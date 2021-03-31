@@ -1,0 +1,28 @@
+platform HP_DMF {
+  define operation special {
+    param n : well = big well;
+    param path : list of pad = [(1,3), (max, 2)];
+    returns seen : boolean;
+  }
+  drop size is 0.5 µL;
+  clock rate is 10 kHz;
+  drop size is 2e-1L;
+  clock tick is 100 ms;
+
+  define well {
+    holds 100 µl;
+    dispenses 1 drop;
+    heats to 98 C in 2 ticks;
+  }
+
+  define big well : default well {
+    holds 2ml;
+  }
+
+  big well 5 at (max, 4);
+
+  wells 2 to 5 at (0, 1), (0, 5);
+  
+
+}
+
