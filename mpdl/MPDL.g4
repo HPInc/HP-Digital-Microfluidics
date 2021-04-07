@@ -11,6 +11,8 @@ platform_member
   | clock_rate_spec
   | board_size_spec
   | motion_rate_spec
+  | pad_type_definition
+  | pad_declaration
   | well_type_definition
   | well_declaration
   | region_type_definition
@@ -66,24 +68,6 @@ well_declaration
   | adj? 'wells' (min=NON_NEG_INT 'to' max=NON_NEG_INT)? 'at' pad_list  ';' # multiple_well_decl
   ;
 
-pad_type_definition : 'define' pad_header '{' pad_member* '}' ;
-
-pad_header
-  : 'default'? 'pad'           # default_pad_header
-  | name=non_def_adj 'pad' (':' parent=adj 'pad')? #named_pad_header 
-  ;
-
-pad_member
-  : volume_spec
-  | dead_spec
-  | magnet_spec
-  | dep_spec
-  ;
-  
-pad_declaration 
-  : adj? 'pad' spec? 'at' pad ';'                                          # single_pad_decl
-  | adj? 'pads' (min=NON_NEG_INT 'to' max=NON_NEG_INT)? 'at' pad_list  ';' # multiple_pad_decl
-  ;
 
 region_type_definition : 'define' region_header '{' region_member* '}' ;
 
@@ -166,18 +150,49 @@ freq_list : '[' elts+=FREQ (',' elts+=FREQ)* ']' ;
  * PADS
  */  
 
-pad : '(' x=row_col ',' y=row_col ')' # pad_literal
+test[Boolean g]
+  : {$g}? INT test[$g]
+  | 'hi'
+  ;
+  
+foo : test[true] ;
+
+pad : '(' row ',' col ')'             # pad_literal
     | PARAM_NAME                      # pad_param
-    | pad '+' distance                # pad_relative
-    | well 'exit'                     # well_exit
+    | pad '+' delta                   # pad_relative
+    | well EXITPAD                    # well_exit
     | '(' pad ')'                     # parenthesized_pad_expr
     ;
 
+
+row : NON_NEG_INT | MAXROW ;
+col : NON_NEG_INT | MAXCOL ;
+
 row_col : NON_NEG_INT | 'max';
-distance : POS_INT PADS dir ;
+delta : POS_INT PADS dir ;
 dir : direction=(UP|DOWN|LEFT|RIGHT);
 
 pad_list : '[' elts+=pad (',' elts+=pad)* ']';
+
+pad_type_definition : 'define' pad_header '{' pad_member* '}' ;
+
+pad_header
+  : 'default'? 'pad'           # default_pad_header
+  | name=non_def_adj 'pad' (':' parent=adj 'pad')? #named_pad_header 
+  ;
+
+pad_member
+  : volume_spec
+  | dead_spec
+  | magnet_spec
+  | dep_spec
+  ;
+  
+pad_declaration 
+  : adj? 'pad' spec? 'at' pad ';'                                          # single_pad_decl
+  | adj? 'pads' (min=NON_NEG_INT 'to' max=NON_NEG_INT)? 'at' pad_list  ';' # multiple_pad_decl
+  ;
+
 
 region 
   : from=pad 'to' to=pad                   # region_bounds
@@ -188,6 +203,7 @@ region
   | region '-' region                      # region_difference
   | POS_INT PADS 'around' pad      # buffered_pad
   | POS_INT PADS 'around' region   # buffered_region
+  | POS_INT PADS 'inside' region   # narrowed_region
   ;
   
 region_list : region (',' region*) ;  
@@ -250,12 +266,15 @@ TEMP
   : (INT | FLOAT) WS* TEMP_UNIT
   | 'room' WS+ 'temp' 'erature'?
   ;  
+  
+MAXROW : 'max' WS+ 'row' ;
+MAXCOL : 'max' WS+ 'col' 'umn'? ;
+EXITPAD : 'exit' WS+ 'pad' ;
 
 UP: 'up';
 DOWN: 'down';
 LEFT: 'left';
 RIGHT: 'right';
-MAX: 'max';
 
 PADS: 'pad' MAYBE_S ;
 

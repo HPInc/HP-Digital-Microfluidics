@@ -1,0 +1,8 @@
+package com.hp.thylacine;
+
+public enum Type {
+  UNKNOWN, ILLEGAL, MISSING,
+  INT, FLOAT, STRING, PAD, WELL, REGION, RECT, SEGMENT, PATH,
+  BOOL, DIST, ROW, COL,
+  VOLUME, TEMP, TIME, FREQ,
+}

@@ -2,15 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="target/generated-sources/antlr4"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-16">
 		<attributes>
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/cygwin64/usr/local/lib/antlr-4.9.2-complete.jar">
-		<attributes>
-			<attribute name="module" value="true"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry kind="lib" path="C:/cygwin64/usr/local/lib/antlr-4.9.2-complete.jar" sourcepath="C:/cygwin64/usr/local/lib/antlr4-4.9.2.zip"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>
