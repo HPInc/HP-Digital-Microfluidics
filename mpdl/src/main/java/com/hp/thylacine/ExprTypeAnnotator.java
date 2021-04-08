@@ -27,27 +27,36 @@ import com.hp.thylacine.CommonParser.Boolean_literalContext;
 import com.hp.thylacine.CommonParser.Capacity_attrContext;
 import com.hp.thylacine.CommonParser.Col_attrContext;
 import com.hp.thylacine.CommonParser.Current_vol_attrContext;
+import com.hp.thylacine.CommonParser.Delta_exprContext;
 import com.hp.thylacine.CommonParser.Distance_exprContext;
 import com.hp.thylacine.CommonParser.Edge_literalContext;
+import com.hp.thylacine.CommonParser.Empty_propContext;
 import com.hp.thylacine.CommonParser.Exit_pad_attrContext;
 import com.hp.thylacine.CommonParser.ExprContext;
 import com.hp.thylacine.CommonParser.Float_literalContext;
 import com.hp.thylacine.CommonParser.Int_literalContext;
 import com.hp.thylacine.CommonParser.List_exprContext;
 import com.hp.thylacine.CommonParser.List_index_exprContext;
-import com.hp.thylacine.CommonParser.Located_wellContext;
 import com.hp.thylacine.CommonParser.Muldiv_exprContext;
 import com.hp.thylacine.CommonParser.NameContext;
 import com.hp.thylacine.CommonParser.Negation_exprContext;
-import com.hp.thylacine.CommonParser.Numbered_regionContext;
-import com.hp.thylacine.CommonParser.Numbered_wellContext;
+import com.hp.thylacine.CommonParser.On_board_propContext;
+import com.hp.thylacine.CommonParser.On_off_propContext;
 import com.hp.thylacine.CommonParser.Pad_coordsContext;
 import com.hp.thylacine.CommonParser.Prenthesized_exprContext;
+import com.hp.thylacine.CommonParser.PropertyContext;
+import com.hp.thylacine.CommonParser.Property_exprContext;
 import com.hp.thylacine.CommonParser.Quantity_exprContext;
+import com.hp.thylacine.CommonParser.Region_by_numContext;
+import com.hp.thylacine.CommonParser.Region_selector_exprContext;
 import com.hp.thylacine.CommonParser.Row_attrContext;
 import com.hp.thylacine.CommonParser.Singleton_regionContext;
 import com.hp.thylacine.CommonParser.Singleton_wellContext;
+import com.hp.thylacine.CommonParser.User_defined_attrContext;
+import com.hp.thylacine.CommonParser.User_defined_propContext;
 import com.hp.thylacine.CommonParser.Variable_nameContext;
+import com.hp.thylacine.CommonParser.Well_by_num_or_padContext;
+import com.hp.thylacine.CommonParser.Well_selector_exprContext;
 
 class ExprTypeAnnotator extends CommonBaseListener {
   
@@ -224,6 +233,36 @@ class ExprTypeAnnotator extends CommonBaseListener {
     boolean matches(Type...param_types) {
       return Arrays.equals(arg_types, param_types);
     }
+
+    public void add_arg_types_to(Set<Type> set, int i) {
+      Type t = arg_types[i];
+      if (t == null) {
+        t = Type.MISSING;
+      }
+      set.add(t);
+    }
+  }
+  
+  static class SymmetricTypeSig extends TypeSig{
+    public SymmetricTypeSig(Type ret_type, Type lhs_type, Type rhs_type) {
+      super(ret_type, lhs_type, rhs_type);
+    }
+    
+    @Override
+    boolean matches(Type... param_types) {
+      return param_types.length == 2
+          && ((param_types[0] == arg_types[0]
+               && param_types[1] == arg_types[1])
+              || (param_types[0] == arg_types[1] 
+                  && param_types[1] == arg_types[0]));
+    }
+    
+    @Override
+    public void add_arg_types_to(Set<Type> set, int i) {
+      set.add(arg_types[0]);
+      set.add(arg_types[1]);
+    }
+    
   }
   
   class SigChecker {
@@ -236,16 +275,12 @@ class ExprTypeAnnotator extends CommonBaseListener {
       Map<Integer, Set<Type>> map = new HashMap<>();
       for (TypeSig sig : sigs) {
         for (int i=0; i<sig.arg_types.length; i++) {
-          Type type = sig.arg_types[i];
-          if (type == null) {
-            type = Type.MISSING;
-          }
           Set<Type> set = map.get(i);
           if (set == null) {
             set = new HashSet<>();
             map.put(i, set);
           }
-          set.add(type);
+          sig.add_arg_types_to(set, i);
         }
       }
       arity = map.size();
@@ -303,21 +338,21 @@ class ExprTypeAnnotator extends CommonBaseListener {
   final SigChecker 
   add_sigs = new SigChecker(new TypeSig(Type.INT, Type.INT, Type.INT),
                             new TypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT),
-                            new TypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
-                            new TypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT),
-                            new TypeSig(Type.ROW, Type.ROW, Type.INT),
-                            new TypeSig(Type.ROW, Type.INT, Type.ROW),
-                            new TypeSig(Type.COL, Type.COL, Type.INT),
-                            new TypeSig(Type.COL, Type.INT, Type.COL));
-  final SigChecker 
-  sub_sigs = new SigChecker(new TypeSig(Type.INT, Type.INT, Type.INT),
-                            new TypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT),
-                            new TypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
-                            new TypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT),
-                            new TypeSig(Type.ROW, Type.ROW, Type.INT),
-                            new TypeSig(Type.COL, Type.COL, Type.INT),
-                            new TypeSig(Type.INT, Type.COL, Type.COL),
-                            new TypeSig(Type.INT, Type.ROW, Type.ROW));
+                            new SymmetricTypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
+                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.ROWS),
+                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.COLS),
+                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.HDELTA),
+                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.VDELTA),
+                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.DELTA2D),
+                            new TypeSig(Type.ROWS, Type.ROWS, Type.ROWS),
+                            new TypeSig(Type.COLS, Type.COLS, Type.COLS),
+                            new TypeSig(Type.PADS, Type.PADS, Type.PADS),
+                            new SymmetricTypeSig(Type.DELTA2D, Type.ROWS, Type.COLS),
+                            new TypeSig(Type.HDELTA, Type.HDELTA, Type.HDELTA),
+                            new TypeSig(Type.VDELTA, Type.VDELTA, Type.VDELTA),
+                            new TypeSig(Type.DELTA2D, Type.DELTA2D, Type.DELTA2D),
+                            new SymmetricTypeSig(Type.DELTA2D, Type.HDELTA, Type.VDELTA)
+                            );
                                
   @Override
   public void exitAddsub_expr(Addsub_exprContext ctx) {
@@ -325,7 +360,7 @@ class ExprTypeAnnotator extends CommonBaseListener {
     if (is_add) {
       noteType(ctx, add_sigs.check("+", ctx.lhs, ctx.rhs));
     } else {
-      noteType(ctx, sub_sigs.check("-", ctx.lhs, ctx.rhs));
+      noteType(ctx, add_sigs.check("-", ctx.lhs, ctx.rhs));
     }
   }
 
@@ -356,21 +391,24 @@ class ExprTypeAnnotator extends CommonBaseListener {
     noteType(ctx, Type.INT);
   }
 
+  final SigChecker
+  regionSelector_sigs = new SigChecker(new TypeSig(Type.REGION, Type.INT));
   @Override
-  public void exitNumbered_region(Numbered_regionContext ctx) {
-    noteType(ctx, Type.REGION);
+  public void exitRegion_selector_expr(Region_selector_exprContext ctx) {
+    var sel = ctx.region_selector();
+    if (sel instanceof Region_by_numContext s) {
+      noteType(ctx, regionSelector_sigs.check("region[]", s.expr()));
+    } else {
+      report_error("Unhandled selector", sel.getText());
+      noteType(ctx, Type.REGION);
+    }
   }
+  
 
   @Override
   public void exitBoolean_literal(Boolean_literalContext ctx) {
     noteType(ctx, Type.BOOL);
   }
-
-  @Override
-  public void exitNumbered_well(Numbered_wellContext ctx) {
-    noteType(ctx, Type.WELL);
-  }
-
   
   final SigChecker
   exit_pad_attr_sigs = new SigChecker(new TypeSig(Type.PAD, Type.WELL));
@@ -385,7 +423,6 @@ class ExprTypeAnnotator extends CommonBaseListener {
   capacity_attr_sigs = new SigChecker(new TypeSig(Type.VOLUME, Type.PAD),
                                       new TypeSig(Type.VOLUME, Type.WELL));
   
-  @SuppressWarnings("preview")
   @Override
   public void exitAttribute_expr(Attribute_exprContext ctx) {
     AttributeContext att = ctx.attr;
@@ -399,10 +436,33 @@ class ExprTypeAnnotator extends CommonBaseListener {
       noteType(ctx, volume_attr_sigs.check(a.getText(), ctx.obj));
     } else if (att instanceof Capacity_attrContext a) {
       noteType(ctx, capacity_attr_sigs.check(a.getText(), ctx.obj));
+    } else if (att instanceof User_defined_attrContext a) {
+      report_error("Unhandled (user-defined?) Attribute", att.getText());
+      noteType(ctx, Type.UNKNOWN);
     } else {
-      report_error("Unknown Attribute", "\""+att.getText()+"\"");
+      report_error("Unhandled Attribute", "\""+att.getText()+"\"");
       noteType(ctx, Type.ILLEGAL);
     }
+  }
+
+  @Override
+  public void exitProperty_expr(Property_exprContext ctx) {
+    PropertyContext prop = ctx.prop;
+    try {
+      if (prop instanceof Empty_propContext) {
+        getCheckedType(ctx.obj, Type.WELL, Type.PAD);
+      } else if (prop instanceof On_off_propContext) {
+        getCheckedType(ctx.obj, Type.PAD);
+      } else if (prop instanceof On_board_propContext) {
+        getCheckedType(ctx.obj, Type.PAD);
+      } else if (prop instanceof User_defined_propContext) {
+        report_error("Unhandled (user-defined?) Attribute", prop.getText());
+      } else {
+        report_error("Unhandled Attribute", "\""+prop.getText()+"\"");
+      }
+    } catch (TypeError e) {
+    }
+    noteType(ctx, Type.BOOL);
   }
 
   @Override
@@ -412,7 +472,41 @@ class ExprTypeAnnotator extends CommonBaseListener {
 
   @Override
   public void exitDistance_expr(Distance_exprContext ctx) {
-    noteType(ctx, Type.DIST);
+    try {
+      getCheckedType(ctx.n, Type.INT);
+      Type t = switch (ctx.kind.kind.getType()) 
+          {
+          case CommonParser.ROW, CommonParser.ROWS -> Type.ROWS;
+          case CommonParser.COL, CommonParser.COLS, 
+               CommonParser.COLUMN, CommonParser.COLUMNS -> Type.COLS;
+          case CommonParser.PAD, CommonParser.PADS -> Type.PADS;
+          default -> Type.ILLEGAL;
+          };
+      noteType(ctx, t);
+    } catch (TypeError e) {
+      noteType(ctx, Type.ILLEGAL);
+    }
+  }
+  
+  @Override
+  public void exitDelta_expr(Delta_exprContext ctx) {
+    try {
+      Type t = switch (ctx.step_dir().dir.getType()) 
+          {
+          case CommonParser.UP, CommonParser.DOWN -> {
+            getCheckedType(ctx.mag, Type.ROWS, Type.PADS, Type.INT);
+            yield Type.VDELTA;
+          }
+          case CommonParser.LEFT, CommonParser.RIGHT -> {
+            getCheckedType(ctx.mag, Type.COLS, Type.PADS, Type.INT);
+            yield Type.HDELTA;
+          }
+          default -> Type.ILLEGAL;
+      };
+      noteType(ctx, t);
+    } catch (TypeError e) {
+      noteType(ctx, Type.ILLEGAL);
+    }
   }
 
   @Override
@@ -451,6 +545,10 @@ class ExprTypeAnnotator extends CommonBaseListener {
   @Override
   public void exitVariable_name(Variable_nameContext ctx) {
     String name = ctx.name().getText();
+    if (name.endsWith("?")) {
+      noteType(ctx, Type.BOOL);
+      return;
+    }
     Matcher m = var_pat.matcher(name);
     if (m.matches()) {
       String base = m.group(1);
@@ -479,10 +577,17 @@ class ExprTypeAnnotator extends CommonBaseListener {
   }
 
   final SigChecker
-  locatedWell_sigs = new SigChecker(new TypeSig(Type.WELL, Type.PAD));
+  wellSelector_sigs = new SigChecker(new TypeSig(Type.WELL, Type.PAD),
+                                     new TypeSig(Type.WELL, Type.INT));
   @Override
-  public void exitLocated_well(Located_wellContext ctx) {
-    noteType(ctx, locatedWell_sigs.check("well-at", ctx.loc));
+  public void exitWell_selector_expr(Well_selector_exprContext ctx) {
+    var sel = ctx.well_selector();
+    if (sel instanceof Well_by_num_or_padContext s) {
+      noteType(ctx, wellSelector_sigs.check("well[]", s.expr()));
+    } else {
+      report_error("Unhandled selector", sel.getText());
+      noteType(ctx, Type.WELL);
+    }
   }
 
   final SigChecker
@@ -506,61 +611,12 @@ class ExprTypeAnnotator extends CommonBaseListener {
       } else if (unit.FREQ_UNIT() != null) {
         noteType(ctx, Type.FREQ);
       } else {
-        report_error("Unknown unit", unit.getText());
-        System.out.println(error_open+"Unknown unit:"+error_close+" "+unit.getText());
+        report_error("Unhandled unit", unit.getText());
+        noteType(ctx, Type.UNKNOWN);
       }
     } catch (TypeError e) {
       noteType(ctx, Type.ILLEGAL);
     }
   }
-
-  @Override
-  public void exitExit_pad_attr(Exit_pad_attrContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitExit_pad_attr(ctx);
-  }
-
-  @Override
-  public void exitRow_attr(Row_attrContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitRow_attr(ctx);
-  }
-
-  @Override
-  public void exitCol_attr(Col_attrContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitCol_attr(ctx);
-  }
-
-  @Override
-  public void exitCurrent_vol_attr(Current_vol_attrContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitCurrent_vol_attr(ctx);
-  }
-
-  @Override
-  public void exitCapacity_attr(Capacity_attrContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitCapacity_attr(ctx);
-  }
-
-  @Override
-  public void exitBoolean_lit(Boolean_litContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitBoolean_lit(ctx);
-  }
-
-  @Override
-  public void exitName(NameContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitName(ctx);
-  }
-
-  @Override
-  public void exitEveryRule(ParserRuleContext ctx) {
-    // TODO Auto-generated method stub
-    super.exitEveryRule(ctx);
-  }
-  
   
 }

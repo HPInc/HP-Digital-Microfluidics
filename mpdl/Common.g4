@@ -8,17 +8,18 @@ just_expr: expr EOF ;
 expr
   : '(' expr ')'                        # prenthesized_expr
   | obj=expr ATTSEL attr=attribute      # attribute_expr
-  | '-' rhs=expr                        # negation_expr
+  | obj=expr 'is' prop=property         # property_expr
   | list=expr '[' index=expr ']'        # list_index_expr
-  | mag=expr unit                      # quantity_expr
-  | n=expr kind=step_kind dir=step_dir? # distance_expr
+  | '-' rhs=expr                        # negation_expr
+  | mag=expr unit                       # quantity_expr
+  | mag=expr step_dir                   # delta_expr
+  | n=expr kind=step_kind               # distance_expr
   | lhs=expr op=('*'|'/') rhs=expr      # muldiv_expr
   | lhs=expr op=('+'|'-') rhs=expr      # addsub_expr
   | 'the' type=name 'well'              # singleton_well
-  | type=name? 'well' which=INT         # numbered_well
-  | 'the' type=name? 'well' 'at' loc=expr   # located_well
-  | 'the' type=name 'region'            # singleton_region 
-  | type=name? 'region' which=INT       # numbered_region
+  | type=name? 'well' '[' well_selector ']' # well_selector_expr 
+  | 'the' type=name 'region'            # singleton_region
+  | type=name? 'region' '[' region_selector']' # region_selector_expr 
   | '(' row=expr ',' col=expr ')'       # pad_coords
   | '[' elts+=expr (',' elts+=expr)* ']' # list_expr
   | val=INT                # int_literal
@@ -28,13 +29,22 @@ expr
   | name                   # variable_name
   ;
   
+well_selector
+  : expr                                 # well_by_num_or_pad
+  ;  
+  
+  
+region_selector
+  : expr                                 # region_by_num
+  ;  
+  
 unit: kind=(VOLUME_UNIT|TIME_UNIT|TEMP_UNIT|FREQ_UNIT);   
   
-step_kind: kind=('row'|'rows'|'col'|'column'|'pad'|'pads');
+step_kind: kind=('row'|'rows'|'col'|'column'|'cols'|'columns'|'pad'|'pads');
 
 step_dir
   : dir=('up'|'down'|'left'|'right')
-  | 'toward' dest=expr
+ // | 'toward' dest=expr
   ;
   
 attribute
@@ -43,6 +53,15 @@ attribute
   | ('col' | 'column')  # col_attr
   | 'current'? 'volume' # current_vol_attr
   | 'capacity'          # capacity_attr
+  | name                # user_defined_attr
+  ;
+  
+  
+property
+  : 'empty'             # empty_prop
+  | 'on' 'the'? 'board'        # on_board_prop
+  | ('on' | 'off')      # on_off_prop
+  | name                # user_defined_prop
   ;
   
 boolean_lit
@@ -51,6 +70,20 @@ locals [boolean val]
   | ('false' | 'no') { $val=false;}
   ;
   
+
+// Keywords that are allowed as names.  Need to make sure that
+// none are expressions on their own.
+kwd_names 
+  : 'max'
+  | 'row'  | 'col'  | 'column'  | 'pad'
+  | 'rows' | 'cols' | 'columns' | 'pads'
+  | 'up' | 'down' | 'left' | 'right' | 'toward'
+  | 'exit' | 'current' | 'volume' | 'capacity'
+  | 'on' | 'board' | 'off'
+  ;  
+
+name : ID | kwd_names | unit ;
+
 ROW: 'row';
 ROWS: 'rows';
 COL: 'col';
@@ -72,16 +105,6 @@ MINUS: '-';
 STAR: '*';
 SLASH: '/';
 
-
-
-
-
-name : ID
-  | 'at'
-  | 'row' | 'rows' | 'col'
-  | UP | DOWN | LEFT | RIGHT
-  | TEMP_UNIT | FREQ_UNIT | TIME_UNIT | VOLUME_UNIT
-  ;
   
 
 fragment ERRE : ('er' | 're') ;
@@ -138,7 +161,7 @@ fragment ALNUM: ALPHA | DIGIT;
 fragment IDCHAR: ALNUM | '_';
 
 
-ID : (ALPHA | '_' IDCHAR) IDCHAR*;
+ID : (ALPHA | '_' IDCHAR) IDCHAR* '?'?;
 
 /*
  * INT and FLOAT don't include leading minus sign so that 'x-2' is seen as <x><-><2> rather than <x><-2>
