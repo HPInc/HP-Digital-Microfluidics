@@ -7,25 +7,36 @@ just_expr: expr EOF ;
 
 expr
   : '(' expr ')'                        # prenthesized_expr
+
   | obj=expr ATTSEL attr=attribute      # attribute_expr
-  | obj=expr 'is' prop=property         # property_expr
+  | ('its'|'it\'s') attr=attribute      # attribute_expr
   | list=expr '[' index=expr ']'        # list_index_expr
+  | 'not' rhs=expr                      # not_expr
   | '-' rhs=expr                        # negation_expr
   | mag=expr unit                       # quantity_expr
   | mag=expr step_dir                   # delta_expr
   | n=expr kind=step_kind               # distance_expr
   | lhs=expr op=('*'|'/') rhs=expr      # muldiv_expr
+  | lhs=expr relpos rhs=expr            # relpos_expr
   | lhs=expr op=('+'|'-') rhs=expr      # addsub_expr
+  | lhs=expr 'is'? 'not'? 'in' rhs=expr  # in_expr
+  | obj=expr 'is' 'not'? prop=property  # property_expr
+  | lhs=expr 'and' rhs=expr             # and_expr
+  | lhs=expr 'or' rhs=expr              # or_expr
+
   | 'the' type=name 'well'              # singleton_well
   | type=name? 'well' '[' well_selector ']' # well_selector_expr 
   | 'the' type=name 'region'            # singleton_region
   | type=name? 'region' '[' region_selector']' # region_selector_expr 
   | '(' row=expr ',' col=expr ')'       # pad_coords
   | '[' elts+=expr (',' elts+=expr)* ']' # list_expr
+  | 'call' name '(' args+=call_arg (',' args+=call_arg)* ')' #op_call
   | val=INT                # int_literal
   | val=FLOAT              # float_literal
   | val=('true' | 'false' | 'yes' | 'no')     # boolean_literal
   | 'max' val=('row' | 'col' | 'column')  # edge_literal
+  | 'room' ('temp'|'temperature')   # room_temp_lit
+  | 'it'                   # current_obj_lit
   | name                   # variable_name
   ;
   
@@ -38,6 +49,17 @@ region_selector
   : expr                                 # region_by_num
   ;  
   
+call_arg
+  : name ':' expr                # in_arg
+  | name 'as' name               # out_arg
+  ;
+
+relpos
+  : ('to' 'the')? ('left'|'right') 'of'   # horizontal_relpos
+  | ('above'|'below')                     # vertical_relpos
+  | ('up'|'down') 'from'                  # vertical_relpos    
+  ;
+
 unit: kind=(VOLUME_UNIT|TIME_UNIT|TEMP_UNIT|FREQ_UNIT);   
   
 step_kind: kind=('row'|'rows'|'col'|'column'|'cols'|'columns'|'pad'|'pads');
@@ -53,6 +75,7 @@ attribute
   | ('col' | 'column')  # col_attr
   | 'current'? 'volume' # current_vol_attr
   | 'capacity'          # capacity_attr
+  | 'count' 'in' unit   # unit_count_attr
   | name                # user_defined_attr
   ;
   
@@ -80,9 +103,10 @@ kwd_names
   | 'up' | 'down' | 'left' | 'right' | 'toward'
   | 'exit' | 'current' | 'volume' | 'capacity'
   | 'on' | 'board' | 'off'
+  | 'as' | 'room' | 'temp' | 'temperature'
   ;  
 
-name : ID | kwd_names | unit ;
+name : (ID | kwd_names | unit)+ ;
 
 ROW: 'row';
 ROWS: 'rows';
@@ -145,10 +169,10 @@ TEMP_UNIT
   | ('°' | 'degrees') 'F'
   ;
   
-TEMP 
-  : (INT | FLOAT) WS* TEMP_UNIT
-  | 'room' WS+ 'temp' 'erature'?
-  ;  
+//TEMP 
+//  : (INT | FLOAT) WS* TEMP_UNIT
+//  | 'room' WS+ 'temp' 'erature'?
+//  ;  
   
 
 

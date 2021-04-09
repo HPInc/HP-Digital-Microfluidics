@@ -2,6 +2,7 @@ package com.hp.thylacine;
 
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -12,7 +13,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.Interval;
@@ -20,12 +20,13 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 
 import com.hp.thylacine.CommonParser.Addsub_exprContext;
+import com.hp.thylacine.CommonParser.And_exprContext;
 import com.hp.thylacine.CommonParser.AttributeContext;
 import com.hp.thylacine.CommonParser.Attribute_exprContext;
-import com.hp.thylacine.CommonParser.Boolean_litContext;
 import com.hp.thylacine.CommonParser.Boolean_literalContext;
 import com.hp.thylacine.CommonParser.Capacity_attrContext;
 import com.hp.thylacine.CommonParser.Col_attrContext;
+import com.hp.thylacine.CommonParser.Current_obj_litContext;
 import com.hp.thylacine.CommonParser.Current_vol_attrContext;
 import com.hp.thylacine.CommonParser.Delta_exprContext;
 import com.hp.thylacine.CommonParser.Distance_exprContext;
@@ -34,14 +35,18 @@ import com.hp.thylacine.CommonParser.Empty_propContext;
 import com.hp.thylacine.CommonParser.Exit_pad_attrContext;
 import com.hp.thylacine.CommonParser.ExprContext;
 import com.hp.thylacine.CommonParser.Float_literalContext;
+import com.hp.thylacine.CommonParser.Horizontal_relposContext;
+import com.hp.thylacine.CommonParser.In_exprContext;
 import com.hp.thylacine.CommonParser.Int_literalContext;
 import com.hp.thylacine.CommonParser.List_exprContext;
 import com.hp.thylacine.CommonParser.List_index_exprContext;
 import com.hp.thylacine.CommonParser.Muldiv_exprContext;
-import com.hp.thylacine.CommonParser.NameContext;
 import com.hp.thylacine.CommonParser.Negation_exprContext;
+import com.hp.thylacine.CommonParser.Not_exprContext;
 import com.hp.thylacine.CommonParser.On_board_propContext;
 import com.hp.thylacine.CommonParser.On_off_propContext;
+import com.hp.thylacine.CommonParser.Op_callContext;
+import com.hp.thylacine.CommonParser.Or_exprContext;
 import com.hp.thylacine.CommonParser.Pad_coordsContext;
 import com.hp.thylacine.CommonParser.Prenthesized_exprContext;
 import com.hp.thylacine.CommonParser.PropertyContext;
@@ -49,12 +54,18 @@ import com.hp.thylacine.CommonParser.Property_exprContext;
 import com.hp.thylacine.CommonParser.Quantity_exprContext;
 import com.hp.thylacine.CommonParser.Region_by_numContext;
 import com.hp.thylacine.CommonParser.Region_selector_exprContext;
+import com.hp.thylacine.CommonParser.RelposContext;
+import com.hp.thylacine.CommonParser.Relpos_exprContext;
+import com.hp.thylacine.CommonParser.Room_temp_litContext;
 import com.hp.thylacine.CommonParser.Row_attrContext;
 import com.hp.thylacine.CommonParser.Singleton_regionContext;
 import com.hp.thylacine.CommonParser.Singleton_wellContext;
+import com.hp.thylacine.CommonParser.UnitContext;
+import com.hp.thylacine.CommonParser.Unit_count_attrContext;
 import com.hp.thylacine.CommonParser.User_defined_attrContext;
 import com.hp.thylacine.CommonParser.User_defined_propContext;
 import com.hp.thylacine.CommonParser.Variable_nameContext;
+import com.hp.thylacine.CommonParser.Vertical_relposContext;
 import com.hp.thylacine.CommonParser.Well_by_num_or_padContext;
 import com.hp.thylacine.CommonParser.Well_selector_exprContext;
 
@@ -181,12 +192,19 @@ class ExprTypeAnnotator extends CommonBaseListener {
         report_error("Type Error", getDesc(ctx),
                      (out)->{
                        String sep = "";
-                       out.print("  Expected one of: ");
-                       for (Type a : allowed) {
-                         out.print(sep+a);
-                         sep = ", ";
-                 }
-                       out.println();
+                       out.print("  Expected ");
+                       if (allowed.length == 1) {
+                         out.println(allowed[0]);
+                       } else if (allowed.length == 2) {
+                         out.format("%s or %s%n", allowed[0], allowed[1]);
+                       } else {
+                         out.print("one of: ");
+                         for (Type a : allowed) {
+                           out.print(sep+a);
+                           sep = ", ";
+                         }
+                         out.println();
+                       }
                      });
       }
     }
@@ -220,8 +238,17 @@ class ExprTypeAnnotator extends CommonBaseListener {
   String getDesc(ParseTree tree) {
     return descriptions.get(tree);
   }
+  
+  static interface TypeSigBase {
+    int arity();
+    /*
+     * Returns null if it doesn't match, return type otherwise
+     */
+    Type matches(Type...param_types);
+    void add_arg_types_to(Set<Type> set, int i);
+  }
 
-  static class TypeSig {
+  static class TypeSig implements TypeSigBase {
     final Type ret_type;
     final Type[] arg_types;
     
@@ -230,10 +257,15 @@ class ExprTypeAnnotator extends CommonBaseListener {
       arg_types = ats;
     }
     
-    boolean matches(Type...param_types) {
-      return Arrays.equals(arg_types, param_types);
+    @Override
+    public Type matches(Type...param_types) {
+      if (Arrays.equals(arg_types, param_types)) {
+        return ret_type;
+      }
+      return null;
     }
 
+    @Override
     public void add_arg_types_to(Set<Type> set, int i) {
       Type t = arg_types[i];
       if (t == null) {
@@ -241,40 +273,97 @@ class ExprTypeAnnotator extends CommonBaseListener {
       }
       set.add(t);
     }
+
+    @Override
+    public int arity() {
+      return arg_types.length;
+    }
+
   }
   
-  static class SymmetricTypeSig extends TypeSig{
-    public SymmetricTypeSig(Type ret_type, Type lhs_type, Type rhs_type) {
-      super(ret_type, lhs_type, rhs_type);
+  static class SymmetricTypeSig implements TypeSigBase {
+    private final Type ret_type;
+    private final Type t1;
+    private final Type t2;
+    public SymmetricTypeSig(Type ret_type, Type t1, Type t2) {
+      this.ret_type = ret_type;
+      this.t1 = t1;
+      this.t2 = t2;
     }
     
     @Override
-    boolean matches(Type... param_types) {
-      return param_types.length == 2
-          && ((param_types[0] == arg_types[0]
-               && param_types[1] == arg_types[1])
-              || (param_types[0] == arg_types[1] 
-                  && param_types[1] == arg_types[0]));
+    public
+    Type matches(Type... param_types) {
+      if (param_types.length == 2
+          && ((param_types[0] == t1 && param_types[1] == t2)
+              || (param_types[0] == t2 && param_types[1] == t1)))
+      {
+        return ret_type;
+      }
+      return null;
     }
     
     @Override
     public void add_arg_types_to(Set<Type> set, int i) {
-      set.add(arg_types[0]);
-      set.add(arg_types[1]);
+      set.add(t1);
+      set.add(t2);
+    }
+
+    @Override
+    public int arity() {
+      return 2;
+    }
+  }
+  
+  class TypePreservingSig implements TypeSigBase {
+    final int arity;
+    final EnumSet<Type> types;
+    
+    public TypePreservingSig(int arity, Type first, Type...rest) {
+      this.arity = arity;
+      types = EnumSet.of(first, rest);
+    }
+
+    @Override
+    public int arity() {
+      return arity;
+    }
+
+    @Override
+    public Type matches(Type... param_types) {
+      if (param_types.length == 0) {
+        return null;
+      }
+      Type pt = param_types[0];
+      if (!types.contains(pt)) {
+        return null;
+      }
+      for (int i=1; i<param_types.length; i++) {
+        if (pt != param_types[i]) {
+          return null;
+        }
+      }
+      return pt;
+    }
+
+    @Override
+    public void add_arg_types_to(Set<Type> set, int i) {
+      set.addAll(types);
     }
     
   }
   
+  
   class SigChecker {
-    final TypeSig[] sigs;
+    final TypeSigBase[] sigs;
     final int arity;
     final Type[][] constraints;
     
-    SigChecker(TypeSig...sigs) {
+    SigChecker(TypeSigBase...sigs) {
       this.sigs = sigs;
       Map<Integer, Set<Type>> map = new HashMap<>();
-      for (TypeSig sig : sigs) {
-        for (int i=0; i<sig.arg_types.length; i++) {
+      for (TypeSigBase sig : sigs) {
+        for (int i=0; i<sig.arity(); i++) {
           Set<Type> set = map.get(i);
           if (set == null) {
             set = new HashSet<>();
@@ -309,8 +398,9 @@ class ExprTypeAnnotator extends CommonBaseListener {
         }
       }
       for (var sig : sigs) {
-        if (sig.matches(types)) {
-          return sig.ret_type;
+        Type ret_type = sig.matches(types);
+        if (ret_type != null) {
+          return ret_type;
         }
       }
       String ptype_descs = Arrays.stream(types).map(Type::toString).collect(Collectors.joining(", "));
@@ -329,6 +419,18 @@ class ExprTypeAnnotator extends CommonBaseListener {
   }
 
   
+  private Type unit_type(UnitContext uc) {
+    if (uc.VOLUME_UNIT() != null) {
+      return Type.VOLUME;
+    } else if (uc.TIME_UNIT() != null) {
+      return Type.TIME;
+    } else if (uc.TEMP_UNIT() != null) {
+      return Type.TEMP;
+    } else if (uc.FREQ_UNIT() != null) {
+      return Type.FREQ;
+    } 
+    return Type.UNKNOWN;
+  }
   
   @Override
   public void exitInt_literal(Int_literalContext ctx) {
@@ -336,31 +438,41 @@ class ExprTypeAnnotator extends CommonBaseListener {
   }
   
   final SigChecker 
-  add_sigs = new SigChecker(new TypeSig(Type.INT, Type.INT, Type.INT),
-                            new TypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT),
+  add_sigs = new SigChecker(new TypePreservingSig(2, Type.INT, Type.FLOAT, 
+                                                  Type.ROWS, Type.COLS, Type.PADS,
+                                                  Type.HDELTA, Type.VDELTA, Type.DELTA2D,
+                                                  Type.REGION),
                             new SymmetricTypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
                             new SymmetricTypeSig(Type.PAD, Type.PAD, Type.ROWS),
                             new SymmetricTypeSig(Type.PAD, Type.PAD, Type.COLS),
                             new SymmetricTypeSig(Type.PAD, Type.PAD, Type.HDELTA),
                             new SymmetricTypeSig(Type.PAD, Type.PAD, Type.VDELTA),
                             new SymmetricTypeSig(Type.PAD, Type.PAD, Type.DELTA2D),
-                            new TypeSig(Type.ROWS, Type.ROWS, Type.ROWS),
-                            new TypeSig(Type.COLS, Type.COLS, Type.COLS),
-                            new TypeSig(Type.PADS, Type.PADS, Type.PADS),
                             new SymmetricTypeSig(Type.DELTA2D, Type.ROWS, Type.COLS),
-                            new TypeSig(Type.HDELTA, Type.HDELTA, Type.HDELTA),
-                            new TypeSig(Type.VDELTA, Type.VDELTA, Type.VDELTA),
-                            new TypeSig(Type.DELTA2D, Type.DELTA2D, Type.DELTA2D),
                             new SymmetricTypeSig(Type.DELTA2D, Type.HDELTA, Type.VDELTA)
                             );
-                               
+  final SigChecker 
+  sub_sigs = new SigChecker(new TypePreservingSig(2, Type.INT, Type.FLOAT, 
+                                                  Type.ROWS, Type.COLS, Type.PADS,
+                                                  Type.HDELTA, Type.VDELTA, Type.DELTA2D,
+                                                  Type.REGION),
+                            new SymmetricTypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
+                            new TypeSig(Type.PAD, Type.PAD, Type.ROWS),
+                            new TypeSig(Type.PAD, Type.PAD, Type.COLS),
+                            new TypeSig(Type.PAD, Type.PAD, Type.HDELTA),
+                            new TypeSig(Type.PAD, Type.PAD, Type.VDELTA),
+                            new TypeSig(Type.PAD, Type.PAD, Type.DELTA2D),
+                            new SymmetricTypeSig(Type.DELTA2D, Type.ROWS, Type.COLS),
+                            new SymmetricTypeSig(Type.DELTA2D, Type.HDELTA, Type.VDELTA),
+                            new TypeSig(Type.DELTA2D, Type.PAD, Type.PAD)
+                            );
   @Override
   public void exitAddsub_expr(Addsub_exprContext ctx) {
     boolean is_add = ctx.op.getType() == CommonParser.PLUS;
     if (is_add) {
       noteType(ctx, add_sigs.check("+", ctx.lhs, ctx.rhs));
     } else {
-      noteType(ctx, add_sigs.check("-", ctx.lhs, ctx.rhs));
+      noteType(ctx, sub_sigs.check("-", ctx.lhs, ctx.rhs));
     }
   }
 
@@ -372,8 +484,7 @@ class ExprTypeAnnotator extends CommonBaseListener {
   }
 
   final SigChecker
-  negSigs = new SigChecker(new TypeSig(Type.INT, Type.INT),
-                           new TypeSig(Type.FLOAT, Type.FLOAT));
+  negSigs = new SigChecker(new TypePreservingSig(1, Type.INT, Type.FLOAT));
   @Override
   public void exitNegation_expr(Negation_exprContext ctx) {
     noteType(ctx, negSigs.check("-", ctx.rhs));
@@ -423,6 +534,7 @@ class ExprTypeAnnotator extends CommonBaseListener {
   capacity_attr_sigs = new SigChecker(new TypeSig(Type.VOLUME, Type.PAD),
                                       new TypeSig(Type.VOLUME, Type.WELL));
   
+  
   @Override
   public void exitAttribute_expr(Attribute_exprContext ctx) {
     AttributeContext att = ctx.attr;
@@ -436,6 +548,18 @@ class ExprTypeAnnotator extends CommonBaseListener {
       noteType(ctx, volume_attr_sigs.check(a.getText(), ctx.obj));
     } else if (att instanceof Capacity_attrContext a) {
       noteType(ctx, capacity_attr_sigs.check(a.getText(), ctx.obj));
+    } else if (att instanceof Unit_count_attrContext a) {
+      Type t = unit_type(a.unit());
+      if (t== Type.UNKNOWN) {
+        report_error("Unhandled unit", a.unit().getText());
+      } else {
+        try {
+          getCheckedType(ctx.obj, t);
+          noteType(ctx, Type.FLOAT);
+        } catch (TypeError e) {
+          noteType(ctx, Type.ILLEGAL);
+        }
+      }
     } else if (att instanceof User_defined_attrContext a) {
       report_error("Unhandled (user-defined?) Attribute", att.getText());
       noteType(ctx, Type.UNKNOWN);
@@ -463,6 +587,13 @@ class ExprTypeAnnotator extends CommonBaseListener {
     } catch (TypeError e) {
     }
     noteType(ctx, Type.BOOL);
+  }
+
+  final SigChecker
+  in_sigs = new SigChecker(new TypeSig(Type.BOOL, Type.PAD, Type.REGION));
+  @Override
+  public void exitIn_expr(In_exprContext ctx) {
+    noteType(ctx, in_sigs.check("in", ctx.lhs, ctx.rhs));
   }
 
   @Override
@@ -566,10 +697,8 @@ class ExprTypeAnnotator extends CommonBaseListener {
   }
 
   final SigChecker 
-  mulDiv_sigs = new SigChecker(new TypeSig(Type.INT, Type.INT, Type.INT),
-                               new TypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT),
-                               new TypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
-                               new TypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT));
+  mulDiv_sigs = new SigChecker(new TypePreservingSig(2, Type.INT, Type.FLOAT),
+                               new SymmetricTypeSig(Type.FLOAT, Type.INT, Type.FLOAT));
                                
   @Override
   public void exitMuldiv_expr(Muldiv_exprContext ctx) {
@@ -602,14 +731,9 @@ class ExprTypeAnnotator extends CommonBaseListener {
     try {
       getCheckedType(ctx.mag, Type.INT, Type.FLOAT);
       var unit = ctx.unit();
-      if (unit.VOLUME_UNIT() != null) {
-        noteType(ctx, Type.VOLUME);
-      } else if (unit.TIME_UNIT() != null) {
-        noteType(ctx, Type.TIME); 
-      } else if (unit.TEMP_UNIT() != null) {
-        noteType(ctx, Type.TEMP);
-      } else if (unit.FREQ_UNIT() != null) {
-        noteType(ctx, Type.FREQ);
+      Type t = unit_type(unit);
+      if (t != Type.UNKNOWN) {
+        noteType(ctx, t);
       } else {
         report_error("Unhandled unit", unit.getText());
         noteType(ctx, Type.UNKNOWN);
@@ -619,4 +743,59 @@ class ExprTypeAnnotator extends CommonBaseListener {
     }
   }
   
+  @Override
+  public void exitRoom_temp_lit(Room_temp_litContext ctx) {
+    noteType(ctx, Type.TEMP);
+  }
+  
+  @Override
+  public void exitOp_call(Op_callContext ctx) {
+    noteType(ctx, Type.OPCALL);
+  }
+  
+  @Override
+  public void exitRelpos_expr(Relpos_exprContext ctx) {
+    try {
+      getCheckedType(ctx.rhs, Type.PAD);
+      RelposContext op = ctx.relpos();
+      if (op instanceof Horizontal_relposContext) {
+        getCheckedType(ctx.lhs, Type.INT, Type.COLS, Type.PADS);
+        noteType(ctx, Type.PAD);
+      } else if (op instanceof Vertical_relposContext) {
+        getCheckedType(ctx.lhs, Type.INT, Type.ROWS, Type.PADS);
+        noteType(ctx, Type.PAD);
+      } else {
+        report_error("Unhandled relative position", op.getText());
+        noteType(ctx, Type.UNKNOWN);
+      }
+    } catch (TypeError e) {
+      noteType(ctx, Type.ILLEGAL);
+    }
+  }
+  
+  final SigChecker
+  not_sigs = new SigChecker(new TypeSig(Type.BOOL, Type.BOOL));
+  @Override
+  public void exitNot_expr(Not_exprContext ctx) {
+    noteType(ctx, not_sigs.check("not", ctx.rhs));
+  }
+  
+  final SigChecker
+  and_sigs = new SigChecker(new TypeSig(Type.BOOL, Type.BOOL, Type.BOOL));
+  @Override
+  public void exitAnd_expr(And_exprContext ctx) {
+    noteType(ctx, and_sigs.check("and",  ctx.lhs, ctx.rhs));
+  }
+  
+  final SigChecker or_sigs = and_sigs;
+  @Override
+  public void exitOr_expr(Or_exprContext ctx) {
+    noteType(ctx, or_sigs.check("or",  ctx.lhs, ctx.rhs));
+  }
+  
+  @Override
+  public void exitCurrent_obj_lit(Current_obj_litContext ctx) {
+    noteType(ctx, Type.UNKNOWN);
+  }
 }
+
