@@ -54,6 +54,7 @@ import com.hp.thylacine.MPAMParser.Property_exprContext;
 import com.hp.thylacine.MPAMParser.Quantity_exprContext;
 import com.hp.thylacine.MPAMParser.Region_by_numContext;
 import com.hp.thylacine.MPAMParser.Region_selector_exprContext;
+import com.hp.thylacine.MPAMParser.Relation_exprContext;
 import com.hp.thylacine.MPAMParser.RelposContext;
 import com.hp.thylacine.MPAMParser.Relpos_exprContext;
 import com.hp.thylacine.MPAMParser.Room_temp_litContext;
@@ -73,6 +74,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   
   final ParseTreeProperty<Type> types = new ParseTreeProperty<>();
   final ParseTreeProperty<String> descriptions = new ParseTreeProperty<>();
+  final ParseTreeProperty<ExprContext> relation_rhs = new ParseTreeProperty<>();
   final TokenStream tokens;
   
   public ExprTypeAnnotator(TokenStream tokens) {
@@ -228,7 +230,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
       return t;
     }
     for (Type a : allowed) {
-      if (a == t) {
+      if (t.dominated_by(a)) {
         return t;
       }
     }
@@ -251,18 +253,25 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   static class TypeSig implements TypeSigBase {
     final Type ret_type;
     final Type[] arg_types;
+    final int arity;
     
     TypeSig(Type rt, Type...ats) {
       ret_type = rt;
       arg_types = ats;
+      arity = ats.length;
     }
     
     @Override
     public Type matches(Type...param_types) {
-      if (Arrays.equals(arg_types, param_types)) {
-        return ret_type;
+      if (param_types.length != arity) {
+        return null;
       }
-      return null;
+      for (int i=0; i<arity; i++) {
+        if (!param_types[i].dominated_by(arg_types[i])) {
+          return null;
+        }
+      }
+      return ret_type;
     }
 
     @Override
@@ -295,8 +304,8 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     public
     Type matches(Type... param_types) {
       if (param_types.length == 2
-          && ((param_types[0] == t1 && param_types[1] == t2)
-              || (param_types[0] == t2 && param_types[1] == t1)))
+          && ((param_types[0].dominated_by(t1) && param_types[1].dominated_by(t2))
+              || (param_types[0].dominated_by(t2) && param_types[1].dominated_by(t1))))
       {
         return ret_type;
       }
@@ -328,22 +337,37 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     public int arity() {
       return arity;
     }
+    
+    private boolean acceptable(Type t) {
+      for (Type a : types) {
+        if (t.dominated_by(a)) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     @Override
     public Type matches(Type... param_types) {
       if (param_types.length == 0) {
         return null;
       }
-      Type pt = param_types[0];
-      if (!types.contains(pt)) {
+      Type highest = param_types[0];
+      if (!acceptable(highest)) {
         return null;
       }
       for (int i=1; i<param_types.length; i++) {
-        if (pt != param_types[i]) {
-          return null;
+        Type pt = param_types[i];
+        if (!pt.dominated_by(highest)) {
+          Type lcd = highest.lowest_common_dominator(pt);
+          if (acceptable(lcd)) {
+            highest = lcd;
+          } else {
+            return null;
+          }
         }
       }
-      return pt;
+      return highest;
     }
 
     @Override
@@ -438,32 +462,18 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   }
   
   final SigChecker 
-  add_sigs = new SigChecker(new TypePreservingSig(2, Type.INT, Type.FLOAT, 
-                                                  Type.ROWS, Type.COLS, Type.PADS,
-                                                  Type.HDELTA, Type.VDELTA, Type.DELTA2D,
+  add_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT, 
+                                                  Type.PADS,
+                                                  Type.DELTA2D,
                                                   Type.REGION),
-                            new SymmetricTypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
-                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.ROWS),
-                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.COLS),
-                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.HDELTA),
-                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.VDELTA),
-                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.DELTA2D),
-                            new SymmetricTypeSig(Type.DELTA2D, Type.ROWS, Type.COLS),
-                            new SymmetricTypeSig(Type.DELTA2D, Type.HDELTA, Type.VDELTA)
+                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.DELTA2D)
                             );
   final SigChecker 
-  sub_sigs = new SigChecker(new TypePreservingSig(2, Type.INT, Type.FLOAT, 
-                                                  Type.ROWS, Type.COLS, Type.PADS,
-                                                  Type.HDELTA, Type.VDELTA, Type.DELTA2D,
+  sub_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT, 
+                                                  Type.PADS,
+                                                  Type.DELTA2D,
                                                   Type.REGION),
-                            new SymmetricTypeSig(Type.FLOAT, Type.INT, Type.FLOAT),
-                            new TypeSig(Type.PAD, Type.PAD, Type.ROWS),
-                            new TypeSig(Type.PAD, Type.PAD, Type.COLS),
-                            new TypeSig(Type.PAD, Type.PAD, Type.HDELTA),
-                            new TypeSig(Type.PAD, Type.PAD, Type.VDELTA),
-                            new TypeSig(Type.PAD, Type.PAD, Type.DELTA2D),
-                            new SymmetricTypeSig(Type.DELTA2D, Type.ROWS, Type.COLS),
-                            new SymmetricTypeSig(Type.DELTA2D, Type.HDELTA, Type.VDELTA),
+                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.DELTA2D),
                             new TypeSig(Type.DELTA2D, Type.PAD, Type.PAD)
                             );
   @Override
@@ -697,12 +707,18 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   }
 
   final SigChecker 
-  mulDiv_sigs = new SigChecker(new TypePreservingSig(2, Type.INT, Type.FLOAT),
-                               new SymmetricTypeSig(Type.FLOAT, Type.INT, Type.FLOAT));
+  mul_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT));
+  final SigChecker 
+  div_sigs = new SigChecker(new SymmetricTypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT));
                                
   @Override
   public void exitMuldiv_expr(Muldiv_exprContext ctx) {
-    noteType(ctx, mulDiv_sigs.check(()->ctx.op.getText(), ctx.lhs, ctx.rhs));
+    boolean is_mul = ctx.op.getType() == MPAMParser.STAR;
+    if (is_mul) {
+      noteType(ctx, mul_sigs.check(()->ctx.op.getText(), ctx.lhs, ctx.rhs));
+    } else {
+      noteType(ctx, div_sigs.check(()->ctx.op.getText(), ctx.lhs, ctx.rhs));
+    }
   }
 
   final SigChecker
@@ -729,7 +745,9 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   @Override
   public void exitQuantity_expr(Quantity_exprContext ctx) {
     try {
-      getCheckedType(ctx.mag, Type.INT, Type.FLOAT);
+      if (ctx.mag != null) {
+        getCheckedType(ctx.mag, Type.FLOAT);
+      }
       var unit = ctx.unit();
       Type t = unit_type(unit);
       if (t != Type.UNKNOWN) {
@@ -796,6 +814,22 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   @Override
   public void exitCurrent_obj_lit(Current_obj_litContext ctx) {
     noteType(ctx, Type.UNKNOWN);
+  }
+  
+  final SigChecker
+  relation_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT, Type.PADS,
+                                                       Type.HDELTA, Type.VDELTA, 
+                                                       Type.VOLUME, Type.TIME, Type.TEMP, Type.FREQ),
+                                 new SymmetricTypeSig(Type.BOOL, Type.FLOAT, Type.INT));
+  @Override
+  public void exitRelation_expr(Relation_exprContext ctx) {
+    ExprContext lhs = ctx.lhs;
+    if (lhs instanceof Relation_exprContext c) {
+      lhs = relation_rhs.get(lhs);
+    }
+    Type t = relation_sigs.check(()->ctx.op.which.getText(), lhs, ctx.rhs);
+    noteType(ctx, t == Type.ILLEGAL ? t : Type.BOOL);
+    relation_rhs.put(ctx, ctx.rhs);
   }
 }
 

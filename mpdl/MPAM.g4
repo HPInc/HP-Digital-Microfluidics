@@ -14,6 +14,7 @@ expr
   | 'not' rhs=expr                      # not_expr
   | '-' rhs=expr                        # negation_expr
   | mag=expr unit                       # quantity_expr
+//  | neg='-'? cmag=(INT|FLOAT) unit      # quantity_expr
   | mag=expr step_dir                   # delta_expr
   | n=expr kind=step_kind               # distance_expr
   | lhs=expr op=('*'|'/') rhs=expr      # muldiv_expr
@@ -21,6 +22,7 @@ expr
   | lhs=expr op=('+'|'-') rhs=expr      # addsub_expr
   | lhs=expr 'is'? 'not'? 'in' rhs=expr  # in_expr
   | obj=expr 'is' 'not'? prop=property  # property_expr
+  | lhs=expr op=rel_op rhs=expr         # relation_expr
   | lhs=expr 'and' rhs=expr             # and_expr
   | lhs=expr 'or' rhs=expr              # or_expr
 
@@ -69,6 +71,10 @@ step_dir
  // | 'toward' dest=expr
   ;
   
+rel_op
+  : 'not'? which=('=' | '<>' | '<=' | '<' | '>=' | '>') 
+  ;  
+  
 attribute
   : 'exit' 'pad'        # exit_pad_attr
   | 'row'               # row_attr
@@ -106,6 +112,15 @@ kwd_names
   | 'as' | 'room' | 'temp' | 'temperature'
   ;  
 
+/*
+ * A multiword name may end with a unit token, so
+ * "n mg" is ambiguous between a name and a quantity with
+ * magnitude "n".  This should be distinguishable at type 
+ * inference based on whether "n" or "n mg" are defined as 
+ * names.  Will also have to pay attention to other contexts
+ * in which a name can exist and which bind higher than 
+ * the quantity rule (e.g., "-n mg" or "x's n mg").
+ */
 name : (ID | kwd_names | unit)+ ;
 
 ROW: 'row';
@@ -128,7 +143,12 @@ PLUS: '+';
 MINUS: '-';
 STAR: '*';
 SLASH: '/';
-
+EQ: '=';
+LT: '<';
+GT: '>';
+LE: '<=';
+GE: '>=';
+NE: '<>';
   
 
 fragment ERRE : ('er' | 're') ;
