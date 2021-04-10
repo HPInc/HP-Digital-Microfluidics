@@ -19,57 +19,57 @@ import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 
-import com.hp.thylacine.CommonParser.Addsub_exprContext;
-import com.hp.thylacine.CommonParser.And_exprContext;
-import com.hp.thylacine.CommonParser.AttributeContext;
-import com.hp.thylacine.CommonParser.Attribute_exprContext;
-import com.hp.thylacine.CommonParser.Boolean_literalContext;
-import com.hp.thylacine.CommonParser.Capacity_attrContext;
-import com.hp.thylacine.CommonParser.Col_attrContext;
-import com.hp.thylacine.CommonParser.Current_obj_litContext;
-import com.hp.thylacine.CommonParser.Current_vol_attrContext;
-import com.hp.thylacine.CommonParser.Delta_exprContext;
-import com.hp.thylacine.CommonParser.Distance_exprContext;
-import com.hp.thylacine.CommonParser.Edge_literalContext;
-import com.hp.thylacine.CommonParser.Empty_propContext;
-import com.hp.thylacine.CommonParser.Exit_pad_attrContext;
-import com.hp.thylacine.CommonParser.ExprContext;
-import com.hp.thylacine.CommonParser.Float_literalContext;
-import com.hp.thylacine.CommonParser.Horizontal_relposContext;
-import com.hp.thylacine.CommonParser.In_exprContext;
-import com.hp.thylacine.CommonParser.Int_literalContext;
-import com.hp.thylacine.CommonParser.List_exprContext;
-import com.hp.thylacine.CommonParser.List_index_exprContext;
-import com.hp.thylacine.CommonParser.Muldiv_exprContext;
-import com.hp.thylacine.CommonParser.Negation_exprContext;
-import com.hp.thylacine.CommonParser.Not_exprContext;
-import com.hp.thylacine.CommonParser.On_board_propContext;
-import com.hp.thylacine.CommonParser.On_off_propContext;
-import com.hp.thylacine.CommonParser.Op_callContext;
-import com.hp.thylacine.CommonParser.Or_exprContext;
-import com.hp.thylacine.CommonParser.Pad_coordsContext;
-import com.hp.thylacine.CommonParser.Prenthesized_exprContext;
-import com.hp.thylacine.CommonParser.PropertyContext;
-import com.hp.thylacine.CommonParser.Property_exprContext;
-import com.hp.thylacine.CommonParser.Quantity_exprContext;
-import com.hp.thylacine.CommonParser.Region_by_numContext;
-import com.hp.thylacine.CommonParser.Region_selector_exprContext;
-import com.hp.thylacine.CommonParser.RelposContext;
-import com.hp.thylacine.CommonParser.Relpos_exprContext;
-import com.hp.thylacine.CommonParser.Room_temp_litContext;
-import com.hp.thylacine.CommonParser.Row_attrContext;
-import com.hp.thylacine.CommonParser.Singleton_regionContext;
-import com.hp.thylacine.CommonParser.Singleton_wellContext;
-import com.hp.thylacine.CommonParser.UnitContext;
-import com.hp.thylacine.CommonParser.Unit_count_attrContext;
-import com.hp.thylacine.CommonParser.User_defined_attrContext;
-import com.hp.thylacine.CommonParser.User_defined_propContext;
-import com.hp.thylacine.CommonParser.Variable_nameContext;
-import com.hp.thylacine.CommonParser.Vertical_relposContext;
-import com.hp.thylacine.CommonParser.Well_by_num_or_padContext;
-import com.hp.thylacine.CommonParser.Well_selector_exprContext;
+import com.hp.thylacine.MPAMParser.Addsub_exprContext;
+import com.hp.thylacine.MPAMParser.And_exprContext;
+import com.hp.thylacine.MPAMParser.AttributeContext;
+import com.hp.thylacine.MPAMParser.Attribute_exprContext;
+import com.hp.thylacine.MPAMParser.Boolean_literalContext;
+import com.hp.thylacine.MPAMParser.Capacity_attrContext;
+import com.hp.thylacine.MPAMParser.Col_attrContext;
+import com.hp.thylacine.MPAMParser.Current_obj_litContext;
+import com.hp.thylacine.MPAMParser.Current_vol_attrContext;
+import com.hp.thylacine.MPAMParser.Delta_exprContext;
+import com.hp.thylacine.MPAMParser.Distance_exprContext;
+import com.hp.thylacine.MPAMParser.Edge_literalContext;
+import com.hp.thylacine.MPAMParser.Empty_propContext;
+import com.hp.thylacine.MPAMParser.Exit_pad_attrContext;
+import com.hp.thylacine.MPAMParser.ExprContext;
+import com.hp.thylacine.MPAMParser.Float_literalContext;
+import com.hp.thylacine.MPAMParser.Horizontal_relposContext;
+import com.hp.thylacine.MPAMParser.In_exprContext;
+import com.hp.thylacine.MPAMParser.Int_literalContext;
+import com.hp.thylacine.MPAMParser.List_exprContext;
+import com.hp.thylacine.MPAMParser.List_index_exprContext;
+import com.hp.thylacine.MPAMParser.Muldiv_exprContext;
+import com.hp.thylacine.MPAMParser.Negation_exprContext;
+import com.hp.thylacine.MPAMParser.Not_exprContext;
+import com.hp.thylacine.MPAMParser.On_board_propContext;
+import com.hp.thylacine.MPAMParser.On_off_propContext;
+import com.hp.thylacine.MPAMParser.Op_callContext;
+import com.hp.thylacine.MPAMParser.Or_exprContext;
+import com.hp.thylacine.MPAMParser.Pad_coordsContext;
+import com.hp.thylacine.MPAMParser.Prenthesized_exprContext;
+import com.hp.thylacine.MPAMParser.PropertyContext;
+import com.hp.thylacine.MPAMParser.Property_exprContext;
+import com.hp.thylacine.MPAMParser.Quantity_exprContext;
+import com.hp.thylacine.MPAMParser.Region_by_numContext;
+import com.hp.thylacine.MPAMParser.Region_selector_exprContext;
+import com.hp.thylacine.MPAMParser.RelposContext;
+import com.hp.thylacine.MPAMParser.Relpos_exprContext;
+import com.hp.thylacine.MPAMParser.Room_temp_litContext;
+import com.hp.thylacine.MPAMParser.Row_attrContext;
+import com.hp.thylacine.MPAMParser.Singleton_regionContext;
+import com.hp.thylacine.MPAMParser.Singleton_wellContext;
+import com.hp.thylacine.MPAMParser.UnitContext;
+import com.hp.thylacine.MPAMParser.Unit_count_attrContext;
+import com.hp.thylacine.MPAMParser.User_defined_attrContext;
+import com.hp.thylacine.MPAMParser.User_defined_propContext;
+import com.hp.thylacine.MPAMParser.Variable_nameContext;
+import com.hp.thylacine.MPAMParser.Vertical_relposContext;
+import com.hp.thylacine.MPAMParser.Well_by_num_or_padContext;
+import com.hp.thylacine.MPAMParser.Well_selector_exprContext;
 
-class ExprTypeAnnotator extends CommonBaseListener {
+class ExprTypeAnnotator extends MPAMBaseListener {
   
   final ParseTreeProperty<Type> types = new ParseTreeProperty<>();
   final ParseTreeProperty<String> descriptions = new ParseTreeProperty<>();
@@ -468,7 +468,7 @@ class ExprTypeAnnotator extends CommonBaseListener {
                             );
   @Override
   public void exitAddsub_expr(Addsub_exprContext ctx) {
-    boolean is_add = ctx.op.getType() == CommonParser.PLUS;
+    boolean is_add = ctx.op.getType() == MPAMParser.PLUS;
     if (is_add) {
       noteType(ctx, add_sigs.check("+", ctx.lhs, ctx.rhs));
     } else {
@@ -607,10 +607,10 @@ class ExprTypeAnnotator extends CommonBaseListener {
       getCheckedType(ctx.n, Type.INT);
       Type t = switch (ctx.kind.kind.getType()) 
           {
-          case CommonParser.ROW, CommonParser.ROWS -> Type.ROWS;
-          case CommonParser.COL, CommonParser.COLS, 
-               CommonParser.COLUMN, CommonParser.COLUMNS -> Type.COLS;
-          case CommonParser.PAD, CommonParser.PADS -> Type.PADS;
+          case MPAMParser.ROW, MPAMParser.ROWS -> Type.ROWS;
+          case MPAMParser.COL, MPAMParser.COLS, 
+               MPAMParser.COLUMN, MPAMParser.COLUMNS -> Type.COLS;
+          case MPAMParser.PAD, MPAMParser.PADS -> Type.PADS;
           default -> Type.ILLEGAL;
           };
       noteType(ctx, t);
@@ -624,11 +624,11 @@ class ExprTypeAnnotator extends CommonBaseListener {
     try {
       Type t = switch (ctx.step_dir().dir.getType()) 
           {
-          case CommonParser.UP, CommonParser.DOWN -> {
+          case MPAMParser.UP, MPAMParser.DOWN -> {
             getCheckedType(ctx.mag, Type.ROWS, Type.PADS, Type.INT);
             yield Type.VDELTA;
           }
-          case CommonParser.LEFT, CommonParser.RIGHT -> {
+          case MPAMParser.LEFT, MPAMParser.RIGHT -> {
             getCheckedType(ctx.mag, Type.COLS, Type.PADS, Type.INT);
             yield Type.HDELTA;
           }

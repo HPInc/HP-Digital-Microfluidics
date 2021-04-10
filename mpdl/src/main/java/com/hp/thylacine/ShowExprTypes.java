@@ -13,9 +13,9 @@ public class ShowExprTypes {
 
   public static void main(String[] args) throws IOException {
     CharStream input = CharStreams.fromFileName("expr.test");
-    CommonLexer lexer = new CommonLexer(input);
+    MPAMLexer lexer = new MPAMLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    CommonParser parser = new CommonParser(tokens);
+    MPAMParser parser = new MPAMParser(tokens);
     ParseTree tree = parser.expr();
     
     ParseTreeWalker walker = new ParseTreeWalker();

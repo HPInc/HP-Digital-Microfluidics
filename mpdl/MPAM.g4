@@ -1,4 +1,4 @@
-grammar Common;
+grammar MPAM;
 
 @header{
 package com.hp.thylacine;	
