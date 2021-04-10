@@ -24,29 +24,23 @@ import com.hp.thylacine.MPAMParser.And_exprContext;
 import com.hp.thylacine.MPAMParser.AttributeContext;
 import com.hp.thylacine.MPAMParser.Attribute_exprContext;
 import com.hp.thylacine.MPAMParser.Boolean_literalContext;
-import com.hp.thylacine.MPAMParser.Capacity_attrContext;
-import com.hp.thylacine.MPAMParser.Col_attrContext;
 import com.hp.thylacine.MPAMParser.Current_obj_litContext;
-import com.hp.thylacine.MPAMParser.Current_vol_attrContext;
 import com.hp.thylacine.MPAMParser.Delta_exprContext;
 import com.hp.thylacine.MPAMParser.Distance_exprContext;
 import com.hp.thylacine.MPAMParser.Edge_literalContext;
-import com.hp.thylacine.MPAMParser.Empty_propContext;
-import com.hp.thylacine.MPAMParser.Exit_pad_attrContext;
 import com.hp.thylacine.MPAMParser.ExprContext;
 import com.hp.thylacine.MPAMParser.Float_literalContext;
 import com.hp.thylacine.MPAMParser.Horizontal_relposContext;
-import com.hp.thylacine.MPAMParser.In_exprContext;
+import com.hp.thylacine.MPAMParser.In_region_relContext;
 import com.hp.thylacine.MPAMParser.Int_literalContext;
 import com.hp.thylacine.MPAMParser.List_exprContext;
 import com.hp.thylacine.MPAMParser.List_index_exprContext;
 import com.hp.thylacine.MPAMParser.Muldiv_exprContext;
 import com.hp.thylacine.MPAMParser.Negation_exprContext;
 import com.hp.thylacine.MPAMParser.Not_exprContext;
-import com.hp.thylacine.MPAMParser.On_board_propContext;
-import com.hp.thylacine.MPAMParser.On_off_propContext;
 import com.hp.thylacine.MPAMParser.Op_callContext;
 import com.hp.thylacine.MPAMParser.Or_exprContext;
+import com.hp.thylacine.MPAMParser.Order_exprContext;
 import com.hp.thylacine.MPAMParser.Pad_coordsContext;
 import com.hp.thylacine.MPAMParser.Prenthesized_exprContext;
 import com.hp.thylacine.MPAMParser.PropertyContext;
@@ -54,17 +48,18 @@ import com.hp.thylacine.MPAMParser.Property_exprContext;
 import com.hp.thylacine.MPAMParser.Quantity_exprContext;
 import com.hp.thylacine.MPAMParser.Region_by_numContext;
 import com.hp.thylacine.MPAMParser.Region_selector_exprContext;
+import com.hp.thylacine.MPAMParser.RelationContext;
 import com.hp.thylacine.MPAMParser.Relation_exprContext;
 import com.hp.thylacine.MPAMParser.RelposContext;
 import com.hp.thylacine.MPAMParser.Relpos_exprContext;
 import com.hp.thylacine.MPAMParser.Room_temp_litContext;
-import com.hp.thylacine.MPAMParser.Row_attrContext;
 import com.hp.thylacine.MPAMParser.Singleton_regionContext;
 import com.hp.thylacine.MPAMParser.Singleton_wellContext;
 import com.hp.thylacine.MPAMParser.UnitContext;
 import com.hp.thylacine.MPAMParser.Unit_count_attrContext;
 import com.hp.thylacine.MPAMParser.User_defined_attrContext;
 import com.hp.thylacine.MPAMParser.User_defined_propContext;
+import com.hp.thylacine.MPAMParser.User_defined_relContext;
 import com.hp.thylacine.MPAMParser.Variable_nameContext;
 import com.hp.thylacine.MPAMParser.Vertical_relposContext;
 import com.hp.thylacine.MPAMParser.Well_by_num_or_padContext;
@@ -155,6 +150,19 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     return sep;
   }
   
+  String with_spaces(ParseTree name) {
+    Interval interval = name.getSourceInterval();
+    StringBuilder s = new StringBuilder();
+    String sep = "";
+    for (int i = interval.a; i<=interval.b; i++) {
+      s.append(sep);
+      sep = " ";
+      s.append(tokens.get(i).getText());
+    }
+    return s.toString();
+  }
+  
+
   static interface PrintStreamConsumer extends Consumer<PrintStream> {}
   
   void report_error(PrintStream out, String kind, Supplier<String> first_line,  
@@ -532,8 +540,6 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   }
   
   final SigChecker
-  exit_pad_attr_sigs = new SigChecker(new TypeSig(Type.PAD, Type.WELL));
-  final SigChecker
   row_attr_sigs = new SigChecker(new TypeSig(Type.INT, Type.PAD));
   final SigChecker
   col_attr_sigs = new SigChecker(new TypeSig(Type.INT, Type.PAD));
@@ -544,24 +550,26 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   capacity_attr_sigs = new SigChecker(new TypeSig(Type.VOLUME, Type.PAD),
                                       new TypeSig(Type.VOLUME, Type.WELL));
   
+  final Map<String, SigChecker> attribute_sigs = new HashMap<>();
+  {
+    attribute_sigs.put("exit pad", new SigChecker(new TypeSig(Type.PAD, Type.WELL)));
+    attribute_sigs.put("volume", new SigChecker(new TypeSig(Type.VOLUME, Type.WELL),
+                                                new TypeSig(Type.VOLUME, Type.PAD)));
+    attribute_sigs.put("current volume", attribute_sigs.get("volume"));
+    attribute_sigs.put("row", new SigChecker(new TypeSig(Type.INT, Type.PAD)));
+    attribute_sigs.put("col", attribute_sigs.get("row"));
+    attribute_sigs.put("column", attribute_sigs.get("col"));
+    attribute_sigs.put("capacity", new SigChecker(new TypeSig(Type.VOLUME, Type.PAD),
+                                                  new TypeSig(Type.VOLUME, Type.WELL)));
+  }
   
   @Override
   public void exitAttribute_expr(Attribute_exprContext ctx) {
     AttributeContext att = ctx.attr;
-    if (att instanceof Exit_pad_attrContext a) {
-      noteType(ctx, exit_pad_attr_sigs.check(a.getText(), ctx.obj));
-    } else if (att instanceof Row_attrContext a) {
-        noteType(ctx, row_attr_sigs.check(a.getText(), ctx.obj));
-    } else if (att instanceof Col_attrContext a) {
-      noteType(ctx, col_attr_sigs.check(a.getText(), ctx.obj));
-    } else if (att instanceof Current_vol_attrContext a) {
-      noteType(ctx, volume_attr_sigs.check(a.getText(), ctx.obj));
-    } else if (att instanceof Capacity_attrContext a) {
-      noteType(ctx, capacity_attr_sigs.check(a.getText(), ctx.obj));
-    } else if (att instanceof Unit_count_attrContext a) {
+    if (att instanceof Unit_count_attrContext a) {
       Type t = unit_type(a.unit());
       if (t== Type.UNKNOWN) {
-        report_error("Unhandled unit", a.unit().getText());
+        report_error("Unhandled unit", with_spaces(a.unit()));
       } else {
         try {
           getCheckedType(ctx.obj, t);
@@ -570,42 +578,76 @@ class ExprTypeAnnotator extends MPAMBaseListener {
           noteType(ctx, Type.ILLEGAL);
         }
       }
-    } else if (att instanceof User_defined_attrContext a) {
-      report_error("Unhandled (user-defined?) Attribute", att.getText());
-      noteType(ctx, Type.UNKNOWN);
+    } else if (att instanceof User_defined_attrContext c) {
+      String att_name = with_spaces(c.name());
+      SigChecker sigs = attribute_sigs.get(att_name);
+      if (sigs != null) {
+        noteType(ctx, sigs.check(att_name, ctx.obj));
+      } else {
+        report_error("Unhandled (user-defined?) Attribute", att_name);
+        noteType(ctx, Type.UNKNOWN);
+      }
     } else {
-      report_error("Unhandled Attribute", "\""+att.getText()+"\"");
+      report_error("Unhandled Attribute", "\""+with_spaces(att)+"\"");
       noteType(ctx, Type.ILLEGAL);
     }
+  }
+  
+  final Map<String, Type[]> prop_obj_types = new HashMap<>();
+  {
+    prop_obj_types.put("empty", new Type[]{Type.WELL, Type.PAD});
+    prop_obj_types.put("on the board", new Type[]{Type.PAD});
+    prop_obj_types.put("on board", prop_obj_types.get("on_board"));
+    prop_obj_types.put("on", new Type[]{Type.PAD});
+    prop_obj_types.put("off", prop_obj_types.get("on"));
+    
   }
 
   @Override
   public void exitProperty_expr(Property_exprContext ctx) {
     PropertyContext prop = ctx.prop;
     try {
-      if (prop instanceof Empty_propContext) {
-        getCheckedType(ctx.obj, Type.WELL, Type.PAD);
-      } else if (prop instanceof On_off_propContext) {
-        getCheckedType(ctx.obj, Type.PAD);
-      } else if (prop instanceof On_board_propContext) {
-        getCheckedType(ctx.obj, Type.PAD);
-      } else if (prop instanceof User_defined_propContext) {
-        report_error("Unhandled (user-defined?) Attribute", prop.getText());
+      if (prop instanceof User_defined_propContext c) {
+        String att_name = with_spaces(c.name());
+        Type[] allowed_types = prop_obj_types.get(att_name);
+        if (allowed_types != null) {
+          getCheckedType(ctx.obj, allowed_types);
+        } else {
+          report_error("Unhandled (user-defined?) Property", att_name);
+        }        
       } else {
-        report_error("Unhandled Attribute", "\""+prop.getText()+"\"");
+        report_error("Unhandled Property", "\""+with_spaces(prop)+"\"");
       }
     } catch (TypeError e) {
     }
     noteType(ctx, Type.BOOL);
   }
 
-  final SigChecker
-  in_sigs = new SigChecker(new TypeSig(Type.BOOL, Type.PAD, Type.REGION));
+  
   @Override
-  public void exitIn_expr(In_exprContext ctx) {
-    noteType(ctx, in_sigs.check("in", ctx.lhs, ctx.rhs));
-  }
+  public void exitRelation_expr(Relation_exprContext ctx) {
+    RelationContext rel = ctx.relation();
+    try {
+      if (rel instanceof In_region_relContext) {
+        getCheckedType(ctx.lhs, Type.PAD);
+        getCheckedType(ctx.rhs, Type.REGION);
+      } else if (rel instanceof User_defined_relContext) {
+        report_error("Unhandled (user-defined?) Relation", with_spaces(rel),
+                     (out)->{
+//                       out.format("%s: %s%n", with_spaces(ctx.lhs), getDesc(ctx.lhs));
+//                       out.format("%s: %s%n", with_spaces(ctx.rhs), getDesc(ctx.rhs));
+                     });
+      } else {
+        report_error("Unhandled Relation", "\""+with_spaces(rel)+"\"");
+      }
+    } catch (TypeError e) {
+    }
+    noteType(ctx, Type.BOOL);
 
+  }
+  
+  
+  
   @Override
   public void exitSingleton_region(Singleton_regionContext ctx) {
     noteType(ctx, Type.REGION);
@@ -822,9 +864,9 @@ class ExprTypeAnnotator extends MPAMBaseListener {
                                                        Type.VOLUME, Type.TIME, Type.TEMP, Type.FREQ),
                                  new SymmetricTypeSig(Type.BOOL, Type.FLOAT, Type.INT));
   @Override
-  public void exitRelation_expr(Relation_exprContext ctx) {
+  public void exitOrder_expr(Order_exprContext ctx) {
     ExprContext lhs = ctx.lhs;
-    if (lhs instanceof Relation_exprContext c) {
+    if (lhs instanceof Order_exprContext c) {
       lhs = relation_rhs.get(lhs);
     }
     Type t = relation_sigs.check(()->ctx.op.which.getText(), lhs, ctx.rhs);

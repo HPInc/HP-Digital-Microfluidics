@@ -20,9 +20,11 @@ expr
   | lhs=expr op=('*'|'/') rhs=expr      # muldiv_expr
   | lhs=expr relpos rhs=expr            # relpos_expr
   | lhs=expr op=('+'|'-') rhs=expr      # addsub_expr
-  | lhs=expr 'is'? 'not'? 'in' rhs=expr  # in_expr
+//  | lhs=expr 'is'? 'not'? 'in' rhs=expr  # in_expr
   | obj=expr 'is' 'not'? prop=property  # property_expr
-  | lhs=expr op=rel_op rhs=expr         # relation_expr
+  | lhs=expr 'is' not='not'? relation ':' rhs=expr  # relation_expr
+  | lhs=expr not='not' relation rhs=expr  # relation_expr
+  | lhs=expr op=rel_op rhs=expr         # order_expr
   | lhs=expr 'and' rhs=expr             # and_expr
   | lhs=expr 'or' rhs=expr              # or_expr
 
@@ -76,21 +78,24 @@ rel_op
   ;  
   
 attribute
-  : 'exit' 'pad'        # exit_pad_attr
-  | 'row'               # row_attr
-  | ('col' | 'column')  # col_attr
-  | 'current'? 'volume' # current_vol_attr
-  | 'capacity'          # capacity_attr
-  | 'count' 'in' unit   # unit_count_attr
+  : 'count' 'in' unit   # unit_count_attr
   | name                # user_defined_attr
   ;
   
   
 property
-  : 'empty'             # empty_prop
-  | 'on' 'the'? 'board'        # on_board_prop
-  | ('on' | 'off')      # on_off_prop
-  | name                # user_defined_prop
+  : 
+//  'empty'             # empty_prop
+//  | 'on' 'the'? 'board'        # on_board_prop
+//  | ('on' | 'off')      # on_off_prop
+//  | 
+  name                # user_defined_prop
+  ;
+  
+relation
+  : 'in'                # in_region_rel
+//  | name prep='than'    # user_defined_rel
+  | name     # user_defined_rel
   ;
   
 boolean_lit
@@ -110,6 +115,7 @@ kwd_names
   | 'exit' | 'current' | 'volume' | 'capacity'
   | 'on' | 'board' | 'off'
   | 'as' | 'room' | 'temp' | 'temperature'
+  | 'than'
   ;  
 
 /*
