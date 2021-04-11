@@ -21,8 +21,8 @@ expr
   | lhs=expr relpos rhs=expr            # relpos_expr
   | lhs=expr op=('+'|'-') rhs=expr      # addsub_expr
 //  | lhs=expr 'is'? 'not'? 'in' rhs=expr  # in_expr
-  | obj=expr 'is' 'not'? prop=property  # property_expr
-  | lhs=expr 'is' not='not'? relation ':' rhs=expr  # relation_expr
+  | obj=expr prop=property  (('and'|'or') property)*# property_expr
+  | lhs=expr 'is' not='not'? relation rhs=expr  # relation_expr
   | lhs=expr not='not' relation rhs=expr  # relation_expr
   | lhs=expr op=rel_op rhs=expr         # order_expr
   | lhs=expr 'and' rhs=expr             # and_expr
@@ -84,14 +84,17 @@ attribute
   
   
 property
-  : 
-//  'empty'             # empty_prop
-//  | 'on' 'the'? 'board'        # on_board_prop
-//  | ('on' | 'off')      # on_off_prop
-//  | 
-  name                # user_defined_prop
+  : aux_verb? name
   ;
   
+aux_verb
+locals[boolean not, boolean can, boolean does, boolean is]
+  : 'is' { $is=true;}
+  | ('is' 'not' | 'isn\'t') { $is=true; $not=true; }
+  | ('does' 'not' | 'doesn\'t') { $does=true; $not=true; }
+  | 'can' { $can=true;}
+  | ('can' 'not' | 'cannot' | 'can\'t') { $can=true; $not=true; }
+  ;
 relation
   : 'in'                # in_region_rel
 //  | name prep='than'    # user_defined_rel

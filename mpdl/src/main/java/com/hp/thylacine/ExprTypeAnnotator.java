@@ -58,7 +58,6 @@ import com.hp.thylacine.MPAMParser.Singleton_wellContext;
 import com.hp.thylacine.MPAMParser.UnitContext;
 import com.hp.thylacine.MPAMParser.Unit_count_attrContext;
 import com.hp.thylacine.MPAMParser.User_defined_attrContext;
-import com.hp.thylacine.MPAMParser.User_defined_propContext;
 import com.hp.thylacine.MPAMParser.User_defined_relContext;
 import com.hp.thylacine.MPAMParser.Variable_nameContext;
 import com.hp.thylacine.MPAMParser.Vertical_relposContext;
@@ -596,8 +595,8 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   final Map<String, Type[]> prop_obj_types = new HashMap<>();
   {
     prop_obj_types.put("empty", new Type[]{Type.WELL, Type.PAD});
-    prop_obj_types.put("on the board", new Type[]{Type.PAD});
-    prop_obj_types.put("on board", prop_obj_types.get("on_board"));
+    prop_obj_types.put("on_the_board", new Type[]{Type.PAD});
+    prop_obj_types.put("on_board", prop_obj_types.get("on_board"));
     prop_obj_types.put("on", new Type[]{Type.PAD});
     prop_obj_types.put("off", prop_obj_types.get("on"));
     
@@ -605,20 +604,20 @@ class ExprTypeAnnotator extends MPAMBaseListener {
 
   @Override
   public void exitProperty_expr(Property_exprContext ctx) {
-    PropertyContext prop = ctx.prop;
-    try {
-      if (prop instanceof User_defined_propContext c) {
-        String att_name = with_spaces(c.name());
+    for (PropertyContext prop : ctx.property()) {
+      try {
+        String att_name = with_spaces(prop.name());
         Type[] allowed_types = prop_obj_types.get(att_name);
         if (allowed_types != null) {
           getCheckedType(ctx.obj, allowed_types);
         } else {
+          if (prop.aux_verb() != null) {
+            att_name = with_spaces(prop.aux_verb())+" "+att_name;
+          }
           report_error("Unhandled (user-defined?) Property", att_name);
         }        
-      } else {
-        report_error("Unhandled Property", "\""+with_spaces(prop)+"\"");
+      } catch (TypeError e) {
       }
-    } catch (TypeError e) {
     }
     noteType(ctx, Type.BOOL);
   }
