@@ -1,3 +1,6 @@
+
+
+
 def: a container is a thing {
   it has an unchangeable capacity;
   it has a volume, initially 0mL;
@@ -43,6 +46,11 @@ the board is a unique thing {
   Its max_row is its grid's max_y.
 }
 
+// want to concisely say that this preserves over delta and
+// addition operations.  Maybe just "An xy_position xy ...".
+
+A literal xy_position xy refers to a pad with xy_position = xy.   
+
 def: a magnet is a switchable thing;
 
 
@@ -62,6 +70,8 @@ def: a pad is a container and a switchable thing {
   It is on the board when its position is in the board's grid.
   
   
+  // we should be able to infer from "it is empty" that "its volume" is
+  // 0ml.
   it may hold a drop;
   when it has a drop,
     its volume is its drop's volume;
@@ -69,7 +79,7 @@ def: a pad is a container and a switchable thing {
     it is empty;
   
   
-     
+  // This allows you to say "if p's up_neighbor exists"
   its up_neighbor = it-1 row when that is on_the board;
   its down_neighbor = it+1 row when that is on_the board;
   its left_neighbor = it-1 col when that is on_the board;
@@ -170,3 +180,18 @@ def: a drop is a thing {
   it is on a path when some pad in the path's pads = its pad;    
 }
 
+// Do we want to be able to specify units that we will use, so that only those can come 
+// after numbers and the rest will be syntax errors?  We might be able to get away with 
+// a general "name" for units and figure out dimensionality from there.
+
+Allow units: mL, uL.
+Allow all volume units.
+Allow all SI volume units.
+
+def: distance is a physical dimension.
+def: volume is distance^3.
+def: SI is a system of units.
+def: US is a system of units.
+def: SI distance unit meter (or metre, abbreviated m) is the base unit.
+def: SI volume unit liter (or litre, abbreviated L or l) is 1 dm^3.
+def: US distance unit inch (abbreviated in) is (1/2.54)*meter
