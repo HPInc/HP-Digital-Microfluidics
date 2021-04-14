@@ -4,6 +4,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.Stack;
 
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.Token;
@@ -18,6 +19,15 @@ public abstract class IndentTrackingLexer extends Lexer {
   private final int indent_token_type;
   private final int dedent_token_type;
   
+  
+  
+  public IndentTrackingLexer(CharStream input, int indent, int dedent) {
+    super(input);
+    this.indent_token_type = indent;
+    this.dedent_token_type = dedent;
+    
+  }
+
   public IndentTrackingLexer(int dedent_token_type, int indent_token_type) {
     this.indent_token_type = indent_token_type;
     this.dedent_token_type = dedent_token_type;
@@ -29,7 +39,7 @@ public abstract class IndentTrackingLexer extends Lexer {
   
   @Override
   public void emit(Token token) {
-    super.setToken(token);
+//    super.setToken(token);
     pending_tokens.offer(token);
   }
   
@@ -39,7 +49,8 @@ public abstract class IndentTrackingLexer extends Lexer {
      * If we hit the EOF and there are still indents, we need to 
      * emit dedents.
      */
-    while (pending_tokens.poll() != null) {
+    while (!margins.isEmpty()) {
+      margins.pop();
       pending_tokens.offer(dedent_token());
     }
     /*
@@ -50,11 +61,11 @@ public abstract class IndentTrackingLexer extends Lexer {
   }
   
   private Token dedent_token() {
-    return new_token(dedent_token_type);
+    return new_token(dedent_token_type, DEFAULT_TOKEN_CHANNEL, "<DEDENT>");
   }
 
   private Token indent_token() {
-    return new_token(indent_token_type);
+    return new_token(indent_token_type, DEFAULT_TOKEN_CHANNEL, "<INDENT>");
   }
 
   @Override
@@ -73,6 +84,10 @@ public abstract class IndentTrackingLexer extends Lexer {
      */
     assert !pending_tokens.isEmpty();
     return pending_tokens.poll();
+  }
+  
+  public void handle_nl() {
+    
   }
   
   public void handle_ws() {
@@ -96,6 +111,7 @@ public abstract class IndentTrackingLexer extends Lexer {
     if (at_beginning_of_line()) {
       if (margin > current_margin()) {
         emit(indent_token());
+        margins.push(margin);
       } else {
         dedent_if_necessary_to(margin);
       }
@@ -119,6 +135,14 @@ public abstract class IndentTrackingLexer extends Lexer {
     }
   }
   
+  public void bullet() {
+    indent_or_dedent_to(getCharPositionInLine());    
+  }
+  
+  public void dedented_kwd() {
+    dedent_to(_tokenStartCharPositionInLine);
+  }
+  
   private Token new_token(int tokenType, int channel, String text) {
     int charIndex = getCharIndex();
     CommonToken token = new CommonToken(_tokenFactorySourcePair, tokenType, channel, charIndex - text.length(), charIndex);
@@ -129,6 +153,7 @@ public abstract class IndentTrackingLexer extends Lexer {
     return token;
   }
   
+  @SuppressWarnings("unused")
   private Token new_token(int tokenType) {
     return new_token(tokenType, DEFAULT_TOKEN_CHANNEL, "");
   }

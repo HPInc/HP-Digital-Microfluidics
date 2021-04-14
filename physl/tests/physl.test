@@ -1,0 +1,8 @@
+def: foo
+-- a.
+//-- b
+-- if e: 
+   -- x.
+   -- y.
+   otherwise:
+   -- z.
