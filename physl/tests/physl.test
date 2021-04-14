@@ -1,7 +1,18 @@
-Block:
--- Let x be -5.
-//-- b
+Def: A queue [of Ts (things)] is a list [of Ts]. 
+
 /*
+Def: A vertex (plural vertices) is a list (of things).
+
+Def: A container (plural containers) is a thing and a rectangle:
+-- It has an unchangeable min row 
+   (a nonnegative integer, by default 0).
+*/   
+
+/*
+
+Block:
+-- Let x be the magnetic pad's row.
+//-- b
 -- If e: 
    -- x.
    -- y.

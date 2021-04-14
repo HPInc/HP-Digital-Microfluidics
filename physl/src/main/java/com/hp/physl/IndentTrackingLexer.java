@@ -49,13 +49,10 @@ public abstract class IndentTrackingLexer extends Lexer {
      * If we hit the EOF and there are still indents, we need to 
      * emit dedents.
      */
-    while (!margins.isEmpty()) {
-      margins.pop();
-      pending_tokens.offer(dedent_token());
-    }
+    dedent_if_necessary_to(0);
     /*
      * Now we call our super to get the actual EOF token, which will
-     * be emitted (and put on the queue.
+     * be emitted (and put on the queue).
      */
     return super.emitEOF();
   }
