@@ -37,10 +37,13 @@
 **/.#*
 ~*
 
-#.class
+*.class
 
 mpdl/build
 mpdl/target/generated-sources
+physl/build
+physl/target/generated-sources
+
 
 build/*/dependencies
 build/*/objs

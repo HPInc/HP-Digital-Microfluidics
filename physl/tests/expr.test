@@ -1,0 +1,32 @@
+//-2+(-2.54)+dunno
+//the well at (5,s)
+//(5+2.1-s) ml
+//max row-max col
+//(5.2, max col)
+//the well at (max row, 3)'s exit pad's row
+//well[(max row, 3)]'s exit pad's row
+// well[2s]
+//region[i+2]
+//p1's column + p2's row
+//w's capacity
+//p is on
+//2 rows up + 3 up
+//call set_temp(pad: p, t: 97 C)
+//2 rows above p + 2 cols left
+//p1+2 rows is not in r1+r2 and b1
+//3 ml's count in uL
+//its volume
+//1 < i+2.2 not < 5.2 and i2 >= 4
+//3*4/2
+//-2mL -f mL
+//p+2rows is better than r
+//p is better_than p+2 rows
+//p is in r
+
+d is ready_to_run and isn't on or can run and is stationary and 2>1
+
+
+
+
+
+
