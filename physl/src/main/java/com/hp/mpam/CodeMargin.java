@@ -1,4 +1,4 @@
-package com.hp.thylacine;
+package com.hp.mpam;
 import java.util.HashMap;
 import java.util.Map;
 

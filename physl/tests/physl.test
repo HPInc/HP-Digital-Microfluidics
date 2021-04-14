@@ -1,8 +1,10 @@
-def: foo
--- a.
+Block:
+-- Let x be -5.
 //-- b
--- if e: 
+/*
+-- If e: 
    -- x.
    -- y.
-   otherwise:
+   Otherwise:
    -- z.
+*/   

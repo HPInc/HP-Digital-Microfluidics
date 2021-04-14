@@ -1,4 +1,4 @@
-package com.hp.thylacine;
+package com.hp.physl;
 
 import java.io.IOException;
 import java.nio.charset.Charset;

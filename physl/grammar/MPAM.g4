@@ -1,7 +1,7 @@
 grammar MPAM;
 
 @header{
-package com.hp.thylacine;	
+package com.hp.mpam;	
 }
 just_expr: expr EOF ;
 

@@ -1,4 +1,4 @@
-package com.hp.thylacine;
+package com.hp.mpam;
 
 import java.io.IOException;
 
@@ -7,6 +7,9 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+
+import com.hp.thylacine.MPAMLexer;
+import com.hp.thylacine.MPAMParser;
 
 
 public class ShowExprTypes {

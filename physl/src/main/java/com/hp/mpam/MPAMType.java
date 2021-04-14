@@ -1,9 +1,9 @@
-package com.hp.thylacine;
+package com.hp.mpam;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public enum Type {
+public enum MPAMType {
   UNKNOWN, ILLEGAL, MISSING,
   BOOL, STRING, 
   FLOAT, INT(FLOAT), 
@@ -17,32 +17,32 @@ public enum Type {
   /*
    * Can't just use EnumSet<Type> because Type isn't known to be an enum here.  Sigh.
    */
-  private final Set<Type> dominators = new HashSet<Type>();
+  private final Set<MPAMType> dominators = new HashSet<MPAMType>();
   
-  Type(Type...supers) {
-    for (Type d : supers) {
+  MPAMType(MPAMType...supers) {
+    for (MPAMType d : supers) {
       dominators.add(d);
       dominators.addAll(d.dominators);
     }
 
   }
   
-  boolean dominates(Type other) {
+  boolean dominates(MPAMType other) {
     return this==other || other.dominated_by(this);
   }
   
-  boolean dominated_by(Type other) {
+  boolean dominated_by(MPAMType other) {
     return this==other || dominators.contains(other);
   }
   
-  Type lowest_common_dominator(Type other) {
+  MPAMType lowest_common_dominator(MPAMType other) {
     if (this==other || other.dominated_by(this)) {
       return this;
     } else if (this.dominated_by(other)) {
       return other;
     }
-    Type lowest = null;
-    for (Type d : dominators) {
+    MPAMType lowest = null;
+    for (MPAMType d : dominators) {
       if (other.dominators.contains(d)) {
         if (lowest == null || d.dominated_by(lowest)) {
           lowest = d;

@@ -1,4 +1,4 @@
-package com.hp.thylacine;
+package com.hp.mpam;
 
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -19,6 +19,9 @@ import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 
+import com.hp.physl.ANSI;
+import com.hp.thylacine.MPAMBaseListener;
+import com.hp.thylacine.MPAMParser;
 import com.hp.thylacine.MPAMParser.Addsub_exprContext;
 import com.hp.thylacine.MPAMParser.And_exprContext;
 import com.hp.thylacine.MPAMParser.AttributeContext;
@@ -66,7 +69,7 @@ import com.hp.thylacine.MPAMParser.Well_selector_exprContext;
 
 class ExprTypeAnnotator extends MPAMBaseListener {
   
-  final ParseTreeProperty<Type> types = new ParseTreeProperty<>();
+  final ParseTreeProperty<MPAMType> types = new ParseTreeProperty<>();
   final ParseTreeProperty<String> descriptions = new ParseTreeProperty<>();
   final ParseTreeProperty<ExprContext> relation_rhs = new ParseTreeProperty<>();
   final TokenStream tokens;
@@ -93,7 +96,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   boolean spacesp = false;
   
 
-  private Type noteType(ExprContext ctx, Type type) {
+  private MPAMType noteType(ExprContext ctx, MPAMType type) {
     types.put(ctx, type);
     StringBuilder s = new StringBuilder();
     int n = ctx.getChildCount();
@@ -125,7 +128,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
       s.append(close_mark);
     }
     s.append(":");
-    boolean flagp = (type == Type.UNKNOWN || type == Type.ILLEGAL);
+    boolean flagp = (type == MPAMType.UNKNOWN || type == MPAMType.ILLEGAL);
     s.append(flagp ? unknown_type_open : type_open);
     s.append(type);
     s.append(flagp ? unknown_type_close : type_close);
@@ -196,8 +199,8 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   @SuppressWarnings("serial")
   class TypeError extends Exception {
 
-    public TypeError(Type t, ExprContext ctx, Type[] allowed) {
-      if (t != Type.ILLEGAL) {
+    public TypeError(MPAMType t, ExprContext ctx, MPAMType[] allowed) {
+      if (t != MPAMType.ILLEGAL) {
         report_error("Type Error", getDesc(ctx),
                      (out)->{
                        String sep = "";
@@ -208,7 +211,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
                          out.format("%s or %s%n", allowed[0], allowed[1]);
                        } else {
                          out.print("one of: ");
-                         for (Type a : allowed) {
+                         for (MPAMType a : allowed) {
                            out.print(sep+a);
                            sep = ", ";
                          }
@@ -220,23 +223,23 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     
   }
   
-  Type getType(ExprContext ctx) {
+  MPAMType getType(ExprContext ctx) {
     if (ctx == null) {
-      return Type.MISSING; 
+      return MPAMType.MISSING; 
     }
-    Type t = types.get(ctx);
+    MPAMType t = types.get(ctx);
     if (t == null) {
-      return Type.UNKNOWN;
+      return MPAMType.UNKNOWN;
     }
     return t;
   }  
 
-  Type getCheckedType(ExprContext ctx, Type... allowed) throws TypeError {
-    Type t = getType(ctx);
+  MPAMType getCheckedType(ExprContext ctx, MPAMType... allowed) throws TypeError {
+    MPAMType t = getType(ctx);
     if (allowed.length == 0) {
       return t;
     }
-    for (Type a : allowed) {
+    for (MPAMType a : allowed) {
       if (t.dominated_by(a)) {
         return t;
       }
@@ -253,23 +256,23 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     /*
      * Returns null if it doesn't match, return type otherwise
      */
-    Type matches(Type...param_types);
-    void add_arg_types_to(Set<Type> set, int i);
+    MPAMType matches(MPAMType...param_types);
+    void add_arg_types_to(Set<MPAMType> set, int i);
   }
 
   static class TypeSig implements TypeSigBase {
-    final Type ret_type;
-    final Type[] arg_types;
+    final MPAMType ret_type;
+    final MPAMType[] arg_types;
     final int arity;
     
-    TypeSig(Type rt, Type...ats) {
+    TypeSig(MPAMType rt, MPAMType...ats) {
       ret_type = rt;
       arg_types = ats;
       arity = ats.length;
     }
     
     @Override
-    public Type matches(Type...param_types) {
+    public MPAMType matches(MPAMType...param_types) {
       if (param_types.length != arity) {
         return null;
       }
@@ -282,10 +285,10 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     }
 
     @Override
-    public void add_arg_types_to(Set<Type> set, int i) {
-      Type t = arg_types[i];
+    public void add_arg_types_to(Set<MPAMType> set, int i) {
+      MPAMType t = arg_types[i];
       if (t == null) {
-        t = Type.MISSING;
+        t = MPAMType.MISSING;
       }
       set.add(t);
     }
@@ -298,10 +301,10 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   }
   
   static class SymmetricTypeSig implements TypeSigBase {
-    private final Type ret_type;
-    private final Type t1;
-    private final Type t2;
-    public SymmetricTypeSig(Type ret_type, Type t1, Type t2) {
+    private final MPAMType ret_type;
+    private final MPAMType t1;
+    private final MPAMType t2;
+    public SymmetricTypeSig(MPAMType ret_type, MPAMType t1, MPAMType t2) {
       this.ret_type = ret_type;
       this.t1 = t1;
       this.t2 = t2;
@@ -309,7 +312,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     
     @Override
     public
-    Type matches(Type... param_types) {
+    MPAMType matches(MPAMType... param_types) {
       if (param_types.length == 2
           && ((param_types[0].dominated_by(t1) && param_types[1].dominated_by(t2))
               || (param_types[0].dominated_by(t2) && param_types[1].dominated_by(t1))))
@@ -320,7 +323,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     }
     
     @Override
-    public void add_arg_types_to(Set<Type> set, int i) {
+    public void add_arg_types_to(Set<MPAMType> set, int i) {
       set.add(t1);
       set.add(t2);
     }
@@ -333,9 +336,9 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   
   class TypePreservingSig implements TypeSigBase {
     final int arity;
-    final EnumSet<Type> types;
+    final EnumSet<MPAMType> types;
     
-    public TypePreservingSig(int arity, Type first, Type...rest) {
+    public TypePreservingSig(int arity, MPAMType first, MPAMType...rest) {
       this.arity = arity;
       types = EnumSet.of(first, rest);
     }
@@ -345,8 +348,8 @@ class ExprTypeAnnotator extends MPAMBaseListener {
       return arity;
     }
     
-    private boolean acceptable(Type t) {
-      for (Type a : types) {
+    private boolean acceptable(MPAMType t) {
+      for (MPAMType a : types) {
         if (t.dominated_by(a)) {
           return true;
         }
@@ -355,18 +358,18 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     }
 
     @Override
-    public Type matches(Type... param_types) {
+    public MPAMType matches(MPAMType... param_types) {
       if (param_types.length == 0) {
         return null;
       }
-      Type highest = param_types[0];
+      MPAMType highest = param_types[0];
       if (!acceptable(highest)) {
         return null;
       }
       for (int i=1; i<param_types.length; i++) {
-        Type pt = param_types[i];
+        MPAMType pt = param_types[i];
         if (!pt.dominated_by(highest)) {
-          Type lcd = highest.lowest_common_dominator(pt);
+          MPAMType lcd = highest.lowest_common_dominator(pt);
           if (acceptable(lcd)) {
             highest = lcd;
           } else {
@@ -378,7 +381,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     }
 
     @Override
-    public void add_arg_types_to(Set<Type> set, int i) {
+    public void add_arg_types_to(Set<MPAMType> set, int i) {
       set.addAll(types);
     }
     
@@ -388,14 +391,14 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   class SigChecker {
     final TypeSigBase[] sigs;
     final int arity;
-    final Type[][] constraints;
+    final MPAMType[][] constraints;
     
     SigChecker(TypeSigBase...sigs) {
       this.sigs = sigs;
-      Map<Integer, Set<Type>> map = new HashMap<>();
+      Map<Integer, Set<MPAMType>> map = new HashMap<>();
       for (TypeSigBase sig : sigs) {
         for (int i=0; i<sig.arity(); i++) {
-          Set<Type> set = map.get(i);
+          Set<MPAMType> set = map.get(i);
           if (set == null) {
             set = new HashSet<>();
             map.put(i, set);
@@ -404,37 +407,37 @@ class ExprTypeAnnotator extends MPAMBaseListener {
         }
       }
       arity = map.size();
-      constraints = new Type[arity][];
+      constraints = new MPAMType[arity][];
       
       for (int i=0; i<arity; i++) {
-        Set<Type> set = map.get(i);
+        Set<MPAMType> set = map.get(i);
         if (set.isEmpty()) {
-          constraints[i] = new Type[0];
+          constraints[i] = new MPAMType[0];
         } else {
-          constraints[i] = set.toArray(new Type[set.size()]);
+          constraints[i] = set.toArray(new MPAMType[set.size()]);
         }
       }
     }
     
-    Type check(String op, ExprContext... params) {
+    MPAMType check(String op, ExprContext... params) {
       return check(()->op, params);
     }
-    Type check(Supplier<String> op, ExprContext... params) {
-      Type[] types = new Type[arity];
+    MPAMType check(Supplier<String> op, ExprContext... params) {
+      MPAMType[] types = new MPAMType[arity];
       for (int i=0; i<params.length; i++) {
         try {
           types[i] = getCheckedType(params[i], constraints[i]);
         } catch (TypeError e) {
-          return Type.ILLEGAL;
+          return MPAMType.ILLEGAL;
         }
       }
       for (var sig : sigs) {
-        Type ret_type = sig.matches(types);
+        MPAMType ret_type = sig.matches(types);
         if (ret_type != null) {
           return ret_type;
         }
       }
-      String ptype_descs = Arrays.stream(types).map(Type::toString).collect(Collectors.joining(", "));
+      String ptype_descs = Arrays.stream(types).map(MPAMType::toString).collect(Collectors.joining(", "));
       report_error("Type Error",
                    String.format("%s not defined on %s", op.get(), ptype_descs),
                    (out)->{
@@ -444,44 +447,44 @@ class ExprTypeAnnotator extends MPAMBaseListener {
                        out.println("  "+d);
                      }
                    });
-      return Type.ILLEGAL;
+      return MPAMType.ILLEGAL;
     }
         
   }
 
   
-  private Type unit_type(UnitContext uc) {
+  private MPAMType unit_type(UnitContext uc) {
     if (uc.VOLUME_UNIT() != null) {
-      return Type.VOLUME;
+      return MPAMType.VOLUME;
     } else if (uc.TIME_UNIT() != null) {
-      return Type.TIME;
+      return MPAMType.TIME;
     } else if (uc.TEMP_UNIT() != null) {
-      return Type.TEMP;
+      return MPAMType.TEMP;
     } else if (uc.FREQ_UNIT() != null) {
-      return Type.FREQ;
+      return MPAMType.FREQ;
     } 
-    return Type.UNKNOWN;
+    return MPAMType.UNKNOWN;
   }
   
   @Override
   public void exitInt_literal(Int_literalContext ctx) {
-    noteType(ctx, Type.INT);
+    noteType(ctx, MPAMType.INT);
   }
   
   final SigChecker 
-  add_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT, 
-                                                  Type.PADS,
-                                                  Type.DELTA2D,
-                                                  Type.REGION),
-                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.DELTA2D)
+  add_sigs = new SigChecker(new TypePreservingSig(2, MPAMType.FLOAT, 
+                                                  MPAMType.PADS,
+                                                  MPAMType.DELTA2D,
+                                                  MPAMType.REGION),
+                            new SymmetricTypeSig(MPAMType.PAD, MPAMType.PAD, MPAMType.DELTA2D)
                             );
   final SigChecker 
-  sub_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT, 
-                                                  Type.PADS,
-                                                  Type.DELTA2D,
-                                                  Type.REGION),
-                            new SymmetricTypeSig(Type.PAD, Type.PAD, Type.DELTA2D),
-                            new TypeSig(Type.DELTA2D, Type.PAD, Type.PAD)
+  sub_sigs = new SigChecker(new TypePreservingSig(2, MPAMType.FLOAT, 
+                                                  MPAMType.PADS,
+                                                  MPAMType.DELTA2D,
+                                                  MPAMType.REGION),
+                            new SymmetricTypeSig(MPAMType.PAD, MPAMType.PAD, MPAMType.DELTA2D),
+                            new TypeSig(MPAMType.DELTA2D, MPAMType.PAD, MPAMType.PAD)
                             );
   @Override
   public void exitAddsub_expr(Addsub_exprContext ctx) {
@@ -497,11 +500,11 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   @Override
   public void exitList_index_expr(List_index_exprContext ctx) {
     // TODO Auto-generated method stub
-    noteType(ctx, Type.UNKNOWN);
+    noteType(ctx, MPAMType.UNKNOWN);
   }
 
   final SigChecker
-  negSigs = new SigChecker(new TypePreservingSig(1, Type.INT, Type.FLOAT));
+  negSigs = new SigChecker(new TypePreservingSig(1, MPAMType.INT, MPAMType.FLOAT));
   @Override
   public void exitNegation_expr(Negation_exprContext ctx) {
     noteType(ctx, negSigs.check("-", ctx.rhs));
@@ -516,11 +519,11 @@ class ExprTypeAnnotator extends MPAMBaseListener {
      */
 //    boolean is_row = ctx.ROW() != null; 
 //    noteType(ctx, is_row ? Type.ROW : Type.COL);
-    noteType(ctx, Type.INT);
+    noteType(ctx, MPAMType.INT);
   }
 
   final SigChecker
-  regionSelector_sigs = new SigChecker(new TypeSig(Type.REGION, Type.INT));
+  regionSelector_sigs = new SigChecker(new TypeSig(MPAMType.REGION, MPAMType.INT));
   @Override
   public void exitRegion_selector_expr(Region_selector_exprContext ctx) {
     var sel = ctx.region_selector();
@@ -528,53 +531,53 @@ class ExprTypeAnnotator extends MPAMBaseListener {
       noteType(ctx, regionSelector_sigs.check("region[]", s.expr()));
     } else {
       report_error("Unhandled selector", sel.getText());
-      noteType(ctx, Type.REGION);
+      noteType(ctx, MPAMType.REGION);
     }
   }
   
 
   @Override
   public void exitBoolean_literal(Boolean_literalContext ctx) {
-    noteType(ctx, Type.BOOL);
+    noteType(ctx, MPAMType.BOOL);
   }
   
   final SigChecker
-  row_attr_sigs = new SigChecker(new TypeSig(Type.INT, Type.PAD));
+  row_attr_sigs = new SigChecker(new TypeSig(MPAMType.INT, MPAMType.PAD));
   final SigChecker
-  col_attr_sigs = new SigChecker(new TypeSig(Type.INT, Type.PAD));
+  col_attr_sigs = new SigChecker(new TypeSig(MPAMType.INT, MPAMType.PAD));
   final SigChecker
-  volume_attr_sigs = new SigChecker(new TypeSig(Type.VOLUME, Type.PAD),
-                                    new TypeSig(Type.VOLUME, Type.WELL));
+  volume_attr_sigs = new SigChecker(new TypeSig(MPAMType.VOLUME, MPAMType.PAD),
+                                    new TypeSig(MPAMType.VOLUME, MPAMType.WELL));
   final SigChecker
-  capacity_attr_sigs = new SigChecker(new TypeSig(Type.VOLUME, Type.PAD),
-                                      new TypeSig(Type.VOLUME, Type.WELL));
+  capacity_attr_sigs = new SigChecker(new TypeSig(MPAMType.VOLUME, MPAMType.PAD),
+                                      new TypeSig(MPAMType.VOLUME, MPAMType.WELL));
   
   final Map<String, SigChecker> attribute_sigs = new HashMap<>();
   {
-    attribute_sigs.put("exit pad", new SigChecker(new TypeSig(Type.PAD, Type.WELL)));
-    attribute_sigs.put("volume", new SigChecker(new TypeSig(Type.VOLUME, Type.WELL),
-                                                new TypeSig(Type.VOLUME, Type.PAD)));
+    attribute_sigs.put("exit pad", new SigChecker(new TypeSig(MPAMType.PAD, MPAMType.WELL)));
+    attribute_sigs.put("volume", new SigChecker(new TypeSig(MPAMType.VOLUME, MPAMType.WELL),
+                                                new TypeSig(MPAMType.VOLUME, MPAMType.PAD)));
     attribute_sigs.put("current volume", attribute_sigs.get("volume"));
-    attribute_sigs.put("row", new SigChecker(new TypeSig(Type.INT, Type.PAD)));
+    attribute_sigs.put("row", new SigChecker(new TypeSig(MPAMType.INT, MPAMType.PAD)));
     attribute_sigs.put("col", attribute_sigs.get("row"));
     attribute_sigs.put("column", attribute_sigs.get("col"));
-    attribute_sigs.put("capacity", new SigChecker(new TypeSig(Type.VOLUME, Type.PAD),
-                                                  new TypeSig(Type.VOLUME, Type.WELL)));
+    attribute_sigs.put("capacity", new SigChecker(new TypeSig(MPAMType.VOLUME, MPAMType.PAD),
+                                                  new TypeSig(MPAMType.VOLUME, MPAMType.WELL)));
   }
   
   @Override
   public void exitAttribute_expr(Attribute_exprContext ctx) {
     AttributeContext att = ctx.attr;
     if (att instanceof Unit_count_attrContext a) {
-      Type t = unit_type(a.unit());
-      if (t== Type.UNKNOWN) {
+      MPAMType t = unit_type(a.unit());
+      if (t== MPAMType.UNKNOWN) {
         report_error("Unhandled unit", with_spaces(a.unit()));
       } else {
         try {
           getCheckedType(ctx.obj, t);
-          noteType(ctx, Type.FLOAT);
+          noteType(ctx, MPAMType.FLOAT);
         } catch (TypeError e) {
-          noteType(ctx, Type.ILLEGAL);
+          noteType(ctx, MPAMType.ILLEGAL);
         }
       }
     } else if (att instanceof User_defined_attrContext c) {
@@ -584,20 +587,20 @@ class ExprTypeAnnotator extends MPAMBaseListener {
         noteType(ctx, sigs.check(att_name, ctx.obj));
       } else {
         report_error("Unhandled (user-defined?) Attribute", att_name);
-        noteType(ctx, Type.UNKNOWN);
+        noteType(ctx, MPAMType.UNKNOWN);
       }
     } else {
       report_error("Unhandled Attribute", "\""+with_spaces(att)+"\"");
-      noteType(ctx, Type.ILLEGAL);
+      noteType(ctx, MPAMType.ILLEGAL);
     }
   }
   
-  final Map<String, Type[]> prop_obj_types = new HashMap<>();
+  final Map<String, MPAMType[]> prop_obj_types = new HashMap<>();
   {
-    prop_obj_types.put("empty", new Type[]{Type.WELL, Type.PAD});
-    prop_obj_types.put("on_the_board", new Type[]{Type.PAD});
+    prop_obj_types.put("empty", new MPAMType[]{MPAMType.WELL, MPAMType.PAD});
+    prop_obj_types.put("on_the_board", new MPAMType[]{MPAMType.PAD});
     prop_obj_types.put("on_board", prop_obj_types.get("on_board"));
-    prop_obj_types.put("on", new Type[]{Type.PAD});
+    prop_obj_types.put("on", new MPAMType[]{MPAMType.PAD});
     prop_obj_types.put("off", prop_obj_types.get("on"));
     
   }
@@ -607,7 +610,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     for (PropertyContext prop : ctx.property()) {
       try {
         String att_name = with_spaces(prop.name());
-        Type[] allowed_types = prop_obj_types.get(att_name);
+        MPAMType[] allowed_types = prop_obj_types.get(att_name);
         if (allowed_types != null) {
           getCheckedType(ctx.obj, allowed_types);
         } else {
@@ -619,7 +622,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
       } catch (TypeError e) {
       }
     }
-    noteType(ctx, Type.BOOL);
+    noteType(ctx, MPAMType.BOOL);
   }
 
   
@@ -628,8 +631,8 @@ class ExprTypeAnnotator extends MPAMBaseListener {
     RelationContext rel = ctx.relation();
     try {
       if (rel instanceof In_region_relContext) {
-        getCheckedType(ctx.lhs, Type.PAD);
-        getCheckedType(ctx.rhs, Type.REGION);
+        getCheckedType(ctx.lhs, MPAMType.PAD);
+        getCheckedType(ctx.rhs, MPAMType.REGION);
       } else if (rel instanceof User_defined_relContext) {
         report_error("Unhandled (user-defined?) Relation", with_spaces(rel),
                      (out)->{
@@ -641,7 +644,7 @@ class ExprTypeAnnotator extends MPAMBaseListener {
       }
     } catch (TypeError e) {
     }
-    noteType(ctx, Type.BOOL);
+    noteType(ctx, MPAMType.BOOL);
 
   }
   
@@ -649,108 +652,108 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   
   @Override
   public void exitSingleton_region(Singleton_regionContext ctx) {
-    noteType(ctx, Type.REGION);
+    noteType(ctx, MPAMType.REGION);
   }
 
   @Override
   public void exitDistance_expr(Distance_exprContext ctx) {
     try {
-      getCheckedType(ctx.n, Type.INT);
-      Type t = switch (ctx.kind.kind.getType()) 
+      getCheckedType(ctx.n, MPAMType.INT);
+      MPAMType t = switch (ctx.kind.kind.getType()) 
           {
-          case MPAMParser.ROW, MPAMParser.ROWS -> Type.ROWS;
+          case MPAMParser.ROW, MPAMParser.ROWS -> MPAMType.ROWS;
           case MPAMParser.COL, MPAMParser.COLS, 
-               MPAMParser.COLUMN, MPAMParser.COLUMNS -> Type.COLS;
-          case MPAMParser.PAD, MPAMParser.PADS -> Type.PADS;
-          default -> Type.ILLEGAL;
+               MPAMParser.COLUMN, MPAMParser.COLUMNS -> MPAMType.COLS;
+          case MPAMParser.PAD, MPAMParser.PADS -> MPAMType.PADS;
+          default -> MPAMType.ILLEGAL;
           };
       noteType(ctx, t);
     } catch (TypeError e) {
-      noteType(ctx, Type.ILLEGAL);
+      noteType(ctx, MPAMType.ILLEGAL);
     }
   }
   
   @Override
   public void exitDelta_expr(Delta_exprContext ctx) {
     try {
-      Type t = switch (ctx.step_dir().dir.getType()) 
+      MPAMType t = switch (ctx.step_dir().dir.getType()) 
           {
           case MPAMParser.UP, MPAMParser.DOWN -> {
-            getCheckedType(ctx.mag, Type.ROWS, Type.PADS, Type.INT);
-            yield Type.VDELTA;
+            getCheckedType(ctx.mag, MPAMType.ROWS, MPAMType.PADS, MPAMType.INT);
+            yield MPAMType.VDELTA;
           }
           case MPAMParser.LEFT, MPAMParser.RIGHT -> {
-            getCheckedType(ctx.mag, Type.COLS, Type.PADS, Type.INT);
-            yield Type.HDELTA;
+            getCheckedType(ctx.mag, MPAMType.COLS, MPAMType.PADS, MPAMType.INT);
+            yield MPAMType.HDELTA;
           }
-          default -> Type.ILLEGAL;
+          default -> MPAMType.ILLEGAL;
       };
       noteType(ctx, t);
     } catch (TypeError e) {
-      noteType(ctx, Type.ILLEGAL);
+      noteType(ctx, MPAMType.ILLEGAL);
     }
   }
 
   @Override
   public void exitSingleton_well(Singleton_wellContext ctx) {
-    noteType(ctx, Type.WELL);
+    noteType(ctx, MPAMType.WELL);
   }
 
   @Override
   public void exitList_expr(List_exprContext ctx) {
     // TODO Auto-generated method stub
-    noteType(ctx, Type.UNKNOWN);
+    noteType(ctx, MPAMType.UNKNOWN);
   }
 
   @Override
   public void exitFloat_literal(Float_literalContext ctx) {
-    noteType(ctx, Type.FLOAT);
+    noteType(ctx, MPAMType.FLOAT);
   }
 
   static Pattern var_pat = Pattern.compile("(.*[^_0-9])_?[0-9]*");
   
-  static Map<String, Type> var_types = new HashMap<>();
+  static Map<String, MPAMType> var_types = new HashMap<>();
   static {
-    var_types.put("b", Type.BOOL);
-    var_types.put("i", Type.INT);
-    var_types.put("f", Type.FLOAT);
-    var_types.put("p", Type.PAD);
-    var_types.put("pth", Type.PATH);
-    var_types.put("r", Type.REGION);
-    var_types.put("s", Type.STRING);
-    var_types.put("temp", Type.TEMP);
-    var_types.put("time", Type.TIME);
-    var_types.put("vol", Type.VOLUME);
-    var_types.put("w", Type.WELL);
+    var_types.put("b", MPAMType.BOOL);
+    var_types.put("i", MPAMType.INT);
+    var_types.put("f", MPAMType.FLOAT);
+    var_types.put("p", MPAMType.PAD);
+    var_types.put("pth", MPAMType.PATH);
+    var_types.put("r", MPAMType.REGION);
+    var_types.put("s", MPAMType.STRING);
+    var_types.put("temp", MPAMType.TEMP);
+    var_types.put("time", MPAMType.TIME);
+    var_types.put("vol", MPAMType.VOLUME);
+    var_types.put("w", MPAMType.WELL);
   }
   
   @Override
   public void exitVariable_name(Variable_nameContext ctx) {
     String name = ctx.name().getText();
     if (name.endsWith("?")) {
-      noteType(ctx, Type.BOOL);
+      noteType(ctx, MPAMType.BOOL);
       return;
     }
     Matcher m = var_pat.matcher(name);
     if (m.matches()) {
       String base = m.group(1);
-      Type t = var_types.getOrDefault(base, Type.UNKNOWN);
+      MPAMType t = var_types.getOrDefault(base, MPAMType.UNKNOWN);
       noteType(ctx, t);
     } else {
-      noteType(ctx, Type.UNKNOWN);
+      noteType(ctx, MPAMType.UNKNOWN);
     }
   }
 
   @Override
   public void exitPrenthesized_expr(Prenthesized_exprContext ctx) {
-    Type inner_type = getType(ctx.expr());
+    MPAMType inner_type = getType(ctx.expr());
     noteType(ctx, inner_type);
   }
 
   final SigChecker 
-  mul_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT));
+  mul_sigs = new SigChecker(new TypePreservingSig(2, MPAMType.FLOAT));
   final SigChecker 
-  div_sigs = new SigChecker(new SymmetricTypeSig(Type.FLOAT, Type.FLOAT, Type.FLOAT));
+  div_sigs = new SigChecker(new SymmetricTypeSig(MPAMType.FLOAT, MPAMType.FLOAT, MPAMType.FLOAT));
                                
   @Override
   public void exitMuldiv_expr(Muldiv_exprContext ctx) {
@@ -763,8 +766,8 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   }
 
   final SigChecker
-  wellSelector_sigs = new SigChecker(new TypeSig(Type.WELL, Type.PAD),
-                                     new TypeSig(Type.WELL, Type.INT));
+  wellSelector_sigs = new SigChecker(new TypeSig(MPAMType.WELL, MPAMType.PAD),
+                                     new TypeSig(MPAMType.WELL, MPAMType.INT));
   @Override
   public void exitWell_selector_expr(Well_selector_exprContext ctx) {
     var sel = ctx.well_selector();
@@ -772,12 +775,12 @@ class ExprTypeAnnotator extends MPAMBaseListener {
       noteType(ctx, wellSelector_sigs.check("well[]", s.expr()));
     } else {
       report_error("Unhandled selector", sel.getText());
-      noteType(ctx, Type.WELL);
+      noteType(ctx, MPAMType.WELL);
     }
   }
 
   final SigChecker
-  coords_sigs = new SigChecker(new TypeSig(Type.PAD, Type.INT, Type.INT));
+  coords_sigs = new SigChecker(new TypeSig(MPAMType.PAD, MPAMType.INT, MPAMType.INT));
   @Override
   public void exitPad_coords(Pad_coordsContext ctx) {
     noteType(ctx, coords_sigs.check("(x,y)", ctx.row, ctx.col));
@@ -787,60 +790,60 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   public void exitQuantity_expr(Quantity_exprContext ctx) {
     try {
       if (ctx.mag != null) {
-        getCheckedType(ctx.mag, Type.FLOAT);
+        getCheckedType(ctx.mag, MPAMType.FLOAT);
       }
       var unit = ctx.unit();
-      Type t = unit_type(unit);
-      if (t != Type.UNKNOWN) {
+      MPAMType t = unit_type(unit);
+      if (t != MPAMType.UNKNOWN) {
         noteType(ctx, t);
       } else {
         report_error("Unhandled unit", unit.getText());
-        noteType(ctx, Type.UNKNOWN);
+        noteType(ctx, MPAMType.UNKNOWN);
       }
     } catch (TypeError e) {
-      noteType(ctx, Type.ILLEGAL);
+      noteType(ctx, MPAMType.ILLEGAL);
     }
   }
   
   @Override
   public void exitRoom_temp_lit(Room_temp_litContext ctx) {
-    noteType(ctx, Type.TEMP);
+    noteType(ctx, MPAMType.TEMP);
   }
   
   @Override
   public void exitOp_call(Op_callContext ctx) {
-    noteType(ctx, Type.OPCALL);
+    noteType(ctx, MPAMType.OPCALL);
   }
   
   @Override
   public void exitRelpos_expr(Relpos_exprContext ctx) {
     try {
-      getCheckedType(ctx.rhs, Type.PAD);
+      getCheckedType(ctx.rhs, MPAMType.PAD);
       RelposContext op = ctx.relpos();
       if (op instanceof Horizontal_relposContext) {
-        getCheckedType(ctx.lhs, Type.INT, Type.COLS, Type.PADS);
-        noteType(ctx, Type.PAD);
+        getCheckedType(ctx.lhs, MPAMType.INT, MPAMType.COLS, MPAMType.PADS);
+        noteType(ctx, MPAMType.PAD);
       } else if (op instanceof Vertical_relposContext) {
-        getCheckedType(ctx.lhs, Type.INT, Type.ROWS, Type.PADS);
-        noteType(ctx, Type.PAD);
+        getCheckedType(ctx.lhs, MPAMType.INT, MPAMType.ROWS, MPAMType.PADS);
+        noteType(ctx, MPAMType.PAD);
       } else {
         report_error("Unhandled relative position", op.getText());
-        noteType(ctx, Type.UNKNOWN);
+        noteType(ctx, MPAMType.UNKNOWN);
       }
     } catch (TypeError e) {
-      noteType(ctx, Type.ILLEGAL);
+      noteType(ctx, MPAMType.ILLEGAL);
     }
   }
   
   final SigChecker
-  not_sigs = new SigChecker(new TypeSig(Type.BOOL, Type.BOOL));
+  not_sigs = new SigChecker(new TypeSig(MPAMType.BOOL, MPAMType.BOOL));
   @Override
   public void exitNot_expr(Not_exprContext ctx) {
     noteType(ctx, not_sigs.check("not", ctx.rhs));
   }
   
   final SigChecker
-  and_sigs = new SigChecker(new TypeSig(Type.BOOL, Type.BOOL, Type.BOOL));
+  and_sigs = new SigChecker(new TypeSig(MPAMType.BOOL, MPAMType.BOOL, MPAMType.BOOL));
   @Override
   public void exitAnd_expr(And_exprContext ctx) {
     noteType(ctx, and_sigs.check("and",  ctx.lhs, ctx.rhs));
@@ -854,22 +857,22 @@ class ExprTypeAnnotator extends MPAMBaseListener {
   
   @Override
   public void exitCurrent_obj_lit(Current_obj_litContext ctx) {
-    noteType(ctx, Type.UNKNOWN);
+    noteType(ctx, MPAMType.UNKNOWN);
   }
   
   final SigChecker
-  relation_sigs = new SigChecker(new TypePreservingSig(2, Type.FLOAT, Type.PADS,
-                                                       Type.HDELTA, Type.VDELTA, 
-                                                       Type.VOLUME, Type.TIME, Type.TEMP, Type.FREQ),
-                                 new SymmetricTypeSig(Type.BOOL, Type.FLOAT, Type.INT));
+  relation_sigs = new SigChecker(new TypePreservingSig(2, MPAMType.FLOAT, MPAMType.PADS,
+                                                       MPAMType.HDELTA, MPAMType.VDELTA, 
+                                                       MPAMType.VOLUME, MPAMType.TIME, MPAMType.TEMP, MPAMType.FREQ),
+                                 new SymmetricTypeSig(MPAMType.BOOL, MPAMType.FLOAT, MPAMType.INT));
   @Override
   public void exitOrder_expr(Order_exprContext ctx) {
     ExprContext lhs = ctx.lhs;
     if (lhs instanceof Order_exprContext c) {
       lhs = relation_rhs.get(lhs);
     }
-    Type t = relation_sigs.check(()->ctx.op.which.getText(), lhs, ctx.rhs);
-    noteType(ctx, t == Type.ILLEGAL ? t : Type.BOOL);
+    MPAMType t = relation_sigs.check(()->ctx.op.which.getText(), lhs, ctx.rhs);
+    noteType(ctx, t == MPAMType.ILLEGAL ? t : MPAMType.BOOL);
     relation_rhs.put(ctx, ctx.rhs);
   }
 }
