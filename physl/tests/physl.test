@@ -1,4 +1,8 @@
-Def: A queue [of Ts (things)] is a list [of Ts]. 
+Let a container be a thing.
+
+
+//Let a queue [of Ts (things)] be a list [of Ts] defined:
+//-- It has a foo. 
 
 /*
 Def: A vertex (plural vertices) is a list (of things).
