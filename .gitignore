@@ -56,3 +56,5 @@ build/*/tools
 core.*
 perf.*
 trace
+
+*.pyc
