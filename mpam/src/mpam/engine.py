@@ -1,25 +1,11 @@
 from enum import Enum, auto
 from threading import Thread, Condition, Event, Lock, Timer
-from quantities import SI
 import heapq
-import time
-from aifc import fn
-
-sec = SI.sec
-usec = SI.usec
-ms = SI.ms
-
-def time_now():
-    return time.time()*sec
-
-def time_in(delta):
-    return time_now()+delta
-
-def time_since(t):
-    return time_now()-t
+from quantities.SI import sec, ms
+from quantities.timestamp import time_now, time_in
 
 def _in_secs(t):
-    return t.in_units(sec).magnitude
+    t.num_in(sec)
 
 _wait_timeout = _in_secs(0.5*sec)
 
@@ -54,11 +40,11 @@ class IdleBarrier:
             
 
 class Engine:
-    def __init__(self, board):
-        self.the_board = board
+    def __init__(self):
         self.idle_barrier = IdleBarrier()
         self.dev_comm_thread = DevCommThread(self)
         self.timer_thread = TimerThread(self)
+        self.clock_thread = ClockThread(self)
         
         
     def _join_threads(self):
@@ -130,7 +116,7 @@ class WorkerThread(Thread):
     
 class DevCommThread(WorkerThread):
     def __init__(self, engine):
-        super().__init__(name="Device Communication Thread", daemon=True)
+        super().__init__(engine, name="Device Communication Thread", daemon=True)
         self.condition = Condition(lock=self.lock)
         self.queue = []
         
@@ -205,7 +191,7 @@ class TimerThread(WorkerThread):
                 tt.wake_up()
                 
     def __init__(self, engine):
-        super().__init__(name="Timer Thread", daemon=True)
+        super().__init__(engine, name="Timer Thread", daemon=True)
         self.condition = Condition(lock=self.lock)
         self.queue = []
         self.timer = None
@@ -289,8 +275,7 @@ class ClockThread(WorkerThread):
         
     
     def __init__(self, engine):
-        super().__init__(name="Clock Thread", daemon = True)
-        self.engine = engine
+        super().__init__(engine, name="Clock Thread", daemon = True)
         self.running = False
         self.tick_event = Event()
         self.update_finished = Event()
