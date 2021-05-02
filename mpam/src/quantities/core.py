@@ -1,4 +1,9 @@
 import numbers
+from typing import Tuple, Optional, ClassVar, Callable, TypeVar, Generic, \
+    overload, Union, NewType
+
+
+ExptFormatter = Callable[[int],str]
 
 class Exponents:
     mapping = { "0": "\u2070", "1": "\u00B9", "2": "\u00B2",
@@ -11,31 +16,44 @@ class Exponents:
     # going to use it.
 
 
-    stars = lambda n : "" if n == 1 else "**%g" % n
-    caret = lambda n : "" if n == 1 else "^%g" % n
-    superscript = lambda n : ("" if n == 1
+    stars: ExptFormatter = lambda n : "" if n == 1 else "**%g" % n
+    caret: ExptFormatter = lambda n : "" if n == 1 else "^%g" % n
+    superscript: ExptFormatter = lambda n : ("" if n == 1
                               else "".join(Exponents.mapping[c] for c in str(n)))
-    html = lambda n : "" if n == 1 else "<sup>%g</sup>" %n
+    html: ExptFormatter = lambda n : "" if n == 1 else "<sup>%g</sup>" %n
 
-    default_format = stars
+    default_format: ExptFormatter = stars
+
+T = TypeVar('T')
+BaseExp = tuple['BaseDimension', int]
+BaseExpTuple = Tuple[BaseExp, ...]
+DimOpCache = dict[T, 'Dimensionality']
+AbbrExp = tuple[str, int]
 
 class Dimensionality:
     
-    _instances = {}
+    _instances: ClassVar[dict[BaseExpTuple, 'Dimensionality']] = {}
+    exponents: BaseExpTuple
+    name: Optional[str]
+    _cached_description: str
+    _desc_expt_fmt: object           # It's an ExptFormatter, but all I care about is whether it has changed
+    _cached_multiplication: DimOpCache['Dimensionality']
+    _cached_division: DimOpCache['Dimensionality']
+    _cached_power = DimOpCache[int]
 
-    def __init__(self, expts, name=None):
+    def __init__(self, expts: BaseExpTuple, name: Optional[str] = None) -> None:
         self.exponents = expts      # a tuple of sorted base/expt tuples
         self.name = name
         self._instances[self.exponents] = self
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name or self.description()
 
-    def named(self, name):
+    def named(self, name: str) -> 'Dimensionality':
         self.name = name
         return self
 
-    def description(self, *, exponent_fmt = None):
+    def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format
         cd = getattr(self, "_cached_description", None)
         if cd is None or self._desc_expt_fmt is not exponent_fmt: 
@@ -63,19 +81,19 @@ class Dimensionality:
         return cd
 
     @classmethod
-    def _find_or_create(cls, expts):
+    def _find_or_create(cls, expts: BaseExpTuple) -> 'Dimensionality':
         d = cls._instances.get(expts)
         return d or Dimensionality(expts)
 
-    def __mul__(self, other):
+    def __mul__(self, other: 'Dimensionality') -> 'Dimensionality':
         if not isinstance(other, Dimensionality):
             raise TypeError("Not a dimensionality object: %s" % other)
-        cache = getattr(self, "_cached_multiplication", None)
+        cache: Optional[DimOpCache['Dimensionality']] = getattr(self, "_cached_multiplication", None)
         if cache is None:
             self._cached_multiplication = cache = {}
-        res = cache.get(other)
+        res: Optional['Dimensionality'] = cache.get(other)
         if res is None:
-            expts = dict(self.exponents)
+            expts: dict['BaseDimension', int] = dict(self.exponents)
             for (d,e) in other.exponents:
                 if d in expts:
                     expts[d] += e
@@ -86,15 +104,15 @@ class Dimensionality:
             res = cache[other] = self._find_or_create(tuple(sorted(expts.items())))
         return res
         
-    def __truediv__(self, other):
+    def __truediv__(self, other: 'Dimensionality') -> 'Dimensionality':
         if not isinstance(other, Dimensionality):
             raise TypeError("Not a dimensionality object: %s" % other)
-        cache = getattr(self, "_cached_division", None)
+        cache: Optional[DimOpCache['Dimensionality']] = getattr(self, "_cached_division", None)
         if cache is None:
             self._cached_division = cache = {}
-        res = cache.get(other)
+        res: Optional['Dimensionality'] = cache.get(other)
         if res is None:
-            expts = dict(self.exponents)
+            expts: dict['BaseDimension', int] = dict(self.exponents)
             for (d,e) in other.exponents:
                 if d in expts:
                     expts[d] -= e
@@ -105,86 +123,100 @@ class Dimensionality:
             res = cache[other] = self._find_or_create(tuple(sorted(expts.items())))
         return res
 
-    def __pow__(self, n):
+    def __pow__(self, n: int) -> 'Dimensionality':
         if not isinstance(n, numbers.Integral):
             raise TypeError("Exponent not integral: %s" % n)
-        cache = getattr(self, "_cached_power", None)
+        cache: Optional[DimOpCache[int]] = getattr(self, "_cached_power", None)
         if cache is None:
             self._cached_power = cache = {}
-        res = cache.get(n)
+        res: Optional['Dimensionality'] = cache.get(n)
         if res is None:
             t = tuple(sorted((d,e*n) for (d,e) in self.exponents))
             res = cache[n] = self._find_or_create(t)
         return res
+    
+D = TypeVar('D', bound=Dimensionality)
         
 
-class BaseDimension(Dimensionality):
-    def __init__(self, name):
+class BaseDimension(Dimensionality, Generic[D]):
+    _sort_name: str
+    
+    def __init__(self, name: str) -> None:
         super().__init__(((self,1),), name)
+        self._sort_name = name
 
-    def __lt__(self, other):
-        return self.name < other.name
+    def __lt__(self, other: 'BaseDimension') -> bool:
+        return self._sort_name < other._sort_name
+    
+    def description(self, *, exponent_fmt: ExptFormatter = None) -> str:
+        return self._sort_name
 
-    def description(self, *, exponent_fmt = None):
-        return self.name
-
-    def base_unit(self, abbr):
+    def base_unit(self: D, abbr: str) -> 'Unit[D]':
         return Unit(abbr, Quantity(1, self))
 
 scalar = Dimensionality((), "scalar")
 
 class DimensionalityError(Exception):
-    def __init__(self, expected, got):
+    def __init__(self, expected: Dimensionality, got: Dimensionality) -> None:
         super().__init__("Expected {0}; got {1}".format(expected, got))
 
 class DimMismatchError(Exception):
-    def __init__(self, lhs, op, rhs):
+    def __init__(self, lhs, op, rhs) -> None:
         super().__init__("{0} {1} {2}".format(lhs, op, rhs))
 
-class Quantity:
-    def __init__(self, mag, dim):
+class Quantity(Generic[D]):
+    dimensionality: D
+    magnitude: float
+    
+    def __init__(self, mag: float, dim: D) -> None:
         self.dimensionality = dim
         self.magnitude = mag
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Quantity({0}, {1})".format(self.magnitude, self.dimensionality)
 
-    def has_dimensionality(self, dim):
+    def has_dimensionality(self, dim: Dimensionality) -> bool:
         if not isinstance(dim, Dimensionality):
             raise TypeError("Not a Dimensionaluty: %s" % dim)
         return self.dimensionality is dim
 
-    def check_dimensionality(self, dim):
+    def check_dimensionality(self, dim: Dimensionality) -> 'Quantity[D]':
         if not self.has_dimensionality(dim):
             raise DimensionalityError(dim, self.dimensionality)
         return self
         
-    def _ensure_dim_match(self, rhs, op):
+    def _ensure_dim_match(self, rhs: 'Quantity[D]', op: str) -> None:
         if not isinstance(rhs, Quantity):
             raise TypeError("RHS of %s is not a Quantity: %s" % (op, rhs))
         if not rhs.has_dimensionality(self.dimensionality):
             raise TypeError("%s %s %s is ill-formed" % (self.dimensionality, op, rhs.dimensionality))
 
-    def __add__(self, rhs):
+    def __add__(self, rhs: 'Quantity[D]') -> 'Quantity[D]':
         self._ensure_dim_match(rhs, "+")
         return Quantity(self.magnitude+rhs.magnitude, self.dimensionality)
 
-    def __sub__(self, rhs):
+    def __sub__(self, rhs: 'Quantity[D]') -> 'Quantity[D]':
         self._ensure_dim_match(rhs, "-")
         return Quantity(self.magnitude-rhs.magnitude, self.dimensionality)
 
-    def __eq__(self, rhs):
+    def __eq__(self, rhs: object) -> bool:
+        if not isinstance(rhs, Quantity): 
+            return False
         self._ensure_dim_match(rhs, "==")
         return self.magnitude == rhs.magnitude
     
-    def __lt__(self, rhs):
+    def __lt__(self, rhs: 'Quantity[D]') -> bool:
         self._ensure_dim_match(rhs, "<")
         return self.magnitude < rhs.magnitude
     
-    def __le__(self, rhs):
+    def __le__(self, rhs: 'Quantity[D]') -> bool:
         self._ensure_dim_match(rhs, "<=")
         return self.magnitude <= rhs.magnitude
 
+    @overload
+    def __mul__(self, rhs: float) -> 'Quantity[D]': ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: 'Quantity') -> 'Quantity': ...  # @UnusedVariable
     def __mul__(self, rhs):
         if isinstance(rhs, numbers.Real):
             return Quantity(self.magnitude*rhs, self.dimensionality)
@@ -193,11 +225,15 @@ class Quantity:
         return Quantity(self.magnitude*rhs.magnitude,
                         self.dimensionality*rhs.dimensionality)
 
-    def __rmul__(self, lhs):
+    def __rmul__(self, lhs: float) -> 'Quantity[D]':
         if not isinstance(lhs, numbers.Real):
             raise TypeError("LHS not a real number: %s" % lhs)
         return Quantity(lhs*self.magnitude, self.dimensionality)
 
+    @overload
+    def __truediv__(self, rhs: float) -> 'Quantity[D]': ...  # @UnusedVariable
+    @overload
+    def __truediv__(self, rhs: 'Quantity') -> 'Quantity': ...  # @UnusedVariable
     def __truediv__(self, rhs):
         if isinstance(rhs, numbers.Real):
             return Quantity(self.magnitude/rhs, self.dimensionality)
@@ -206,60 +242,70 @@ class Quantity:
         return Quantity(self.magnitude/rhs.magnitude,
                         self.dimensionality/rhs.dimensionality)
 
-    def __rtruediv__(self, lhs):
+    def __rtruediv__(self, lhs: float) -> 'Quantity':
         if not isinstance(lhs, numbers.Real):
             raise TypeError("LHS not a real number: %s" % lhs)
         return Quantity(lhs/self.magnitude, scalar/self.dimensionality)
 
-    def __pow__(self, rhs):
+    def __pow__(self, rhs: int) -> 'Quantity':
         if not isinstance(rhs, numbers.Integral):
             raise TypeError("LHS not an integer: %s" % rhs)
         return Quantity(self.magnitude**rhs, self.dimensionality**rhs)
 
-    def in_units(self, units):
+    def in_units(self, units: 'UnitExpr[D]') -> '_BoundQuantity[D]':
         if not isinstance(units, UnitExpr):
             raise TypeError("Not a UnitExpr: %s" % units)
         if units.dimensionality() is not self.dimensionality:
             raise DimMismatchError(self.dimensionality, " in ", "{0} ({1})".format(units, units.dimensionality()))
         return _BoundQuantity(self, units)
     
-    def as_number(self, units):
+    def as_number(self, units: 'UnitExpr[D]') -> float:
         return self.in_units(units).magnitude
 
-class _BoundQuantity:
-    def __init__(self, quant, units):
+class _BoundQuantity(Generic[D]):
+    magnitude: float
+    units: 'UnitExpr[D]'
+    def __init__(self, quant: Quantity[D], units: 'UnitExpr[D]') -> None:
         self.magnitude = quant.magnitude/units.quantity.magnitude
         self.units = units
 
-    def description(self, *, exponent_fmt = None):
+    def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         return "%g %s" % (self.magnitude, self.units.description(exponent_fmt = exponent_fmt))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.description()
 
-class UnitExpr:
-    def __init__(self, quant, num, denom):
+class UnitExpr(Generic[D]):
+    quantity: Quantity[D]
+    num: list[AbbrExp]
+    denom: list[AbbrExp]
+    
+    _cached_description: str
+    _desc_expt_fmt: object           # It's an ExptFormatter, but all I care about is whether it has changed
+  
+    def __init__(self, quant: Quantity[D], num: list[AbbrExp], denom: list[AbbrExp]) -> None:
         self.quantity = quant
         self.num = num
         self.denom = denom
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.description()
         return "Unit('{0}', {1})".format(self.abbreviation, self.quantity)
 
-    def dimensionality(self):
+    def dimensionality(self) -> D:
         return self.quantity.dimensionality
 
-    def _index_in(self, abbr, lst):
+    def _index_in(self, abbr: str, lst: list[AbbrExp]) -> Union[Tuple[None,None], Tuple[int,int]]:
         for (i, pair) in enumerate(lst):
             if abbr == pair[0]:
                 return (i, pair[1])
         return (None, None)
 
-    def _add_expts(self, new_n, new_d, expts):
+    def _add_expts(self, new_n: list[AbbrExp], new_d: list[AbbrExp], expts: list[AbbrExp]) -> None:
         for (a,e) in expts:
             (i, old_e) = self._index_in(a, new_n)
             if i is not None:
+                assert old_e is not None
                 # if it's in the numerator, we just add
                 new_n[i] = (a,old_e+e)
                 continue
@@ -269,7 +315,7 @@ class UnitExpr:
                 # if it's in neither, we add to the numerator.
                 new_n.append((a, e))
                 continue
-
+            assert old_e is not None
             # it's in the denominator.  If the values are the same, we
             # can get rid of it.
             if e == old_e:
@@ -287,7 +333,7 @@ class UnitExpr:
             del new_d[i]
             new_n.append((a,e-old_e))
             
-    def description(self, *, exponent_fmt = None):
+    def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format
         cd = getattr(self, "_cached_description", None)
         if cd is None or self._desc_expt_fmt is not exponent_fmt: 
@@ -301,7 +347,7 @@ class UnitExpr:
         return cd
 
 
-    def _combine_with(self, num, denom):
+    def _combine_with(self, num: list[AbbrExp], denom: list[AbbrExp]) -> Tuple[list[AbbrExp], list[AbbrExp]]: 
         new_n = self.num[:]
         new_d = self.denom[:]
 
@@ -312,7 +358,10 @@ class UnitExpr:
         return (new_n, new_d)
 
         
-
+    @overload
+    def __mul__(self, rhs: float) -> Quantity[D]: ...
+    @overload
+    def __mul__(self, rhs: 'UnitExpr') -> 'UnitExpr': ...
     def __mul__(self, rhs):
         if isinstance(rhs, numbers.Real):
             return self.quantity*rhs
@@ -330,11 +379,15 @@ class UnitExpr:
             cache[rhs] = res
         return res
 
-    def __rmul__(self, n):
+    def __rmul__(self, n: float) -> Quantity[D]:
         if not isinstance(n, numbers.Real):
             raise TypeError("LHS is not a real number: %s" % n)
         return n*self.quantity
-
+    
+    @overload
+    def __truediv__(self, rhs: float) -> Quantity[D]: ...
+    @overload
+    def __truediv__(self, rhs: 'UnitExpr') -> 'UnitExpr': ...
     def __truediv__(self, rhs):
         if isinstance(rhs, numbers.Real):
             return self.quantity/rhs
@@ -353,13 +406,13 @@ class UnitExpr:
         return res
 
 
-    def __rtruediv__(self, n):
+    def __rtruediv__(self, n: float) -> 'UnitExpr':
         if not isinstance(n, numbers.Real):
             raise TypeError("LHS is not a real number: %s" % n)
         return n/self.quantity
         
 
-    def __pow__(self, rhs):
+    def __pow__(self, rhs: int) -> 'UnitExpr':
         if not isinstance(rhs, numbers.Integral):
             raise TypeError("LHS not an integer: %s" % rhs)
         q = self.quantity**rhs
@@ -367,14 +420,16 @@ class UnitExpr:
         denom = [(a, e*rhs) for (a,e) in self.denom]
         return UnitExpr(q, num, denom)
 
-    def format(self, q):
+    def format(self, q: Quantity[D]) -> _BoundQuantity[D]:
         return q.in_units(self)
 
-    def __mod__(self, q):
+    def __mod__(self, q: Quantity[D]) -> _BoundQuantity[D]:
         return self.format(q)
 
-class Unit(UnitExpr):
-    def __init__(self, abbr, quant, check = None):
+class Unit(UnitExpr[D]):
+    abbreviation: str
+    
+    def __init__(self, abbr: str, quant: Union[Quantity[D],UnitExpr[D]], check: Optional[Dimensionality] = None):
         if isinstance(quant, UnitExpr):
             quant = 1*quant
         if not isinstance(quant, Quantity):
@@ -384,20 +439,23 @@ class Unit(UnitExpr):
         super().__init__(quant, [(abbr, 1)], [])
         self.abbreviation = abbr
 
-    def description(self, *, exponent_fmt = None):
+    def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         return self.abbreviation
 
 class Prefix:
-    def __init__(self, prefix, mult):
+    prefix: str
+    multiplier: float
+    
+    def __init__(self, prefix: str, mult: float) -> None:
         if not isinstance(mult, numbers.Real):
             raise TypeError("Multipler is not a real number: %s" % mult)
         self.prefix = prefix
         self.multiplier = mult
 
-    def __rep__(self):
+    def __rep__(self) -> str:
         return "Prefix(%s, %s)" % (self.prefix, self.multiplier)
 
-    def __call__(self, unit):
+    def __call__(self, unit: Unit[D]) -> Unit[D]:
         if not isinstance(unit, Unit):
             raise TypeError("Prefix %s applied to non-Unit %s" % (self, unit))
         return Unit(self.prefix+unit.abbreviation, self.multiplier*unit.quantity)
@@ -405,9 +463,12 @@ class Prefix:
 
 if __name__ == '__main__':
 
-    dist = BaseDimension("distance")
-    time = BaseDimension("time")
-    mass = BaseDimension("mass")
+    Distance = NewType('Distance', Dimensionality)
+    dist = BaseDimension[Distance]("distance")
+    Time = NewType('Time', Dimensionality)
+    time = BaseDimension[Time]("time")
+    Mass = NewType('Mass', Dimensionality)
+    mass = BaseDimension[Mass]("mass")
 
     m = Quantity(5, mass)
     m2 = Quantity(3, mass)

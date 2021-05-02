@@ -1,4 +1,5 @@
 from . import core, prefixes, SI
+from quantities import dimensions
 
 
 # mass
@@ -36,14 +37,14 @@ cable = core.Unit("cable", 100*ftm)
 
 #area
 
-sq_in = square_inch = core.Unit("sq_in", inch**2)
-sq_ft = square_foot = core.Unit("sq_ft", ft**2)
-sq_mi = square_mile = core.Unit("sq_mi", mi**2)
+sq_in = square_inch = core.Unit[dimensions.Area]("sq_in", inch**2)
+sq_ft = square_foot = core.Unit[dimensions.Area]("sq_ft", ft**2)
+sq_mi = square_mile = core.Unit[dimensions.Area]("sq_mi", mi**2)
 acre = core.Unit("acre", sq_mi/640)
 section = core.Unit("section", sq_mi)
 
 # volume
-cu_in = cubic_inch = core.Unit("cu_in", inch**3)
+cu_in = cubic_inch = core.Unit[dimensions.Volume]("cu_in", inch**3)
 gal = gallon = core.Unit("gal", 231*cu_in)
 fl_oz = fluid_ounce = core.Unit("fl_oz", gal/128)
 qt = quart = core.Unit("qt", 32*fl_oz)
@@ -56,7 +57,7 @@ minim = core.Unit("min", tsp/80)
 shot = jig = jigger = core.Unit("jig", 1.5*fl_oz)
 bbl = barrel = core.Unit("bbl", 31.5*gal)
 hogshead = core.Unit("hogshead", 63*gal)
-board_ft = board_foot = core.Unit("board_ft", ft**2*inch)
+board_ft = board_foot = core.Unit[dimensions.Volume]("board_ft", ft**2*inch)
 
 pt_d = dry_pt = dry_pint = core.Unit("pt_d", 33.6003125*cu_in)
 qt_d = dry_qt = dry_quart = core.Unit("qt_d", 2*pt_d)
@@ -72,8 +73,8 @@ mins = SI.mins
 hr = SI.hr
 
 # velocity
-fps = foot_per_second = core.Unit("fps", ft/s)
-mph = mile_per_hour = core.Unit("mph", mi/hr)
+fps = foot_per_second = core.Unit[dimensions.Velocity]("fps", ft/s)
+mph = mile_per_hour = core.Unit[dimensions.Velocity]("mph", mi/hr)
 
 # temperature
 deg_F = core.Unit("°F", 1.8*SI.deg_C)
@@ -85,11 +86,11 @@ kcal = kilocalorie = prefixes.kilo(small_cal)
 Cal = food_calorie = calorie = core.Unit("Cal", kcal)
 
 # force
-pdl = poundal = core.Unit("pdl", lb*ft/s**2)
-lbf = pound_force = core.Unit("lbf", slug*ft/s**2)
+pdl = poundal = core.Unit[dimensions.Force]("pdl", lb*ft/s**2)
+lbf = pound_force = core.Unit[dimensions.Force]("lbf", slug*ft/s**2)
 
 # pressure
-psi = core.Unit("psi", lbf/sq_in)
+psi = core.Unit[dimensions.Pressure]("psi", lbf/sq_in)
 
 # power
 hp = horsepower = core.Unit("hp", 845.7*SI.W)

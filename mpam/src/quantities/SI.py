@@ -1,8 +1,9 @@
-from . import core, prefixes, dimensions
+from . import dimensions, prefixes, core
+from quantities import dimensions
 
 # angle
-rad = radian = core.Unit("rad", core.Quantity(1, dimensions.scalar))
-sr = steraian = core.Unit("sr", core.Quantity(1, dimensions.scalar))
+rad = radian = core.Unit("rad", core.Quantity(1, dimensions.angle))
+sr = steradian = core.Unit("sr", core.Quantity(1, dimensions.solid_angle))
 
 # mass
 g = gramme = gram = dimensions.mass.base_unit("g")
@@ -24,7 +25,7 @@ km = kilometre = kilometer = prefixes.kilo(meter)
 ha = hectare = core.Unit("ha", m**2)
 
 # volume
-l = L = litre = liter = core.Unit("l", dm**3)
+l = L = litre = liter = core.Unit[dimensions.Volume]("l", dm**3)
 dl = dL = decilitre = deciliter = prefixes.deci(liter)
 cl = cL = centilitre = centiliter = prefixes.centi(liter)
 ml = mL = millilitre = milliliter = prefixes.milli(liter)
@@ -41,19 +42,19 @@ hr = hour = core.Unit("hr", 60*minute)
 day = core.Unit("day", 24*hour)
 
 # frequency
-Hz = hertz = core.Unit("Hz", 1/s)
+Hz = hertz = core.Unit[dimensions.Frequency]("Hz", 1/s)
 
 # force
-N = newton = core.Unit("N", kg*m/s**2)
+N = newton = core.Unit[dimensions.Force]("N", kg*m/s**2)
 
 # work
-J = joule = core.Unit("J", N*m)
+J = joule = core.Unit[dimensions.Work]("J", N*m)
 
 # pressure
-Pa = pascal = core.Unit("Pa", N/m**2)
+Pa = pascal = core.Unit[dimensions.Pressure]("Pa", N/m**2)
 
 # power
-W = watt = core.Unit("W", J/s)
+W = watt = core.Unit[dimensions.Power]("W", J/s)
 
 # temperature
 K = kelvin = dimensions.temperature.base_unit("K")
@@ -64,43 +65,43 @@ deg_C = core.Unit("°C", kelvin)
 cd = candela = dimensions.lum_int.base_unit("cd")
 
 # luminous flux
-lm = lumen = core.Unit("lm", cd*sr)
+lm = lumen = core.Unit[dimensions.LumFlux]("lm", cd*sr)
 
 # illuminance
-lx = lux = core.Unit("lux", lm/m**2)
+lx = lux = core.Unit[dimensions.Illuminance]("lux", lm/m**2)
 
 # current
 A = ampere = dimensions.current.base_unit("A")
 
 # charge
-C = coulomb = core.Unit("C", A*s)
+C = coulomb = core.Unit[dimensions.Charge]("C", A*s)
 faraday = core.Unit("F", 96485.33212310084*C)
 
 # voltage, electric potential, emf
-V = volt = core.Unit("V", J/C)
+V = volt = core.Unit[dimensions.Voltage]("V", J/C)
 
 # magnetic flux
-Wb = weber = core.Unit("Wb", V*s)
+Wb = weber = core.Unit[dimensions.MagneticFlux]("Wb", V*s)
 
 # magnetic induction, flux density
-T = tesla = core.Unit("T", Wb/m**2)
+T = tesla = core.Unit[dimensions.MagneticInduction]("T", Wb/m**2)
 
 # capacitance
-F = farad = core.Unit("F", C/V)
+F = farad = core.Unit[dimensions.Capacitance]("F", C/V)
 
 # resistance
-Ω = ohm = core.Unit("Ω", V/A)
+Ω = ohm = core.Unit[dimensions.Resistance]("Ω", V/A)
 
 # conductance
-S = siemens = core.Unit("S", A/V)
+S = siemens = core.Unit[dimensions.Conductance]("S", A/V)
 mho = core.Unit("mho", S)
 
 # inductance
-H = henry = core.Unit("H", V*s/A)
+H = henry = core.Unit[dimensions.Inductance]("H", V*s/A)
 
 # radioactivity
-Bq = becquerel = core.Unit("Bq", 1/s)
+Bq = becquerel = core.Unit[dimensions.Radioactivity]("Bq", 1/s)
 
 # ionizing radiation dose
-Gy = gray = core.Unit("Gy", J/kg)
-Sv = sievert = core.Unit("Sv", J/kg)
+Gy = gray = core.Unit[dimensions.IonizingRadDose]("Gy", J/kg)
+Sv = sievert = core.Unit[dimensions.IonizingRadDose]("Sv", J/kg)
