@@ -1,102 +1,113 @@
-from .core import scalar, BaseDimension, Dimensionality
-from typing import NewType, cast
+from typing import Literal, overload
+from quantities.core import UnitExpr, Unit, BaseDim, Scalar, Quantity,\
+    DerivedDim
 
-Mass = NewType('Mass', Dimensionality)
-mass = BaseDimension[Mass]("mass")
+class Mass(BaseDim['Mass']): ...
+    
 
-Distance = NewType('Distance', Dimensionality)
-distance = BaseDimension[Distance]("distance")
-
-Time = NewType('Time', Dimensionality)
-time = BaseDimension[Time]("time")
-
-Temperature = NewType('Temperature', Dimensionality)
-temperature = BaseDimension[Temperature]("temperature")
-
-LumInt = NewType('LumInt', Dimensionality)
-lum_int = BaseDimension[LumInt]("lum_int")
-
-Current = NewType('Current', Dimensionality)
-current = BaseDimension[Current]("current")
-
-Storage = NewType('Storage', Dimensionality)
-storage = BaseDimension[Storage]("storage")
-
-Angle = NewType('Angle', Dimensionality)
-angle = cast(Angle, scalar)
-
-SolidAngle = NewType('SolidAngle', Dimensionality)
-solid_angle = cast(SolidAngle, scalar)
-
-Area = NewType('Area', Dimensionality)
-area = (distance**2).named("area")
-
-Volume = NewType('Volume', Dimensionality)
-volume = (distance**3).named("volume")
+class Distance(BaseDim['Distance']): ...
+    # @overload
+    # def __pow__(self, rhs: Literal[2]) -> 'Area': ...  # @UnusedVariable
+    # @overload
+    # def __pow__(self, rhs: Literal[3]) -> 'Volume': ...  # @UnusedVariable
+    # @overload
+    # def __pow__(self, rhs: int) -> Quantity: ...  # @UnusedVariable
+    # def __pow__(self, rhs: int):
+    #     return super().__pow__(rhs)
+    #
+    # class DistanceUnitExpr(UnitExpr['Distance']):
+    #     @overload
+    #     def __pow__(self, rhs: Literal[2]) -> 'Area.AreaUnitExpr': ...  # @UnusedVariable
+    #     @overload
+    #     def __pow__(self, rhs: Literal[3]) -> 'Volume.VolumeUnitExpr': ...  # @UnusedVariable
+    #     @overload
+    #     def __pow__(self, rhs: int) -> UnitExpr: ...  # @UnusedVariable
+    #     def __pow__(self, rhs: int):
+    #         return super().__pow__(rhs)
+    #
+    # class DistanceUnit(Unit['Distance'], DistanceUnitExpr):
+    #     ...
 
 
-Frequency = NewType('Frequency', Dimensionality)
-frequency = (scalar/time).named("frequency")
+class Time(BaseDim['Time']): ...
 
-Radioactivity = NewType('Radioactivity', Dimensionality)
-radioactivity = frequency
+class Temperature(BaseDim['Temperature']): ...
 
-Velocity = NewType('Velocity', Dimensionality)
-velocity = (distance/time).named("velocity")
+class LumInt(BaseDim['LumInt']): ...
 
-Acceleration = NewType('Acceleration', Dimensionality)
-acceleration = (velocity/time).named("acceleration")
+class Current(BaseDim['Current']): ...
 
-Force = NewType('Force', Dimensionality)
-force = (mass*acceleration).named("force")
+class Storage(BaseDim['Storage']): ...
 
-Work = NewType('Work', Dimensionality)
-work = (force*distance).named("work")
+Angle = Scalar
+SolidAngle = Scalar
 
-Pressure = NewType('Pressure', Dimensionality)
-pressure = (force/area).named("pressure")
+class Area(DerivedDim['Area']): 
+    derived = Distance.dim()**2
+    class AreaUnitExpr(UnitExpr['Area']): ...
 
-Power = NewType('Power', Dimensionality)
-power = (work/time).named("power")
+class Volume(DerivedDim['Volume']): 
+    derived = Distance.dim()**3
+    class VolumeUnitExpr(UnitExpr['Volume']): ...
 
-LumFlux = NewType('LumFlux', Dimensionality)
-lum_flux = lum_int
+class Frequency(DerivedDim['Frequency']): 
+    derived = Scalar.dim()/Time.dim()
 
-Illuminance = NewType('Illuminance', Dimensionality)
-illuminance = (lum_flux/area).named("illuminance")
+class Radioactivity(DerivedDim['Radioactivity']): 
+    derived = Scalar.dim()/Time.dim()
 
-Charge = NewType('Charge', Dimensionality)
-charge = (current*time).named("charge")
+class Velocity(DerivedDim['Velocity']): 
+    derived = Distance.dim()/Time.dim()
 
-Voltage = NewType('Voltage', Dimensionality)
-voltage = (work/charge).named("voltage")
+class Acceleration(DerivedDim['Acceleration']): 
+    derived = Velocity.dim()/Time.dim()
 
-Emf = NewType('Emf', Dimensionality)
-emf = elec_potential = voltage
+class Force(DerivedDim['Force']): 
+    derived = Mass.dim()*Acceleration.dim()
 
-Flux = NewType('Flux', Dimensionality)
-flux = (voltage*time).named("flux")
+class Work(DerivedDim['Work']): 
+    derived = Force.dim()*Distance.dim()
 
-MagneticFlux = NewType('MagneticFlux', Dimensionality)
-magnetic_flux = flux
+class Pressure(DerivedDim['Pressure']): 
+    derived = Force.dim()/Area.dim()
 
-FluxDensity = NewType('FluxDensity', Dimensionality)
-flux_density = (flux/area).named("flux_density")
+class Power(DerivedDim['Power']): 
+    derived = Work.dim()/Time.dim()
 
-MagneticInduction = NewType('MagneticInduction', Dimensionality)
-magnetic_induction = flux_density
+LumFlux = LumInt
 
-Capacitance = NewType('Capacitance', Dimensionality)
-capacitance = (charge/voltage).named("capacitance")
+class Illuminance(DerivedDim['Illuminance']): 
+    derived = LumFlux.dim()/Area.dim()
 
-Resistance = NewType('Resistance', Dimensionality)
-resistance = (voltage/current).named("resistance")
+class Charge(DerivedDim['Charge']): 
+    derived = Current.dim()*Time.dim()
 
-Conductance = NewType('Conductance', Dimensionality)
-conductance = (current/voltage).named("conductance")
+class Voltage(DerivedDim['Voltage']): 
+    derived = Work.dim()/Charge.dim()
 
-Inductance = NewType('Inductance', Dimensionality)
-inductance = (resistance*time).named("inductance")
+Emf = ElecPotential = Voltage
 
-IonizingRadDose = NewType('IonizingRadDose', Dimensionality)
-ionizing_rad_dose = (work/mass).named("ionizing_rad_dose")
+class Flux(DerivedDim['Flux']): 
+    derived = Voltage.dim()*Time.dim()
+
+MagneticFlux = Flux
+
+class FluxDensity(DerivedDim['FluxDensity']): 
+    derived = Flux.dim()/Area.dim()
+
+MagneticInduction = FluxDensity
+
+class Capacitance(DerivedDim['Capacitance']): 
+    derived = Charge.dim()/Voltage.dim()
+
+class Resistance(DerivedDim['Resistance']): 
+    derived = Voltage.dim()/Current.dim()
+
+class Conductance(DerivedDim['Conductance']): 
+    derived = Current.dim()/Voltage.dim()
+
+class Inductance(DerivedDim['Inductance']): 
+    derived = Resistance.dim()*Time.dim()
+
+class IonizingRadDose(DerivedDim['IonizingRadDose']): 
+    derived = Work.dim()/Mass.dim()
