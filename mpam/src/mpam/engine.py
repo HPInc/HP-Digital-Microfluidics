@@ -5,7 +5,7 @@ from quantities.SI import sec, ms
 from quantities.timestamp import time_now, time_in
 from quantities.dimensions import Time
 from typing import Optional, Type, Literal, Protocol, Any, Callable, Sequence,\
-    Iterable
+    Iterable, Union
 from types import TracebackType
 import time
 
@@ -14,6 +14,9 @@ def _in_secs(t: Time) -> float:
 
 _wait_timeout: float = _in_secs(0.5*sec)
 
+TimerFunc = Callable[[], Optional[Time]]
+ClockCallback = Callable[[], Optional[int]]
+
 class  State(Enum):
     NEW = auto()
     RUNNING = auto()
@@ -21,23 +24,32 @@ class  State(Enum):
     ABORT_REQUESTED = auto()
     DEAD = auto()
     
+class Worker:
+    idle_barrier: 'IdleBarrier'
+    
+    def not_idle(self) -> None:
+        self.idle_barrier.running(self)
+        
+    def idle(self) -> None:
+        self.idle_barrier.idle(self)
+
 class IdleBarrier:
     event: Event
     lock: Lock
-    running_components: set['WorkerThread'] 
+    running_components: set[Worker] 
     
     def __init__(self) -> None:
         self.event = Event()
         self.event.set()
         self.lock = Lock()
-        self.running_components = set['WorkerThread']()
+        self.running_components = set[Worker]()
     
-    def running(self, component: 'WorkerThread') -> None:
+    def running(self, component: Worker) -> None:
         with self.lock:
             self.event.clear()
             self.running_components.add(component)
             
-    def idle(self, component: 'WorkerThread') -> None:
+    def idle(self, component: Worker) -> None:
         with self.lock:
             self.running_components.discard(component)
             if len(self.running_components) == 0:
@@ -47,14 +59,20 @@ class IdleBarrier:
         self.event.wait(timeout)
       
 class Updatable(Protocol):
-    def updatestate(self) -> Any: ...          
-            
-class Request(Protocol):
-    def prepare(self) -> Any: ...
-    component: Optional[Updatable]
-    
-Callback = Callable[[], Any]
+    def update_state(self) -> Any: ...          
 
+Callback = Callable[[], Any]
+            
+# class DevCommRequest:
+#     component: Optional[Updatable]
+#     def __init__(self, component: Optional[Updatable], cb: Callback):
+#         self.component = component
+#         self.callback: Callback = cb    
+#     def prepare(self) -> Any:
+#         (self.callback)()
+#
+
+DevCommRequest = Callable[[], Iterable[Updatable]]
 
 class Engine:
     idle_barrier: IdleBarrier
@@ -70,17 +88,26 @@ class Engine:
         
         
     def _join_threads(self) -> None:
-        self.dev_comm_thread.join()
+        if self.dev_comm_thread.is_alive():
+            self.dev_comm_thread.join()
+        if self.timer_thread.is_alive():
+            self.timer_thread.join()
+        if self.clock_thread.is_alive():
+            self.clock_thread.join()
     
     def start(self) -> None:
         pass
         
     def stop(self) -> None:
         self.dev_comm_thread.request_stop()
+        self.timer_thread.request_stop()
+        self.clock_thread.request_stop()
         self._join_threads()
     
     def abort(self) -> None:
         self.dev_comm_thread.request_abort()
+        self.timer_thread.request_abort()
+        self.clock_thread.request_abort()
         self._join_threads()
         
     def __enter__(self) -> 'Engine':
@@ -94,23 +121,34 @@ class Engine:
         self.idle_barrier.wait()
         return False
     
-    def communicate(self, req: Request):
+    def communicate(self, req: DevCommRequest):
         self.dev_comm_thread.add_request(req)
         
-    def call_at(self, t: Time, fn: Callback):
+    def call_at(self, t: Time, fn: TimerFunc):
         self.timer_thread.call_at(t, fn)
         
-    def call_after(self, delta: Time, fn: Callback):
+    def call_after(self, delta: Time, fn: TimerFunc):
         self.timer_thread.call_after(delta, fn)
+
+    def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
+        self.clock_thread.before_tick(fn, delta=delta)
+
+    def after_tick(self, fn: ClockCallback, *, delta: int=0):
+        self.clock_thread.after_tick(fn, delta=delta)
+
+    def on_tick(self, req: DevCommRequest, *, delta: int=0):
+        self.clock_thread.on_tick(req, delta=delta)
         
-class WorkerThread(Thread):
+        
+class WorkerThread(Thread, Worker):
     engine: Engine
     idle_barrier: IdleBarrier
     state: State
     lock: Lock
     
-    def __init__(self, engine: Engine, *args, **kwdargs) -> None:
-        super().__init__(*args, **kwdargs)
+    def __init__(self, engine: Engine, name: str) -> None:
+        # super().__init__(*args, **kwdargs)
+        super().__init__(name=name, daemon=True)
         self.engine = engine
         self.idle_barrier = engine.idle_barrier
         self.state = State.NEW
@@ -123,7 +161,7 @@ class WorkerThread(Thread):
         if self.state is State.RUNNING:
             with self.lock:
                 self.state = State.ABORT_REQUESTED
-                self.daemon = True
+                # self.daemon = True
                 self.wake_up()
             
     def request_stop(self) -> None:
@@ -139,22 +177,24 @@ class WorkerThread(Thread):
             
     # called with lock
     def not_idle(self) -> None:
-        self.idle_barrier.running(self)
-        self.daemon = False
+        super().not_idle()
+        # self.idle_barrier.running(self)
+        # self.daemon = False
         self.ensure_running()
         
     # called with lock
-    def idle(self) -> None:
-        self.idle_barrier.idle(self)
-        self.daemon = True
-        
+    # def idle(self) -> None:
+    #     self.idle_barrier.idle(self)
+    #     # self.daemon = True
+    #
+
     
 class DevCommThread(WorkerThread):
     condition: Condition
-    queue: list[Request]
+    queue: list[DevCommRequest]
     
     def __init__(self, engine: Engine):
-        super().__init__(engine, name="Device Communication Thread", daemon=True)
+        super().__init__(engine, "Device Communication Thread")
         self.condition = Condition(lock=self.lock)
         self.queue = []
         
@@ -170,7 +210,7 @@ class DevCommThread(WorkerThread):
             queue = self.queue
             condition = self.condition
             while self.state is State.RUNNING:
-                queue_copy: list[Request]
+                queue_copy: list[DevCommRequest]
                 with self.lock:
                     while self.state is State.RUNNING and not queue:
                         condition.wait(_wait_timeout)
@@ -182,28 +222,28 @@ class DevCommThread(WorkerThread):
                     queue_copy = queue.copy()
                     queue.clear()
                 for req in queue_copy:
-                    req.prepare()
-                    if req.component:
-                        need_update.add(req.component)
+                    cpts = req()
+                    need_update.update(cpts)
                 for c in need_update:
-                    c.updatestate()
+                    c.update_state()
                 need_update.clear()
                 if not queue:
                     with self.lock:
                         if not queue:
                             self.idle()
         finally:
+            print(self.name, "exited")
             self.state = State.DEAD
     
-    def add_request(self, req: Request) -> None:
-        assert self.state is State.RUNNING
+    def add_request(self, req: DevCommRequest) -> None:
+        assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
             self.queue.append(req)
             self.not_idle()
             self.wake_up()
             
-    def add_requests(self, reqs: Sequence[Request]) -> None:
-        assert self.state is State.RUNNING
+    def add_requests(self, reqs: Sequence[DevCommRequest]) -> None:
+        assert self.state is State.RUNNING or self.state is State.NEW
         if len(reqs) > 0:
             with self.condition:
                 self.queue.extend(reqs)
@@ -211,7 +251,6 @@ class DevCommThread(WorkerThread):
                 self.wake_up()
             
         
-TimerFunc = Callable[[], Optional[Time]]
 FT = tuple[Time, TimerFunc]
 
 class TimerThread(WorkerThread):
@@ -246,7 +285,7 @@ class TimerThread(WorkerThread):
     timer: Optional[MyTimer]
                 
     def __init__(self, engine: Engine) -> None:
-        super().__init__(engine, name="Timer Thread", daemon=True)
+        super().__init__(engine, "Timer Thread")
         self.condition = Condition(lock=self.lock)
         self.queue = []
         self.timer = None
@@ -289,10 +328,11 @@ class TimerThread(WorkerThread):
                         self.timer = self.MyTimer(self, desired_time, desired_time-now, func)
                         self.timer.start()
         finally:
+            print(self.name, "exited")
             self.state = State.DEAD
             
     def call_at(self, t: Time, fn: TimerFunc) -> None:
-        assert self.state is State.RUNNING
+        assert self.state is State.RUNNING or self.state is State.NEW
         with self.condition:
             self.not_idle()
             timer = self.timer
@@ -311,7 +351,6 @@ class TimerThread(WorkerThread):
     def call_after(self, delta: Time, fn: TimerFunc) -> None:
         self.call_at(time_in(delta), fn)
 
-ClockCallback = Callable[[], Optional[int]]
 CT = tuple[int, ClockCallback]
                 
 class ClockThread(WorkerThread):
@@ -324,37 +363,47 @@ class ClockThread(WorkerThread):
             self.clock = clock
             
         def __call__(self) -> Optional[Time]:
+            next_tick = time_in(self.clock.update_interval)
             if not self.cancelled:
                 self.clock.tick_event.set()
-                return time_in(self.clock.update_interval)
+                return next_tick
             return None
                 
         def cancel(self) -> None:
             self.cancelled = True
             if self.clock.outstanding_tick_request is self:
                 self.clock.outstanding_tick_request = None
-        
+                
+                
+    class note_done:
+        event: Event
+        component: Optional[Updatable] = None
+        def __init__(self, e: Event) -> None:
+            self.event = e
+        def prepare(self) -> None:
+            self.event.set()
+
     running: bool
     tick_event: Event
-    update_finished: Event
     pre_tick_queue: list[CT]
     post_tick_queue: list[CT]
-    on_tick_queue: list[tuple[int, Request]]
+    on_tick_queue: list[tuple[int, DevCommRequest]]
+    update_interval: Time = 100*ms
     work: int
     next_tick: int
+    last_tick_time: Time
     outstanding_tick_request: Optional[TickRequest]
     
     def __init__(self, engine):
-        super().__init__(engine, name="Clock Thread", daemon = True)
+        super().__init__(engine, "Clock Thread")
         self.running = False
         self.tick_event = Event()
-        self.update_finished = Event()
         self.pre_tick_queue = []
         self.post_tick_queue = []
         self.on_tick_queue = []
-        self.update_interval = 100*ms
         self.work = 0
         self.next_tick = 0
+        self.last_tick_time = 0*sec
         self.outstanding_tick_request = None
         
     def _process_queue(self, queue: Sequence[CT]) -> list[CT]:
@@ -371,17 +420,10 @@ class ClockThread(WorkerThread):
     def wake_up(self) -> None:
         self.tick_event.set()
 
-    class note_done:
-        event: Event
-        component: Optional[Updatable] = None
-        def __init__(self, e: Event) -> None:
-            self.event = e
-        def prepare(self) -> None:
-            self.event.set()
         
     def run(self) -> None:
         lock = self.lock
-        update_finished = self.update_finished 
+        update_finished = Event()
         tick_event = self.tick_event
         comm_thread = self.engine.dev_comm_thread
         try:
@@ -392,21 +434,26 @@ class ClockThread(WorkerThread):
                 tick_event.clear()
                 if self.state is State.ABORT_REQUESTED:
                     return
+                print("Processing tick ", self.next_tick)
+                self.last_tick_time = time_now()
                 queue: list[CT]
                 with lock:
                     queue = self.pre_tick_queue
                     self.pre_tick_queue = []
                     self.work -= len(queue)
                 new_queue: list[CT] = self._process_queue(queue)
-                rqueue: list[Request]
+                rqueue: list[DevCommRequest]
                 with lock:
                     self.pre_tick_queue.extend(new_queue)
                     self.work += len(new_queue)
-                    rqueue = [req for (delta, req) in self.on_tick_queue if delta == 0]
+                    rqueue = [req for (delta, req) in self.on_tick_queue if delta <= 0]
                     self.on_tick_queue = [(delta-1, req) for (delta, req) in self.on_tick_queue if delta > 0]
                     self.work -= len(rqueue)
                     if rqueue:
-                        rqueue.append(self.note_done(update_finished))
+                        def note_finished():
+                            update_finished.set()
+                            return ()
+                        rqueue.append(note_finished)
                         comm_thread.add_requests(rqueue)
                     self.next_tick += 1
                 if rqueue:
@@ -425,21 +472,25 @@ class ClockThread(WorkerThread):
                 if self.work == 0 or not self.running:
                     self.idle()
         finally:
+            print(self.name, "exited")
             self.state = State.DEAD
             
     def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
+        assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
             self.pre_tick_queue.append((delta, fn))
             self.not_idle()
             self.work += 1
 
     def after_tick(self, fn: ClockCallback, *, delta: int=0):
+        assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
             self.post_tick_queue.append((delta, fn))
             self.not_idle()
             self.work += 1
 
-    def on_tick(self, req: Request, *, delta: int=0):
+    def on_tick(self, req: DevCommRequest, *, delta: int=0):
+        assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
             self.on_tick_queue.append((delta, req))
             self.not_idle()

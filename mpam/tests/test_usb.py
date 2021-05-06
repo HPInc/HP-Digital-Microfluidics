@@ -20,7 +20,7 @@ a = bytearray(128)
 
 a[56] = a[45] = 1
 
-port = serial.Serial('COM4')
+port = serial.Serial('COM5')
 port.write(a)
 
 #with open("/dev/ttyS4", "wb") as f:
