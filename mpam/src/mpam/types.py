@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Union, Literal
 
 class OnOff(Enum):
     OFF = 0
@@ -8,7 +9,11 @@ class OnOff(Enum):
         return self is OnOff.ON
 
 class Dir(Enum):
-    def __init__(self, delta_x, delta_y):
+    Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]
+    delta_x: Minus1To1
+    delta_y: Minus1To1
+    
+    def __init__(self, delta_x: Minus1To1, delta_y: Minus1To1):
         self.delta_x = delta_x
         self.delta_y = delta_y
     
@@ -35,7 +40,10 @@ class Dir(Enum):
     RIGHT = EAST
 
 class XYCoord:
-    def __init__(self, x, y):
+    x: int
+    y: int
+    
+    def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
         
@@ -45,7 +53,8 @@ class XYCoord:
     def col(self):
         return self.x
         
-    def __eq__(self, other):
+    def __eq__(self, other: object):
+        if not isinstance(other, XYCoord): return False
         return self.x == other.x and self.y == other.y
     
     def __hash__(self):
@@ -85,4 +94,3 @@ if __name__ == '__main__':
     print(Dir.RIGHT+coord)
     coord += Dir.NORTHWEST
     print(coord)
-    print(coord+5)
