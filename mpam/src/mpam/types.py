@@ -93,10 +93,6 @@ class XYCoord:
 
 ValTuple = tuple[bool, T]
 
-class Waiting: ...
-WAITING = Waiting()
-DelayedValue = Union[Waiting, T]
-
 class Missing: ...
 MISSING = Missing()
 

@@ -5,7 +5,7 @@ from quantities.SI import sec, ms
 from quantities.timestamp import time_now, time_in
 from quantities.dimensions import Time
 from typing import Optional, Type, Literal, Protocol, Any, Callable, Sequence,\
-    Iterable
+    Iterable, Final
 from types import TracebackType
 
 def _in_secs(t: Time) -> float:
@@ -47,11 +47,14 @@ class IdleBarrier:
         with self.lock:
             self.event.clear()
             self.running_components.add(component)
+            # print(f"{component} not idle [{len(self.running_components)}]")
             
     def idle(self, component: Worker) -> None:
         with self.lock:
             self.running_components.discard(component)
+            # print(f"{component} idle [{len(self.running_components)}]")
             if len(self.running_components) == 0:
+                # print("System is idle")
                 self.event.set()
                 
     def wait(self, timeout: float = None) -> None:
@@ -123,11 +126,11 @@ class Engine:
     def communicate(self, req: DevCommRequest):
         self.dev_comm_thread.add_request(req)
         
-    def call_at(self, t: Time, fn: TimerFunc):
-        self.timer_thread.call_at(t, fn)
+    def call_at(self, t: Time, fn: TimerFunc, *, daemon = False):
+        self.timer_thread.call_at(t, fn, daemon = daemon)
         
-    def call_after(self, delta: Time, fn: TimerFunc):
-        self.timer_thread.call_after(delta, fn)
+    def call_after(self, delta: Time, fn: TimerFunc, *, daemon = False):
+        self.timer_thread.call_after(delta, fn, daemon = daemon)
 
     def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
         self.clock_thread.before_tick(fn, delta=delta)
@@ -250,7 +253,7 @@ class DevCommThread(WorkerThread):
                 self.wake_up()
             
         
-FT = tuple[Time, TimerFunc]
+FT = tuple[Time, TimerFunc, bool]
 
 class TimerThread(WorkerThread):
     
@@ -258,14 +261,16 @@ class TimerThread(WorkerThread):
         timer_thread: 'TimerThread'
         target_time: Time
         started: bool
+        daemon_task: Final[bool]
         
 
-        def __init__(self, timer_thread: 'TimerThread', target_time: Time, delay: Time, func: TimerFunc) -> None:
+        def __init__(self, timer_thread: 'TimerThread', target_time: Time, delay: Time, func: TimerFunc, daemon: bool) -> None:
             super().__init__(_in_secs(delay), lambda : self.call_func())
             self.timer_thread = timer_thread
             self.target_time = target_time
             self.func: TimerFunc = func
-            self.started = False 
+            self.started = False
+            self.daemon_task = daemon 
             
         def call_func(self) -> None:
             self.started = True
@@ -273,21 +278,25 @@ class TimerThread(WorkerThread):
             tt = self.timer_thread
             with tt.lock:
                 if next_time:
-                    heapq.heappush(tt.queue, (next_time, self.func))
+                    heapq.heappush(tt.queue, (next_time, self.func, self.daemon_task))
+                elif self.daemon_task:
+                    tt.n_daemons -= 1
                 tt.timer = None
-                if not tt.queue:
+                if len(tt.queue) == tt.n_daemons:
                     tt.idle()
                 tt.wake_up()
 
     condition: Condition
     queue: list[FT]
     timer: Optional[MyTimer]
+    n_daemons: int
                 
     def __init__(self, engine: Engine) -> None:
         super().__init__(engine, "Timer Thread")
         self.condition = Condition(lock=self.lock)
         self.queue = []
         self.timer = None
+        self.n_daemons = 0
         
     def wake_up(self) -> None:
         self.condition.notify()
@@ -312,25 +321,25 @@ class TimerThread(WorkerThread):
                     if not queue:
                         assert self.state is not State.RUNNING
                         return
-                    (desired_time, func) = heapq.heappop(queue)
+                    (desired_time, func, daemon) = heapq.heappop(queue)
                 # we're now not locked, so we can safely either run the function or schedule it
                 now: Time = time_now()
                 if now >= desired_time:
                     next_time: Optional[Time] = func()
                     if next_time:
                         with condition:
-                            heapq.heappush(queue, (next_time, func))
+                            heapq.heappush(queue, (next_time, func, daemon))
                     elif not queue:
                         self.idle()
                 else:
                     with condition:
-                        self.timer = self.MyTimer(self, desired_time, desired_time-now, func)
+                        self.timer = self.MyTimer(self, desired_time, desired_time-now, func, daemon)
                         self.timer.start()
         finally:
             print(self.name, "exited")
             self.state = State.DEAD
             
-    def call_at(self, t: Time, fn: TimerFunc) -> None:
+    def call_at(self, t: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.condition:
             self.not_idle()
@@ -342,13 +351,15 @@ class TimerThread(WorkerThread):
                 # we could just call it here, but I'm not sure how safe that is.)
                 timer.cancel()
                 if not timer.started:
-                    heapq.heappush(self.queue, (timer.target_time, timer.func))
+                    heapq.heappush(self.queue, (timer.target_time, timer.func, timer.daemon_task))
                     self.timer = None
-            heapq.heappush(self.queue, (t, fn))  
+            heapq.heappush(self.queue, (t, fn, daemon))
+            if daemon:
+                self.n_daemons += 1  
             self.wake_up()
 
-    def call_after(self, delta: Time, fn: TimerFunc) -> None:
-        self.call_at(time_in(delta), fn)
+    def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
+        self.call_at(time_in(delta), fn, daemon=daemon)
 
 CT = tuple[int, ClockCallback]
                 
@@ -372,15 +383,6 @@ class ClockThread(WorkerThread):
             self.cancelled = True
             if self.clock.outstanding_tick_request is self:
                 self.clock.outstanding_tick_request = None
-                
-                
-    class note_done:
-        event: Event
-        component: Optional[Updatable] = None
-        def __init__(self, e: Event) -> None:
-            self.event = e
-        def prepare(self) -> None:
-            self.event.set()
 
     running: bool
     tick_event: Event
@@ -478,21 +480,51 @@ class ClockThread(WorkerThread):
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
             self.pre_tick_queue.append((delta, fn))
-            self.not_idle()
+            if self.running:
+                self.not_idle()
+            else:
+                self.ensure_running()
             self.work += 1
 
-    def after_tick(self, fn: ClockCallback, *, delta: int=0):
+    def after_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
             self.post_tick_queue.append((delta, fn))
-            self.not_idle()
+            if self.running:
+                self.not_idle()
+            else:
+                self.ensure_running()
             self.work += 1
 
-    def on_tick(self, req: DevCommRequest, *, delta: int=0):
+    def on_tick(self, req: DevCommRequest, *, delta: int=0) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
             self.on_tick_queue.append((delta, req))
-            self.not_idle()
+            if self.running:
+                self.not_idle()
+            else:
+                self.ensure_running()
             self.work += 1
+            
 
-    
+    def start_clock(self, interval: Optional[Time] = None) -> None:
+        with self.lock:
+            assert not self.running
+            assert not self.outstanding_tick_request
+            if interval is not None:
+                self.update_interval = interval
+            self.running = True
+            tr = self.outstanding_tick_request = self.TickRequest(self)
+            self.engine.call_after(self.update_interval, tr, daemon=True)
+            self.ensure_running()
+            self.wake_up()
+            
+    def pause_clock(self) -> None:
+        with self.lock:
+            assert self.running
+            assert self.outstanding_tick_request
+            self.running = False
+            self.outstanding_tick_request.cancel()
+            assert self.outstanding_tick_request
+            
+        
