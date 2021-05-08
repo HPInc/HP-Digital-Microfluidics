@@ -5,9 +5,8 @@ from quantities.SI import sec, ms
 from quantities.timestamp import time_now, time_in
 from quantities.dimensions import Time
 from typing import Optional, Type, Literal, Protocol, Any, Callable, Sequence,\
-    Iterable, Union
+    Iterable
 from types import TracebackType
-import time
 
 def _in_secs(t: Time) -> float:
     return t.as_number(sec)

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Union, Literal, Generic, TypeVar, Optional, Final, Callable, Any,\
+from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast
 from threading import Event, Lock
 
@@ -70,12 +70,11 @@ class XYCoord:
         return hash((self.x, self.y))
     
     def __repr__(self):
-        return "XYCoord({0},{1})".format(self.x, self.y)
+        return f"XYCoord({self.x},{self.y})"
     
     def __add__(self, delta: Dir):
         if not isinstance(delta, Dir):
-            raise TypeError("{0} only supports addition with {1}: {2} provided"
-                            .format(XYCoord, Dir, type(delta)))
+            raise TypeError(f"{XYCoord} only supports addition with {Dir}: {type(delta)} provided")
         return XYCoord(self.x+delta.delta_x, self.y+delta.delta_y)
     
     def __radd__(self, delta: Dir):
@@ -83,8 +82,7 @@ class XYCoord:
     
     def __iadd__(self, delta: Dir):
         if not isinstance(delta, Dir):
-            raise TypeError("{0} only supports addition with {1}: {2} provided"
-                            .format(XYCoord, Dir, type(delta)))
+            raise TypeError(f"{XYCoord} only supports addition with {Dir}: {type(delta)} provided")
         self.x += delta.delta_x
         self.y += delta.delta_y
         return self

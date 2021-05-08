@@ -113,7 +113,7 @@ class SystemComponent:
         return system
     
     def update_state(self) -> None:
-        raise NotImplementedError("{}.update_state() not defined".format(self.__class__))
+        raise NotImplementedError(f"{self.__class__}.update_state() not defined")
             
     def communicate(self, cb: Callback):
         def req() -> Tuple[SystemComponent]:
