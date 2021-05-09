@@ -107,5 +107,16 @@ Bq = becquerel = (1/s).a(dimensions.Radioactivity).as_unit("Bq")
 Gy = gray = (J/kg).a(dimensions.IonizingRadDose).as_unit("Gy")
 Sv = sievert = (J/kg).a(dimensions.IonizingRadDose).as_unit("Sv")
 
-if __name__ == '__main__':
-    ...
+# amount
+mol = mole = dimensions.Amount.base_unit("mol")
+mmol = millimole = prefixes.milli(mole)
+µmol = umol = micromole = prefixes.micro(mole)
+
+
+# molar concentration
+M = molar = (mmol/L).a(dimensions.MolarConcentration).as_unit("M")
+mM = millimolar = prefixes.milli(molar)
+µM = micromolar = prefixes.micro(molar)
+nM = nanomolar = prefixes.nano(molar)
+
+

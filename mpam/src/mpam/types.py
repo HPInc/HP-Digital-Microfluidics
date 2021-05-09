@@ -2,6 +2,8 @@ from enum import Enum
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast
 from threading import Event, Lock
+from quantities.core import BaseDim
+from quantities import prefixes
 
 T = TypeVar('T')
 
@@ -174,16 +176,10 @@ class Delayed(Generic[T]):
                 # The callbacks are never going to be needed again
                 del self._callbacks
             
+class ReagentVolume(BaseDim['ReagentVolume']): ...
+l_r = L_r = litre_r = liter_r = ReagentVolume.base_unit("L_r")
+dl_r = dL_r = decilitre_r = deciliter_r = prefixes.deci(liter_r)
+cl_r = cL_r = centilitre_r = centiliter_r = prefixes.centi(liter_r)
+ml_r = mL_r = millilitre_r = milliliter_r = prefixes.milli(liter_r)
+µl_r = µL_r = ul_r = uL_r = micorlitre = microliter = prefixes.micro(liter_r)
 
-if __name__ == '__main__':
-    print(OnOff.ON)
-    print(Dir.NORTHWEST)
-    print(Dir.NORTH)
-    print(Dir.UP)
-    print(Dir.NORTH == Dir.UP)
-    coord = XYCoord(3,5)
-    print(coord)
-    print(coord+Dir.RIGHT)
-    print(Dir.RIGHT+coord)
-    coord += Dir.NORTHWEST
-    print(coord)

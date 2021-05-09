@@ -1,6 +1,4 @@
-from typing import Literal, overload
-from quantities.core import UnitExpr, Unit, BaseDim, Scalar, Quantity,\
-    DerivedDim
+from quantities.core import BaseDim, Scalar, DerivedDim
 
 class Mass(BaseDim['Mass']): ...
     
@@ -39,17 +37,37 @@ class Current(BaseDim['Current']): ...
 
 class Storage(BaseDim['Storage']): ...
 
+class Amount(BaseDim['Amount']): ...
+
 Angle = Scalar
 SolidAngle = Scalar
 
 class Area(DerivedDim['Area']): 
     derived = Distance.dim()**2
-    class AreaUnitExpr(UnitExpr['Area']): ...
+    # class AreaUnitExpr(UnitExpr['Area']): ...
 
 class Volume(DerivedDim['Volume']): 
     derived = Distance.dim()**3
-    class VolumeUnitExpr(UnitExpr['Volume']): ...
-
+    # class VolumeUnitExpr(UnitExpr['Volume']): ...
+    
+class Density(DerivedDim['Density']):
+    derived = Mass.dim()/Volume.dim()
+    
+class Substance: ...
+class Solution: ...
+class Solvent: ...
+    
+MassConcentration = Density
+    
+class MolarConcentration(DerivedDim['MolarConcentration']):
+    derived = Amount.dim()/Volume.dim()
+    
+class SpecificVolume(DerivedDim['SpecificVolume']):
+    derived = Volume.dim()/Mass.dim()
+    
+class VolumeConcentration(DerivedDim['VolumeConcentration']):
+    derived = Volume.dim().of(Substance)/Volume.dim()    
+    
 class Frequency(DerivedDim['Frequency']): 
     derived = Scalar.dim()/Time.dim()
 
@@ -111,3 +129,7 @@ class Inductance(DerivedDim['Inductance']):
 
 class IonizingRadDose(DerivedDim['IonizingRadDose']): 
     derived = Work.dim()/Mass.dim()
+
+
+    
+    
