@@ -144,6 +144,11 @@ class Delayed(Generic[T]):
         self.wait()
         return self._val[1]
     
+    # This allows you to say "drop.move(N).then.move(S)"
+    @property
+    def then(self) -> T:
+        return self.value()
+    
 
     def when_value(self, fn: Callable[[T], Any]) -> None:
         v = self._val
@@ -186,7 +191,7 @@ class Chemical:
     formula: Optional[str]
     description: Optional[str]
     
-    known: ClassVar[dict[str, Chemical]] = dict[str, Chemical]()
+    known: ClassVar[dict[str, Chemical]] = dict[str, 'Chemical']()
     
     def __init__(self, name: str, *,
                  formula: Optional[str] = None, 
@@ -217,7 +222,7 @@ class Reagent:
     min_storage_temp: Optional[Temperature]
     max_storage_temp: Optional[Temperature]
     
-    known: ClassVar[dict[str, Reagent]] = dict[str, Reagent]()
+    known: ClassVar[dict[str, Reagent]] = dict[str, 'Reagent']()
 
     def __init__(self, name: str, 
                  composition: Mapping[Chemical, Concentration] = {},

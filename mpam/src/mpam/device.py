@@ -1,15 +1,17 @@
 from __future__ import annotations
 from typing import Type, Optional, Final, Mapping, Callable, Tuple, Literal,\
-    TypeVar, Sequence
+    TypeVar, Sequence, TYPE_CHECKING, Union
 from types import TracebackType
-from mpam.types import XYCoord, Dir, OnOff, Delayed
-from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
-    Engine, ClockThread, _wait_timeout, Worker
-from quantities.dimensions import Time
+from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
-from threading import Event
+from threading import Event, Lock
 
-from typing import TYPE_CHECKING
+from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid
+from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
+    Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
+    ClockCommRequest
+from mpam.exceptions import PadBrokenError
+
 if TYPE_CHECKING:
     from mpam.drop import Drop
 
@@ -30,6 +32,7 @@ class Pad:
     _drop: Optional[Drop]
     _dried_liquid: Optional[Drop]
     _neighbors: Optional[Sequence[Pad]]
+    _well: Optional[Well]
         
     @property
     def row(self) -> int:
@@ -37,6 +40,10 @@ class Pad:
     @property
     def column(self) -> int:
         return self.location.x
+    
+    @property
+    def well(self) -> Optional[Well]:
+        return self._well
     
     @property
     def current_state(self) -> OnOff:
@@ -68,6 +75,9 @@ class Pad:
         self.set_device_state: Callable[[OnOff], None]
         self._drop = None
         self._dried_liquid = None
+        
+    def __repr__(self) -> str:
+        return f"Pad[{self.column},{self.row}]"
         
     def neighbor(self, d: Dir) -> Optional[Pad]:
         p = self._pads[self.location+d]
@@ -109,12 +119,16 @@ class Pad:
             
     
     def request_modify_state(self, mod: Modifier[OnOff], *, gated: bool = False) -> OnOff:
+        if self.broken:
+            raise PadBrokenError(self)
         fn = Pad._modifier(gated=gated, immediate = True)
         return fn(self, mod).value()
     def async_modify_state(self, mod: Modifier[OnOff], *, gated: bool = False) -> Delayed[OnOff]:
+        if self.broken:
+            raise PadBrokenError(self)
         fn = Pad._modifier(gated=gated)
         return fn(self, mod)
-    def gated_request_modify_state(self, mod: Modifier[OnOff]) -> OnOff:
+    def request_gated_modify_state(self, mod: Modifier[OnOff]) -> OnOff:
         return self.request_modify_state(mod, gated=True)
     def modify_state(self, mod: Modifier[OnOff]) -> OnOff:
         return self.async_modify_state(mod).value()
@@ -123,7 +137,7 @@ class Pad:
     
     def request_set_state(self, val: OnOff, *, gated: bool = False) -> OnOff:
         return self.request_modify_state(lambda _: val, gated=gated)
-    def gated_request_set_state(self, val: OnOff) -> OnOff:
+    def request_gated_set_state(self, val: OnOff) -> OnOff:
         return self.request_set_state(val, gated=True)
     def async_set_state(self, val: OnOff, *, gated: bool = False) -> Delayed[OnOff]:
         return self.async_modify_state(lambda _: val, gated=gated)
@@ -136,7 +150,7 @@ class Pad:
         return self.request_set_state(OnOff.ON, gated=gated)
     def async_turn_on(self, *, gated: bool = False) -> Delayed[OnOff]:
         return self.async_set_state(OnOff.ON, gated=gated)
-    def gated_request_turn_on(self) -> OnOff:
+    def request_gated_turn_on(self) -> OnOff:
         return self.request_turn_on(gated=True)
     def gated_turn_on(self) -> Delayed[OnOff]:
         return self.async_turn_on(gated=True)
@@ -147,7 +161,7 @@ class Pad:
         return self.request_set_state(OnOff.OFF, gated=gated)
     def async_turn_off(self, *, gated: bool = False) -> Delayed[OnOff]:
         return self.async_set_state(OnOff.OFF, gated=gated)
-    def gated_request_turn_off(self) -> OnOff:
+    def request_gated_turn_off(self) -> OnOff:
         return self.request_turn_off(gated=True)
     def gated_turn_off(self) -> Delayed[OnOff]:
         return self.async_turn_off(gated=True)
@@ -158,12 +172,97 @@ class Pad:
         return self.request_modify_state(lambda s : ~s, gated=gated)
     def async_toggle(self, *, gated: bool = False) -> Delayed[OnOff]:
         return self.async_modify_state(lambda s : ~s, gated=gated)
-    def gated_request_toggle(self) -> OnOff:
+    def request_gated_toggle(self) -> OnOff:
         return self.request_toggle(gated=True)
     def gated_toggle(self) -> Delayed[OnOff]:
         return self.async_toggle(gated=True)
     def toggle(self) -> OnOff:
         return self.async_toggle().value()
+    
+class Well:
+    class Section:
+        index: Final[int] 
+        well: Final[Well]
+        def __init__(self, index: int, well: Well) -> None:
+            self.index = index
+            self.well = well
+            
+        def __repr__(self) -> str:
+            return f"Section[{self.index}, {self.well}]"
+        
+    class DispensingSequence: ...
+    
+    number: Final[int]
+    _board: Final[Board]
+    capacity: Final[Volume]
+    exit_pad: Final[Pad]
+    dispensed_volume: Final[Volume]
+    dispensing_ticks: Final[int]
+    absorbing_ticks: Final[int]
+    is_voidable: Final[bool]
+    gate: Final[Section]
+    sections: Final[Sequence[Section]]
+    dispensing_sequences: Final[Sequence[DispensingSequence]]
+    _contents: Optional[Liquid]
+    
+    @property
+    def contents(self) -> Optional[Liquid]:
+        return self._contents
+    
+    @property
+    def volume(self) -> Volume:
+        c = self._contents
+        if c is None:
+            return Volume.ZERO()
+        else:
+            return c.volume
+
+    @property    
+    def remaining_capacity(self) -> Volume:
+        return self.capacity-self.volume
+        
+    @property
+    def drop_availability(self) -> float:
+        return self.volume.ratio(self.dispensed_volume)
+    
+    @property
+    def empty(self) -> bool:
+        return self.drop_availability < 1
+    
+    @property
+    def available(self) -> bool:
+        c = self._contents
+        return c is None or c.volume==Volume.ZERO and not c.inexact
+        
+    def __init__(self, board: Board, *,
+                 number: int, 
+                 capacity: Volume,
+                 exit_pad: Pad,
+                 dispensed_volume: Volume,
+                 dispensing_ticks: int,
+                 absorbing_ticks: int,
+                 is_voidable: bool = False,
+                 gate: Section,
+                 sections: Sequence[Section],
+                 dispensing_sequences: Sequence[DispensingSequence]
+                 ) -> None:
+        self._board = board
+        self.number = number
+        self.capacity = capacity
+        self.exit_pad = exit_pad
+        assert not exit_pad._well, f"{exit_pad} is already associated with {exit_pad.well}"
+        exit_pad._well = self
+        self.dispensed_volume = dispensed_volume
+        self.dispensing_ticks = dispensing_ticks
+        self.absorbing_ticks = absorbing_ticks
+        self.is_voidable = is_voidable
+        self.gate = gate
+        self.sections = sections
+        self.dispensing_sequences = dispensing_sequences
+        assert len(dispensing_sequences) > 0, "At least one dispensing sequence must be provided"
+        self._contents = None
+        
+
     
 class SystemComponent:
     system: Optional[System] = None
@@ -284,7 +383,7 @@ class Clock:
             delta = max(0, tick-self.next_tick)
         elif delta is None:
             delta = 0
-        self.clock_thread.before_tick(fn, delta=delta)
+        self.system.before_tick(fn, delta=delta)
 
     def after_tick(self, fn: ClockCallback, tick: Optional[int] = None, delta: Optional[int] = None) -> None:
         if tick is not None:
@@ -292,8 +391,10 @@ class Clock:
             delta = max(0, tick-self.next_tick)
         elif delta is None:
             delta = 0
-        self.clock_thread.after_tick(fn, delta=delta)
+        self.system.after_tick(fn, delta=delta)
     
+    # Calling await_tick() when the clock isn't running only works if there is another thread that
+    # will advance it.  
     def await_tick(self, tick: Optional[int] = None, delta: Optional[int] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.await_tick() called with both tick and delta specified"
@@ -304,11 +405,11 @@ class Clock:
             e = Event()
             def cb():
                 e.signal()
-            self.clock_thread.after_tick(cb, delta=delta)
+            self.clock_thread.after_tick([(delta, cb)])
             while not e.is_set():
                 e.wait(_wait_timeout)
 
-    def advance_clock(self, min_delay: Optional[Time] = None) -> None:
+    def advance(self, min_delay: Optional[Time] = None) -> None:
         assert not self.running, "Clock.advance_clock() called while clock is running"
         ct = self.clock_thread
         if min_delay is not None:
@@ -316,7 +417,7 @@ class Clock:
             if next_allowed > time_now():
                 def do_advance():
                     ct.wake_up()
-                self.system.call_at(next_allowed, do_advance)
+                self.system.engine.call_at([(next_allowed, do_advance, False)])
                 return
         ct.wake_up()
         
@@ -327,20 +428,83 @@ class Clock:
     def pause(self) -> None:
         assert self.running, "Clock.pause() called while clock is running"
         self.clock_thread.pause_clock()
+
+class Batch:
+    system: Final[System]
+    nested: Final[Optional[Batch]]
+    
+    buffer_communicate: list[DevCommRequest]
+    buffer_call_at: list[TimerRequest]
+    buffer_call_after: list[TimerRequest]
+    buffer_before_tick: list[ClockRequest]
+    buffer_after_tick: list[ClockRequest]
+    buffer_on_tick: list[ClockCommRequest]
+    
+    def __init__(self, system: System, *, nested: Optional[Batch]) -> None:
+        self.system = system
+        self.nested = nested
+        self.buffer_communicate = []
+        self.buffer_call_at = []
+        self.buffer_call_after = []
+        self.buffer_before_tick = []
+        self.buffer_after_tick = []
+        self.buffer_on_tick = []
+
+    def communicate(self, reqs: Sequence[DevCommRequest]) -> None:
+        self.buffer_communicate.extend(reqs)
         
+    def call_at(self, reqs: Sequence[TimerRequest]) -> None:
+        self.buffer_call_at.extend(reqs)
         
+    def call_after(self, reqs: Sequence[TimerRequest]) -> None:
+        self.buffer_call_after.extend(reqs)
+        
+    def before_tick(self, reqs: Sequence[ClockRequest]) -> None:
+        self.buffer_before_tick.extend(reqs)
+
+    def after_tick(self, reqs: Sequence[ClockRequest]) -> None:
+        self.buffer_after_tick.extend(reqs)
+
+    def on_tick(self, reqs: Sequence[ClockCommRequest]) -> None:
+        self.buffer_on_tick.extend(reqs)
                 
-                
+    def __enter__(self) -> Batch:
+        return self
+
+    # I'm currently assuming that if we get an exception,
+    # we don't want to try to do the communication.  Instead
+    # we just return, clearing ourselves from the system
+    # if we're not nested    
+    def __exit__(self, 
+                 exc_type: Optional[Type[BaseException]], 
+                 exc_val: Optional[BaseException],  # @UnusedVariable
+                 exc_tb: Optional[TracebackType]) -> Literal[False]:  # @UnusedVariable
+        if exc_type is None:
+            sink: Union[Batch,Engine] = self.nested or self.system.engine
+            sink.communicate(self.buffer_communicate)
+            sink.call_at(self.buffer_call_at)
+            sink.call_after(self.buffer_call_after)
+            sink.before_tick(self.buffer_before_tick)
+            sink.after_tick(self.buffer_after_tick)
+            sink.on_tick(self.buffer_on_tick)
+            with self.system._batch_lock:
+                self.system._batch = self.nested
+        return False
+    
 
 class System:
     board: Board
     engine: Engine
     clock: Clock
+    _batch_lock: Final[Lock]
+    _batch: Optional[Batch]
     
     def __init__(self, *, board: Board):
         self.board = board
         self.engine = Engine()
         self.clock = Clock(self)
+        self._batch = None
+        self._batch_lock = Lock()
         board.join_system(self)
 
     def __enter__(self) -> System:
@@ -361,21 +525,30 @@ class System:
         self.engine.abort()
         self.board.abort()
         
+    def _channel(self) -> Union[Batch, Engine]:
+        with self._batch_lock:
+            return self._batch or self.engine
     def communicate(self, req: DevCommRequest) -> None:
-        self.engine.communicate(req)
+        self._channel().communicate([req])
         
     def call_at(self, t: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
-        self.engine.call_at(t, fn, daemon = daemon)
+        self._channel().call_at([(t, fn, daemon)])
         
     def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
-        self.engine.call_after(delta, fn, daemon = daemon)
+        self._channel().call_after([(delta, fn, daemon)])
         
     def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
-        self.engine.before_tick(fn, delta=delta)
+        self._channel().before_tick([(delta, fn)])
 
     def after_tick(self, fn: ClockCallback, *, delta: int=0):
-        self.engine.after_tick(fn, delta=delta)
+        self._channel().after_tick([(delta, fn)])
+        
 
     def on_tick(self, req: DevCommRequest, *, delta: int=0):
-        self.engine.on_tick(req, delta=delta)
+        self._channel().on_tick([(delta, req)])
         
+    def batched(self) -> Batch:
+        with self._batch_lock:
+            self._batch = Batch(self, nested=self._batch)
+            return self._batch
+    

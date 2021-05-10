@@ -6,7 +6,7 @@ from quantities.SI import sec, ms
 from quantities.timestamp import time_now, time_in
 from quantities.dimensions import Time
 from typing import Optional, Type, Literal, Protocol, Any, Callable, Sequence,\
-    Iterable, Final
+    Iterable, Final, Tuple
 from types import TracebackType
 
 def _in_secs(t: Time) -> float:
@@ -76,6 +76,9 @@ Callback = Callable[[], Any]
 #
 
 DevCommRequest = Callable[[], Iterable[Updatable]]
+ClockRequest = Tuple[int, ClockCallback]
+ClockCommRequest = Tuple[int, DevCommRequest]
+TimerRequest = Tuple[Time, TimerFunc, bool]
 
 class Engine:
     idle_barrier: IdleBarrier
@@ -124,23 +127,23 @@ class Engine:
         self.idle_barrier.wait()
         return False
     
-    def communicate(self, req: DevCommRequest):
-        self.dev_comm_thread.add_request(req)
+    def communicate(self, reqs: Sequence[DevCommRequest]) -> None:
+        self.dev_comm_thread.add_requests(reqs)
         
-    def call_at(self, t: Time, fn: TimerFunc, *, daemon = False):
-        self.timer_thread.call_at(t, fn, daemon = daemon)
+    def call_at(self, reqs: Sequence[TimerRequest]) -> None:
+        self.timer_thread.call_at(reqs)
         
-    def call_after(self, delta: Time, fn: TimerFunc, *, daemon = False):
-        self.timer_thread.call_after(delta, fn, daemon = daemon)
+    def call_after(self, reqs: Sequence[TimerRequest]) -> None:
+        self.timer_thread.call_after(reqs)
 
-    def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
-        self.clock_thread.before_tick(fn, delta=delta)
+    def before_tick(self, reqs: Sequence[ClockRequest]) -> None:
+        self.clock_thread.before_tick(reqs)
 
-    def after_tick(self, fn: ClockCallback, *, delta: int=0):
-        self.clock_thread.after_tick(fn, delta=delta)
+    def after_tick(self, reqs: Sequence[ClockRequest]) -> None:
+        self.clock_thread.after_tick(reqs)
 
-    def on_tick(self, req: DevCommRequest, *, delta: int=0):
-        self.clock_thread.on_tick(req, delta=delta)
+    def on_tick(self, reqs: Sequence[ClockCommRequest]):
+        self.clock_thread.on_tick(reqs)
         
         
 class WorkerThread(Thread, Worker):
@@ -238,12 +241,12 @@ class DevCommThread(WorkerThread):
             print(self.name, "exited")
             self.state = State.DEAD
     
-    def add_request(self, req: DevCommRequest) -> None:
-        assert self.state is State.RUNNING or self.state is State.NEW
-        with self.lock:
-            self.queue.append(req)
-            self.not_idle()
-            self.wake_up()
+    # def add_request(self, req: DevCommRequest) -> None:
+    #     assert self.state is State.RUNNING or self.state is State.NEW
+    #     with self.lock:
+    #         self.queue.append(req)
+    #         self.not_idle()
+    #         self.wake_up()
             
     def add_requests(self, reqs: Sequence[DevCommRequest]) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
@@ -339,28 +342,30 @@ class TimerThread(WorkerThread):
         finally:
             print(self.name, "exited")
             self.state = State.DEAD
-            
-    def call_at(self, t: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
+      
+    def call_at(self, reqs: Sequence[TimerRequest]) -> None:      
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.condition:
             self.not_idle()
             timer = self.timer
-            if timer is not None and t < timer.target_time:
-                # We're trying to add something before the one that's (maybe) waiting.  If we
-                # can cancel it, we push it back and then ourselves.  If we can't cancel it, it's
-                # already started, so we just push ourselves.  (We know it's past time for us to run, so
-                # we could just call it here, but I'm not sure how safe that is.)
-                timer.cancel()
-                if not timer.started:
-                    heapq.heappush(self.queue, (timer.target_time, timer.func, timer.daemon_task))
-                    self.timer = None
-            heapq.heappush(self.queue, (t, fn, daemon))
-            if daemon:
-                self.n_daemons += 1  
+            for (t, fn, daemon) in reqs:
+                if timer is not None and t < timer.target_time:
+                    # We're trying to add something before the one that's (maybe) waiting.  If we
+                    # can cancel it, we push it back and then ourselves.  If we can't cancel it, it's
+                    # already started, so we just push ourselves.  (We know it's past time for us to run, so
+                    # we could just call it here, but I'm not sure how safe that is.)
+                    timer.cancel()
+                    if not timer.started:
+                        heapq.heappush(self.queue, (timer.target_time, timer.func, timer.daemon_task))
+                        self.timer = None
+                heapq.heappush(self.queue, (t, fn, daemon))
+                if daemon:
+                    self.n_daemons += 1  
             self.wake_up()
 
-    def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
-        self.call_at(time_in(delta), fn, daemon=daemon)
+    def call_after(self, reqs: Sequence[TimerRequest]) -> None:
+        now = time_now()
+        self.call_at([(now+delta, fn, daemon) for (delta, fn, daemon) in reqs])
 
 CT = tuple[int, ClockCallback]
                 
@@ -476,36 +481,36 @@ class ClockThread(WorkerThread):
         finally:
             print(self.name, "exited")
             self.state = State.DEAD
-            
-    def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
+           
+    def before_tick(self, reqs: Sequence[ClockRequest]) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
-            self.pre_tick_queue.append((delta, fn))
+            self.pre_tick_queue.extend(reqs)
             if self.running:
                 self.not_idle()
             else:
                 self.ensure_running()
-            self.work += 1
+            self.work += len(reqs)
 
-    def after_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
+    def after_tick(self, reqs: Sequence[ClockRequest]) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
-            self.post_tick_queue.append((delta, fn))
+            self.post_tick_queue.extend(reqs)
             if self.running:
                 self.not_idle()
             else:
                 self.ensure_running()
-            self.work += 1
+            self.work += len(reqs)
 
-    def on_tick(self, req: DevCommRequest, *, delta: int=0) -> None:
+    def on_tick(self, reqs: Sequence[ClockCommRequest]) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
-            self.on_tick_queue.append((delta, req))
+            self.on_tick_queue.extend(reqs)
             if self.running:
                 self.not_idle()
             else:
                 self.ensure_running()
-            self.work += 1
+            self.work += len(reqs)
             
 
     def start_clock(self, interval: Optional[Time] = None) -> None:
@@ -516,7 +521,7 @@ class ClockThread(WorkerThread):
                 self.update_interval = interval
             self.running = True
             tr = self.outstanding_tick_request = self.TickRequest(self)
-            self.engine.call_after(self.update_interval, tr, daemon=True)
+            self.engine.call_after([(self.update_interval, tr, True)])
             self.ensure_running()
             self.wake_up()
             

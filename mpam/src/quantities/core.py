@@ -319,6 +319,9 @@ class Quantity(Generic[D]):
 
     def __pow__(self, rhs: int) -> Quant:
         return self.to_power(rhs)
+    
+    def ratio(self, base: D) -> float:
+        return self.magnitude/base.magnitude
 
     def in_units(self: D, units: UnitExpr[D]) -> _BoundQuantity[D]:
         if not isinstance(units, UnitExpr):
@@ -596,9 +599,17 @@ class NamedDim(Quantity[ND]):
     @classmethod
     def unit(cls: Type[ND], abbr: str, quant: Union[ND, UnitExpr[ND]]) -> Unit[ND]:
         return Unit[ND](abbr, quant, cls._dim)
-
+    
+    @classmethod
+    def ZERO(cls) -> ND:
+        # This is created in the metaclasses for the subclasses.  If I try to add
+        # @property here, mypy complains that it has method type.  If I make it
+        # a propery in the metaclasses (the correct approach), I can't type it 
+        # properly, because the metaclasses can't get the ND parameter.
+        return getattr(cls, "_zero")
+    
 class Scalar(NamedDim['Scalar']):
-    _dim = Dimensionality[Scalar]((), 'scalar')
+    _dim = Dimensionality['Scalar']((), 'scalar')
     
 Scalar._dim.quant_class = Scalar
     
@@ -609,7 +620,7 @@ class DerivedDimMeta(type):
     def __new__(cls, name, base, dct):
         return super().__new__(cls, name, base, dct)
     
-    def __init__(cls, name: str, base, dct) -> None:  # @UnusedVariable
+    def __init__(cls, name: str, base, dct) -> None:  # @UnusedVariable @NoSelf
         if name == "DerivedDim":
             return
         cls._this_class = cls
@@ -623,7 +634,9 @@ class DerivedDimMeta(type):
             d.name = n
             d.quant_class = cast(Type[DerivedDim], cls)
         cls._dim = d
+        cls._zero = cls(0)
         
+
 class DerivedDim(NamedDim[ND], metaclass=DerivedDimMeta): 
     derived: ClassVar[Dimensionality]
 
@@ -648,6 +661,7 @@ class BaseDimMeta(type):
         d = BaseDimension[ND](n)
         d.quant_class = cast(Type[DerivedDim], cls)
         cls._dim = d
+        cls._zero = cls(0)
 
 class BaseDim(NamedDim[ND], metaclass=BaseDimMeta): 
     _dim: ClassVar[BaseDimension[ND]]

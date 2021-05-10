@@ -1,3 +1,4 @@
+from __future__ import annotations
 from mpam.device import System, Pad
 import opendrop
 from mpam.types import OnOff, Dir
@@ -25,5 +26,9 @@ with system:
     time.sleep(2)
     system.clock.start()
     # system.clock.advance_clock()
+    time.sleep(2)
+    with system.batched():
+        for y in range(0,8):
+            board.pad_at(6,y).async_set_state(OnOff.ON)
     time.sleep(2)
 system.stop()
