@@ -62,6 +62,8 @@ MassConcentration = Density
 class MolarConcentration(DerivedDim['MolarConcentration']):
     derived = Amount.dim()/Volume.dim()
     
+Molarity = MolarConcentration
+    
 class SpecificVolume(DerivedDim['SpecificVolume']):
     derived = Volume.dim()/Mass.dim()
     

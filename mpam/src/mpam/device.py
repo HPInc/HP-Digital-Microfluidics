@@ -1,7 +1,7 @@
 from typing import Type, Optional, Final, Mapping, Callable, Tuple, Literal,\
-    TypeVar
+    TypeVar, Sequence
 from types import TracebackType
-from mpam.types import XYCoord, Dir, OnOff, Delayed
+from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid
 from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker
 from quantities.dimensions import Time
@@ -13,15 +13,22 @@ PadArray = Mapping[XYCoord, 'Pad']
 T = TypeVar('T')
 Modifier = Callable[[T],T]
 
+class Drop:
+    liquid: Liquid
+    pad: 'Pad'
+
 class Pad:
     location: Final[XYCoord]
     exists: Final[bool]
+    broken: bool
+    
     _board: Final['Board']
     _pads: Final[PadArray]
     _state: OnOff
-    
-    
-    
+    _drop: Optional[Drop]
+    _dried_liquid: Optional[Drop]
+    _neighbors: Optional[Sequence['Pad']]
+        
     @property
     def row(self) -> int:
         return self.location.y 
@@ -33,13 +40,32 @@ class Pad:
     def current_state(self) -> OnOff:
         return self._state
     
+    @property
+    def drop(self) -> Optional[Drop]:
+        return self._drop
+    
+    @property
+    def dried_liquid(self) -> Optional[Drop]:
+        return self._dried_liquid
+    
+    @property
+    def neighbors(self) -> Sequence['Pad']:
+        ns = getattr(self, '_neighbors', None)
+        if ns is None:
+            ns = [self.neighbor(d) for d in Dir if self.neighbor(d)]
+            self._neighbors = ns
+        return ns
+    
     def __init__(self, loc: XYCoord, board: 'Board', *, exists: bool = True) -> None:
         self.location = loc
         self.exists = exists
+        self.broken = False
         self._board = board
         self._state = OnOff.OFF
         self._pads = board.pad_array()
         self.set_device_state: Callable[[OnOff], None]
+        self._drop = None
+        self._dried_liquid = None
         
     def neighbor(self, d: Dir) -> Optional['Pad']:
         p = self._pads[self.location+d]
@@ -47,6 +73,12 @@ class Pad:
             return None
         return p
     
+    def empty(self) -> bool:
+        return self.drop is None
+    
+    def safe(self) -> bool:
+        return self.empty and all(map(lambda n : n.empty, self.neighbors))
+
     @classmethod
     def _modifier(cls, *, gated:bool=False, immediate:bool=False):
         def fn(self: 'Pad', mod: Modifier[OnOff]) -> Delayed[OnOff]:

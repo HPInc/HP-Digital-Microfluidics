@@ -1,9 +1,12 @@
 from enum import Enum
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast
+    cast, Final, ClassVar, Mapping
 from threading import Event, Lock
 from quantities.core import BaseDim
 from quantities import prefixes
+from quantities.dimensions import Molarity, MassConcentration,\
+    VolumeConcentration, Temperature, Volume
+from quantities.SI import ml
 
 T = TypeVar('T')
 
@@ -176,10 +179,96 @@ class Delayed(Generic[T]):
                 # The callbacks are never going to be needed again
                 del self._callbacks
             
-class ReagentVolume(BaseDim['ReagentVolume']): ...
-l_r = L_r = litre_r = liter_r = ReagentVolume.base_unit("L_r")
-dl_r = dL_r = decilitre_r = deciliter_r = prefixes.deci(liter_r)
-cl_r = cL_r = centilitre_r = centiliter_r = prefixes.centi(liter_r)
-ml_r = mL_r = millilitre_r = milliliter_r = prefixes.milli(liter_r)
-µl_r = µL_r = ul_r = uL_r = micorlitre = microliter = prefixes.micro(liter_r)
 
+Concentration = Union[Molarity, MassConcentration, VolumeConcentration]
+
+class Chemical:
+    name: Final[str]
+    formula: Optional[str]
+    description: Optional[str]
+    
+    known: ClassVar[dict[str, 'Chemical']] = dict[str, 'Chemical']()
+    
+    def __init__(self, name: str, *,
+                 formula: Optional[str] = None, 
+                 description: Optional[str] = None) -> None:
+        self.name = name
+        self.formula = formula
+        self.description = description
+        Chemical.known[name] = self
+        
+    @classmethod
+    def find(cls, name: str, *,
+             formula: Optional[str] = None, 
+             description: Optional[str] = None) -> 'Chemical':
+        c = cls.known.get(name, None)
+        if c is None:
+            c = Chemical(name, formula=formula, description=description)
+        return c
+    
+    def __repr__(self) -> str:
+        return f"Chemical[{self.name}]"
+    
+    def __str__(self) -> str:
+        return self.name
+        
+class Reagent:
+    name: Final[str]
+    composition: Mapping[Chemical, Concentration]
+    min_storage_temp: Optional[Temperature]
+    max_storage_temp: Optional[Temperature]
+    
+    known: ClassVar[dict[str, 'Reagent']] = dict[str, 'Reagent']()
+
+    def __init__(self, name: str, 
+                 composition: Mapping[Chemical, Concentration] = {},
+                 min_storage_temp: Optional[Temperature] = None,
+                 max_storage_temp: Optional[Temperature] = None) -> None:
+        self.name = name
+        self.composition = composition
+        self.min_storage_temp = min_storage_temp
+        self.max_storage_temp = max_storage_temp
+        Reagent.known[name] = self
+
+    @classmethod        
+    def find(cls, name: str, *,
+             composition: Mapping[Chemical, Concentration] = {},
+             min_storage_temp: Optional[Temperature] = None,
+             max_storage_temp: Optional[Temperature] = None) -> 'Reagent':
+        c = cls.known.get(name, None)
+        if c is None:
+            c = Reagent(name, composition=composition, 
+                         min_storage_temp=min_storage_temp, max_storage_temp=max_storage_temp)
+        return c
+    
+    def liquid(self, volume: Volume, *, inexact: bool = False) -> 'Liquid':
+        return Liquid(self, volume, inexact=inexact)
+    
+    def __repr__(self) -> str:
+        return f"Reagent[{self.name}]"
+    
+    def __str__(self) -> str:
+        return self.name
+    
+waste_reagent: Final[Reagent] = Reagent.find("waste")
+unknown_reagent: Final[Reagent] = Reagent.find("unknown")
+    
+class Liquid:
+    reagent: Reagent
+    volume: Volume
+    inexact: bool
+    
+    def __init__(self, reagent: Reagent, volume: Volume, *, inexact: bool = False):
+        self.reagent = reagent
+        self.volume = volume
+        self.inexact = inexact
+        
+    def __iadd__(self, rhs: Volume) -> 'Liquid':
+        self.volume = max(self.volume+rhs, 0*ml)
+        return self
+    
+    def __isub__(self, rhs: Volume) -> 'Liquid':
+        self.volume = max(self.volume-rhs, 0*ml)
+        return self
+    
+    

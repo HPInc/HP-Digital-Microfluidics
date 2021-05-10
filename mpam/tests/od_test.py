@@ -1,6 +1,6 @@
 from mpam.device import System, Pad
 import opendrop
-from mpam.types import OnOff
+from mpam.types import OnOff, Dir
 from quantities.SI import sec
 import time
 
