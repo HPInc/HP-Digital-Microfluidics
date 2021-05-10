@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum, auto
 from threading import Thread, Condition, Event, Lock, Timer
 import heapq
@@ -24,7 +25,7 @@ class  State(Enum):
     DEAD = auto()
     
 class Worker:
-    idle_barrier: 'IdleBarrier'
+    idle_barrier: IdleBarrier
     
     def not_idle(self) -> None:
         self.idle_barrier.running(self)
@@ -78,9 +79,9 @@ DevCommRequest = Callable[[], Iterable[Updatable]]
 
 class Engine:
     idle_barrier: IdleBarrier
-    dev_comm_thread: 'DevCommThread'
-    timer_thread: 'TimerThread'
-    clock_thread: 'ClockThread'
+    dev_comm_thread: DevCommThread
+    timer_thread: TimerThread
+    clock_thread: ClockThread
     
     def __init__(self) -> None:
         self.idle_barrier = IdleBarrier()
@@ -112,7 +113,7 @@ class Engine:
         self.clock_thread.request_abort()
         self._join_threads()
         
-    def __enter__(self) -> 'Engine':
+    def __enter__(self) -> Engine:
         return self
     
     def __exit__(self, 
@@ -258,13 +259,13 @@ FT = tuple[Time, TimerFunc, bool]
 class TimerThread(WorkerThread):
     
     class MyTimer(Timer):
-        timer_thread: 'TimerThread'
+        timer_thread: TimerThread
         target_time: Time
         started: bool
         daemon_task: Final[bool]
         
 
-        def __init__(self, timer_thread: 'TimerThread', target_time: Time, delay: Time, func: TimerFunc, daemon: bool) -> None:
+        def __init__(self, timer_thread: TimerThread, target_time: Time, delay: Time, func: TimerFunc, daemon: bool) -> None:
             super().__init__(_in_secs(delay), lambda : self.call_func())
             self.timer_thread = timer_thread
             self.target_time = target_time
@@ -366,9 +367,9 @@ CT = tuple[int, ClockCallback]
 class ClockThread(WorkerThread):
     class TickRequest:
         cancelled: bool
-        clock: 'ClockThread'
+        clock: ClockThread
         
-        def __init__(self, clock: 'ClockThread') -> None:
+        def __init__(self, clock: ClockThread) -> None:
             self.cancelled = False
             self.clock = clock
             

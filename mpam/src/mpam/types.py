@@ -1,9 +1,8 @@
+from __future__ import annotations
 from enum import Enum
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast, Final, ClassVar, Mapping
 from threading import Event, Lock
-from quantities.core import BaseDim
-from quantities import prefixes
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume
 from quantities.SI import ml
@@ -17,7 +16,7 @@ class OnOff(Enum):
     def __bool__(self) -> bool:
         return self is OnOff.ON
     
-    def __invert__(self) -> 'OnOff':
+    def __invert__(self) -> OnOff:
         return OnOff.OFF if self else OnOff.ON
     
     
@@ -187,7 +186,7 @@ class Chemical:
     formula: Optional[str]
     description: Optional[str]
     
-    known: ClassVar[dict[str, 'Chemical']] = dict[str, 'Chemical']()
+    known: ClassVar[dict[str, Chemical]] = dict[str, Chemical]()
     
     def __init__(self, name: str, *,
                  formula: Optional[str] = None, 
@@ -200,7 +199,7 @@ class Chemical:
     @classmethod
     def find(cls, name: str, *,
              formula: Optional[str] = None, 
-             description: Optional[str] = None) -> 'Chemical':
+             description: Optional[str] = None) -> Chemical:
         c = cls.known.get(name, None)
         if c is None:
             c = Chemical(name, formula=formula, description=description)
@@ -218,7 +217,7 @@ class Reagent:
     min_storage_temp: Optional[Temperature]
     max_storage_temp: Optional[Temperature]
     
-    known: ClassVar[dict[str, 'Reagent']] = dict[str, 'Reagent']()
+    known: ClassVar[dict[str, Reagent]] = dict[str, Reagent]()
 
     def __init__(self, name: str, 
                  composition: Mapping[Chemical, Concentration] = {},
@@ -234,14 +233,14 @@ class Reagent:
     def find(cls, name: str, *,
              composition: Mapping[Chemical, Concentration] = {},
              min_storage_temp: Optional[Temperature] = None,
-             max_storage_temp: Optional[Temperature] = None) -> 'Reagent':
+             max_storage_temp: Optional[Temperature] = None) -> Reagent:
         c = cls.known.get(name, None)
         if c is None:
             c = Reagent(name, composition=composition, 
                          min_storage_temp=min_storage_temp, max_storage_temp=max_storage_temp)
         return c
     
-    def liquid(self, volume: Volume, *, inexact: bool = False) -> 'Liquid':
+    def liquid(self, volume: Volume, *, inexact: bool = False) -> Liquid:
         return Liquid(self, volume, inexact=inexact)
     
     def __repr__(self) -> str:
@@ -263,11 +262,11 @@ class Liquid:
         self.volume = volume
         self.inexact = inexact
         
-    def __iadd__(self, rhs: Volume) -> 'Liquid':
+    def __iadd__(self, rhs: Volume) -> Liquid:
         self.volume = max(self.volume+rhs, 0*ml)
         return self
     
-    def __isub__(self, rhs: Volume) -> 'Liquid':
+    def __isub__(self, rhs: Volume) -> Liquid:
         self.volume = max(self.volume-rhs, 0*ml)
         return self
     

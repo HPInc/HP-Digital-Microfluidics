@@ -1,33 +1,35 @@
+from __future__ import annotations
 from typing import Type, Optional, Final, Mapping, Callable, Tuple, Literal,\
     TypeVar, Sequence
 from types import TracebackType
-from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid
+from mpam.types import XYCoord, Dir, OnOff, Delayed
 from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker
 from quantities.dimensions import Time
 from quantities.timestamp import time_now
 from threading import Event
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from mpam.drop import Drop
+
 PadArray = Mapping[XYCoord, 'Pad']
 
 T = TypeVar('T')
 Modifier = Callable[[T],T]
 
-class Drop:
-    liquid: Liquid
-    pad: 'Pad'
 
 class Pad:
     location: Final[XYCoord]
     exists: Final[bool]
     broken: bool
     
-    _board: Final['Board']
+    _board: Final[Board]
     _pads: Final[PadArray]
     _state: OnOff
     _drop: Optional[Drop]
     _dried_liquid: Optional[Drop]
-    _neighbors: Optional[Sequence['Pad']]
+    _neighbors: Optional[Sequence[Pad]]
         
     @property
     def row(self) -> int:
@@ -49,14 +51,14 @@ class Pad:
         return self._dried_liquid
     
     @property
-    def neighbors(self) -> Sequence['Pad']:
+    def neighbors(self) -> Sequence[Pad]:
         ns = getattr(self, '_neighbors', None)
         if ns is None:
             ns = [self.neighbor(d) for d in Dir if self.neighbor(d)]
             self._neighbors = ns
         return ns
     
-    def __init__(self, loc: XYCoord, board: 'Board', *, exists: bool = True) -> None:
+    def __init__(self, loc: XYCoord, board: Board, *, exists: bool = True) -> None:
         self.location = loc
         self.exists = exists
         self.broken = False
@@ -67,7 +69,7 @@ class Pad:
         self._drop = None
         self._dried_liquid = None
         
-    def neighbor(self, d: Dir) -> Optional['Pad']:
+    def neighbor(self, d: Dir) -> Optional[Pad]:
         p = self._pads[self.location+d]
         if p is None or not p.exists:
             return None
@@ -81,7 +83,7 @@ class Pad:
 
     @classmethod
     def _modifier(cls, *, gated:bool=False, immediate:bool=False):
-        def fn(self: 'Pad', mod: Modifier[OnOff]) -> Delayed[OnOff]:
+        def fn(self: Pad, mod: Modifier[OnOff]) -> Delayed[OnOff]:
             future = Delayed[OnOff]()
             setter = self.set_device_state
             
@@ -164,16 +166,16 @@ class Pad:
         return self.async_toggle().value()
     
 class SystemComponent:
-    system: Optional['System'] = None
+    system: Optional[System] = None
     _after_update: Final[list[Callback]]
     
     def __init__(self) -> None:
         self._after_update = []
         
-    def join_system(self, system: 'System') -> None:
+    def join_system(self, system: System) -> None:
         self.system = system
         
-    def in_system(self) -> 'System':
+    def in_system(self) -> System:
         system = self.system
         assert system is not None
         return system
@@ -236,7 +238,7 @@ class Board(SystemComponent):
         return self.pads[XYCoord(x,y)]
     
 class Operation(Worker):
-    def __enter__(self) -> 'Operation':
+    def __enter__(self) -> Operation:
         self.not_idle()
         return self
     
@@ -248,10 +250,10 @@ class Operation(Worker):
         return False
 
 class Clock:
-    system: Final['System']
+    system: Final[System]
     engine: Final[Engine]
     clock_thread: Final[ClockThread]
-    def __init__(self, system: 'System') -> None:
+    def __init__(self, system: System) -> None:
         self.system = system
         self.engine = system.engine
         self.clock_thread = system.engine.clock_thread
@@ -341,7 +343,7 @@ class System:
         self.clock = Clock(self)
         board.join_system(self)
 
-    def __enter__(self) -> 'System':
+    def __enter__(self) -> System:
         self.engine.__enter__()
         return self
     
