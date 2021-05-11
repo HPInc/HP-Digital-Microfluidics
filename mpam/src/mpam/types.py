@@ -5,7 +5,7 @@ from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume
-from quantities.SI import ml
+from quantities.SI import ml, uL
 
 T = TypeVar('T')
 
@@ -233,7 +233,7 @@ class Reagent:
         self.min_storage_temp = min_storage_temp
         self.max_storage_temp = max_storage_temp
         Reagent.known[name] = self
-
+        
     @classmethod        
     def find(cls, name: str, *,
              composition: Mapping[Chemical, Concentration] = {},
@@ -262,10 +262,16 @@ class Liquid:
     volume: Volume
     inexact: bool
     
-    def __init__(self, reagent: Reagent, volume: Volume, *, inexact: bool = False):
+    def __init__(self, reagent: Reagent, volume: Volume, *, inexact: bool = False) -> None:
         self.reagent = reagent
         self.volume = volume
         self.inexact = inexact
+        
+    def __repr__(self) -> str:
+        return f"Liquid[{'~' if self.inexact else ''}{self.volume.in_units(uL)}, {self.reagent}]"
+
+    def __str__(self) -> str:
+        return f"{'~' if self.inexact else ''}{self.volume.in_units(uL)} of {self.reagent.name}"
         
     def __iadd__(self, rhs: Volume) -> Liquid:
         self.volume = max(self.volume+rhs, 0*ml)

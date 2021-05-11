@@ -9,8 +9,13 @@ class Drop:
     pad: Pad
     
     def __init__(self, pad: Pad, liquid: Liquid) -> None:
+        assert pad.drop is None, f"Trying to create a second drop at {pad}"
         self.liquid = liquid
         self.pad = pad
+        pad._drop = self
+        
+    def __repr__(self) -> str:
+        return f"Drop[{self.pad}, {self.liquid}]"
         
     def _move_fn(self, drop: Drop, from_pad: Pad, to_pad: Pad):
         def step() -> Callback:
@@ -18,7 +23,11 @@ class Drop:
             (from_pad.set_device_state)(OnOff.OFF)
             (to_pad.set_device_state)(OnOff.ON)
             def update() -> None:
+                assert from_pad._drop is self, f"Moved {self}, but thought it was at {from_pad}"
+                assert to_pad._drop is None, f"Moving {self} to non-empty {to_pad}"
+                from_pad._drop = None
                 drop.pad = to_pad
+                to_pad._drop = drop
                 print(f"Drop now at {to_pad}")
             return update
         return step
