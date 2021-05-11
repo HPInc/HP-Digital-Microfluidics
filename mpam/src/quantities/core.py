@@ -2,7 +2,8 @@ from __future__ import annotations
 import numbers
 from typing import Tuple, Optional, ClassVar, Callable, TypeVar, Generic, \
     overload, Union, cast, Type, MutableMapping, Any, Final
-from erk.stringutils import split_camel_case
+from erk.stringutils import split_camel_case, infer_plural
+import math
 
 ExptFormatter = Callable[[int],str]
 
@@ -29,7 +30,7 @@ T = TypeVar('T')
 BaseExp = tuple['BaseDimension', int]
 BaseExpTuple = Tuple[BaseExp, ...]
 DimOpCache = MutableMapping[T, 'Dimensionality']
-AbbrExp = tuple[str, int]
+AbbrExp = tuple[Union[str, Tuple[str,str]], int]
 
 D = TypeVar('D', bound='Quantity')
 ND = TypeVar('ND', bound='NamedDim')
@@ -54,6 +55,9 @@ class Dimensionality(Generic[D]):
     _cached_division: DimOpCache[Dimensionality]
     _cached_power: DimOpCache[int]
     _restrictions: dict[Any, BaseDimension]
+    _default_units: Optional[UnitExpr[D]]
+    _unrestricted: Optional[Dimensionality[D]] = None
+    _restriction: Optional[Any] = None
 
     def __init__(self, expts: BaseExpTuple, name: Optional[str] = None) -> None:
         self.exponents = expts      # a tuple of sorted base/expt tuples
@@ -61,6 +65,7 @@ class Dimensionality(Generic[D]):
         # self.quant_class = UnknownDimQuant
         self._instances[self.exponents] = self
         self._restrictions = dict[Any, BaseDimension]()
+        self._default_units = None
 
     def __repr__(self) -> str:
         return self.name or self.description()
@@ -68,6 +73,39 @@ class Dimensionality(Generic[D]):
     def named(self, name: str) -> Dimensionality:
         self.name = name
         return self
+    
+    @property
+    def default_units(self) -> Optional[UnitExpr[D]]:
+        units = self._default_units
+        # print(f"Finding default units for {self}")
+        if units is None:
+            us: Optional[UnitExpr] = None
+            for t in self.exponents:
+                # If we're a base and we don't have default, our tuple
+                # will be ((self,1),), which would cause an infinite recursion
+                if t[0] is self:
+                    # but if we're restricted, we can delegate to our unrestricted one
+                    if self._unrestricted is None:
+                        return None
+                    unr_units = self._unrestricted.default_units
+                    if unr_units is None:
+                        return None
+                    if isinstance(unr_units, Unit):
+                        return unr_units.of(self._restriction)
+                    desc: str = unr_units.description(mag=2)
+                    return unr_units.as_unit(f"({desc})").of(self._restriction)
+                du = t[0].default_units
+                if du is None:
+                    return None
+                u: UnitExpr = du**t[1]
+                us = u if us is None else us*u
+            units = us
+            self._default_units = units
+        return units
+    
+    @default_units.setter
+    def default_units(self, units: UnitExpr[D]):
+        self._default_units = units    
     
     def make_quantity(self, mag: float) -> D:
         return self.quant_class(mag, self)
@@ -162,13 +200,21 @@ class Dimensionality(Generic[D]):
         d = self._restrictions.get(restriction, None)
         if d is not None:
             return d
+        if issubclass(self.quant_class, NamedDim):
+            c = self.quant_class.restricted(restriction)
+            d = c._dim
+            self._restrictions[restriction] = d
+            return d
         name = dim or self.name
         assert name is not None, f"Unnamed dimension {self} cannot be restricted, without 'dim='"
         restr_pname = _restriction_name(restriction)
         pname = f"{name}[{restr_pname}]"
         rname = f"{name}_{restr_pname}"
+        # immediate_base = CountDim if issubclass(self.quant_class, CountDim) else BaseDim
         new_dim_class = BaseDimMeta(rname,(BaseDim,), {"_dim_name": pname})
         new_dim: BaseDimension = new_dim_class._dim
+        new_dim._unrestricted = self
+        new_dim._restriction = restriction
         self._restrictions[restriction] = new_dim
         return new_dim
     
@@ -189,8 +235,10 @@ class BaseDimension(Dimensionality[ND]):
     def description(self, *, exponent_fmt: ExptFormatter = None) -> str:  # @UnusedVariable
         return self._sort_name
 
-    def base_unit(self, abbr: str) -> Unit[ND]:
-        return Unit[ND](abbr, cast(ND, self.make_quantity(1)))
+    def base_unit(self, abbr: str, singular: Optional[str]=None) -> Unit[ND]:
+        unit = Unit[ND](abbr, cast(ND, self.make_quantity(1)), singular=singular)
+        self.default_units = unit
+        return unit
     
 
 class DimensionalityError(Exception):
@@ -213,14 +261,22 @@ class Quantity(Generic[D]):
     def __repr__(self) -> str:
         return f"Quantity({self.magnitude}, {self.dimensionality})"
     
+    def __str__(self) -> str:
+        units = self.dimensionality.default_units
+        return self.__repr__() if units is None else self.in_units(units).__str__() 
+    
+    def __bool__(self) -> bool:
+        return self.magnitude != 0
 
     def cast(self: D) -> D:
         return self
+    
 
     def has_dimensionality(self, dim: Dimensionality) -> bool:
         if not isinstance(dim, Dimensionality):
             raise TypeError(f"Not a Dimensionaluty: {dim}")
-        return self.dimensionality is dim
+        my_dim = self.dimensionality
+        return my_dim is dim or my_dim._unrestricted is dim
 
     def check_dimensionality(self: D, dim: Dimensionality) -> D:
         if not self.has_dimensionality(dim):
@@ -327,7 +383,7 @@ class Quantity(Generic[D]):
         if not isinstance(units, UnitExpr):
             raise TypeError(f"Not a UnitExpr: {units}")
         if units.dimensionality() is not self.dimensionality:
-            raise DimMismatchError(self.dimensionality, " in ", f"{units} ({units.dimensionality()})")
+            raise DimMismatchError(self.dimensionality, "in", f"{units} ({units.dimensionality()})")
         return _BoundQuantity(self, units)
     
     def as_number(self, units: UnitExpr[D]) -> float:
@@ -359,7 +415,7 @@ class _BoundQuantity(Generic[D]):
         self.units = units
 
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
-        desc = self.units.description(exponent_fmt=exponent_fmt)
+        desc = self.units.description(exponent_fmt=exponent_fmt, mag=self.magnitude)
         return f"{self.magnitude:g} {desc}"
 
     def __repr__(self) -> str:
@@ -379,13 +435,13 @@ class UnitExpr(Generic[D]):
         self.denom = denom
 
     def __repr__(self) -> str:
-        return self.description()
-        return f"Unit('{self.abbreviation}', {self.quantity})"
+        return self.description(mag=0)
+        # return f"Unit('{self.abbreviation}', {self.quantity})"
 
     def dimensionality(self) -> Dimensionality[D]:
         return self.quantity.dimensionality
 
-    def _index_in(self, abbr: str, lst: list[AbbrExp]) -> Union[Tuple[None,None], Tuple[int,int]]:
+    def _index_in(self, abbr: Union[str,Tuple[str,str]], lst: list[AbbrExp]) -> Union[Tuple[None,None], Tuple[int,int]]:
         for (i, pair) in enumerate(lst):
             if abbr == pair[0]:
                 return (i, pair[1])
@@ -423,14 +479,23 @@ class UnitExpr(Generic[D]):
             del new_d[i]
             new_n.append((a,e-old_e))
             
-    def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
+    @staticmethod
+    def choose_abbr(mag: float, abbrs: Union[str, Tuple[str,str]]) -> str:
+        # print(f"mag={mag}, abbrs={abbrs}")
+        if (isinstance(abbrs, tuple)):
+            return abbrs[0] if mag==1 else abbrs[1]
+        else:
+            return abbrs
+            
+    def description(self, *, mag: float, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format
         cd = getattr(self, "_cached_description", None)
         if cd is None or self._desc_expt_fmt is not exponent_fmt: 
             self._desc_expt_fmt = exponent_fmt
-            num = [a+exponent_fmt(e) for (a, e) in self.num]
+            num = [self.choose_abbr(mag, a)+exponent_fmt(e) for (a, e) in self.num]
             n = "*".join(num)
-            denom = [a+exponent_fmt(e) for (a, e) in self.denom]
+            # we always pick the singular form in the denominator
+            denom = [self.choose_abbr(1, a)+exponent_fmt(e) for (a, e) in self.denom]
             if denom:
                 n += "/"+"*".join(denom)
             cd = self._cached_description = n
@@ -511,9 +576,18 @@ class UnitExpr(Generic[D]):
     def __pow__(self, rhs: int) -> UnitExpr[UnknownDimQuant]:
         if not isinstance(rhs, numbers.Integral):
             raise TypeError(f"LHS not an integer: {rhs}")
+        if rhs == 1:
+            return self
+        if rhs == 0:
+            return UnitExpr(Scalar(1),(),())
         q = self.quantity**rhs
-        num = [(a, e*rhs) for (a,e) in self.num]
-        denom = [(a, e*rhs) for (a,e) in self.denom]
+        n = self.num
+        d = self.denom
+        if rhs < 0:
+            rhs = -rhs
+            (n,d) = (d,n)
+        num = ((a, e*rhs) for (a,e) in n)
+        denom = ((a, e*rhs) for (a,e) in d)
         return q.as_unit_expr(num, denom)
 
     def format(self, q: D) -> _BoundQuantity[D]:
@@ -532,24 +606,29 @@ class UnitExpr(Generic[D]):
     
 
 class Unit(UnitExpr[D]):
-    abbreviation: str
+    abbreviation: Final[str]
+    singular: Final[str]
     _restrictions: Final[dict[Any, Unit]]
     
-    def __init__(self, abbr: str, quant: Union[D,UnitExpr[D]], check: Optional[Dimensionality] = None):
+    def __init__(self, abbr: str, quant: Union[D,UnitExpr[D]], 
+                 *, check: Optional[Dimensionality] = None,
+                 singular: Optional[str] = None):
         if isinstance(quant, UnitExpr):
             quant = 1*quant
         if not isinstance(quant, Quantity):
             raise TypeError(f"Creating Unit from non-Quantity: {quant}")
         if check is not None and quant.dimensionality is not check:
             raise DimMismatchError(quant.dimensionality, "!=", check)
-        super().__init__(quant, ((abbr, 1),), ())
+        real_abbr: Union[str, Tuple[str,str]] = abbr if singular is None else (singular, abbr)
+        super().__init__(quant, ((real_abbr, 1),), ())
         self.abbreviation = abbr
+        self.singular = singular or abbr
         self._restrictions = dict[Any, Unit]()
 
-    def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:  # @UnusedVariable
-        return self.abbreviation
-    
-    def of(self, restriction: T, *, dim: Optional[str] = None) -> Unit:
+    def description(self, *, mag: float, exponent_fmt: Optional[ExptFormatter] = None) -> str:  # @UnusedVariable
+        return self.singular if mag == 1 else self.abbreviation
+            
+    def of(self, restriction: T, *, dim: Optional[str] = None) -> Unit[D]:
         u = self._restrictions.get(restriction, None)
         if u is None:
             q = self.quantity.of(restriction, dim=dim)
@@ -592,13 +671,14 @@ class NamedDim(Quantity[ND]):
     def __repr__(self) -> str:
         return f"{self._this_class.__name__}[{self.magnitude}]"
     
+    
     @classmethod
     def dim(cls: Type[ND]) -> Dimensionality[ND]:
         return cls._dim
     
     @classmethod
     def unit(cls: Type[ND], abbr: str, quant: Union[ND, UnitExpr[ND]]) -> Unit[ND]:
-        return Unit[ND](abbr, quant, cls._dim)
+        return Unit[ND](abbr, quant, check=cls._dim)
     
     @classmethod
     def ZERO(cls) -> ND:
@@ -607,6 +687,29 @@ class NamedDim(Quantity[ND]):
         # a propery in the metaclasses (the correct approach), I can't type it 
         # properly, because the metaclasses can't get the ND parameter.
         return getattr(cls, "_zero")
+    
+    @classmethod
+    def default_units(cls, units: UnitExpr[ND]) -> None:
+        cls.dim().default_units = units
+        
+    _restriction_classes: ClassVar[dict[Any, Type[BaseDim[ND]]]]
+    @classmethod
+    def restricted(cls, restriction: T) -> Type[BaseDim[ND]]:
+        c = cls._restriction_classes.get(restriction, None)
+        if c is not None:
+            return c
+        restr_pname = _restriction_name(restriction)
+        pname = f"{cls._dim.name}[{restr_pname}]"
+        rname = f"{cls.__name__}_{restr_pname}"
+        # immediate_base = CountDim if issubclass(self.quant_class, CountDim) else BaseDim
+        immediate_base = cls if issubclass(cls, BaseDim) else BaseDim
+        new_dim_class = cast(Type[BaseDim], BaseDimMeta(rname,(immediate_base,), {"_dim_name": pname}))
+        new_dim: BaseDimension = new_dim_class._dim
+        cls._restriction_classes[restriction] = new_dim_class
+        new_dim._unrestricted = cls._dim
+        new_dim._restriction = restriction
+        return new_dim_class
+    
     
 class Scalar(NamedDim['Scalar']):
     _dim = Dimensionality['Scalar']((), 'scalar')
@@ -635,6 +738,8 @@ class DerivedDimMeta(type):
             d.quant_class = cast(Type[DerivedDim], cls)
         cls._dim = d
         cls._zero = cls(0)
+        cls._restriction_classes: dict[Any, Type[BaseDim]] = {}
+
         
 
 class DerivedDim(NamedDim[ND], metaclass=DerivedDimMeta): 
@@ -648,9 +753,10 @@ class BaseDimMeta(type):
         if name == "BaseDim":
             return
         cls._this_class = cls
-        d = getattr(cls, "_dim", None)
-        if d is not None:
-            raise NameError(f"BaseDim {name} already defines 'dim'")
+        # d = getattr(cls, "_dim", None)
+        # if d is not None:
+            # raise NameError(f"BaseDim {name} already defines '_dim'")
+        # if d is None:
         n: str
         explicit_name = getattr(cls, "_dim_name", None)
         if explicit_name is not None:
@@ -662,6 +768,7 @@ class BaseDimMeta(type):
         d.quant_class = cast(Type[DerivedDim], cls)
         cls._dim = d
         cls._zero = cls(0)
+        cls._restriction_classes: dict[Any, Type[BaseDim]] = {}
 
 class BaseDim(NamedDim[ND], metaclass=BaseDimMeta): 
     _dim: ClassVar[BaseDimension[ND]]
@@ -669,3 +776,57 @@ class BaseDim(NamedDim[ND], metaclass=BaseDimMeta):
     @classmethod
     def base_unit(cls: Type[BaseDim[ND]], abbr: str) -> Unit[ND]:
         return cls._dim.base_unit(abbr)
+    
+class CountDim(BaseDim[ND]):
+    @property
+    def count(self) -> int:
+        return math.floor(self.magnitude)
+    
+    @property
+    def checked_count(self) -> int:
+        m = self.magnitude
+        n = math.floor(m)
+        if n != m:
+            raise ValueError(f"{self} has non-integral magnitude")
+        return n
+    
+    def __add__(self: ND, rhs: Union[float,ND]) -> ND:
+        rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
+        return cast(ND, self.dimensionality.make_quantity(self.magnitude+rmag))
+    
+    def __radd__(self, lhs: float) -> ND:
+        return cast(ND, self.dimensionality.make_quantity(self.magnitude+lhs))
+    
+    def __sub__(self: ND, rhs: Union[float,ND]) -> ND:
+        rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
+        return cast(ND, self.dimensionality.make_quantity(self.magnitude-rmag))
+    
+    def __rsub__(self, lhs: float) -> ND:
+        return cast(ND, self.dimensionality.make_quantity(lhs-self.magnitude))
+        
+
+    def __eq__(self, rhs: object) -> bool:
+        if isinstance(rhs, (int, float)):
+            return self.magnitude == rhs
+        if not isinstance(rhs, Quantity): 
+            return False
+        self._ensure_dim_match(rhs, "==")
+        return self.magnitude == rhs.magnitude
+    
+    def __lt__(self, rhs: Union[float,ND]) -> bool:
+        if isinstance(rhs, (int, float)):
+            return self.magnitude < rhs
+        self._ensure_dim_match(rhs, "<")
+        return self.magnitude < rhs.magnitude
+    
+    def __le__(self, rhs: D) -> bool:
+        if isinstance(rhs, (int, float)):
+            return self.magnitude <= rhs
+        self._ensure_dim_match(rhs, "<=")
+        return self.magnitude <= rhs.magnitude
+
+    @classmethod
+    def base_unit(cls: Type[CountDim[ND]], singular: str, *, plural: Optional[str] = None) -> Unit[ND]:
+        if plural is None:
+            plural = infer_plural(singular)
+        return cls._dim.base_unit(plural, singular=singular)
