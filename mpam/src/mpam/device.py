@@ -80,7 +80,7 @@ class Pad:
         return f"Pad[{self.column},{self.row}]"
         
     def neighbor(self, d: Dir) -> Optional[Pad]:
-        p = self._pads[self.location+d]
+        p = self._pads.get(self.location+d, None)
         if p is None or not p.exists:
             return None
         return p

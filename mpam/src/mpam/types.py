@@ -26,21 +26,21 @@ class Dir(Enum):
     delta_x: Minus1To1
     delta_y: Minus1To1
     
-    NORTH = (0, 1)
+    NORTH = (0, -1)
     N = NORTH
-    NORTHEAST = (1, 1)
+    NORTHEAST = (1, -1)
     NE = NORTHEAST
     EAST = (1, 0)
     E = EAST
-    SOUTHEAST = (1, -1)
+    SOUTHEAST = (1, 1)
     SE = SOUTHEAST
-    SOUTH = (0, -1)
+    SOUTH = (0, 1)
     S = SOUTH
-    SOUTHWEST = (-1, -1)
+    SOUTHWEST = (-1, 1)
     SW = SOUTHWEST
     WEST = (-1, 0)
     W = WEST
-    NORTHWEST = (-1, 1)
+    NORTHWEST = (-1, -1)
     NW = NORTHWEST
     
     UP = NORTH

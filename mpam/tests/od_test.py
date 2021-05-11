@@ -1,9 +1,10 @@
 from __future__ import annotations
 from mpam.device import System, Pad
 import opendrop
-from mpam.types import OnOff, Dir
-from quantities.SI import sec
+from mpam.types import OnOff, unknown_reagent, Liquid, Dir
+from quantities.SI import sec, uL
 import time
+from mpam.drop import Drop
 
 
 board = opendrop.Board("COM5")
@@ -24,8 +25,10 @@ with system:
     for y in range(0,8):
         board.pad_at(5,y).gated_set_state(OnOff.ON)
     time.sleep(2)
-    system.clock.start()
+    system.clock.start(0.5*sec)
     # system.clock.advance_clock()
+    drop = Drop(board.pad_at(8, 1), Liquid(unknown_reagent, 0.5*uL))
+    drop.gated_move(Dir.S, steps=3).then.gated_move(Dir.W, steps=5)
     time.sleep(2)
     with system.batched():
         for y in range(0,8):
