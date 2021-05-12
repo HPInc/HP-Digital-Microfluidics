@@ -3,13 +3,13 @@ from typing import Type, Optional, Final, Mapping, Callable, Tuple, Literal,\
     TypeVar, Sequence, TYPE_CHECKING, Union
 from types import TracebackType
 from quantities.dimensions import Time, Volume
-from quantities.timestamp import time_now
+from quantities.timestamp import time_now, Timestamp
 from threading import Event, Lock
 
-from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid
+from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType
 from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
-    ClockCommRequest
+    ClockCommRequest, TimerDeltaRequest
 from mpam.exceptions import PadBrokenError
 
 if TYPE_CHECKING:
@@ -91,93 +91,84 @@ class Pad:
     def safe(self) -> bool:
         return self.empty and all(map(lambda n : n.empty, self.neighbors))
 
-    @classmethod
-    def _modifier(cls, *, gated:bool=False, immediate:bool=False):
-        def fn(self: Pad, mod: Modifier[OnOff]) -> Delayed[OnOff]:
-            future = Delayed[OnOff]()
-            setter = self.set_device_state
-            
-            def cb() -> Optional[Callback]:
-                old = self._state
-                new = mod(old)
-                print(f"Setting pad at {self.location} to {new}")
-                setter(new)
-                self._state = new
-                finish: Optional[Callback] = None if immediate else (lambda : future.post(old))
-                return finish
-            
-            tag = "[Gated] " if gated else ""
-            print(f"{tag}Asking to set pad at {self.location} to {mod(self._state)}")
-            if immediate:
-                future.post(mod(self._state))
-            if gated:
-                self._board.on_tick(cb)
-            else:
-                self._board.communicate(cb)
-            return future
-        return fn
-            
-    
-    def request_modify_state(self, mod: Modifier[OnOff], *, gated: bool = False) -> OnOff:
+    def schedule_modify_state(self, mod: Modifier[OnOff], *, 
+                              mode: RunMode=RunMode.GATED, 
+                              after:Optional[DelayType] = None,
+                              guess_only: bool = False) -> Delayed[OnOff]:
         if self.broken:
-            raise PadBrokenError(self)
-        fn = Pad._modifier(gated=gated, immediate = True)
-        return fn(self, mod).value()
-    def async_modify_state(self, mod: Modifier[OnOff], *, gated: bool = False) -> Delayed[OnOff]:
-        if self.broken:
-            raise PadBrokenError(self)
-        fn = Pad._modifier(gated=gated)
-        return fn(self, mod)
-    def request_gated_modify_state(self, mod: Modifier[OnOff]) -> OnOff:
-        return self.request_modify_state(mod, gated=True)
-    def modify_state(self, mod: Modifier[OnOff]) -> OnOff:
-        return self.async_modify_state(mod).value()
-    def gated_modify_state(self, mod: Modifier[OnOff]) -> Delayed[OnOff]:
-        return self.async_modify_state(mod, gated=True)
-    
-    def request_set_state(self, val: OnOff, *, gated: bool = False) -> OnOff:
-        return self.request_modify_state(lambda _: val, gated=gated)
-    def request_gated_set_state(self, val: OnOff) -> OnOff:
-        return self.request_set_state(val, gated=True)
-    def async_set_state(self, val: OnOff, *, gated: bool = False) -> Delayed[OnOff]:
-        return self.async_modify_state(lambda _: val, gated=gated)
-    def set_state(self, val: OnOff) -> OnOff:
-        return self.async_set_state(val).value()
-    def gated_set_state(self, val: OnOff) -> Delayed[OnOff]:
-        return self.async_set_state(val, gated = True)
-            
-    def request_turn_on(self, *, gated: bool = False) -> OnOff:
-        return self.request_set_state(OnOff.ON, gated=gated)
-    def async_turn_on(self, *, gated: bool = False) -> Delayed[OnOff]:
-        return self.async_set_state(OnOff.ON, gated=gated)
-    def request_gated_turn_on(self) -> OnOff:
-        return self.request_turn_on(gated=True)
-    def gated_turn_on(self) -> Delayed[OnOff]:
-        return self.async_turn_on(gated=True)
-    def turn_on(self) -> OnOff:
-        return self.gated_turn_on().value()
+            raise PadBrokenError
+        current = self._state
+        future = Delayed[OnOff](guess=mod(current), immediate=guess_only)
+        setter = self.set_device_state
+        
+        def cb() -> Optional[Callback]:
+            old = self._state
+            new = mod(old)
+            print(f"Setting pad at {self.location} to {new}")
+            setter(new)
+            self._state = new
+            finish: Optional[Callback] = None if guess_only else (lambda : future.post(old))
+            return finish
+        
+        tag = "[Gated] " if mode.is_gated else ""
+        print(f"{tag}Asking to set pad at {self.location} to {mod(self._state)}")
+        self._board.schedule(cb, mode, after=after)
+        return future
 
-    def request_turn_off(self, *, gated: bool = False) -> OnOff:
-        return self.request_set_state(OnOff.OFF, gated=gated)
-    def async_turn_off(self, *, gated: bool = False) -> Delayed[OnOff]:
-        return self.async_set_state(OnOff.OFF, gated=gated)
-    def request_gated_turn_off(self) -> OnOff:
-        return self.request_turn_off(gated=True)
-    def gated_turn_off(self) -> Delayed[OnOff]:
-        return self.async_turn_off(gated=True)
-    def turn_off(self) -> OnOff:
-        return self.gated_turn_off().value()
+    def modify_state(self, mod: Modifier[OnOff], *, 
+                     mode: RunMode=RunMode.GATED, 
+                     after:Optional[DelayType] = None,
+                     guess_only: bool = False) -> OnOff:
+        return self.schedule_modify_state(mod, mode=mode, after=after, guess_only=guess_only).value
+   
+    def schedule_set_state(self, val: OnOff, *,
+                           mode: RunMode=RunMode.GATED, 
+                           after:Optional[DelayType] = None,
+                           guess_only: bool = False) -> Delayed[OnOff]:
+        return self.schedule_modify_state(lambda _: val, mode=mode, after=after, guess_only=guess_only)
+                  
+    def set_state(self, val: OnOff, *, 
+                  mode: RunMode=RunMode.GATED, 
+                  after:Optional[DelayType] = None,
+                  guess_only: bool = False) -> OnOff:
+        return self.schedule_set_state(val, mode=mode, after=after, guess_only=guess_only).value
     
-    def request_toggle(self, *, gated: bool = False) -> OnOff:
-        return self.request_modify_state(lambda s : ~s, gated=gated)
-    def async_toggle(self, *, gated: bool = False) -> Delayed[OnOff]:
-        return self.async_modify_state(lambda s : ~s, gated=gated)
-    def request_gated_toggle(self) -> OnOff:
-        return self.request_toggle(gated=True)
-    def gated_toggle(self) -> Delayed[OnOff]:
-        return self.async_toggle(gated=True)
-    def toggle(self) -> OnOff:
-        return self.async_toggle().value()
+    def schedule_turn_on(self, *,
+                         mode: RunMode=RunMode.GATED, 
+                         after:Optional[DelayType] = None,
+                         guess_only: bool = False) -> Delayed[OnOff]:
+        return self.schedule_set_state(OnOff.ON, mode=mode, after=after, guess_only=guess_only)
+            
+    def turn_on(self, *, 
+                mode: RunMode=RunMode.GATED, 
+                after:Optional[DelayType] = None,
+                guess_only: bool = False) -> OnOff:
+        return self.schedule_turn_on(mode=mode, after=after, guess_only=guess_only).value
+   
+    def schedule_turn_off(self, *,
+                          mode: RunMode=RunMode.GATED, 
+                          after:Optional[DelayType] = None,
+                          guess_only: bool = False) -> Delayed[OnOff]:
+        return self.schedule_set_state(OnOff.OFF, mode=mode, after=after, guess_only=guess_only)
+            
+    def turn_off(self, *, 
+                 mode: RunMode=RunMode.GATED, 
+                 after:Optional[DelayType] = None,
+                 guess_only: bool = False) -> OnOff:
+        return self.schedule_turn_off(mode=mode, after=after, guess_only=guess_only).value
+   
+    def schedule_toggle(self, *,
+                        mode: RunMode=RunMode.GATED, 
+                        after:Optional[DelayType] = None,
+                        guess_only: bool = False) -> Delayed[OnOff]:
+        return self.schedule_modify_state(lambda s: ~s, mode=mode, after=after, guess_only=guess_only)
+            
+    def toggle(self, *, 
+               mode: RunMode=RunMode.GATED, 
+               after:Optional[DelayType] = None,
+               guess_only: bool = False) -> OnOff:
+        return self.schedule_toggle(mode=mode, after=after, guess_only=guess_only).value
+ 
     
 class Well:
     class Section:
@@ -297,11 +288,15 @@ class SystemComponent:
             return (self,)
         return req
     
-    def communicate(self, cb: Callable[[], Optional[Callback]]):
+    def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO()):
         req = self.make_request(cb)
-        self.in_system().communicate(req)
+        sys = self.in_system()
+        if delta > Time.ZERO():
+            self.call_after(delta, lambda : sys.communicate(req))
+        else:
+            sys.communicate(req)
         
-    def call_at(self, t: Time, fn: Callback):
+    def call_at(self, t: Timestamp, fn: Callback):
         self.in_system().call_at(t, fn)
         
     def call_after(self, delta: Time, fn: Callback):
@@ -317,6 +312,14 @@ class SystemComponent:
         req = self.make_request(cb)
         self.in_system().on_tick(req, delta=delta)
  
+    def schedule(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *, 
+                 after: Optional[DelayType] = None) -> None:
+        if mode.is_gated:
+            self.on_tick(cb, delta=mode.gated_delay(after).count)
+        else:
+            self.communicate(cb, delta=mode.asynchronous_delay(after))
+       
+    # def schedule_before(self, cb: C):
 
 class Board(SystemComponent):
     pads: Final[PadArray]
@@ -435,7 +438,7 @@ class Batch:
     
     buffer_communicate: list[DevCommRequest]
     buffer_call_at: list[TimerRequest]
-    buffer_call_after: list[TimerRequest]
+    buffer_call_after: list[TimerDeltaRequest]
     buffer_before_tick: list[ClockRequest]
     buffer_after_tick: list[ClockRequest]
     buffer_on_tick: list[ClockCommRequest]
@@ -456,7 +459,7 @@ class Batch:
     def call_at(self, reqs: Sequence[TimerRequest]) -> None:
         self.buffer_call_at.extend(reqs)
         
-    def call_after(self, reqs: Sequence[TimerRequest]) -> None:
+    def call_after(self, reqs: Sequence[TimerDeltaRequest]) -> None:
         self.buffer_call_after.extend(reqs)
         
     def before_tick(self, reqs: Sequence[ClockRequest]) -> None:
@@ -531,7 +534,7 @@ class System:
     def communicate(self, req: DevCommRequest) -> None:
         self._channel().communicate([req])
         
-    def call_at(self, t: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
+    def call_at(self, t: Timestamp, fn: TimerFunc, *, daemon: bool = False) -> None:
         self._channel().call_at([(t, fn, daemon)])
         
     def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:

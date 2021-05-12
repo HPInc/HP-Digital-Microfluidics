@@ -4,8 +4,9 @@ from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast, Final, ClassVar, Mapping
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
-    VolumeConcentration, Temperature, Volume
-from quantities.SI import ml, uL
+    VolumeConcentration, Temperature, Volume, Time
+from quantities.SI import ml, uL, millisecond
+from quantities.core import CountDim
 
 T = TypeVar('T')
 
@@ -91,6 +92,52 @@ class XYCoord:
         self.y += delta.delta_y
         return self
     
+class Ticks(CountDim['Ticks']): ...
+ticks = tick = Ticks.base_unit("tick")
+
+DelayType = Union[Ticks, Time]
+
+class RunMode:
+    is_gated: Final[bool]
+    motion_time: Time
+    GATED: ClassVar[RunMode]
+    
+    def __init__(self, is_gated: bool, motion_time: Time):
+        self.is_gated = is_gated
+        self.motion_time = motion_time
+        
+    def __repr__(self) -> str:
+        if (self.is_gated):
+            return f"RunMode.GATED"
+        else:
+            return f"RunMode.asynchronous({self.motion_time.in_units(millisecond)})"
+        
+    def gated_delay(self, after: Optional[DelayType], *, step: int=0) -> Ticks:
+        if after is None:
+            return step*ticks
+        assert isinstance(after, Ticks), f"Gated run mode incomapatible with delay of {after}"
+        return after if step == 0 else after+step*ticks
+ 
+    def asynchronous_delay(self, after: Optional[DelayType], step: int=0) -> Time:
+        if after is None:
+            return Time.ZERO() if step == 0 else step*self.motion_time
+        assert isinstance(after, Time), f"Asynchronous run mode incomapatible with delay of {after}"
+        return after if step == 0 else after+step*self.motion_time
+ 
+    def step_delay(self, base: Optional[DelayType], step: int) -> DelayType:
+        if self.is_gated:
+            return self.gated_delay(base)+step*ticks
+        else:
+            return self.asynchronous_delay(base)+step*self.motion_time
+                
+    
+    @classmethod   
+    def asynchronous(cls, motion_time: Time) -> RunMode:
+        return RunMode(False, motion_time)
+    
+RunMode.GATED = RunMode(True, Time.ZERO())
+
+
 # ValTuple = tuple[Literal[False],None]
 
 # ValTuple = Union[tuple[Literal[False],None],Literal[True], T]
@@ -104,6 +151,7 @@ class Delayed(Generic[T]):
     _val: ValTuple[T] = (False, cast(T, None))
     _maybe_lock: Optional[Lock] = None
     _callbacks: list[Callable[[T], Any]]
+    _guess: T
     
     @property
     def _lock(self) -> Lock:
@@ -122,24 +170,41 @@ class Delayed(Generic[T]):
         return lock
     
     
-    def __init__(self, *, value: Union[Missing, T] = MISSING) -> None:
-        if value != MISSING:
-            self._val = (True, cast(T, value))
+    def __init__(self, *, guess: T, immediate: bool=False) -> None:
+        self._guess = guess
+        if immediate:
+            self._val = (True, guess)
         
+    @property
     def has_value(self) -> bool:
         return self._val[0]
+    
+    @property
+    def initial_guess(self):
+        return self.guess
+    
+    @property
+    def best_guess(self):
+        if self.has_value:
+            return self._val[1]
+        else:
+            return self._guess
+        
     
     def peek(self) -> ValTuple[T]:
         return self._val
 
     def wait(self) -> None:
-        if not self.has_value():
+        if not self.has_value:
             e = Event()
             self.when_value(lambda _: e.set())
             while not e.is_set():
                 # We probably want a timeout here to allow it to be interrupted
                 e.wait()
-
+                
+    and_wait = wait
+    
+    @property
     def value(self) -> T:
         self.wait()
         return self._val[1]
@@ -147,7 +212,7 @@ class Delayed(Generic[T]):
     # This allows you to say "drop.move(N).then.move(S)"
     @property
     def then(self) -> T:
-        return self.value()
+        return self.value
     
 
     def when_value(self, fn: Callable[[T], Any]) -> None:
@@ -173,10 +238,11 @@ class Delayed(Generic[T]):
     # we beat the lock in when_value(), in which case it will notice
     # the value and not add, or it's already added and we process it.
     def post(self, val: T) -> None:
-        assert not self.has_value()
+        assert not self.has_value
         self._val = (True, val)
-        if self._maybe_lock:
-            with self._lock:
+        lock = self._maybe_lock
+        if lock is not None:
+            with lock:
                 for fn in self._callbacks:
                     fn(val)
                 # Just in case this object gets stuck somewhere.

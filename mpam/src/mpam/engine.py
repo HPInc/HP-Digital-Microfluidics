@@ -3,10 +3,10 @@ from enum import Enum, auto
 from threading import Thread, Condition, Event, Lock, Timer
 import heapq
 from quantities.SI import sec, ms
-from quantities.timestamp import time_now, time_in
+from quantities.timestamp import time_now, time_in, Timestamp
 from quantities.dimensions import Time
 from typing import Optional, Type, Literal, Protocol, Any, Callable, Sequence,\
-    Iterable, Final, Tuple
+    Iterable, Final, Tuple, Union
 from types import TracebackType
 
 def _in_secs(t: Time) -> float:
@@ -14,7 +14,7 @@ def _in_secs(t: Time) -> float:
 
 _wait_timeout: float = _in_secs(0.5*sec)
 
-TimerFunc = Callable[[], Optional[Time]]
+TimerFunc = Callable[[], Optional[Union[Time,Timestamp]]]
 ClockCallback = Callable[[], Optional[int]]
 
 class  State(Enum):
@@ -78,7 +78,8 @@ Callback = Callable[[], Any]
 DevCommRequest = Callable[[], Iterable[Updatable]]
 ClockRequest = Tuple[int, ClockCallback]
 ClockCommRequest = Tuple[int, DevCommRequest]
-TimerRequest = Tuple[Time, TimerFunc, bool]
+TimerRequest = Tuple[Timestamp, TimerFunc, bool]
+TimerDeltaRequest = Tuple[Time, TimerFunc, bool]
 
 class Engine:
     idle_barrier: IdleBarrier
@@ -133,7 +134,7 @@ class Engine:
     def call_at(self, reqs: Sequence[TimerRequest]) -> None:
         self.timer_thread.call_at(reqs)
         
-    def call_after(self, reqs: Sequence[TimerRequest]) -> None:
+    def call_after(self, reqs: Sequence[TimerDeltaRequest]) -> None:
         self.timer_thread.call_after(reqs)
 
     def before_tick(self, reqs: Sequence[ClockRequest]) -> None:
@@ -257,18 +258,18 @@ class DevCommThread(WorkerThread):
                 self.wake_up()
             
         
-FT = tuple[Time, TimerFunc, bool]
+FT = tuple[Timestamp, TimerFunc, bool]
 
 class TimerThread(WorkerThread):
     
     class MyTimer(Timer):
         timer_thread: TimerThread
-        target_time: Time
+        target_time: Timestamp
         started: bool
         daemon_task: Final[bool]
         
 
-        def __init__(self, timer_thread: TimerThread, target_time: Time, delay: Time, func: TimerFunc, daemon: bool) -> None:
+        def __init__(self, timer_thread: TimerThread, target_time: Timestamp, delay: Time, func: TimerFunc, daemon: bool) -> None:
             super().__init__(_in_secs(delay), lambda : self.call_func())
             self.timer_thread = timer_thread
             self.target_time = target_time
@@ -278,10 +279,12 @@ class TimerThread(WorkerThread):
             
         def call_func(self) -> None:
             self.started = True
-            next_time: Optional[Time] = (self.func)()
+            next_time: Optional[Union[Timestamp, Time]] = (self.func)()
             tt = self.timer_thread
             with tt.lock:
                 if next_time:
+                    if isinstance(next_time, Time):
+                        next_time = time_in(next_time)
                     heapq.heappush(tt.queue, (next_time, self.func, self.daemon_task))
                 elif self.daemon_task:
                     tt.n_daemons -= 1
@@ -313,7 +316,7 @@ class TimerThread(WorkerThread):
             self.state = State.RUNNING
             while self.state is State.RUNNING or (self.state is State.SHUTDOWN_REQUESTED and queue):
                 func = None
-                desired_time: Optional[Time] = None
+                desired_time: Timestamp
                 with lock:
                     while ((self.state is State.RUNNING and (not queue or self.timer is not None))
                             or
@@ -327,10 +330,12 @@ class TimerThread(WorkerThread):
                         return
                     (desired_time, func, daemon) = heapq.heappop(queue)
                 # we're now not locked, so we can safely either run the function or schedule it
-                now: Time = time_now()
+                now: Timestamp = time_now()
                 if now >= desired_time:
-                    next_time: Optional[Time] = func()
+                    next_time: Optional[Union[Time,Timestamp]] = func()
                     if next_time:
+                        if isinstance(next_time, Time):
+                            next_time = time_in(next_time)
                         with condition:
                             heapq.heappush(queue, (next_time, func, daemon))
                     elif not queue:
@@ -363,7 +368,7 @@ class TimerThread(WorkerThread):
                     self.n_daemons += 1  
             self.wake_up()
 
-    def call_after(self, reqs: Sequence[TimerRequest]) -> None:
+    def call_after(self, reqs: Sequence[TimerDeltaRequest]) -> None:
         now = time_now()
         self.call_at([(now+delta, fn, daemon) for (delta, fn, daemon) in reqs])
 
@@ -379,10 +384,11 @@ class ClockThread(WorkerThread):
             self.clock = clock
             
         def __call__(self) -> Optional[Time]:
-            next_tick = time_in(self.clock.update_interval)
+            # next_tick = time_in(self.clock.update_interval)
             if not self.cancelled:
                 self.clock.tick_event.set()
-                return next_tick
+                # return next_tick
+                return self.clock.update_interval
             return None
                 
         def cancel(self) -> None:
@@ -398,7 +404,7 @@ class ClockThread(WorkerThread):
     update_interval: Time = 100*ms
     work: int
     next_tick: int
-    last_tick_time: Time
+    last_tick_time: Timestamp
     outstanding_tick_request: Optional[TickRequest]
     
     def __init__(self, engine):
@@ -410,7 +416,7 @@ class ClockThread(WorkerThread):
         self.on_tick_queue = []
         self.work = 0
         self.next_tick = 0
-        self.last_tick_time = 0*sec
+        self.last_tick_time = Timestamp.never()
         self.outstanding_tick_request = None
         
     def _process_queue(self, queue: Sequence[CT]) -> list[CT]:
