@@ -1,12 +1,13 @@
 from __future__ import annotations
-from typing import Type, Optional, Final, Mapping, Callable, Tuple, Literal,\
-    TypeVar, Sequence, TYPE_CHECKING, Union
+from typing import Optional, Final, Mapping, Callable, Literal,\
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar
 from types import TracebackType
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now, Timestamp
 from threading import Event, Lock
 
-from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType
+from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType,\
+    Operation, OpScheduler
 from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
     ClockCommRequest, TimerDeltaRequest
@@ -21,7 +22,7 @@ T = TypeVar('T')
 Modifier = Callable[[T],T]
 
 
-class Pad:
+class Pad(OpScheduler['Pad']):
     location: Final[XYCoord]
     exists: Final[bool]
     broken: bool
@@ -90,6 +91,52 @@ class Pad:
     
     def safe(self) -> bool:
         return self.empty and all(map(lambda n : n.empty, self.neighbors))
+    
+    class ModifyState(Operation['Pad', OnOff]):
+        def guess_value(self, pad: Pad) -> OnOff:
+            return self.mod(pad._state)
+        
+        def _schedule_for(self, pad: Pad, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          guess_only: bool = False,
+                          future: Optional[Delayed[OnOff]] = None
+                          ) -> Delayed[OnOff]:
+            
+            if pad.broken:
+                raise PadBrokenError
+            current = pad._state
+            mod = self.mod
+            if future is None:
+                future = Delayed[OnOff](guess=mod(current), immediate=guess_only)
+            real_future = future
+            setter = pad.set_device_state
+            
+            def cb() -> Optional[Callback]:
+                old = pad._state
+                new = mod(old)
+                print(f"Setting pad at {pad.location} to {new}")
+                setter(new)
+                self._state = new
+                finish: Optional[Callback] = None if guess_only else (lambda : real_future.post(old))
+                return finish
+            
+            tag = "[Gated] " if mode.is_gated else ""
+            print(f"{tag}Asking to set pad at {pad.location} to {mod(pad._state)}")
+            pad._board.schedule(cb, mode, after=after)
+            return future
+        
+        def __init__(self, mod: Modifier[OnOff]) -> None:
+            self.mod: Final[Modifier[OnOff]] = mod
+    
+    @staticmethod        
+    def SetState(val: OnOff) -> ModifyState:
+        return Pad.ModifyState(lambda _ : val)
+            
+ 
+    TurnOn: ClassVar[ModifyState]
+    TurnOff: ClassVar[ModifyState]
+    Toggle: ClassVar[ModifyState]
 
     def schedule_modify_state(self, mod: Modifier[OnOff], *, 
                               mode: RunMode=RunMode.GATED, 
@@ -169,6 +216,10 @@ class Pad:
                guess_only: bool = False) -> OnOff:
         return self.schedule_toggle(mode=mode, after=after, guess_only=guess_only).value
  
+Pad.TurnOn = Pad.SetState(OnOff.ON)
+Pad.TurnOff = Pad.SetState(OnOff.OFF)
+Pad.Toggle = Pad.ModifyState(lambda s: ~s)
+
     
 class Well:
     class Section:
@@ -281,7 +332,7 @@ class SystemComponent:
         self._after_update.clear()
         
     def make_request(self, cb: Callable[[], Optional[Callback]]) -> DevCommRequest:
-        def req() -> Tuple[SystemComponent]:
+        def req() -> tuple[SystemComponent]:
             new_cb = cb()
             if new_cb is not None:
                 self._after_update.append(new_cb)
@@ -339,13 +390,13 @@ class Board(SystemComponent):
     def pad_at(self, x: int, y: int) -> Pad:
         return self.pads[XYCoord(x,y)]
     
-class Operation(Worker):
-    def __enter__(self) -> Operation:
+class UserOperation(Worker):
+    def __enter__(self) -> UserOperation:
         self.not_idle()
         return self
     
     def __exit__(self, 
-                 exc_type: Optional[Type[BaseException]],  # @UnusedVariable
+                 exc_type: Optional[type[BaseException]],  # @UnusedVariable
                  exc_val: Optional[BaseException],  # @UnusedVariable
                  exc_tb: Optional[TracebackType]) -> Literal[False]:  # @UnusedVariable
         self.idle()
@@ -479,7 +530,7 @@ class Batch:
     # we just return, clearing ourselves from the system
     # if we're not nested    
     def __exit__(self, 
-                 exc_type: Optional[Type[BaseException]], 
+                 exc_type: Optional[type[BaseException]], 
                  exc_val: Optional[BaseException],  # @UnusedVariable
                  exc_tb: Optional[TracebackType]) -> Literal[False]:  # @UnusedVariable
         if exc_type is None:
@@ -515,7 +566,7 @@ class System:
         return self
     
     def __exit__(self, 
-                 exc_type: Optional[Type[BaseException]], 
+                 exc_type: Optional[type[BaseException]], 
                  exc_val: Optional[BaseException], 
                  exc_tb: Optional[TracebackType]) -> bool:
         return self.engine.__exit__(exc_type, exc_val, exc_tb)

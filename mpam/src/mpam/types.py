@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast, Final, ClassVar, Mapping
+    cast, Final, ClassVar, Mapping, Protocol, overload
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -9,6 +9,7 @@ from quantities.SI import ml, uL, millisecond
 from quantities.core import CountDim
 
 T = TypeVar('T')
+V = TypeVar('V')
 
 class OnOff(Enum):
     OFF = 0
@@ -145,7 +146,40 @@ RunMode.GATED = RunMode(True, Time.ZERO())
 ValTuple = tuple[bool, T]
 
 class Missing: ...
-MISSING = Missing()
+MISSING: Final[Missing] = Missing()
+
+class Operation(Generic[T, V]):
+    
+    def guess_value(self, obj: T) -> V: 
+        raise NotImplementedError()
+    def _schedule_for(self, obj: T, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      guess_only: bool = False,
+                      future: Optional[Delayed[V]] = None
+                      ) -> Delayed[V]:
+        raise NotImplementedError()
+    def schedule_for(self, obj: Union[T, Delayed[T]], *,
+                     mode: RunMode = RunMode.GATED, 
+                     after: Optional[DelayType] = None,
+                     guess_only: bool = False,
+                     future: Optional[Delayed[V]] = None
+                     ) -> Delayed[V]:
+        if isinstance(obj, Delayed):
+            if future is None:
+                future = Delayed[V](guess=self.guess_value(obj.best_guess), immediate=guess_only)
+            obj.when_value(lambda x : self.schedule_for(x, mode=mode, after=after, guess_only=guess_only, future=future))
+            return future
+        return self._schedule_for(obj, mode=mode, after=after, guess_only=guess_only, future=future)
+        
+class OpScheduler(Generic[T]):
+    def schedule(self: T, op: Operation[T, V],
+                 mode: RunMode = RunMode.GATED, 
+                 after: Optional[DelayType] = None,
+                 guess_only: bool = False,
+                 future: Optional[Delayed[V]] = None
+                 ) -> Delayed[V]:
+        return op.schedule_for(self, mode=mode, after=after, guess_only=guess_only,future=future)
 
 class Delayed(Generic[T]):
     _val: ValTuple[T] = (False, cast(T, None))
@@ -209,13 +243,15 @@ class Delayed(Generic[T]):
         self.wait()
         return self._val[1]
     
-    # This allows you to say "drop.move(N).then.move(S)"
-    @property
-    def then(self) -> T:
-        return self.value
-    
+    def then_schedule(self, op: Operation[T,V], *, 
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      guess_only: bool = False,
+                      future: Optional[Delayed[V]] = None) -> Delayed[V]:
+        return op.schedule_for(self, mode=mode, after=after, guess_only=guess_only, future=future)
 
-    def when_value(self, fn: Callable[[T], Any]) -> None:
+
+    def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:
         v = self._val
         just_run: bool = v[0]
         if not just_run:
@@ -226,6 +262,10 @@ class Delayed(Generic[T]):
                     self._callbacks.append(fn)
         if just_run:
             fn(v[1])
+        return self
+            
+    # or maybe then_call should create a new future, posted at the end.            
+    then_call = when_value
 
     # The logic here is a bit tricky, but I think it works.
     # We're racing against when_value().  If we see that there's

@@ -1,11 +1,13 @@
 from __future__ import annotations
-from mpam.types import Liquid, Dir, Delayed, OnOff, RunMode, DelayType
-from mpam.device import Pad
+from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
+    Operation, OpScheduler, XYCoord, unknown_reagent
+from mpam.device import Pad, Board
 from mpam.exceptions import NoSuchPad, UnsafeMotion
-from mpam.engine import Callback
-from typing import Optional
+from typing import Optional, Final, Union, Sequence
+from quantities.SI import uL
+from threading import Lock
 
-class Drop:
+class Drop(OpScheduler['Drop']):
     liquid: Liquid
     pad: Pad
     
@@ -17,22 +19,86 @@ class Drop:
         
     def __repr__(self) -> str:
         return f"Drop[{self.pad}, {self.liquid}]"
-        
-    def _move_fn(self, drop: Drop, from_pad: Pad, to_pad: Pad):
-        def step() -> Callback:
-            print(f"Moving from {from_pad} to {to_pad}")
-            (from_pad.set_device_state)(OnOff.OFF)
-            (to_pad.set_device_state)(OnOff.ON)
-            def update() -> None:
-                assert from_pad._drop is self, f"Moved {self}, but thought it was at {from_pad}"
-                assert to_pad._drop is None, f"Moving {self} to non-empty {to_pad}"
-                from_pad._drop = None
-                drop.pad = to_pad
-                to_pad._drop = drop
-                print(f"Drop now at {to_pad}")
-            return update
-        return step
     
+    @classmethod
+    def appear_at(self, board: Board, locations: Sequence[Union[XYCoord, tuple[int, int]]],
+                 liquid: Liquid = Liquid(unknown_reagent, 0.5*uL) 
+                 ) -> Delayed[Sequence[Drop]]:
+        locs = ((loc.x, loc.y) if isinstance(loc, XYCoord) else loc for loc in locations)
+        drops = tuple(Drop(board.pad_at(x,y), liquid) for (x, y) in locs)
+        future = Delayed[Sequence[Drop]](guess=drops)
+        system = board.system
+        assert system is not None
+        outstanding: int = len(drops)
+        lock = Lock()
+        def join(_) -> None:
+            with lock:
+                nonlocal outstanding
+                outstanding -= 1
+                if outstanding == 0:
+                    future.post(drops)
+        with system.batched():
+            for drop in drops:
+                drop.pad.schedule(Pad.TurnOn).when_value(join)
+        return future
+        
+    
+    class Move(Operation['Drop','Drop']):
+        direction: Final[Dir]
+        steps: Final[int]
+        allow_unsafe_motion: Final[bool]
+        
+        def guess_value(self, drop: Drop) -> Drop: 
+            return drop
+        
+        def _schedule_for(self, drop: Drop, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          guess_only: bool = False,
+                          future: Optional[Delayed[Drop]] = None
+                          ) -> Delayed[Drop]:
+            board = drop.pad._board
+            system = board.in_system()
+            direction = self.direction
+            steps = self.steps
+            allow_unsafe_motion = self.allow_unsafe_motion
+            if future is None:
+                future = Delayed[Drop](guess=drop, immediate=guess_only)
+            with system.batched():
+                last_pad: Pad = drop.pad
+                for step in range(steps):
+                    next_pad = last_pad.neighbor(direction)
+                    if next_pad is None or next_pad.broken:
+                        raise NoSuchPad(last_pad.location+direction)
+                    if not allow_unsafe_motion and not next_pad.safe():
+                        raise UnsafeMotion(next_pad)
+                    delay = mode.step_delay(after, step)
+                    next_pad.schedule(Pad.TurnOn, mode=mode, guess_only=True, after=delay)
+                    last_pad.schedule(Pad.TurnOff, mode=mode, guess_only=True, after=delay)
+                    ufn = drop._update_pad_fn(last_pad, next_pad)
+                    if mode.is_gated:
+                        board.before_tick(ufn, delta=mode.gated_delay(after, step=step+1).count)
+                    else:
+                        delta = mode.asynchronous_delay(after, step=step+1)-0.1*mode.motion_time
+                        board.call_after(delta, ufn)
+                    last_pad = next_pad
+                if not guess_only:
+                    real_future: Delayed[Drop] = future
+                    def post() -> None:
+                        real_future.post(drop)
+                    if mode.is_gated:
+                        board.before_tick(post, delta=mode.gated_delay(after, step=steps).count)
+                    else:
+                        delta = mode.asynchronous_delay(after, step=steps+1)-0.1*mode.motion_time
+                        board.call_after(delta, ufn)
+                    # board.schedule(post, mode, after=delay)
+            return future
+        
+        def __init__(self, direction: Dir, *, steps: int=1, allow_unsafe_motion: bool = False) -> None:
+            self.direction = direction
+            self.steps = steps
+            self.allow_unsafe_motion = allow_unsafe_motion
+            
     def _update_pad_fn(self, from_pad: Pad, to_pad: Pad):
         def fn() -> None:
             assert from_pad._drop is self, f"Moved {self}, but thought it was at {from_pad}"
@@ -44,70 +110,5 @@ class Drop:
         return fn
         
         
-    def gated_move(self, direction: Dir, *, steps: int=1, allow_unsafe_motion: bool = False) -> Delayed[Drop]:
-        board = self.pad._board
-        system = board.in_system()
-        future = Delayed[Drop](guess=self)
-        with system.batched():
-            last_pad: Pad = self.pad
-            for delta in range(steps):
-                next_pad = last_pad.neighbor(direction)
-                if next_pad is None or next_pad.broken:
-                    raise NoSuchPad(last_pad.location+direction)
-                if not allow_unsafe_motion and not next_pad.safe():
-                    raise UnsafeMotion(next_pad)
-                step = self._move_fn(self, last_pad, next_pad)
-                print(f"Scheduling {last_pad} to {next_pad} @ {delta}")
-                board.on_tick(step, delta=delta)
-                last_pad = next_pad
-            def post() -> None:
-                future.post(self)
-            board.on_tick(post, delta=steps)
-        return future
     
-    def schedule_move(self, direction: Dir, *, 
-                      steps: int=1, 
-                      allow_unsafe_motion: bool = False,
-                      mode: RunMode=RunMode.GATED, 
-                      after:Optional[DelayType] = None,
-                      guess_only: bool = False) -> Delayed[Drop]:
-        board = self.pad._board
-        system = board.in_system()
-        future = Delayed[Drop](guess=self, immediate=guess_only)
-        with system.batched():
-            last_pad: Pad = self.pad
-            for step in range(steps):
-                next_pad = last_pad.neighbor(direction)
-                if next_pad is None or next_pad.broken:
-                    raise NoSuchPad(last_pad.location+direction)
-                if not allow_unsafe_motion and not next_pad.safe():
-                    raise UnsafeMotion(next_pad)
-                delay = mode.step_delay(after, step)
-                next_pad.schedule_turn_on(mode=mode, guess_only=True, after=delay)
-                last_pad.schedule_turn_off(mode=mode, guess_only=True, after=delay)
-                ufn = self._update_pad_fn(last_pad, next_pad)
-                if mode.is_gated:
-                    board.before_tick(ufn, delta=mode.gated_delay(after, step=step+1).count)
-                else:
-                    delta = mode.asynchronous_delay(after, step=step+1)-0.1*mode.motion_time
-                    board.call_after(delta, ufn)
-                last_pad = next_pad
-            if not guess_only:
-                def post() -> None:
-                    future.post(self)
-                if mode.is_gated:
-                    board.before_tick(post, delta=mode.gated_delay(after, step=steps).count)
-                else:
-                    delta = mode.asynchronous_delay(after, step=steps+1)-0.1*mode.motion_time
-                    board.call_after(delta, ufn)
-                # board.schedule(post, mode, after=delay)
-        return future
-
-    def move(self, direction: Dir, *, 
-             steps: int=1, 
-             allow_unsafe_motion: bool = False,
-             mode: RunMode=RunMode.GATED, 
-             after:Optional[DelayType] = None,
-             guess_only: bool = False) -> Drop:
-        return self.schedule_move(direction, steps=steps,allow_unsafe_motion=allow_unsafe_motion,
-                                  mode=mode,after=after,guess_only=guess_only).value
+ 

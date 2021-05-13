@@ -5,8 +5,8 @@ import heapq
 from quantities.SI import sec, ms
 from quantities.timestamp import time_now, time_in, Timestamp
 from quantities.dimensions import Time
-from typing import Optional, Type, Literal, Protocol, Any, Callable, Sequence,\
-    Iterable, Final, Tuple, Union
+from typing import Optional, Literal, Protocol, Any, Sequence,\
+    Iterable, Final, Union, Callable
 from types import TracebackType
 
 def _in_secs(t: Time) -> float:
@@ -76,10 +76,10 @@ Callback = Callable[[], Any]
 #
 
 DevCommRequest = Callable[[], Iterable[Updatable]]
-ClockRequest = Tuple[int, ClockCallback]
-ClockCommRequest = Tuple[int, DevCommRequest]
-TimerRequest = Tuple[Timestamp, TimerFunc, bool]
-TimerDeltaRequest = Tuple[Time, TimerFunc, bool]
+ClockRequest = tuple[int, ClockCallback]
+ClockCommRequest = tuple[int, DevCommRequest]
+TimerRequest = tuple[Timestamp, TimerFunc, bool]
+TimerDeltaRequest = tuple[Time, TimerFunc, bool]
 
 class Engine:
     idle_barrier: IdleBarrier
@@ -121,7 +121,7 @@ class Engine:
         return self
     
     def __exit__(self, 
-                 exc_type: Optional[Type[BaseException]],  # @UnusedVariable
+                 exc_type: Optional[type[BaseException]],  # @UnusedVariable
                  exc_val: Optional[BaseException],  # @UnusedVariable
                  exc_tb: Optional[TracebackType]  # @UnusedVariable
                  ) -> Literal[False]:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numbers
-from typing import Tuple, Optional, ClassVar, Callable, TypeVar, Generic, \
-    overload, Union, cast, Type, MutableMapping, Any, Final
+from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
+    overload, Union, cast, MutableMapping, Any, Final, Tuple
 from erk.stringutils import split_camel_case, infer_plural
 import math
 
@@ -30,7 +30,7 @@ T = TypeVar('T')
 BaseExp = tuple['BaseDimension', int]
 BaseExpTuple = Tuple[BaseExp, ...]
 DimOpCache = MutableMapping[T, 'Dimensionality']
-AbbrExp = tuple[Union[str, Tuple[str,str]], int]
+AbbrExp = tuple[Union[str, tuple[str,str]], int]
 
 D = TypeVar('D', bound='Quantity')
 ND = TypeVar('ND', bound='NamedDim')
@@ -48,7 +48,7 @@ class Dimensionality(Generic[D]):
     _instances: ClassVar[dict[BaseExpTuple, Dimensionality]] = {}
     exponents: BaseExpTuple
     name: Optional[str]
-    quant_class: Type[D]
+    quant_class: type[D]
     _cached_description: str
     _desc_expt_fmt: object           # It's an ExptFormatter, but all I care about is whether it has changed
     _cached_multiplication: DimOpCache[Dimensionality]
@@ -283,7 +283,7 @@ class Quantity(Generic[D]):
             raise DimensionalityError(dim, self.dimensionality)
         return self
         
-    def a(self, expected: Type[ND]) -> ND:
+    def a(self, expected: type[ND]) -> ND:
         return cast(ND, self.check_dimensionality(expected.dim()))
     
     an = a
@@ -441,7 +441,7 @@ class UnitExpr(Generic[D]):
     def dimensionality(self) -> Dimensionality[D]:
         return self.quantity.dimensionality
 
-    def _index_in(self, abbr: Union[str,Tuple[str,str]], lst: list[AbbrExp]) -> Union[Tuple[None,None], Tuple[int,int]]:
+    def _index_in(self, abbr: Union[str,tuple[str,str]], lst: list[AbbrExp]) -> Union[tuple[None,None], tuple[int,int]]:
         for (i, pair) in enumerate(lst):
             if abbr == pair[0]:
                 return (i, pair[1])
@@ -480,7 +480,7 @@ class UnitExpr(Generic[D]):
             new_n.append((a,e-old_e))
             
     @staticmethod
-    def choose_abbr(mag: float, abbrs: Union[str, Tuple[str,str]]) -> str:
+    def choose_abbr(mag: float, abbrs: Union[str, tuple[str,str]]) -> str:
         # print(f"mag={mag}, abbrs={abbrs}")
         if (isinstance(abbrs, tuple)):
             return abbrs[0] if mag==1 else abbrs[1]
@@ -502,7 +502,7 @@ class UnitExpr(Generic[D]):
         return cd
 
 
-    def _combine_with(self, num: list[AbbrExp], denom: list[AbbrExp]) -> Tuple[tuple[AbbrExp,...], tuple[AbbrExp,...]]: 
+    def _combine_with(self, num: list[AbbrExp], denom: list[AbbrExp]) -> tuple[tuple[AbbrExp,...], tuple[AbbrExp,...]]: 
         new_n = list(self.num)
         new_d = list(self.denom)
 
@@ -596,12 +596,12 @@ class UnitExpr(Generic[D]):
     def __mod__(self, q: D) -> _BoundQuantity[D]:
         return self.format(q)
     
-    def a(self, expected: Type[ND]) -> UnitExpr[ND]:
+    def a(self, expected: type[ND]) -> UnitExpr[ND]:
         self.quantity.check_dimensionality(expected.dim())
         return cast(UnitExpr[ND], self)
     an = a
     
-    def as_unit(self, abbr: str, check: Type[D] = None) -> Unit[D]:  # @UnusedVariable
+    def as_unit(self, abbr: str, check: type[D] = None) -> Unit[D]:  # @UnusedVariable
         return Unit[D](abbr, self)
     
 
@@ -619,7 +619,7 @@ class Unit(UnitExpr[D]):
             raise TypeError(f"Creating Unit from non-Quantity: {quant}")
         if check is not None and quant.dimensionality is not check:
             raise DimMismatchError(quant.dimensionality, "!=", check)
-        real_abbr: Union[str, Tuple[str,str]] = abbr if singular is None else (singular, abbr)
+        real_abbr: Union[str, tuple[str,str]] = abbr if singular is None else (singular, abbr)
         super().__init__(quant, ((real_abbr, 1),), ())
         self.abbreviation = abbr
         self.singular = singular or abbr
@@ -661,7 +661,7 @@ class Prefix:
 
 class NamedDim(Quantity[ND]): 
     _dim: ClassVar[Dimensionality[ND]]
-    _this_class: ClassVar[Type[ND]]
+    _this_class: ClassVar[type[ND]]
     
     def __init__(self, mag: float, dim: Dimensionality[ND] = None) -> None:
         if dim is None:
@@ -673,11 +673,11 @@ class NamedDim(Quantity[ND]):
     
     
     @classmethod
-    def dim(cls: Type[ND]) -> Dimensionality[ND]:
+    def dim(cls: type[ND]) -> Dimensionality[ND]:
         return cls._dim
     
     @classmethod
-    def unit(cls: Type[ND], abbr: str, quant: Union[ND, UnitExpr[ND]]) -> Unit[ND]:
+    def unit(cls: type[ND], abbr: str, quant: Union[ND, UnitExpr[ND]]) -> Unit[ND]:
         return Unit[ND](abbr, quant, check=cls._dim)
     
     @classmethod
@@ -692,9 +692,9 @@ class NamedDim(Quantity[ND]):
     def default_units(cls, units: UnitExpr[ND]) -> None:
         cls.dim().default_units = units
         
-    _restriction_classes: ClassVar[dict[Any, Type[BaseDim[ND]]]]
+    _restriction_classes: ClassVar[dict[Any, type[BaseDim[ND]]]]
     @classmethod
-    def restricted(cls, restriction: T) -> Type[BaseDim[ND]]:
+    def restricted(cls, restriction: T) -> type[BaseDim[ND]]:
         c = cls._restriction_classes.get(restriction, None)
         if c is not None:
             return c
@@ -703,7 +703,7 @@ class NamedDim(Quantity[ND]):
         rname = f"{cls.__name__}_{restr_pname}"
         # immediate_base = CountDim if issubclass(self.quant_class, CountDim) else BaseDim
         immediate_base = cls if issubclass(cls, BaseDim) else BaseDim
-        new_dim_class = cast(Type[BaseDim], BaseDimMeta(rname,(immediate_base,), {"_dim_name": pname}))
+        new_dim_class = cast(type[BaseDim], BaseDimMeta(rname,(immediate_base,), {"_dim_name": pname}))
         new_dim: BaseDimension = new_dim_class._dim
         cls._restriction_classes[restriction] = new_dim_class
         new_dim._unrestricted = cls._dim
@@ -735,10 +735,10 @@ class DerivedDimMeta(type):
         if d.name is None:
             n:str = "_".join(split_camel_case(name)).lower()
             d.name = n
-            d.quant_class = cast(Type[DerivedDim], cls)
+            d.quant_class = cast(type[DerivedDim], cls)
         cls._dim = d
         cls._zero = cls(0)
-        cls._restriction_classes: dict[Any, Type[BaseDim]] = {}
+        cls._restriction_classes: dict[Any, type[BaseDim]] = {}
 
         
 
@@ -765,16 +765,16 @@ class BaseDimMeta(type):
         else:
             n = "_".join(split_camel_case(name)).lower()
         d = BaseDimension[ND](n)
-        d.quant_class = cast(Type[DerivedDim], cls)
+        d.quant_class = cast(type[DerivedDim], cls)
         cls._dim = d
         cls._zero = cls(0)
-        cls._restriction_classes: dict[Any, Type[BaseDim]] = {}
+        cls._restriction_classes: dict[Any, type[BaseDim]] = {}
 
 class BaseDim(NamedDim[ND], metaclass=BaseDimMeta): 
     _dim: ClassVar[BaseDimension[ND]]
     
     @classmethod
-    def base_unit(cls: Type[BaseDim[ND]], abbr: str) -> Unit[ND]:
+    def base_unit(cls: type[BaseDim[ND]], abbr: str) -> Unit[ND]:
         return cls._dim.base_unit(abbr)
     
 class CountDim(BaseDim[ND]):
@@ -826,7 +826,7 @@ class CountDim(BaseDim[ND]):
         return self.magnitude <= rhs.magnitude
 
     @classmethod
-    def base_unit(cls: Type[CountDim[ND]], singular: str, *, plural: Optional[str] = None) -> Unit[ND]:
+    def base_unit(cls: type[CountDim[ND]], singular: str, *, plural: Optional[str] = None) -> Unit[ND]:
         if plural is None:
             plural = infer_plural(singular)
         return cls._dim.base_unit(plural, singular=singular)
