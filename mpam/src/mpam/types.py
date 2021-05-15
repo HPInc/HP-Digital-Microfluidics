@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast, Final, ClassVar, Mapping, Protocol, overload
+    cast, Final, ClassVar, Mapping
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -150,42 +150,43 @@ MISSING: Final[Missing] = Missing()
 
 class Operation(Generic[T, V]):
     
-    def guess_value(self, obj: T) -> V: 
-        raise NotImplementedError()
     def _schedule_for(self, obj: T, *,
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
-                      guess_only: bool = False,
+                      post_result: bool = True,
                       future: Optional[Delayed[V]] = None
                       ) -> Delayed[V]:
         raise NotImplementedError()
     def schedule_for(self, obj: Union[T, Delayed[T]], *,
                      mode: RunMode = RunMode.GATED, 
                      after: Optional[DelayType] = None,
-                     guess_only: bool = False,
+                     post_result: bool = True,
                      future: Optional[Delayed[V]] = None
                      ) -> Delayed[V]:
         if isinstance(obj, Delayed):
             if future is None:
-                future = Delayed[V](guess=self.guess_value(obj.best_guess), immediate=guess_only)
-            obj.when_value(lambda x : self.schedule_for(x, mode=mode, after=after, guess_only=guess_only, future=future))
+                future = Delayed[V]()
+            obj.when_value(lambda x : self._schedule_for(x, mode=mode, after=after, post_result=post_result, future=future))
             return future
-        return self._schedule_for(obj, mode=mode, after=after, guess_only=guess_only, future=future)
+        return self._schedule_for(obj, mode=mode, after=after, post_result=post_result, future=future)
         
 class OpScheduler(Generic[T]):
     def schedule(self: T, op: Operation[T, V],
                  mode: RunMode = RunMode.GATED, 
                  after: Optional[DelayType] = None,
-                 guess_only: bool = False,
+                 post_result: bool = True,
                  future: Optional[Delayed[V]] = None
                  ) -> Delayed[V]:
-        return op.schedule_for(self, mode=mode, after=after, guess_only=guess_only,future=future)
+        return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
 
+# In an earlier iteration, Delayed[T] took a mandatory "guess" argument, and had "initial_guess" and "best_guess"
+# properties (the latter returned the value if it was there and the initial guess otherwise).  This seemed to 
+# unnecessarily complicate things and made me have to do things like creating a drop before it actually existed,
+# which enabled errors.
 class Delayed(Generic[T]):
     _val: ValTuple[T] = (False, cast(T, None))
     _maybe_lock: Optional[Lock] = None
     _callbacks: list[Callable[[T], Any]]
-    _guess: T
     
     @property
     def _lock(self) -> Lock:
@@ -204,26 +205,9 @@ class Delayed(Generic[T]):
         return lock
     
     
-    def __init__(self, *, guess: T, immediate: bool=False) -> None:
-        self._guess = guess
-        if immediate:
-            self._val = (True, guess)
-        
     @property
     def has_value(self) -> bool:
         return self._val[0]
-    
-    @property
-    def initial_guess(self):
-        return self.guess
-    
-    @property
-    def best_guess(self):
-        if self.has_value:
-            return self._val[1]
-        else:
-            return self._guess
-        
     
     def peek(self) -> ValTuple[T]:
         return self._val
@@ -246,9 +230,8 @@ class Delayed(Generic[T]):
     def then_schedule(self, op: Operation[T,V], *, 
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
-                      guess_only: bool = False,
                       future: Optional[Delayed[V]] = None) -> Delayed[V]:
-        return op.schedule_for(self, mode=mode, after=after, guess_only=guess_only, future=future)
+        return op.schedule_for(self, mode=mode, after=after, future=future)
 
 
     def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:

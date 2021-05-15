@@ -93,22 +93,18 @@ class Pad(OpScheduler['Pad']):
         return self.empty and all(map(lambda n : n.empty, self.neighbors))
     
     class ModifyState(Operation['Pad', OnOff]):
-        def guess_value(self, pad: Pad) -> OnOff:
-            return self.mod(pad._state)
-        
         def _schedule_for(self, pad: Pad, *,
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
-                          guess_only: bool = False,
+                          post_result: bool = True,
                           future: Optional[Delayed[OnOff]] = None
                           ) -> Delayed[OnOff]:
             
             if pad.broken:
                 raise PadBrokenError
-            current = pad._state
             mod = self.mod
             if future is None:
-                future = Delayed[OnOff](guess=mod(current), immediate=guess_only)
+                future = Delayed[OnOff]()
             real_future = future
             setter = pad.set_device_state
             
@@ -118,7 +114,7 @@ class Pad(OpScheduler['Pad']):
                 print(f"Setting pad at {pad.location} to {new}")
                 setter(new)
                 self._state = new
-                finish: Optional[Callback] = None if guess_only else (lambda : real_future.post(old))
+                finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(old))
                 return finish
             
             tag = "[Gated] " if mode.is_gated else ""
@@ -138,83 +134,6 @@ class Pad(OpScheduler['Pad']):
     TurnOff: ClassVar[ModifyState]
     Toggle: ClassVar[ModifyState]
 
-    def schedule_modify_state(self, mod: Modifier[OnOff], *, 
-                              mode: RunMode=RunMode.GATED, 
-                              after:Optional[DelayType] = None,
-                              guess_only: bool = False) -> Delayed[OnOff]:
-        if self.broken:
-            raise PadBrokenError
-        current = self._state
-        future = Delayed[OnOff](guess=mod(current), immediate=guess_only)
-        setter = self.set_device_state
-        
-        def cb() -> Optional[Callback]:
-            old = self._state
-            new = mod(old)
-            print(f"Setting pad at {self.location} to {new}")
-            setter(new)
-            self._state = new
-            finish: Optional[Callback] = None if guess_only else (lambda : future.post(old))
-            return finish
-        
-        tag = "[Gated] " if mode.is_gated else ""
-        print(f"{tag}Asking to set pad at {self.location} to {mod(self._state)}")
-        self._board.schedule(cb, mode, after=after)
-        return future
-
-    def modify_state(self, mod: Modifier[OnOff], *, 
-                     mode: RunMode=RunMode.GATED, 
-                     after:Optional[DelayType] = None,
-                     guess_only: bool = False) -> OnOff:
-        return self.schedule_modify_state(mod, mode=mode, after=after, guess_only=guess_only).value
-   
-    def schedule_set_state(self, val: OnOff, *,
-                           mode: RunMode=RunMode.GATED, 
-                           after:Optional[DelayType] = None,
-                           guess_only: bool = False) -> Delayed[OnOff]:
-        return self.schedule_modify_state(lambda _: val, mode=mode, after=after, guess_only=guess_only)
-                  
-    def set_state(self, val: OnOff, *, 
-                  mode: RunMode=RunMode.GATED, 
-                  after:Optional[DelayType] = None,
-                  guess_only: bool = False) -> OnOff:
-        return self.schedule_set_state(val, mode=mode, after=after, guess_only=guess_only).value
-    
-    def schedule_turn_on(self, *,
-                         mode: RunMode=RunMode.GATED, 
-                         after:Optional[DelayType] = None,
-                         guess_only: bool = False) -> Delayed[OnOff]:
-        return self.schedule_set_state(OnOff.ON, mode=mode, after=after, guess_only=guess_only)
-            
-    def turn_on(self, *, 
-                mode: RunMode=RunMode.GATED, 
-                after:Optional[DelayType] = None,
-                guess_only: bool = False) -> OnOff:
-        return self.schedule_turn_on(mode=mode, after=after, guess_only=guess_only).value
-   
-    def schedule_turn_off(self, *,
-                          mode: RunMode=RunMode.GATED, 
-                          after:Optional[DelayType] = None,
-                          guess_only: bool = False) -> Delayed[OnOff]:
-        return self.schedule_set_state(OnOff.OFF, mode=mode, after=after, guess_only=guess_only)
-            
-    def turn_off(self, *, 
-                 mode: RunMode=RunMode.GATED, 
-                 after:Optional[DelayType] = None,
-                 guess_only: bool = False) -> OnOff:
-        return self.schedule_turn_off(mode=mode, after=after, guess_only=guess_only).value
-   
-    def schedule_toggle(self, *,
-                        mode: RunMode=RunMode.GATED, 
-                        after:Optional[DelayType] = None,
-                        guess_only: bool = False) -> Delayed[OnOff]:
-        return self.schedule_modify_state(lambda s: ~s, mode=mode, after=after, guess_only=guess_only)
-            
-    def toggle(self, *, 
-               mode: RunMode=RunMode.GATED, 
-               after:Optional[DelayType] = None,
-               guess_only: bool = False) -> OnOff:
-        return self.schedule_toggle(mode=mode, after=after, guess_only=guess_only).value
  
 Pad.TurnOn = Pad.SetState(OnOff.ON)
 Pad.TurnOff = Pad.SetState(OnOff.OFF)

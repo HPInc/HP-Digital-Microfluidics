@@ -26,7 +26,7 @@ class Drop(OpScheduler['Drop']):
                  ) -> Delayed[Sequence[Drop]]:
         locs = ((loc.x, loc.y) if isinstance(loc, XYCoord) else loc for loc in locations)
         drops = tuple(Drop(board.pad_at(x,y), liquid) for (x, y) in locs)
-        future = Delayed[Sequence[Drop]](guess=drops)
+        future = Delayed[Sequence[Drop]]()
         system = board.system
         assert system is not None
         outstanding: int = len(drops)
@@ -48,13 +48,10 @@ class Drop(OpScheduler['Drop']):
         steps: Final[int]
         allow_unsafe_motion: Final[bool]
         
-        def guess_value(self, drop: Drop) -> Drop: 
-            return drop
-        
         def _schedule_for(self, drop: Drop, *,
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
-                          guess_only: bool = False,
+                          post_result: bool = True,
                           future: Optional[Delayed[Drop]] = None
                           ) -> Delayed[Drop]:
             board = drop.pad._board
@@ -63,7 +60,7 @@ class Drop(OpScheduler['Drop']):
             steps = self.steps
             allow_unsafe_motion = self.allow_unsafe_motion
             if future is None:
-                future = Delayed[Drop](guess=drop, immediate=guess_only)
+                future = Delayed[Drop]()
             with system.batched():
                 last_pad: Pad = drop.pad
                 for step in range(steps):
@@ -73,8 +70,8 @@ class Drop(OpScheduler['Drop']):
                     if not allow_unsafe_motion and not next_pad.safe():
                         raise UnsafeMotion(next_pad)
                     delay = mode.step_delay(after, step)
-                    next_pad.schedule(Pad.TurnOn, mode=mode, guess_only=True, after=delay)
-                    last_pad.schedule(Pad.TurnOff, mode=mode, guess_only=True, after=delay)
+                    next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False, after=delay)
+                    last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False, after=delay)
                     ufn = drop._update_pad_fn(last_pad, next_pad)
                     if mode.is_gated:
                         board.before_tick(ufn, delta=mode.gated_delay(after, step=step+1).count)
@@ -82,7 +79,7 @@ class Drop(OpScheduler['Drop']):
                         delta = mode.asynchronous_delay(after, step=step+1)-0.1*mode.motion_time
                         board.call_after(delta, ufn)
                     last_pad = next_pad
-                if not guess_only:
+                if post_result:
                     real_future: Delayed[Drop] = future
                     def post() -> None:
                         real_future.post(drop)
@@ -108,7 +105,3 @@ class Drop(OpScheduler['Drop']):
             to_pad._drop = self
             print(f"Drop now at {to_pad}")
         return fn
-        
-        
-    
- 
