@@ -54,7 +54,7 @@ class Drop(OpScheduler['Drop']):
                           post_result: bool = True,
                           future: Optional[Delayed[Drop]] = None
                           ) -> Delayed[Drop]:
-            board = drop.pad._board
+            board = drop.pad.board
             system = board.in_system()
             direction = self.direction
             steps = self.steps

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Final, Mapping, Callable, Literal,\
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic
 from types import TracebackType
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now, Timestamp
@@ -21,13 +21,77 @@ PadArray = Mapping[XYCoord, 'Pad']
 T = TypeVar('T')
 Modifier = Callable[[T],T]
 
+class BoardComponent:
+    board: Final[Board]
+    
+    def __init__(self, board: Board) -> None:
+        self.board = board
+        
 
-class Pad(OpScheduler['Pad']):
-    location: Final[XYCoord]
-    exists: Final[bool]
+BC = TypeVar('BC', bound='BinaryComponent')
+        
+class BinaryComponent(BoardComponent, Generic[BC]):
+    _state: OnOff
     broken: bool
     
-    _board: Final[Board]
+    def __init__(self, board: Board, initial_state: OnOff = OnOff.OFF) -> None:
+        super().__init__(board)
+        self._state = initial_state
+        self.broken = False
+        self.set_device_state: Callable[[OnOff], None]
+        
+    class ModifyState(Operation[BC, OnOff]):
+        def _schedule_for(self, obj: BC, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,
+                          future: Optional[Delayed[OnOff]] = None
+                          ) -> Delayed[OnOff]:
+            
+            if obj.broken:
+                raise PadBrokenError
+            mod = self.mod
+            if future is None:
+                future = Delayed[OnOff]()
+            real_future = future
+            setter = obj.set_device_state
+            
+            def cb() -> Optional[Callback]:
+                old = obj._state
+                new = mod(old)
+                setter(new)
+                self._state = new
+                finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(old))
+                return finish
+            
+            obj.board.schedule(cb, mode, after=after)
+            return future
+        
+        def __init__(self, mod: Modifier[OnOff]) -> None:
+            self.mod: Final[Modifier[OnOff]] = mod
+    
+    @staticmethod        
+    def SetState(val: OnOff) -> ModifyState:
+        return BinaryComponent[BC].ModifyState(lambda _ : val)
+            
+ 
+    TurnOn: ClassVar[ModifyState]
+    TurnOff: ClassVar[ModifyState]
+    Toggle: ClassVar[ModifyState]
+    
+    ...
+    
+BinaryComponent[BC].TurnOn = BinaryComponent.SetState(OnOff.ON)
+BinaryComponent[BC].TurnOff = BinaryComponent.SetState(OnOff.OFF)
+BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
+    
+    
+    
+class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
+    location: Final[XYCoord]
+    exists: Final[bool]
+    # broken: bool
+    
     _pads: Final[PadArray]
     _state: OnOff
     _drop: Optional[Drop]
@@ -67,13 +131,12 @@ class Pad(OpScheduler['Pad']):
         return ns
     
     def __init__(self, loc: XYCoord, board: Board, *, exists: bool = True) -> None:
+        BinaryComponent.__init__(self, board)
         self.location = loc
         self.exists = exists
-        self.broken = False
-        self._board = board
+        # self.broken = False
         self._state = OnOff.OFF
         self._pads = board.pad_array()
-        self.set_device_state: Callable[[OnOff], None]
         self._drop = None
         self._dried_liquid = None
         
@@ -92,59 +155,14 @@ class Pad(OpScheduler['Pad']):
     def safe(self) -> bool:
         return self.empty and all(map(lambda n : n.empty, self.neighbors))
     
-    class ModifyState(Operation['Pad', OnOff]):
-        def _schedule_for(self, pad: Pad, *,
-                          mode: RunMode = RunMode.GATED, 
-                          after: Optional[DelayType] = None,
-                          post_result: bool = True,
-                          future: Optional[Delayed[OnOff]] = None
-                          ) -> Delayed[OnOff]:
-            
-            if pad.broken:
-                raise PadBrokenError
-            mod = self.mod
-            if future is None:
-                future = Delayed[OnOff]()
-            real_future = future
-            setter = pad.set_device_state
-            
-            def cb() -> Optional[Callback]:
-                old = pad._state
-                new = mod(old)
-                print(f"Setting pad at {pad.location} to {new}")
-                setter(new)
-                self._state = new
-                finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(old))
-                return finish
-            
-            tag = "[Gated] " if mode.is_gated else ""
-            print(f"{tag}Asking to set pad at {pad.location} to {mod(pad._state)}")
-            pad._board.schedule(cb, mode, after=after)
-            return future
-        
-        def __init__(self, mod: Modifier[OnOff]) -> None:
-            self.mod: Final[Modifier[OnOff]] = mod
-    
-    @staticmethod        
-    def SetState(val: OnOff) -> ModifyState:
-        return Pad.ModifyState(lambda _ : val)
-            
- 
-    TurnOn: ClassVar[ModifyState]
-    TurnOff: ClassVar[ModifyState]
-    Toggle: ClassVar[ModifyState]
-
- 
-Pad.TurnOn = Pad.SetState(OnOff.ON)
-Pad.TurnOff = Pad.SetState(OnOff.OFF)
-Pad.Toggle = Pad.ModifyState(lambda s: ~s)
 
     
 class Well:
-    class Section:
+    class Section(BinaryComponent['Section']):
         index: Final[int] 
         well: Final[Well]
-        def __init__(self, index: int, well: Well) -> None:
+        def __init__(self, index: int, well: Well, *, board: Board) -> None:
+            super().__init__(board)
             self.index = index
             self.well = well
             
