@@ -1,6 +1,6 @@
 from __future__ import annotations
 import time
-from .SI import sec
+from .SI import sec, ns
 from . import dimensions
 from typing import overload, Union
 
@@ -10,13 +10,16 @@ class Timestamp:
     def __init__(self, time: dimensions.Time) -> None:
         self.time = time
         
+    def __repr__(self) -> str:
+        return f"Timestamp({self.time.in_units(sec)})"
+    
     @classmethod
     def now(cls) -> Timestamp:
-        return Timestamp(time.time()*sec)
+        return Timestamp(time.monotonic_ns()*ns)
     
     @classmethod
     def never(cls) -> Timestamp: 
-        return Timestamp(0*sec)
+        return Timestamp(dimensions.Time.ZERO())
     
     def __add__(self, rhs: dimensions.Time) -> Timestamp:
         return Timestamp(self.time+rhs)
@@ -57,6 +60,10 @@ class Timestamp:
 
     def __le__(self, rhs: Timestamp) -> bool:
         return self.time <= rhs.time
+    
+    def strftime(self, fmt: str = "%Y-m-%d.%H:%M:%S") -> str:
+        stime = time.localtime(self.time.as_number(sec))
+        return time.strftime(fmt, stime)
 
 def time_now() -> Timestamp:
     return Timestamp.now()

@@ -2,12 +2,13 @@ from __future__ import annotations
 from enum import Enum, auto
 from threading import Thread, Condition, Event, Lock, Timer
 import heapq
-from quantities.SI import sec, ms
+from quantities.SI import sec
 from quantities.timestamp import time_now, time_in, Timestamp
 from quantities.dimensions import Time
 from typing import Optional, Literal, Protocol, Any, Sequence,\
     Iterable, Final, Union, Callable
 from types import TracebackType
+from mpam.types import TickNumber, ticks, Ticks
 
 def _in_secs(t: Time) -> float:
     return t.as_number(sec)
@@ -15,9 +16,9 @@ def _in_secs(t: Time) -> float:
 _wait_timeout: float = _in_secs(0.5*sec)
 
 TimerFunc = Callable[[], Optional[Union[Time,Timestamp]]]
-ClockCallback = Callable[[], Optional[int]]
+ClockCallback = Callable[[], Optional[Ticks]]
 
-class  State(Enum):
+class  State(Enum): 
     NEW = auto()
     RUNNING = auto()
     SHUTDOWN_REQUESTED = auto()
@@ -76,8 +77,8 @@ Callback = Callable[[], Any]
 #
 
 DevCommRequest = Callable[[], Iterable[Updatable]]
-ClockRequest = tuple[int, ClockCallback]
-ClockCommRequest = tuple[int, DevCommRequest]
+ClockRequest = tuple[Ticks, ClockCallback]
+ClockCommRequest = tuple[Ticks, DevCommRequest]
 TimerRequest = tuple[Timestamp, TimerFunc, bool]
 TimerDeltaRequest = tuple[Time, TimerFunc, bool]
 
@@ -87,11 +88,12 @@ class Engine:
     timer_thread: TimerThread
     clock_thread: ClockThread
     
-    def __init__(self) -> None:
+    def __init__(self, *, 
+                 default_clock_interval: Time) -> None:
         self.idle_barrier = IdleBarrier()
         self.dev_comm_thread = DevCommThread(self)
         self.timer_thread = TimerThread(self)
-        self.clock_thread = ClockThread(self)
+        self.clock_thread = ClockThread(self, default_clock_interval=default_clock_interval)
         
         
     def _join_threads(self) -> None:
@@ -372,7 +374,7 @@ class TimerThread(WorkerThread):
         now = time_now()
         self.call_at([(now+delta, fn, daemon) for (delta, fn, daemon) in reqs])
 
-CT = tuple[int, ClockCallback]
+CT = tuple[Ticks, ClockCallback]
                 
 class ClockThread(WorkerThread):
     class TickRequest:
@@ -400,14 +402,14 @@ class ClockThread(WorkerThread):
     tick_event: Event
     pre_tick_queue: list[CT]
     post_tick_queue: list[CT]
-    on_tick_queue: list[tuple[int, DevCommRequest]]
-    update_interval: Time = 100*ms
+    on_tick_queue: list[tuple[Ticks, DevCommRequest]]
+    update_interval: Time
     work: int
-    next_tick: int
+    next_tick: TickNumber
     last_tick_time: Timestamp
     outstanding_tick_request: Optional[TickRequest]
     
-    def __init__(self, engine):
+    def __init__(self, engine, *, default_clock_interval: Time):
         super().__init__(engine, "Clock Thread")
         self.running = False
         self.tick_event = Event()
@@ -415,9 +417,10 @@ class ClockThread(WorkerThread):
         self.post_tick_queue = []
         self.on_tick_queue = []
         self.work = 0
-        self.next_tick = 0
+        self.next_tick = TickNumber.ZERO()
         self.last_tick_time = Timestamp.never()
         self.outstanding_tick_request = None
+        self.update_interval = default_clock_interval
         
     def _process_queue(self, queue: Sequence[CT]) -> list[CT]:
         new_queue: list[CT] = []
@@ -425,7 +428,7 @@ class ClockThread(WorkerThread):
             if delay > 0:
                 new_queue.append((delay-1, fn))
             else:
-                new_delay: Optional[int] = fn()
+                new_delay: Optional[Ticks] = fn()
                 if new_delay is not None:
                     new_queue.append((new_delay, fn))
         return new_queue
@@ -468,7 +471,7 @@ class ClockThread(WorkerThread):
                             return ()
                         rqueue.append(note_finished)
                         comm_thread.add_requests(rqueue)
-                    self.next_tick += 1
+                    self.next_tick += 1*ticks
                 if rqueue:
                     while not update_finished.wait(_wait_timeout):
                         pass

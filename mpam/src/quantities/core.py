@@ -797,6 +797,11 @@ class CountDim(BaseDim[ND]):
     def __radd__(self, lhs: float) -> ND:
         return cast(ND, self.dimensionality.make_quantity(self.magnitude+lhs))
     
+    def __iadd__(self, rhs: Union[float,ND]) -> ND:
+        rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
+        self.magnitude += rmag
+        return self.cast()
+    
     def __sub__(self: ND, rhs: Union[float,ND]) -> ND:
         rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
         return cast(ND, self.dimensionality.make_quantity(self.magnitude-rmag))
@@ -804,6 +809,10 @@ class CountDim(BaseDim[ND]):
     def __rsub__(self, lhs: float) -> ND:
         return cast(ND, self.dimensionality.make_quantity(lhs-self.magnitude))
         
+    def __isub__(self, rhs: Union[float,ND]) -> ND:
+        rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
+        self.magnitude -= rmag
+        return self.cast()
 
     def __eq__(self, rhs: object) -> bool:
         if isinstance(rhs, (int, float)):
@@ -818,12 +827,22 @@ class CountDim(BaseDim[ND]):
             return self.magnitude < rhs
         self._ensure_dim_match(rhs, "<")
         return self.magnitude < rhs.magnitude
+    def __gt__(self, rhs: Union[float,ND]) -> bool:
+        if isinstance(rhs, (int, float)):
+            return self.magnitude > rhs
+        self._ensure_dim_match(rhs, ">")
+        return self.magnitude > rhs.magnitude
     
-    def __le__(self, rhs: D) -> bool:
+    def __le__(self, rhs: Union[float,ND]) -> bool:
         if isinstance(rhs, (int, float)):
             return self.magnitude <= rhs
         self._ensure_dim_match(rhs, "<=")
         return self.magnitude <= rhs.magnitude
+    def __ge__(self, rhs: Union[float,ND]) -> bool:
+        if isinstance(rhs, (int, float)):
+            return self.magnitude >= rhs
+        self._ensure_dim_match(rhs, ">=")
+        return self.magnitude >= rhs.magnitude
 
     @classmethod
     def base_unit(cls: type[CountDim[ND]], singular: str, *, plural: Optional[str] = None) -> Unit[ND]:

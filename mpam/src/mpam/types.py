@@ -1,7 +1,7 @@
 from __future__ import annotations
-from enum import Enum
+from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast, Final, ClassVar, Mapping
+    cast, Final, ClassVar, Mapping, overload
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -25,24 +25,21 @@ class OnOff(Enum):
 Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]
 
 class Dir(Enum):
-    delta_x: Minus1To1
-    delta_y: Minus1To1
-    
-    NORTH = (0, -1)
+    NORTH = auto()
     N = NORTH
-    NORTHEAST = (1, -1)
+    NORTHEAST = auto()
     NE = NORTHEAST
-    EAST = (1, 0)
+    EAST = auto()
     E = EAST
-    SOUTHEAST = (1, 1)
+    SOUTHEAST = auto()
     SE = SOUTHEAST
-    SOUTH = (0, 1)
+    SOUTH = auto()
     S = SOUTH
-    SOUTHWEST = (-1, 1)
+    SOUTHWEST = auto()
     SW = SOUTHWEST
-    WEST = (-1, 0)
+    WEST = auto()
     W = WEST
-    NORTHWEST = (-1, -1)
+    NORTHWEST = auto()
     NW = NORTHWEST
     
     UP = NORTH
@@ -50,9 +47,6 @@ class Dir(Enum):
     LEFT = WEST
     RIGHT = EAST
 
-    def __init__(self, dx: Minus1To1, dy: Minus1To1):
-        self.delta_x = dx
-        self.delta_y = dy
 
 class XYCoord:
     x: int
@@ -78,25 +72,83 @@ class XYCoord:
     def __repr__(self):
         return f"XYCoord({self.x},{self.y})"
     
-    def __add__(self, delta: Dir):
-        if not isinstance(delta, Dir):
-            raise TypeError(f"{XYCoord} only supports addition with {Dir}: {type(delta)} provided")
-        return XYCoord(self.x+delta.delta_x, self.y+delta.delta_y)
+
+class Orientation(Enum):
+    offset: Final[Mapping[Dir, tuple[Minus1To1, Minus1To1]]]
     
-    def __radd__(self, delta: Dir):
-        return self+delta
+    NORTH_POS_EAST_POS = {Dir.N: (0,1), Dir.NE: (1,1), Dir.E: (1,0), Dir.SE: (1,-1),
+                          Dir.S: (0,-1), Dir.SW: (-1,-1), Dir.W: (-1,0), Dir.NW: (-1,1)}
+    NORTH_NEG_EAST_POS = {Dir.N: (0,-1), Dir.NE: (1,-1), Dir.E: (1,0), Dir.SE: (1,1),
+                          Dir.S: (0,1), Dir.SW: (-1,1), Dir.W: (-1,0), Dir.NW: (-1,-1)}
+    NORTH_NEG_EAST_NEG = {Dir.N: (0,-1), Dir.NE: (-1,-1), Dir.E: (-1,0), Dir.SE: (-1,1),
+                          Dir.S: (0,1), Dir.SW: (1,1), Dir.W: (1,0), Dir.NW: (1,-1)}
+    NORTH_POS_EAST_NEG = {Dir.N: (0,-1), Dir.NE: (1,-1), Dir.E: (1,0), Dir.SE: (1,1),
+                          Dir.S: (0,1), Dir.SW: (-1,1), Dir.W: (-1,0), Dir.NW: (-1,-1)}
     
-    def __iadd__(self, delta: Dir):
-        if not isinstance(delta, Dir):
-            raise TypeError(f"{XYCoord} only supports addition with {Dir}: {type(delta)} provided")
-        self.x += delta.delta_x
-        self.y += delta.delta_y
-        return self
+    def __init__(self, offset: Mapping[Dir, tuple[Minus1To1, Minus1To1]]) -> None:
+        self.offset = offset
+        
+    def neighbor(self, direction: Dir, coord: XYCoord) -> XYCoord:
+        (dx, dy) = self.offset[direction]
+        return XYCoord(coord.x+dx, coord.y+dy)
+    
+    def __repr__(self):
+        return f"Orientation.{self.name}"
+    
     
 class Ticks(CountDim['Ticks']): ...
 ticks = tick = Ticks.base_unit("tick")
 
 DelayType = Union[Ticks, Time]
+
+class TickNumber:
+    tick: Ticks
+    _zero: ClassVar[TickNumber]
+    
+    def __init__(self, tick: Ticks) -> None:
+        self.tick = tick
+        
+    def __repr__(self) -> str:
+        return f"TickNumber({self.tick.count})"
+    
+    @classmethod
+    def ZERO(cls) -> TickNumber:
+        return cls._zero
+        
+    def __add__(self, rhs: Ticks) -> TickNumber:
+        return TickNumber(self.tick+rhs)
+    def __radd__(self, lhs: Ticks) -> TickNumber:
+        return TickNumber(lhs+self.tick)
+    def __iadd__(self, rhs: Ticks) -> TickNumber:
+        self.tick += rhs
+        return self
+    
+    @overload
+    def __sub__(self, rhs: TickNumber) -> Ticks: ...  # @UnusedVariable
+    @overload
+    def __sub__(self, rhs: Ticks) -> TickNumber: ...  # @UnusedVariable
+    def __sub__(self, rhs: Union[TickNumber, Ticks]):
+        if isinstance(rhs, TickNumber):
+            return self.tick-rhs.tick
+        else:
+            return TickNumber(self.tick-rhs)
+        
+    def __eq__(self, rhs: object) -> bool:
+        if self is rhs:
+            return True
+        if not isinstance(rhs, TickNumber):
+            return False
+        return self.tick == rhs.tick
+    
+    def __hash__(self) -> int:
+        return hash(self.tick)
+    
+    def __lt__(self, rhs: TickNumber):
+        return self.tick < rhs.tick
+    def __le__(self, rhs: TickNumber):
+        return self.tick <= rhs.tick
+
+TickNumber._zero = TickNumber(Ticks.ZERO())
 
 class RunMode:
     is_gated: Final[bool]

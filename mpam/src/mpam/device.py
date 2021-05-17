@@ -7,7 +7,7 @@ from quantities.timestamp import time_now, Timestamp
 from threading import Event, Lock
 
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType,\
-    Operation, OpScheduler
+    Operation, OpScheduler, Orientation, TickNumber, tick, Ticks
 from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
     ClockCommRequest, TimerDeltaRequest
@@ -97,7 +97,7 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     _drop: Optional[Drop]
     _dried_liquid: Optional[Drop]
     _neighbors: Optional[Sequence[Pad]]
-    _well: Optional[Well]
+    _well: Optional[Well] = None
         
     @property
     def row(self) -> int:
@@ -136,7 +136,7 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
         self.exists = exists
         # self.broken = False
         self._state = OnOff.OFF
-        self._pads = board.pad_array()
+        self._pads = board.pad_array
         self._drop = None
         self._dried_liquid = None
         
@@ -144,7 +144,8 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
         return f"Pad[{self.column},{self.row}]"
         
     def neighbor(self, d: Dir) -> Optional[Pad]:
-        p = self._pads.get(self.location+d, None)
+        n = self.board.orientation.neighbor(d, self.location)
+        p = self._pads.get(n, None)
         if p is None or not p.exists:
             return None
         return p
@@ -155,33 +156,49 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     def safe(self) -> bool:
         return self.empty and all(map(lambda n : n.empty, self.neighbors))
     
+WellPadLoc = Union[tuple['WellGroup', int], 'Well']
+
+class WellPad(OpScheduler['WellPad'], BinaryComponent['WellPad']):
+        loc: WellPadLoc
+        def __repr__(self) -> str:
+            loc = getattr(self, 'loc', None)
+            if loc is None:
+                return f"WellPad(unassigned, {id(self)})"
+            elif isinstance(loc, Well):
+                return f"WellPad({loc}[gate])"
+            else:
+                return f"WellPad({loc[0]}[{loc[1]}]"
+            
+        def set_location(self, loc: WellPadLoc) -> None:
+            self.loc = loc
 
     
-class Well:
-    class Section(BinaryComponent['Section']):
-        index: Final[int] 
-        well: Final[Well]
-        def __init__(self, index: int, well: Well, *, board: Board) -> None:
-            super().__init__(board)
-            self.index = index
-            self.well = well
-            
-        def __repr__(self) -> str:
-            return f"Section[{self.index}, {self.well}]"
-        
-    class DispensingSequence: ...
+class WellGroup:
+    name: Final[str]
+    shared_pads: Final[Sequence[WellPad]]
+    wells: list[Well]
     
+    def __init__(self, name: str, pads: Sequence[WellPad]) -> None:
+        self.name = name
+        self.shared_pads = pads
+        for (index, pad) in enumerate(pads):
+            pad.set_location((self, index))
+        self.wells = []
+        
+    def __repr__(self) -> str:
+        return f"WellGroup[{self.name}]"
+        
+    def add_well(self, well: Well) -> None:
+        self.wells.append(well)
+    
+class Well:
     number: Final[int]
-    _board: Final[Board]
+    group: Final[WellGroup]
     capacity: Final[Volume]
-    exit_pad: Final[Pad]
     dispensed_volume: Final[Volume]
-    dispensing_ticks: Final[int]
-    absorbing_ticks: Final[int]
     is_voidable: Final[bool]
-    gate: Final[Section]
-    sections: Final[Sequence[Section]]
-    dispensing_sequences: Final[Sequence[DispensingSequence]]
+    exit_pad: Final[Pad]
+    gate: Final[WellPad]
     _contents: Optional[Liquid]
     
     @property
@@ -212,36 +229,33 @@ class Well:
     def available(self) -> bool:
         c = self._contents
         return c is None or c.volume==Volume.ZERO and not c.inexact
-        
-    def __init__(self, board: Board, *,
-                 number: int, 
-                 capacity: Volume,
+    
+    def __init__(self, *,
+                 number: int,
+                 group: WellGroup,
                  exit_pad: Pad,
+                 gate: WellPad,
+                 capacity: Volume,
                  dispensed_volume: Volume,
-                 dispensing_ticks: int,
-                 absorbing_ticks: int,
-                 is_voidable: bool = False,
-                 gate: Section,
-                 sections: Sequence[Section],
-                 dispensing_sequences: Sequence[DispensingSequence]
-                 ) -> None:
-        self._board = board
+                 is_voidable: bool = False) -> None:
         self.number = number
-        self.capacity = capacity
+        self.group = group
         self.exit_pad = exit_pad
-        assert not exit_pad._well, f"{exit_pad} is already associated with {exit_pad.well}"
-        exit_pad._well = self
-        self.dispensed_volume = dispensed_volume
-        self.dispensing_ticks = dispensing_ticks
-        self.absorbing_ticks = absorbing_ticks
-        self.is_voidable = is_voidable
         self.gate = gate
-        self.sections = sections
-        self.dispensing_sequences = dispensing_sequences
-        assert len(dispensing_sequences) > 0, "At least one dispensing sequence must be provided"
+        self.capacity = capacity
+        self.dispensed_volume = dispensed_volume
+        self.is_voidable = is_voidable
         self._contents = None
-        
 
+        group.add_well(self)
+        assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
+        exit_pad._well = self
+        gate.set_location(self)
+        
+    def __repr__(self) -> str:
+        return f"Well[{self.number} <> {self.exit_pad}]"
+        
+    
     
 class SystemComponent:
     system: Optional[System] = None
@@ -290,20 +304,20 @@ class SystemComponent:
     def call_after(self, delta: Time, fn: Callback):
         self.in_system().call_after(delta, fn)
         
-    def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
+    def before_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()) -> None:
         self.in_system().before_tick(fn, delta=delta)
 
-    def after_tick(self, fn: ClockCallback, *, delta: int=0):
+    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()):
         self.in_system().after_tick(fn, delta=delta)
 
-    def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: int=0):
+    def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO()):
         req = self.make_request(cb)
         self.in_system().on_tick(req, delta=delta)
  
     def schedule(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *, 
                  after: Optional[DelayType] = None) -> None:
         if mode.is_gated:
-            self.on_tick(cb, delta=mode.gated_delay(after).count)
+            self.on_tick(cb, delta=mode.gated_delay(after))
         else:
             self.communicate(cb, delta=mode.asynchronous_delay(after))
        
@@ -311,21 +325,53 @@ class SystemComponent:
 
 class Board(SystemComponent):
     pads: Final[PadArray]
+    wells: Final[Sequence[Well]]
+    _well_groups: Mapping[str, WellGroup]
+    orientation: Final[Orientation]
+    drop_motion_time: Final[Time]
+    _drop_size: Volume
     
-    def __init__(self, pads: PadArray) -> None:
+    def __init__(self, *, 
+                 pads: PadArray,
+                 wells: Sequence[Well],
+                 orientation: Orientation,
+                 drop_motion_time: Time) -> None:
         super().__init__()
         self.pads = pads
+        self.wells = wells
+        self.orientation = orientation
+        self.drop_motion_time = drop_motion_time
 
     def stop(self) -> None:
         pass    
     def abort(self) -> None:
         pass
     
+    @property
     def pad_array(self) -> PadArray:
         return self.pads
     
     def pad_at(self, x: int, y: int) -> Pad:
         return self.pads[XYCoord(x,y)]
+    
+    @property
+    def well_groups(self) -> Mapping[str, WellGroup]:
+        cache = getattr(self, '_well_groups', None)
+        if cache is None:
+            cache = {well.group.name: well.group for well in self.wells}
+            self._well_groups = cache
+        return cache
+    
+    @property
+    def drop_size(self) -> Volume:
+        cache = getattr(self, '_drop_size', None)
+        if cache is None:
+            cache = self.wells[0].dispensed_volume
+            assert all(w.dispensed_volume==cache for w in self.wells), "Not all wells dispense the same volume"
+            self._drop_size = cache
+        return cache
+        
+        
     
 class UserOperation(Worker):
     def __enter__(self) -> UserOperation:
@@ -357,41 +403,41 @@ class Clock:
         self.clock_thread.update_interval = interval
     
     @property
-    def next_tick(self) -> int:
+    def next_tick(self) -> TickNumber:
         return self.clock_thread.next_tick
     
     @property
-    def last_tick(self) -> int:
-        return self.next_tick-1
+    def last_tick(self) -> TickNumber:
+        return self.next_tick-1*tick
     
     @property
     def running(self) -> bool:
         return self.clock_thread.running
     
-    def before_tick(self, fn: ClockCallback, tick: Optional[int] = None, delta: Optional[int] = None) -> None:
+    def before_tick(self, fn: ClockCallback, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.before_tick() called with both tick and delta specified"
-            delta = max(0, tick-self.next_tick)
+            delta = max(Ticks.ZERO(), tick-self.next_tick)
         elif delta is None:
-            delta = 0
+            delta = Ticks.ZERO()
         self.system.before_tick(fn, delta=delta)
 
-    def after_tick(self, fn: ClockCallback, tick: Optional[int] = None, delta: Optional[int] = None) -> None:
+    def after_tick(self, fn: ClockCallback, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.after_tick() called with both tick and delta specified"
-            delta = max(0, tick-self.next_tick)
+            delta = max(Ticks.ZERO(), tick-self.next_tick)
         elif delta is None:
-            delta = 0
+            delta = Ticks.ZERO()
         self.system.after_tick(fn, delta=delta)
     
     # Calling await_tick() when the clock isn't running only works if there is another thread that
     # will advance it.  
-    def await_tick(self, tick: Optional[int] = None, delta: Optional[int] = None) -> None:
+    def await_tick(self, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.await_tick() called with both tick and delta specified"
             delta = tick-self.next_tick
         elif delta is None:
-            delta = 0
+            delta = Ticks.ZERO()
         if delta >= 0:
             e = Event()
             def cb():
@@ -492,7 +538,7 @@ class System:
     
     def __init__(self, *, board: Board):
         self.board = board
-        self.engine = Engine()
+        self.engine = Engine(default_clock_interval=board.drop_motion_time)
         self.clock = Clock(self)
         self._batch = None
         self._batch_lock = Lock()
@@ -528,14 +574,14 @@ class System:
     def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
         self._channel().call_after([(delta, fn, daemon)])
         
-    def before_tick(self, fn: ClockCallback, *, delta: int=0) -> None:
+    def before_tick(self, fn: ClockCallback, *, delta: Ticks=Ticks.ZERO()) -> None:
         self._channel().before_tick([(delta, fn)])
 
-    def after_tick(self, fn: ClockCallback, *, delta: int=0):
+    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()):
         self._channel().after_tick([(delta, fn)])
         
 
-    def on_tick(self, req: DevCommRequest, *, delta: int=0):
+    def on_tick(self, req: DevCommRequest, *, delta: Ticks = Ticks.ZERO()):
         self._channel().on_tick([(delta, req)])
         
     def batched(self) -> Batch:

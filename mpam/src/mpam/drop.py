@@ -2,7 +2,7 @@ from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent
 from mpam.device import Pad, Board
-from mpam.exceptions import NoSuchPad, UnsafeMotion
+from mpam.exceptions import NoSuchPad
 from typing import Optional, Final, Union, Sequence
 from quantities.SI import uL
 from threading import Lock
@@ -46,7 +46,12 @@ class Drop(OpScheduler['Drop']):
     class Move(Operation['Drop','Drop']):
         direction: Final[Dir]
         steps: Final[int]
-        allow_unsafe_motion: Final[bool]
+        
+        # I originally had an "allow_unsafe_motion" parameter that was used in a test to see whether 
+        # a step would be in the neighborhood of a drop, but it was reasoning based on the current state,
+        # so it really didn't make any sense.
+
+        # allow_unsafe_motion: Final[bool]
         
         def _schedule_for(self, drop: Drop, *,
                           mode: RunMode = RunMode.GATED, 
@@ -58,7 +63,7 @@ class Drop(OpScheduler['Drop']):
             system = board.in_system()
             direction = self.direction
             steps = self.steps
-            allow_unsafe_motion = self.allow_unsafe_motion
+            # allow_unsafe_motion = self.allow_unsafe_motion
             if future is None:
                 future = Delayed[Drop]()
             with system.batched():
@@ -66,15 +71,15 @@ class Drop(OpScheduler['Drop']):
                 for step in range(steps):
                     next_pad = last_pad.neighbor(direction)
                     if next_pad is None or next_pad.broken:
-                        raise NoSuchPad(last_pad.location+direction)
-                    if not allow_unsafe_motion and not next_pad.safe():
-                        raise UnsafeMotion(next_pad)
+                        raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
+                    # if not allow_unsafe_motion and not next_pad.safe():
+                    #     raise UnsafeMotion(next_pad)
                     delay = mode.step_delay(after, step)
                     next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False, after=delay)
                     last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False, after=delay)
                     ufn = drop._update_pad_fn(last_pad, next_pad)
                     if mode.is_gated:
-                        board.before_tick(ufn, delta=mode.gated_delay(after, step=step+1).count)
+                        board.before_tick(ufn, delta=mode.gated_delay(after, step=step+1))
                     else:
                         delta = mode.asynchronous_delay(after, step=step+1)-0.1*mode.motion_time
                         board.call_after(delta, ufn)
@@ -84,17 +89,16 @@ class Drop(OpScheduler['Drop']):
                     def post() -> None:
                         real_future.post(drop)
                     if mode.is_gated:
-                        board.before_tick(post, delta=mode.gated_delay(after, step=steps).count)
+                        board.before_tick(post, delta=mode.gated_delay(after, step=steps))
                     else:
                         delta = mode.asynchronous_delay(after, step=steps+1)-0.1*mode.motion_time
                         board.call_after(delta, ufn)
                     # board.schedule(post, mode, after=delay)
             return future
         
-        def __init__(self, direction: Dir, *, steps: int=1, allow_unsafe_motion: bool = False) -> None:
+        def __init__(self, direction: Dir, *, steps: int=1) -> None:
             self.direction = direction
             self.steps = steps
-            self.allow_unsafe_motion = allow_unsafe_motion
             
     def _update_pad_fn(self, from_pad: Pad, to_pad: Pad):
         def fn() -> None:
@@ -103,5 +107,5 @@ class Drop(OpScheduler['Drop']):
             from_pad._drop = None
             self.pad = to_pad
             to_pad._drop = self
-            print(f"Drop now at {to_pad}")
+            # print(f"Drop now at {to_pad}")
         return fn
