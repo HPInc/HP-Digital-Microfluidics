@@ -797,10 +797,14 @@ class CountDim(BaseDim[ND]):
     def __radd__(self, lhs: float) -> ND:
         return cast(ND, self.dimensionality.make_quantity(self.magnitude+lhs))
     
-    def __iadd__(self, rhs: Union[float,ND]) -> ND:
-        rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
-        self.magnitude += rmag
-        return self.cast()
+    # I'm getting rid of the in-place operations because it's maddeningly frustrating to 
+    # track down errors due to ZERO() changing because it was used in a context in
+    # which somebody thought it was okay to increment.
+    
+    # def __iadd__(self, rhs: Union[float,ND]) -> ND:
+    #     rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
+    #     self.magnitude += rmag
+    #     return self.cast()
     
     def __sub__(self: ND, rhs: Union[float,ND]) -> ND:
         rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
@@ -809,10 +813,10 @@ class CountDim(BaseDim[ND]):
     def __rsub__(self, lhs: float) -> ND:
         return cast(ND, self.dimensionality.make_quantity(lhs-self.magnitude))
         
-    def __isub__(self, rhs: Union[float,ND]) -> ND:
-        rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
-        self.magnitude -= rmag
-        return self.cast()
+    # def __isub__(self, rhs: Union[float,ND]) -> ND:
+    #     rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
+    #     self.magnitude -= rmag
+    #     return self.cast()
 
     def __eq__(self, rhs: object) -> bool:
         if isinstance(rhs, (int, float)):

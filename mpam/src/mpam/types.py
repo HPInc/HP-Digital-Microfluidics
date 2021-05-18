@@ -115,8 +115,8 @@ class TickNumber:
     # to make it immutable, and something was incrementing it.
     @classmethod
     def ZERO(cls) -> TickNumber:
-        # return cls._zero
-        return TickNumber(0*ticks)
+        return cls._zero
+        # return TickNumber(0*ticks)
     
     @property
     def number(self) -> int:
@@ -126,9 +126,9 @@ class TickNumber:
         return TickNumber(self.tick+rhs)
     def __radd__(self, lhs: Ticks) -> TickNumber:
         return TickNumber(lhs+self.tick)
-    def __iadd__(self, rhs: Ticks) -> TickNumber:
-        self.tick += rhs
-        return self
+    # def __iadd__(self, rhs: Ticks) -> TickNumber:
+    #     self.tick += rhs
+    #     return self
     
     @overload
     def __sub__(self, rhs: TickNumber) -> Ticks: ...  # @UnusedVariable

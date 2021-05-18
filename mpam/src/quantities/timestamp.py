@@ -27,10 +27,11 @@ class Timestamp:
     def __radd__(self, lhs: dimensions.Time) -> Timestamp:
         return Timestamp(lhs+self.time)
     
-    def __iadd__(self, rhs: dimensions.Time) -> Timestamp:
-        self.time += rhs
-        return self
-    
+    # def __iadd__(self, rhs: dimensions.Time) -> Timestamp:
+    #     self.time += rhs
+    #     return self
+    #
+
     @overload
     def __sub__(self, rhs: Timestamp) -> dimensions.Time: ...  # @UnusedVariable
     @overload
@@ -41,9 +42,9 @@ class Timestamp:
         else:
             return Timestamp(self.time-rhs)
     
-    def __isub__(self, rhs: dimensions.Time) -> Timestamp:  # type: ignore
-        self.time -= rhs
-        return self
+    # def __isub__(self, rhs: dimensions.Time) -> Timestamp:  # type: ignore
+    #     self.time -= rhs
+    #     return self
     
     def __eq__(self, rhs: object) -> bool:
         if self is rhs: 
