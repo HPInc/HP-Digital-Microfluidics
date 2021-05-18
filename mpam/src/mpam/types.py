@@ -111,9 +111,16 @@ class TickNumber:
     def __repr__(self) -> str:
         return f"TickNumber({self.tick.count})"
     
+    # I had this cached, but there doesn't seem to be any way
+    # to make it immutable, and something was incrementing it.
     @classmethod
     def ZERO(cls) -> TickNumber:
-        return cls._zero
+        # return cls._zero
+        return TickNumber(0*ticks)
+    
+    @property
+    def number(self) -> int:
+        return self.tick.count
         
     def __add__(self, rhs: Ticks) -> TickNumber:
         return TickNumber(self.tick+rhs)

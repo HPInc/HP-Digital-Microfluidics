@@ -23,7 +23,7 @@ drops: Unit[Volume] = board.drop_size.as_unit("drops")
 Volume.default_units(uL)
 print(f"Drop size is {1*drops}")
 v: Volume = 3*drops
-print(v, v.in_units(drops))
+print(f"{v}, {v.in_units(drops)}")
 acre_ft = (acre*ft).a(Volume)
 print(v.in_units(acre_ft))
 

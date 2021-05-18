@@ -450,18 +450,20 @@ class ClockThread(WorkerThread):
                 tick_event.clear()
                 if self.state is State.ABORT_REQUESTED:
                     return
-                print("Processing tick ", self.next_tick)
+                print(f"Processing tick #{self.next_tick.number}")
                 self.last_tick_time = time_now()
                 queue: list[CT]
                 with lock:
                     queue = self.pre_tick_queue
                     self.pre_tick_queue = []
                     self.work -= len(queue)
+                # print("processing pre-tick queue")
                 new_queue: list[CT] = self._process_queue(queue)
                 rqueue: list[DevCommRequest]
                 with lock:
                     self.pre_tick_queue.extend(new_queue)
                     self.work += len(new_queue)
+                    # print("processing on-tick queue")
                     rqueue = [req for (delta, req) in self.on_tick_queue if delta <= 0]
                     self.on_tick_queue = [(delta-1, req) for (delta, req) in self.on_tick_queue if delta > 0]
                     self.work -= len(rqueue)
@@ -480,6 +482,7 @@ class ClockThread(WorkerThread):
                     queue = self.post_tick_queue
                     self.post_tick_queue = []
                     self.work -= len(queue)
+                # print("processing post-tick queue")
                 new_queue = self._process_queue(queue)
                 if new_queue:
                     with lock:
