@@ -2,7 +2,7 @@ import mpam.device as device
 from typing import Optional, Final
 from mpam.types import OnOff, XYCoord, Orientation
 from serial import Serial
-from mpam.device import WellGroup, Well
+from mpam.device import WellGroup, Well, WellOpSeqDict, WellState
 from quantities.SI import uL, ms
 
 class Electrode:
@@ -53,6 +53,7 @@ class Board(device.Board):
     
     def _well(self, num: int, group: WellGroup, gate_loc: XYCoord, exit_pad: device.Pad):
         return Well(number=num,
+                    board=self,
                     group=group,
                     exit_pad=exit_pad,
                     gate=WellGatePad(Electrode(gate_loc.x, gate_loc.y, self._states), self),
@@ -75,19 +76,30 @@ class Board(device.Board):
                 e = Electrode(x, y, self._states)
                 p = Pad(e, loc, self)
                 pad_dict[loc] = p
+                
+        sequences: WellOpSeqDict = {
+            (WellState.EXTRACTABLE, WellState.READY): ((2,),(1,2)),
+            (WellState.READY, WellState.EXTRACTABLE): ((2,), ()),
+            (WellState.READY, WellState.DISPENSED): ((-1,0,1),(-1,)),
+            (WellState.DISPENSED, WellState.READY): ((1,2),),
+            (WellState.READY, WellState.ABSORBED): ((-1,2),),
+            (WellState.ABSORBED, WellState.READY): ((1,2),)
+            }
         
         left_group = WellGroup("left", (SharedWellPad(Electrode(0, 1, self._states),
                                                       Electrode(0, 6, self._states), self),
                                         SharedWellPad(Electrode(0, 2, self._states),
                                                       Electrode(0, 5, self._states), self),
                                         SharedWellPad(Electrode(0, 3, self._states),
-                                                      Electrode(0, 4, self._states), self)))
-        right_group = WellGroup("left", (SharedWellPad(Electrode(15, 1, self._states),
-                                                       Electrode(15, 6, self._states), self),
-                                         SharedWellPad(Electrode(15, 2, self._states),
-                                                       Electrode(15, 5, self._states), self),
-                                         SharedWellPad(Electrode(15, 3, self._states),
-                                                       Electrode(15, 4, self._states), self)))
+                                                      Electrode(0, 4, self._states), self)),
+                                sequences)
+        right_group = WellGroup("right", (SharedWellPad(Electrode(15, 1, self._states),
+                                                        Electrode(15, 6, self._states), self),
+                                          SharedWellPad(Electrode(15, 2, self._states),
+                                                        Electrode(15, 5, self._states), self),
+                                          SharedWellPad(Electrode(15, 3, self._states),
+                                                        Electrode(15, 4, self._states), self)),
+                                sequences)
         
         upper_left = self._well(0, left_group, XYCoord(0,0), self.pad_at(1,1))
         upper_right = self._well(1, right_group, XYCoord(15,0), self.pad_at(14,1))

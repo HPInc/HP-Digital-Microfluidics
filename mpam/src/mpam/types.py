@@ -238,6 +238,31 @@ class OpScheduler(Generic[T]):
                  ) -> Delayed[V]:
         return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
 
+class StaticOperation(Generic[V]):
+    
+    def _schedule(self, *,
+                  mode: RunMode = RunMode.GATED, 
+                  after: Optional[DelayType] = None,
+                  post_result: bool = True,
+                  future: Optional[Delayed[V]] = None
+                  ) -> Delayed[V]:
+        raise NotImplementedError()
+    
+    
+    def schedule(self, *,
+                 on_future: Optional[Delayed[Any]] = None,
+                 mode: RunMode = RunMode.GATED, 
+                 after: Optional[DelayType] = None,
+                 post_result: bool = True,
+                 future: Optional[Delayed[V]] = None
+                 ) -> Delayed[V]:
+        if on_future is not None:
+            if future is None:
+                future = Delayed[V]()
+            on_future.when_value(lambda _ : self._schedule(mode=mode, after=after, post_result=post_result, future=future))
+            return future
+        return self._schedule(mode=mode, after=after, post_result=post_result, future=future)
+    
 # In an earlier iteration, Delayed[T] took a mandatory "guess" argument, and had "initial_guess" and "best_guess"
 # properties (the latter returned the value if it was there and the initial guess otherwise).  This seemed to 
 # unnecessarily complicate things and made me have to do things like creating a drop before it actually existed,
@@ -286,11 +311,14 @@ class Delayed(Generic[T]):
         self.wait()
         return self._val[1]
     
-    def then_schedule(self, op: Operation[T,V], *, 
+    def then_schedule(self, op: Union[Operation[T,V], StaticOperation[V]], *, 
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       future: Optional[Delayed[V]] = None) -> Delayed[V]:
-        return op.schedule_for(self, mode=mode, after=after, future=future)
+        if isinstance(op, StaticOperation):
+            return op.schedule(on_future=self, mode=mode, after=after, future=future)
+        else:
+            return op.schedule_for(self, mode=mode, after=after, future=future)
 
 
     def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:

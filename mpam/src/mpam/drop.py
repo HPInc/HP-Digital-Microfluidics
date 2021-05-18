@@ -1,7 +1,8 @@
 from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
-    Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick
-from mpam.device import Pad, Board
+    Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
+    StaticOperation
+from mpam.device import Pad, Board, Well
 from mpam.exceptions import NoSuchPad
 from typing import Optional, Final, Union, Sequence
 from quantities.SI import uL
@@ -89,13 +90,35 @@ class Drop(OpScheduler['Drop']):
                         board.after_tick(lambda : real_future.post(drop))
                 return None
             board.before_tick(before_tick, delta=mode.gated_delay(after))
-            return future 
-            
-            
+            return future
         
-        def __init__(self, direction: Dir, *, steps: int=1) -> None:
+        def __init__(self, direction: Dir, *, steps: int = 1) -> None:
             self.direction = direction
             self.steps = steps
+         
+            
+    class Dispense(StaticOperation['Drop']):
+        well: Well
+        
+        
+        def _schedule(self, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,
+                      future: Optional[Delayed[Drop]] = None
+                      ) -> Delayed[Drop]:
+            # if not TYPE_CHECKING:
+                # from drop import Drop
+            if future is None:
+                future = Delayed[Drop]()
+            df = Drop.appear_at(self.well.board, (self.well.exit_pad.location,))
+            real_future = future
+            df.when_value(lambda seq : real_future.post(seq[0]))
+            return future
+            
+        
+        def __init__(self, well: Well) -> None:
+            self.well = well
             
     def _update_pad_fn(self, from_pad: Pad, to_pad: Pad):
         def fn() -> None:

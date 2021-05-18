@@ -12,6 +12,7 @@ from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
     ClockCommRequest, TimerDeltaRequest
 from mpam.exceptions import PadBrokenError
+from enum import Enum, auto
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -172,18 +173,49 @@ class WellPad(OpScheduler['WellPad'], BinaryComponent['WellPad']):
         def set_location(self, loc: WellPadLoc) -> None:
             self.loc = loc
 
+class WellState(Enum):
+    EXTRACTABLE = auto()
+    READY = auto()
+    DISPENSED = auto()
+    ABSORBED = auto()
+    
+class WellMotion(Enum):
+    IDLE = auto()
+    READYING = auto()
+    DISPENSING = auto()
+    ABSORBING = auto()
+    EXTRACTING = auto()
+    
+# -1 is the well's gate pad.  Others are indexes into the shared_pads list
+WellOpStep = Sequence[int]
+WellOpStepSeq = Sequence[WellOpStep]
+WellOpSeqDict = Mapping[tuple[WellState,WellState], WellOpStepSeq]
     
 class WellGroup:
     name: Final[str]
     shared_pads: Final[Sequence[WellPad]]
     wells: list[Well]
+    sequences: Final[WellOpSeqDict]
     
-    def __init__(self, name: str, pads: Sequence[WellPad]) -> None:
+    state: WellState
+    motion: WellMotion
+    motion_future: Optional[Delayed[WellGroup]]
+    op_wells: list[Well]
+    
+    def __init__(self, name: str, 
+                 pads: Sequence[WellPad],
+                 sequences: WellOpSeqDict) -> None:
         self.name = name
         self.shared_pads = pads
         for (index, pad) in enumerate(pads):
             pad.set_location((self, index))
+        self.sequences = sequences
         self.wells = []
+        
+        self.state = WellState.EXTRACTABLE
+        self.motion = WellMotion.IDLE
+        self.motion_future = None
+        self.op_wells = []
         
     def __repr__(self) -> str:
         return f"WellGroup[{self.name}]"
@@ -191,7 +223,7 @@ class WellGroup:
     def add_well(self, well: Well) -> None:
         self.wells.append(well)
     
-class Well:
+class Well(OpScheduler['Well'], BoardComponent):
     number: Final[int]
     group: Final[WellGroup]
     capacity: Final[Volume]
@@ -231,6 +263,7 @@ class Well:
         return c is None or c.volume==Volume.ZERO and not c.inexact
     
     def __init__(self, *,
+                 board: Board,
                  number: int,
                  group: WellGroup,
                  exit_pad: Pad,
@@ -238,6 +271,7 @@ class Well:
                  capacity: Volume,
                  dispensed_volume: Volume,
                  is_voidable: bool = False) -> None:
+        BoardComponent.__init__(self, board)
         self.number = number
         self.group = group
         self.exit_pad = exit_pad
@@ -255,7 +289,6 @@ class Well:
     def __repr__(self) -> str:
         return f"Well[{self.number} <> {self.exit_pad}]"
         
-    
     
 class SystemComponent:
     system: Optional[System] = None
