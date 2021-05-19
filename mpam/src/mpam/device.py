@@ -13,6 +13,7 @@ from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     ClockCommRequest, TimerDeltaRequest
 from mpam.exceptions import PadBrokenError
 from enum import Enum, auto
+import itertools
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -179,32 +180,119 @@ class WellState(Enum):
     DISPENSED = auto()
     ABSORBED = auto()
     
-class WellMotion(Enum):
-    IDLE = auto()
-    READYING = auto()
-    DISPENSING = auto()
-    ABSORBING = auto()
-    EXTRACTING = auto()
-    
 # -1 is the well's gate pad.  Others are indexes into the shared_pads list
 WellOpStep = Sequence[int]
 WellOpStepSeq = Sequence[WellOpStep]
 WellOpSeqDict = Mapping[tuple[WellState,WellState], WellOpStepSeq]
+
+class WellMotion:
+    group: Final[WellGroup]
+    target: Final[WellState]
+    future: Final[Delayed[WellGroup]]
+    well_gates: Final[set[WellPad]]
+    pad_states: Final[dict[Pad, OnOff]]
+    next_step: int
+    one_tick: Final[ClassVar[Ticks]] = 1*tick
+    sequence: WellOpStepSeq
+    used_gate: bool
     
-class WellGroup:
+    def __init__(self, group: WellGroup, target: WellState, *,
+                 future: Optional[Delayed[WellGroup]] = None) -> None:
+        self.group = group
+        self.target = target
+        self.future = future or Delayed[WellGroup]()
+        self.well_gates = set[WellPad]()
+        self.pad_states = {}
+        self.next_step = 0
+        self.callback: ClockCallback = lambda : self.do_step()
+        self.used_gate = False
+        
+    def do_step(self) -> Optional[Ticks]:
+        group = self.group
+        # On the first step, we need to see if this is really necessary or if we 
+        # can piggyback onto another motion (or just return) 
+        if self.next_step == 0:
+            with group.lock:
+                current = group.motion
+                if current is not None:
+                    if current.target == self.target and not current.used_gate:
+                        # The current one is already going the same place we are and
+                        # it hasn't twiddled a gate yet, so we can piggyback.
+                        # (Strictly speaking, we could do that if it's *just* twiddled
+                        # the gates for the first time and it hasn't taken place yet, 
+                        # but that's probably more bookkeeping than is worthwhile.)
+                        current.well_gates.update(self.well_gates)
+                        current.pad_states.update(self.pad_states)
+                        current.future.when_value(lambda g : self.future.post(g))
+                        return None
+                    else:
+                        # Otherwise, we'll try again next time.  (I was going to reschedule 
+                        # when the current one was done, but it's almost certainly cheaper to
+                        # just check each tick.
+                        return self.one_tick
+                if group.state is self.target:
+                    # There's no motion, and we're already where we want to be.
+                    # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
+                    # without using our gates, so we need to go through READY again
+                    if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
+                        self.future.post(group)
+                        return None
+                if group.state is WellState.READY:
+                    self.sequence = group.sequences[(WellState.READY, self.target)]
+                else:
+                    self.sequence = list(group.sequences[(group.state, WellState.READY)])
+                    self.sequence += group.sequences[(WellState.READY, self.target)]
+                assert len(self.sequence) > 0
+                group.motion = self
+        shared_pads = group.shared_pads
+        states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
+        gate_state = OnOff.OFF
+        for pad_index in self.sequence[self.next_step]:
+            if pad_index == -1:
+                gate_state = OnOff.ON
+                self.used_gate = True
+            else:
+                states[pad_index] = OnOff.ON
+        for (i, shared) in enumerate(shared_pads):
+            shared.schedule(WellPad.SetState(states[i]), post_result=False)
+        for gate in self.well_gates:
+            gate.schedule(WellPad.SetState(gate_state), post_result=False)
+        self.next_step += 1
+        if self.next_step == len(self.sequence):
+            # we're done.  If there are any (exit) pads to twiddle, we do it now.
+            for (pad, state) in self.pad_states.items():
+                pad.schedule(Pad.SetState(state), post_result=False)
+            # And on the other side, we clean up
+            def cb() -> None:
+                with group.lock:
+                    group.motion = None
+                    group.state = self.target
+                    self.future.post(group)
+            group.board.after_tick(cb)
+            return None
+        else:
+            # Otherwise we do the next step the next time around
+            return self.one_tick
+            
+                    
+    
+class WellGroup(BoardComponent, OpScheduler['WellGroup']):
     name: Final[str]
     shared_pads: Final[Sequence[WellPad]]
     wells: list[Well]
     sequences: Final[WellOpSeqDict]
     
+    lock: Final[Lock]
+    
     state: WellState
-    motion: WellMotion
-    motion_future: Optional[Delayed[WellGroup]]
-    op_wells: list[Well]
+    motion: Optional[WellMotion]
+    
     
     def __init__(self, name: str, 
+                 board: Board,
                  pads: Sequence[WellPad],
                  sequences: WellOpSeqDict) -> None:
+        BoardComponent.__init__(self, board)
         self.name = name
         self.shared_pads = pads
         for (index, pad) in enumerate(pads):
@@ -213,15 +301,34 @@ class WellGroup:
         self.wells = []
         
         self.state = WellState.EXTRACTABLE
-        self.motion = WellMotion.IDLE
-        self.motion_future = None
-        self.op_wells = []
+        self.motion = None
+        self.lock = Lock()
         
     def __repr__(self) -> str:
         return f"WellGroup[{self.name}]"
         
     def add_well(self, well: Well) -> None:
         self.wells.append(well)
+        
+    class TransitionTo(Operation['WellGroup','WellGroup']):
+        target: Final[WellState]
+        well: Final[Optional[Well]]
+        
+        def __init__(self, target: WellState, *,
+                     well: Optional[Well] = None) -> None:
+            self.target = target
+            self.well = well
+            
+        def _schedule_for(self, group: WellGroup, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,
+                          future: Optional[Delayed[WellGroup]] = None
+                          )-> Delayed[WellGroup]:
+            board = group.board
+            motion = WellMotion(group, self.target, future=future)
+            board.before_tick(motion.callback, delta=mode.gated_delay(after))
+            return motion.future
     
 class Well(OpScheduler['Well'], BoardComponent):
     number: Final[int]
