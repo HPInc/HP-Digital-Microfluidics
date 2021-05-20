@@ -1,8 +1,8 @@
 from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
-    StaticOperation
-from mpam.device import Pad, Board, Well
+    StaticOperation, Reagent
+from mpam.device import Pad, Board, Well, WellGroup, WellState
 from mpam.exceptions import NoSuchPad
 from typing import Optional, Final, Union, Sequence
 from quantities.SI import uL
@@ -107,13 +107,33 @@ class Drop(OpScheduler['Drop']):
                       post_result: bool = True,
                       future: Optional[Delayed[Drop]] = None
                       ) -> Delayed[Drop]:
-            # if not TYPE_CHECKING:
-                # from drop import Drop
             if future is None:
                 future = Delayed[Drop]()
-            df = Drop.appear_at(self.well.board, (self.well.exit_pad.location,))
             real_future = future
-            df.when_value(lambda seq : real_future.post(seq[0]))
+            well = self.well
+            def make_drop(_) -> None:
+                v = well.dispensed_volume
+                in_well = well.contents
+                r: Reagent  # @UnusedVariable
+                r = in_well.reagent if in_well else unknown_reagent
+                if in_well is None:
+                    print(f"Dispensing from empty well {well}")
+                    r = unknown_reagent
+                else:
+                    r = in_well.reagent
+                    if in_well.volume < v:
+                        print(f"Attempting to draw {v} from {well}, which only has {in_well.volume}")
+                    in_well -= v
+                drop = Drop(pad=self.well.exit_pad, liquid=Liquid(r, v))
+                real_future.post(drop)
+                
+                
+            # Note, we post the drop as soon as we get to the DISPENSED state, even theough
+            # we continue on to READY
+            group = self.well.group
+            group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well), after=after) \
+                .then_call(make_drop) \
+                .then_schedule(WellGroup.TransitionTo(WellState.READY))
             return future
             
         

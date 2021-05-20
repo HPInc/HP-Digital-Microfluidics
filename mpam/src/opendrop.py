@@ -66,7 +66,7 @@ class Board(device.Board):
         super().__init__(pads=pad_dict, 
                          wells=wells,
                          orientation=Orientation.NORTH_NEG_EAST_POS,
-                         drop_motion_time=100*ms)
+                         drop_motion_time=500*ms)
         self._dev = dev
         self._states = bytearray(128)
         self._port= None
@@ -105,8 +105,8 @@ class Board(device.Board):
         
         upper_left = self._well(0, left_group, XYCoord(0,0), self.pad_at(1,1))
         upper_right = self._well(1, right_group, XYCoord(15,0), self.pad_at(14,1))
-        lower_left = self._well(2, left_group, XYCoord(0,7), self.pad_at(1,7))
-        lower_right = self._well(1, right_group, XYCoord(15,7), self.pad_at(14,7))
+        lower_left = self._well(2, left_group, XYCoord(0,7), self.pad_at(1,6))
+        lower_right = self._well(1, right_group, XYCoord(15,7), self.pad_at(14,6))
         wells.extend((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:

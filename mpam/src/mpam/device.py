@@ -189,6 +189,7 @@ class WellMotion:
     group: Final[WellGroup]
     target: Final[WellState]
     future: Final[Delayed[WellGroup]]
+    post_result: Final[bool]
     well_gates: Final[set[WellPad]]
     pad_states: Final[dict[Pad, OnOff]]
     next_step: int
@@ -197,10 +198,12 @@ class WellMotion:
     used_gate: bool
     
     def __init__(self, group: WellGroup, target: WellState, *,
-                 future: Optional[Delayed[WellGroup]] = None) -> None:
+                 future: Optional[Delayed[WellGroup]] = None,
+                 post_result: bool = True) -> None:
         self.group = group
         self.target = target
         self.future = future or Delayed[WellGroup]()
+        self.post_result = post_result
         self.well_gates = set[WellPad]()
         self.pad_states = {}
         self.next_step = 0
@@ -237,8 +240,8 @@ class WellMotion:
                     if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
                         self.future.post(group)
                         return None
-                if group.state is WellState.READY:
-                    self.sequence = group.sequences[(WellState.READY, self.target)]
+                if group.state is WellState.READY or self.target is WellState.READY:
+                    self.sequence = group.sequences[(group.state, self.target)]
                 else:
                     self.sequence = list(group.sequences[(group.state, WellState.READY)])
                     self.sequence += group.sequences[(WellState.READY, self.target)]
@@ -264,10 +267,14 @@ class WellMotion:
                 pad.schedule(Pad.SetState(state), post_result=False)
             # And on the other side, we clean up
             def cb() -> None:
+                # Any gates we turned on, we turn off at the next tick
+                for gate in self.well_gates:
+                    gate.schedule(WellPad.TurnOff, post_result=False)
                 with group.lock:
                     group.motion = None
                     group.state = self.target
-                    self.future.post(group)
+                    if self.post_result:
+                        self.future.post(group)
             group.board.after_tick(cb)
             return None
         else:
@@ -326,7 +333,14 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
                           future: Optional[Delayed[WellGroup]] = None
                           )-> Delayed[WellGroup]:
             board = group.board
-            motion = WellMotion(group, self.target, future=future)
+            motion = WellMotion(group, self.target, future=future, post_result=post_result)
+            well = self.well
+            if well is not None:
+                motion.well_gates.add(well.gate)
+                target = self.target
+                assert target is WellState.DISPENSED or target is WellState.ABSORBED, \
+                    f"Well provided on transition to {target}"
+                motion.pad_states[well.exit_pad] = OnOff.ON if target is WellState.DISPENSED else OnOff.OFF
             board.before_tick(motion.callback, delta=mode.gated_delay(after))
             return motion.future
     
