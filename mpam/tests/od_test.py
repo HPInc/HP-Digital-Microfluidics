@@ -1,13 +1,13 @@
 from __future__ import annotations
 from mpam.device import System, WellPad, Well
 import opendrop
-from mpam.types import Dir
+from mpam.types import Dir, unknown_reagent, Liquid, schedule, StaticOperation,\
+    ticks
 from quantities.SI import uL, ms
 from mpam.drop import Drop
 from quantities.dimensions import Volume
 from quantities.core import Unit
 from quantities.US import acre, ft
-
 
 board = opendrop.Board("COM5")
 
@@ -47,16 +47,31 @@ with system:
     # board.well_groups['left'].shared_pads[2].schedule(WellPad.TurnOn)
     # board.wells[3].gate.schedule(WellPad.TurnOn)
     
+    from_well = board.wells[1]
+    to_well = board.wells[0]
+    from_well.contains(Liquid(unknown_reagent, 8*drops))
+    
+    # Drop.DispenseFrom(from_well).schedule() \
+    #     .then_schedule(Drop.Move(Dir.WEST, steps = 13)) \
+    #     .then_schedule(Drop.Enter(to_well))
+    
     def dispense_drops(n_drops: int):
         w = board.wells[1]
+        sequence = Drop.DispenseFrom(w) \
+                    .then(Drop.Move(Dir.WEST, steps = 4)) \
+                    .then(Drop.Move(Dir.WEST, steps=9)) \
+                    .then(Drop.EnterWell)
         def dispense_and_walk(_=None):
             nonlocal n_drops
             if (n_drops > 0):
-                Drop.Dispense(w).schedule() \
-                    .then_schedule(Drop.Move(Dir.WEST)) \
-                    .then_call(dispense_and_walk) \
-                    .then_schedule(Drop.Move(Dir.WEST, steps=2*n_drops)) \
-                    .then_schedule(Drop.Move(Dir.SOUTH, steps=4))
+                # schedule(Drop.DispenseFrom(w)) \
+                #     .then_schedule(Drop.Move(Dir.WEST, steps = 4)) \
+                #     .then_call(dispense_and_walk) \
+                #     .then_schedule(Drop.Move(Dir.WEST, steps=9)) \
+                #     .then_schedule(Drop.EnterWell)
+                sequence.schedule()
+                sequence.schedule(after=10*ticks)
+                sequence.schedule(after=15*ticks)
                 n_drops -= 1
         dispense_and_walk()
     

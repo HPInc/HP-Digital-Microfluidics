@@ -3,14 +3,23 @@ from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
     StaticOperation, Reagent
 from mpam.device import Pad, Board, Well, WellGroup, WellState
-from mpam.exceptions import NoSuchPad
+from mpam.exceptions import NoSuchPad, NotAtWell
 from typing import Optional, Final, Union, Sequence
 from quantities.SI import uL
 from threading import Lock
+from quantities.dimensions import Volume
 
 class Drop(OpScheduler['Drop']):
     liquid: Liquid
     pad: Pad
+    
+    @property
+    def volume(self) -> Volume:
+        return self.liquid.volume
+    
+    @property
+    def reagent(self) -> Reagent:
+        return self.liquid.reagent
     
     def __init__(self, pad: Pad, liquid: Liquid) -> None:
         assert pad.drop is None, f"Trying to create a second drop at {pad}"
@@ -97,14 +106,13 @@ class Drop(OpScheduler['Drop']):
             self.steps = steps
          
             
-    class Dispense(StaticOperation['Drop']):
+    class DispenseFrom(StaticOperation['Drop']):
         well: Well
-        
         
         def _schedule(self, *,
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
-                      post_result: bool = True,
+                      post_result: bool = True,  
                       future: Optional[Delayed[Drop]] = None
                       ) -> Delayed[Drop]:
             if future is None:
@@ -113,25 +121,17 @@ class Drop(OpScheduler['Drop']):
             well = self.well
             def make_drop(_) -> None:
                 v = well.dispensed_volume
-                in_well = well.contents
-                r: Reagent  # @UnusedVariable
-                r = in_well.reagent if in_well else unknown_reagent
-                if in_well is None:
-                    print(f"Dispensing from empty well {well}")
-                    r = unknown_reagent
-                else:
-                    r = in_well.reagent
-                    if in_well.volume < v:
-                        print(f"Attempting to draw {v} from {well}, which only has {in_well.volume}")
-                    in_well -= v
-                drop = Drop(pad=self.well.exit_pad, liquid=Liquid(r, v))
-                real_future.post(drop)
+                pad = self.well.exit_pad
+                liquid = well.transfer_out(v)
+                drop = Drop(pad=pad, liquid=liquid)
+                if post_result:
+                    real_future.post(drop)
                 
                 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
             group = self.well.group
-            group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well), after=after) \
+            group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well), mode=mode, after=after) \
                 .then_call(make_drop) \
                 .then_schedule(WellGroup.TransitionTo(WellState.READY))
             return future
@@ -139,6 +139,44 @@ class Drop(OpScheduler['Drop']):
         
         def __init__(self, well: Well) -> None:
             self.well = well
+            
+    class EnterWell(Operation['Drop',None]):
+        well: Final[Optional[Well]]
+        
+        def _schedule_for(self, drop: Drop, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,  
+                          future: Optional[Delayed[None]] = None
+                          ) -> Delayed[None]:
+            if future is None:
+                future = Delayed[None]()
+            real_future = future
+            if self.well is None:
+                if drop.pad.well is None:
+                    raise NotAtWell(f"{drop} not at a well")
+                well = drop.pad.well
+            else:
+                well = self.well
+            def consume_drop(_) -> None:
+                well.transfer_in(drop.liquid)
+                drop.pad._drop = None
+                if post_result:
+                    real_future.post(None)
+                
+                
+            # Note, we post the drop as soon as we get to the DISPENSED state, even theough
+            # we continue on to READY
+            group = well.group
+            group.schedule(WellGroup.TransitionTo(WellState.ABSORBED, well=well), mode=mode, after=after) \
+                .then_call(consume_drop) \
+                .then_schedule(WellGroup.TransitionTo(WellState.READY))
+            return future
+            
+        
+        def __init__(self, well: Optional[Well] = None) -> None:
+            self.well = well
+        
             
     def _update_pad_fn(self, from_pad: Pad, to_pad: Pad):
         def fn() -> None:

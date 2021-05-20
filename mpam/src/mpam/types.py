@@ -10,6 +10,7 @@ from quantities.core import CountDim
 
 T = TypeVar('T')
 V = TypeVar('V')
+V2 = TypeVar('V2')
 
 class OnOff(Enum):
     OFF = 0
@@ -228,14 +229,41 @@ class Operation(Generic[T, V]):
             obj.when_value(lambda x : self._schedule_for(x, mode=mode, after=after, post_result=post_result, future=future))
             return future
         return self._schedule_for(obj, mode=mode, after=after, post_result=post_result, future=future)
+    
+    def then(self, op: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+             after: Optional[DelayType] = None,
+             ) -> Operation[T,V2]:
+        return CombinedOperation[T,V,V2](self, op, after=after)
+    
+class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
+    first: Operation[T,V]
+    second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]]
+    after: Final[Optional[DelayType]]
+    
+    def __init__(self, first: Operation[T, V], second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+                 after: Optional[DelayType] = None) -> None:
+        self.first = first
+        self.second = second
+        self.after = after
+    
+    def _schedule_for(self, obj: T, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,
+                      future: Optional[Delayed[V2]] = None
+                      ) -> Delayed[V2]:
+        return self.first._schedule_for(obj, mode=mode, after=after) \
+                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result, future=future)
         
 class OpScheduler(Generic[T]):
-    def schedule(self: T, op: Operation[T, V],
+    def schedule(self: T, op: Union[Operation[T, V], Callable[[],Operation[T,V]]],
                  mode: RunMode = RunMode.GATED, 
                  after: Optional[DelayType] = None,
                  post_result: bool = True,
                  future: Optional[Delayed[V]] = None
                  ) -> Delayed[V]:
+        if not isinstance(op, Operation):
+            op = op()
         return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
 
 class StaticOperation(Generic[V]):
@@ -262,6 +290,31 @@ class StaticOperation(Generic[V]):
             on_future.when_value(lambda _ : self._schedule(mode=mode, after=after, post_result=post_result, future=future))
             return future
         return self._schedule(mode=mode, after=after, post_result=post_result, future=future)
+    
+    def then(self, op: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+             after: Optional[DelayType] = None,
+             ) -> StaticOperation[V2]:
+        return CombinedStaticOperation[V,V2](self, op, after=after)
+    
+class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
+    first: StaticOperation[V]
+    second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]]
+    after: Final[Optional[DelayType]]
+    
+    def __init__(self, first: StaticOperation[V], second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+                 after: Optional[DelayType] = None) -> None:
+        self.first = first
+        self.second = second
+        self.after = after
+    
+    def _schedule(self, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,
+                      future: Optional[Delayed[V2]] = None
+                      ) -> Delayed[V2]:
+        return self.first._schedule(mode=mode, after=after) \
+                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result, future=future)
     
 # In an earlier iteration, Delayed[T] took a mandatory "guess" argument, and had "initial_guess" and "best_guess"
 # properties (the latter returned the value if it was there and the initial guess otherwise).  This seemed to 
@@ -311,14 +364,19 @@ class Delayed(Generic[T]):
         self.wait()
         return self._val[1]
     
-    def then_schedule(self, op: Union[Operation[T,V], StaticOperation[V]], *, 
+    def then_schedule(self, op: Union[Operation[T,V], StaticOperation[V],
+                                      Callable[[], Operation[T,V]],
+                                      Callable[[], StaticOperation[V]]], *, 
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
+                      post_result: bool = True,
                       future: Optional[Delayed[V]] = None) -> Delayed[V]:
         if isinstance(op, StaticOperation):
-            return op.schedule(on_future=self, mode=mode, after=after, future=future)
+            return op.schedule(on_future=self, mode=mode, after=after, post_result=post_result, future=future)
+        elif isinstance(op, Operation):
+            return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
         else:
-            return op.schedule_for(self, mode=mode, after=after, future=future)
+            return self.then_schedule(op(), mode=mode, after=after, post_result=post_result, future=future)
 
 
     def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:
@@ -358,6 +416,18 @@ class Delayed(Generic[T]):
                 # Just in case this object gets stuck somewhere.
                 # The callbacks are never going to be needed again
                 del self._callbacks
+
+def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
+             mode: RunMode = RunMode.GATED, 
+             after: Optional[DelayType] = None,
+             post_result: bool = True,
+             future: Optional[Delayed[V]] = None
+             ) -> Delayed[V]:
+    if isinstance(op, StaticOperation):
+        return op.schedule(mode=mode, after=after, post_result=post_result, future=future)
+    else:
+        return op().schedule(mode=mode, after=after, post_result=post_result, future=future)
+        
             
 
 Concentration = Union[Molarity, MassConcentration, VolumeConcentration]
@@ -456,5 +526,6 @@ class Liquid:
     def __isub__(self, rhs: Volume) -> Liquid:
         self.volume = max(self.volume-rhs, 0*ml)
         return self
+    
     
     

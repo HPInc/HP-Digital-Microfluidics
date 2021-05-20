@@ -7,13 +7,15 @@ from quantities.timestamp import time_now, Timestamp
 from threading import Event, Lock
 
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType,\
-    Operation, OpScheduler, Orientation, TickNumber, tick, Ticks
+    Operation, OpScheduler, Orientation, TickNumber, tick, Ticks,\
+    unknown_reagent, waste_reagent, Reagent
 from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
     ClockCommRequest, TimerDeltaRequest
 from mpam.exceptions import PadBrokenError
 from enum import Enum, auto
 import itertools
+from erk.errors import ErrorHandler, IGNORE, PRINT
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -409,7 +411,56 @@ class Well(OpScheduler['Well'], BoardComponent):
         
     def __repr__(self) -> str:
         return f"Well[{self.number} <> {self.exit_pad}]"
-        
+    
+    def _can_accept(self, liquid: Liquid) -> bool:
+        c = self._contents
+        if c is None: return True
+        my_r = c.reagent
+        their_r = liquid.reagent
+        return (my_r == their_r 
+                or my_r == unknown_reagent 
+                or their_r == unknown_reagent
+                or my_r == waste_reagent) 
+    
+    def transfer_in(self, liquid: Liquid, *,
+                    volume: Optional[Volume] = None, 
+                    on_overflow: ErrorHandler = PRINT,
+                    on_reagent_mismatch: ErrorHandler = PRINT) -> None:
+        if volume is None:
+            volume = liquid.volume
+        on_overflow.expect_true(self.remaining_capacity >= volume,
+                    lambda : f"Tried to add {volume} to {self}.  Remaining capacity only {self.remaining_capacity}")
+        if self._contents is None:
+            self._contents = Liquid(liquid.reagent, volume)
+        else:
+            r = self._contents.reagent
+            on_reagent_mismatch.expect_true(self._can_accept(liquid),
+                                            lambda : f"Adding {liquid.reagent} to {self} containing {r}")
+            self._contents += volume
+            liquid -= volume
+        print(f"{self} now contains {self.contents}")
+            
+    def transfer_out(self, volume: Volume, *,
+                     on_empty: ErrorHandler = PRINT) -> Liquid:
+        on_empty.expect_true(self.volume>= volume,
+                    lambda : f"Tried to draw {volume} from {self}, which only has {self.volume}")
+        reagent: Reagent
+        if self._contents is None:
+            reagent = unknown_reagent
+        else:
+            reagent = self._contents.reagent
+            print(f"Removing {volume} from {self._contents}")
+            self._contents -= volume
+        print(f"{self} now contains {self.contents}")
+        return Liquid(reagent, volume)
+
+    def contains(self, liquid: Liquid,
+                 *, on_overflow: ErrorHandler = PRINT) -> None:
+        on_overflow.expect_true(liquid.volume <= self.capacity,
+                                lambda : f"Asserted {self} contains {liquid}. capacity only {self.capacity}")
+        self._contents = None
+        self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
+        print(f"Volume is now {self.volume}")
     
 class SystemComponent:
     system: Optional[System] = None

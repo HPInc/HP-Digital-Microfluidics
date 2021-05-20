@@ -37,4 +37,5 @@ class UnsafeMotion(MPAMError):
         super().__init__(f"Motion travels through unsafe {pad}")
         self.pad = pad
 
+class NotAtWell(MPAMError): ...
     
