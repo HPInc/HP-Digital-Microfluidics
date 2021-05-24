@@ -65,8 +65,6 @@ class IdleBarrier:
 class Updatable(Protocol):
     def update_state(self) -> Any: ...          
 
-Callback = Callable[[], Any]
-            
 # class DevCommRequest:
 #     component: Optional[Updatable]
 #     def __init__(self, component: Optional[Updatable], cb: Callback):

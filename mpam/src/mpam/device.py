@@ -1,21 +1,23 @@
 from __future__ import annotations
 from typing import Optional, Final, Mapping, Callable, Literal,\
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic, Hashable
 from types import TracebackType
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now, Timestamp
-from threading import Event, Lock
+from threading import Event, Lock, Thread
 
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType,\
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks,\
-    unknown_reagent, waste_reagent, Reagent
-from mpam.engine import Callback, DevCommRequest, TimerFunc, ClockCallback,\
+    unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback,\
+    Callback
+from mpam.engine import DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
     ClockCommRequest, TimerDeltaRequest
 from mpam.exceptions import PadBrokenError
 from enum import Enum, auto
 import itertools
-from erk.errors import ErrorHandler, IGNORE, PRINT
+from erk.errors import ErrorHandler, PRINT
+from matplotlib import pyplot
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -37,12 +39,28 @@ BC = TypeVar('BC', bound='BinaryComponent')
 class BinaryComponent(BoardComponent, Generic[BC]):
     _state: OnOff
     broken: bool
+    state_change_callbacks: Final[ChangeCallbackList[OnOff]]
+    
     
     def __init__(self, board: Board, initial_state: OnOff = OnOff.OFF) -> None:
         super().__init__(board)
         self._state = initial_state
         self.broken = False
         self.set_device_state: Callable[[OnOff], None]
+        self.state_change_callbacks = ChangeCallbackList[OnOff]()
+        
+    @property
+    def current_state(self) -> OnOff:
+        return self._state
+
+    @current_state.setter
+    def current_state(self, val: OnOff) -> None:
+        old = self._state
+        self._state = val
+        self.state_change_callbacks.process(old, val)
+        
+    def on_state_change(self, cb: ChangeCallback[OnOff], *, key: Optional[Hashable] = None):
+        self.state_change_callbacks.add(cb, key=key)
         
     class ModifyState(Operation[BC, OnOff]):
         def _schedule_for(self, obj: BC, *,
@@ -61,10 +79,12 @@ class BinaryComponent(BoardComponent, Generic[BC]):
             setter = obj.set_device_state
             
             def cb() -> Optional[Callback]:
-                old = obj._state
+                old = obj.current_state
                 new = mod(old)
+                print(f"Setting {obj} to {new}")
                 setter(new)
-                self._state = new
+                obj.current_state= new
+                print(f"Back from setting {obj} val = {obj._state}")
                 finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(old))
                 return finish
             
@@ -97,11 +117,13 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     # broken: bool
     
     _pads: Final[PadArray]
-    _state: OnOff
     _drop: Optional[Drop]
     _dried_liquid: Optional[Drop]
     _neighbors: Optional[Sequence[Pad]]
     _well: Optional[Well] = None
+    _magnet: Optional[Magnet] = None
+    
+    _drop_change_callbacks: Final[ChangeCallbackList[Optional[Drop]]]
         
     @property
     def row(self) -> int:
@@ -115,12 +137,19 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
         return self._well
     
     @property
-    def current_state(self) -> OnOff:
-        return self._state
+    def magnet(self) -> Optional[Magnet]:
+        return self._magnet
+    
     
     @property
     def drop(self) -> Optional[Drop]:
         return self._drop
+    
+    @drop.setter
+    def drop(self, drop: Drop):
+        old = self._drop
+        self._drop = drop
+        self._drop_change_callbacks.process(old, drop)
     
     @property
     def dried_liquid(self) -> Optional[Drop]:
@@ -135,17 +164,17 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
         return ns
     
     def __init__(self, loc: XYCoord, board: Board, *, exists: bool = True) -> None:
-        BinaryComponent.__init__(self, board)
+        BinaryComponent.__init__(self, board, initial_state=OnOff.OFF)
         self.location = loc
         self.exists = exists
         # self.broken = False
-        self._state = OnOff.OFF
         self._pads = board.pad_array
         self._drop = None
         self._dried_liquid = None
+        self._drop_change_callbacks = ChangeCallbackList()
         
     def __repr__(self) -> str:
-        return f"Pad[{self.column},{self.row}]"
+        return f"Pad({self.column},{self.row})"
         
     def neighbor(self, d: Dir) -> Optional[Pad]:
         n = self.board.orientation.neighbor(d, self.location)
@@ -159,6 +188,9 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     
     def safe(self) -> bool:
         return self.empty and all(map(lambda n : n.empty, self.neighbors))
+    
+    def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
+        self._drop_change_callbacks.add(cb, key=key)
     
 WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
@@ -461,13 +493,31 @@ class Well(OpScheduler['Well'], BoardComponent):
         self._contents = None
         self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
         print(f"Volume is now {self.volume}")
+        
+        
+class Magnet(BinaryComponent['Magnet']): 
+    pads: Final[Sequence[Pad]]
+    
+    def __init__(self, board: Board, *, pads: Sequence[Pad]) -> None:
+        BinaryComponent.__init__(self, board)
+        self.pads = pads
+        for pad in pads:
+            pad._magnet = self
+            
+    def current_state(self) -> OnOff:
+        return self._state
+    
+    def __repr__(self) -> str:
+        return f"Magnet({', '.join(str(self.pads))})"
     
 class SystemComponent:
     system: Optional[System] = None
     _after_update: Final[list[Callback]]
+    _monitor_callbacks: Final[list[Callback]]
     
     def __init__(self) -> None:
         self._after_update = []
+        self._monitor_callbacks = []
         
     def join_system(self, system: System) -> None:
         self.system = system
@@ -480,12 +530,17 @@ class SystemComponent:
     def update_state(self) -> None:
         raise NotImplementedError(f"{self.__class__}.update_state() not defined")
     
+    def add_monitor(self, cb: Callback) -> None:
+        self._monitor_callbacks.append(cb)
+    
     def finish_update(self) -> None:
         # This is assumed to only be called in the DevComm thread, so
         # no locking is necessary.
         for cb in self._after_update:
             cb()
         self._after_update.clear()
+        for cb in self._monitor_callbacks:
+            cb()
         
     def make_request(self, cb: Callable[[], Optional[Callback]]) -> DevCommRequest:
         def req() -> tuple[SystemComponent]:
@@ -558,6 +613,22 @@ class Board(SystemComponent):
     
     def pad_at(self, x: int, y: int) -> Pad:
         return self.pads[XYCoord(x,y)]
+    
+    @property
+    def max_row(self) -> int:
+        return max(coord.y for coord in self.pads)
+
+    @property
+    def min_row(self) -> int:
+        return min(coord.y for coord in self.pads)
+
+    @property
+    def max_column(self) -> int:
+        return max(coord.x for coord in self.pads)
+
+    @property
+    def min_column(self) -> int:
+        return min(coord.x for coord in self.pads)
     
     @property
     def well_groups(self) -> Mapping[str, WellGroup]:
@@ -793,4 +864,27 @@ class System:
         with self._batch_lock:
             self._batch = Batch(self, nested=self._batch)
             return self._batch
+        
+        
+    def run_monitored(self, fn: Callable[[System],T]) -> T:
+        from mpam.monitor import BoardMonitor
+        val: T
+        
+        done = Event()
+        def run_it() -> None:
+            nonlocal val
+            with self:
+                val = fn(self)  # @UnusedVariable
+            done.set()
+
+        thread = Thread(target=run_it)
+        monitor = BoardMonitor(self.board)
+        thread.start()
+        while not done.is_set():
+            monitor.process_display_updates()
+            monitor.figure.canvas.draw_idle()
+            pyplot.pause(0.02)
+            
+        pyplot.pause(100)
+        return val
     
