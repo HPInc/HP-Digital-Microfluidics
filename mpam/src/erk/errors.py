@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Protocol, Final, IO, TextIO, NoReturn
+from typing import Callable, Final, TextIO, NoReturn
 import sys
 
 class ErrorHandler:

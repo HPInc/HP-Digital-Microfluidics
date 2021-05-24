@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast, Final, ClassVar, Mapping, overload
+    cast, Final, ClassVar, Mapping, overload, Hashable
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -11,6 +11,8 @@ from quantities.core import CountDim
 T = TypeVar('T')
 V = TypeVar('V')
 V2 = TypeVar('V2')
+
+Callback = Callable[[], Any]
 
 class OnOff(Enum):
     OFF = 0
@@ -428,6 +430,34 @@ def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
     else:
         return op().schedule(mode=mode, after=after, post_result=post_result, future=future)
         
+ChangeCallback = Callable[[T,T],None]
+class ChangeCallbackList(Generic[T]):
+    callbacks: dict[Hashable, ChangeCallback[T]]
+    
+    def __init__(self) -> None:
+        self.callbacks = {}
+        
+    def add(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
+        if key is None:
+            key = cb
+        self.callbacks[key] = cb
+        
+    def remove(self, key: Hashable) -> None:
+        del self.callbacks[key]
+        
+    def discard(self, key: Hashable) -> None:
+        self.callbacks.pop(key, None)
+        
+    def clear(self) -> None:
+        self.callbacks.clear()
+        
+    def process(self, old: T, new: T) -> None:
+        print(f"Processing callbacks")
+        for cb in self.callbacks.values():
+            print("-- processing callback")
+            cb(old, new)
+
+    
             
 
 Concentration = Union[Molarity, MassConcentration, VolumeConcentration]
@@ -504,14 +534,40 @@ waste_reagent: Final[Reagent] = Reagent.find("waste")
 unknown_reagent: Final[Reagent] = Reagent.find("unknown")
     
 class Liquid:
-    reagent: Reagent
-    volume: Volume
+    _reagent: Reagent
+    _volume: Volume
     inexact: bool
     
+    volume_change_callbacks: Final[ChangeCallbackList[Volume]]
+    reagent_change_callbacks: Final[ChangeCallbackList[Reagent]]
+    
+    @property
+    def volume(self) -> Volume:
+        return self._volume
+    
+    @volume.setter
+    def volume(self, new: Volume) -> None:
+        old = self._volume
+        self._volume = new
+        self.volume_change_callbacks.process(old, new)
+        
+    @property
+    def reagent(self) -> Reagent:
+        return self._reagent
+    
+    @reagent.setter
+    def reagent(self, new: Reagent) -> None:
+        old = self._reagent
+        self._reagent = new
+        self.reagent_change_callbacks.process(old, new)
+    
     def __init__(self, reagent: Reagent, volume: Volume, *, inexact: bool = False) -> None:
-        self.reagent = reagent
-        self.volume = volume
+        self._reagent = reagent
+        self._volume = volume
         self.inexact = inexact
+        
+        self.volume_change_callbacks = ChangeCallbackList[Volume]()
+        self.reagent_change_callbacks = ChangeCallbackList[Reagent]()
         
     def __repr__(self) -> str:
         return f"Liquid[{'~' if self.inexact else ''}{self.volume.in_units(uL)}, {self.reagent}]"
@@ -527,5 +583,14 @@ class Liquid:
         self.volume = max(self.volume-rhs, 0*ml)
         return self
     
+    def on_volume_change(self, cb: ChangeCallback[Volume], *, key: Optional[Hashable] = None):
+        if key is None:
+            key = cb
+        self.volume_change_callbacks.add(cb, key=key)
+    
+    def on_reagent_change(self, cb: ChangeCallback[Reagent], *, key: Optional[Hashable] = None):
+        if key is None:
+            key = cb
+        self.reagent_change_callbacks.add(cb, key=key)
     
     

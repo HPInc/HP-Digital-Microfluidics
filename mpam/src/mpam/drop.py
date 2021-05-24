@@ -12,6 +12,7 @@ from quantities.dimensions import Volume
 class Drop(OpScheduler['Drop']):
     liquid: Liquid
     pad: Pad
+    exists: bool
     
     @property
     def volume(self) -> Volume:
@@ -25,7 +26,8 @@ class Drop(OpScheduler['Drop']):
         assert pad.drop is None, f"Trying to create a second drop at {pad}"
         self.liquid = liquid
         self.pad = pad
-        pad._drop = self
+        self.exists = True
+        pad.drop = self
         
     def __repr__(self) -> str:
         return f"Drop[{self.pad}, {self.liquid}]"
@@ -160,7 +162,8 @@ class Drop(OpScheduler['Drop']):
                 well = self.well
             def consume_drop(_) -> None:
                 well.transfer_in(drop.liquid)
-                drop.pad._drop = None
+                drop.exists = False
+                drop.pad.drop = None
                 if post_result:
                     real_future.post(None)
                 
@@ -180,11 +183,11 @@ class Drop(OpScheduler['Drop']):
             
     def _update_pad_fn(self, from_pad: Pad, to_pad: Pad):
         def fn() -> None:
-            assert from_pad._drop is self, f"Moved {self}, but thought it was at {from_pad}"
-            assert to_pad._drop is None, f"Moving {self} to non-empty {to_pad}"
+            assert from_pad.drop is self, f"Moved {self}, but thought it was at {from_pad}"
+            assert to_pad.drop is None, f"Moving {self} to non-empty {to_pad}"
             # print(f"Moved drop from {from_pad} to {to_pad}")
-            from_pad._drop = None
+            from_pad.drop = None
             self.pad = to_pad
-            to_pad._drop = self
+            to_pad.drop = self
             # print(f"Drop now at {to_pad}")
         return fn
