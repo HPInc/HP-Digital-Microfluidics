@@ -1,16 +1,19 @@
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast, Final, ClassVar, Mapping, overload, Hashable, Sequence, Tuple
+    cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
 from quantities.SI import ml, uL, millisecond
 from quantities.core import CountDim
+from matplotlib._color_data import XKCD_COLORS
+from weakref import WeakKeyDictionary
 
 T = TypeVar('T')
 V = TypeVar('V')
 V2 = TypeVar('V2')
+H = TypeVar('H', bound=Hashable)
 
 Callback = Callable[[], Any]
 
@@ -813,4 +816,83 @@ class Liquid:
                   new_composition_function: Optional[Callable[[ChemicalComposition], ChemicalComposition]] = None) -> Liquid:
         self.reagent = self.reagent.processed(step, new_composition_function)
         return self
+    
+class Color:
+    description: Final[str]
+    rgba: Final[tuple[float,float,float,float]]
+    
+    _class_lock: Final[ClassVar[Lock]] = Lock()
+    _known: Final[ClassVar[dict[str, Color]]] = {}
+    
+    def __init__(self, description: str, rgba: tuple[float,float,float,float]) -> None:
+        self.description = description
+        self.rgba = rgba
+        
+    @classmethod
+    def find(cls, description: Union[str, tuple[float,float,float]]) -> Color:
+        key = str(description)
+        with cls._class_lock:
+            c = cls._known.get(key, None)
+            if c is None:
+                from matplotlib import colors
+                c = Color(key, colors.to_rgb(description))
+            cls._known[key] = c
+            return c
+        
+    def __repr__(self) -> str:
+        return f"Color({repr(self.description)}, {repr(self.rgba)})"
+    
+    def __str__(self) -> str:
+        return self.description
+    
+class ColorAllocator(Generic[H]):
+    all_colors: ClassVar[Optional[Sequence[str]]] = None
+    color_assignments: WeakKeyDictionary[H, Color]
+    colors_in_use: Final[dict[Color, int]]
+    next_reagent_color: int
+    _class_lock: Final[ClassVar[Lock]] = Lock()
+    
+    def __init__(self, initial_reservations: Optional[Mapping[H, Color]] = None):
+        self.color_assignments = WeakKeyDictionary()
+        self.colors_in_use = {}
+        self.next_reagent_color = 0
+        if initial_reservations is not None:
+            for k,c in initial_reservations.items():
+                self.reserve_color(k, c)
+            
+    def reserve_color(self, key: H, color: Color) -> None:
+        self.color_assignments[key] = color
+        self.colors_in_use[color] = self.colors_in_use.get(color, 0)+1
+    
+    def get_color(self, key: H) -> Color:
+        assignments = self.color_assignments
+        c = assignments.get(key, None)
+        if c is not None:
+            return c
+        color_list = ColorAllocator.all_colors
+        if color_list is None:
+            with ColorAllocator._class_lock:
+                color_list = ColorAllocator.all_colors
+                if color_list is None:
+                    color_list = [k for k in XKCD_COLORS]
+                    ColorAllocator.all_colors = color_list
+        in_use = self.colors_in_use
+        first_try = self.next_reagent_color
+        i = first_try
+        wrapped = False
+        while True:
+            c = Color.find(color_list[i])
+            uses = in_use.get(c, 0)
+            if uses==0 or wrapped and i == first_try:
+                in_use[c] = uses+1
+                assignments[key] = c
+                return c
+            i += 1
+            if i == len(color_list):
+                wrapped = True
+                i = 0
+    
+
+
+        
 

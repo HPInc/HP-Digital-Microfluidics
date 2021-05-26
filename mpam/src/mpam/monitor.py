@@ -7,12 +7,13 @@ from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib import pyplot
 from matplotlib.patches import Rectangle, Circle
-from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback
+from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
+    ColorAllocator
 from matplotlib.text import Annotation
 from mpam.drop import Drop
 import math
 from quantities.dimensions import Volume
-from threading import Lock
+from threading import RLock
 
 
 class PadMonitor(object):
@@ -109,9 +110,9 @@ class DropMonitor:
         self.board_monitor = board_monitor
         pad = drop.pad
         pm = board_monitor.pads[pad]
-        reagent_color = 'green'
+        reagent_color = board_monitor.reagent_color(drop.reagent)
         self.shape= Circle(pm.center, radius=pm.drop_radius(drop),
-                           facecolor = reagent_color,
+                           facecolor = reagent_color.rgba,
                            edgecolor = 'black',
                            alpha = 0.5,
                            visible=False)
@@ -126,7 +127,7 @@ class DropMonitor:
 
     def note_reagent(self, reagent: Reagent) -> None:
         color = self.board_monitor.reagent_color(reagent)
-        self.shape.set_facecolor(color)
+        self.shape.set_facecolor(color.rgba)
 
         
         
@@ -138,13 +139,14 @@ class BoardMonitor:
     figure: Final[Figure]
     plot: Final[Axes]
     drop_map: Final[dict[Drop, DropMonitor]]
-    lock: Final[Lock]
+    lock: Final[RLock]
     update_callbacks: Final[list[Callback]]
+    color_allocator: Final[ColorAllocator[Reagent]]
     
     def __init__(self, board: Board) -> None:
         self.board = board
         self.drop_map = dict[Drop, DropMonitor]()
-        self.lock = Lock()
+        self.lock = RLock()
         self.update_callbacks = []
         
         self.figure = pyplot.figure()
@@ -153,6 +155,7 @@ class BoardMonitor:
         self.plot.set_xlim(board.min_column, board.max_column+1)
         self.plot.set_ylim(board.min_row, board.max_row+1)
         self.pads = { pad: PadMonitor(pad, self) for pad in board.pad_array.values()}
+        self.color_allocator = ColorAllocator[Reagent]()
         self.figure.canvas.draw()
         
     def map_coord(self, xy: XYCoord) -> tuple[float, float]:
@@ -175,9 +178,13 @@ class BoardMonitor:
             self.drop_map[drop] = dm
         return dm
         
-        
-    def reagent_color(self, reagent: Reagent):
-        return 'green'
+    def reserve_color(self, reagent: Reagent, color: Color) -> None:
+        with self.lock:
+            self.color_allocator.reserve_color(reagent, color)
+    
+    def reagent_color(self, reagent: Reagent) -> Color:
+        with self.lock:
+            return self.color_allocator.get_color(reagent)
     
     def in_display_thread(self, cb: Callback) -> None:
         with self.lock:

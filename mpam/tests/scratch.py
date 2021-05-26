@@ -1,10 +1,10 @@
-from mpam.types import Reagent, Liquid, Mixture, Chemical, waste_reagent
+from mpam.types import Reagent, Mixture, Chemical, waste_reagent, Color,\
+    ColorAllocator
 from quantities.SI import uL, mM, L, mg, ml
 from quantities.dimensions import MassConcentration, Substance,\
     VolumeConcentration, Molarity
 from typing import Mapping
 from erk.stringutils import map_str
-from mypyc import rt_subtype
 
 c1 = Chemical.find("C1")
 c2 = Chemical.find("C2")
@@ -57,3 +57,12 @@ rt = r2.processed("thermocycled", Reagent.LoseComposition)
 print(rt)
 print(map_str(rt.composition))
 print(l1.processed("frozen"))
+
+print(repr(Color.find("xkcd:apricot")))
+
+colors = ColorAllocator[Reagent]()
+print(colors.get_color(r1))
+print(colors.get_color(r2))
+print(colors.get_color(m.reagent))
+print(colors.get_color(r1))
+
