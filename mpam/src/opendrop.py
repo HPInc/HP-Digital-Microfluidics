@@ -47,7 +47,7 @@ class SharedWellPad(device.WellPad):
         self.set_device_state = set_state
 
 class Board(device.Board):
-    _dev: str
+    _dev: Optional[str]
     _states: bytearray
     _port: Optional[Serial]
     
@@ -60,7 +60,7 @@ class Board(device.Board):
                     capacity=12*uL,
                     dispensed_volume=2*uL)
     
-    def __init__(self, dev : str) -> None:
+    def __init__(self, dev : Optional[str]) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         super().__init__(pads=pad_dict, 
@@ -111,6 +111,8 @@ class Board(device.Board):
         
     def update_state(self) -> None:
         if self._port is None:
+            if self._dev is None:
+                return
             self._port = Serial(self._dev)
             # self._stream = open(self._dev, "wb")
         self._port.write(self._states)

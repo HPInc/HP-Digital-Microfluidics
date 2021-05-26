@@ -1,15 +1,17 @@
 from __future__ import annotations
-from mpam.device import System, WellPad, Well
+from mpam.device import System
 import opendrop
-from mpam.types import Dir, unknown_reagent, Liquid, schedule, StaticOperation,\
-    ticks
+from mpam.types import Dir, unknown_reagent, Liquid, ticks
 from quantities.SI import uL, ms
 from mpam.drop import Drop
 from quantities.dimensions import Volume
 from quantities.core import Unit
 from quantities.US import acre, ft
+from typing import Optional
 
-board = opendrop.Board("COM5")
+com_port: Optional[str] = "COM5"
+com_port = None
+board = opendrop.Board(com_port)
 
 system = System(board=board)
 
