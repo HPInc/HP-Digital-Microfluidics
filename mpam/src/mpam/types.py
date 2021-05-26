@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast, Final, ClassVar, Mapping, overload, Hashable
+    cast, Final, ClassVar, Mapping, overload, Hashable, Sequence, Tuple
 from threading import Event, Lock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -452,15 +452,31 @@ class ChangeCallbackList(Generic[T]):
         self.callbacks.clear()
         
     def process(self, old: T, new: T) -> None:
-        print(f"Processing callbacks")
+        # print(f"Processing callbacks")
         for cb in self.callbacks.values():
-            print("-- processing callback")
+            # print("-- processing callback")
             cb(old, new)
 
     
-            
+# Used in the case when a chemical is there, but its concentration
+# cannot be computed.  Usually when two reagents specify the chemical,
+# but with different concentration units
+class UnknownConcentration:
+    def __repr__(self) -> str:
+        return "UnknownConcentration()"
+    def __str__(self) -> str:
+        return "unknown concentration"
+    
+    def __mul__(self, _: float) -> UnknownConcentration:
+        return self
+    
+    def __plus_(self, _: UnknownConcentration) -> UnknownConcentration:
+        return self
+    
+unknown_concentration: Final[UnknownConcentration] = UnknownConcentration()            
+Concentration = Union[Molarity, MassConcentration, VolumeConcentration, UnknownConcentration]
 
-Concentration = Union[Molarity, MassConcentration, VolumeConcentration]
+
 
 class Chemical:
     name: Final[str]
@@ -491,28 +507,65 @@ class Chemical:
     
     def __str__(self) -> str:
         return self.name
+    
+ChemicalComposition = Mapping[Chemical, Concentration]
+    
+class ProcessStep:
+    description: Final[str]
+    _known: Final[ClassVar[dict[str, ProcessStep]]] = {}
+    _class_lock: Final[ClassVar[Lock]] = Lock()
+    
+    def __init__(self, description: str) -> None:
+        self.description = description
+        
+    def __repr__(self) -> str:
+        return f"ProcessStep({repr(self.description)})"
+    
+    def __str__(self) -> str:
+        return self.description
+        
+    # Note that this only works to find basic ProcessStep objects
+    # created by this method. Those instantiated directly (including
+    # by subclassing) will not be found.  Arguably, this is the correct
+    # behavior.
+    @classmethod
+    def find_or_create(cls, description: str) -> ProcessStep:
+        with cls._class_lock:
+            ps = cls._known.get(description, None)
+            if ps is None:
+                ps = ProcessStep(description)
+                cls._known[description] = ps
+            return ps
+                
+MixtureSpec = Tuple[tuple['Reagent', float], ...]
         
 class Reagent:
     name: Final[str]
-    composition: Mapping[Chemical, Concentration]
+    composition: ChemicalComposition
     min_storage_temp: Optional[Temperature]
     max_storage_temp: Optional[Temperature]
+    _lock: Final[Lock]
+    _process_results: Final[dict[ProcessStep, Reagent]]
     
     known: ClassVar[dict[str, Reagent]] = dict[str, 'Reagent']()
+    
 
-    def __init__(self, name: str, 
-                 composition: Mapping[Chemical, Concentration] = {},
+    def __init__(self, name: str, *, 
+                 composition: ChemicalComposition = {},
                  min_storage_temp: Optional[Temperature] = None,
-                 max_storage_temp: Optional[Temperature] = None) -> None:
+                 max_storage_temp: Optional[Temperature] = None,
+                 ) -> None:
         self.name = name
         self.composition = composition
         self.min_storage_temp = min_storage_temp
         self.max_storage_temp = max_storage_temp
+        self._lock = Lock()
+        self._process_results = {}
         Reagent.known[name] = self
         
     @classmethod        
     def find(cls, name: str, *,
-             composition: Mapping[Chemical, Concentration] = {},
+             composition: ChemicalComposition = {},
              min_storage_temp: Optional[Temperature] = None,
              max_storage_temp: Optional[Temperature] = None) -> Reagent:
         c = cls.known.get(name, None)
@@ -521,17 +574,162 @@ class Reagent:
                          min_storage_temp=min_storage_temp, max_storage_temp=max_storage_temp)
         return c
     
+    @property
+    def mixture(self) -> MixtureSpec:
+        return ((self, 1),)
+    
+    @property
+    def process_steps(self) -> tuple[ProcessStep, ...]:
+        return ()
+    
+    @property
+    def unprocessed(self) -> Reagent:
+        return self
+    
     def liquid(self, volume: Volume, *, inexact: bool = False) -> Liquid:
         return Liquid(self, volume, inexact=inexact)
     
     def __repr__(self) -> str:
-        return f"Reagent[{self.name}]"
+        return f"Reagent({repr(self.name)})"
     
     def __str__(self) -> str:
+        if self.process_steps:
+            return f"{self.name}[{', '.join(str(ps) for ps in self.process_steps)}]"
         return self.name
+    
+    def __lt__(self, other: Reagent) -> bool:
+        return self.name < other.name
+    
+    @staticmethod
+    def SameComposition(composition: ChemicalComposition) -> ChemicalComposition:
+        return composition
+    
+    @staticmethod
+    def LoseComposition(composition: ChemicalComposition) -> ChemicalComposition:  # @UnusedVariable
+        return {}
+    
+    
+    def processed(self, step: Union[str, ProcessStep], 
+                  new_composition_function: Optional[Callable[[ChemicalComposition], ChemicalComposition]] = None) -> Reagent:
+        if self is waste_reagent:
+            return self
+        if isinstance(step, str):
+            step = ProcessStep.find_or_create(step)
+        with self._lock:
+            r = self._process_results.get(step, None)
+            if r is None:
+                if new_composition_function is None:
+                    new_composition_function = Reagent.SameComposition
+                r = ProcessedReagent(self, step)
+                self._process_results[step] = r
+            return r
+    
+    
     
 waste_reagent: Final[Reagent] = Reagent.find("waste")
 unknown_reagent: Final[Reagent] = Reagent.find("unknown")
+
+class Mixture(Reagent):
+    _mixture: Final[MixtureSpec]
+    _class_lock: Final[ClassVar[Lock]] = Lock()
+    _known_mixtures: Final[dict[tuple[float,Reagent,Reagent], Reagent]] = {}
+    _instances: Final[ClassVar[dict[MixtureSpec, Mixture]]] = {}
+    
+    def __init__(self, name: str, mixture: MixtureSpec, *, 
+                 composition: ChemicalComposition = {},
+                 min_storage_temp: Optional[Temperature] = None,
+                 max_storage_temp: Optional[Temperature] = None,
+                 ) -> None:
+        super().__init__(name, composition=composition, min_storage_temp=min_storage_temp, max_storage_temp=max_storage_temp)
+        self._mixture = mixture
+
+    @property
+    def mixture(self) -> MixtureSpec:
+        return self._mixture
+    
+    def __repr__(self) -> str:
+        return f"Mixture({repr(self.name), repr(self._mixture)})"
+    
+
+    @classmethod
+    def new_mixture(cls, r1: Reagent, r2: Reagent, ratio: float, name: Optional[str] = None) -> Reagent:
+        fraction = ratio/(ratio+1)
+        mixture = {r: f*fraction for r,f in r1.mixture}
+        composition = {chem: conc*fraction for chem, conc in r1.composition.items()}
+        fraction = 1-fraction
+        for r,f in r2.mixture:
+            cpt = f*fraction
+            f1 = mixture.get(r, None)
+            mixture[r] = cpt if f1 is None else cpt+f1
+        for chem, conc in r2.composition.items():
+            r2_conc = conc*fraction
+            r1_conc = composition.get(chem, None)
+            if r1_conc is None:
+                r_conc: Concentration = r2_conc
+            elif isinstance(r1_conc, Molarity) and isinstance(r2_conc, Molarity):
+                r_conc = r1_conc+r2_conc
+            elif isinstance(r1_conc, MassConcentration) and isinstance(r2_conc, MassConcentration):
+                r_conc = r1_conc+r2_conc
+            elif isinstance(r1_conc, VolumeConcentration) and isinstance(r2_conc, VolumeConcentration):
+                r_conc = r1_conc+r2_conc
+            else:
+                r_conc = unknown_concentration
+            composition[chem] = r_conc
+            
+        seq = [(r,f) for r,f in mixture.items()]
+        seq.sort()
+        t = tuple(seq)
+        m = cls._instances.get(t, None)
+        if m is None:
+            if name is None:
+                name = ' + '.join(f"{f:.3g} {r.name}" for r,f in seq)
+            m = Mixture(name, t, composition=composition)
+            cls._instances[t] = m
+        return m
+    
+    @classmethod
+    def find_or_compute(cls, r1: Reagent, r2: Reagent, *, 
+                        ratio: float = 1,
+                        name: Optional[str] = None) -> Reagent:
+        known = cls._known_mixtures
+        with cls._class_lock:
+            r = known.get((ratio, r1, r2), None)
+            if r is not None:
+                return r
+            r = known.get((1/ratio, r2, r2))
+            if r is not None:
+                return r
+            r = cls.new_mixture(r1, r2, ratio, name=name)
+            known[(ratio, r1, r2)] = r
+        return r
+                
+class ProcessedReagent(Reagent):
+    last_step: Final[ProcessStep]
+    prior: Final[Reagent]
+    
+    def __init__(self, prior: Reagent, step: ProcessStep, *, 
+                 composition: ChemicalComposition = {},
+                 min_storage_temp: Optional[Temperature] = None,
+                 max_storage_temp: Optional[Temperature] = None,
+                 ) -> None:
+        super().__init__(prior.name, composition=composition, min_storage_temp=min_storage_temp, max_storage_temp=max_storage_temp)
+        self.prior = prior
+        self.last_step = step
+        
+    @property
+    def process_steps(self)->tuple[ProcessStep, ...]:
+        return self.prior.process_steps+(self.last_step,)
+
+    @property
+    def unprocessed(self)->Reagent:
+        return self.prior.unprocessed
+    
+    def __repr__(self) -> str:
+        return f"ProcessedReagent({repr(self.prior), repr(self.last_step)})"
+    
+
+    
+
     
 class Liquid:
     _reagent: Reagent
@@ -573,7 +771,7 @@ class Liquid:
         return f"Liquid[{'~' if self.inexact else ''}{self.volume.in_units(uL)}, {self.reagent}]"
 
     def __str__(self) -> str:
-        return f"{'~' if self.inexact else ''}{self.volume.in_units(uL)} of {self.reagent.name}"
+        return f"{'~' if self.inexact else ''}{self.volume.in_units(uL)} of {self.reagent}"
         
     def __iadd__(self, rhs: Volume) -> Liquid:
         self.volume = max(self.volume+rhs, 0*ml)
@@ -592,5 +790,27 @@ class Liquid:
         if key is None:
             key = cb
         self.reagent_change_callbacks.add(cb, key=key)
+        
+    def mix_with(self, other: Liquid, *, result: Optional[Union[Reagent, str]] = None) -> Liquid:
+        my_v = self.volume
+        my_r = self.reagent
+        their_v = other.volume
+        their_r = other.reagent
+        
+        v = my_v + their_v
+        if isinstance(result, Reagent):
+            r = result
+        elif my_r is their_r:
+            r = my_r
+        elif my_r is waste_reagent or their_r is waste_reagent:
+            r = waste_reagent if result is None else Reagent.find(result)
+        else:
+            ratio = my_v.ratio(their_v)
+            r = Mixture.find_or_compute(my_r, their_r, ratio=ratio, name=result)
+        return Liquid(reagent=r, volume=v, inexact=self.inexact or other.inexact)
     
-    
+    def processed(self, step: Union[str, ProcessStep], 
+                  new_composition_function: Optional[Callable[[ChemicalComposition], ChemicalComposition]] = None) -> Liquid:
+        self.reagent = self.reagent.processed(step, new_composition_function)
+        return self
+

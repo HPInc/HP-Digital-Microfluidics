@@ -1,6 +1,7 @@
 from re import Pattern
-from typing import Optional, Final
+from typing import Optional, Final, Mapping, Union, cast, Sequence
 import re
+from numpy.lib.arraysetops import isin
 
 _camel_case_re: Optional[Pattern] = None
 
@@ -41,6 +42,20 @@ def infer_plural(singular: str) -> str:
         return singular[:-3]+"men"
     return singular+"s"
     
+def map_str(d: Union[Mapping, set, tuple, Sequence]) -> str:
+    if getattr(d, "items", None) is not None:
+        return f"{{{', '.join(f'{k}: {v}' for k,v in cast(Mapping, d).items())}}}"
+    if isinstance(d, set):
+        return f"{{{', '.join(f'{v}' for v in d)}}}"
+    if isinstance(d, tuple):
+        return f"({', '.join(f'{v}' for k,v in d)}{',' if len(d) == 1 else ''})"
+    if getattr(d, "__iter__", None) is not None:
+        return f"[{', '.join(f'{v}' for k,v in d)}]"
+    assert False, f"{d} is somehow not a Mapping, set, tuple, or Sequence"
+
+def fmt_dict(d: Mapping) -> str:
+    return f"{{{', '.join(f'{k}: {v}' for k,v in d.items())}}}"
+
     
 
 if __name__ == '__main__':
