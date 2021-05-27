@@ -1,7 +1,8 @@
 from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
-    cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence
+    cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence,\
+    Generator
 from threading import Event, Lock, RLock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -96,12 +97,53 @@ class Orientation(Enum):
     def __init__(self, offset: Mapping[Dir, tuple[Minus1To1, Minus1To1]]) -> None:
         self.offset = offset
         
-    def neighbor(self, direction: Dir, coord: XYCoord) -> XYCoord:
+    def neighbor(self, direction: Dir, coord: XYCoord, *, steps: int=1  ) -> XYCoord:
         (dx, dy) = self.offset[direction]
-        return XYCoord(coord.x+dx, coord.y+dy)
+        return XYCoord(coord.x+dx*steps, coord.y+dy*steps)
     
     def __repr__(self):
         return f"Orientation.{self.name}"
+    
+class GridRegion:
+    lower_left: Final[XYCoord]
+    upper_right: Final[XYCoord]
+    width: Final[int]
+    height: Final[int]
+    orientation: Final[Orientation]
+    min_x: Final[int]
+    min_y: Final[int]
+    max_x: Final[int]
+    max_y: Final[int]
+    
+    def __init__(self, lower_left: XYCoord, width: int, height: int, *, 
+                 orientation: Orientation = Orientation.NORTH_POS_EAST_POS) -> None:
+        lower_right = orientation.neighbor(Dir.RIGHT, lower_left, steps = width-1)
+        upper_right = orientation.neighbor(Dir.UP, lower_right, steps=height-1)
+        self.lower_left = lower_left
+        self.upper_right = upper_right
+        self.width = width
+        self.height = height
+        self.orientation = orientation
+        self.min_x = min(lower_left.x, upper_right.x)
+        self.min_y = min(lower_left.y, upper_right.y)
+        self.max_x = max(lower_left.x, upper_right.x)
+        self.max_y = max(lower_left.y, upper_right.y)
+        
+    def __contains__(self, xy: XYCoord) -> bool:
+        return (xy.x >= self.min_x and xy.x <= self.max_x and xy.y >= self.min_y and xy.y <= self.max_y)
+        
+    def __iter__(self) -> Generator[XYCoord, None, None]:
+        orientation = self.orientation
+        left = self.lower_left
+        
+        for _ in range(self.height):
+            current = left
+            for _ in range(self.width):
+                yield current
+                current = orientation.neighbor(Dir.RIGHT, current)
+            left = orientation.neighbor(Dir.UP, left)
+            
+    
     
     
 class Ticks(CountDim['Ticks']): ...

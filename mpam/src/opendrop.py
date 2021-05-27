@@ -1,3 +1,4 @@
+from __future__ import annotations
 import mpam.device as device
 from typing import Optional, Final, Sequence
 from mpam.types import OnOff, XYCoord, Orientation
@@ -18,7 +19,7 @@ class Electrode:
         
 class Pad(device.Pad):
     electrode: Electrode
-    def __init__(self, e: Electrode, loc: XYCoord, board: 'Board'):
+    def __init__(self, e: Electrode, loc: XYCoord, board: Board):
         super().__init__(loc, board)
         self.electrode = e
         
@@ -26,7 +27,7 @@ class Pad(device.Pad):
     
 class WellGatePad(device.WellPad):
     electrode: Electrode
-    def __init__(self, e: Electrode, board: 'Board'):
+    def __init__(self, e: Electrode, board: Board):
         super().__init__(board)
         self.electrode = e
         
@@ -35,7 +36,7 @@ class WellGatePad(device.WellPad):
 class SharedWellPad(device.WellPad):
     upper_electrode: Electrode
     lower_electrode: Electrode
-    def __init__(self, upper: Electrode, lower: Electrode, board: 'Board'):
+    def __init__(self, upper: Electrode, lower: Electrode, board: Board):
         super().__init__(board)
         self.upper_electrode = upper
         self.lower_electrode = lower
@@ -166,7 +167,7 @@ class Board(device.Board):
         upper_left = self._well(0, left_group, XYCoord(0,0), self.pad_at(1,1))
         upper_right = self._well(1, right_group, XYCoord(15,0), self.pad_at(14,1))
         lower_left = self._well(2, left_group, XYCoord(0,7), self.pad_at(1,6))
-        lower_right = self._well(1, right_group, XYCoord(15,7), self.pad_at(14,6))
+        lower_right = self._well(3, right_group, XYCoord(15,7), self.pad_at(14,6))
         wells.extend((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:

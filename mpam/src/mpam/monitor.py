@@ -43,31 +43,33 @@ class PadMonitor(object):
         
         self.center = (ox+0.5*w, oy+0.5*w)
         square = Rectangle(xy=(ox,oy), width=1, height=1,
-                           facecolor='white',
+                           facecolor='white' if pad.exists else 'black',
                            edgecolor='black')
         self.square = square
         self.note_state(pad.current_state)
         board_monitor.plot.add_patch(square)
         self.capacity = board_monitor.board.drop_size
         
-        if pad.magnet is None:
-            m = None
-        else:
-            m = plot.annotate(text='M', xy=(0,0),
-                                        xytext=(0.95, 0.05),
-                                        xycoords=square,
-                                        horizontalalignment='right')
-            self.note_magnet_state(OnOff.OFF)
-            pad.magnet.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_magnet_state(new)))
-        self.magnet = m
-        
-        pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
-        pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
+        if pad.exists:
+            if pad.magnet is None:
+                m = None
+            else:
+                m = plot.annotate(text='M', xy=(0,0),
+                                            xytext=(0.95, 0.05),
+                                            xycoords=square,
+                                            horizontalalignment='right')
+                pad.magnet.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_magnet_state(new)))
+            self.magnet = m
+            if pad.magnet is not None:
+                self.note_magnet_state(OnOff.OFF)
+            
+            pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
+            pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
         
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
         if state:
-            self.square.set_linewidth(5)
+            self.square.set_linewidth(3)
             self.square.set_edgecolor('green')
         else:
             self.square.set_linewidth(1)
@@ -178,7 +180,7 @@ class WellPadMonitor:
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
         for shape in self.shapes:
-            shape.set_linewidth(5 if state else 1)
+            shape.set_linewidth(3 if state else 1)
             shape.set_edgecolor('green' if state else 'black')
         
     def note_liquid(self, liquid: Optional[Liquid]) -> None:

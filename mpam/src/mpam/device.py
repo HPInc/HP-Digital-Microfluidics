@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, Final, Mapping, Callable, Literal,\
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic, Hashable
 from types import TracebackType
-from quantities.dimensions import Time, Volume
+from quantities.dimensions import Time, Volume, Temperature
 from quantities.timestamp import time_now, Timestamp
 from threading import Event, Lock, Thread
 
@@ -122,6 +122,7 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     _neighbors: Optional[Sequence[Pad]]
     _well: Optional[Well] = None
     _magnet: Optional[Magnet] = None
+    _heater: Optional[Heater] = None
     
     _drop_change_callbacks: Final[ChangeCallbackList[Optional[Drop]]]
         
@@ -140,6 +141,9 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     def magnet(self) -> Optional[Magnet]:
         return self._magnet
     
+    @property
+    def heater(self) -> Optional[Heater]:
+        return self._heater
     
     @property
     def drop(self) -> Optional[Drop]:
@@ -517,7 +521,7 @@ class Well(OpScheduler['Well'], BoardComponent):
         self._liquid_change_callbacks.add(cb, key=key)
         
         
-class Magnet(BinaryComponent['Magnet']): 
+class Magnet(OpScheduler['Magnet'], BinaryComponent['Magnet']): 
     pads: Final[Sequence[Pad]]
     
     def __init__(self, board: Board, *, pads: Sequence[Pad]) -> None:
@@ -526,11 +530,69 @@ class Magnet(BinaryComponent['Magnet']):
         for pad in pads:
             pad._magnet = self
             
-    def current_state(self) -> OnOff:
-        return self._state
-    
     def __repr__(self) -> str:
         return f"Magnet({', '.join(str(self.pads))})"
+    
+class Heater(OpScheduler['Heater'], BoardComponent):
+    num: Final[int]
+    pads: Final[Sequence[Pad]]
+    _last_reading: Optional[Temperature]
+    _target: Optional[Temperature]
+    polling_interval: Final[Time]
+    _temperature_change_callbacks: Final[ChangeCallbackList[Optional[Temperature]]]
+    _target_change_callbacks: Final[ChangeCallbackList[Optional[Temperature]]]
+    
+    @property
+    def current_temperature(self) -> Optional[Temperature]:
+        return self._last_reading
+    
+    @current_temperature.setter
+    def current_temperature(self, new: Optional[Temperature]) -> None:
+        old = self._last_reading
+        self._last_reading = new
+        self._temperature_change_callbacks.process(old, new)
+        
+    @property
+    def target(self) -> Optional[Temperature]:
+        return self._target
+    
+    @target.setter
+    def target(self, new: Optional[Temperature]) -> None:
+        old = self._target
+        self._target = new
+        self._target_change_callbacks.process(old, new)
+        
+    def __init__(self, num: int, board: Board, *, 
+                 pads: Sequence[Pad],
+                 polling_interval: Time) -> None:
+        BoardComponent.__init__(self, board)
+        self.num = num
+        self.pads = pads
+        self.polling_interval = polling_interval
+        self._last_reading = None
+        self._target = None
+        self._temperature_change_callbacks = ChangeCallbackList()
+        self._target_change_callbacks = ChangeCallbackList()
+        for pad in pads:
+            pad._heater = self
+            
+    def __repr__(self) -> str:
+        return f"Heater({self.num})"
+    
+    # If the implementation doesn't override, then we always get back None (immediately)
+    def poll(self) -> Delayed[Optional[Temperature]]:
+        future = Delayed[Optional[Temperature]]()
+        future.post(None)
+        return future
+        
+        
+    def on_temperature_change(self, cb: ChangeCallback[Optional[Temperature]], *, key: Optional[Hashable] = None):
+        self._temperature_change_callbacks.add(cb, key=key)
+
+    def on_target_change(self, cb: ChangeCallback[Optional[Temperature]], *, key: Optional[Hashable] = None):
+        self._target_change_callbacks.add(cb, key=key)
+    
+
     
 class SystemComponent:
     system: Optional[System] = None
@@ -608,6 +670,7 @@ class SystemComponent:
 class Board(SystemComponent):
     pads: Final[PadArray]
     wells: Final[Sequence[Well]]
+    magnets: Final[Sequence[Magnet]]
     _well_groups: Mapping[str, WellGroup]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
@@ -616,11 +679,13 @@ class Board(SystemComponent):
     def __init__(self, *, 
                  pads: PadArray,
                  wells: Sequence[Well],
+                 magnets: Optional[Sequence[Magnet]] = None,
                  orientation: Orientation,
                  drop_motion_time: Time) -> None:
         super().__init__()
         self.pads = pads
         self.wells = wells
+        self.magnets = [] if magnets is None else magnets
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
 
