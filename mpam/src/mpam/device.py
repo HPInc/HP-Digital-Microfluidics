@@ -146,7 +146,7 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
         return self._drop
     
     @drop.setter
-    def drop(self, drop: Drop):
+    def drop(self, drop: Optional[Drop]):
         old = self._drop
         self._drop = drop
         self._drop_change_callbacks.process(old, drop)
@@ -196,6 +196,7 @@ WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
 class WellPad(OpScheduler['WellPad'], BinaryComponent['WellPad']):
         loc: WellPadLoc
+        
         def __repr__(self) -> str:
             loc = getattr(self, 'loc', None)
             if loc is None:
@@ -372,12 +373,14 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
             if well is not None:
                 motion.well_gates.add(well.gate)
                 target = self.target
-                assert target is WellState.DISPENSED or target is WellState.ABSORBED, \
-                    f"Well provided on transition to {target}"
+                # assert target is WellState.DISPENSED or target is WellState.ABSORBED, \
+                    # f"Well provided on transition to {target}"
                 motion.pad_states[well.exit_pad] = OnOff.ON if target is WellState.DISPENSED else OnOff.OFF
             board.before_tick(motion.callback, delta=mode.gated_delay(after))
             return motion.future
     
+PadBounds = Sequence[tuple[float,float]]
+
 class Well(OpScheduler['Well'], BoardComponent):
     number: Final[int]
     group: Final[WellGroup]
@@ -387,10 +390,20 @@ class Well(OpScheduler['Well'], BoardComponent):
     exit_pad: Final[Pad]
     gate: Final[WellPad]
     _contents: Optional[Liquid]
+    gate_pad_bounds: Final[Optional[PadBounds]]
+    shared_pad_bounds: Final[Optional[Sequence[Union[PadBounds, Sequence[PadBounds]]]]]
+    
+    _liquid_change_callbacks: Final[ChangeCallbackList[Optional[Liquid]]]
     
     @property
     def contents(self) -> Optional[Liquid]:
         return self._contents
+    
+    @contents.setter
+    def contents(self, liquid: Optional[Liquid]):
+        old = self._contents
+        self._contents = liquid
+        self._liquid_change_callbacks.process(old, liquid)
     
     @property
     def volume(self) -> Volume:
@@ -425,7 +438,10 @@ class Well(OpScheduler['Well'], BoardComponent):
                  gate: WellPad,
                  capacity: Volume,
                  dispensed_volume: Volume,
-                 is_voidable: bool = False) -> None:
+                 is_voidable: bool = False,
+                 gate_pad_bounds: Optional[PadBounds] = None,
+                 shared_pad_bounds: Optional[Sequence[Union[PadBounds, Sequence[PadBounds]]]] = None
+                 ) -> None:
         BoardComponent.__init__(self, board)
         self.number = number
         self.group = group
@@ -435,6 +451,9 @@ class Well(OpScheduler['Well'], BoardComponent):
         self.dispensed_volume = dispensed_volume
         self.is_voidable = is_voidable
         self._contents = None
+        self.gate_pad_bounds = gate_pad_bounds
+        self.shared_pad_bounds = shared_pad_bounds
+        self._liquid_change_callbacks = ChangeCallbackList()
 
         group.add_well(self)
         assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
@@ -463,7 +482,7 @@ class Well(OpScheduler['Well'], BoardComponent):
         on_overflow.expect_true(self.remaining_capacity >= volume,
                     lambda : f"Tried to add {volume} to {self}.  Remaining capacity only {self.remaining_capacity}")
         if self._contents is None:
-            self._contents = Liquid(liquid.reagent, volume)
+            self.contents = Liquid(liquid.reagent, volume)
         else:
             r = self._contents.reagent
             on_reagent_mismatch.expect_true(self._can_accept(liquid),
@@ -493,6 +512,9 @@ class Well(OpScheduler['Well'], BoardComponent):
         self._contents = None
         self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
         print(f"Volume is now {self.volume}")
+        
+    def on_liquid_change(self, cb: ChangeCallback[Optional[Liquid]], *, key: Optional[Hashable] = None) -> None:
+        self._liquid_change_callbacks.add(cb, key=key)
         
         
 class Magnet(BinaryComponent['Magnet']): 

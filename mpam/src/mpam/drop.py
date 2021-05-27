@@ -173,7 +173,7 @@ class Drop(OpScheduler['Drop']):
             group = well.group
             group.schedule(WellGroup.TransitionTo(WellState.ABSORBED, well=well), mode=mode, after=after) \
                 .then_call(consume_drop) \
-                .then_schedule(WellGroup.TransitionTo(WellState.READY))
+                .then_schedule(WellGroup.TransitionTo(WellState.READY, well=well))
             return future
             
         

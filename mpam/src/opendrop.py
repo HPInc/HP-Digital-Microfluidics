@@ -1,8 +1,8 @@
 import mpam.device as device
-from typing import Optional, Final
+from typing import Optional, Final, Sequence
 from mpam.types import OnOff, XYCoord, Orientation
 from serial import Serial
-from mpam.device import WellGroup, Well, WellOpSeqDict, WellState
+from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds
 from quantities.SI import uL, ms
 
 class Electrode:
@@ -51,6 +51,61 @@ class Board(device.Board):
     _states: bytearray
     _port: Optional[Serial]
     
+    def _long_pad_bounds(self, ep_loc: XYCoord) -> PadBounds:
+        epx = ep_loc.x
+        epy = ep_loc.y
+        outdir = -1 if epx == 1 else 1
+        if outdir == 1:
+            epx += 1
+        return ((epx+outdir, epy),
+                (epx+2.5*outdir, epy),
+                (epx+2.5*outdir, epy-1),
+                (epx+outdir, epy-1))
+        
+    def _side_pad_bounds(self, ep_loc: XYCoord) -> Sequence[PadBounds]:
+        epx = ep_loc.x
+        epy = ep_loc.y
+        outdir = -1 if epx == 1 else 1
+        if outdir == 1:
+            epx += 1
+        return (((epx+0.5*outdir, epy-1),
+                 (epx+1.5*outdir, epy-1),
+                 (epx+1.5*outdir, epy-2),
+                 (epx+0.5*outdir, epy-2)),
+                ((epx+0.5*outdir, epy),
+                 (epx+1.5*outdir, epy),
+                 (epx+1.5*outdir, epy+1),
+                 (epx+0.5*outdir, epy+1))
+                 )
+    
+    def _big_pad_bounds(self, ep_loc: XYCoord) -> PadBounds:
+        epx = ep_loc.x
+        epy = ep_loc.y
+        outdir = -1 if epx == 1 else 1
+        if outdir == 1:
+            epx += 1
+        return ((epx+1.5*outdir, epy+1),
+                (epx+3.5*outdir, epy+1),
+                (epx+3.5*outdir, epy-2),
+                (epx+1.5*outdir, epy-2),
+                (epx+1.5*outdir, epy-1),
+                (epx+2.5*outdir, epy-1),
+                (epx+2.5*outdir, epy),
+                (epx+1.5*outdir, epy)
+                )
+        
+
+    def _gate_bounds(self, ep_loc: XYCoord) -> PadBounds:
+        epx = ep_loc.x
+        epy = ep_loc.y
+        outdir = -1 if epx == 1 else 1
+        if outdir == 1:
+            epx += 1
+        return ((epx,epy), 
+                (epx+outdir,epy), 
+                (epx+outdir,epy-1),
+                (epx, epy-1))
+    
     def _well(self, num: int, group: WellGroup, gate_loc: XYCoord, exit_pad: device.Pad):
         return Well(number=num,
                     board=self,
@@ -58,7 +113,12 @@ class Board(device.Board):
                     exit_pad=exit_pad,
                     gate=WellGatePad(Electrode(gate_loc.x, gate_loc.y, self._states), self),
                     capacity=12*uL,
-                    dispensed_volume=2*uL)
+                    dispensed_volume=2*uL,
+                    gate_pad_bounds= self._gate_bounds(exit_pad.location),
+                    shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
+                                         self._side_pad_bounds(exit_pad.location),
+                                         self._big_pad_bounds(exit_pad.location))
+                    )
     
     def __init__(self, dev : Optional[str]) -> None:
         pad_dict = dict[XYCoord, Pad]()

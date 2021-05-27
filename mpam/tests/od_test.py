@@ -1,7 +1,8 @@
 from __future__ import annotations
-from mpam.device import System
+from mpam.device import System, Well
 import opendrop
-from mpam.types import Dir, unknown_reagent, Liquid, ticks
+from mpam.types import Dir, unknown_reagent, Liquid, ticks, Reagent,\
+    StaticOperation
 from quantities.SI import uL, ms
 from mpam.drop import Drop
 from quantities.dimensions import Volume
@@ -79,20 +80,28 @@ print(v.in_units(acre_ft))
     #             n_drops -= 1
     #     dispense_and_walk()
     
+def walk_across(well: Well, direction: Dir) -> StaticOperation[None]:
+    return Drop.DispenseFrom(well) \
+            .then(Drop.Move(direction, steps=13)) \
+            .then(Drop.EnterWell)
+    pass    
+    
 def experiment(system: System) -> None:
+    r1 = Reagent('R1')
+    r2 = Reagent('R2')
     board = system.board
-    well = board.wells[1]
-    well.contains(Liquid(unknown_reagent, 8*drops))
+    board.wells[1].contains(Liquid(r1, 8*drops))
+    board.wells[3].contains(Liquid(r2, 8*drops))
 
     system.clock.start(100*ms)
         
-    sequence = Drop.DispenseFrom(well) \
-                .then(Drop.Move(Dir.WEST, steps=13)) \
-                .then(Drop.EnterWell)
+    s1 = walk_across(board.wells[1], Dir.LEFT)
+    s2 = walk_across(board.wells[3], Dir.LEFT)
     with system.batched():
-        sequence.schedule()
-        sequence.schedule(after=10*ticks)
-        sequence.schedule(after=15*ticks)
+        s1.schedule()
+        s1.schedule(after=10*ticks)
+        s1.schedule(after=15*ticks)
+        s2.schedule()
     
 system.run_monitored(experiment)
     
