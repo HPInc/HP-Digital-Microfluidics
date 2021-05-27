@@ -2,13 +2,15 @@ from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence
-from threading import Event, Lock
+from threading import Event, Lock, RLock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
 from quantities.SI import ml, uL, millisecond
 from quantities.core import CountDim
 from matplotlib._color_data import XKCD_COLORS
-from weakref import WeakKeyDictionary
+from weakref import WeakKeyDictionary, finalize
+from _weakref import ReferenceType, ref
+from _collections import deque
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -554,12 +556,12 @@ class Reagent:
     
 
     def __init__(self, name: str, *, 
-                 composition: ChemicalComposition = {},
+                 composition: Optional[ChemicalComposition] = None,
                  min_storage_temp: Optional[Temperature] = None,
                  max_storage_temp: Optional[Temperature] = None,
                  ) -> None:
         self.name = name
-        self.composition = composition
+        self.composition = {} if composition is None else composition 
         self.min_storage_temp = min_storage_temp
         self.max_storage_temp = max_storage_temp
         self._lock = Lock()
@@ -568,7 +570,7 @@ class Reagent:
         
     @classmethod        
     def find(cls, name: str, *,
-             composition: ChemicalComposition = {},
+             composition: Optional[ChemicalComposition] = None,
              min_storage_temp: Optional[Temperature] = None,
              max_storage_temp: Optional[Temperature] = None) -> Reagent:
         c = cls.known.get(name, None)
@@ -639,7 +641,7 @@ class Mixture(Reagent):
     _instances: Final[ClassVar[dict[MixtureSpec, Mixture]]] = {}
     
     def __init__(self, name: str, mixture: MixtureSpec, *, 
-                 composition: ChemicalComposition = {},
+                 composition: Optional[ChemicalComposition] = None,
                  min_storage_temp: Optional[Temperature] = None,
                  max_storage_temp: Optional[Temperature] = None,
                  ) -> None:
@@ -711,7 +713,7 @@ class ProcessedReagent(Reagent):
     prior: Final[Reagent]
     
     def __init__(self, prior: Reagent, step: ProcessStep, *, 
-                 composition: ChemicalComposition = {},
+                 composition: Optional[ChemicalComposition] = None,
                  min_storage_temp: Optional[Temperature] = None,
                  max_storage_temp: Optional[Temperature] = None,
                  ) -> None:
@@ -847,28 +849,53 @@ class Color:
     
 class ColorAllocator(Generic[H]):
     all_colors: ClassVar[Optional[Sequence[str]]] = None
-    color_assignments: WeakKeyDictionary[H, Color]
+    color_assignments: WeakKeyDictionary[H, tuple[Color, finalize]]
     colors_in_use: Final[dict[Color, int]]
+    returned_colors: Final[deque[Color]]
     next_reagent_color: int
+    first_pass_done: bool
+    _lock: Final[RLock]
     _class_lock: Final[ClassVar[Lock]] = Lock()
     
     def __init__(self, initial_reservations: Optional[Mapping[H, Color]] = None):
         self.color_assignments = WeakKeyDictionary()
         self.colors_in_use = {}
+        self.returned_colors = deque[Color]()
         self.next_reagent_color = 0
+        self._lock = RLock()
         if initial_reservations is not None:
             for k,c in initial_reservations.items():
                 self.reserve_color(k, c)
-            
-    def reserve_color(self, key: H, color: Color) -> None:
-        self.color_assignments[key] = color
-        self.colors_in_use[color] = self.colors_in_use.get(color, 0)+1
     
-    def get_color(self, key: H) -> Color:
+    def _lose_mapping(self, color: Color) -> None:
+        uses = self.colors_in_use[color]
+        if uses > 1:
+            self.colors_in_use[color] = uses-1
+        else:
+            del self.colors_in_use[color]
+            self.returned_colors.append(color)
+    
+    @staticmethod
+    def _lose_mapping_on_gc(color: Color, selfref: ReferenceType[ColorAllocator]) -> None:
+        self = selfref()
+        if self is not None:
+            with self._lock:
+                self._lose_mapping(color)
+    
+    def reserve_color(self, key: H, color: Color) -> None:
         assignments = self.color_assignments
-        c = assignments.get(key, None)
-        if c is not None:
-            return c
+        with self._lock:
+            old = assignments.get(key, None)
+            if old is color:
+                return
+            if old is not None:
+                self._lose_mapping(old[0])
+                old[1].detach()
+            assignments[key] = (color, finalize(key, self._lose_mapping_on_gc, color, ref(self)))
+            self.colors_in_use[color] = self.colors_in_use.get(color, 0)+1
+
+    # Called with lock held
+    def _next_color(self) -> Color:
         color_list = ColorAllocator.all_colors
         if color_list is None:
             with ColorAllocator._class_lock:
@@ -876,21 +903,28 @@ class ColorAllocator(Generic[H]):
                 if color_list is None:
                     color_list = [k for k in XKCD_COLORS]
                     ColorAllocator.all_colors = color_list
-        in_use = self.colors_in_use
-        first_try = self.next_reagent_color
-        i = first_try
-        wrapped = False
-        while True:
-            c = Color.find(color_list[i])
-            uses = in_use.get(c, 0)
-            if uses==0 or wrapped and i == first_try:
-                in_use[c] = uses+1
-                assignments[key] = c
-                return c
-            i += 1
-            if i == len(color_list):
-                wrapped = True
-                i = 0
+        bound = len(color_list)
+        start = self.next_reagent_color
+        if start < bound:
+            for i in range(start, bound):
+                c = Color.find(color_list[i])
+                if c not in self.colors_in_use:
+                    self.next_reagent_color = i+1
+                    return c
+            self.next_reagent_color = bound
+        try:
+            return self.returned_colors.popleft()
+        except IndexError:
+                raise IndexError(f"All colors in use")
+    
+    def get_color(self, key: H) -> Color:
+        assignments = self.color_assignments
+        ct = assignments.get(key, None)
+        if ct is not None:
+            return ct[0]
+        c = self._next_color()
+        self.reserve_color(key, c)
+        return c
     
 
 

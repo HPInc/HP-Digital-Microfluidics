@@ -5,6 +5,7 @@ from quantities.dimensions import MassConcentration, Substance,\
     VolumeConcentration, Molarity
 from typing import Mapping
 from erk.stringutils import map_str
+import weakref
 
 c1 = Chemical.find("C1")
 c2 = Chemical.find("C2")
@@ -65,4 +66,5 @@ print(colors.get_color(r1))
 print(colors.get_color(r2))
 print(colors.get_color(m.reagent))
 print(colors.get_color(r1))
+
 
