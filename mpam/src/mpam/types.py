@@ -480,28 +480,43 @@ def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
 ChangeCallback = Callable[[T,T],None]
 class ChangeCallbackList(Generic[T]):
     callbacks: dict[Hashable, ChangeCallback[T]]
+    lock: Final[RLock]
     
     def __init__(self) -> None:
         self.callbacks = {}
+        self.lock = RLock()
         
     def add(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
         if key is None:
             key = cb
-        self.callbacks[key] = cb
+        with self.lock:
+            self.callbacks[key] = cb
+            # if key is not cb:
+                # print(f"Adding callback {key}")
+                # print(f"  Callbacks now {map_str(list(self.callbacks.keys()))}")
         
     def remove(self, key: Hashable) -> None:
-        del self.callbacks[key]
+        with self.lock:
+            # val = self.callbacks[key]
+            del self.callbacks[key]
+            # if key is not val:
+                # print(f"Removing callback {key}")
+                # print(f"  Callbacks now {map_str(list(self.callbacks.keys()))}")
         
     def discard(self, key: Hashable) -> None:
-        self.callbacks.pop(key, None)
+        with self.lock:
+            self.callbacks.pop(key, None)
         
     def clear(self) -> None:
-        self.callbacks.clear()
+        with self.lock:
+            self.callbacks.clear()
         
     def process(self, old: T, new: T) -> None:
         # print(f"Processing callbacks")
-        for cb in self.callbacks.values():
-            # print("-- processing callback")
+        with self.lock:
+            copy = list((k,cb) for k,cb in self.callbacks.items())
+        for k,cb in copy:
+            # print(f"Callback ({old}->{new}: {k}")
             cb(old, new)
 
     

@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, Final, Mapping, Callable, Literal,\
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic, Hashable
 from types import TracebackType
-from quantities.dimensions import Time, Volume, Temperature
+from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now, Timestamp
 from threading import Event, Lock, Thread
 
@@ -17,8 +17,9 @@ from mpam.exceptions import PadBrokenError
 from enum import Enum, auto
 import itertools
 from erk.errors import ErrorHandler, PRINT
-from matplotlib import pyplot
-from quantities.temperature import TemperaturePoint
+from quantities.temperature import TemperaturePoint, abs_F
+import random
+from quantities.SI import mins
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -494,7 +495,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
             self._contents += volume
             liquid -= volume
-        print(f"{self} now contains {self.contents}")
+        # print(f"{self} now contains {self.contents}")
             
     def transfer_out(self, volume: Volume, *,
                      on_empty: ErrorHandler = PRINT) -> Liquid:
@@ -505,18 +506,18 @@ class Well(OpScheduler['Well'], BoardComponent):
             reagent = unknown_reagent
         else:
             reagent = self._contents.reagent
-            print(f"Removing {volume} from {self._contents}")
+            # print(f"Removing {volume} from {self._contents}")
             self._contents -= volume
-        print(f"{self} now contains {self.contents}")
+        # print(f"{self} now contains {self.contents}")
         return Liquid(reagent, volume)
 
     def contains(self, liquid: Liquid,
                  *, on_overflow: ErrorHandler = PRINT) -> None:
         on_overflow.expect_true(liquid.volume <= self.capacity,
-                                lambda : f"Asserted {self} contains {liquid}. capacity only {self.capacity}")
+                                lambda : f"Asserted {self} contains {liquid}. Capacity only {self.capacity}")
         self._contents = None
         self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
-        print(f"Volume is now {self.volume}")
+        # print(f"Volume is now {self.volume}")
         
     def on_liquid_change(self, cb: ChangeCallback[Optional[Liquid]], *, key: Optional[Hashable] = None) -> None:
         self._liquid_change_callbacks.add(cb, key=key)
@@ -534,9 +535,17 @@ class Magnet(OpScheduler['Magnet'], BinaryComponent['Magnet']):
     def __repr__(self) -> str:
         return f"Magnet({', '.join(str(self.pads))})"
     
+class HeatingMode(Enum):
+    OFF = auto()
+    MAINTAINING = auto()
+    HEATING = auto()
+    COOLING = auto()
+    
+    
 class Heater(OpScheduler['Heater'], BoardComponent):
     num: Final[int]
     pads: Final[Sequence[Pad]]
+    mode: HeatingMode
     _last_reading: Optional[TemperaturePoint]
     _target: Optional[TemperaturePoint]
     polling_interval: Final[Time]
@@ -569,6 +578,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         BoardComponent.__init__(self, board)
         self.num = num
         self.pads = pads
+        self.mode = HeatingMode.OFF
         self.polling_interval = polling_interval
         self._last_reading = None
         self._target = None
@@ -592,6 +602,52 @@ class Heater(OpScheduler['Heater'], BoardComponent):
 
     def on_target_change(self, cb: ChangeCallback[Optional[TemperaturePoint]], *, key: Optional[Hashable] = None):
         self._target_change_callbacks.add(cb, key=key)
+        
+    class SetTemperature(Operation['Heater','Heater']):
+        target: Final[Optional[TemperaturePoint]]
+        
+        def _schedule_for(self, heater: Heater, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,
+                          future: Optional[Delayed[Heater]] = None
+                          ) -> Delayed[Heater]:
+            if future is None:
+                future = Delayed[Heater]()
+            real_future = future
+            target = 75*abs_F if self.target is None else self.target 
+            
+            def do_it() -> None:
+                current_target = heater.target
+                if current_target is None:
+                    current_target = 75*abs_F
+                if current_target == target:
+                    if post_result:
+                        real_future.post(heater)
+                    return
+                heating_request = target > current_target
+                # print(f"New {'heating' if heating_request else 'cooling'} request to {target}")
+                heater.target = target
+                key = (heater, f"Temp->{target}", random.random())
+                
+                def check(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]):  # @UnusedVariable
+                    assert new is not None, f"No temperature reading during {'heating' if heating_request else 'cooling'} operation"
+                    done: bool = new >= target if heating_request else new <= target
+                    if done:
+                        # print(f"Temperature made it to {target}")
+                        if post_result:
+                            real_future.post(heater)
+                        heater._temperature_change_callbacks.remove(key)
+                    # else:
+                        # print(f"Temperature of {new} not at {target} ({self.target})")
+                heater.on_temperature_change(check, key=key)
+            
+            heater.board.schedule(do_it, mode, after=after)
+            return future
+            
+        
+        def __init__(self, target: Optional[TemperaturePoint]) -> None:
+            self.target = target
     
 
     
@@ -971,11 +1027,8 @@ class System:
         thread = Thread(target=run_it)
         monitor = BoardMonitor(self.board)
         thread.start()
-        while not done.is_set():
-            monitor.process_display_updates()
-            monitor.figure.canvas.draw_idle()
-            pyplot.pause(0.02)
-            
-        pyplot.pause(100)
+        monitor.keep_alive(sentinel = lambda : done.is_set(),
+                           min_time = 5*mins)
+
         return val
     

@@ -48,9 +48,9 @@ def map_str(d: Union[Mapping, set, tuple, Sequence]) -> str:
     if isinstance(d, set):
         return f"{{{', '.join(f'{v}' for v in d)}}}"
     if isinstance(d, tuple):
-        return f"({', '.join(f'{v}' for k,v in d)}{',' if len(d) == 1 else ''})"
+        return f"({', '.join(f'{v}' for v in d)}{',' if len(d) == 1 else ''})"
     if getattr(d, "__iter__", None) is not None:
-        return f"[{', '.join(f'{v}' for k,v in d)}]"
+        return f"[{', '.join(f'{v}' for v in d)}]"
     assert False, f"{d} is somehow not a Mapping, set, tuple, or Sequence"
 
 def fmt_dict(d: Mapping) -> str:

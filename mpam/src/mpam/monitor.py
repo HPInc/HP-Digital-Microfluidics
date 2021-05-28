@@ -1,7 +1,7 @@
 from __future__ import annotations
 # import matplotlib
 # matplotlib.use('Agg')
-from typing import Final, Mapping, Optional, Union, Sequence, cast
+from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
@@ -17,7 +17,9 @@ from threading import RLock
 from matplotlib.path import Path
 from numbers import Number
 from quantities.temperature import abs_F, abs_C, TemperaturePoint
-from quantities.SI import deg_C
+from quantities.SI import deg_C, ms, sec
+import random
+from quantities.timestamp import time_now
 
 
 class PadMonitor(object):
@@ -75,8 +77,11 @@ class PadMonitor(object):
                                   horizontalalignment='left',
                                   color='darkred',
                                   fontsize='xx-small')
-                pad.heater.on_temperature_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new))) 
-                pad.heater.on_target_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new)))
+                key = (pad.heater, f"monitor({pad.location.x},{pad.location.y})", random.random())
+                pad.heater.on_temperature_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new)),
+                                                 key=key) 
+                pad.heater.on_target_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new)),
+                                            key=key)
             self.heater = h
             if pad.heater is not None:
                 self.note_temperature(pad.heater.current_temperature)
@@ -115,9 +120,16 @@ class PadMonitor(object):
         annotation = self.heater
         assert annotation is not None
         
+        # if heater.num == 3:
+            # print(f"target: {target}, temp: {temp}")
+        
         if target is None:
             # The heater is off
             cool = temp is None or temp < 80*abs_F
+            # if not cool:
+                # print(f"Should see {temp}")
+            # else:
+                # print(f"{heater} is cool")
             annotation.set_weight('normal' if cool else 'bold')
             annotation.set_text('Off' if temp is None else f"{temp.as_number(abs_C):.0f}C")
             annotation.set_color('darkred' if cool else 'blue')
@@ -308,7 +320,7 @@ class BoardMonitor:
         interval = heater.polling_interval
         def do_poll() -> Optional[Time]:
             heater.poll()
-            print(f"Polling {heater}")
+            # print(f"Polling {heater}")
             return interval
         self.board.call_after(interval, do_poll, daemon=True)
         
@@ -354,4 +366,31 @@ class BoardMonitor:
         with self.lock:
             for cb in self.update_callbacks:
                 cb()
+                
+    def keep_alive(self, *, 
+                   min_time: Time = 0*sec, 
+                   max_time: Optional[Time] = None, 
+                   sentinel: Optional[Callable[[], bool]] = None,
+                   update_interval: Time = 20*ms):
+        now = time_now()
+        kill_at = None if max_time is None else now+max_time
+        live_through = now+min_time
+        pause = update_interval.as_number(sec)
+        saw_sentinel: bool = False
+        def done() -> bool:
+            nonlocal saw_sentinel
+            if not saw_sentinel and sentinel is not None:
+                saw_sentinel = sentinel()
+            now = time_now()
+            if now < live_through:
+                return False
+            if kill_at is not None and now > kill_at:
+                return True
+            return saw_sentinel
+            
+        while not done():
+            self.process_display_updates()
+            self.figure.canvas.draw_idle()
+            pyplot.pause(pause)
+        
             

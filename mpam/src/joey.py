@@ -1,14 +1,14 @@
 from __future__ import annotations
 import mpam.device as device
-from typing import Optional, Final
+from typing import Optional, Final, Sequence
 from mpam.types import OnOff, XYCoord, Orientation, GridRegion, Delayed
-from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
-    Magnet
+from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import Timestamp, time_now
 from quantities.dimensions import Temperature, Time
 from quantities.core import DerivedDim
+import random
 
 class Electrode:
     index: Final[int]
@@ -33,6 +33,11 @@ class Pad(device.Pad):
             real_e = e
             self.set_device_state = lambda v: real_e.set_state(v)
             
+class Magnet(device.Magnet):
+    def __init__(self, board: Board, *, pads: Sequence[device.Pad]):
+        super().__init__(board, pads=pads)
+        self.set_device_state = lambda _: None
+            
 class HeatingRate(DerivedDim['HeatingRate']):
     derived = Temperature.dim()/Time.dim()
     
@@ -48,7 +53,6 @@ class WellPad(device.WellPad):
             real_e = e
             self.set_device_state = lambda v: real_e.set_state(v)
 
-DH = device.Heater
 class Heater(device.Heater):
     _last_read_time: Timestamp
     _heating_rate: HeatingRate
@@ -61,12 +65,13 @@ class Heater(device.Heater):
                          polling_interval = 200*ms,
                          pads = [board.pad_array[xy] for xy in region])
         self._last_read_time = time_now()
-        self._heating_rate = 10*(deg_C/sec).a(HeatingRate)
-        self._cooling_rate = 5*(deg_C/sec).a(HeatingRate)
+        self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
+        self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
         self._last_reading = 75*abs_F
         # It really seems as though we should be able to just override the target setter, but I
         # can't get the compiler (and MyPy) to accept it
-        self.on_target_change(lambda old,new: self._update_temp(old))  # @UnusedVariable
+        key=(self, "target changed", random.random())
+        self.on_target_change(lambda old,new: self._update_temp(old), key=key)  # @UnusedVariable
         
     def _update_temp(self, target: Optional[TemperaturePoint]) -> None:
         now = time_now()
@@ -120,8 +125,8 @@ class Board(device.Board):
                     group=group,
                     exit_pad=exit_pad,
                     gate=WellPad(e=None, board=self),
-                    capacity=12*uL,
-                    dispensed_volume=2*uL,
+                    capacity=20*uL,
+                    dispensed_volume=0.5*uL,
                     gate_pad_bounds= self._rectangle(epx, epy, outdir, 1, 1), 
                     shared_pad_bounds = [self._rectangle(epx+1*outdir,epy+1,outdir,1,0.5),
                                          self._rectangle(epx+1*outdir,epy,outdir,1,1),
@@ -191,8 +196,7 @@ class Board(device.Board):
             self._well(7, right_group, self.pad_at(18,0)),
             ))
         
-        magnets.append(Magnet(self, pads = (self.pad_at(13, 3),)))
-        magnets.append(Magnet(self, pads = (self.pad_at(13, 15),)))
+        magnets.append(Magnet(self, pads = (self.pad_at(13, 3), self.pad_at(13, 15),)))
         
         heaters.append(Heater(0, self, region=GridRegion(XYCoord(0,12),3,7)))
         heaters.append(Heater(1, self, region=GridRegion(XYCoord(0,0),3,7)))

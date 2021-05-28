@@ -468,7 +468,7 @@ class ClockThread(WorkerThread):
                 tick_event.clear()
                 if self.state is State.ABORT_REQUESTED:
                     return
-                print(f"Processing tick #{self.next_tick.number}")
+                # print(f"Processing tick #{self.next_tick.number}")
                 self.last_tick_time = time_now()
                 queue: list[CT]
                 with lock:

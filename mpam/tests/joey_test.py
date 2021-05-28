@@ -1,12 +1,17 @@
 from __future__ import annotations
 import joey
-from mpam.device import System, Well
-from mpam.types import StaticOperation, Dir, Reagent, Liquid, ticks
+from mpam.device import System, Well, Heater, Magnet
+from mpam.types import StaticOperation, Dir, Reagent, Liquid, ticks, Operation,\
+    RunMode
 from mpam.drop import Drop
-from quantities.dimensions import Volume
+from quantities.dimensions import Volume, Time
 from quantities.core import Unit
-from quantities.SI import ms
-from quantities.temperature import abs_C
+from quantities.SI import ms, sec, uL
+from quantities.temperature import abs_C, TemperaturePoint
+from typing import Sequence
+
+Volume.default_units(uL)
+Time.default_units(ms)
 
 board = joey.Board()
 
@@ -14,12 +19,20 @@ system = System(board=board)
 
 drops: Unit[Volume] = board.drop_size.as_unit("drops")
 
+async_mode = RunMode.asynchronous(100*ms)
     
 def walk_across(well: Well, direction: Dir) -> StaticOperation[None]:
     return Drop.DispenseFrom(well) \
             .then(Drop.Move(direction, steps=18)) \
             .then(Drop.EnterWell)
-    pass    
+    pass   
+
+def ramp_heater(temps: Sequence[TemperaturePoint]) -> Operation[Heater, Heater]:
+    op: Operation[Heater,Heater] = Heater.SetTemperature(temps[0])
+    for i in range(1, len(temps)):
+        op = op.then(Heater.SetTemperature(temps[i]), after=5*sec)
+    return op.then(Heater.SetTemperature(None), after=5*sec)
+
     
 def experiment(system: System) -> None:
     r1 = Reagent('R1')
@@ -29,19 +42,20 @@ def experiment(system: System) -> None:
     board.wells[6].contains(Liquid(r2, 8*drops))
 
     system.clock.start(100*ms)
-    
-    board.heaters[2].target = 60*abs_C
-    board.heaters[2].current_temperature = 40*abs_C
-    
-    board.heaters[3].current_temperature = 50*abs_C
         
     s1 = walk_across(board.wells[4], Dir.LEFT)
     s2 = walk_across(board.wells[6], Dir.LEFT)
+    
+    
     with system.batched():
         s1.schedule()
         s1.schedule(after=15*ticks)
         s1.schedule(after=20*ticks)
         s2.schedule()
+        ramp_heater([80*abs_C]).schedule_for(board.heaters[3], mode = async_mode)
+        Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
+        
+        
     
 system.run_monitored(experiment)
     
