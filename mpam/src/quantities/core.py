@@ -416,7 +416,7 @@ class _BoundQuantity(Generic[D]):
 
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         desc = self.units.description(exponent_fmt=exponent_fmt, mag=self.magnitude)
-        return f"{self.magnitude:g} {desc}"
+        return f"{self.magnitude:f} {desc}"
 
     def __repr__(self) -> str:
         return self.description()

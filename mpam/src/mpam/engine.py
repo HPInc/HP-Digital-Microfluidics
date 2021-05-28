@@ -258,9 +258,30 @@ class DevCommThread(WorkerThread):
                 self.wake_up()
             
         
-FT = tuple[Timestamp, TimerFunc, bool]
+# FT = tuple[Timestamp, TimerFunc, bool]
 
 class TimerThread(WorkerThread):
+    class Entry:
+        desired_time: Final[Timestamp]
+        is_daemon: Final[bool]
+        
+        def __init__(self, desired_time: Timestamp, func: TimerFunc, is_daemon: bool):
+            self.desired_time = desired_time
+            self.func: Final[TimerFunc] = func
+            self.is_daemon = is_daemon
+            
+        def __lt__(self, other: TimerThread.Entry) -> bool:
+            my_time = self.desired_time
+            their_time = other.desired_time
+            if my_time < their_time: 
+                return True
+            elif their_time < my_time:
+                return False
+            else:
+                return id(self.func) < id(other.func)
+            
+        def __repr__(self) -> str:
+            return f"Entry({self.desired_time}, {self.func}{', daemon' if self.is_daemon else ''})@{id(self)}"
     
     class MyTimer(Timer):
         timer_thread: TimerThread
@@ -285,7 +306,7 @@ class TimerThread(WorkerThread):
                 if next_time:
                     if isinstance(next_time, Time):
                         next_time = time_in(next_time)
-                    heapq.heappush(tt.queue, (next_time, self.func, self.daemon_task))
+                    heapq.heappush(tt.queue, TimerThread.Entry(next_time, self.func, self.daemon_task))
                 elif self.daemon_task:
                     tt.n_daemons -= 1
                 tt.timer = None
@@ -294,7 +315,7 @@ class TimerThread(WorkerThread):
                 tt.wake_up()
 
     condition: Condition
-    queue: list[FT]
+    queue: list[Entry]
     timer: Optional[MyTimer]
     n_daemons: int
                 
@@ -315,8 +336,7 @@ class TimerThread(WorkerThread):
             lock = self.lock
             self.state = State.RUNNING
             while self.state is State.RUNNING or (self.state is State.SHUTDOWN_REQUESTED and queue):
-                func = None
-                desired_time: Timestamp
+                # desired_time: Timestamp
                 with lock:
                     while ((self.state is State.RUNNING and (not queue or self.timer is not None))
                             or
@@ -328,21 +348,21 @@ class TimerThread(WorkerThread):
                     if not queue:
                         assert self.state is not State.RUNNING
                         return
-                    (desired_time, func, daemon) = heapq.heappop(queue)
+                    entry = heapq.heappop(queue)
                 # we're now not locked, so we can safely either run the function or schedule it
                 now: Timestamp = time_now()
-                if now >= desired_time:
-                    next_time: Optional[Union[Time,Timestamp]] = func()
+                if now >= entry.desired_time:
+                    next_time: Optional[Union[Time,Timestamp]] = entry.func()
                     if next_time:
                         if isinstance(next_time, Time):
                             next_time = time_in(next_time)
                         with condition:
-                            heapq.heappush(queue, (next_time, func, daemon))
+                            heapq.heappush(queue, TimerThread.Entry(next_time, entry.func, entry.is_daemon))
                     elif not queue:
                         self.idle()
                 else:
                     with condition:
-                        self.timer = self.MyTimer(self, desired_time, desired_time-now, func, daemon)
+                        self.timer = self.MyTimer(self, entry.desired_time, entry.desired_time-now, entry.func, entry.is_daemon)
                         self.timer.start()
         finally:
             print(self.name, "exited")
@@ -361,9 +381,9 @@ class TimerThread(WorkerThread):
                     # we could just call it here, but I'm not sure how safe that is.)
                     timer.cancel()
                     if not timer.started:
-                        heapq.heappush(self.queue, (timer.target_time, timer.func, timer.daemon_task))
+                        heapq.heappush(self.queue, TimerThread.Entry(timer.target_time, timer.func, timer.daemon_task))
                         self.timer = None
-                heapq.heappush(self.queue, (t, fn, daemon))
+                heapq.heappush(self.queue, TimerThread.Entry(t, fn, daemon))
                 if daemon:
                     self.n_daemons += 1  
             self.wake_up()

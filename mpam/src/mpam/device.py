@@ -18,6 +18,7 @@ from enum import Enum, auto
 import itertools
 from erk.errors import ErrorHandler, PRINT
 from matplotlib import pyplot
+from quantities.temperature import TemperaturePoint
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -81,10 +82,10 @@ class BinaryComponent(BoardComponent, Generic[BC]):
             def cb() -> Optional[Callback]:
                 old = obj.current_state
                 new = mod(old)
-                print(f"Setting {obj} to {new}")
+                # print(f"Setting {obj} to {new}")
                 setter(new)
                 obj.current_state= new
-                print(f"Back from setting {obj} val = {obj._state}")
+                # print(f"Back from setting {obj} val = {obj._state}")
                 finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(old))
                 return finish
             
@@ -536,28 +537,28 @@ class Magnet(OpScheduler['Magnet'], BinaryComponent['Magnet']):
 class Heater(OpScheduler['Heater'], BoardComponent):
     num: Final[int]
     pads: Final[Sequence[Pad]]
-    _last_reading: Optional[Temperature]
-    _target: Optional[Temperature]
+    _last_reading: Optional[TemperaturePoint]
+    _target: Optional[TemperaturePoint]
     polling_interval: Final[Time]
-    _temperature_change_callbacks: Final[ChangeCallbackList[Optional[Temperature]]]
-    _target_change_callbacks: Final[ChangeCallbackList[Optional[Temperature]]]
+    _temperature_change_callbacks: Final[ChangeCallbackList[Optional[TemperaturePoint]]]
+    _target_change_callbacks: Final[ChangeCallbackList[Optional[TemperaturePoint]]]
     
     @property
-    def current_temperature(self) -> Optional[Temperature]:
+    def current_temperature(self) -> Optional[TemperaturePoint]:
         return self._last_reading
     
     @current_temperature.setter
-    def current_temperature(self, new: Optional[Temperature]) -> None:
+    def current_temperature(self, new: Optional[TemperaturePoint]) -> None:
         old = self._last_reading
         self._last_reading = new
         self._temperature_change_callbacks.process(old, new)
         
     @property
-    def target(self) -> Optional[Temperature]:
+    def target(self) -> Optional[TemperaturePoint]:
         return self._target
     
     @target.setter
-    def target(self, new: Optional[Temperature]) -> None:
+    def target(self, new: Optional[TemperaturePoint]) -> None:
         old = self._target
         self._target = new
         self._target_change_callbacks.process(old, new)
@@ -580,16 +581,16 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         return f"Heater({self.num})"
     
     # If the implementation doesn't override, then we always get back None (immediately)
-    def poll(self) -> Delayed[Optional[Temperature]]:
-        future = Delayed[Optional[Temperature]]()
+    def poll(self) -> Delayed[Optional[TemperaturePoint]]:
+        future = Delayed[Optional[TemperaturePoint]]()
         future.post(None)
         return future
         
         
-    def on_temperature_change(self, cb: ChangeCallback[Optional[Temperature]], *, key: Optional[Hashable] = None):
+    def on_temperature_change(self, cb: ChangeCallback[Optional[TemperaturePoint]], *, key: Optional[Hashable] = None):
         self._temperature_change_callbacks.add(cb, key=key)
 
-    def on_target_change(self, cb: ChangeCallback[Optional[Temperature]], *, key: Optional[Hashable] = None):
+    def on_target_change(self, cb: ChangeCallback[Optional[TemperaturePoint]], *, key: Optional[Hashable] = None):
         self._target_change_callbacks.add(cb, key=key)
     
 
@@ -642,11 +643,11 @@ class SystemComponent:
         else:
             sys.communicate(req)
         
-    def call_at(self, t: Timestamp, fn: Callback):
-        self.in_system().call_at(t, fn)
+    def call_at(self, t: Timestamp, fn: Callback, *, daemon: bool = False):
+        self.in_system().call_at(t, fn, daemon=daemon)
         
-    def call_after(self, delta: Time, fn: Callback):
-        self.in_system().call_after(delta, fn)
+    def call_after(self, delta: Time, fn: Callback, *, daemon: bool = False):
+        self.in_system().call_after(delta, fn, daemon=daemon)
         
     def before_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()) -> None:
         self.in_system().before_tick(fn, delta=delta)
@@ -671,6 +672,7 @@ class Board(SystemComponent):
     pads: Final[PadArray]
     wells: Final[Sequence[Well]]
     magnets: Final[Sequence[Magnet]]
+    heaters: Final[Sequence[Heater]]
     _well_groups: Mapping[str, WellGroup]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
@@ -680,12 +682,14 @@ class Board(SystemComponent):
                  pads: PadArray,
                  wells: Sequence[Well],
                  magnets: Optional[Sequence[Magnet]] = None,
+                 heaters: Optional[Sequence[Heater]] = None,
                  orientation: Orientation,
                  drop_motion_time: Time) -> None:
         super().__init__()
         self.pads = pads
         self.wells = wells
         self.magnets = [] if magnets is None else magnets
+        self.heaters = [] if heaters is None else heaters
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
 

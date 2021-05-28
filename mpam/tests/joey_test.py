@@ -6,6 +6,7 @@ from mpam.drop import Drop
 from quantities.dimensions import Volume
 from quantities.core import Unit
 from quantities.SI import ms
+from quantities.temperature import abs_C
 
 board = joey.Board()
 
@@ -28,6 +29,11 @@ def experiment(system: System) -> None:
     board.wells[6].contains(Liquid(r2, 8*drops))
 
     system.clock.start(100*ms)
+    
+    board.heaters[2].target = 60*abs_C
+    board.heaters[2].current_temperature = 40*abs_C
+    
+    board.heaters[3].current_temperature = 50*abs_C
         
     s1 = walk_across(board.wells[4], Dir.LEFT)
     s2 = walk_across(board.wells[6], Dir.LEFT)

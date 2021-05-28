@@ -1,10 +1,14 @@
 from __future__ import annotations
 import mpam.device as device
 from typing import Optional, Final
-from mpam.types import OnOff, XYCoord, Orientation, GridRegion
+from mpam.types import OnOff, XYCoord, Orientation, GridRegion, Delayed
 from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
     Magnet
-from quantities.SI import uL, ms
+from quantities.SI import uL, ms, deg_C, sec
+from quantities.temperature import TemperaturePoint, abs_F
+from quantities.timestamp import Timestamp, time_now
+from quantities.dimensions import Temperature, Time
+from quantities.core import DerivedDim
 
 class Electrode:
     index: Final[int]
@@ -28,6 +32,9 @@ class Pad(device.Pad):
         else:
             real_e = e
             self.set_device_state = lambda v: real_e.set_state(v)
+            
+class HeatingRate(DerivedDim['HeatingRate']):
+    derived = Temperature.dim()/Time.dim()
     
 class WellPad(device.WellPad):
     electrode: Optional[Electrode]
@@ -41,12 +48,49 @@ class WellPad(device.WellPad):
             real_e = e
             self.set_device_state = lambda v: real_e.set_state(v)
 
+DH = device.Heater
 class Heater(device.Heater):
+    _last_read_time: Timestamp
+    _heating_rate: HeatingRate
+    _cooling_rate: HeatingRate
+    
+
     def __init__(self, num: int, board: Board, *, 
                  region: GridRegion) -> None:
         super().__init__(num, board,
-                         polling_interval = 100*ms,
+                         polling_interval = 200*ms,
                          pads = [board.pad_array[xy] for xy in region])
+        self._last_read_time = time_now()
+        self._heating_rate = 10*(deg_C/sec).a(HeatingRate)
+        self._cooling_rate = 5*(deg_C/sec).a(HeatingRate)
+        self._last_reading = 75*abs_F
+        # It really seems as though we should be able to just override the target setter, but I
+        # can't get the compiler (and MyPy) to accept it
+        self.on_target_change(lambda old,new: self._update_temp(old))  # @UnusedVariable
+        
+    def _update_temp(self, target: Optional[TemperaturePoint]) -> None:
+        now = time_now()
+        elapsed = now-self._last_read_time
+        if target is None:
+            target = 75*abs_F
+        assert self._last_reading is not None
+        delta: Temperature
+        if self._last_reading < target:
+            delta = (self._heating_rate*elapsed).a(Temperature)
+            self.current_temperature = min(target, self._last_reading+delta)
+        else:
+            delta = (self._cooling_rate*elapsed).a(Temperature)
+            self.current_temperature = max(target, self._last_reading-delta)
+        self._last_read_time = now
+            
+    def poll(self) -> Delayed[Optional[TemperaturePoint]]:
+        future = Delayed[Optional[TemperaturePoint]]()
+        self._update_temp(self.target)
+        future.post(self._last_reading)
+        return future
+    
+    
+        
 
 class Board(device.Board):
     _states: bytearray
@@ -99,9 +143,11 @@ class Board(device.Board):
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
-        super().__init__(pads=pad_dict, 
+        heaters: list[Heater] = []
+        super().__init__(pads=pad_dict,
                          wells=wells,
                          magnets=magnets,
+                         heaters=heaters,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms)
         self._states = bytearray(128)
@@ -147,6 +193,13 @@ class Board(device.Board):
         
         magnets.append(Magnet(self, pads = (self.pad_at(13, 3),)))
         magnets.append(Magnet(self, pads = (self.pad_at(13, 15),)))
+        
+        heaters.append(Heater(0, self, region=GridRegion(XYCoord(0,12),3,7)))
+        heaters.append(Heater(1, self, region=GridRegion(XYCoord(0,0),3,7)))
+        heaters.append(Heater(2, self, region=GridRegion(XYCoord(8,12),3,7)))
+        heaters.append(Heater(3, self, region=GridRegion(XYCoord(8,0),3,7)))
+        heaters.append(Heater(4, self, region=GridRegion(XYCoord(16,12),3,7)))
+        heaters.append(Heater(5, self, region=GridRegion(XYCoord(16,0),3,7)))
                        
     def update_state(self) -> None:
         pass

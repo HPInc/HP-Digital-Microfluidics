@@ -2,7 +2,7 @@ from __future__ import annotations
 # import matplotlib
 # matplotlib.use('Agg')
 from typing import Final, Mapping, Optional, Union, Sequence, cast
-from mpam.device import Board, Pad, Well, WellPad, PadBounds
+from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib import pyplot
@@ -12,10 +12,12 @@ from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
 from matplotlib.text import Annotation
 from mpam.drop import Drop
 import math
-from quantities.dimensions import Volume
+from quantities.dimensions import Volume, Time
 from threading import RLock
 from matplotlib.path import Path
 from numbers import Number
+from quantities.temperature import abs_F, abs_C, TemperaturePoint
+from quantities.SI import deg_C
 
 
 class PadMonitor(object):
@@ -23,6 +25,7 @@ class PadMonitor(object):
     board_monitor: Final[BoardMonitor]
     square: Final[Rectangle]
     magnet: Final[Optional[Annotation]]
+    heater: Final[Optional[Annotation]]
     origin: Final[tuple[float, float]]
     width: Final[float]
     center: Final[tuple[float, float]]
@@ -62,9 +65,25 @@ class PadMonitor(object):
             self.magnet = m
             if pad.magnet is not None:
                 self.note_magnet_state(OnOff.OFF)
+                
+            if pad.heater is None:
+                h = None
+            else:
+                h = plot.annotate(text='Off', xy=(0,0),
+                                  xytext=(0.05, 0.05),
+                                  xycoords=square,
+                                  horizontalalignment='left',
+                                  color='darkred',
+                                  fontsize='xx-small')
+                pad.heater.on_temperature_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new))) 
+                pad.heater.on_target_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new)))
+            self.heater = h
+            if pad.heater is not None:
+                self.note_temperature(pad.heater.current_temperature)
             
             pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
             pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
+            
         
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
@@ -88,6 +107,25 @@ class PadMonitor(object):
             magnet.set_color('darkslateblue')
             magnet.set_weight('normal')
             magnet.set_bbox(None)
+            
+    def note_temperature(self, temp: Optional[TemperaturePoint]) -> None:
+        heater = self.pad.heater
+        assert heater is not None
+        target = heater.target
+        annotation = self.heater
+        assert annotation is not None
+        
+        if target is None:
+            # The heater is off
+            cool = temp is None or temp < 80*abs_F
+            annotation.set_weight('normal' if cool else 'bold')
+            annotation.set_text('Off' if temp is None else f"{temp.as_number(abs_C):.0f}C")
+            annotation.set_color('darkred' if cool else 'blue')
+        else:
+            warming = temp is None or temp < target-0.5*deg_C
+            annotation.set_weight('bold')
+            annotation.set_text('On' if temp is None else f"{temp.as_number(abs_C):.0f}C")
+            annotation.set_color('darkorange' if warming else 'red')
             
     def drop_radius(self, drop: Drop) -> float:
         return 0.45*self.square.get_width()*math.sqrt(drop.volume.ratio(self.capacity))
@@ -250,7 +288,7 @@ class BoardMonitor:
         
         self.no_bounds = True
         
-        self.figure = pyplot.figure()
+        self.figure = pyplot.figure(figsize=(10,10))
         self.plot = self.figure.add_subplot(111, aspect='equal')
         self.plot.axis('off')
         self.pads = { pad: PadMonitor(pad, self) for pad in board.pad_array.values()}
@@ -259,7 +297,20 @@ class BoardMonitor:
         self.plot.set_xlim(self.min_x-padding, self.max_x+padding)
         self.plot.set_ylim(self.min_y-padding, self.max_y+padding)
         self.color_allocator = ColorAllocator[Reagent]()
+
+        for heater in board.heaters:       
+            self.setup_heater_poll(heater) 
+
+        
         self.figure.canvas.draw()
+        
+    def setup_heater_poll(self, heater: Heater) -> None:
+        interval = heater.polling_interval
+        def do_poll() -> Optional[Time]:
+            heater.poll()
+            print(f"Polling {heater}")
+            return interval
+        self.board.call_after(interval, do_poll, daemon=True)
         
     def map_coord(self, xy: Union[XYCoord, tuple[float,float]]) -> tuple[float, float]:
         board = self.board
