@@ -1,8 +1,10 @@
 from __future__ import annotations
 # import matplotlib
 # matplotlib.use('Agg')
-from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable
-from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater
+from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable,\
+    ClassVar
+from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
+    HeatingMode
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib import pyplot
@@ -78,13 +80,13 @@ class PadMonitor(object):
                                   color='darkred',
                                   fontsize='xx-small')
                 key = (pad.heater, f"monitor({pad.location.x},{pad.location.y})", random.random())
-                pad.heater.on_temperature_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new)),
-                                                 key=key) 
-                pad.heater.on_target_change(lambda _,new: board_monitor.in_display_thread(lambda: self.note_temperature(new)),
-                                            key=key)
+                def cb(old,new) -> None:  # @UnusedVariable
+                    board_monitor.in_display_thread(lambda : self.note_new_temperature())
+                pad.heater.on_temperature_change(cb, key=key) 
+                pad.heater.on_target_change(cb, key=key)
             self.heater = h
             if pad.heater is not None:
-                self.note_temperature(pad.heater.current_temperature)
+                self.note_new_temperature()
             
             pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
             pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
@@ -113,31 +115,32 @@ class PadMonitor(object):
             magnet.set_weight('normal')
             magnet.set_bbox(None)
             
-    def note_temperature(self, temp: Optional[TemperaturePoint]) -> None:
+    heating_mode_colors: Final[ClassVar[Mapping[HeatingMode, str]]] = {
+            HeatingMode.OFF: 'darkred',
+            HeatingMode.MAINTAINING: 'red',
+            HeatingMode.HEATING: 'darkorange',
+            HeatingMode.COOLING: 'blue'
+            }
+            
+    def note_new_temperature(self) -> None:
         heater = self.pad.heater
         assert heater is not None
-        target = heater.target
         annotation = self.heater
         assert annotation is not None
         
-        # if heater.num == 3:
-            # print(f"target: {target}, temp: {temp}")
+        temp = heater.current_temperature
         
-        if target is None:
-            # The heater is off
-            cool = temp is None or temp < 80*abs_F
-            # if not cool:
-                # print(f"Should see {temp}")
-            # else:
-                # print(f"{heater} is cool")
-            annotation.set_weight('normal' if cool else 'bold')
-            annotation.set_text('Off' if temp is None else f"{temp.as_number(abs_C):.0f}C")
-            annotation.set_color('darkred' if cool else 'blue')
+        mode = heater.mode
+        weight = 'normal' if mode is HeatingMode.OFF else 'bold'
+        if temp is None:
+            text = 'Off' if mode is HeatingMode.OFF or mode is HeatingMode.COOLING else 'On'
         else:
-            warming = temp is None or temp < target-0.5*deg_C
-            annotation.set_weight('bold')
-            annotation.set_text('On' if temp is None else f"{temp.as_number(abs_C):.0f}C")
-            annotation.set_color('darkorange' if warming else 'red')
+            text = f"{temp.as_number(abs_C):.0f}C"
+        color = self.heating_mode_colors[mode]
+        
+        annotation.set_weight(weight)
+        annotation.set_text(text)
+        annotation.set_color(color)
             
     def drop_radius(self, drop: Drop) -> float:
         return 0.45*self.square.get_width()*math.sqrt(drop.volume.ratio(self.capacity))

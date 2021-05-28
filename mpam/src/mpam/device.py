@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Final, Mapping, Callable, Literal,\
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic, Hashable
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic, Hashable, Any
 from types import TracebackType
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now, Timestamp
@@ -551,6 +551,8 @@ class Heater(OpScheduler['Heater'], BoardComponent):
     polling_interval: Final[Time]
     _temperature_change_callbacks: Final[ChangeCallbackList[Optional[TemperaturePoint]]]
     _target_change_callbacks: Final[ChangeCallbackList[Optional[TemperaturePoint]]]
+    _lock: Final[Lock]
+    _current_op_key: Any
     
     @property
     def current_temperature(self) -> Optional[TemperaturePoint]:
@@ -584,6 +586,8 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         self._target = None
         self._temperature_change_callbacks = ChangeCallbackList()
         self._target_change_callbacks = ChangeCallbackList()
+        self._lock = Lock()
+        self._current_op_key = None
         for pad in pads:
             pad._heater = self
             
@@ -615,33 +619,59 @@ class Heater(OpScheduler['Heater'], BoardComponent):
             if future is None:
                 future = Delayed[Heater]()
             real_future = future
-            target = 75*abs_F if self.target is None else self.target 
+            target = self.target
             
             def do_it() -> None:
-                current_target = heater.target
-                if current_target is None:
-                    current_target = 75*abs_F
-                if current_target == target:
-                    if post_result:
-                        real_future.post(heater)
-                    return
-                heating_request = target > current_target
-                # print(f"New {'heating' if heating_request else 'cooling'} request to {target}")
-                heater.target = target
-                key = (heater, f"Temp->{target}", random.random())
-                
-                def check(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]):  # @UnusedVariable
-                    assert new is not None, f"No temperature reading during {'heating' if heating_request else 'cooling'} operation"
-                    done: bool = new >= target if heating_request else new <= target
-                    if done:
-                        # print(f"Temperature made it to {target}")
+                ambient_threshold = 80*abs_F
+                with heater._lock:
+                    if heater._current_op_key is not None:
+                        heater._temperature_change_callbacks.remove(heater._current_op_key)
+                    heater.target = target
+                    temp = heater.current_temperature
+                    
+                    mode: HeatingMode
+                    if temp is None:
+                        mode = HeatingMode.OFF if target is None else HeatingMode.HEATING
                         if post_result:
                             real_future.post(heater)
-                        heater._temperature_change_callbacks.remove(key)
-                    # else:
-                        # print(f"Temperature of {new} not at {target} ({self.target})")
-                heater.on_temperature_change(check, key=key)
-            
+                        return
+                    elif temp == target:
+                        mode = HeatingMode.MAINTAINING
+                        if post_result:
+                            real_future.post(heater)
+                        return
+                    elif target is None and temp < ambient_threshold:
+                        mode = HeatingMode.OFF
+                        if post_result:
+                            real_future.post(heater)
+                        return
+                    elif target is None or temp > target:
+                        mode = HeatingMode.COOLING
+                    else:
+                        mode = HeatingMode.HEATING
+                    heater.mode = mode
+                    key = (heater, f"Temp->{target}", random.random())
+                
+                    def check(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]):  # @UnusedVariable
+                        assert mode is HeatingMode.HEATING or mode is HeatingMode.COOLING
+                        if new is None:
+                            # Not much we can do if we don't get a reading
+                            return
+                        if mode is HeatingMode.HEATING:
+                            assert target is not None
+                            done = new >= target
+                        elif target is None:
+                            done = new < ambient_threshold
+                        else:
+                            done = new <= target
+                        
+                        if done:
+                            with heater._lock:
+                                heater.mode = HeatingMode.OFF if target is None else HeatingMode.MAINTAINING
+                                heater._temperature_change_callbacks.remove(key)
+                            if post_result:
+                                real_future.post(heater)
+                    heater.on_temperature_change(check, key=key)
             heater.board.schedule(do_it, mode, after=after)
             return future
             

@@ -1,8 +1,9 @@
 from __future__ import annotations
 import mpam.device as device
-from typing import Optional, Final, Sequence
+from typing import Optional, Final, Sequence, ClassVar
 from mpam.types import OnOff, XYCoord, Orientation, GridRegion, Delayed
-from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds
+from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
+    HeatingMode
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import Timestamp, time_now
@@ -58,6 +59,7 @@ class Heater(device.Heater):
     _heating_rate: HeatingRate
     _cooling_rate: HeatingRate
     
+    ambient_temperature: ClassVar[TemperaturePoint] = 72*abs_F
 
     def __init__(self, num: int, board: Board, *, 
                  region: GridRegion) -> None:
@@ -67,7 +69,7 @@ class Heater(device.Heater):
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
         self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
-        self._last_reading = 75*abs_F
+        self._last_reading = self.ambient_temperature
         # It really seems as though we should be able to just override the target setter, but I
         # can't get the compiler (and MyPy) to accept it
         key=(self, "target changed", random.random())
@@ -76,16 +78,28 @@ class Heater(device.Heater):
     def _update_temp(self, target: Optional[TemperaturePoint]) -> None:
         now = time_now()
         elapsed = now-self._last_read_time
-        if target is None:
-            target = 75*abs_F
+        mode = self.mode
+        if mode is HeatingMode.MAINTAINING:
+            return
         assert self._last_reading is not None
+        if mode is HeatingMode.OFF and self._last_reading == self.ambient_temperature:
+            return
+        target = self.target
         delta: Temperature
-        if self._last_reading < target:
+        if mode is HeatingMode.HEATING:
             delta = (self._heating_rate*elapsed).a(Temperature)
-            self.current_temperature = min(target, self._last_reading+delta)
+            new_temp = self._last_reading + delta
+            if target is not None:
+                new_temp = min(new_temp, target)
+            self.current_temperature = new_temp
         else:
             delta = (self._cooling_rate*elapsed).a(Temperature)
-            self.current_temperature = max(target, self._last_reading-delta)
+            new_temp = self._last_reading - delta
+            if target is None:
+                new_temp = max(new_temp, self.ambient_temperature)
+            else:
+                new_temp = max(new_temp, target)
+            self.current_temperature = new_temp
         self._last_read_time = now
             
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:

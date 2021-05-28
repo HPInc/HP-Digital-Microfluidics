@@ -6,7 +6,7 @@ from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
 from threading import Event, Lock, RLock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
-from quantities.SI import ml, uL, millisecond
+from quantities.SI import ml, uL, ms
 from quantities.core import CountDim
 from matplotlib._color_data import XKCD_COLORS
 from weakref import WeakKeyDictionary, finalize
@@ -220,7 +220,7 @@ class RunMode:
         if (self.is_gated):
             return f"RunMode.GATED"
         else:
-            return f"RunMode.asynchronous({self.motion_time.in_units(millisecond)})"
+            return f"RunMode.asynchronous({self.motion_time.in_units(ms)})"
         
     def gated_delay(self, after: Optional[DelayType], *, step: int=0) -> Ticks:
         if after is None:

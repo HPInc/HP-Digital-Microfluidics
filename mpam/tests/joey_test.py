@@ -52,7 +52,8 @@ def experiment(system: System) -> None:
         s1.schedule(after=15*ticks)
         s1.schedule(after=20*ticks)
         s2.schedule()
-        ramp_heater([80*abs_C]).schedule_for(board.heaters[3], mode = async_mode)
+        ramp_heater([80*abs_C, 60*abs_C, 90*abs_C, 40*abs_C, 120*abs_C]) \
+            .schedule_for(board.heaters[3], mode = async_mode)
         Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
         
         
