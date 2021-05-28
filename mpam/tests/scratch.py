@@ -6,6 +6,8 @@ from quantities.dimensions import MassConcentration, Substance,\
 from typing import Mapping
 from erk.stringutils import map_str
 import weakref
+from quantities.temperature import TemperaturePoint, abs_C, abs_F
+from quantities.US import deg_F
 
 c1 = Chemical.find("C1")
 c2 = Chemical.find("C2")
@@ -67,4 +69,10 @@ print(colors.get_color(r2))
 print(colors.get_color(m.reagent))
 print(colors.get_color(r1))
 
+target: TemperaturePoint = 70*abs_C
+print(target, target.absolute) 
+print(target.in_units(abs_F))
+print(32*abs_F, (32*abs_F).in_units(abs_F))
+print(75*abs_F)
 
+print(70*abs_C+2*deg_F)
