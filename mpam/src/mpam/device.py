@@ -125,6 +125,7 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     _well: Optional[Well] = None
     _magnet: Optional[Magnet] = None
     _heater: Optional[Heater] = None
+    _extraction_point: Optional[ExtractionPoint] = None
     
     _drop_change_callbacks: Final[ChangeCallbackList[Optional[Drop]]]
         
@@ -146,6 +147,10 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     @property
     def heater(self) -> Optional[Heater]:
         return self._heater
+    
+    @property
+    def extraction_point(self) -> Optional[ExtractionPoint]:
+        return self._extraction_point
     
     @property
     def drop(self) -> Optional[Drop]:
@@ -387,6 +392,16 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
     
 PadBounds = Sequence[tuple[float,float]]
 
+class WellShape:
+    gate_pad_bounds: Final[PadBounds]
+    shared_pad_bounds: Final[Sequence[Union[PadBounds, Sequence[PadBounds]]]]
+    
+    def __init__(self, *, 
+                 gate_pad_bounds: PadBounds,
+                 shared_pad_bounds: Sequence[Union[PadBounds, Sequence[PadBounds]]]):
+        self.gate_pad_bounds = gate_pad_bounds
+        self.shared_pad_bounds = shared_pad_bounds
+    
 class Well(OpScheduler['Well'], BoardComponent):
     number: Final[int]
     group: Final[WellGroup]
@@ -396,8 +411,7 @@ class Well(OpScheduler['Well'], BoardComponent):
     exit_pad: Final[Pad]
     gate: Final[WellPad]
     _contents: Optional[Liquid]
-    gate_pad_bounds: Final[Optional[PadBounds]]
-    shared_pad_bounds: Final[Optional[Sequence[Union[PadBounds, Sequence[PadBounds]]]]]
+    _shape: Final[Optional[WellShape]]
     
     _liquid_change_callbacks: Final[ChangeCallbackList[Optional[Liquid]]]
     
@@ -445,8 +459,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                  capacity: Volume,
                  dispensed_volume: Volume,
                  is_voidable: bool = False,
-                 gate_pad_bounds: Optional[PadBounds] = None,
-                 shared_pad_bounds: Optional[Sequence[Union[PadBounds, Sequence[PadBounds]]]] = None
+                 shape: Optional[WellShape] = None,
                  ) -> None:
         BoardComponent.__init__(self, board)
         self.number = number
@@ -457,8 +470,7 @@ class Well(OpScheduler['Well'], BoardComponent):
         self.dispensed_volume = dispensed_volume
         self.is_voidable = is_voidable
         self._contents = None
-        self.gate_pad_bounds = gate_pad_bounds
-        self.shared_pad_bounds = shared_pad_bounds
+        self._shape = shape
         self._liquid_change_callbacks = ChangeCallbackList()
 
         group.add_well(self)
@@ -679,7 +691,12 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         def __init__(self, target: Optional[TemperaturePoint]) -> None:
             self.target = target
     
-
+class ExtractionPoint:
+    pad: Final[Pad]
+    
+    def __init__(self, pad: Pad) -> None:
+        self.pad = pad
+        pad._extraction_point = self
     
 class SystemComponent:
     system: Optional[System] = None
@@ -759,6 +776,7 @@ class Board(SystemComponent):
     wells: Final[Sequence[Well]]
     magnets: Final[Sequence[Magnet]]
     heaters: Final[Sequence[Heater]]
+    extraction_points: Final[Sequence[ExtractionPoint]]
     _well_groups: Mapping[str, WellGroup]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
@@ -769,6 +787,7 @@ class Board(SystemComponent):
                  wells: Sequence[Well],
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
+                 extraction_points: Optional[Sequence[ExtractionPoint]] = None,
                  orientation: Orientation,
                  drop_motion_time: Time) -> None:
         super().__init__()
@@ -776,6 +795,7 @@ class Board(SystemComponent):
         self.wells = wells
         self.magnets = [] if magnets is None else magnets
         self.heaters = [] if heaters is None else heaters
+        self.extraction_points = [] if extraction_points is None else extraction_points
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
 

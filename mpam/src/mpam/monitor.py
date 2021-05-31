@@ -8,7 +8,7 @@ from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib import pyplot
-from matplotlib.patches import Rectangle, Circle, PathPatch
+from matplotlib.patches import Rectangle, Circle, PathPatch, Patch
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
     ColorAllocator, Liquid
 from matplotlib.text import Annotation
@@ -18,8 +18,8 @@ from quantities.dimensions import Volume, Time
 from threading import RLock
 from matplotlib.path import Path
 from numbers import Number
-from quantities.temperature import abs_F, abs_C, TemperaturePoint
-from quantities.SI import deg_C, ms, sec
+from quantities.temperature import abs_C
+from quantities.SI import ms, sec
 import random
 from quantities.timestamp import time_now
 
@@ -30,6 +30,7 @@ class PadMonitor(object):
     square: Final[Rectangle]
     magnet: Final[Optional[Annotation]]
     heater: Final[Optional[Annotation]]
+    port: Final[Optional[Patch]]
     origin: Final[tuple[float, float]]
     width: Final[float]
     center: Final[tuple[float, float]]
@@ -87,6 +88,14 @@ class PadMonitor(object):
             self.heater = h
             if pad.heater is not None:
                 self.note_new_temperature()
+                
+            if pad.extraction_point is not None:
+                ep = Circle((ox+0.5*w, oy+0.7*w), radius=0.1*w,
+                            facecolor='white',
+                            edgecolor='black')
+                self.port = ep
+                board_monitor.plot.add_patch(ep)
+                
             
             pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
             pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
@@ -255,12 +264,12 @@ class WellMonitor:
         self.well = well
         self.board_monitor = board_monitor
         
-        assert well.gate_pad_bounds is not None
-        assert well.shared_pad_bounds is not None
-        self.gate_monitor = WellPadMonitor(well.gate, board_monitor, well.gate_pad_bounds, well = well, is_gate = True)
+        shape = well._shape
+        assert shape is not None
+        self.gate_monitor = WellPadMonitor(well.gate, board_monitor, shape.gate_pad_bounds, well = well, is_gate = True)
         
         self.shared_pad_monitors = [WellPadMonitor(wp, board_monitor, bounds, well=well, is_gate = False)
-                                    for bounds, wp in zip(well.shared_pad_bounds, well.group.shared_pads)]
+                                    for bounds, wp in zip(shape.shared_pad_bounds, well.group.shared_pads)]
         
     
     
@@ -307,7 +316,7 @@ class BoardMonitor:
         self.plot = self.figure.add_subplot(111, aspect='equal')
         self.plot.axis('off')
         self.pads = { pad: PadMonitor(pad, self) for pad in board.pad_array.values()}
-        self.wells = { well: WellMonitor(well, self) for well in board.wells if well.shared_pad_bounds is not None}
+        self.wells = { well: WellMonitor(well, self) for well in board.wells if well._shape is not None}
         padding = 0.2
         self.plot.set_xlim(self.min_x-padding, self.max_x+padding)
         self.plot.set_ylim(self.min_y-padding, self.max_y+padding)

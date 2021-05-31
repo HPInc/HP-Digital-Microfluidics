@@ -3,7 +3,7 @@ import mpam.device as device
 from typing import Optional, Final, Sequence, ClassVar
 from mpam.types import OnOff, XYCoord, Orientation, GridRegion, Delayed
 from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
-    HeatingMode
+    HeatingMode, ExtractionPoint, WellShape
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import Timestamp, time_now
@@ -134,13 +134,8 @@ class Board(device.Board):
         if outdir == 1:
             epx += 1
         # gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
-        return Well(number=num,
-                    board=self,
-                    group=group,
-                    exit_pad=exit_pad,
-                    gate=WellPad(e=None, board=self),
-                    capacity=20*uL,
-                    dispensed_volume=0.5*uL,
+        
+        shape = WellShape(
                     gate_pad_bounds= self._rectangle(epx, epy, outdir, 1, 1), 
                     shared_pad_bounds = [self._rectangle(epx+1*outdir,epy+1,outdir,1,0.5),
                                          self._rectangle(epx+1*outdir,epy,outdir,1,1),
@@ -150,9 +145,17 @@ class Board(device.Board):
                                          self._rectangle(epx+2*outdir,epy-1.5,outdir,1,1),
                                          self._rectangle(epx+3*outdir,epy-1.5,outdir,1,4),
                                          self._rectangle(epx+4*outdir,epy-1.5,outdir,1,4),
-                                         self._big_well_pad(epx+5*outdir, epy-1.5, outdir)
+                                         self._big_well_pad(epx+5*outdir, epy-1.5, outdir)]
+                    )
+        return Well(number=num,
+                    board=self,
+                    group=group,
+                    exit_pad=exit_pad,
+                    gate=WellPad(e=None, board=self),
+                    capacity=20*uL,
+                    dispensed_volume=0.5*uL,
+                    shape = shape
                                          # self._rectangle(epx+5*outdir,epy-1.5,outdir,1,4),
-                                         ]
                     # shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
                     #                      self._side_pad_bounds(exit_pad.location),
                     #                      self._big_pad_bounds(exit_pad.location))
@@ -163,10 +166,12 @@ class Board(device.Board):
         wells: list[Well] = []
         magnets: list[Magnet] = []
         heaters: list[Heater] = []
+        extraction_points: list[ExtractionPoint] = []
         super().__init__(pads=pad_dict,
                          wells=wells,
                          magnets=magnets,
                          heaters=heaters,
+                         extraction_points=extraction_points,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms)
         self._states = bytearray(128)
@@ -218,6 +223,10 @@ class Board(device.Board):
         heaters.append(Heater(3, self, region=GridRegion(XYCoord(8,0),3,7)))
         heaters.append(Heater(4, self, region=GridRegion(XYCoord(16,12),3,7)))
         heaters.append(Heater(5, self, region=GridRegion(XYCoord(16,0),3,7)))
+        
+        extraction_points.append(ExtractionPoint(self.pad_at(4,3)))
+        extraction_points.append(ExtractionPoint(self.pad_at(4,9)))
+        extraction_points.append(ExtractionPoint(self.pad_at(4,15)))
                        
     def update_state(self) -> None:
         pass

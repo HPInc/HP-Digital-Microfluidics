@@ -314,6 +314,31 @@ class OpScheduler(Generic[T]):
         if not isinstance(op, Operation):
             op = op()
         return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
+    
+    class WaitUntil(Operation[T,T]):
+        event: Final[Event]
+        def _schedule_for(self, obj: T, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,
+                          future: Optional[Delayed[OnOff]] = None
+                          ) -> Delayed[OnOff]:
+            
+            if future is None:
+                future = Delayed[OnOff]()
+            real_future = future
+            
+            def cb() -> Optional[Callback]:
+                self.event.wait()
+                finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(obj))
+                return finish
+            
+            obj.board.schedule(cb, mode, after=after)
+            return future
+        
+        def __init__(self, event: Event) -> None:
+            self.event = event
+        
 
 class StaticOperation(Generic[V]):
     
