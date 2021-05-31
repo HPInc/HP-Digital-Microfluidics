@@ -395,12 +395,18 @@ PadBounds = Sequence[tuple[float,float]]
 class WellShape:
     gate_pad_bounds: Final[PadBounds]
     shared_pad_bounds: Final[Sequence[Union[PadBounds, Sequence[PadBounds]]]]
+    reagent_id_circle_center: tuple[float,float]
+    reagent_id_circle_radius: float
     
     def __init__(self, *, 
                  gate_pad_bounds: PadBounds,
-                 shared_pad_bounds: Sequence[Union[PadBounds, Sequence[PadBounds]]]):
+                 shared_pad_bounds: Sequence[Union[PadBounds, Sequence[PadBounds]]],
+                 reagent_id_circle_center: tuple[float, float],
+                 reagent_id_circle_radius: float = 1):
         self.gate_pad_bounds = gate_pad_bounds
         self.shared_pad_bounds = shared_pad_bounds
+        self.reagent_id_circle_center = reagent_id_circle_center
+        self.reagent_id_circle_radius = reagent_id_circle_radius
     
 class Well(OpScheduler['Well'], BoardComponent):
     number: Final[int]

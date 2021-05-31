@@ -232,11 +232,12 @@ class WellPadMonitor:
         shape = PathPatch(path, 
                           facecolor='white',
                           edgecolor='black',
-                          alpha = 0.5)
+                          # alpha = 0.5
+                          )
         bm.plot.add_patch(shape)
         pad.on_state_change(lambda _,new: bm.in_display_thread(lambda: self.note_state(new)))
-        if not is_gate:
-            well.on_liquid_change(lambda _,new: bm.in_display_thread(lambda: self.note_liquid(new)))
+        # if not is_gate:
+            # well.on_liquid_change(lambda _,new: bm.in_display_thread(lambda: self.note_liquid(new)))
         return shape
 
     def note_state(self, state: OnOff) -> None:
@@ -258,6 +259,7 @@ class WellMonitor:
     board_monitor: Final[BoardMonitor]
     gate_monitor: Final[WellPadMonitor]
     shared_pad_monitors: Final[Sequence[WellPadMonitor]]
+    reagent_circle: Final[Circle]
 
     
     def __init__(self, well: Well, board_monitor: BoardMonitor) -> None:
@@ -270,10 +272,27 @@ class WellMonitor:
         
         self.shared_pad_monitors = [WellPadMonitor(wp, board_monitor, bounds, well=well, is_gate = False)
                                     for bounds, wp in zip(shape.shared_pad_bounds, well.group.shared_pads)]
+        rc_center = board_monitor.map_coord(shape.reagent_id_circle_center)
+        rc_radius = shape.reagent_id_circle_radius
+        board_monitor._on_board(rc_center[0]-rc_radius, rc_center[1]-rc_radius)
+        board_monitor._on_board(rc_center[0]+rc_radius, rc_center[1]+rc_radius)
+        board_monitor._on_board(rc_center[0]+rc_radius, rc_center[1]-rc_radius)
+        board_monitor._on_board(rc_center[0]-rc_radius, rc_center[1]+rc_radius)
+        rc = Circle(rc_center, radius = shape.reagent_id_circle_radius,
+                    edgecolor='black',
+                    facecolor='white')
+        board_monitor.plot.add_patch(rc)
+        self.reagent_circle = rc
+        well.on_liquid_change(lambda _,new: 
+                              board_monitor.in_display_thread(lambda: self.note_liquid(new)))
         
-    
-    
-    ...
+    def note_liquid(self, liquid: Optional[Liquid]) -> None:
+        if liquid is None:
+            self.reagent_circle.set_facecolor('white')
+        else:
+            self.reagent_circle.set_facecolor(self.board_monitor.reagent_color(liquid.reagent).rgba)
+        
+
             
 
 class BoardMonitor:

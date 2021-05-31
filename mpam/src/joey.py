@@ -145,7 +145,9 @@ class Board(device.Board):
                                          self._rectangle(epx+2*outdir,epy-1.5,outdir,1,1),
                                          self._rectangle(epx+3*outdir,epy-1.5,outdir,1,4),
                                          self._rectangle(epx+4*outdir,epy-1.5,outdir,1,4),
-                                         self._big_well_pad(epx+5*outdir, epy-1.5, outdir)]
+                                         self._big_well_pad(epx+5*outdir, epy-1.5, outdir)],
+                    reagent_id_circle_radius = 1,
+                    reagent_id_circle_center = (epx+8.5*outdir, epy+0.5)
                     )
         return Well(number=num,
                     board=self,
