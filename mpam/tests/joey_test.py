@@ -38,8 +38,8 @@ def experiment(system: System) -> None:
     r1 = Reagent('R1')
     r2 = Reagent('R2')
     board = system.board
-    board.wells[4].contains(Liquid(r1, 8*drops))
-    board.wells[6].contains(Liquid(r2, 8*drops))
+    board.wells[4].contains(Liquid(r1, 40*drops))
+    board.wells[6].contains(Liquid(r2, 40*drops))
 
     system.clock.start(100*ms)
         

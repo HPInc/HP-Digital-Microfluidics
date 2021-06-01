@@ -154,7 +154,7 @@ class Board(device.Board):
                     group=group,
                     exit_pad=exit_pad,
                     gate=WellPad(e=None, board=self),
-                    capacity=20*uL,
+                    capacity=54.25*uL,
                     dispensed_volume=0.5*uL,
                     shape = shape
                                          # self._rectangle(epx+5*outdir,epy-1.5,outdir,1,4),

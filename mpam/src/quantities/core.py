@@ -389,8 +389,8 @@ class Quantity(Generic[D]):
     def as_number(self, units: UnitExpr[D]) -> float:
         return self.in_units(units).magnitude
     
-    def as_unit(self: D, abbr: str) -> Unit[D]:
-        return Unit[D](abbr, self)
+    def as_unit(self: D, abbr: str, *, singular: Optional[str]=None) -> Unit[D]:
+        return Unit[D](abbr, self, singular=singular)
     
     def as_unit_expr(self: D, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> UnitExpr[D]:
         return UnitExpr[D](self, num, denom)
@@ -416,7 +416,7 @@ class _BoundQuantity(Generic[D]):
 
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         desc = self.units.description(exponent_fmt=exponent_fmt, mag=self.magnitude)
-        return f"{self.magnitude:f} {desc}"
+        return f"{self.magnitude:g} {desc}"
 
     def __repr__(self) -> str:
         return self.description()
