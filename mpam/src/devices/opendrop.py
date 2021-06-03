@@ -3,7 +3,8 @@ import mpam.device as device
 from typing import Optional, Final, Sequence
 from mpam.types import OnOff, XYCoord, Orientation
 from serial import Serial
-from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds
+from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
+    WellShape
 from quantities.SI import uL, ms
 
 class Electrode:
@@ -106,8 +107,24 @@ class Board(device.Board):
                 (epx+outdir,epy), 
                 (epx+outdir,epy-1),
                 (epx, epy-1))
+        
+    def _reagent_circle_center(self, ep_loc: XYCoord) -> tuple[float,float]:
+        epx = ep_loc.x
+        epy = ep_loc.y
+        outdir = -1 if epx == 1 else 1
+        if outdir == 1:
+            epx += 1
+        return (epx+5*outdir, epy-0.5)
     
     def _well(self, num: int, group: WellGroup, gate_loc: XYCoord, exit_pad: device.Pad):
+        shape = WellShape(
+                    gate_pad_bounds= self._gate_bounds(exit_pad.location),
+                    shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
+                                         self._side_pad_bounds(exit_pad.location),
+                                         self._big_pad_bounds(exit_pad.location)),
+                    reagent_id_circle_radius = 1,
+                    reagent_id_circle_center = self._reagent_circle_center(exit_pad.location) 
+            )
         return Well(number=num,
                     board=self,
                     group=group,
@@ -115,10 +132,7 @@ class Board(device.Board):
                     gate=WellGatePad(Electrode(gate_loc.x, gate_loc.y, self._states), self),
                     capacity=12*uL,
                     dispensed_volume=2*uL,
-                    gate_pad_bounds= self._gate_bounds(exit_pad.location),
-                    shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
-                                         self._side_pad_bounds(exit_pad.location),
-                                         self._big_pad_bounds(exit_pad.location))
+                    shape=shape
                     )
     
     def __init__(self, dev : Optional[str]) -> None:

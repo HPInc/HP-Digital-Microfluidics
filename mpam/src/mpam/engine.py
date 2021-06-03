@@ -28,6 +28,9 @@ class  State(Enum):
 class Worker:
     idle_barrier: IdleBarrier
     
+    def __init__(self, idle_barrier: IdleBarrier) -> None:
+        self.idle_barrier = idle_barrier
+    
     def not_idle(self) -> None:
         self.idle_barrier.running(self)
         
@@ -149,15 +152,14 @@ class Engine:
         
 class WorkerThread(Thread, Worker):
     engine: Engine
-    idle_barrier: IdleBarrier
     state: State
     lock: Lock
     
     def __init__(self, engine: Engine, name: str) -> None:
         # super().__init__(*args, **kwdargs)
-        super().__init__(name=name, daemon=True)
+        Thread.__init__(self, name=name, daemon=True)
+        Worker.__init__(self, engine.idle_barrier)
         self.engine = engine
-        self.idle_barrier = engine.idle_barrier
         self.state = State.NEW
         self.lock = Lock()
         

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import mpam.device as device
-from typing import Optional, Final, Sequence, ClassVar, Mapping
-from mpam.types import OnOff, XYCoord, Orientation, GridRegion, Delayed, T
+from typing import Optional, Sequence, ClassVar
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed
 from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
     HeatingMode, ExtractionPoint, WellShape
 from quantities.SI import uL, ms, deg_C, sec
@@ -11,28 +11,11 @@ from quantities.dimensions import Temperature, Time
 from quantities.core import DerivedDim
 import random
 
-class Electrode:
-    index: Final[int]
-    array: Final[bytearray]
-    
-    def set_state(self, val: OnOff) -> None:
-        self.array[self.index] = 1 if val else 0
-    
-    def __init__(self, index: int, a: bytearray) -> None:
-        self.index = index
-        self.array = a
         
 class Pad(device.Pad):
-    electrode: Final[Optional[Electrode]]
-    def __init__(self, e: Optional[Electrode], loc: XYCoord, board: Board, *, exists: bool):
+    def __init__(self, loc: XYCoord, board: Board, *, exists: bool):
         super().__init__(loc, board, exists=exists)
-        self.electrode = e
-        
-        if e is None:
-            self.set_device_state = lambda _: None
-        else:
-            real_e = e
-            self.set_device_state = lambda v: real_e.set_state(v)
+        self.set_device_state = lambda _: None
             
 class Magnet(device.Magnet):
     def __init__(self, board: Board, *, pads: Sequence[device.Pad]):
@@ -43,16 +26,9 @@ class HeatingRate(DerivedDim['HeatingRate']):
     derived = Temperature.dim()/Time.dim()
     
 class WellPad(device.WellPad):
-    electrode: Optional[Electrode]
-    def __init__(self, e: Optional[Electrode], board: Board):
+    def __init__(self, board: Board):
         super().__init__(board)
-        self.electrode = e
-        
-        if e is None:
-            self.set_device_state = lambda _: None
-        else:
-            real_e = e
-            self.set_device_state = lambda v: real_e.set_state(v)
+        self.set_device_state = lambda _: None
 
 class Heater(device.Heater):
     _last_read_time: Timestamp
@@ -84,7 +60,7 @@ class Heater(device.Heater):
         assert self._last_reading is not None
         if mode is HeatingMode.OFF and self._last_reading == self.ambient_temperature:
             return
-        target = self.target
+        # target = self.target
         delta: Temperature
         if mode is HeatingMode.HEATING:
             delta = (self._heating_rate*elapsed).a(Temperature)
@@ -112,7 +88,8 @@ class Heater(device.Heater):
         
 
 class Board(device.Board):
-    _states: bytearray
+    def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
+        return Pad(XYCoord(x, y), self, exists=exists)
     
     def _rectangle(self, x: float, y: float, outdir: int, width: float, height: float) -> PadBounds:
         return ((x,y), (x+width*outdir,y), (x+width*outdir, y+height), (x, y+height))
@@ -125,7 +102,8 @@ class Board(device.Board):
         y4 = y+4
         return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4)) 
     
-    
+    def _make_well_gate(self, well: int) -> WellPad:
+        return WellPad(board=self)
     
     def _well(self, num: int, group: WellGroup, exit_pad: device.Pad):
         epx = exit_pad.location.x
@@ -153,7 +131,7 @@ class Board(device.Board):
                     board=self,
                     group=group,
                     exit_pad=exit_pad,
-                    gate=WellPad(e=None, board=self),
+                    gate=self._make_well_gate(num),
                     capacity=54.25*uL,
                     dispensed_volume=0.5*uL,
                     shape = shape
@@ -163,18 +141,10 @@ class Board(device.Board):
                     #                      self._big_pad_bounds(exit_pad.location))
                     )
         
-    def _find_electrode(self, key: T, emap: Optional[Mapping[T, int]]) -> Optional[Electrode]:
-        if emap is None:
-            return None
-        i = emap.get(key, None)
-        if i is None:
-            return None
-        return Electrode(i, self._states)
+    def _make_well_pad(self, group_name: str, num: int) -> WellPad:  # @UnusedVariable
+        return WellPad(board=self)
     
-    def __init__(self, *,
-                 pad_electrodes: Optional[Mapping[tuple[int,int], int]] = None,
-                 well_pad_electrodes: Optional[Mapping[tuple[str,int], int]] = None,
-                 well_gate_electrodes: Optional[Mapping[int, int]] = None) -> None:
+    def __init__(self) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
@@ -187,18 +157,14 @@ class Board(device.Board):
                          extraction_points=extraction_points,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms)
-        self._states = bytearray(128)
         
         dead_region = GridRegion(XYCoord(7,8), width=5, height=3)
         
         for x in range(0,19):
             for y in range(0,19):
                 loc = XYCoord(x, y)
-                # e = Electrode(x, y, self._states)
-                e = self._find_electrode((x,y), pad_electrodes)
-                exists = loc not in dead_region and (pad_electrodes is None or e is not None)
-                p = Pad(e, loc, self, exists=exists)
-                pad_dict[loc] = p
+                exists = loc not in dead_region
+                pad_dict[loc] = self._make_pad(x, y, exists=exists)
                 
         sequences: WellOpSeqDict = {
             (WellState.EXTRACTABLE, WellState.READY): ((7,6), (7,3,4,5), (7,4,0,1,2)),
@@ -210,10 +176,10 @@ class Board(device.Board):
             }
         
         left_group = WellGroup("left", self, 
-                               tuple(WellPad(None, self) for _ in range(9)),
+                               tuple(self._make_well_pad('left', n) for n in range(9)),
                                sequences)
         right_group = WellGroup("right", self,
-                                tuple(WellPad(None, self) for _ in range(9)),
+                                tuple(self._make_well_pad('right', n) for n in range(9)),
                                 sequences)
         
         
@@ -240,10 +206,10 @@ class Board(device.Board):
         extraction_points.append(ExtractionPoint(self.pad_at(4,3)))
         extraction_points.append(ExtractionPoint(self.pad_at(4,9)))
         extraction_points.append(ExtractionPoint(self.pad_at(4,15)))
-                       
-    def update_state(self) -> None:
-        pass
         
+    def update_state(self):
+        pass
+                       
     def stop(self)->None:
         # if self._port is not None:
         #     self._port.close()

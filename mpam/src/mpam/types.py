@@ -498,6 +498,14 @@ class Delayed(Generic[T]):
                 # Just in case this object gets stuck somewhere.
                 # The callbacks are never going to be needed again
                 del self._callbacks
+                
+    @classmethod
+    def join(cls, futures: Union[Delayed, Sequence[Delayed]]) -> None:
+        if isinstance(futures, Delayed):
+            futures.wait()
+        else:
+            for f in futures:
+                f.wait()
 
 def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
              mode: RunMode = RunMode.GATED, 

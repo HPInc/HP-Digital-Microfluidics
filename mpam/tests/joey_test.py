@@ -2,11 +2,11 @@ from __future__ import annotations
 from devices import joey
 from mpam.device import System, Well, Heater, Magnet
 from mpam.types import StaticOperation, Dir, Reagent, Liquid, ticks, Operation,\
-    RunMode
+    RunMode, Delayed
 from mpam.drop import Drop
 from quantities.dimensions import Volume, Time
 from quantities.core import Unit
-from quantities.SI import ms, sec, uL
+from quantities.SI import ms, sec, uL, minutes
 from quantities.temperature import abs_C, TemperaturePoint
 from typing import Sequence
 
@@ -20,12 +20,11 @@ system = System(board=board)
 drops: Unit[Volume] = board.drop_size.as_unit("drops")
 
 async_mode = RunMode.asynchronous(100*ms)
-    
+
 def walk_across(well: Well, direction: Dir) -> StaticOperation[None]:
     return Drop.DispenseFrom(well) \
             .then(Drop.Move(direction, steps=18)) \
             .then(Drop.EnterWell)
-    pass   
 
 def ramp_heater(temps: Sequence[TemperaturePoint]) -> Operation[Heater, Heater]:
     op: Operation[Heater,Heater] = Heater.SetTemperature(temps[0])
@@ -52,13 +51,15 @@ def experiment(system: System) -> None:
         s1.schedule(after=15*ticks)
         s1.schedule(after=20*ticks)
         s2.schedule()
-        ramp_heater([80*abs_C, 60*abs_C, 90*abs_C, 40*abs_C, 120*abs_C]) \
-            .schedule_for(board.heaters[3], mode = async_mode)
+        f = ramp_heater([80*abs_C, 60*abs_C, 90*abs_C, 40*abs_C, 120*abs_C]) \
+                .schedule_for(board.heaters[3], mode = async_mode)
         Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
         
-        
+    Delayed.join(f)
     
-system.run_monitored(experiment)
+    print(f.value.current_temperature)
+    
+system.run_monitored(experiment, min_time=0*minutes)
     
     
 

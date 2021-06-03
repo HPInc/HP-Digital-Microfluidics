@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, Final, Mapping, Callable, Literal,\
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic, Hashable, Any
 from types import TracebackType
-from quantities.dimensions import Time, Volume
+from quantities.dimensions import Time, Volume, Frequency
 from quantities.timestamp import time_now, Timestamp
 from threading import Event, Lock, Thread
 
@@ -12,14 +12,14 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType,
     Callback
 from mpam.engine import DevCommRequest, TimerFunc, ClockCallback,\
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
-    ClockCommRequest, TimerDeltaRequest
+    ClockCommRequest, TimerDeltaRequest, IdleBarrier
 from mpam.exceptions import PadBrokenError
 from enum import Enum, auto
 import itertools
 from erk.errors import ErrorHandler, PRINT
 from quantities.temperature import TemperaturePoint, abs_F
 import random
-from quantities.SI import mins
+from quantities.SI import sec, ms
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -37,6 +37,9 @@ class BoardComponent:
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
                                after: Optional[DelayType] = None) -> None:  
         return self.board.schedule(cb, mode=mode, after=after)
+    
+    def user_operation(self) -> UserOperation:
+        return UserOperation(self.board.in_system().engine.idle_barrier)
 
 BC = TypeVar('BC', bound='BinaryComponent')
         
@@ -671,6 +674,10 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                         mode = HeatingMode.HEATING
                     heater.mode = mode
                     key = (heater, f"Temp->{target}", random.random())
+                    
+                    user_op = heater.user_operation()
+                    
+                    user_op.__enter__()
                 
                     def check(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]):  # @UnusedVariable
                         assert mode is HeatingMode.HEATING or mode is HeatingMode.COOLING
@@ -687,6 +694,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                         
                         if done:
                             with heater._lock:
+                                user_op.__exit__(None, None, None)
                                 heater.mode = HeatingMode.OFF if target is None else HeatingMode.MAINTAINING
                                 heater._temperature_change_callbacks.remove(key)
                             if post_result:
@@ -855,6 +863,9 @@ class Board(SystemComponent):
         
     
 class UserOperation(Worker):
+    def __init__(self, idle_barrier: IdleBarrier) -> None:
+        super().__init__(idle_barrier)
+    
     def __enter__(self) -> UserOperation:
         self.not_idle()
         return self
@@ -882,6 +893,14 @@ class Clock:
     @update_interval.setter
     def update_interval(self, interval: Time) -> None:
         self.clock_thread.update_interval = interval
+        
+    @property
+    def update_rate(self) -> Frequency:
+        return (1/self.update_interval).a(Frequency)
+    
+    @update_rate.setter
+    def update_rate(self, rate: Frequency) -> None:
+        self.update_interval = (1/rate).a(Time)
     
     @property
     def next_tick(self) -> TickNumber:
@@ -939,8 +958,10 @@ class Clock:
                 return
         ct.wake_up()
         
-    def start(self, interval: Optional[Time] = None) -> None:
+    def start(self, interval: Optional[Union[Time,Frequency]] = None) -> None:
         assert not self.running, "Clock.start() called while clock is running"
+        if isinstance(interval, Frequency):
+            interval = (1/interval).a(Time)
         self.clock_thread.start_clock(interval)
         
     def pause(self) -> None:
@@ -1071,7 +1092,11 @@ class System:
             return self._batch
         
         
-    def run_monitored(self, fn: Callable[[System],T]) -> T:
+    def run_monitored(self, fn: Callable[[System],T],
+                      *, 
+                      min_time: Time = 0*sec, 
+                      max_time: Optional[Time] = None, 
+                      update_interval: Time = 20*ms) -> T:
         from mpam.monitor import BoardMonitor
         val: T
         
@@ -1086,7 +1111,9 @@ class System:
         monitor = BoardMonitor(self.board)
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),
-                           min_time = 5*mins)
+                           min_time = min_time,
+                           max_time = max_time,
+                           update_interval = update_interval)
 
         return val
     

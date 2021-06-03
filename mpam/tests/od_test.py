@@ -1,6 +1,6 @@
 from __future__ import annotations
 from mpam.device import System, Well
-import opendrop
+from devices import opendrop
 from mpam.types import Dir, unknown_reagent, Liquid, ticks, Reagent,\
     StaticOperation
 from quantities.SI import uL, ms
