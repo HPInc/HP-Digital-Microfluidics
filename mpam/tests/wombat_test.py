@@ -1,5 +1,5 @@
 from __future__ import annotations
-from devices import joey
+from devices import wombat
 from mpam.device import System, Well, Heater, Magnet
 from mpam.types import StaticOperation, Dir, Reagent, Liquid, ticks, Operation,\
     RunMode
@@ -13,7 +13,7 @@ from typing import Sequence
 Volume.default_units(uL)
 Time.default_units(ms)
 
-board = joey.Board()
+board = wombat.Board()
 
 system = System(board=board)
 
