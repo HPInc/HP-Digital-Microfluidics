@@ -1,7 +1,7 @@
 from __future__ import annotations
 import mpam.device as device
-from typing import Optional, Final, Sequence, ClassVar
-from mpam.types import OnOff, XYCoord, Orientation, GridRegion, Delayed
+from typing import Optional, Final, Sequence, ClassVar, Mapping
+from mpam.types import OnOff, XYCoord, Orientation, GridRegion, Delayed, T
 from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
     HeatingMode, ExtractionPoint, WellShape
 from quantities.SI import uL, ms, deg_C, sec
@@ -162,8 +162,19 @@ class Board(device.Board):
                     #                      self._side_pad_bounds(exit_pad.location),
                     #                      self._big_pad_bounds(exit_pad.location))
                     )
+        
+    def _find_electrode(self, key: T, emap: Optional[Mapping[T, int]]) -> Optional[Electrode]:
+        if emap is None:
+            return None
+        i = emap.get(key, None)
+        if i is None:
+            return None
+        return Electrode(i, self._states)
     
-    def __init__(self) -> None:
+    def __init__(self, *,
+                 pad_electrodes: Optional[Mapping[tuple[int,int], int]] = None,
+                 well_pad_electrodes: Optional[Mapping[tuple[str,int], int]] = None,
+                 well_gate_electrodes: Optional[Mapping[int, int]] = None) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
@@ -184,8 +195,8 @@ class Board(device.Board):
             for y in range(0,19):
                 loc = XYCoord(x, y)
                 # e = Electrode(x, y, self._states)
-                e = None
-                exists = loc not in dead_region 
+                e = self._find_electrode((x,y), pad_electrodes)
+                exists = loc not in dead_region and (pad_electrodes is None or e is not None)
                 p = Pad(e, loc, self, exists=exists)
                 pad_dict[loc] = p
                 

@@ -1,10 +1,10 @@
 from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
-    StaticOperation, Reagent
+    StaticOperation, Reagent, Callback
 from mpam.device import Pad, Board, Well, WellGroup, WellState
 from mpam.exceptions import NoSuchPad, NotAtWell
-from typing import Optional, Final, Union, Sequence
+from typing import Optional, Final, Union, Sequence, Callable
 from quantities.SI import uL
 from threading import Lock
 from quantities.dimensions import Volume
@@ -31,6 +31,11 @@ class Drop(OpScheduler['Drop']):
         
     def __repr__(self) -> str:
         return f"Drop[{self.pad}, {self.liquid}]"
+    
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
+                               after: Optional[DelayType] = None) -> None:  
+        self.pad.schedule_communication(cb, mode=mode, after=after)
+    
     
     @classmethod
     def appear_at(self, board: Board, locations: Sequence[Union[XYCoord, tuple[int, int]]],

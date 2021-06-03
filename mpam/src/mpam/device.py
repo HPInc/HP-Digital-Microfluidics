@@ -34,7 +34,9 @@ class BoardComponent:
     
     def __init__(self, board: Board) -> None:
         self.board = board
-        
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
+                               after: Optional[DelayType] = None) -> None:  
+        return self.board.schedule(cb, mode=mode, after=after)
 
 BC = TypeVar('BC', bound='BinaryComponent')
         

@@ -601,8 +601,8 @@ class UnitExpr(Generic[D]):
         return cast(UnitExpr[ND], self)
     an = a
     
-    def as_unit(self, abbr: str, check: type[D] = None) -> Unit[D]:  # @UnusedVariable
-        return Unit[D](abbr, self)
+    def as_unit(self, abbr: str, check: type[D] = None, singular: Optional[str]=None) -> Unit[D]:  # @UnusedVariable
+        return Unit[D](abbr, self, singular=singular)
     
 
 class Unit(UnitExpr[D]):

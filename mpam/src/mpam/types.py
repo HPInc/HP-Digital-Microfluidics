@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence,\
-    Generator
+    Generator, Protocol
 from threading import Event, Lock, RLock
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -304,8 +304,16 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
         return self.first._schedule_for(obj, mode=mode, after=after) \
                     .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result, future=future)
         
-class OpScheduler(Generic[T]):
-    def schedule(self: T, op: Union[Operation[T, V], Callable[[],Operation[T,V]]],
+        
+class CommunicationScheduler(Protocol):
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  # @UnusedVariable
+                               after: Optional[DelayType] = None) -> None:  # @UnusedVariable
+        ...
+        
+CS = TypeVar('CS', bound=CommunicationScheduler)
+
+class OpScheduler(Generic[CS]):
+    def schedule(self: CS, op: Union[Operation[CS, V], Callable[[],Operation[CS,V]]],
                  mode: RunMode = RunMode.GATED, 
                  after: Optional[DelayType] = None,
                  post_result: bool = True,
@@ -315,17 +323,17 @@ class OpScheduler(Generic[T]):
             op = op()
         return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
     
-    class WaitUntil(Operation[T,T]):
+    class WaitUntil(Operation[CS,CS]):
         event: Final[Event]
-        def _schedule_for(self, obj: T, *,
+        def _schedule_for(self, obj: CS, *,
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
-                          future: Optional[Delayed[OnOff]] = None
-                          ) -> Delayed[OnOff]:
+                          future: Optional[Delayed[CS]] = None
+                          ) -> Delayed[CS]:
             
             if future is None:
-                future = Delayed[OnOff]()
+                future = Delayed[CS]()
             real_future = future
             
             def cb() -> Optional[Callback]:
@@ -333,7 +341,7 @@ class OpScheduler(Generic[T]):
                 finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(obj))
                 return finish
             
-            obj.board.schedule(cb, mode, after=after)
+            obj.schedule_communication(cb, mode, after=after)
             return future
         
         def __init__(self, event: Event) -> None:

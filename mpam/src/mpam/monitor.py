@@ -261,8 +261,8 @@ class WellMonitor:
     gate_monitor: Final[WellPadMonitor]
     shared_pad_monitors: Final[Sequence[WellPadMonitor]]
     reagent_circle: Final[Circle]
-    reagent_volume_circle: Final[Circle]
-    volume_rectangle: Final[Rectangle]
+    # reagent_volume_circle: Final[Circle]
+    # volume_rectangle: Final[Rectangle]
     content_description: Final[Annotation]
 
     
@@ -288,20 +288,20 @@ class WellMonitor:
                     alpha=0.5)
         board_monitor.plot.add_patch(rc)
         self.reagent_circle = rc
-        rvc = Circle(rc_center, radius = shape.reagent_id_circle_radius,
-                     edgecolor='none',
-                     facecolor='white')
-        board_monitor.plot.add_patch(rvc)
-        self.reagent_volume_circle = rvc
-        vr = Rectangle(xy=(rc_center[0]-rc_radius, 
-                           rc_center[1]-rc_radius),
-                       width=2*rc_radius,
-                       height=rc_radius,
-                       facecolor='none',
-                       edgecolor='none')
-        board_monitor.plot.add_patch(vr)
-        rvc.set_clip_path(vr)
-        self.volume_rectangle=vr
+        # rvc = Circle(rc_center, radius = shape.reagent_id_circle_radius,
+        #             edgecolor='none',
+        #             facecolor='white')
+        # board_monitor.plot.add_patch(rvc)
+        # self.reagent_volume_circle = rvc
+        # vr = Rectangle(xy=(rc_center[0]-rc_radius, 
+        #                     rc_center[1]-rc_radius),
+        #                 width=2*rc_radius,
+        #                height=rc_radius,
+        #                facecolor='none',
+        #                edgecolor='none')
+        # board_monitor.plot.add_patch(vr)
+        # rvc.set_clip_path(vr)
+        # self.volume_rectangle=vr
         well.on_liquid_change(lambda _,new: 
                               board_monitor.in_display_thread(lambda: self.note_liquid(new)))
         cd = board_monitor.plot.annotate(text='This is a test', xy=(0,0),
@@ -318,15 +318,15 @@ class WellMonitor:
     def note_liquid(self, liquid: Optional[Liquid]) -> None:
         if liquid is None:
             self.reagent_circle.set_facecolor('white')
-            self.reagent_volume_circle.set_facecolor('white')
+            # self.reagent_volume_circle.set_facecolor('white')
             self.content_description.set_visible(False)
         else:
             self.reagent_circle.set_facecolor(self.board_monitor.reagent_color(liquid.reagent).rgba)
-            self.reagent_volume_circle.set_facecolor(self.board_monitor.reagent_color(liquid.reagent).rgba)
-            fraction: float = liquid.volume.ratio(self.well.capacity)
-            height = 2*fraction*self.reagent_circle.get_radius()
-            self.volume_rectangle.set_height(height)
-            self.reagent_volume_circle.set_clip_path(self.volume_rectangle)
+            # self.reagent_volume_circle.set_facecolor(self.board_monitor.reagent_color(liquid.reagent).rgba)
+            # fraction: float = liquid.volume.ratio(self.well.capacity)
+            # height = 2*fraction*self.reagent_circle.get_radius()
+            # self.volume_rectangle.set_height(height)
+            # self.reagent_volume_circle.set_clip_path(self.volume_rectangle)
             # self.content_description.set_text(str(liquid))
             units=self.board_monitor.drop_unit
             self.content_description.set_text(f"{liquid.volume.in_units(units)} of {liquid.reagent}")
