@@ -2,9 +2,9 @@ from __future__ import annotations
 # import matplotlib
 # matplotlib.use('Agg')
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable,\
-    ClassVar
+    ClassVar, MutableMapping
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
-    HeatingMode
+    HeatingMode, BinaryComponent
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib import pyplot
@@ -23,6 +23,8 @@ from quantities.SI import ms, sec
 import random
 from quantities.timestamp import time_now
 from quantities.core import Unit
+from matplotlib.artist import Artist
+from msilib import Binary
 
 
 class PadMonitor(object):
@@ -51,9 +53,12 @@ class PadMonitor(object):
         board_monitor._on_board(ox+1, oy+1)
         
         self.center = (ox+0.5*w, oy+0.5*w)
+        
         square = Rectangle(xy=(ox,oy), width=1, height=1,
                            facecolor='white' if pad.exists else 'black',
-                           edgecolor='black')
+                           edgecolor='black',
+                           picker=pad.exists)
+        board_monitor.click_id[square] = pad
         self.square = square
         self.note_state(pad.current_state)
         board_monitor.plot.add_patch(square)
@@ -222,7 +227,7 @@ class WellPadMonitor:
         self.shapes = [ self._make_shape(b, pad, well=well, is_gate=is_gate) for b in bounds ]
         
     
-    def _make_shape(self, bounds: PadBounds, pad: WellPad, *, well: Well, is_gate:bool) -> PathPatch:
+    def _make_shape(self, bounds: PadBounds, pad: WellPad, *, well: Well, is_gate:bool) -> PathPatch:  # @UnusedVariable
 
         bm = self.board_monitor
         verts = [bm.map_coord(xy) for xy in bounds]
@@ -233,8 +238,10 @@ class WellPadMonitor:
         shape = PathPatch(path, 
                           facecolor='white',
                           edgecolor='black',
-                          # alpha = 0.5
+                          # alpha = 0.5,
+                          picker=True
                           )
+        bm.click_id[shape] = pad
         bm.plot.add_patch(shape)
         pad.on_state_change(lambda _,new: bm.in_display_thread(lambda: self.note_state(new)))
         # if not is_gate:
@@ -346,6 +353,7 @@ class BoardMonitor:
     update_callbacks: Final[list[Callback]]
     color_allocator: Final[ColorAllocator[Reagent]]
     drop_unit: Final[Unit[Volume]]
+    click_id: Final[MutableMapping[Artist, BinaryComponent]]
 
     
     min_x: float
@@ -370,6 +378,7 @@ class BoardMonitor:
         self.drop_map = dict[Drop, DropMonitor]()
         self.lock = RLock()
         self.update_callbacks = []
+        self.click_id = {}
         
         self.no_bounds = True
         
@@ -388,6 +397,13 @@ class BoardMonitor:
         for heater in board.heaters:       
             self.setup_heater_poll(heater) 
 
+        def on_pick(event):
+            artist = event.artist
+            cpt = self.click_id[artist]
+            print(f"Clicked on {cpt}")
+            cpt.schedule(BinaryComponent.Toggle)
+            
+        self.figure.canvas.mpl_connect('pick_event', on_pick)
         
         self.figure.canvas.draw()
         
