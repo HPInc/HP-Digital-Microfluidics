@@ -26,8 +26,8 @@ class HeatingRate(DerivedDim['HeatingRate']):
     derived = Temperature.dim()/Time.dim()
     
 class WellPad(device.WellPad):
-    def __init__(self, board: Board):
-        super().__init__(board)
+    def __init__(self, board: Board, *, live: bool = True):
+        super().__init__(board, live=live)
         self.set_device_state = lambda _: None
 
 class Heater(device.Heater):
@@ -102,7 +102,7 @@ class Board(device.Board):
         y4 = y+4
         return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4)) 
     
-    def _make_well_gate(self, well: int) -> WellPad:
+    def _make_well_gate(self, well: int) -> WellPad:  # @UnusedVariable
         return WellPad(board=self)
     
     def _well(self, num: int, group: WellGroup, exit_pad: device.Pad):

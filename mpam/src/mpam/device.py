@@ -46,13 +46,16 @@ BC = TypeVar('BC', bound='BinaryComponent')
 class BinaryComponent(BoardComponent, Generic[BC]):
     _state: OnOff
     broken: bool
+    live: bool
     state_change_callbacks: Final[ChangeCallbackList[OnOff]]
     
-    
-    def __init__(self, board: Board, initial_state: OnOff = OnOff.OFF) -> None:
+    def __init__(self, board: Board, *,
+                 initial_state: OnOff = OnOff.OFF,
+                 live: bool = True) -> None:
         super().__init__(board)
         self._state = initial_state
         self.broken = False
+        self.live = live
         self.set_device_state: Callable[[OnOff], None]
         self.state_change_callbacks = ChangeCallbackList[OnOff]()
         
@@ -180,7 +183,7 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
         return ns
     
     def __init__(self, loc: XYCoord, board: Board, *, exists: bool = True) -> None:
-        BinaryComponent.__init__(self, board, initial_state=OnOff.OFF)
+        BinaryComponent.__init__(self, board, initial_state=OnOff.OFF, live=exists)
         self.location = loc
         self.exists = exists
         # self.broken = False
@@ -211,19 +214,25 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
 WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
 class WellPad(OpScheduler['WellPad'], BinaryComponent['WellPad']):
-        loc: WellPadLoc
+    loc: WellPadLoc
         
-        def __repr__(self) -> str:
-            loc = getattr(self, 'loc', None)
-            if loc is None:
-                return f"WellPad(unassigned, {id(self)})"
-            elif isinstance(loc, Well):
-                return f"WellPad({loc}[gate])"
-            else:
-                return f"WellPad({loc[0]}[{loc[1]}]"
+    def __init__(self, board: Board, 
+                 initial_state: OnOff = OnOff.OFF, *, 
+                 live: bool = True) -> None:
+        BinaryComponent.__init__(self, board, initial_state=initial_state, live=live)
+        # print(f"{self}.live = {self.live}")
+        
+    def __repr__(self) -> str:
+        loc = getattr(self, 'loc', None)
+        if loc is None:
+            return f"WellPad(unassigned, {id(self)})"
+        elif isinstance(loc, Well):
+            return f"WellPad({loc}[gate])"
+        else:
+            return f"WellPad({loc[0]}[{loc[1]}]"
             
-        def set_location(self, loc: WellPadLoc) -> None:
-            self.loc = loc
+    def set_location(self, loc: WellPadLoc) -> None:
+        self.loc = loc
 
 class WellState(Enum):
     EXTRACTABLE = auto()

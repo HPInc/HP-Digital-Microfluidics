@@ -29,7 +29,8 @@ _pins: Mapping[str, int] = {
     "C23": 139, "C24": 138, "B24": 137, "F23": 136, "F24": 135,
     "E24": 134, "D24": 133, "D25": 132, "C25": 131, "B25": 130,
     "B26": 129, "F25": 128, "E25": 127, "A28": 126, "BC27": 125,
-    "B27": 124, "AB27": 123,
+    "B27": 124, "AB27": 123, "B30": 65, "B29": 64, "C28": 63,
+    "B28": 62, "B31": 61, "H26": 60
 }
 
 _opendrop: Mapping[int, tuple[int,int]] = {
@@ -71,14 +72,14 @@ _shared_pad_cells: Mapping[tuple[str,int], str] = {
     ('left', 0): 'BC27', ('left', 1): 'B27', ('left', 2): 'AB27', 
     ('left', 3): 'C28', ('left', 4): 'B28', ('left', 5): 'A28',
     ('left', 6): 'B29', ('left', 7): 'B30', ('left', 8): 'B31',
-    ('right', 0): 'BC5', ('right', 1): 'B5', ('right', 2): 'AB5', 
-    ('right', 3): 'C4', ('right', 4): 'B4', ('right', 5): 'A4',
-    ('right', 6): 'B3', ('right', 7): 'B2', ('right', 8): 'B1',
+    ('right', 0): 'BC05', ('right', 1): 'B05', ('right', 2): 'AB05', 
+    ('right', 3): 'C04', ('right', 4): 'B04', ('right', 5): 'A04',
+    ('right', 6): 'B03', ('right', 7): 'B02', ('right', 8): 'B01',
     }
 
 _well_gate_cells: Mapping[int, str] = {
-    2: 'H26', 3: 'B26',
-    6: 'H6', 7: 'B6'
+    0: 'T26', 1: 'N26', 2: 'H26', 3: 'B26',
+    4: 'T06', 5: 'N06', 6: 'H06', 7: 'B06'
     }
 
 class Electrode:
@@ -110,7 +111,7 @@ class WellPad(joey.WellPad):
     electrode: Final[Optional[Electrode]]
 
     def __init__(self, electrode: Optional[Electrode], board: Board) -> None:
-        super().__init__(board)
+        super().__init__(board, live=electrode is not None)
         self.electrode = electrode
         if electrode is None:
             self.set_device_state = lambda _: None
@@ -137,10 +138,12 @@ class Board(joey.Board):
     
     def _make_well_pad(self, group_name: str, num: int) -> WellPad:
         cell = _shared_pad_cells.get((group_name, num))  
+        # print(f"-- shared: {group_name} {num} -- {cell}")
         return WellPad(self._electrode(cell), board=self)
 
     def _make_well_gate(self, well: int) -> WellPad:
         cell = _well_gate_cells.get(well, None)
+        # print(f"-- gate: {well} -- {cell}")
         return WellPad(self._electrode(cell), board=self)
     
     def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:

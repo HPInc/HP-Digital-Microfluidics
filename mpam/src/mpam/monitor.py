@@ -24,7 +24,6 @@ import random
 from quantities.timestamp import time_now
 from quantities.core import Unit
 from matplotlib.artist import Artist
-from msilib import Binary
 
 
 class PadMonitor(object):
@@ -400,8 +399,11 @@ class BoardMonitor:
         def on_pick(event):
             artist = event.artist
             cpt = self.click_id[artist]
-            print(f"Clicked on {cpt}")
-            cpt.schedule(BinaryComponent.Toggle)
+            if cpt.live:
+                print(f"Clicked on {cpt}")
+                cpt.schedule(BinaryComponent.Toggle)
+            else:
+                print(f"{cpt} is not live")
             
         self.figure.canvas.mpl_connect('pick_event', on_pick)
         
