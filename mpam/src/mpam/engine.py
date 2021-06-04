@@ -28,6 +28,10 @@ class  State(Enum):
 class Worker:
     idle_barrier: IdleBarrier
     
+    @property
+    def is_idle(self) -> bool:
+        return self not in self.idle_barrier.running_components
+    
     def __init__(self, idle_barrier: IdleBarrier) -> None:
         self.idle_barrier = idle_barrier
     
@@ -337,7 +341,7 @@ class TimerThread(WorkerThread):
             condition = self.condition
             lock = self.lock
             self.state = State.RUNNING
-            while self.state is State.RUNNING or (self.state is State.SHUTDOWN_REQUESTED and queue):
+            while self.state is State.RUNNING or (self.state is State.SHUTDOWN_REQUESTED and not self.is_idle):
                 # desired_time: Timestamp
                 with lock:
                     while ((self.state is State.RUNNING and (not queue or self.timer is not None))
@@ -345,6 +349,8 @@ class TimerThread(WorkerThread):
                             self.state is State.SHUTDOWN_REQUESTED and self.timer is not None):
                         condition.wait(_wait_timeout)
                     if self.state is State.ABORT_REQUESTED:
+                        return
+                    if self.state is State.SHUTDOWN_REQUESTED and self.is_idle:
                         return
                     assert self.timer is None
                     if not queue:
@@ -360,7 +366,7 @@ class TimerThread(WorkerThread):
                             next_time = time_in(next_time)
                         with condition:
                             heapq.heappush(queue, TimerThread.Entry(next_time, entry.func, entry.is_daemon))
-                    elif not queue:
+                    if len(queue) == self.n_daemons:
                         self.idle()
                 else:
                     with condition:
@@ -388,6 +394,8 @@ class TimerThread(WorkerThread):
                 heapq.heappush(self.queue, TimerThread.Entry(t, fn, daemon))
                 if daemon:
                     self.n_daemons += 1  
+                if len(self.queue) == self.n_daemons:
+                    self.idle()
             self.wake_up()
 
     def call_after(self, reqs: Sequence[TimerDeltaRequest]) -> None:

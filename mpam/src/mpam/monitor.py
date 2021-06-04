@@ -15,7 +15,7 @@ from matplotlib.text import Annotation
 from mpam.drop import Drop
 import math
 from quantities.dimensions import Volume, Time
-from threading import RLock
+from threading import RLock, Event
 from matplotlib.path import Path
 from numbers import Number
 from quantities.temperature import abs_C
@@ -353,6 +353,7 @@ class BoardMonitor:
     color_allocator: Final[ColorAllocator[Reagent]]
     drop_unit: Final[Unit[Volume]]
     click_id: Final[MutableMapping[Artist, BinaryComponent]]
+    close_event: Final[Event]
 
     
     min_x: float
@@ -378,6 +379,7 @@ class BoardMonitor:
         self.lock = RLock()
         self.update_callbacks = []
         self.click_id = {}
+        self.close_event = Event()
         
         self.no_bounds = True
         
@@ -406,6 +408,7 @@ class BoardMonitor:
                 print(f"{cpt} is not live")
             
         self.figure.canvas.mpl_connect('pick_event', on_pick)
+        self.figure.canvas.mpl_connect('close_event', lambda _: self.close_event.set())
         
         self.figure.canvas.draw()
         
@@ -475,7 +478,7 @@ class BoardMonitor:
             if not saw_sentinel and sentinel is not None:
                 saw_sentinel = sentinel()
             now = time_now()
-            if now < live_through:
+            if now < live_through and not self.close_event.is_set():
                 return False
             if kill_at is not None and now > kill_at:
                 return True
