@@ -465,6 +465,7 @@ class Delayed(Generic[T]):
         v = self._val
         just_run: bool = v[0]
         if not just_run:
+            print("Adding to wait queue")
             with self._lock:
                 v = self._val
                 just_run = v[0]

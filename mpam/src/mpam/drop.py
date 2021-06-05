@@ -38,7 +38,7 @@ class Drop(OpScheduler['Drop']):
     
     
     @classmethod
-    def appear_at(self, board: Board, locations: Sequence[Union[XYCoord, tuple[int, int]]],
+    def appear_at(cls, board: Board, locations: Sequence[Union[XYCoord, tuple[int, int]]],
                  liquid: Liquid = Liquid(unknown_reagent, 0.5*uL) 
                  ) -> Delayed[Sequence[Drop]]:
         locs = ((loc.x, loc.y) if isinstance(loc, XYCoord) else loc for loc in locations)
@@ -49,6 +49,7 @@ class Drop(OpScheduler['Drop']):
         outstanding: int = len(drops)
         lock = Lock()
         def join(_) -> None:
+            print("joining")
             with lock:
                 nonlocal outstanding
                 outstanding -= 1

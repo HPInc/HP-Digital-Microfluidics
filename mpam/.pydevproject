@@ -5,7 +5,7 @@
     <pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
         <path>/${PROJECT_DIR_NAME}/src</path>
         <path>/${PROJECT_DIR_NAME}/tests</path>
-        <path>/${PROJECT_DIR_NAME}/wombat-tests</path>
+        <path>/${PROJECT_DIR_NAME}/tools</path>
     </pydev_pathproperty>
             
     

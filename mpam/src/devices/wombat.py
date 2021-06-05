@@ -161,15 +161,13 @@ class Board(joey.Board):
         self._port = None
         
     def update_state(self) -> None:
-        if self._port is None:
-            if self._device is None:
-                return
+        if self._port is None and self._device is not None:
             self._port = Serial(self._device)
-            # self._stream = open(self._dev, "wb")
-        self._port.write(self._states)
-        # I'm not sure why, but it seems that nothing happens until the 
-        # first byte of the next round gets sent. (Sending 129 bytes works, 
-        # but then the next round will use that extra byte.  Sending everything
-        # twice seems to do the job.  I'll look into this further.
-        self._port.write(self._states)
+        if self._port is not None:
+            self._port.write(self._states)
+            # I'm not sure why, but it seems that nothing happens until the 
+            # first byte of the next round gets sent. (Sending 129 bytes works, 
+            # but then the next round will use that extra byte.  Sending everything
+            # twice seems to do the job.  I'll look into this further.
+            self._port.write(self._states)
         self.finish_update()
