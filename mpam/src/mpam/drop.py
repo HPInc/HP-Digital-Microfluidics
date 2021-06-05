@@ -49,7 +49,7 @@ class Drop(OpScheduler['Drop']):
         outstanding: int = len(drops)
         lock = Lock()
         def join(_) -> None:
-            print("joining")
+            # print("joining")
             with lock:
                 nonlocal outstanding
                 outstanding -= 1
@@ -70,6 +70,9 @@ class Drop(OpScheduler['Drop']):
         # so it really didn't make any sense.
 
         # allow_unsafe_motion: Final[bool]
+        
+        def __repr__(self) -> str:
+            return f"<Drop.Move: {self.steps} {self.direction}>"
         
         def _schedule_for(self, drop: Drop, *,
                           mode: RunMode = RunMode.GATED, 
@@ -150,6 +153,10 @@ class Drop(OpScheduler['Drop']):
             
     class EnterWell(Operation['Drop',None]):
         well: Final[Optional[Well]]
+        
+        def __repr__(self) -> str:
+            return f"<Drop.EnterWell: {self.well}>"
+        
         
         def _schedule_for(self, drop: Drop, *,
                           mode: RunMode = RunMode.GATED, 

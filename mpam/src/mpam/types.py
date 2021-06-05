@@ -294,6 +294,10 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
         self.first = first
         self.second = second
         self.after = after
+        
+    def __repr__(self) -> str:
+        return f"<Combined: {self.first} {self.second}>"
+        
     
     def _schedule_for(self, obj: T, *,
                       mode: RunMode = RunMode.GATED, 
@@ -465,7 +469,7 @@ class Delayed(Generic[T]):
         v = self._val
         just_run: bool = v[0]
         if not just_run:
-            print("Adding to wait queue")
+            # print("Adding to wait queue")
             with self._lock:
                 v = self._val
                 just_run = v[0]
