@@ -171,7 +171,7 @@ class Board(device.Board):
             (WellState.READY, WellState.EXTRACTABLE): ((7,3,4,5), (7,6), (8,), ()),
             (WellState.READY, WellState.DISPENSED): ((4,1,-1), (4,1)),
             (WellState.DISPENSED, WellState.READY): ((6,4), (7,4,0,1,2),),
-            (WellState.READY, WellState.ABSORBED): ((-1,6,4,1,2,3),),
+            (WellState.READY, WellState.ABSORBED): ((-1,6,4,0,1,2),),
             (WellState.ABSORBED, WellState.READY): ((7,4,0,1,2),)
             }
         
