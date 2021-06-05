@@ -83,36 +83,41 @@ def volume_arg(arg: str) -> Union[Volume,float]:
 class Task:
     def run(self, board: Board, system: System, args: Namespace) -> None:
         raise NotImplementedError(f"Task.run() not implemented for {self}")
+    
+    @classmethod
+    def add_common_args(cls, parser: ArgumentParser) -> None:
+        group = parser.add_argument_group(title="common options")
+        group.add_argument('-p', '--port',
+                            help='''
+                           The communication port (e.g., COM5) to use to talk to the board.
+                           By default, only the display is run
+                           ''')
+        default_clock_interval=100*ms
+        group.add_argument('-cs', '--clock-speed', type=time_arg, default=default_clock_interval, metavar='TIME',
+                            help=f'''
+                            The amount of time between clock ticks.  
+                            Default is {default_clock_interval.in_units(ms)}.
+                            ''')
+        default_min_time=5*minutes
+        group.add_argument('--min-time', type=time_arg, default=default_min_time, metavar='TIME',
+                            help=f'''
+                            The minimum amount of time to leave the display up, even if the 
+                            operation has finished.  Default is {default_min_time.in_units(minutes)}.
+                            ''')
+        group.add_argument('--max-time', type=time_arg, metavar='TIME',
+                            help=f'''
+                            The maximum amount of time to leave the display up, even if the 
+                            operation hasn't finished.  Default is no limit
+                            ''')
+        group.add_argument('-nd', '--no-display', action='store_false', dest='use_display',
+                            help=f'''
+                            Run the task without the on-screen display
+                            ''')
+            
 
 
 def make_arg_parser() -> ArgumentParser:
     parser = ArgumentParser(description="Put the Wombat board through its paces")
-    parser.add_argument('-p', '--port',
-                        help='''
-                       The communication port (e.g., COM5) to use to talk to the board.
-                       By default, only the display is run
-                       ''')
-    default_clock_interval=100*ms
-    parser.add_argument('-cs', '--clock-speed', type=time_arg, default=default_clock_interval, metavar='TIME',
-                        help=f'''
-                        The amount of time between clock ticks.  
-                        Default is {default_clock_interval.in_units(ms)}.
-                        ''')
-    default_min_time=5*minutes
-    parser.add_argument('--min-time', type=time_arg, default=default_min_time, metavar='TIME',
-                        help=f'''
-                        The minimum amount of time to leave the display up, even if the 
-                        operation has finished.  Default is {default_min_time.in_units(minutes)}.
-                        ''')
-    parser.add_argument('--max-time', type=time_arg, metavar='TIME',
-                        help=f'''
-                        The maximum amount of time to leave the display up, even if the 
-                        operation hasn't finished.  Default is no limit
-                        ''')
-    parser.add_argument('-nd', '--no-display', action='store_false', dest='use_display',
-                        help=f'''
-                        Run the task without the on-screen display
-                        ''')
     subparsers = parser.add_subparsers(help="Tasks", dest='task_name', required=True, metavar='TASK')
     
     Dispense.add_task_args(subparsers)
@@ -127,17 +132,18 @@ class Dispense(Task):
 
     @classmethod
     def add_task_args(cls, subparsers: _SubParsersAction):
+        desc = "Dispense a drop from a given well and leave it there."
         parser = subparsers.add_parser("dispense", aliases=["disp"], 
-                                       help='''
-                                       Dispense a drop from a given well and leave it there.
-                                       '''
+                                       help=desc, description=desc
                                        )
-        parser.add_argument('-w', '--well', type=int, required=True, metavar="INT",
+        group = parser.add_argument_group(title="task-specific options")
+        group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
                             choices=[2,3,6,7],
                             help="The well to dispense from")
-        parser.add_argument('-v', '--volume', type=volume_arg, metavar='VOLUME',
+        group.add_argument('-v', '--volume', type=volume_arg, metavar='VOLUME',
                             help="The initial volume of the well.  Default is a full well.")
-        parser.set_defaults(task=Dispense())
+        group.set_defaults(task=Dispense())
+        cls.add_common_args(parser)
         
     def run(self, board: Board, system: System, args: Namespace) -> None:
         well_no = args.well
@@ -162,14 +168,16 @@ class Absorb(Task):
 
     @classmethod
     def add_task_args(cls, subparsers: _SubParsersAction):
+        desc = "Absorb a drop assumed to be on a well's exit pad."
+
         parser = subparsers.add_parser("absorb", aliases=["abs"], 
-                                       help='''
-                                       Absorb a drop assumed to be on a well's exit pad.
-                                       '''
+                                       help=desc, description=desc
                                        )
-        parser.add_argument('-w', '--well', type=int, required=True, metavar="INT",
+        group = parser.add_argument_group(title="task-specific options")
+        group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
                             choices=[2,3,6,7],
                             help="The well to dispense from")
+        cls.add_common_args(parser)
         parser.set_defaults(task=Absorb())
         
     def run(self, board: Board, system: System, args: Namespace) -> None:
@@ -187,23 +195,23 @@ class DispenseAndWalk(Task):
 
     @classmethod
     def add_task_args(cls, subparsers: _SubParsersAction):
+        desc = "Dispense a drop from a given well and walk to the well across from it."
         parser = subparsers.add_parser("walk", 
-                                       help='''
-                                       Dispense a drop from a given well and walk
-                                       to the well across from it.
-                                       '''
+                                       help=desc, description=desc
                                        )
-        parser.add_argument('-w', '--well', type=int, required=True, metavar="INT",
+        group = parser.add_argument_group(title="task-specific options")
+        group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
                             choices=[2,3,6,7],
                             help="The well to dispense from")
-        parser.add_argument('-v', '--volume', type=volume_arg, metavar='VOLUME',
+        group.add_argument('-v', '--volume', type=volume_arg, metavar='VOLUME',
                             help="The initial volume of the well.  Default is a full well.")
-        parser.add_argument('-d', '--drops', type=int, default=1, metavar='N',
+        group.add_argument('-d', '--drops', type=int, default=1, metavar='N',
                             help="The number of drops to walk.  Default is 1")
         # parser.add_argument('-g', '--gap', type=int, default=8, metavar='N',
         #                     help="""
         #                     The gap between drops.  Default is 8
         #                     """)
+        cls.add_common_args(parser)
         parser.set_defaults(task=DispenseAndWalk())
         
     def run(self, board: Board, system: System, args: Namespace) -> None:
@@ -242,11 +250,11 @@ class DisplayOnly(Task):
 
     @classmethod
     def add_task_args(cls, subparsers: _SubParsersAction):
-        parser = subparsers.add_parser("dispense-only", aliases=["disp", "do"], 
-                                       help='''
-                                       Just bring up the display
-                                       '''
-                                       )
+        desc="Just bring up the display"
+        parser = subparsers.add_parser("display-only",  aliases=["display"],
+                                       help=desc, description = desc)
+        # group = parser.add_argument_group(title="task-specific options",)
+        cls.add_common_args(parser)
         parser.set_defaults(task=DisplayOnly())
         
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
