@@ -1,8 +1,11 @@
 from __future__ import annotations
 import time
-from .SI import sec, ns
+from .SI import sec, ns, ms
 from . import dimensions
-from typing import overload, Union
+from . import core
+from typing import overload, Union, Final, ClassVar, MutableMapping
+import math
+from quantities.SI import us
 
 class Timestamp:
     time: dimensions.Time
@@ -15,7 +18,7 @@ class Timestamp:
     
     @classmethod
     def now(cls) -> Timestamp:
-        return Timestamp(time.monotonic_ns()*ns)
+        return Timestamp(time.time_ns()*ns)
     
     @classmethod
     def never(cls) -> Timestamp: 
@@ -62,9 +65,34 @@ class Timestamp:
     def __le__(self, rhs: Timestamp) -> bool:
         return self.time <= rhs.time
     
-    def strftime(self, fmt: str = "%Y-m-%d.%H:%M:%S") -> str:
+    _precision_size: Final[ClassVar[MutableMapping[core.Unit[dimensions.Time], int]]] = {
+        sec: 0
+        }
+    
+    def strftime(self, *,  
+                 fmt: str = "%Y-%m-%d_%H:%M:%S.%f", 
+                 precision: core.Unit[dimensions.Time] = ms) -> str:
+        
+        if '.%f' in fmt:
+            sizes = self._precision_size
+            width = sizes.get(precision, None)
+            if width is None:
+                mag = (1*sec).as_number(precision)
+                width = int(math.log10(mag))
+                sizes[precision] = width
+            if width > 0:
+                in_secs = self.time.as_number(sec)
+                
+                fraction = math.modf(in_secs)[0]
+                extra = (fraction*sec).as_number(precision)
+                fmt = fmt.replace('%f', f"{int(extra):0{width}d}")
+            else:
+                fmt = fmt.replace('.%f', '')
         stime = time.localtime(self.time.as_number(sec))
         return time.strftime(fmt, stime)
+    
+    def __str__(self) -> str:
+        return self.strftime()
 
 def time_now() -> Timestamp:
     return Timestamp.now()
