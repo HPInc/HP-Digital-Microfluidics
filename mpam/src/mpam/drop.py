@@ -60,6 +60,42 @@ class Drop(OpScheduler['Drop']):
                 drop.pad.schedule(Pad.TurnOn).when_value(join)
         return future
         
+    class AppearAt(StaticOperation['Drop']):
+        pad: Final[Pad]
+        liquid: Final[Liquid]
+        
+        def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *, 
+                     board: Board,
+                     liquid: Optional[Liquid] = None,
+                     ) -> None:
+            if isinstance(pad, XYCoord):
+                pad = board.pad_array[pad]
+            elif isinstance(pad, tuple):
+                pad = board.pad_at(pad[0], pad[1])
+            self.pad = pad
+            if liquid is None:
+                liquid = Liquid(unknown_reagent, board.drop_size)
+            self.liquid = liquid
+            
+        def _schedule(self, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,  
+                      future: Optional[Delayed[Drop]] = None
+                      ) -> Delayed[Drop]:
+            if future is None:
+                future = Delayed[Drop]()
+            real_future = future
+            assert mode.is_gated
+            pad = self.pad
+            def make_drop(_) -> None:
+                drop = Drop(pad=pad, liquid=self.liquid)
+                if post_result:
+                    real_future.post(drop)
+            pad.schedule(Pad.TurnOn, mode=mode, after=after) \
+                .then_call(make_drop)
+            return future
+            
     
     class Move(Operation['Drop','Drop']):
         direction: Final[Dir]

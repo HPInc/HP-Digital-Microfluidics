@@ -18,6 +18,8 @@ _wait_timeout: float = _in_secs(0.5*sec)
 TimerFunc = Callable[[], Optional[Union[Time,Timestamp]]]
 ClockCallback = Callable[[], Optional[Ticks]]
 
+_trace_ticks: bool = False
+
 class  State(Enum): 
     NEW = auto()
     RUNNING = auto()
@@ -459,13 +461,13 @@ class ClockThread(WorkerThread):
         
     def _process_queue(self, queue: Sequence[CT], *, tag: Optional[str]=None) -> list[CT]:
         new_queue: list[CT] = []
-        if tag is not None and len(queue) > 0:
+        if _trace_ticks and len(queue) > 0:
             print(f">> processing {tag} queue")
         for (delay, fn) in queue:
             if delay > 0:
                 new_queue.append((delay-1, fn))
             else:
-                if tag is not None:
+                if _trace_ticks:
                     print(f"-- calling {fn}")
                 new_delay: Optional[Ticks] = fn()
                 if new_delay is not None:
@@ -475,7 +477,7 @@ class ClockThread(WorkerThread):
                     # The least astonishing return value for something that should happen on relative to the next tick
                     # is 1*tick, not 0*ticks
                     new_queue.append((new_delay-1, fn))
-        if tag is not None and len(queue) > 0:
+        if _trace_ticks and len(queue) > 0:
             deferred = len(new_queue)
             processed = len(queue)-deferred
             print(f"<< processed {tag} queue: processed {processed}, deferred {deferred}")
@@ -502,7 +504,8 @@ class ClockThread(WorkerThread):
                 now = time_now()
                 elapsed = now-last_time
                 last_time = now
-                print(f"** Processing tick #{self.next_tick.number} time is {now} ({elapsed.as_number(ms):.2f} ms since last)")
+                if _trace_ticks:
+                    print(f"** Processing tick #{self.next_tick.number} time is {now} ({elapsed.as_number(ms):.2f} ms since last)")
                 self.last_tick_time = now
                 queue: list[CT]
                 with lock:
@@ -518,7 +521,8 @@ class ClockThread(WorkerThread):
                     self.on_tick_queue = [(delta-1, req) for (delta, req) in self.on_tick_queue if delta > 0]
                     self.work -= len(rqueue)
                     if rqueue:
-                        print(f"-- processing on-tick queue: length {len(rqueue)}")
+                        if _trace_ticks:
+                            print(f"-- processing on-tick queue: length {len(rqueue)}")
                         def note_finished():
                             update_finished.set()
                             return ()

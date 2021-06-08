@@ -182,7 +182,8 @@ class Absorb(Task):
 
         system.clock.start(args.clock_speed)
         
-        drop = Drop.appear_at(board, [well.exit_pad.location]).value[0]
+        drop = Drop.AppearAt(well.exit_pad, board=board).schedule().value
+        # drop = Drop.appear_at(board, [well.exit_pad.location]).value[0]
         drop.schedule(Drop.EnterWell)
 
 class DispenseAndWalk(Task):
