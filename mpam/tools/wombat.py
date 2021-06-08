@@ -4,7 +4,7 @@ from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction,\
 from quantities.dimensions import Time, Volume
 from typing import Mapping, Final, Union, Optional, Any, Sequence
 from quantities.core import Unit
-from quantities.SI import us, sec, ms, ns, minutes, hr, uL
+from quantities.SI import us, sec, ms, ns, minutes, hr, uL, secs
 from re import Pattern, Match
 import re
 from mpam.device import System, Pad, Well, Heater, Magnet
@@ -100,6 +100,13 @@ class Task:
                             The amount of time between clock ticks.  
                             Default is {default_clock_interval.in_units(ms)}.
                             ''')
+        default_initial_delay=5*secs
+        group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=default_initial_delay,
+                            help=f'''
+                            The amount of time to wait before running the task.
+                            Default is {default_initial_delay}.
+                            ''')
+        
         default_min_time=5*minutes
         group.add_argument('--min-time', type=time_arg, default=default_min_time, metavar='TIME',
                             help=f'''
@@ -183,7 +190,6 @@ class Absorb(Task):
         system.clock.start(args.clock_speed)
         
         drop = Drop.AppearAt(well.exit_pad, board=board).schedule().value
-        # drop = Drop.appear_at(board, [well.exit_pad.location]).value[0]
         drop.schedule(Drop.EnterWell)
 
 class DispenseAndWalk(Task):
@@ -290,7 +296,6 @@ class WalkPath(Task):
             assert args.start_pad is not None
             loc = XYCoord(args.start_pad[0], args.start_pad[1])
             start_pad = board.pad_array[loc]
-            # seq = Drop.appear_at(board, loc)
         # print(f"Starting at {start_pad}")
         seq: Optional[Operation[Drop, Drop]] = None
         current_pad = start_pad
@@ -346,9 +351,10 @@ class WalkPath(Task):
             else:
                 Drop.DispenseFrom(well).then(full_op).schedule()
         else:
-            drop = Drop.appear_at(board, [start_pad.location]).value[0]
-            if full_op is not None:
-                drop.schedule(full_op)
+            if full_op is None:
+                Drop.AppearAt(start_pad, board=board).schedule()
+            else:
+                Drop.AppearAt(start_pad, board=board).then(full_op).schedule()
         
             
 class DisplayOnly(Task):
@@ -439,11 +445,16 @@ def make_arg_parser() -> ArgumentParser:
 def run_task(task: Task, args: Namespace) -> None:
     board = Board(device=args.port)
     system = System(board=board)
+
+    def do_run() -> None:
+        system.call_after(args.initial_delay,
+                          lambda : task.run(board, system, args))
+
     if not args.use_display:
         with system:
-            task.run(board, system, args)
+            do_run()
     else:
-        system.run_monitored(lambda _: task.run(board, system, args),
+        system.run_monitored(lambda _: do_run(),
                              min_time=args.min_time,
                              max_time=args.max_time,
                              update_interval=args.update_interval
