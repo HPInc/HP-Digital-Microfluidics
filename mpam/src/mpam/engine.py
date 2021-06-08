@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum, auto
 from threading import Thread, Condition, Event, Lock, Timer
 import heapq
-from quantities.SI import sec
+from quantities.SI import sec, ms
 from quantities.timestamp import time_now, time_in, Timestamp
 from quantities.dimensions import Time
 from typing import Optional, Literal, Protocol, Any, Sequence,\
@@ -459,17 +459,26 @@ class ClockThread(WorkerThread):
         
     def _process_queue(self, queue: Sequence[CT], *, tag: Optional[str]=None) -> list[CT]:
         new_queue: list[CT] = []
+        if tag is not None and len(queue) > 0:
+            print(f">> processing {tag} queue")
         for (delay, fn) in queue:
             if delay > 0:
                 new_queue.append((delay-1, fn))
             else:
+                if tag is not None:
+                    print(f"-- calling {fn}")
                 new_delay: Optional[Ticks] = fn()
                 if new_delay is not None:
-                    new_queue.append((new_delay, fn))
-        # if tag is not None and len(queue) > 0:
-        #     deferred = len(new_queue)
-        #     processed = len(queue)-deferred
-        #     print(f"--processed {tag} queue: processed {processed}, deferred {deferred}")
+                    assert new_delay >= 0, f"Delay returned by before/after tick callback ({new_delay}) cannot be negative"
+                    assert new_delay > 0, f"Delay returned by before/after tick callback ({new_delay}) "+ \
+                                            "is relative to current tick number, and so cannot be zero"
+                    # The least astonishing return value for something that should happen on relative to the next tick
+                    # is 1*tick, not 0*ticks
+                    new_queue.append((new_delay-1, fn))
+        if tag is not None and len(queue) > 0:
+            deferred = len(new_queue)
+            processed = len(queue)-deferred
+            print(f"<< processed {tag} queue: processed {processed}, deferred {deferred}")
         return new_queue
     
     def wake_up(self) -> None:
@@ -481,7 +490,7 @@ class ClockThread(WorkerThread):
         update_finished = Event()
         tick_event = self.tick_event
         comm_thread = self.engine.dev_comm_thread
-        # last_time: Timestamp = time_now()
+        last_time: Timestamp = time_now()
         try:
             self.state = State.RUNNING
             while self.state is State.RUNNING or self.state is State.SHUTDOWN_REQUESTED and self.work > 0:
@@ -491,9 +500,9 @@ class ClockThread(WorkerThread):
                 if self.state is State.ABORT_REQUESTED:
                     return
                 now = time_now()
-                # elapsed = now-last_time
-                # last_time = now
-                # print(f"*** Processing tick #{self.next_tick.number} time is {now} ({elapsed.as_number(ms):.2f} ms since last)")
+                elapsed = now-last_time
+                last_time = now
+                print(f"** Processing tick #{self.next_tick.number} time is {now} ({elapsed.as_number(ms):.2f} ms since last)")
                 self.last_tick_time = now
                 queue: list[CT]
                 with lock:
@@ -509,7 +518,7 @@ class ClockThread(WorkerThread):
                     self.on_tick_queue = [(delta-1, req) for (delta, req) in self.on_tick_queue if delta > 0]
                     self.work -= len(rqueue)
                     if rqueue:
-                        # print(f"--processing on-tick queue: length {len(rqueue)}")
+                        print(f"-- processing on-tick queue: length {len(rqueue)}")
                         def note_finished():
                             update_finished.set()
                             return ()

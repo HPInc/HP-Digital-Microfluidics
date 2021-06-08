@@ -115,6 +115,12 @@ class Task:
                             help=f'''
                             Run the task without the on-screen display
                             ''')
+        default_update_interval=20*ms
+        group.add_argument('--update-interval', type=time_arg, metavar='TIME', default=default_update_interval,
+                            help=f'''
+                            The maximum amount of time between display updates.  
+                            Default is {default_update_interval}.
+                            ''')
             
 
 
@@ -229,7 +235,7 @@ class DispenseAndWalk(Task):
                 
         with system.batched():
             for i in range(args.drops):
-                delay = 0*ticks if i==0 else (8+8*i)*ticks
+                delay = 0*ticks if i==0 else (4+4*i)*ticks
                 seq.schedule(after=delay)
 
 class WalkPath(Task):
@@ -403,7 +409,7 @@ class WombatTest(Task):
         
         with system.batched():
             for i in range(30):
-                delay = 0*ticks if i==0 else (8+8*i)*ticks
+                delay = 0*ticks if i==0 else (4+4*i)*ticks
                 s1.schedule(after=delay)
                 s2.schedule(after=delay)
             self.ramp_heater([80*abs_C, 60*abs_C, 90*abs_C, 40*abs_C, 120*abs_C]) \
@@ -438,7 +444,8 @@ def run_task(task: Task, args: Namespace) -> None:
     else:
         system.run_monitored(lambda _: task.run(board, system, args),
                              min_time=args.min_time,
-                             max_time=args.max_time
+                             max_time=args.max_time,
+                             update_interval=args.update_interval
                              )
 
 if __name__ == '__main__':
