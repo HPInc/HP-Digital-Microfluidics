@@ -2,16 +2,17 @@ from __future__ import annotations
 from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction,\
     Namespace
 from quantities.dimensions import Time, Volume
-from typing import Mapping, Final, Union, Optional, Any
+from typing import Mapping, Final, Union, Optional, Any, Sequence
 from quantities.core import Unit
 from quantities.SI import us, sec, ms, ns, minutes, hr, uL
 from re import Pattern, Match
 import re
-from mpam.device import System, Pad
+from mpam.device import System, Pad, Well, Heater, Magnet
 from devices.wombat import Board
 from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
-    XYCoord, Operation
+    XYCoord, Operation, StaticOperation, RunMode, Reagent
 from mpam.drop import Drop
+from quantities.temperature import TemperaturePoint, abs_C
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
     "ns": ns,
@@ -357,6 +358,59 @@ class DisplayOnly(Task):
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
         system.clock.start(args.clock_speed)
 
+class WombatTest(Task):
+
+    @classmethod
+    def add_task_args(cls, subparsers: _SubParsersAction):
+        desc="The original Wombat test."
+        parser = subparsers.add_parser("wombat-test",  aliases=["test"],
+                                       help=desc, description = desc)
+        # group = parser.add_argument_group(title="task-specific options",)
+        cls.add_common_args(parser)
+        parser.set_defaults(task=WombatTest())
+        
+    def walk_across(self, well: Well, direction: Dir,
+                    turn1: Dir,
+                    turn2: Dir,
+                    ) -> StaticOperation[None]:
+        return Drop.DispenseFrom(well) \
+                .then(Drop.Move(direction)) \
+                .then(Drop.Move(turn1, steps=2)) \
+                .then(Drop.Move(direction, steps=16)) \
+                .then(Drop.Move(turn2, steps=2)) \
+                .then(Drop.Move(direction)) \
+                .then(Drop.EnterWell)
+    
+    def ramp_heater(self, temps: Sequence[TemperaturePoint]) -> Operation[Heater, Heater]:
+        op: Operation[Heater,Heater] = Heater.SetTemperature(temps[0])
+        for i in range(1, len(temps)):
+            op = op.then(Heater.SetTemperature(temps[i]), after=5*sec)
+        return op.then(Heater.SetTemperature(None), after=5*sec)        
+        
+    def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
+        
+        r1 = Reagent("R1")
+        r2 = Reagent("R2")
+        drops = board.drop_size.as_unit("drops")
+        board.wells[2].contains(Liquid(r1, 40*drops))
+        board.wells[3].contains(Liquid(r2, 40*drops))
+        
+        async_mode = RunMode.asynchronous(args.clock_speed)
+        
+        system.clock.start(args.clock_speed)
+        s1 = self.walk_across(board.wells[2], Dir.RIGHT, Dir.DOWN, Dir.UP)
+        s2 = self.walk_across(board.wells[3], Dir.RIGHT, Dir.UP, Dir.DOWN)
+        
+        with system.batched():
+            for i in range(30):
+                delay = 0*ticks if i==0 else (8+8*i)*ticks
+                s1.schedule(after=delay)
+                s2.schedule(after=delay)
+            self.ramp_heater([80*abs_C, 60*abs_C, 90*abs_C, 40*abs_C, 120*abs_C]) \
+                .schedule_for(board.heaters[3], mode = async_mode)
+            Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
+
+
 
 
 def make_arg_parser() -> ArgumentParser:
@@ -368,6 +422,7 @@ def make_arg_parser() -> ArgumentParser:
     DispenseAndWalk.add_task_args(subparsers)
     DisplayOnly.add_task_args(subparsers)
     WalkPath.add_task_args(subparsers)
+    WombatTest.add_task_args(subparsers)
 
     return parser
         
@@ -378,7 +433,8 @@ def run_task(task: Task, args: Namespace) -> None:
     board = Board(device=args.port)
     system = System(board=board)
     if not args.use_display:
-        task.run(board, system, args)
+        with system:
+            task.run(board, system, args)
     else:
         system.run_monitored(lambda _: task.run(board, system, args),
                              min_time=args.min_time,

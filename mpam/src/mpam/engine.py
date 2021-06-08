@@ -234,6 +234,7 @@ class DevCommThread(WorkerThread):
                     # but they might).  So we'll copy the queue and clear it.
                     queue_copy = queue.copy()
                     queue.clear()
+                # print(f"--processing communication queue: length {len(queue_copy)}")
                 for req in queue_copy:
                     cpts = req()
                     need_update.update(cpts)
@@ -296,13 +297,16 @@ class TimerThread(WorkerThread):
         daemon_task: Final[bool]
         
 
-        def __init__(self, timer_thread: TimerThread, target_time: Timestamp, delay: Time, func: TimerFunc, daemon: bool) -> None:
+        def __init__(self, timer_thread: TimerThread, target_time: Timestamp, delay: Time, 
+                     func: TimerFunc, daemon: bool) -> None:
             super().__init__(_in_secs(delay), lambda : self.call_func())
+            self.name=f"MyTimer ({target_time})"
             self.timer_thread = timer_thread
             self.target_time = target_time
             self.func: TimerFunc = func
             self.started = False
             self.daemon_task = daemon 
+            # print(f"Pausing for {delay} until {target_time} for {func}")
             
         def call_func(self) -> None:
             self.started = True
@@ -413,6 +417,9 @@ class ClockThread(WorkerThread):
             self.cancelled = False
             self.clock = clock
             
+        def __repr__(self) -> str:
+            return "<Tick Request>"
+            
         def __call__(self) -> Optional[Time]:
             # next_tick = time_in(self.clock.update_interval)
             if not self.cancelled:
@@ -450,7 +457,7 @@ class ClockThread(WorkerThread):
         self.outstanding_tick_request = None
         self.update_interval = default_clock_interval
         
-    def _process_queue(self, queue: Sequence[CT]) -> list[CT]:
+    def _process_queue(self, queue: Sequence[CT], *, tag: Optional[str]=None) -> list[CT]:
         new_queue: list[CT] = []
         for (delay, fn) in queue:
             if delay > 0:
@@ -459,6 +466,10 @@ class ClockThread(WorkerThread):
                 new_delay: Optional[Ticks] = fn()
                 if new_delay is not None:
                     new_queue.append((new_delay, fn))
+        # if tag is not None and len(queue) > 0:
+        #     deferred = len(new_queue)
+        #     processed = len(queue)-deferred
+        #     print(f"--processed {tag} queue: processed {processed}, deferred {deferred}")
         return new_queue
     
     def wake_up(self) -> None:
@@ -470,6 +481,7 @@ class ClockThread(WorkerThread):
         update_finished = Event()
         tick_event = self.tick_event
         comm_thread = self.engine.dev_comm_thread
+        # last_time: Timestamp = time_now()
         try:
             self.state = State.RUNNING
             while self.state is State.RUNNING or self.state is State.SHUTDOWN_REQUESTED and self.work > 0:
@@ -478,24 +490,26 @@ class ClockThread(WorkerThread):
                 tick_event.clear()
                 if self.state is State.ABORT_REQUESTED:
                     return
-                # print(f"Processing tick #{self.next_tick.number}")
-                self.last_tick_time = time_now()
+                now = time_now()
+                # elapsed = now-last_time
+                # last_time = now
+                # print(f"*** Processing tick #{self.next_tick.number} time is {now} ({elapsed.as_number(ms):.2f} ms since last)")
+                self.last_tick_time = now
                 queue: list[CT]
                 with lock:
                     queue = self.pre_tick_queue
                     self.pre_tick_queue = []
                     self.work -= len(queue)
-                # print("processing pre-tick queue")
-                new_queue: list[CT] = self._process_queue(queue)
+                new_queue: list[CT] = self._process_queue(queue, tag = "pre-tick")
                 rqueue: list[DevCommRequest]
                 with lock:
                     self.pre_tick_queue.extend(new_queue)
                     self.work += len(new_queue)
-                    # print("processing on-tick queue")
                     rqueue = [req for (delta, req) in self.on_tick_queue if delta <= 0]
                     self.on_tick_queue = [(delta-1, req) for (delta, req) in self.on_tick_queue if delta > 0]
                     self.work -= len(rqueue)
                     if rqueue:
+                        # print(f"--processing on-tick queue: length {len(rqueue)}")
                         def note_finished():
                             update_finished.set()
                             return ()
@@ -510,8 +524,7 @@ class ClockThread(WorkerThread):
                     queue = self.post_tick_queue
                     self.post_tick_queue = []
                     self.work -= len(queue)
-                # print("processing post-tick queue")
-                new_queue = self._process_queue(queue)
+                new_queue = self._process_queue(queue, tag = "post-tick")
                 if new_queue:
                     with lock:
                         self.post_tick_queue.extend(new_queue)

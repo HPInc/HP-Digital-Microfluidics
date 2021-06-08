@@ -245,6 +245,11 @@ WellOpStep = Sequence[int]
 WellOpStepSeq = Sequence[WellOpStep]
 WellOpSeqDict = Mapping[tuple[WellState,WellState], WellOpStepSeq]
 
+class GateStatus(Enum):
+    NOT_YET = auto()
+    JUST_ON = auto()
+    UNSAFE = auto()
+
 class WellMotion:
     group: Final[WellGroup]
     target: Final[WellState]
@@ -255,7 +260,7 @@ class WellMotion:
     next_step: int
     one_tick: Final[ClassVar[Ticks]] = 1*tick
     sequence: WellOpStepSeq
-    used_gate: bool
+    gate_status: GateStatus
     
     def __init__(self, group: WellGroup, target: WellState, *,
                  future: Optional[Delayed[WellGroup]] = None,
@@ -268,43 +273,60 @@ class WellMotion:
         self.pad_states = {}
         self.next_step = 0
         self.callback: ClockCallback = lambda : self.do_step()
-        self.used_gate = False
+        self.gate_status = GateStatus.NOT_YET
+        
+    def try_adopt(self, other: WellMotion) -> bool:
+        # This is called from other.do_step(), with the group locked.
+        if self.target is not other.target or self.gate_status is GateStatus.UNSAFE:
+            return False
+        # The other one wants to go to the same place we are, and either we haven't turned 
+        # any gates on yet or we just did in this tick.
+        # print(f"Piggybacking")
+        self.well_gates.update(other.well_gates)
+        if self.gate_status is GateStatus.JUST_ON:
+            for gate in other.well_gates:
+                gate.schedule(WellPad.TurnOn, post_result = False)
+        self.pad_states.update(other.pad_states)
+        if self.next_step == len(self.sequence):
+            for pad,state in other.pad_states.items():
+                pad.schedule(Pad.SetState(state), post_result=False)
+        self.future.when_value(lambda g: other.future.post(g))
+        return True
         
     def do_step(self) -> Optional[Ticks]:
         group = self.group
         # On the first step, we need to see if this is really necessary or if we 
         # can piggyback onto another motion (or just return) 
         if self.next_step == 0:
+            # print(f"New motion to {self.target}, gates = {self.well_gates}: {self}")
             with group.lock:
                 current = group.motion
                 if current is not None:
-                    if current.target == self.target and not current.used_gate:
-                        # The current one is already going the same place we are and
-                        # it hasn't twiddled a gate yet, so we can piggyback.
-                        # (Strictly speaking, we could do that if it's *just* twiddled
-                        # the gates for the first time and it hasn't taken place yet, 
-                        # but that's probably more bookkeeping than is worthwhile.)
-                        current.well_gates.update(self.well_gates)
-                        current.pad_states.update(self.pad_states)
-                        current.future.when_value(lambda g : self.future.post(g))
+                    # print(f"There already is a motion going to {current.target} (gate_status = {current.gate_status}): {current}")
+                    if current.try_adopt(self):
+                        # If we can piggyback, we do.
                         return None
                     else:
                         # Otherwise, we'll try again next time.  (I was going to reschedule 
                         # when the current one was done, but it's almost certainly cheaper to
                         # just check each tick.
+                        # print(f"Deferring")
                         return self.one_tick
+                # print(f"We're the first")
                 if group.state is self.target:
                     # There's no motion, and we're already where we want to be.
                     # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
                     # without using our gates, so we need to go through READY again
                     if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
                         self.future.post(group)
+                        # print(f"Already at {self.target}")
                         return None
                 if group.state is WellState.READY or self.target is WellState.READY:
                     self.sequence = group.sequences[(group.state, self.target)]
                 else:
                     self.sequence = list(group.sequences[(group.state, WellState.READY)])
                     self.sequence += group.sequences[(WellState.READY, self.target)]
+                # print(f"Switching from {group.state} to {self.target}: {self.sequence}")
                 assert len(self.sequence) > 0
                 group.motion = self
         shared_pads = group.shared_pads
@@ -313,17 +335,23 @@ class WellMotion:
         for pad_index in self.sequence[self.next_step]:
             if pad_index == -1:
                 gate_state = OnOff.ON
-                self.used_gate = True
             else:
                 states[pad_index] = OnOff.ON
         for (i, shared) in enumerate(shared_pads):
             shared.schedule(WellPad.SetState(states[i]), post_result=False)
         for gate in self.well_gates:
             gate.schedule(WellPad.SetState(gate_state), post_result=False)
+            gs = self.gate_status
+            if gate_state is OnOff.ON:
+                self.gate_status = GateStatus.JUST_ON if gs is GateStatus.NOT_YET else GateStatus.UNSAFE
+            elif gs is GateStatus.JUST_ON:
+                self.gate_status = GateStatus.UNSAFE
+                
         self.next_step += 1
         if self.next_step == len(self.sequence):
             # we're done.  If there are any (exit) pads to twiddle, we do it now.
             for (pad, state) in self.pad_states.items():
+                # print(f"Exit pad {pad} going to {state}")
                 pad.schedule(Pad.SetState(state), post_result=False)
             # And on the other side, we clean up
             def cb() -> None:

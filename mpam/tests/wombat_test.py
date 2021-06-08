@@ -9,6 +9,7 @@ from quantities.core import Unit
 from quantities.SI import ms, sec, uL, Hz, minutes
 from quantities.temperature import abs_C, TemperaturePoint
 from typing import Sequence
+import cProfile
 
 Volume.default_units(uL)
 Time.default_units(ms)
@@ -70,7 +71,8 @@ def experiment(system: System) -> None:
         
         
     
-system.run_monitored(experiment, min_time=5*minutes)
+# system.run_monitored(experiment, min_time=0*minutes)
+cProfile.run('system.run_monitored(experiment, min_time=0*minutes)')
     
     
 

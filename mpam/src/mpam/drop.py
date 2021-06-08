@@ -96,7 +96,7 @@ class Drop(OpScheduler['Drop']):
                 last_pad = drop.pad
                 with system.batched():
                     next_pad = last_pad.neighbor(direction)
-                    # print(f"Moving from {last_pad} to {next_pad}")
+                    # print(f"Moving drop from {last_pad} to {next_pad}")
                     if next_pad is None or next_pad.broken:
                         raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
                     next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False)
