@@ -1,78 +1,25 @@
-from mpam.types import Reagent, Mixture, Chemical, waste_reagent, Color,\
-    ColorAllocator
-from quantities.SI import uL, mM, L, mg, ml
-from quantities.dimensions import MassConcentration, Substance,\
-    VolumeConcentration, Molarity
-from typing import Mapping
-from erk.stringutils import map_str
-import weakref
-from quantities.temperature import TemperaturePoint, abs_C, abs_F
-from quantities.US import deg_F
+from quantities.SI import uL, mL, L, nL, cc, cm, hours, days, minutes, seconds,\
+    ms, us
+from quantities.dimensions import Volume
+from quantities.US import pint, qt, acre, ft
 
-c1 = Chemical.find("C1")
-c2 = Chemical.find("C2")
-c3 = Chemical.find("C3")
-c4 = Chemical.find("C4")
 
-mg_per_L = (mg/L).a(MassConcentration)
-ml_per_L = (ml.of(Substance)/L).a(VolumeConcentration)
+v : Volume = 25*uL
 
-Molarity.default_units(mM)
-MassConcentration.default_units(mg_per_L)
-VolumeConcentration.default_units(ml_per_L)
+Volume.default_units([mL, cc, uL, pint, qt])
 
-r1 = Reagent("R1", composition={c1: 1*mM, c2: 3*mg_per_L})
-r2 = Reagent("R2", composition={c1: 2*mM, c3: 2*ml_per_L})
-r3 = Reagent("R3", composition={c3: 2*mg_per_L})
+print(25*uL)
+print(1*L)
+print(20*nL)
 
-l1 = r1.liquid(volume=2*uL)
-l2 = r2.liquid(volume=2*uL)
-l3 = r3.liquid(volume=2*uL)
+Volume.default_units((acre*ft).a(Volume))
 
-m1 = l1.mix_with(l2)
-m2 = l1.mix_with(l3)
-m = m1.mix_with(m2)
+print(25*uL)
+print(1*L)
+print(20*nL)
 
-n1 = l2.mix_with(l3)
-n = n1.mix_with(l1).mix_with(l1)
+print((24*hours).in_units([days]))
 
-def fmt_dict(d: Mapping) -> str:
-    return f"{{{', '.join(f'{k}: {v}' for k,v in d.items())}}}"
 
-print(m)
-print(Mixture._known_mixtures)
-print(Mixture._instances)
-print(n)
-print(n.reagent is m.reagent)
-print(map_str(r1.composition))
-print(map_str(r2.composition))
-print(map_str(r3.composition))
-print(map_str(m1.reagent.composition))
-print(map_str(m2.reagent.composition))
-print(map_str(m.reagent.composition))
-print(m1.reagent.composition[c1])
-print(m1.reagent.composition[c2])
-
-n2 = l2.mix_with(waste_reagent.liquid(2*uL))
-print(n2)
-
-rt = r2.processed("thermocycled", Reagent.LoseComposition)
-print(rt)
-print(map_str(rt.composition))
-print(l1.processed("frozen"))
-
-print(repr(Color.find("xkcd:apricot")))
-
-colors = ColorAllocator[Reagent]()
-print(colors.get_color(r1))
-print(colors.get_color(r2))
-print(colors.get_color(m.reagent))
-print(colors.get_color(r1))
-
-target: TemperaturePoint = 70*abs_C
-print(target, target.absolute) 
-print(target.in_units(abs_F))
-print(32*abs_F, (32*abs_F).in_units(abs_F))
-print(75*abs_F)
-
-print(70*abs_C+2*deg_F)
+duration = 540*minutes+52.24*seconds
+print(duration.decomposed([days, hours, minutes, seconds], optional=[days, hours]))

@@ -4,7 +4,7 @@ from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction,\
 from quantities.dimensions import Time, Volume
 from typing import Mapping, Final, Union, Optional, Any, Sequence
 from quantities.core import Unit
-from quantities.SI import us, sec, ms, ns, minutes, hr, uL, secs
+from quantities.SI import us, sec, ms, ns, minutes, hr, uL, secs, days
 from re import Pattern, Match
 import re
 from mpam.device import System, Pad, Well, Heater, Magnet
@@ -32,9 +32,11 @@ time_arg_units: Final[Mapping[str, Unit[Time]]] = {
     "hr": hr,
     "hour": hr,
     "hours": hr,
+    "days": days,
+    "day": days
     }
 
-time_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(time_arg_units)})")
+time_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)\\s*({'|'.join(time_arg_units)})")
 
 def time_arg(arg: str) -> Time:
     m = time_arg_re.fullmatch(arg)
@@ -87,6 +89,11 @@ class Task:
         raise NotImplementedError(f"Task.run() not implemented for {self}")
     
     @classmethod
+    def fmt_time(self, t: Time) -> str:
+        return t.decomposed((days, hr, minutes, secs),
+                            optional=(days, hr, minutes, secs))
+    
+    @classmethod
     def add_common_args(cls, parser: ArgumentParser) -> None:
         group = parser.add_argument_group(title="common options")
         group.add_argument('-p', '--port',
@@ -104,14 +111,14 @@ class Task:
         group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=default_initial_delay,
                             help=f'''
                             The amount of time to wait before running the task.
-                            Default is {default_initial_delay}.
+                            Default is {cls.fmt_time(default_initial_delay)}.
                             ''')
         
         default_min_time=5*minutes
         group.add_argument('--min-time', type=time_arg, default=default_min_time, metavar='TIME',
                             help=f'''
                             The minimum amount of time to leave the display up, even if the 
-                            operation has finished.  Default is {default_min_time.in_units(minutes)}.
+                            operation has finished.  Default is {cls.fmt_time(default_min_time)}.
                             ''')
         group.add_argument('--max-time', type=time_arg, metavar='TIME',
                             help=f'''

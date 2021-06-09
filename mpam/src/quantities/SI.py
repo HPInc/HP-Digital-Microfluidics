@@ -48,6 +48,11 @@ ml = mL = millilitre = milliliter = prefixes.milli(liter)
 millilitres = milliliters = mL
 µl = µL = ul = uL = micorlitre = microliter = prefixes.micro(liter)
 microlitres = microliters = uL
+nl = nL = nanolitre = nanoliter = prefixes.nano(liter)
+nanolitres = nanoliters = nL
+pl = pL = picolitre = picoliter = prefixes.pico(liter)
+picolitres = picoliters = pL
+cc = (cm**3).a(dimensions.Volume).as_unit("cc")
 st = steres = stere = (m**3).a(dimensions.Volume).as_unit("st")
 
 # time
@@ -61,7 +66,7 @@ ns = nsec = nanosec = nanosecond = prefixes.nano(second)
 nsecs = nanosecs = nanoseconds = ns
 mins = minutes = minute = (60*second).as_unit("min")
 hr = hours = hour = (60*minute).as_unit("hr")
-days = day = (24*hour).as_unit("day")
+days = day = (24*hour).as_unit("days", singular="day")
 wk = weeks = week = (7*day).as_unit("wk")
 
 # frequency

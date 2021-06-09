@@ -1,9 +1,11 @@
 from __future__ import annotations
 import numbers
 from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
-    overload, Union, cast, MutableMapping, Any, Final, Tuple
+    overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable
 from erk.stringutils import split_camel_case, infer_plural
 import math
+import itertools
+import functools
 
 ExptFormatter = Callable[[int],str]
 
@@ -55,7 +57,7 @@ class Dimensionality(Generic[D]):
     _cached_division: DimOpCache[Dimensionality]
     _cached_power: DimOpCache[int]
     _restrictions: dict[Any, BaseDimension]
-    _default_units: Optional[UnitExpr[D]]
+    _default_units: Optional[Tuple[UnitExpr[D], ...]]
     _unrestricted: Optional[Dimensionality[D]] = None
     _restriction: Optional[Any] = None
 
@@ -75,7 +77,7 @@ class Dimensionality(Generic[D]):
         return self
     
     @property
-    def default_units(self) -> Optional[UnitExpr[D]]:
+    def default_units(self) -> Optional[Tuple[UnitExpr[D], ...]]:
         units = self._default_units
         # print(f"Finding default units for {self}")
         if units is None:
@@ -87,25 +89,35 @@ class Dimensionality(Generic[D]):
                     # but if we're restricted, we can delegate to our unrestricted one
                     if self._unrestricted is None:
                         return None
-                    unr_units = self._unrestricted.default_units
-                    if unr_units is None:
+                    unr_units_set = self._unrestricted.default_units
+                    if unr_units_set is None:
                         return None
-                    if isinstance(unr_units, Unit):
-                        return unr_units.of(self._restriction)
-                    desc: str = unr_units.description(mag=2)
-                    return unr_units.as_unit(f"({desc})").of(self._restriction)
+                    def map_to_restriction(u: UnitExpr[D]) -> Unit[D]:
+                        if isinstance(u, Unit):
+                            return u.of(self._restriction)
+                        else:
+                            desc: str = u.description(mag=2)
+                            return u.as_unit(f"({desc})").of(self._restriction)
+                    return tuple( map_to_restriction(u) for u in unr_units_set )
                 du = t[0].default_units
                 if du is None:
                     return None
-                u: UnitExpr = du**t[1]
+                u: UnitExpr = du[0]**t[1]
                 us = u if us is None else us*u
-            units = us
+            units = None if us is None else (us,)
             self._default_units = units
         return units
     
     @default_units.setter
-    def default_units(self, units: UnitExpr[D]):
-        self._default_units = units    
+    def default_units(self, units: Optional[Tuple[UnitExpr[D], ...]]) -> None:
+        self._default_units = units
+        
+    def format_quantity(self, quant: Quantity[D]) -> str:
+        units = self.default_units
+        if units is None or len(units) == 0:
+            return quant.__repr__()
+        return quant.in_units(units).__str__() 
+        
     
     def make_quantity(self, mag: float) -> D:
         return self.quant_class(mag, self)
@@ -237,7 +249,8 @@ class BaseDimension(Dimensionality[ND]):
 
     def base_unit(self, abbr: str, singular: Optional[str]=None) -> Unit[ND]:
         unit = Unit[ND](abbr, cast(ND, self.make_quantity(1)), singular=singular)
-        self.default_units = unit
+        if self._default_units is None: 
+            self.default_units = (unit,)
         return unit
     
 
@@ -262,8 +275,7 @@ class Quantity(Generic[D]):
         return f"Quantity({self.magnitude}, {self.dimensionality})"
     
     def __str__(self) -> str:
-        units = self.dimensionality.default_units
-        return self.__repr__() if units is None else self.in_units(units).__str__() 
+        return self.dimensionality.format_quantity(self)
     
     def __bool__(self) -> bool:
         return self.magnitude != 0
@@ -378,13 +390,30 @@ class Quantity(Generic[D]):
     
     def ratio(self, base: D) -> float:
         return self.magnitude/base.magnitude
-
-    def in_units(self: D, units: UnitExpr[D]) -> _BoundQuantity[D]:
-        if not isinstance(units, UnitExpr):
-            raise TypeError(f"Not a UnitExpr: {units}")
+    
+    def _in_units(self: D, units: UnitExpr[D]) -> _BoundQuantity[D]:
         if units.dimensionality() is not self.dimensionality:
             raise DimMismatchError(self.dimensionality, "in", f"{units} ({units.dimensionality()})")
         return _BoundQuantity(self, units)
+        
+
+    def in_units(self: D, units: Union[UnitExpr[D], Sequence[UnitExpr[D]]]) -> _BoundQuantity[D]:
+        if isinstance(units, UnitExpr):
+            return self._in_units(units)
+        assert len(units) > 0, f"Empty units list passed to ({self}).in_units()"
+        if len(units) == 1:
+            return self._in_units(units[0])
+        
+        best = units[0]
+        best_mag = self.as_number(best)
+        if best_mag == 0:
+            return self._in_units(best)
+        for u in units[1:]:
+            m = self.as_number(u)
+            if (m >= 1 and (best_mag < 1 or m < best_mag)) or (m < 1 and m > best_mag):
+                best = u
+                best_mag = m
+        return self._in_units(best)
     
     def as_number(self, units: UnitExpr[D]) -> float:
         return self.in_units(units).magnitude
@@ -401,6 +430,35 @@ class Quantity(Generic[D]):
     
     def __getitem__(self, restriction: T) -> BaseDim:
         return self.of(restriction)
+    
+    def decomposed(self, units: Iterable[UnitExpr[D]], *, 
+                   optional: Optional[Iterable[UnitExpr[D]]] = None) -> str:
+        if self.magnitude < 0:
+            raise ValueError(f"decompose() not defined for negative {self}")
+        opts = set() if optional is None else set(optional)
+        biggest_first = list(units)
+        biggest_first.sort(key = lambda u: 1*u, reverse = True)
+        # return ", ".join(u.__str__() for u in biggest_first)
+        used: list[tuple[UnitExpr[D], int]] = []
+        q = self
+        last = biggest_first[-1]
+        for u in biggest_first:
+            m = q.as_number(u)
+            if m >= 1:
+                whole = math.floor(m)
+                remainder = m - whole
+                used.append((u, whole))
+                q = remainder*u
+                last = u
+            elif u not in opts:
+                used.append((u, 0))
+                last = u
+        def fmt(u: UnitExpr[D], mag: int):
+            f: float = mag+q.as_number(u) if u is last else mag
+            return (f*u).in_units(u).__str__()
+        if len(used) == 0:
+            used = [(last, 0)]
+        return ", ".join(fmt(u, mag) for u,mag in used)
     
 
 class UnknownDimQuant(Quantity['UnknownDimQuant']):
@@ -689,7 +747,11 @@ class NamedDim(Quantity[ND]):
         return getattr(cls, "_zero")
     
     @classmethod
-    def default_units(cls, units: UnitExpr[ND]) -> None:
+    def default_units(cls, units: Union[UnitExpr[ND], Sequence[UnitExpr[ND]]]) -> None:
+        if isinstance(units, UnitExpr):
+            units = (units,)
+        elif not isinstance(units, tuple):
+            units = tuple(units)
         cls.dim().default_units = units
         
     _restriction_classes: ClassVar[dict[Any, type[BaseDim[ND]]]]
