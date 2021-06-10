@@ -2,11 +2,11 @@ from __future__ import annotations
 import numbers
 from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
     overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable,\
-    Literal
+    Literal, Mapping
 from erk.stringutils import split_camel_case, infer_plural
 import math
-import itertools
-import functools
+from erk.basic import LazyPattern, Lazy
+import re
 
 ExptFormatter = Callable[[int],str]
 
@@ -113,11 +113,11 @@ class Dimensionality(Generic[D]):
     def default_units(self, units: Optional[Tuple[UnitExpr[D], ...]]) -> None:
         self._default_units = units
         
-    def format_quantity(self, quant: Quantity[D]) -> str:
+    def format_quantity(self, quant: Quantity[D], format_spec: str = "") -> str:
         units = self.default_units
         if units is None or len(units) == 0:
             return quant.__repr__()
-        return quant.in_units(units).__str__() 
+        return quant.in_units(units).__format__(format_spec) 
         
     
     def make_quantity(self, mag: float) -> D:
@@ -277,6 +277,9 @@ class Quantity(Generic[D]):
     
     def __str__(self) -> str:
         return self.dimensionality.format_quantity(self)
+    
+    def __format__(self, format_spec: str) -> str:
+        return self.dimensionality.format_quantity(self, format_spec)
     
     def __bool__(self) -> bool:
         return self.magnitude != 0
@@ -486,6 +489,41 @@ class _DecomposedQuantity(Generic[D]):
             return (f*u).in_units(u).__str__()
         return ", ".join(fmt(u, mag) for u,mag in self.tuples)
     
+#            (?P<mid>\\#?0?)
+    _nspec_re: ClassVar[LazyPattern] = LazyPattern("""
+            (?:(?P<fill>.)?
+                (?P<align>[<>^])
+            )?
+            (?P<mid>\\#?0?)
+            (?P<width>[0-9]+)?
+            (?P<grouping>[,_]?)
+            (?P<prec>\\.[0-9]+)?
+            (?P<type>.)?
+        """, re.VERBOSE)
+    def __format__(self, format_spec: str) -> str:
+        nspec, _, uspec = format_spec.partition(";")
+        
+        if uspec:
+            uspec = ";"+uspec
+        
+        pat = _DecomposedQuantity._nspec_re.value
+        m = pat.fullmatch(nspec)
+        if m is None:
+            raise ValueError(f"UnitExpr can't parse number format specification '{nspec}'")
+        d = m.groupdict(default = "")
+        align = d["align"]
+        most_spec = d["mid"]+d["grouping"]+".0f"+uspec
+        last_spec = d["mid"]+d["grouping"]+d["prec"]+d["type"]+uspec
+        sspec = d["fill"]+align+d["width"]
+        
+        last = self.tuples[-1][0]
+        def fmt(u: UnitExpr[D], mag: int) -> str:
+            f: float = mag+self.remainder.as_number(u) if u is last else mag
+            return (f*u).in_units(u).__format__(last_spec if u is last else most_spec)
+        s = ", ".join(fmt(u, mag) for u,mag in self.tuples)
+        return s.__format__(sspec)
+    
+    
 class _BoundQuantity(Generic[D]):
     magnitude: float
     units: UnitExpr[D]
@@ -499,7 +537,70 @@ class _BoundQuantity(Generic[D]):
 
     def __repr__(self) -> str:
         return self.description()
+    
+    def split(self) -> tuple[float, UnitExpr[D]]:
+        return (self.magnitude, self.units)
+    
+    _uspec_re: ClassVar[LazyPattern] = LazyPattern("""
+                (?:(?P<fill>.)?
+                   (?P<align>[<>^])
+                )?
+                (?P<min>[0-9]+)?
+                (?:\\.(?P<max>[0-9]+))?
+                (?P<exp>[hsc*])?
+                (?P<brackets>[pb])?
+                (?P<sep>[- =_])?
+            """, re.VERBOSE
+        )
+    _nspec_re: ClassVar[LazyPattern] = LazyPattern("""
+                (?:(?P<fill>.)?
+                   (?P<align>[<>^])
+                )?
+                (?P<mid>\\#?0?)
+                (?P<width>[0-9]+)?
+                (?P<rest>.*)
+            """, re.VERBOSE
+        )
+    def __format__(self, format_spec: str) -> str:
+        nspec, _, uspec = format_spec.partition(";")
 
+        pat = _BoundQuantity._uspec_re.value
+        m = pat.fullmatch(uspec)
+        if m is None:
+            raise ValueError(f"UnitExpr can't parse unit format specification '{uspec}'")
+        d = m.groupdict(default = "")
+        sep = d["sep"] or " "
+        if sep == "=":
+            sep = ""
+        alt = "#" if self.magnitude == 1 else ""
+        maxw = ("."+d["max"]) if d["max"] else ""
+        uspec = d["fill"]+d["align"]+alt+d["min"]+maxw+d["exp"]
+        formatted_unit  = self.units.__format__(uspec)
+        if d["brackets"] == "p":
+            formatted_unit = "(" + formatted_unit + ")"
+        elif d["brackets"] == "b":
+            formatted_unit = "[" + formatted_unit + "]"
+        # print(f"u: '{formatted_unit}'")
+        pat = _BoundQuantity._nspec_re.value
+        m = pat.fullmatch(nspec)
+        if m is None:
+            raise ValueError(f"UnitExpr can't parse number format specification '{nspec}'")
+        d = m.groupdict(default = "")
+        sspec = ""
+        align = d["align"]
+        if align == "<" or align == "^":
+            sspec = d["fill"]+align+d["width"]
+            nspec = d["mid"]+d["rest"]
+        elif d["width"]:
+            width = int(d["width"])-len(formatted_unit)-len(sep)
+            wspec = "" if width < 1 else str(width)
+            nspec = d["fill"]+d["align"]+d["mid"]+wspec+d["rest"]
+        formatted_number = self.magnitude.__format__(nspec)
+        res = (formatted_number+sep+formatted_unit).__format__(sspec)
+        return res
+
+        
+        
 class UnitExpr(Generic[D]):
     quantity: D
     num: tuple[AbbrExp, ...]
@@ -579,6 +680,42 @@ class UnitExpr(Generic[D]):
                 n += "/"+"*".join(denom)
             cd = self._cached_description = n
         return cd
+    
+    # _fmt_re: ClassVar[Optional[Pattern]] = None
+    
+    _fmt_re: ClassVar[LazyPattern] = LazyPattern("(?P<pre>.*?)(?P<exp>[hs*c])?")
+    
+    _expt_fmts: ClassVar[Lazy[Mapping[str, ExptFormatter]]] = Lazy(
+        lambda: {
+            '': Exponents.default_format,
+            '*': Exponents.stars,
+            's': Exponents.superscript,
+            'c': Exponents.caret,
+            'h': Exponents.html
+            }
+        )
+    
+    def __format__(self, format_spec: str) -> str:
+        # pat = UnitExpr._fmt_re
+        # if pat is None:
+        #     pat = re.compile("(?P<bracket>[[(])?(?:(?P<fill>.)?(?P<align>[<>^]))?(?P<sing>#)?(?P<min>[0-9]+)?(?:\\.(?P<max>[0-9]+))?")
+        #     UnitExpr._fmt_re = pat
+        # m = pat.fullmatch(format_spec)
+        # if m is None:
+        #     raise ValueError(f"UnitExpr can't parse format specification '{format_spec}'")
+        # d = m.groupdict()
+        # print(d)
+        m = UnitExpr._fmt_re.value.fullmatch(format_spec)
+        if m is None:
+            raise ValueError(f"UnitExpr can't parse format specification '{format_spec}'")
+        d = m.groupdict(default = "")
+        e = d["exp"]
+        # print(f"exp: '{e}' in '{format_spec}' {repr(self)}")
+        expt = UnitExpr._expt_fmts.value[e]
+        pre, match, post = d["pre"].partition("#")
+        desc = self.description(mag = 1 if match else 2, exponent_fmt = expt)
+        # print(f"desc: '{desc}'")
+        return desc.__format__(pre+post)
 
 
     def _combine_with(self, num: list[AbbrExp], denom: list[AbbrExp]) -> tuple[tuple[AbbrExp,...], tuple[AbbrExp,...]]: 
@@ -665,13 +802,13 @@ class UnitExpr(Generic[D]):
         if rhs < 0:
             rhs = -rhs
             (n,d) = (d,n)
-        num = ((a, e*rhs) for (a,e) in n)
-        denom = ((a, e*rhs) for (a,e) in d)
+        num = tuple((a, e*rhs) for (a,e) in n)
+        denom = tuple((a, e*rhs) for (a,e) in d)
         return q.as_unit_expr(num, denom)
 
     def format(self, q: D) -> _BoundQuantity[D]:
         return q.in_units(self)
-
+    
     def __mod__(self, q: D) -> _BoundQuantity[D]:
         return self.format(q)
     
@@ -718,7 +855,7 @@ class Unit(UnitExpr[D]):
 
     def description(self, *, mag: float, exponent_fmt: Optional[ExptFormatter] = None) -> str:  # @UnusedVariable
         return self.singular if mag == 1 else self.abbreviation
-            
+    
     def of(self, restriction: T, *, dim: Optional[str] = None) -> Unit[D]:
         u = self._restrictions.get(restriction, None)
         if u is None:

@@ -5,7 +5,6 @@ from . import dimensions
 from . import core
 from typing import overload, Union, Final, ClassVar, MutableMapping
 import math
-from quantities.SI import us
 
 class Timestamp:
     time: dimensions.Time

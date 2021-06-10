@@ -1,7 +1,6 @@
 from re import Pattern
 from typing import Optional, Final, Mapping, Union, cast, Sequence
 import re
-from numpy.lib.arraysetops import isin
 
 _camel_case_re: Optional[Pattern] = None
 
