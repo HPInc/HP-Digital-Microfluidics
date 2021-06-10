@@ -1,5 +1,4 @@
-from quantities.SI import uL, mL, L, nL, cc, cm, hours, days, minutes, seconds,\
-    ms, us
+from quantities.SI import uL, mL, L, nL, cc, hours, days, minutes, seconds
 from quantities.dimensions import Volume
 from quantities.US import pint, qt, acre, ft
 
@@ -22,4 +21,6 @@ print((24*hours).in_units([days]))
 
 
 duration = 540*minutes+52.24*seconds
-print(duration.decomposed([days, hours, minutes, seconds], optional=[days, hours]))
+print(duration.decomposed([seconds, hours, days, minutes], required=[minutes, seconds]))
+print(duration.decomposed([days, hours, minutes, seconds], required="all"))
+print(duration.decomposed([days, hours, minutes, seconds]))

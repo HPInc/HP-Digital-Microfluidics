@@ -1,7 +1,8 @@
 from __future__ import annotations
 import numbers
 from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
-    overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable
+    overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable,\
+    Literal
 from erk.stringutils import split_camel_case, infer_plural
 import math
 import itertools
@@ -320,6 +321,9 @@ class Quantity(Generic[D]):
         self._ensure_dim_match(rhs, "==")
         return self.magnitude == rhs.magnitude
     
+    def __hash__(self) -> int:
+        return hash((self.magnitude, self.dimensionality))
+    
     def __lt__(self, rhs: D) -> bool:
         self._ensure_dim_match(rhs, "<")
         return self.magnitude < rhs.magnitude
@@ -432,13 +436,16 @@ class Quantity(Generic[D]):
         return self.of(restriction)
     
     def decomposed(self, units: Iterable[UnitExpr[D]], *, 
-                   optional: Optional[Iterable[UnitExpr[D]]] = None) -> str:
+                   required: Optional[Union[Iterable[UnitExpr[D]],
+                                            Literal["all"]]] = None) -> _DecomposedQuantity[D]:
         if self.magnitude < 0:
             raise ValueError(f"decompose() not defined for negative {self}")
-        opts = set() if optional is None else set(optional)
         biggest_first = list(units)
-        biggest_first.sort(key = lambda u: 1*u, reverse = True)
-        # return ", ".join(u.__str__() for u in biggest_first)
+        biggest_first.sort(reverse = True)
+        if required is not None:
+            reqd = set(biggest_first if required == "all" else required)
+        else:
+            reqd = set()
         used: list[tuple[UnitExpr[D], int]] = []
         q = self
         last = biggest_first[-1]
@@ -450,20 +457,34 @@ class Quantity(Generic[D]):
                 used.append((u, whole))
                 q = remainder*u
                 last = u
-            elif u not in opts:
+            elif u in reqd:
                 used.append((u, 0))
                 last = u
-        def fmt(u: UnitExpr[D], mag: int):
-            f: float = mag+q.as_number(u) if u is last else mag
-            return (f*u).in_units(u).__str__()
         if len(used) == 0:
-            used = [(last, 0)]
-        return ", ".join(fmt(u, mag) for u,mag in used)
+            used.append((last, 0))
+        return _DecomposedQuantity[D](used, q)
     
 
 class UnknownDimQuant(Quantity['UnknownDimQuant']):
     def __repr__(self) -> str:
         return f"UnknownDimQuant[{self.magnitude},{self.dimensionality}]"
+    
+class _DecomposedQuantity(Generic[D]):
+    tuples: Sequence[tuple[UnitExpr[D], int]]
+    remainder: Quantity[D]
+    
+    def __init__(self, 
+                 tuples: Sequence[tuple[UnitExpr[D], int]],
+                 remainder: Quantity[D]) -> None:
+        self.tuples = tuples
+        self.remainder = remainder
+        
+    def __repr__(self) -> str:
+        last = self.tuples[-1][0]
+        def fmt(u: UnitExpr[D], mag: int):
+            f: float = mag+self.remainder.as_number(u) if u is last else mag
+            return (f*u).in_units(u).__str__()
+        return ", ".join(fmt(u, mag) for u,mag in self.tuples)
     
 class _BoundQuantity(Generic[D]):
     magnitude: float
@@ -661,6 +682,18 @@ class UnitExpr(Generic[D]):
     
     def as_unit(self, abbr: str, check: type[D] = None, singular: Optional[str]=None) -> Unit[D]:  # @UnusedVariable
         return Unit[D](abbr, self, singular=singular)
+    
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, UnitExpr): 
+            return False
+        return self.quantity == other.quantity
+    def __hash__(self) -> int:
+        return hash(self.quantity)
+    def __lt__(self, other: UnitExpr[D]) -> bool:
+        return self.quantity < other.quantity
+    def __le__(self, other: UnitExpr[D]) -> bool:
+        return self.quantity <= other.quantity
+    
     
 
 class Unit(UnitExpr[D]):

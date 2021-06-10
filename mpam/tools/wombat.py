@@ -90,8 +90,7 @@ class Task:
     
     @classmethod
     def fmt_time(self, t: Time) -> str:
-        return t.decomposed((days, hr, minutes, secs),
-                            optional=(days, hr, minutes, secs))
+        return t.decomposed((days, hr, minutes, secs))
     
     @classmethod
     def add_common_args(cls, parser: ArgumentParser) -> None:
