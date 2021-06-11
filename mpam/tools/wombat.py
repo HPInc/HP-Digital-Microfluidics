@@ -238,9 +238,17 @@ class DispenseAndWalk(Task):
         
         system.clock.start(args.clock_speed)
 
+        # seq = Drop.DispenseFrom(well) \
+        #         .then(Drop.Move(hdir)) \
+        #         .then(Drop.Move(vdir1, steps=2)) \
+        #         .then(Drop.Move(hdir, steps=16)) \
+        #         .then(Drop.Move(vdir2, steps=2)) \
+        #         .then(Drop.Move(hdir)) \
+        #         .then(Drop.EnterWell)
+
         seq = Drop.DispenseFrom(well) \
                 .then(Drop.Move(hdir)) \
-                .then(Drop.Move(vdir1, steps=2)) \
+                .then_move(vdir1, steps=2) \
                 .then(Drop.Move(hdir, steps=16)) \
                 .then(Drop.Move(vdir2, steps=2)) \
                 .then(Drop.Move(hdir)) \

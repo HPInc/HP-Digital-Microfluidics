@@ -4,10 +4,88 @@ from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     StaticOperation, Reagent, Callback
 from mpam.device import Pad, Board, Well, WellGroup, WellState
 from mpam.exceptions import NoSuchPad, NotAtWell
-from typing import Optional, Final, Union, Sequence, Callable
+from typing import Optional, Final, Union, Sequence, Callable, TypeVar, Generic,\
+    overload
 from quantities.SI import uL
 from threading import Lock
 from quantities.dimensions import Volume
+
+From = TypeVar('From')
+To = TypeVar('To')
+Mid = TypeVar('Mid')
+Src = TypeVar('Src')
+class ToDropOp(Operation[From,'Drop']):
+    
+    def then_move(self, direction: Dir, *,
+                  steps: int = 1,
+                  after: Optional[DelayType] = None) -> ToDropOp[From]:
+        return Drop.Move(direction, steps=steps).following(self, after=after)
+
+    @overload    
+    def following(self, op: Operation[Src, From], *,  # @UnusedVariable
+                  after: Optional[DelayType] = None) -> ToDropOp[Src]: ...  # @UnusedVariable
+    @overload
+    def following(self, op: StaticOperation[From], *,  # @UnusedVariable
+                  after: Optional[DelayType] = None) -> ToDropStaticOp: ...  # @UnusedVariable
+    def following(self, op: Union[Operation[Src, From], StaticOperation[From]], *, 
+                  after: Optional[DelayType] = None):
+        if isinstance(op, Operation):
+            return CombinedToDropOp[Src,From](op, self, after=after)
+        else:
+            return CombinedToDropStaticOp[From](op, self, after=after)
+    
+class CombinedToDropOp(Generic[Src, Mid], ToDropOp[Src]):
+    first: Operation[Src, Mid]
+    second: ToDropOp[Mid]
+    after: Final[Optional[DelayType]]
+    def __init__(self, first: Operation[Src, Mid],
+                 second: ToDropOp[Mid], 
+                 after: Optional[DelayType] = None) -> None:
+        self.first = first
+        self.second = second
+        self.after = after
+        
+    def __repr__(self) -> str:
+        return f"<Combined: {self.first} {self.second}>"
+        
+    def _schedule_for(self, obj: Src, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,
+                      future: Optional[Delayed[Drop]] = None
+                      ) -> Delayed[Drop]:
+        return self.first._schedule_for(obj, mode=mode, after=after) \
+                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result, future=future)
+class ToDropStaticOp(StaticOperation['Drop']):
+    
+    def then_move(self, direction: Dir, *,
+                  steps: int = 1,
+                  after: Optional[DelayType] = None) -> ToDropStaticOp:
+        return Drop.Move(direction, steps=steps).following(self, after=after)
+    
+    
+class CombinedToDropStaticOp(Generic[Mid], ToDropStaticOp):
+    first: StaticOperation[Mid]
+    second: ToDropOp[Mid]
+    after: Final[Optional[DelayType]]
+    def __init__(self, first: StaticOperation[Mid],
+                 second: ToDropOp[Mid], 
+                 after: Optional[DelayType] = None) -> None:
+        self.first = first
+        self.second = second
+        self.after = after
+        
+    def __repr__(self) -> str:
+        return f"<Combined: {self.first} {self.second}>"
+        
+    def _schedule(self, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,
+                      future: Optional[Delayed[Drop]] = None
+                      ) -> Delayed[Drop]:
+        return self.first._schedule(mode=mode, after=after) \
+                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result, future=future)
 
 class Drop(OpScheduler['Drop']):
     liquid: Liquid
@@ -97,7 +175,8 @@ class Drop(OpScheduler['Drop']):
             return future
             
     
-    class Move(Operation['Drop','Drop']):
+    # class Move(Operation['Drop','Drop']):
+    class Move(ToDropOp['Drop']):
         direction: Final[Dir]
         steps: Final[int]
         
@@ -240,3 +319,4 @@ class Drop(OpScheduler['Drop']):
             to_pad.drop = self
             # print(f"Drop now at {to_pad}")
         return fn
+
