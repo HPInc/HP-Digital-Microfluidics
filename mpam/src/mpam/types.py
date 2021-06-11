@@ -279,17 +279,24 @@ class Operation(Generic[T, V]):
             return future
         return self._schedule_for(obj, mode=mode, after=after, post_result=post_result, future=future)
     
-    def then(self, op: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+    def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
+                             Callable[[], Operation[V,V2]],
+                             Callable[[], StaticOperation[V2]]], *,
              after: Optional[DelayType] = None,
              ) -> Operation[T,V2]:
         return CombinedOperation[T,V,V2](self, op, after=after)
     
 class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
     first: Operation[T,V]
-    second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]]
+    second: Union[Operation[V,V2], StaticOperation[V2],
+                  Callable[[], Operation[V,V2]],
+                  Callable[[], StaticOperation[V2]]]
     after: Final[Optional[DelayType]]
     
-    def __init__(self, first: Operation[T, V], second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+    def __init__(self, first: Operation[T, V],
+                 second: Union[Operation[V,V2], StaticOperation[V2],
+                               Callable[[], Operation[V,V2]],
+                               Callable[[], StaticOperation[V2]]], 
                  after: Optional[DelayType] = None) -> None:
         self.first = first
         self.second = second
@@ -317,7 +324,8 @@ class CommunicationScheduler(Protocol):
 CS = TypeVar('CS', bound=CommunicationScheduler)
 
 class OpScheduler(Generic[CS]):
-    def schedule(self: CS, op: Union[Operation[CS, V], Callable[[],Operation[CS,V]]],
+    def schedule(self: CS,
+                 op: Union[Operation[CS, V], Callable[[],Operation[CS,V]]],
                  mode: RunMode = RunMode.GATED, 
                  after: Optional[DelayType] = None,
                  post_result: bool = True,
@@ -377,17 +385,24 @@ class StaticOperation(Generic[V]):
             return future
         return self._schedule(mode=mode, after=after, post_result=post_result, future=future)
     
-    def then(self, op: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+    def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
+                             Callable[[], Operation[V,V2]],
+                             Callable[[], StaticOperation[V2]]],
              after: Optional[DelayType] = None,
              ) -> StaticOperation[V2]:
         return CombinedStaticOperation[V,V2](self, op, after=after)
     
 class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
     first: StaticOperation[V]
-    second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]]
+    second: Union[Operation[V,V2], StaticOperation[V2],
+                  Callable[[], Operation[V,V2]],
+                  Callable[[], StaticOperation[V2]]]
     after: Final[Optional[DelayType]]
     
-    def __init__(self, first: StaticOperation[V], second: Union[Operation[V,V2], Callable[[], Operation[V,V2]]], *,
+    def __init__(self, first: StaticOperation[V], 
+                 second: Union[Operation[V,V2], StaticOperation[V2],
+                               Callable[[], Operation[V,V2]],
+                               Callable[[], StaticOperation[V2]]], *,
                  after: Optional[DelayType] = None) -> None:
         self.first = first
         self.second = second
