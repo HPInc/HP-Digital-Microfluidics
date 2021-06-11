@@ -30,20 +30,27 @@ print(duration.decomposed([seconds, hours, days, minutes], required=[minutes, se
 # print("------------")
 
 v = 3*liters
-# Volume.default_units([mL, cc, uL, pint, qt])
+Volume.default_units([mL, cc, uL, pint, qt])
 # # Volume.default_units((m**3).a(Volume))
 # Volume.default_units(mL)
 #
-# print(f"|{v:20,f}|")
-# print(f"|{v:<20,f}|")
-# print(f"|{v:20,.2f}|")
-# print(f"|{v:<20,.2f}|")
-# print(f"|{v:<20,f;>5}|")
-# print(f"|{v:20,f;>5}|")
-# print(f"|{v:20,.3f;.>5}|")
-# print(f"|{v:*<20,.3f;.>5}|")
+print(f"{v:.2f}")
+print(f"|{v:.>20.2f}|")
+print(f"|{v:.<20.2f}|")
+print(f"|{v:.^20.2f}|")
+print(f"|{v:.>20.2f;=<5}|")
+print(f"|{v:20,f}|")
+print(f"|{v:20,f}|")
+print(f"|{v:<20,f}|")
+print(f"|{v:20,.2f}|")
+print(f"|{v:<20,.2f}|")
+print(f"|{v:<20,f;>5}|")
+print(f"|{v:20,f;>5}|")
+print(f"|{v:20,.3f;.>5}|")
+print(f"|{v:*<20,.3f;.>5}|")
 #
-# d = (5*L).decomposed([gallons, quarts, pints, cups, fl_oz])
+d = (5*L).decomposed([gallons, quarts, pints, cups, fl_oz])
+print(f"{d:0.2f;_}")
 # print(d)
 #
 # print(f"|{d:40f}|")
@@ -53,17 +60,29 @@ v = 3*liters
 # print(f"|{d:.<40}|")
 # print(f"|{d:.<40.2}|")
 
-Volume.default_units((m**3).a(Volume))
-print(f"{v}")
-print(f"{v:;h}")
-print(f"{m**3:h}")
-print(f"{m**3:s}")
-print(f"{m**3:c}")
-print(f"{(m**3)/seconds:c}")
+# Volume.default_units((m**3).a(Volume))
+# print(f"{v}")
+# print(f"{v:;h}")
+# print(f"{m**3:h}")
+# print(f"{m**3:s}")
+# print(f"{m**3:c}")
+# print(f"{(m**3)/seconds:c}")
+#
+#
+#
+# print(f"{v/(2*s):.4f;c}")
+# print(f"{m**3:h}")
+# print(f"{v:.3f;p-}")
 
 
+print(f"{v:.2f}")
+print(f"{v:.2f; }")
+print(f"{v:.2f;-}")
+print(f"{v:.2f;_}")
+print(f"{v:.2f;=}")
 
-print(f"{v/(2*s):.4f;c}")
-print(f"{m**3:h}")
-print(f"{v:.3f;p-}")
-
+t = 4*hours+5*minutes+4.23561*seconds
+print(t.HMS())
+print(t.HM())
+print(t.MS())
+print(f"{t.HMS():.0}")

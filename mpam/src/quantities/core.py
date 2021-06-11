@@ -500,7 +500,8 @@ class _DecomposedQuantity(Generic[D]):
             (?P<prec>\\.[0-9]+)?
             (?P<type>.)?
         """, re.VERBOSE)
-    def __format__(self, format_spec: str) -> str:
+    
+    def _fmt_specs(self, format_spec: str) -> tuple[str, str, str]:
         nspec, _, uspec = format_spec.partition(";")
         
         if uspec:
@@ -509,12 +510,17 @@ class _DecomposedQuantity(Generic[D]):
         pat = _DecomposedQuantity._nspec_re.value
         m = pat.fullmatch(nspec)
         if m is None:
-            raise ValueError(f"UnitExpr can't parse number format specification '{nspec}'")
+            raise ValueError(f"_DecomposedQuantity can't parse number format specification '{nspec}'")
         d = m.groupdict(default = "")
         align = d["align"]
         most_spec = d["mid"]+d["grouping"]+".0f"+uspec
         last_spec = d["mid"]+d["grouping"]+d["prec"]+d["type"]+uspec
         sspec = d["fill"]+align+d["width"]
+        
+        return (most_spec, last_spec, sspec)
+    
+    def __format__(self, format_spec: str) -> str:
+        most_spec, last_spec, sspec = self._fmt_specs(format_spec)
         
         last = self.tuples[-1][0]
         def fmt(u: UnitExpr[D], mag: int) -> str:
@@ -522,6 +528,51 @@ class _DecomposedQuantity(Generic[D]):
             return (f*u).in_units(u).__format__(last_spec if u is last else most_spec)
         s = ", ".join(fmt(u, mag) for u,mag in self.tuples)
         return s.__format__(sspec)
+    
+    class Joined:
+        decomposed: Final[_DecomposedQuantity]
+        sep: Final[str]
+        digits: Final[int]
+        
+        def __init__(self, decomposed: _DecomposedQuantity, sep: str, digits: int) -> None:
+            self.decomposed = decomposed
+            self.sep = sep
+            self.digits = digits
+            
+        def __str__(self) -> str:
+            return self.__format__("f")
+            
+            
+        def __format__(self, format_spec: str) -> str:
+            pat = _DecomposedQuantity._nspec_re.value
+            m = pat.fullmatch(format_spec)
+            if m is None:
+                raise ValueError(f"_DecomposedQuantity can't parse number format specification '{format_spec}'")
+            d = m.groupdict(default = "")
+            align = d["align"]
+            w = str(self.digits)
+            unpadded_spec = d["mid"]+d["grouping"]+".0f"
+            padded_spec = d["mid"]+d["grouping"]+"0"+w+".0f"
+            remainder_spec = d["prec"]+"f"
+            sspec = d["fill"]+align+d["width"]
+            
+            decomposed = self.decomposed
+            last = decomposed.tuples[-1][0]
+            spec = unpadded_spec
+            def fmt(mag: int) -> str:
+                nonlocal spec
+                val = mag.__format__(spec)
+                spec = padded_spec
+                return val
+            s = self.sep.join(fmt(t[1]) for t in decomposed.tuples)
+            r = decomposed.remainder.as_number(last).__format__(remainder_spec)[1:]
+            s += r
+            return s.__format__(sspec)
+            
+    
+    def joined(self, sep: str, digits: int) -> Joined:
+        return _DecomposedQuantity.Joined(self, sep, digits)
+
     
     
 class _BoundQuantity(Generic[D]):

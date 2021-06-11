@@ -1,4 +1,4 @@
-from quantities.core import BaseDim, Scalar, DerivedDim
+from quantities.core import BaseDim, Scalar, DerivedDim, _DecomposedQuantity
 
 class Mass(BaseDim['Mass']): ...
     
@@ -27,7 +27,16 @@ class Distance(BaseDim['Distance']): ...
     #     ...
 
 
-class Time(BaseDim['Time']): ...
+class Time(BaseDim['Time']): 
+    def HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
+        from quantities.SI import hours, minutes, seconds
+        return self.decomposed([hours, minutes, seconds], required="all").joined(sep, 2)
+    def HM(self, sep: str = ":") -> _DecomposedQuantity.Joined:
+        from quantities.SI import hours, minutes
+        return self.decomposed([hours, minutes], required="all").joined(sep, 2)
+    def MS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
+        from quantities.SI import minutes, seconds
+        return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
 
 class Temperature(BaseDim['Temperature']): ...
 
