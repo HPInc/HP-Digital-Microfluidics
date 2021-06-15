@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional, Final, Mapping, Callable, Literal,\
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Generic, Hashable, Any
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any
 from types import TracebackType
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.timestamp import time_now, Timestamp
@@ -43,7 +43,7 @@ class BoardComponent:
 
 BC = TypeVar('BC', bound='BinaryComponent')
         
-class BinaryComponent(BoardComponent, Generic[BC]):
+class BinaryComponent(BoardComponent, OpScheduler[BC]):
     _state: OnOff
     broken: bool
     live: bool
@@ -121,7 +121,7 @@ BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
     
     
     
-class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
+class Pad(BinaryComponent['Pad']):
     location: Final[XYCoord]
     exists: Final[bool]
     # broken: bool
@@ -213,7 +213,7 @@ class Pad(OpScheduler['Pad'], BinaryComponent['Pad']):
     
 WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
-class WellPad(OpScheduler['WellPad'], BinaryComponent['WellPad']):
+class WellPad(BinaryComponent['WellPad']):
     loc: WellPadLoc
         
     def __init__(self, board: Board, 
@@ -583,7 +583,7 @@ class Well(OpScheduler['Well'], BoardComponent):
         self._liquid_change_callbacks.add(cb, key=key)
         
         
-class Magnet(OpScheduler['Magnet'], BinaryComponent['Magnet']): 
+class Magnet(BinaryComponent['Magnet']): 
     pads: Final[Sequence[Pad]]
     
     def __init__(self, board: Board, *, pads: Sequence[Pad]) -> None:

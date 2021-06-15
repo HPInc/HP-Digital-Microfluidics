@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable,\
     ClassVar, MutableMapping
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
-    HeatingMode, BinaryComponent
+    HeatingMode, BinaryComponent, WellState
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib import pyplot
@@ -24,6 +24,7 @@ import random
 from quantities.timestamp import time_now
 from quantities.core import Unit
 from matplotlib.artist import Artist
+from matplotlib.backend_bases import PickEvent
 
 
 class PadMonitor(object):
@@ -398,12 +399,27 @@ class BoardMonitor:
         for heater in board.heaters:       
             self.setup_heater_poll(heater) 
 
-        def on_pick(event):
+        def on_pick(event: PickEvent):
             artist = event.artist
             cpt = self.click_id[artist]
             if cpt.live:
-                print(f"Clicked on {cpt}")
-                cpt.schedule(BinaryComponent.Toggle)
+                key = event.mouseevent.key
+                print(f"Clicked on {cpt} (modifiers: {key})")
+                if key == "control":
+                    cpt.schedule(BinaryComponent.Toggle)
+                else:
+                    with board.in_system().batched():
+                        for p in board.pad_array.values():
+                            if p.live:
+                                p.schedule(Pad.SetState(OnOff.ON if cpt is p else OnOff.OFF))
+                        for wg in board.well_groups.values():
+                            for wp in wg.shared_pads:
+                                wp.schedule(Pad.SetState(OnOff.ON if cpt is wp else OnOff.OFF))
+                            wg.state = WellState.EXTRACTABLE
+                        for w in board.wells:
+                            g = w.gate
+                            if g.live:
+                                g.schedule(Pad.SetState(OnOff.ON if cpt is g else OnOff.OFF))
             else:
                 print(f"{cpt} is not live")
             
