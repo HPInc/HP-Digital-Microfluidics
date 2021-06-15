@@ -933,11 +933,11 @@ class Clock:
         
     @property
     def update_rate(self) -> Frequency:
-        return (1/self.update_interval).a(Frequency)
+        return 1/self.update_interval
     
     @update_rate.setter
     def update_rate(self, rate: Frequency) -> None:
-        self.update_interval = (1/rate).a(Time)
+        self.update_interval = 1/rate
     
     @property
     def next_tick(self) -> TickNumber:

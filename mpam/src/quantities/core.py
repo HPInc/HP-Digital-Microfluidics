@@ -39,6 +39,7 @@ D = TypeVar('D', bound='Quantity')
 ND = TypeVar('ND', bound='NamedDim')
 
 Quant = Union['UnknownDimQuant', 'NamedDim[ND]']
+QuantOrUnit = Union[D, 'UnitExpr[D]']
 
 # def _restriction_name(obj) -> str:
 #     return 
@@ -73,7 +74,7 @@ class Dimensionality(Generic[D]):
     def __repr__(self) -> str:
         return self.name or self.description()
 
-    def named(self, name: str) -> Dimensionality:
+    def named(self, name: str) -> Dimensionality[D]:
         self.name = name
         return self
     
@@ -264,11 +265,11 @@ class DimMismatchError(Exception):
         super().__init__(f"{lhs} {op} {rhs}")
 
 class Quantity(Generic[D]):
-    dimensionality: Dimensionality
+    dimensionality: Dimensionality[D]
     magnitude: float
 
     # def __init__(self, mag: float, dim: Dimensionality[D]) -> None:
-    def __init__(self, mag: float, dim: Dimensionality) -> None:
+    def __init__(self, mag: float, dim: Dimensionality[D]) -> None:
         self.dimensionality = dim
         self.magnitude = mag
 
@@ -287,14 +288,18 @@ class Quantity(Generic[D]):
     def cast(self: D) -> D:
         return self
     
-
-    def has_dimensionality(self, dim: Dimensionality) -> bool:
+    # It's tempting to overload this so that if the argument is 
+    # Dimensionality[D] the return type is hinted Literal[True] and 
+    # otherwise it's hinted Literal[False] (or maybe just bool).  
+    # But I think that would break restricted types, which have the
+    # same D, regardless of restriction.
+    def has_dimensionality(self, dim: Dimensionality) -> bool: 
         if not isinstance(dim, Dimensionality):
             raise TypeError(f"Not a Dimensionaluty: {dim}")
         my_dim = self.dimensionality
         return my_dim is dim or my_dim._unrestricted is dim
 
-    def check_dimensionality(self: D, dim: Dimensionality) -> D:
+    def check_dimensionality(self: D, dim: Dimensionality[D]) -> D:
         if not self.has_dimensionality(dim):
             raise DimensionalityError(dim, self.dimensionality)
         return self
@@ -846,6 +851,7 @@ class UnitExpr(Generic[D]):
         if rhs == 1:
             return self
         if rhs == 0:
+            from .dimensions import Scalar
             return UnitExpr(Scalar(1),(),())
         q = self.quantity**rhs
         n = self.num
@@ -890,7 +896,7 @@ class Unit(UnitExpr[D]):
     _restrictions: Final[dict[Any, Unit]]
     
     def __init__(self, abbr: str, quant: Union[D,UnitExpr[D]], 
-                 *, check: Optional[Dimensionality] = None,
+                 *, check: Optional[Dimensionality[D]] = None,
                  singular: Optional[str] = None):
         if isinstance(quant, UnitExpr):
             quant = 1*quant
@@ -994,10 +1000,6 @@ class NamedDim(Quantity[ND]):
         return new_dim_class
     
     
-class Scalar(NamedDim['Scalar']):
-    _dim = Dimensionality['Scalar']((), 'scalar')
-    
-Scalar._dim.quant_class = Scalar
     
     
     
@@ -1026,7 +1028,7 @@ class DerivedDimMeta(type):
         
 
 class DerivedDim(NamedDim[ND], metaclass=DerivedDimMeta): 
-    derived: ClassVar[Dimensionality]
+    derived: ClassVar[Dimensionality[ND]]
 
 class BaseDimMeta(type):
     def __new__(cls, name, base, dct):

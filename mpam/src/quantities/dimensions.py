@@ -1,4 +1,24 @@
-from quantities.core import BaseDim, Scalar, DerivedDim, _DecomposedQuantity
+from __future__ import annotations
+from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity,\
+    NamedDim, Dimensionality
+
+class Scalar(NamedDim['Scalar']):
+    _dim = Dimensionality['Scalar']((), 'scalar')
+    def __float__(self) -> float:
+        return float(self.magnitude)
+    # @overload
+    # def __mul__(self, rhs: float) -> Scalar: ...  # @UnusedVariable
+    # # @overload
+    # # def __mul__(self, rhs: Time) -> Time: ...  # @UnusedVariable
+    # @overload
+    # def __mul__(self, rhs: Quantity) -> Quant: ...  # @UnusedVariable
+    # @overload
+    # def __mul__(self, rhs: UnitExpr) -> Quant: ...  # @UnusedVariable
+    # def __mul__(self, rhs):
+    #     return super().__mul__(rhs)    
+    
+Scalar._dim.quant_class = Scalar
+
 
 class Mass(BaseDim['Mass']): ...
     
@@ -26,6 +46,16 @@ class Distance(BaseDim['Distance']): ...
     # class DistanceUnit(Unit['Distance'], DistanceUnitExpr):
     #     ...
 
+    # @overload
+    # def __mul__(self, rhs: float) -> Distance: ...  # @UnusedVariable
+    # @overload
+    # def __mul__(self, rhs: Distance) -> Area: ...  # @UnusedVariable
+    # @overload
+    # def __mul__(self, rhs: Quant) -> Quant: ...  # @UnusedVariable
+    # @overload
+    # def __mul__(self, rhs: UnitExpr) -> Quant: ...  # @UnusedVariable
+    # def __mul__(self, rhs):
+    #     return super().__mul__(rhs)
 
 class Time(BaseDim['Time']): 
     def HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
@@ -37,6 +67,9 @@ class Time(BaseDim['Time']):
     def MS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         from quantities.SI import minutes, seconds
         return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
+    def __rtruediv__(self, lhs: float) -> Frequency:
+        return super().__rtruediv__(lhs).a(Frequency)
+    
 
 class Temperature(BaseDim['Temperature']): ...
 
@@ -81,6 +114,9 @@ class VolumeConcentration(DerivedDim['VolumeConcentration']):
     
 class Frequency(DerivedDim['Frequency']): 
     derived = Scalar.dim()/Time.dim()
+    def __rtruediv__(self, lhs: float) -> Time:
+        return super().__rtruediv__(lhs).a(Time)
+    
 
 class Radioactivity(DerivedDim['Radioactivity']): 
     derived = Scalar.dim()/Time.dim()

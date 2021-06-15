@@ -1,88 +1,61 @@
-from quantities.SI import uL, mL, L, nL, cc, hours, days, minutes, seconds,\
-    meters, liters, m, s
-from quantities.dimensions import Volume
-from quantities.US import pint, qt, acre, ft, fl_oz, gallons, pints, quarts,\
-    cups
+from __future__ import annotations
+from quantities.SI import kg
+from quantities.dimensions import Scalar
 
+s = Scalar(5)
 
-# v : Volume = 25*uL
-#
-# Volume.default_units([mL, cc, uL, pint, qt])
-#
-# print(25*uL)
-# print(1*L)
-# print(20*nL)
-#
-# Volume.default_units((acre*ft).a(Volume))
-#
-# print(25*uL)
-# print(1*L)
-# print(20*nL)
-#
-# print((24*hours).in_units([days]))
-#
-duration = 540*minutes+52.24*seconds
-print(duration.decomposed([seconds, hours, days, minutes], required=[minutes, seconds]))
-# print(duration.decomposed([days, hours, minutes, seconds], required="all"))
-# print(duration.decomposed([days, hours, minutes, seconds]))
-#
-# print(f"|{(meters**2)/seconds:.^20}|")
-# print("------------")
+f: float = float(s)
+print(f)
 
-v = 3*liters
-Volume.default_units([mL, cc, uL, pint, qt])
-# # Volume.default_units((m**3).a(Volume))
-# Volume.default_units(mL)
-#
-print(f"{v:.2f}")
-print(f"|{v:.>20.2f}|")
-print(f"|{v:.<20.2f}|")
-print(f"|{v:.^20.2f}|")
-print(f"|{v:.>20.2f;=<5}|")
-print(f"|{v:20,f}|")
-print(f"|{v:20,f}|")
-print(f"|{v:<20,f}|")
-print(f"|{v:20,.2f}|")
-print(f"|{v:<20,.2f}|")
-print(f"|{v:<20,f;>5}|")
-print(f"|{v:20,f;>5}|")
-print(f"|{v:20,.3f;.>5}|")
-print(f"|{v:*<20,.3f;.>5}|")
-#
-d = (5*L).decomposed([gallons, quarts, pints, cups, fl_oz])
-print(f"{d:0.2f;_}")
-# print(d)
-#
-# print(f"|{d:40f}|")
-# print(f"|{d:.>40f}|")
-# print(f"|{d:.<40f}|")
-# print(f"|{d:.<40.2f}|")
-# print(f"|{d:.<40}|")
-# print(f"|{d:.<40.2}|")
+print(f"{3:.2f}")
 
-# Volume.default_units((m**3).a(Volume))
-# print(f"{v}")
-# print(f"{v:;h}")
-# print(f"{m**3:h}")
-# print(f"{m**3:s}")
-# print(f"{m**3:c}")
-# print(f"{(m**3)/seconds:c}")
+m = 3*kg
+print(type(s))
+print(type(m))
+print(type(s*m))
+
+# D = TypeVar('D', bound='Quant')
+# class Quant(Generic[D]):
+#     @overload
+#     def __mul__(self, rhs: int) -> D: ...
+#     @overload
+#     def __mul__(self, rhs: Quant) -> Quant: ...
+#     def __mul__(self, rhs): ...
+#
+#     def __rmul__(self, lhs: int) -> D: ...
+#
+# class Dist(Quant['Dist']):
+#     @overload
+#     def __mul__(self, rhs: int) -> Dist: ...
+#     # @overload
+#     # def __mul__(self, rhs: Dist) -> Area: ...
+#     @overload
+#     def __mul__(self, rhs: Quant) -> Quant: ...
+#     def __mul__(self, rhs): 
+#         return super().__mul__(rhs)
+#
+# class Area(Quant['Area']): ...
+    
+# class Quant:
+#     @overload
+#     def __mul__(self:D , rhs: int) -> D: ...
+#     @overload
+#     def __mul__(self, rhs: Quant) -> Quant: ...
+#     def __mul__(self, rhs): ...
+#
+#     def __rmul__(self: D, lhs: int) -> D: ...
+#
+# class Dist(Quant):
+#     @overload
+#     def __mul__(self, rhs: int) -> Dist: ...
+#     @overload
+#     def __mul__(self, rhs: Dist) -> Area: ...
+#     @overload
+#     def __mul__(self, rhs: Quant) -> Quant: ...
+#     def __mul__(self, rhs): 
+#         return super().__mul__(rhs)
 #
 #
+# class Area(Quant): ...
 #
-# print(f"{v/(2*s):.4f;c}")
-# print(f"{m**3:h}")
-# print(f"{v:.3f;p-}")
 
-
-print(f"{v:.2f}")
-print(f"{v:.2f; }")
-print(f"{v:.2f;-}")
-print(f"{v:.2f;_}")
-print(f"{v:.2f;=}")
-
-t = 4*hours+5*minutes+4.23561*seconds
-print(t.HMS())
-print(t.HM())
-print(t.MS())
-print(f"{t.HMS():.0}")
