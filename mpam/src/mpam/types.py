@@ -34,6 +34,9 @@ class OnOff(Enum):
 Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]
 
 class Dir(Enum):
+    _ignore_ = ["_opposites"]
+    _opposites: ClassVar[Mapping[Dir, Dir]]
+    
     NORTH = auto()
     N = NORTH
     NORTHEAST = auto()
@@ -55,6 +58,24 @@ class Dir(Enum):
     DOWN = SOUTH
     LEFT = WEST
     RIGHT = EAST
+    
+    @classmethod
+    def cardinals(cls) -> Sequence[Dir]:
+        return (Dir.N, Dir.S, Dir.E, Dir.W)
+    
+    def opposite(self) -> Dir:
+        return self._opposites[self]
+    
+Dir._opposites = {
+        Dir.N: Dir.S,
+        Dir.NE: Dir.SW,
+        Dir.E: Dir.W,
+        Dir.SE: Dir.NW,
+        Dir.S: Dir.N,
+        Dir.SW: Dir.NE,
+        Dir.W: Dir.E,
+        Dir.NW: Dir.SE
+    }
 
 
 class XYCoord:
@@ -814,6 +835,8 @@ class Mixture(Reagent):
     def find_or_compute(cls, r1: Reagent, r2: Reagent, *, 
                         ratio: float = 1,
                         name: Optional[str] = None) -> Reagent:
+        if r1 is r2:
+            return r1
         known = cls._known_mixtures
         with cls._class_lock:
             r = known.get((ratio, r1, r2), None)
@@ -869,8 +892,9 @@ class Liquid:
     @volume.setter
     def volume(self, new: Volume) -> None:
         old = self._volume
-        self._volume = new
-        self.volume_change_callbacks.process(old, new)
+        if old is not new:
+            self._volume = new
+            self.volume_change_callbacks.process(old, new)
         
     @property
     def reagent(self) -> Reagent:
@@ -879,8 +903,9 @@ class Liquid:
     @reagent.setter
     def reagent(self, new: Reagent) -> None:
         old = self._reagent
-        self._reagent = new
-        self.reagent_change_callbacks.process(old, new)
+        if old is not new:
+            self._reagent = new
+            self.reagent_change_callbacks.process(old, new)
     
     def __init__(self, reagent: Reagent, volume: Volume, *, inexact: bool = False) -> None:
         self._reagent = reagent
@@ -931,6 +956,36 @@ class Liquid:
             ratio = my_v.ratio(their_v)
             r = Mixture.find_or_compute(my_r, their_r, ratio=ratio, name=result)
         return Liquid(reagent=r, volume=v, inexact=self.inexact or other.inexact)
+    
+    def mix_in(self, other: Liquid, *, result: Optional[Union[Reagent, str]] = None) -> None:
+        my_v = self.volume
+        my_r = self.reagent
+        their_v = other.volume
+        their_r = other.reagent
+        
+        v = my_v + their_v
+        if isinstance(result, Reagent):
+            r = result
+        elif my_r is their_r:
+            r = my_r
+        elif my_r is waste_reagent or their_r is waste_reagent:
+            r = waste_reagent if result is None else Reagent.find(result)
+        else:
+            ratio = my_v.ratio(their_v)
+            r = Mixture.find_or_compute(my_r, their_r, ratio=ratio, name=result)
+        self.reagent = r
+        self.inexact = self.inexact or other.inexact
+        self.volume = v
+        other.reagent = r
+        other.inexact = False
+        other.volume = Volume.ZERO()
+        
+    def split_to(self, other: Liquid) -> None:
+        other.reagent = self.reagent
+        other.inexact = self.inexact
+        v = self.volume/2
+        self.volume = v
+        other.volume = v
     
     def processed(self, step: Union[str, ProcessStep], 
                   new_composition_function: Optional[Callable[[ChemicalComposition], ChemicalComposition]] = None) -> Liquid:

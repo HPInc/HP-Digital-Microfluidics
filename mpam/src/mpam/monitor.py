@@ -12,7 +12,7 @@ from matplotlib.patches import Rectangle, Circle, PathPatch, Patch
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
     ColorAllocator, Liquid
 from matplotlib.text import Annotation
-from mpam.drop import Drop
+from mpam.drop import Drop, DropStatus
 import math
 from quantities.dimensions import Volume, Time
 from threading import RLock, Event
@@ -171,10 +171,11 @@ class PadMonitor(object):
             y = square.get_y()
             circle.set_visible(True)
             circle.set_center((x+0.5*w, y+0.5*w))
-        if old is not None and not old.exists:
+        if old is not None and old.status is not DropStatus.ON_BOARD:
             dm = self.board_monitor.drop_monitor(old)
             dm.shape.set_visible(False)
-            del self.board_monitor.drop_map[old]
+            if old.status is not DropStatus.IN_MIX:
+                del self.board_monitor.drop_map[old]
     
 class DropMonitor:
     drop: Final[Drop]

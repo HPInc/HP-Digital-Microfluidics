@@ -129,7 +129,9 @@ class Pad(BinaryComponent['Pad']):
     _pads: Final[PadArray]
     _drop: Optional[Drop]
     _dried_liquid: Optional[Drop]
-    _neighbors: Optional[Sequence[Pad]]
+    _neighbors: Optional[Sequence[Pad]] = None
+    _all_neighbors: Optional[Sequence[Pad]] = None
+    _between_pads: Optional[Mapping[Pad,Pad]] = None
     _well: Optional[Well] = None
     _magnet: Optional[Magnet] = None
     _heater: Optional[Heater] = None
@@ -176,11 +178,29 @@ class Pad(BinaryComponent['Pad']):
     
     @property
     def neighbors(self) -> Sequence[Pad]:
-        ns = getattr(self, '_neighbors', None)
+        ns = self._neighbors
         if ns is None:
-            ns = [self.neighbor(d) for d in Dir if self.neighbor(d)]
+            ns = [n for d in (Dir.N,Dir.S,Dir.E,Dir.W) if (n := self.neighbor(d)) is not None]
             self._neighbors = ns
         return ns
+
+    @property
+    def all_neighbors(self) -> Sequence[Pad]:
+        ns = self._all_neighbors
+        if ns is None:
+            ns = [n for d in Dir if (n := self.neighbor(d)) is not None]
+            self._neighbors = ns
+        return ns
+    
+    @property
+    def between_pads(self) -> Mapping[Pad, Pad]:
+        bps: Optional[Mapping[Pad,Pad]] = getattr(self, '_between_pads', None)
+        if bps is None:
+            bps = {p: m for d in Dir.cardinals() 
+                   if (m := self.neighbor(d)) is not None 
+                        and (p := m.neighbor(d)) is not None}
+            self._between_pads = bps
+        return bps
     
     def __init__(self, loc: XYCoord, board: Board, *, exists: bool = True) -> None:
         BinaryComponent.__init__(self, board, initial_state=OnOff.OFF, live=exists)
@@ -206,7 +226,7 @@ class Pad(BinaryComponent['Pad']):
         return self.drop is None
     
     def safe(self) -> bool:
-        return self.empty and all(map(lambda n : n.empty, self.neighbors))
+        return self.empty and all(map(lambda n : n.empty, self.all_neighbors))
     
     def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
         self._drop_change_callbacks.add(cb, key=key)
