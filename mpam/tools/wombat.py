@@ -11,7 +11,7 @@ from mpam.device import System, Pad, Well, Heater, Magnet
 from devices.wombat import Board
 from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
     XYCoord, Operation, StaticOperation, RunMode, Reagent
-from mpam.drop import Drop
+from mpam.drop import Drop, Mix2
 from quantities.temperature import TemperaturePoint, abs_C
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
@@ -90,7 +90,7 @@ class Task:
     
     @classmethod
     def fmt_time(self, t: Time) -> str:
-        return t.decomposed((days, hr, minutes, secs))
+        return str(t.decomposed((days, hr, minutes, secs)))
     
     @classmethod
     def add_common_args(cls, parser: ArgumentParser) -> None:
@@ -430,6 +430,51 @@ class WombatTest(Task):
             Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
 
 
+class Mix(Task):
+    @classmethod
+    def add_task_args(cls, subparsers: _SubParsersAction):
+        desc = "Dispense two drops, walk them out and mix them together"
+        parser = subparsers.add_parser("mix", 
+                                       help=desc, description=desc
+                                       )
+        group = parser.add_argument_group(title="task-specific options")
+        group.add_argument('--shuttles', type=int, metavar='INT', default=0,
+                            help="The number of extra shuttles to perform.  Default is zero.")
+        cls.add_common_args(parser)
+        parser.set_defaults(task=Mix())
+        
+    def run(self, board: Board, system: System, args: Namespace) -> None:
+        well1 = board.wells[2]
+        well2 = board.wells[3]
+        r1 = Reagent("R1")
+        r2 = Reagent("R2")
+        
+        well1.contains(Liquid(r1, well1.capacity))
+        well2.contains(Liquid(r2, well2.capacity))
+        
+        system.clock.start(args.clock_speed)
+        seq1 = Drop.DispenseFrom(well1) \
+                .then(Drop.Move(Dir.RIGHT, steps=2)) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT, steps=10)) \
+                .then(Drop.Mix(Mix2(Dir.DOWN), n_shuttles=args.shuttles)) \
+                .then(Drop.Move(Dir.RIGHT, steps=5)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT)) \
+                .then(Drop.EnterWell)
+                
+        seq2 = Drop.DispenseFrom(well2) \
+                .then(Drop.Move(Dir.RIGHT, steps=2)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT, steps=10)) \
+                .then(Drop.InMix) \
+                .then(Drop.Move(Dir.RIGHT, steps=5)) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT)) \
+                .then(Drop.EnterWell)
+        with system.batched():
+            seq1.schedule()
+            seq2.schedule()
 
 
 def make_arg_parser() -> ArgumentParser:
@@ -442,6 +487,7 @@ def make_arg_parser() -> ArgumentParser:
     DisplayOnly.add_task_args(subparsers)
     WalkPath.add_task_args(subparsers)
     WombatTest.add_task_args(subparsers)
+    Mix.add_task_args(subparsers)
 
     return parser
         

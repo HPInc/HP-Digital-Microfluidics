@@ -58,4 +58,4 @@ print(type(s*m))
 #
 # class Area(Quant): ...
 #
-
+print(1/0)

@@ -3,13 +3,14 @@ from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
     StaticOperation, Reagent, Callback, waste_reagent
 from mpam.device import Pad, Board, Well, WellGroup, WellState
-from mpam.exceptions import NoSuchPad, NotAtWell
-from typing import Optional, Final, Union, Sequence, Callable, Mapping
+from mpam.exceptions import NoSuchPad, NotAtWell, MPAMError
+from typing import Optional, Final, Union, Sequence, Callable, Mapping, ClassVar
 from quantities.SI import uL
 from threading import Lock
 from quantities.dimensions import Volume
 from enum import Enum, auto
 from mpam.engine import ClockCallback
+import math
 
 class DropStatus(Enum):
     ON_BOARD = auto()
@@ -18,8 +19,21 @@ class DropStatus(Enum):
 
 class Drop(OpScheduler['Drop']):
     liquid: Liquid
-    pad: Pad
+    _pad: Pad
     status: DropStatus
+    
+    @property
+    def pad(self) -> Pad:
+        return self._pad
+    
+    @pad.setter
+    def pad(self, pad: Pad) -> None:
+        old = self._pad
+        # assert?
+        if old.drop is self:
+            old.drop = None
+        self._pad = pad
+        pad.drop = self
     
     @property
     def volume(self) -> Volume:
@@ -36,7 +50,7 @@ class Drop(OpScheduler['Drop']):
     def __init__(self, pad: Pad, liquid: Liquid) -> None:
         assert pad.drop is None, f"Trying to create a second drop at {pad}"
         self.liquid = liquid
-        self.pad = pad
+        self._pad = pad
         self.status = DropStatus.ON_BOARD 
         pad.drop = self
         
@@ -284,9 +298,7 @@ class Drop(OpScheduler['Drop']):
             assert from_pad.drop is self, f"Moved {self}, but thought it was at {from_pad}"
             assert to_pad.drop is None, f"Moving {self} to non-empty {to_pad}"
             # print(f"Moved drop from {from_pad} to {to_pad}")
-            from_pad.drop = None
             self.pad = to_pad
-            to_pad.drop = self
             # print(f"Drop now at {to_pad}")
         return fn
     
@@ -316,16 +328,27 @@ class Drop(OpScheduler['Drop']):
             board.before_tick(before_tick, delta=mode.gated_delay(after))
             return future
 
+class MixSequenceStep:
+    def schedule(self, shuttle_no: int, mergep: bool, 
+                 drops: Sequence[Drop], 
+                 pads: Sequence[Pad]) -> Mapping[Drop, float]:
+        raise NotImplementedError()
+    
+MixSequence = Sequence[Sequence[MixSequenceStep]]
+        
 
 class MixInstance:
     mix_type: Final[MixingType]
     tolerance: Final[float]
     result: Final[Optional[Reagent]]
     n_shuttles: Final[int]
+    drops: Final[list[Optional[Drop]]]
+    pad_indices: Final[Mapping[Pad, int]]
     futures: Final[dict[Drop, Delayed[Drop]]]
     full_mix: Final[set[Drop]]
     secondary_locs: Final[Sequence[Pad]]
     board: Final[Board]
+    script: Final[MixSequence]
     pending_drops: int
     
     global_lock: Final[Lock] = Lock()
@@ -334,7 +357,8 @@ class MixInstance:
                  op: Drop.Mix,
                  lead_drop: Drop,
                  lead_future: Delayed[Drop],
-                 secondary_locs: Sequence[Pad]
+                 secondary_locs: Sequence[Pad],
+                 script: MixSequence
                  ) -> None:
         self.mix_type = op.mix_type
         self.tolerance = op.tolerance
@@ -344,6 +368,10 @@ class MixInstance:
         self.full_mix = { lead_drop }
         self.secondary_locs = secondary_locs
         self.board = lead_drop.pad.board
+        self.script = script
+        self.drops = [None] * (len(secondary_locs)+1)
+        self.drops[0] = lead_drop
+        self.pad_indices = { p: i+1 for i,p in enumerate(secondary_locs)}
         
     def install(self) -> bool:
         pending_drops = 0
@@ -358,6 +386,7 @@ class MixInstance:
                     d = p.drop
                     assert d is not None
                     self.futures[d] = t[0]
+                    self.drops[self.pad_indices[p]] = d
                     if t[1]:
                         self.full_mix.add(d)
             if pending_drops > 0:
@@ -377,6 +406,7 @@ class MixInstance:
             else:
                 setattr(p, "_mix_waiting", None)
                 inst.futures[drop] = future
+                inst.drops[inst.pad_indices[p]] = drop
                 if fully_mixed:
                     inst.full_mix.add(drop)
                 inst.pending_drops -= 1
@@ -384,116 +414,59 @@ class MixInstance:
         if ready:
             inst.run()
                
-    def stepper(self) -> ClockCallback:
-        raise NotImplementedError()
-    
     def run(self) -> None: 
-        cb = self.stepper()
+        script = self.script
+        unsatisfied = self.full_mix.copy()
+        tolerances = {d: self.tolerance if d in unsatisfied else math.inf for d in self.futures}
+        def checked(d: Optional[Drop]) -> Drop:
+            assert d is not None
+            return d
+        drops = tuple(checked(d) for d in self.drops)
+        drop_pads = tuple(d.pad for d in drops)
+        error = {d: math.inf for d in drops}
+        s = 0
+        n_shuttles = self.n_shuttles
+        shuttle = 0
+        mergep = True
+        one_tick = 1*tick
+        
+        # TODO: This should almost certainly be a generator
+        def cb() -> Optional[Ticks]:
+            nonlocal s, shuttle, mergep, drop_pads
+            step = script[s]
+            for action in step:
+                e = action.schedule(shuttle, mergep, drops, drop_pads)
+                error.update(e)
+            for d in unsatisfied.copy():
+                if error[d] <= tolerances[d]:
+                    unsatisfied.remove(d)
+            if mergep:
+                mergep = False
+            else:
+                mergep = True
+                shuttle += 1
+                if shuttle > n_shuttles:
+                    if unsatisfied:
+                        s += 1
+                        shuttle = 0
+                        drop_pads = tuple(d.pad for d in drops)
+                        if s == len(script):
+                            min_tolerance = min(tolerances[d] for d in unsatisfied)
+                            min_error = min(error[d] for d in unsatisfied)
+                            n = len(drops)
+                            raise MPAMError(f"""Requested driving error to {min_tolerance} in {n}-way mix.  
+                                            Could only get to {min_error} on at least one drop""")
+                    else:
+                        self.schedule_post()
+                        return None
+            return one_tick
+            
         # We're inside a before_tick, so we run the first step here.  Then we install
         # the callback before the next tick to do the rest
         after_first = cb()
         assert after_first is not None
         self.board.before_tick(cb)
-        
-    def pairwise_merge(self, pad1: Pad, middle: Pad, pad2: Pad, *,
-                       result: Optional[Reagent] = None) -> None:
-        drop1 = pad1.drop
-        assert drop1 is not None
-        drop2 = pad2.drop
-        assert drop2 is not None
-
-        l1 = drop1.liquid
-        l2 = drop2.liquid
-        real_drop1 = drop1
-        real_drop2 = drop2
-        def update(_) -> None:
-            real_drop2.status = DropStatus.IN_MIX
-            l1.mix_in(l2, result=result)
-            
-            pad1.drop = None
-            pad2.drop = None 
-            real_drop1.pad = middle 
-            middle.drop = real_drop1
-            setattr(middle, "_stashed_drop", real_drop2)
-        
-        pad1.schedule(Pad.TurnOff, post_result=False)
-        pad2.schedule(Pad.TurnOff, post_result=False)
-        middle.schedule(Pad.TurnOn).then_call(update)
-        
-    def pairwise_split(self, pad1: Pad, middle: Pad, pad2: Pad) -> None:
-        drop1 = middle.drop
-        assert drop1 is not None
-        drop2 = getattr(middle, "_stashed_drop")
-        assert drop2 is not None
-
-        l1 = drop1.liquid
-        l2 = drop2.liquid
-        real_drop1 = drop1
-        real_drop2 = drop2
-        def update(_) -> None:
-            l1.split_to(l2)
-            real_drop2.status = DropStatus.ON_BOARD
-            pad1.drop = real_drop1
-            real_drop1.pad = pad1
-            pad2.drop = real_drop2
-            real_drop2.pad = pad2
-            middle.drop = None
-            setattr(middle, "_stashed_drop", None)
-        
-        pad1.schedule(Pad.TurnOff, post_result=False)
-        pad2.schedule(Pad.TurnOff, post_result=False)
-        middle.schedule(Pad.TurnOn).then_call(update)
-        
-    class Step:
-        def run(self, shuttle_no: int, mergep: bool, drops: Sequence[Drop]) -> Mapping[Drop, float]:
-            raise NotImplementedError()
-        
-    class MixStep:
-        d1_index: Final[int]
-        d2_index: Final[int]
-        error: Final[float]
-        def __init__(self, drop1: int, drop2: int, error: float) -> None:
-            self.d1_index = drop1
-            self.d2_index = drop2
-            self.error = error
-            
-                
-        def run(self, shuttle_no: int, mergep: bool, drops: Sequence[Drop]) -> Mapping[Drop, float]:  # @UnusedVariable
-            drop1 = drops[self.d1_index]
-            drop2 = drops[self.d2_index]
-            pad1 = drop1.pad
-            pad2 = drop2.pad
-            middle = pad1.between_pads[pad2]
-            l1 = drop1.liquid
-            l2 = drop2.liquid
-            if mergep:
-                def update(_) -> None:
-                    drop2.status = DropStatus.IN_MIX
-                    l1.mix_in(l2)
-                    pad1.drop = None
-                    pad2.drop = None
-                    drop1.pad = middle
-                    middle.drop = drop1
-                pad1.schedule(Pad.TurnOff, post_result = False)
-                pad2.schedule(Pad.TurnOff, post_result = False)
-                middle.schedule(Pad.TurnOn).then_call(update)
-            else:
-                def update(_) -> None:
-                    l1.split_to(l2)
-                    drop2.status = DropStatus.ON_BOARD
-                    pad1.drop = drop1
-                    drop1.pad = pad1
-                    pad2.drop = drop2
-                    drop2.pad = pad2
-                    middle.drop = None
-                pad1.schedule(Pad.TurnOn, post_result = False)
-                pad2.schedule(Pad.TurnOn, post_result = False)
-                middle.schedule(Pad.TurnOff).then_call(update)
-            e = self.error
-            return {drop1: e, drop2: e}
-                
-                
-        
+    
     def schedule_post(self) -> None:
         def do_post() -> None:
             result = self.result
@@ -505,71 +478,119 @@ class MixInstance:
                     drop.reagent = waste_reagent
                 future.post(drop)
         self.board.after_tick(do_post)
+        
+class MixStep(MixSequenceStep):
+    d1_index: Final[int]
+    d2_index: Final[int]
+    error: Final[float]
+    def __init__(self, drop1: int, drop2: int, error: float) -> None:
+        self.d1_index = drop1
+        self.d2_index = drop2
+        self.error = error
+        
+            
+    def schedule(self, shuttle_no: int,  # @UnusedVariable
+                 mergep: bool, 
+                 drops: Sequence[Drop],
+                 pads: Sequence[Pad]) -> Mapping[Drop, float]:  
+        drop1 = drops[self.d1_index]
+        drop2 = drops[self.d2_index]
+        pad1 = pads[self.d1_index]
+        pad2 = pads[self.d2_index]
+        middle = pad1.between_pads[pad2]
+        l1 = drop1.liquid
+        l2 = drop2.liquid
+        if mergep:
+            def update(_) -> None:
+                drop2.status = DropStatus.IN_MIX
+                l1.mix_in(l2)
+                pad2.drop = None
+                drop1.pad = middle
+            pad1.schedule(Pad.TurnOff, post_result = False)
+            pad2.schedule(Pad.TurnOff, post_result = False)
+            middle.schedule(Pad.TurnOn).then_call(update)
+        else:
+            def update(_) -> None:
+                l1.split_to(l2)
+                drop2.status = DropStatus.ON_BOARD
+                drop1.pad = pad1
+                pad2.drop = drop2
+            pad1.schedule(Pad.TurnOn, post_result = False)
+            pad2.schedule(Pad.TurnOn, post_result = False)
+            middle.schedule(Pad.TurnOff).then_call(update)
+        e = self.error
+        return {drop1: e, drop2: e}
+                 
 
 class MixingType:
+    script: Final[MixSequence]
+    
+    def __init__(self, script: MixSequence):
+        self.script = script
     def start_mix(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> None:
         inst = self.new_instance(op, lead_drop, future)
         if inst.install():
             inst.run()
+            
+    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:
+        raise NotImplementedError()
     
     def new_instance(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> MixInstance:
-        raise NotImplementedError()
-
+        secondary = self.secondary_pads(lead_drop) 
+        return MixInstance(op, lead_drop, future, secondary, self.script)
+    
 class Mix2(MixingType):
     to_second: Final[Dir]
     
+    the_script: Final[ClassVar[MixSequence]] = (
+        (MixStep(0,1,0.0),)
+        ,)
+
     def __init__(self, to_second: Dir) -> None:
+        super().__init__(Mix2.the_script)
         self.to_second = to_second
         
-    def new_instance(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> MixInstance:
-        return self.Inst(op, lead_drop, future, self.to_second)
-    
+    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
+        direction = self.to_second
+        p1 = lead_drop.pad
+        m = p1.neighbor(direction)
+        assert m is not None
+        p2 = m.neighbor(direction)
+        assert p2 is not None
+        return (p2,)
 
-    class Inst(MixInstance):
-        lead_pad: Final[Pad]
-        other_pad: Final[Pad]
-        middle_pad: Final[Pad]
-        
-        @staticmethod
-        def pads_to_use(drop: Drop, direction: Dir) -> tuple[Pad,Pad,Pad]:
-            p1 = drop.pad
-            p2 = p1.neighbor(direction)
-            assert p2 is not None and p2.exists
-            p3 = p2.neighbor(direction)
-            assert p3 is not None and p3.exists
-            return (p1, p2, p3)
-        
-        def __init__(self, 
-                     op: Drop.Mix,
-                     lead_drop: Drop,
-                     lead_future: Delayed[Drop],
-                     to_second: Dir
-                     ) -> None:
-            pads = self.pads_to_use(lead_drop, to_second)
-            super().__init__(op, lead_drop, lead_future, (pads[2],))
-            self.lead_pad = pads[0]
-            self.middle_pad = pads[1]
-            self.other_pad = pads[2]
-            
-        def stepper(self) -> ClockCallback:
-            steps_remaining = 2*(self.n_shuttles+1)
-            one_tick = 1*tick
-            pad1 = self.lead_pad            
-            pad2 = self.other_pad
-            middle = self.middle_pad
-            def cb() -> Optional[Ticks]:
-                nonlocal steps_remaining
-                if steps_remaining % 2 == 0:
-                    self.pairwise_merge(pad1, middle, pad2)
-                else:
-                    self.pairwise_split(pad1, middle, pad2)
-                steps_remaining -= 1
-                if steps_remaining == 0:
-                    self.schedule_post()
-                    return None
-                return one_tick
-            return cb
-            
-        
+class Mix3(MixingType):
+    to_second: Final[Dir]
+    to_third: Final[Dir]
     
+    the_script: Final[ClassVar[MixSequence]] = (
+        (MixStep(0,1,math.inf),),
+        (MixStep(1,2,1/1),),        
+        (MixStep(0,1,1/2),),
+        (MixStep(1,2,1/5),),
+        (MixStep(0,1,1/10),),
+        (MixStep(1,2,1/21),),
+        (MixStep(0,1,1/42),),
+        (MixStep(1,2,1/85),),
+        (MixStep(0,1,1/170),),
+        (MixStep(1,2,1/341),),
+        )
 
+    def __init__(self, to_second: Dir, to_third: Dir) -> None:
+        super().__init__(Mix2.the_script)
+        self.to_second = to_second
+        self.to_third = to_third
+        
+    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
+        to_second = self.to_second
+        to_third = self.to_third
+        p1 = lead_drop.pad
+        m = p1.neighbor(to_second)
+        assert m is not None
+        p2 = m.neighbor(to_second)
+        assert p2 is not None
+        m = p2.neighbor(to_third)
+        assert m is not None
+        p3 = m.neighbor(to_third)
+        assert p3 is not None
+        return (p2,p3)
