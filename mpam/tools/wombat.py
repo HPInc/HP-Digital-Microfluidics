@@ -10,7 +10,7 @@ import re
 from mpam.device import System, Pad, Well, Heater, Magnet
 from devices.wombat import Board
 from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
-    XYCoord, Operation, StaticOperation, RunMode, Reagent
+    XYCoord, Operation, StaticOperation, RunMode, Reagent, tick
 from mpam.drop import Drop, Mix2, Mix3, Mix4
 from quantities.temperature import TemperaturePoint, abs_C
 
@@ -489,9 +489,11 @@ class Mix(Task):
         r2 = Reagent("R2")
         r3 = Reagent("R3")
         
-        well1.contains(Liquid(r1, well1.capacity))
-        well2.contains(Liquid(r2, well2.capacity))
-        well3.contains(Liquid(r3, well3.capacity))
+        drop = board.drop_size.as_unit("drops", singular="drop")
+        
+        well1.contains(Liquid(r1, 1*drop))
+        well2.contains(Liquid(r2, 1*drop))
+        well3.contains(Liquid(r3, 1*drop))
         
         system.clock.start(args.clock_speed)
         seq1 = Drop.DispenseFrom(well1) \
@@ -509,21 +511,17 @@ class Mix(Task):
                 .then(Drop.Move(Dir.UP, steps=2)) \
                 .then(Drop.Move(Dir.RIGHT, steps=10)) \
                 .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=6), after=7*ticks) \
-                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.Move(Dir.RIGHT, steps=6), after=2*ticks) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
                 .then(Drop.EnterWell)
-                # .then(Drop.Move(Dir.RIGHT, steps=5)) \
-                # .then(Drop.Move(Dir.DOWN, steps=2)) \
-                # .then(Drop.Move(Dir.RIGHT)) \
-                # .then(Drop.EnterWell)
                 
         seq3 = Drop.DispenseFrom(well3) \
                 .then(Drop.Move(Dir.LEFT, steps=2)) \
                 .then(Drop.Move(Dir.UP, steps=2)) \
                 .then(Drop.Move(Dir.LEFT, steps=2)) \
                 .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=4), after=5*ticks) \
-                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.Move(Dir.RIGHT, steps=4)) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
                 .then(Drop.EnterWell)
         with system.batched():
             seq1.schedule()
@@ -540,10 +538,12 @@ class Mix(Task):
         r3 = Reagent("R3")
         r4 = Reagent("R4")
         
-        well1.contains(Liquid(r1, well1.capacity))
-        well2.contains(Liquid(r2, well2.capacity))
-        well3.contains(Liquid(r3, well3.dispensed_volume))
-        well4.contains(Liquid(r4, well4.capacity))
+        drop = board.drop_size.as_unit("drops", singular="drop")
+
+        well1.contains(Liquid(r1, 1*drop))
+        well2.contains(Liquid(r2, 1*drop))
+        well3.contains(Liquid(r3, 1*drop))
+        well4.contains(Liquid(r4, 1*drop))
         
         system.clock.start(args.clock_speed)
         seq1 = Drop.DispenseFrom(well1) \
@@ -551,7 +551,7 @@ class Mix(Task):
                 .then(Drop.Move(Dir.DOWN, steps=2)) \
                 .then(Drop.Move(Dir.RIGHT, steps=10)) \
                 .then(Drop.Mix(Mix4(Dir.DOWN, Dir.RIGHT), n_shuttles=args.shuttles)) \
-                .then(Drop.Move(Dir.RIGHT, steps=5), after=2*ticks) \
+                .then(Drop.Move(Dir.RIGHT, steps=5), after=1*tick) \
                 .then(Drop.Move(Dir.UP, steps=2)) \
                 .then(Drop.Move(Dir.RIGHT)) \
                 .then(Drop.EnterWell)
@@ -561,8 +561,8 @@ class Mix(Task):
                 .then(Drop.Move(Dir.UP, steps=2)) \
                 .then(Drop.Move(Dir.RIGHT, steps=10)) \
                 .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=6), after=6*ticks) \
-                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.Move(Dir.RIGHT, steps=6), after=3*ticks) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
                 .then(Drop.EnterWell)
                 
         seq3 = Drop.DispenseFrom(well3) \
@@ -570,7 +570,7 @@ class Mix(Task):
                 .then(Drop.Move(Dir.LEFT, steps=4)) \
                 .then(Drop.InMix(fully_mixed = args.full)) \
                 .then(Drop.Move(Dir.RIGHT, steps=4)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.DOWN, steps=4)) \
                 .then(Drop.EnterWell)
 
         seq4 = Drop.DispenseFrom(well4) \
@@ -578,8 +578,8 @@ class Mix(Task):
                 .then(Drop.Move(Dir.UP, steps=2)) \
                 .then(Drop.Move(Dir.LEFT, steps=2)) \
                 .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=4), after=4*ticks) \
-                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.Move(Dir.RIGHT, steps=4)) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
                 .then(Drop.EnterWell)
 
         with system.batched():

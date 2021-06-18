@@ -723,6 +723,10 @@ class Reagent:
         return ((self, 1),)
     
     @property
+    def is_pure(self) -> bool:
+        return len(self.mixture) == 1
+    
+    @property
     def process_steps(self) -> tuple[ProcessStep, ...]:
         return ()
     
@@ -776,7 +780,7 @@ unknown_reagent: Final[Reagent] = Reagent.find("unknown")
 class Mixture(Reagent):
     _mixture: Final[MixtureSpec]
     _class_lock: Final[ClassVar[Lock]] = Lock()
-    _known_mixtures: Final[dict[tuple[float,Reagent,Reagent], Reagent]] = {}
+    _known_mixtures: Final[ClassVar[dict[tuple[float,Reagent,Reagent], Reagent]]] = {}
     _instances: Final[ClassVar[dict[MixtureSpec, Mixture]]] = {}
     
     def __init__(self, name: str, mixture: MixtureSpec, *, 
@@ -842,7 +846,7 @@ class Mixture(Reagent):
             r = known.get((ratio, r1, r2), None)
             if r is not None:
                 return r
-            r = known.get((1/ratio, r2, r2))
+            r = known.get((1/ratio, r2, r1))
             if r is not None:
                 return r
             r = cls.new_mixture(r1, r2, ratio, name=name)

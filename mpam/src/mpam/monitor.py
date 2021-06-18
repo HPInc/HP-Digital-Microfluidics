@@ -8,7 +8,7 @@ from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 from matplotlib import pyplot
-from matplotlib.patches import Rectangle, Circle, PathPatch, Patch
+from matplotlib.patches import Rectangle, Circle, PathPatch, Patch, Wedge
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
     ColorAllocator, Liquid
 from matplotlib.text import Annotation
@@ -163,48 +163,145 @@ class PadMonitor(object):
     def note_drop_change(self, old: Optional[Drop], new: Optional[Drop]) -> None:
         # print(f"{self.pad}'s drop changed from {old} to {new}")
         if new is not None:
-            dm = self.board_monitor.drop_monitor(new)
-            circle = dm.shape
             square = self.square
             w = square.get_width()
             x = square.get_x()
             y = square.get_y()
-            circle.set_visible(True)
-            circle.set_center((x+0.5*w, y+0.5*w))
+            dm = self.board_monitor.drop_monitor(new)
+            dm.circle.center = (x+0.5*w, y+0.5*w)
+            dm.circle.visible = True
         if old is not None and old.status is not DropStatus.ON_BOARD:
             dm = self.board_monitor.drop_monitor(old)
-            dm.shape.set_visible(False)
+            dm.circle.visible = False
             if old.status is not DropStatus.IN_MIX:
                 del self.board_monitor.drop_map[old]
+                
+class ReagentCircle:
+    board_monitor: Final[BoardMonitor]
+    _center: tuple[float,float]
+    _radius: float
+    _reagent: Optional[Reagent]
+    _visible: bool
+    slices: Final[list[Wedge]]
+    alpha: Final[float]
+    
+    @property
+    def visible(self) -> bool:
+        return self._visible
+    
+    @visible.setter
+    def visible(self, val: bool) -> None:
+        self._visible = val
+        for s in self.slices:
+            s.set_visible(val)
+    
+    @property
+    def center(self) -> tuple[float,float]:
+        return self._center
+    
+    @center.setter
+    def center(self, val: tuple[float,float]) -> None:
+        self._center = val
+        for s in self.slices:
+            s.set_center(val)
+    
+    @property
+    def radius(self) -> float:
+        return self._radius
+    
+    @radius.setter
+    def radius(self, val: float) -> None:
+        self._radius = val
+        for s in self.slices:
+            s.set_radius(val)
+    
+    @property
+    def reagent(self) -> Optional[Reagent]:
+        return self._reagent
+    
+    @reagent.setter
+    def reagent(self, val: Optional[Reagent]) -> None:
+        slices = self.slices
+        if len(slices) == 1 and val is not None and val.is_pure:
+            # If we've got a whole circle and we want a whole circle, we can just change the color
+            color = self.board_monitor.reagent_color(val)
+            slices[0].set_facecolor(color.rgba)
+            return
+        for s in slices:
+            s.set_visible(False)
+            s.remove()
+        slices.clear()
+        bm = self.board_monitor
+        plot = bm.plot
+        center = self.center
+        radius = self.radius
+        alpha = self.alpha
+        visible = self.visible
+        if val is None:
+            s = Wedge(center, radius, 0, 360, 
+                      facecolor = "white",
+                      edgecolor = 'black',
+                      alpha = alpha,
+                      visible = visible)
+        else:
+            start = 0.0
+            for r,f in val.mixture:
+                portion = f*360.0
+                end = start+portion
+                color = bm.reagent_color(r)
+                s = Wedge(center, radius, start, end,
+                          facecolor = color.rgba,
+                          edgecolor = 'black',
+                          alpha = alpha,
+                          visible = visible)
+                slices.append(s)
+                plot.add_patch(s) 
+                start = end
+        
+    
+    def __init__(self, reagent: Optional[Reagent], *,
+                 center: tuple[float,float],
+                 radius: float,
+                 board_monitor: BoardMonitor,
+                 alpha: float = 0.5,
+                 visible: bool = False):
+        self.board_monitor = board_monitor
+        self.slices = []
+        self._visible = visible
+        self._center = center
+        self._radius = radius
+        self.alpha = alpha
+        self.reagent = reagent
+        
+    
     
 class DropMonitor:
     drop: Final[Drop]
     board_monitor: Final[BoardMonitor]
-    shape: Final[Circle]
+    circle: Final[ReagentCircle]
     
     def __init__(self, drop: Drop, board_monitor: BoardMonitor):
         self.drop = drop
         self.board_monitor = board_monitor
-        pad = drop.pad
-        pm = board_monitor.pads[pad]
-        reagent_color = board_monitor.reagent_color(drop.reagent)
-        self.shape= Circle(pm.center, radius=pm.drop_radius(drop),
-                           facecolor = reagent_color.rgba,
-                           edgecolor = 'black',
-                           alpha = 0.5,
-                           visible=False)
-        board_monitor.plot.add_patch(self.shape)
+        
+        drop = self.drop
+        pm = board_monitor.pads[drop.pad]
+        self.circle = ReagentCircle(drop.reagent, 
+                                    center=pm.center,
+                                    radius=pm.drop_radius(drop),
+                                    board_monitor=board_monitor)
+        self.note_reagent(drop.reagent)
         liquid = drop.liquid
         liquid.on_volume_change(lambda _, new: board_monitor.in_display_thread(lambda: self.note_volume(new)))
         liquid.on_reagent_change(lambda _, new: board_monitor.in_display_thread(lambda: self.note_reagent(new)))
         
     def note_volume(self, _: Volume) -> None:
         pm = self.board_monitor.pads[self.drop.pad]
-        self.shape.set_radius(pm.drop_radius(self.drop))
+        radius = pm.drop_radius(self.drop)
+        self.circle.radius = radius
 
     def note_reagent(self, reagent: Reagent) -> None:
-        color = self.board_monitor.reagent_color(reagent)
-        self.shape.set_facecolor(color.rgba)
+        self.circle.reagent = reagent
         
         
 class WellPadMonitor:
@@ -268,7 +365,7 @@ class WellMonitor:
     board_monitor: Final[BoardMonitor]
     gate_monitor: Final[WellPadMonitor]
     shared_pad_monitors: Final[Sequence[WellPadMonitor]]
-    reagent_circle: Final[Circle]
+    reagent_circle: Final[ReagentCircle]
     # reagent_volume_circle: Final[Circle]
     # volume_rectangle: Final[Rectangle]
     content_description: Final[Annotation]
@@ -295,21 +392,11 @@ class WellMonitor:
                     facecolor='white',
                     alpha=0.5)
         board_monitor.plot.add_patch(rc)
-        self.reagent_circle = rc
-        # rvc = Circle(rc_center, radius = shape.reagent_id_circle_radius,
-        #             edgecolor='none',
-        #             facecolor='white')
-        # board_monitor.plot.add_patch(rvc)
-        # self.reagent_volume_circle = rvc
-        # vr = Rectangle(xy=(rc_center[0]-rc_radius, 
-        #                     rc_center[1]-rc_radius),
-        #                 width=2*rc_radius,
-        #                height=rc_radius,
-        #                facecolor='none',
-        #                edgecolor='none')
-        # board_monitor.plot.add_patch(vr)
-        # rvc.set_clip_path(vr)
-        # self.volume_rectangle=vr
+        self.reagent_circle = ReagentCircle(None, 
+                                            center = rc_center,
+                                            radius = rc_radius,
+                                            board_monitor = board_monitor,
+                                            visible = True)
         well.on_liquid_change(lambda _,new: 
                               board_monitor.in_display_thread(lambda: self.note_liquid(new)))
         cd = board_monitor.plot.annotate(text='This is a test', xy=(0,0),
@@ -325,11 +412,10 @@ class WellMonitor:
         
     def note_liquid(self, liquid: Optional[Liquid]) -> None:
         if liquid is None:
-            self.reagent_circle.set_facecolor('white')
-            # self.reagent_volume_circle.set_facecolor('white')
+            self.reagent_circle.reagent = None
             self.content_description.set_visible(False)
         else:
-            self.reagent_circle.set_facecolor(self.board_monitor.reagent_color(liquid.reagent).rgba)
+            self.reagent_circle.reagent = liquid.reagent
             # self.reagent_volume_circle.set_facecolor(self.board_monitor.reagent_color(liquid.reagent).rgba)
             # fraction: float = liquid.volume.ratio(self.well.capacity)
             # height = 2*fraction*self.reagent_circle.get_radius()
