@@ -516,7 +516,7 @@ class Well(OpScheduler['Well'], BoardComponent):
     @property
     def available(self) -> bool:
         c = self._contents
-        return c is None or c.volume==Volume.ZERO and not c.inexact
+        return c is None or c.volume==Volume.ZERO() and not c.inexact
     
     def __init__(self, *,
                  board: Board,
@@ -567,7 +567,7 @@ class Well(OpScheduler['Well'], BoardComponent):
             volume = liquid.volume
         on_overflow.expect_true(self.remaining_capacity >= volume,
                     lambda : f"Tried to add {volume} to {self}.  Remaining capacity only {self.remaining_capacity}")
-        if self._contents is None:
+        if self._contents is None or self.available:
             self.contents = Liquid(liquid.reagent, volume)
         else:
             r = self._contents.reagent

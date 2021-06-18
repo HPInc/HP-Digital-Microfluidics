@@ -11,7 +11,7 @@ from mpam.device import System, Pad, Well, Heater, Magnet
 from devices.wombat import Board
 from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
     XYCoord, Operation, StaticOperation, RunMode, Reagent
-from mpam.drop import Drop, Mix2, Mix3
+from mpam.drop import Drop, Mix2, Mix3, Mix4
 from quantities.temperature import TemperaturePoint, abs_C
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
@@ -439,7 +439,7 @@ class Mix(Task):
                                        )
         group = parser.add_argument_group(title="task-specific options")
         group.add_argument('-n', '--num-drops', type=int, metavar='INT', default=2,                             
-                           choices=[2,3],
+                           choices=[2,3,4],
                            help="The number of drops to mix.")
         group.add_argument('-f', '--full', action='store_true',  
                             help="Fully mix all drops")
@@ -530,11 +530,73 @@ class Mix(Task):
             seq2.schedule()
             seq3.schedule()
 
+    def run4(self, board: Board, system: System, args: Namespace) -> None:
+        well1 = board.wells[2]
+        well2 = board.wells[3]
+        well3 = board.wells[6]
+        well4 = board.wells[7]
+        r1 = Reagent("R1")
+        r2 = Reagent("R2")
+        r3 = Reagent("R3")
+        r4 = Reagent("R4")
+        
+        well1.contains(Liquid(r1, well1.capacity))
+        well2.contains(Liquid(r2, well2.capacity))
+        well3.contains(Liquid(r3, well3.dispensed_volume))
+        well4.contains(Liquid(r4, well4.capacity))
+        
+        system.clock.start(args.clock_speed)
+        seq1 = Drop.DispenseFrom(well1) \
+                .then(Drop.Move(Dir.RIGHT, steps=2)) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT, steps=10)) \
+                .then(Drop.Mix(Mix4(Dir.DOWN, Dir.RIGHT), n_shuttles=args.shuttles)) \
+                .then(Drop.Move(Dir.RIGHT, steps=5), after=2*ticks) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT)) \
+                .then(Drop.EnterWell)
+                
+        seq2 = Drop.DispenseFrom(well2) \
+                .then(Drop.Move(Dir.RIGHT, steps=2)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT, steps=10)) \
+                .then(Drop.InMix(fully_mixed = args.full)) \
+                .then(Drop.Move(Dir.RIGHT, steps=6), after=6*ticks) \
+                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.EnterWell)
+                
+        seq3 = Drop.DispenseFrom(well3) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
+                .then(Drop.Move(Dir.LEFT, steps=4)) \
+                .then(Drop.InMix(fully_mixed = args.full)) \
+                .then(Drop.Move(Dir.RIGHT, steps=4)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.EnterWell)
+
+        seq4 = Drop.DispenseFrom(well4) \
+                .then(Drop.Move(Dir.LEFT, steps=2)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.LEFT, steps=2)) \
+                .then(Drop.InMix(fully_mixed = args.full)) \
+                .then(Drop.Move(Dir.RIGHT, steps=4), after=4*ticks) \
+                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.EnterWell)
+
+        with system.batched():
+            seq1.schedule()
+            seq2.schedule()
+            seq3.schedule()
+            seq4.schedule()
+
     def run(self, board: Board, system: System, args: Namespace) -> None:
         if args.num_drops == 2:
             self.run2(board, system, args)
         elif args.num_drops == 3:
             self.run3(board, system, args)
+        elif args.num_drops == 4:
+            self.run4(board, system, args)
+        else:
+            raise ValueError(f"Don't know how to do a {args.num_drops}-way mix")
             
 
 

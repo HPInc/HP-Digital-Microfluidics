@@ -12,6 +12,7 @@ from quantities.dimensions import Volume
 from enum import Enum, auto
 from mpam.engine import ClockCallback
 import math
+from erk.stringutils import map_str
 
 class DropStatus(Enum):
     ON_BOARD = auto()
@@ -373,6 +374,7 @@ class MixInstance:
         self.drops = [None] * (len(secondary_locs)+1)
         self.drops[0] = lead_drop
         self.pad_indices = { p: i+1 for i,p in enumerate(secondary_locs)}
+        print(map_str(self.pad_indices))
         
     def install(self) -> bool:
         pending_drops = 0
@@ -497,7 +499,7 @@ class MixStep(MixSequenceStep):
             def update(_) -> None:
                 drop2.status = DropStatus.IN_MIX
                 l1.mix_in(l2)
-                print(f"Merging: now {l1.reagent}.  Error is {self.error}")
+                # print(f"Merging: now {l1.reagent}.  Error is {self.error}")
                 pad2.drop = None
                 drop1.pad = middle
             pad1.schedule(Pad.TurnOff, post_result = False)
@@ -533,6 +535,13 @@ class MixingType:
         secondary = self.secondary_pads(lead_drop) 
         return MixInstance(op, lead_drop, future, secondary, self.script)
     
+    def two_steps_from(self, pad: Pad, direction: Dir) -> Pad:
+        m = pad.neighbor(direction)
+        assert m is not None
+        p = m.neighbor(direction)
+        assert p is not None
+        return p
+    
 class Mix2(MixingType):
     to_second: Final[Dir]
     
@@ -545,12 +554,8 @@ class Mix2(MixingType):
         self.to_second = to_second
         
     def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
-        direction = self.to_second
         p1 = lead_drop.pad
-        m = p1.neighbor(direction)
-        assert m is not None
-        p2 = m.neighbor(direction)
-        assert p2 is not None
+        p2 = self.two_steps_from(p1, self.to_second)
         return (p2,)
 
 class Mix3(MixingType):
@@ -576,15 +581,32 @@ class Mix3(MixingType):
         self.to_third = to_third
         
     def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
-        to_second = self.to_second
-        to_third = self.to_third
         p1 = lead_drop.pad
-        m = p1.neighbor(to_second)
-        assert m is not None
-        p2 = m.neighbor(to_second)
-        assert p2 is not None
-        m = p2.neighbor(to_third)
-        assert m is not None
-        p3 = m.neighbor(to_third)
-        assert p3 is not None
+        p2 = self.two_steps_from(p1, self.to_second)
+        p3 = self.two_steps_from(p2, self.to_third)
         return (p2,p3)
+
+class Mix4(MixingType):
+    to_second: Final[Dir]
+    to_third: Final[Dir]
+    
+    the_script: Final[ClassVar[MixSequence]] = (
+        (MixStep(0,1,math.inf),
+         MixStep(2,3,math.inf)),
+        (MixStep(0,2,0.0),
+         MixStep(1,3,0.0))
+        )
+
+    def __init__(self, to_second: Dir, to_third: Dir) -> None:
+        super().__init__(Mix4.the_script)
+        self.to_second = to_second
+        self.to_third = to_third
+        
+    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
+        p1 = lead_drop.pad
+        p2 = self.two_steps_from(p1, self.to_second)
+        p3 = self.two_steps_from(p1, self.to_third)
+        p4 = self.two_steps_from(p3, self.to_second)
+        return (p2,p3,p4)
+
+
