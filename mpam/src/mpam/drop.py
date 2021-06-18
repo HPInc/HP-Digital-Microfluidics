@@ -4,7 +4,8 @@ from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     StaticOperation, Reagent, Callback, waste_reagent
 from mpam.device import Pad, Board, Well, WellGroup, WellState
 from mpam.exceptions import NoSuchPad, NotAtWell, MPAMError
-from typing import Optional, Final, Union, Sequence, Callable, Mapping, ClassVar
+from typing import Optional, Final, Union, Sequence, Callable, Mapping, ClassVar,\
+    Iterator
 from quantities.SI import uL
 from threading import Lock
 from quantities.dimensions import Volume
@@ -413,8 +414,8 @@ class MixInstance:
                 ready = inst.pending_drops == 0
         if ready:
             inst.run()
-               
-    def run(self) -> None: 
+            
+    def play_script(self) -> Iterator[Optional[Ticks]]:
         script = self.script
         unsatisfied = self.full_mix.copy()
         tolerances = {d: self.tolerance if d in unsatisfied else math.inf for d in self.futures}
@@ -422,50 +423,42 @@ class MixInstance:
             assert d is not None
             return d
         drops = tuple(checked(d) for d in self.drops)
-        drop_pads = tuple(d.pad for d in drops)
-        error = {d: math.inf for d in drops}
-        s = 0
         n_shuttles = self.n_shuttles
-        shuttle = 0
-        mergep = True
+        error = {d: math.inf for d in drops}
         one_tick = 1*tick
-        
-        # TODO: This should almost certainly be a generator
-        def cb() -> Optional[Ticks]:
-            nonlocal s, shuttle, mergep, drop_pads
-            step = script[s]
-            for action in step:
-                e = action.schedule(shuttle, mergep, drops, drop_pads)
-                error.update(e)
-            for d in unsatisfied.copy():
-                if error[d] <= tolerances[d]:
-                    unsatisfied.remove(d)
-            if mergep:
-                mergep = False
-            else:
-                mergep = True
-                shuttle += 1
-                if shuttle > n_shuttles:
+        for step in script:
+            drop_pads = tuple(d.pad for d in drops)
+            for shuttle in range(n_shuttles+1):
+                for mergep in (True, False):
+                    for action in step:
+                        e = action.schedule(shuttle, mergep, drops, drop_pads)
+                        error.update(e)
+                    if not mergep and shuttle == n_shuttles:
+                        for d in unsatisfied.copy():
+                            if error[d] <= tolerances[d]:
+                                unsatisfied.remove(d)
                     if unsatisfied:
-                        s += 1
-                        shuttle = 0
-                        drop_pads = tuple(d.pad for d in drops)
-                        if s == len(script):
-                            min_tolerance = min(tolerances[d] for d in unsatisfied)
-                            min_error = min(error[d] for d in unsatisfied)
-                            n = len(drops)
-                            raise MPAMError(f"""Requested driving error to {min_tolerance} in {n}-way mix.  
-                                            Could only get to {min_error} on at least one drop""")
+                        yield one_tick
                     else:
                         self.schedule_post()
-                        return None
-            return one_tick
-            
+                        yield None
+        min_tolerance = min(tolerances[d] for d in unsatisfied)
+        min_error = min(error[d] for d in unsatisfied)
+        n = len(drops)
+        raise MPAMError(f"""Requested driving error to {min_tolerance} in {n}-way mix.  
+                                        Could only get to {min_error} on at least one drop""")
+        
+    def run(self) -> None: 
+        iterator = self.play_script()
+        
         # We're inside a before_tick, so we run the first step here.  Then we install
         # the callback before the next tick to do the rest
-        after_first = cb()
+        after_first = next(iterator)
         assert after_first is not None
-        self.board.before_tick(cb)
+        self.board.before_tick(lambda: next(iterator))
+
+               
+        
     
     def schedule_post(self) -> None:
         def do_post() -> None:
@@ -504,6 +497,7 @@ class MixStep(MixSequenceStep):
             def update(_) -> None:
                 drop2.status = DropStatus.IN_MIX
                 l1.mix_in(l2)
+                print(f"Merging: now {l1.reagent}.  Error is {self.error}")
                 pad2.drop = None
                 drop1.pad = middle
             pad1.schedule(Pad.TurnOff, post_result = False)
@@ -577,7 +571,7 @@ class Mix3(MixingType):
         )
 
     def __init__(self, to_second: Dir, to_third: Dir) -> None:
-        super().__init__(Mix2.the_script)
+        super().__init__(Mix3.the_script)
         self.to_second = to_second
         self.to_third = to_third
         

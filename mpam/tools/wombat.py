@@ -11,7 +11,7 @@ from mpam.device import System, Pad, Well, Heater, Magnet
 from devices.wombat import Board
 from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
     XYCoord, Operation, StaticOperation, RunMode, Reagent
-from mpam.drop import Drop, Mix2
+from mpam.drop import Drop, Mix2, Mix3
 from quantities.temperature import TemperaturePoint, abs_C
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
@@ -438,12 +438,17 @@ class Mix(Task):
                                        help=desc, description=desc
                                        )
         group = parser.add_argument_group(title="task-specific options")
+        group.add_argument('-n', '--num-drops', type=int, metavar='INT', default=2,                             
+                           choices=[2,3],
+                           help="The number of drops to mix.")
+        group.add_argument('-f', '--full', action='store_true',  
+                            help="Fully mix all drops")
         group.add_argument('--shuttles', type=int, metavar='INT', default=0,
                             help="The number of extra shuttles to perform.  Default is zero.")
         cls.add_common_args(parser)
         parser.set_defaults(task=Mix())
         
-    def run(self, board: Board, system: System, args: Namespace) -> None:
+    def run2(self, board: Board, system: System, args: Namespace) -> None:
         well1 = board.wells[2]
         well2 = board.wells[3]
         r1 = Reagent("R1")
@@ -467,7 +472,7 @@ class Mix(Task):
                 .then(Drop.Move(Dir.RIGHT, steps=2)) \
                 .then(Drop.Move(Dir.UP, steps=2)) \
                 .then(Drop.Move(Dir.RIGHT, steps=10)) \
-                .then(Drop.InMix) \
+                .then(Drop.InMix(fully_mixed = args.full)) \
                 .then(Drop.Move(Dir.RIGHT, steps=5)) \
                 .then(Drop.Move(Dir.DOWN, steps=2)) \
                 .then(Drop.Move(Dir.RIGHT)) \
@@ -475,6 +480,62 @@ class Mix(Task):
         with system.batched():
             seq1.schedule()
             seq2.schedule()
+
+    def run3(self, board: Board, system: System, args: Namespace) -> None:
+        well1 = board.wells[2]
+        well2 = board.wells[3]
+        well3 = board.wells[7]
+        r1 = Reagent("R1")
+        r2 = Reagent("R2")
+        r3 = Reagent("R3")
+        
+        well1.contains(Liquid(r1, well1.capacity))
+        well2.contains(Liquid(r2, well2.capacity))
+        well3.contains(Liquid(r3, well3.capacity))
+        
+        system.clock.start(args.clock_speed)
+        seq1 = Drop.DispenseFrom(well1) \
+                .then(Drop.Move(Dir.RIGHT, steps=2)) \
+                .then(Drop.Move(Dir.DOWN, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT, steps=10)) \
+                .then(Drop.Mix(Mix3(Dir.DOWN, Dir.RIGHT), n_shuttles=args.shuttles)) \
+                .then(Drop.Move(Dir.RIGHT, steps=5)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT)) \
+                .then(Drop.EnterWell)
+                
+        seq2 = Drop.DispenseFrom(well2) \
+                .then(Drop.Move(Dir.RIGHT, steps=2)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.RIGHT, steps=10)) \
+                .then(Drop.InMix(fully_mixed = args.full)) \
+                .then(Drop.Move(Dir.RIGHT, steps=6), after=7*ticks) \
+                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.EnterWell)
+                # .then(Drop.Move(Dir.RIGHT, steps=5)) \
+                # .then(Drop.Move(Dir.DOWN, steps=2)) \
+                # .then(Drop.Move(Dir.RIGHT)) \
+                # .then(Drop.EnterWell)
+                
+        seq3 = Drop.DispenseFrom(well3) \
+                .then(Drop.Move(Dir.LEFT, steps=2)) \
+                .then(Drop.Move(Dir.UP, steps=2)) \
+                .then(Drop.Move(Dir.LEFT, steps=2)) \
+                .then(Drop.InMix(fully_mixed = args.full)) \
+                .then(Drop.Move(Dir.RIGHT, steps=4), after=5*ticks) \
+                .then(Drop.Move(Dir.UP, steps=4)) \
+                .then(Drop.EnterWell)
+        with system.batched():
+            seq1.schedule()
+            seq2.schedule()
+            seq3.schedule()
+
+    def run(self, board: Board, system: System, args: Namespace) -> None:
+        if args.num_drops == 2:
+            self.run2(board, system, args)
+        elif args.num_drops == 3:
+            self.run3(board, system, args)
+            
 
 
 def make_arg_parser() -> ArgumentParser:
