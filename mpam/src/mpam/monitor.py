@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 from matplotlib import pyplot
 from matplotlib.patches import Rectangle, Circle, PathPatch, Patch, Wedge
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
-    ColorAllocator, Liquid
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent
 from matplotlib.text import Annotation
 from mpam.drop import Drop, DropStatus
 import math
@@ -481,7 +481,11 @@ class BoardMonitor:
         padding = 0.2
         self.plot.set_xlim(self.min_x-padding, self.max_x+padding)
         self.plot.set_ylim(self.min_y-padding, self.max_y+padding)
-        self.color_allocator = ColorAllocator[Reagent]()
+        reserved_colors = {
+                unknown_reagent: Color.find("xkcd:violet"),
+                waste_reagent: Color.find("xkcd:black"),
+            }
+        self.color_allocator = ColorAllocator[Reagent](reserved_colors)
 
         for heater in board.heaters:       
             self.setup_heater_poll(heater) 
