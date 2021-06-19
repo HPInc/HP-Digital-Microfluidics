@@ -284,21 +284,22 @@ class Operation(Generic[T, V]):
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
-                      future: Optional[Delayed[V]] = None
                       ) -> Delayed[V]:
         raise NotImplementedError()
     def schedule_for(self, obj: Union[T, Delayed[T]], *,
                      mode: RunMode = RunMode.GATED, 
                      after: Optional[DelayType] = None,
                      post_result: bool = True,
-                     future: Optional[Delayed[V]] = None
                      ) -> Delayed[V]:
         if isinstance(obj, Delayed):
-            if future is None:
-                future = Delayed[V]()
-            obj.when_value(lambda x : self._schedule_for(x, mode=mode, after=after, post_result=post_result, future=future))
+            
+            future = Delayed[V]()
+            def schedule_and_post(x: T) -> None:
+                f = self._schedule_for(x, mode=mode, after=after, post_result=post_result)
+                f.when_value(lambda val: future.post(val))
+            obj.when_value(schedule_and_post)
             return future
-        return self._schedule_for(obj, mode=mode, after=after, post_result=post_result, future=future)
+        return self._schedule_for(obj, mode=mode, after=after, post_result=post_result)
     
     def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
                              Callable[[], Operation[V,V2]],
@@ -338,10 +339,9 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
-                      future: Optional[Delayed[V2]] = None
                       ) -> Delayed[V2]:
         return self.first._schedule_for(obj, mode=mode, after=after) \
-                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result, future=future)
+                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result)
         
 
 class ComputeOp(Operation[T,V]):
@@ -356,13 +356,11 @@ class ComputeOp(Operation[T,V]):
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
-                      future: Optional[Delayed[V]] = None
                       ) -> Delayed[V]:
         assert after == None
         assert post_result == True
         assert mode is RunMode.GATED
-        if future is None:
-            future = Delayed[V]()
+        future = Delayed[V]()
         future.post(self.function(obj))
         return future
             
@@ -380,11 +378,10 @@ class OpScheduler(Generic[CS]):
                  mode: RunMode = RunMode.GATED, 
                  after: Optional[DelayType] = None,
                  post_result: bool = True,
-                 future: Optional[Delayed[V]] = None
                  ) -> Delayed[V]:
         if not isinstance(op, Operation):
             op = op()
-        return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
+        return op.schedule_for(self, mode=mode, after=after, post_result=post_result)
     
     class WaitUntil(Operation[CS,CS]):
         event: Final[Event]
@@ -392,16 +389,13 @@ class OpScheduler(Generic[CS]):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
-                          future: Optional[Delayed[CS]] = None
                           ) -> Delayed[CS]:
             
-            if future is None:
-                future = Delayed[CS]()
-            real_future = future
+            future = Delayed[CS]()
             
             def cb() -> Optional[Callback]:
                 self.event.wait()
-                finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(obj))
+                finish: Optional[Callback] = None if not post_result else (lambda : future.post(obj))
                 return finish
             
             obj.schedule_communication(cb, mode, after=after)
@@ -417,7 +411,6 @@ class StaticOperation(Generic[V]):
                   mode: RunMode = RunMode.GATED, 
                   after: Optional[DelayType] = None,
                   post_result: bool = True,
-                  future: Optional[Delayed[V]] = None
                   ) -> Delayed[V]:
         raise NotImplementedError()
     
@@ -427,14 +420,15 @@ class StaticOperation(Generic[V]):
                  mode: RunMode = RunMode.GATED, 
                  after: Optional[DelayType] = None,
                  post_result: bool = True,
-                 future: Optional[Delayed[V]] = None
                  ) -> Delayed[V]:
         if on_future is not None:
-            if future is None:
-                future = Delayed[V]()
-            on_future.when_value(lambda _ : self._schedule(mode=mode, after=after, post_result=post_result, future=future))
+            future = Delayed[V]()
+            def schedule_and_post(_) -> None:
+                f = self._schedule(mode=mode, after=after, post_result=post_result)
+                f.when_value(lambda val: future.post(val))
+            on_future.when_value(schedule_and_post)
             return future
-        return self._schedule(mode=mode, after=after, post_result=post_result, future=future)
+        return self._schedule(mode=mode, after=after, post_result=post_result)
     
     def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
                              Callable[[], Operation[V,V2]],
@@ -471,10 +465,9 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
-                      future: Optional[Delayed[V2]] = None
                       ) -> Delayed[V2]:
         return self.first._schedule(mode=mode, after=after) \
-                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result, future=future)
+                    .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result)
     
 # In an earlier iteration, Delayed[T] took a mandatory "guess" argument, and had "initial_guess" and "best_guess"
 # properties (the latter returned the value if it was there and the initial guess otherwise).  This seemed to 
@@ -529,14 +522,13 @@ class Delayed(Generic[T]):
                                       Callable[[], StaticOperation[V]]], *, 
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
-                      post_result: bool = True,
-                      future: Optional[Delayed[V]] = None) -> Delayed[V]:
+                      post_result: bool = True) -> Delayed[V]:
         if isinstance(op, StaticOperation):
-            return op.schedule(on_future=self, mode=mode, after=after, post_result=post_result, future=future)
+            return op.schedule(on_future=self, mode=mode, after=after, post_result=post_result)
         elif isinstance(op, Operation):
-            return op.schedule_for(self, mode=mode, after=after, post_result=post_result, future=future)
+            return op.schedule_for(self, mode=mode, after=after, post_result=post_result)
         else:
-            return self.then_schedule(op(), mode=mode, after=after, post_result=post_result, future=future)
+            return self.then_schedule(op(), mode=mode, after=after, post_result=post_result)
 
 
     def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:
@@ -590,12 +582,11 @@ def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
              mode: RunMode = RunMode.GATED, 
              after: Optional[DelayType] = None,
              post_result: bool = True,
-             future: Optional[Delayed[V]] = None
              ) -> Delayed[V]:
     if isinstance(op, StaticOperation):
-        return op.schedule(mode=mode, after=after, post_result=post_result, future=future)
+        return op.schedule(mode=mode, after=after, post_result=post_result)
     else:
-        return op().schedule(mode=mode, after=after, post_result=post_result, future=future)
+        return op().schedule(mode=mode, after=after, post_result=post_result)
         
 ChangeCallback = Callable[[T,T],None]
 class ChangeCallbackList(Generic[T]):

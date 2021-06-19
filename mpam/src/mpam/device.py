@@ -77,15 +77,12 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
-                          future: Optional[Delayed[OnOff]] = None
                           ) -> Delayed[OnOff]:
             
             if obj.broken:
                 raise PadBrokenError
             mod = self.mod
-            if future is None:
-                future = Delayed[OnOff]()
-            real_future = future
+            future = Delayed[OnOff]()
             setter = obj.set_device_state
             
             def cb() -> Optional[Callback]:
@@ -95,7 +92,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                 setter(new)
                 obj.current_state= new
                 # print(f"Back from setting {obj} val = {obj._state}")
-                finish: Optional[Callback] = None if not post_result else (lambda : real_future.post(old))
+                finish: Optional[Callback] = None if not post_result else (lambda : future.post(old))
                 return finish
             
             obj.board.schedule(cb, mode, after=after)
@@ -283,11 +280,10 @@ class WellMotion:
     gate_status: GateStatus
     
     def __init__(self, group: WellGroup, target: WellState, *,
-                 future: Optional[Delayed[WellGroup]] = None,
                  post_result: bool = True) -> None:
         self.group = group
         self.target = target
-        self.future = future or Delayed[WellGroup]()
+        self.future = Delayed[WellGroup]()
         self.post_result = post_result
         self.well_gates = set[WellPad]()
         self.pad_states = {}
@@ -438,10 +434,9 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
-                          future: Optional[Delayed[WellGroup]] = None
                           )-> Delayed[WellGroup]:
             board = group.board
-            motion = WellMotion(group, self.target, future=future, post_result=post_result)
+            motion = WellMotion(group, self.target, post_result=post_result)
             well = self.well
             if well is not None:
                 motion.well_gates.add(well.gate)
@@ -694,11 +689,8 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
-                          future: Optional[Delayed[Heater]] = None
                           ) -> Delayed[Heater]:
-            if future is None:
-                future = Delayed[Heater]()
-            real_future = future
+            future = Delayed[Heater]()
             target = self.target
             
             def do_it() -> None:
@@ -713,17 +705,17 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                     if temp is None:
                         mode = HeatingMode.OFF if target is None else HeatingMode.HEATING
                         if post_result:
-                            real_future.post(heater)
+                            future.post(heater)
                         return
                     elif temp == target:
                         mode = HeatingMode.MAINTAINING
                         if post_result:
-                            real_future.post(heater)
+                            future.post(heater)
                         return
                     elif target is None and temp < ambient_threshold:
                         mode = HeatingMode.OFF
                         if post_result:
-                            real_future.post(heater)
+                            future.post(heater)
                         return
                     elif target is None or temp > target:
                         mode = HeatingMode.COOLING
@@ -755,7 +747,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                                 heater.mode = HeatingMode.OFF if target is None else HeatingMode.MAINTAINING
                                 heater._temperature_change_callbacks.remove(key)
                             if post_result:
-                                real_future.post(heater)
+                                future.post(heater)
                     heater.on_temperature_change(check, key=key)
             heater.board.schedule(do_it, mode, after=after)
             return future

@@ -353,7 +353,8 @@ class ReagentCircle:
         self._center = center
         self._radius = radius
         self.alpha = alpha
-        self._reagent = reagent
+        self._reagent = None
+        self.reagent = reagent
         
     
     
@@ -372,7 +373,6 @@ class DropMonitor:
                                     center=pm.center,
                                     radius=pm.drop_radius(drop),
                                     board_monitor=board_monitor)
-        self.note_reagent(drop.reagent)
         liquid = drop.liquid
         liquid.on_volume_change(lambda _, new: board_monitor.in_display_thread(lambda: self.note_volume(new)))
         liquid.on_reagent_change(lambda _, new: board_monitor.in_display_thread(lambda: self.note_reagent(new)))

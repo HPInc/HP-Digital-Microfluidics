@@ -107,17 +107,14 @@ class Drop(OpScheduler['Drop']):
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  
-                      future: Optional[Delayed[Drop]] = None
                       ) -> Delayed[Drop]:
-            if future is None:
-                future = Delayed[Drop]()
-            real_future = future
+            future = Delayed[Drop]()
             assert mode.is_gated
             pad = self.pad
             def make_drop(_) -> None:
                 drop = Drop(pad=pad, liquid=self.liquid)
                 if post_result:
-                    real_future.post(drop)
+                    future.post(drop)
             pad.schedule(Pad.TurnOn, mode=mode, after=after) \
                 .then_call(make_drop)
             return future
@@ -140,18 +137,15 @@ class Drop(OpScheduler['Drop']):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
-                          future: Optional[Delayed[Drop]] = None
                           ) -> Delayed[Drop]:
             board = drop.pad.board
             system = board.in_system()
             direction = self.direction
             steps = self.steps
             # allow_unsafe_motion = self.allow_unsafe_motion
-            if future is None:
-                future = Delayed[Drop]()
+            future = Delayed[Drop]()
                 
             one_tick: Ticks = 1*tick
-            real_future: Delayed[Drop] = future
             assert mode.is_gated
             def before_tick() -> Optional[Ticks]:
                 nonlocal steps
@@ -169,7 +163,7 @@ class Drop(OpScheduler['Drop']):
                     if steps > 0:
                         return one_tick
                     if post_result:
-                        board.after_tick(lambda : real_future.post(drop))
+                        board.after_tick(lambda : future.post(drop))
                 return None
             board.before_tick(before_tick, delta=mode.gated_delay(after))
             return future
@@ -186,11 +180,8 @@ class Drop(OpScheduler['Drop']):
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  
-                      future: Optional[Delayed[Drop]] = None
                       ) -> Delayed[Drop]:
-            if future is None:
-                future = Delayed[Drop]()
-            real_future = future
+            future = Delayed[Drop]()
             well = self.well
             def make_drop(_) -> None:
                 v = well.dispensed_volume
@@ -198,7 +189,7 @@ class Drop(OpScheduler['Drop']):
                 liquid = well.transfer_out(v)
                 drop = Drop(pad=pad, liquid=liquid)
                 if post_result:
-                    real_future.post(drop)
+                    future.post(drop)
                 
                 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
@@ -224,11 +215,8 @@ class Drop(OpScheduler['Drop']):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,  
-                          future: Optional[Delayed[None]] = None
                           ) -> Delayed[None]:
-            if future is None:
-                future = Delayed[None]()
-            real_future = future
+            future = Delayed[None]()
             if self.well is None:
                 if drop.pad.well is None:
                     raise NotAtWell(f"{drop} not at a well")
@@ -240,7 +228,7 @@ class Drop(OpScheduler['Drop']):
                 drop.status = DropStatus.IN_WELL
                 drop.pad.drop = None
                 if post_result:
-                    real_future.post(None)
+                    future.post(None)
                 
                 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
@@ -278,19 +266,16 @@ class Drop(OpScheduler['Drop']):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
-                          future: Optional[Delayed[Drop]] = None
                           ) -> Delayed[Drop]:
             board = drop.pad.board
-            if future is None:
-                future = Delayed[Drop]()
+            future = Delayed[Drop]()
                 
-            real_future: Delayed[Drop] = future
             assert mode.is_gated
             def before_tick() -> None:
                 # If all the other drops are waiting, this will install a callback on the next tick and then
                 # call it immediately to do the first step.  Otherwise, that will happen when the last 
                 # drop shows up.
-                self.mix_type.start_mix(self, drop, real_future)
+                self.mix_type.start_mix(self, drop, future)
             board.before_tick(before_tick, delta=mode.gated_delay(after))
             return future
         
@@ -316,16 +301,13 @@ class Drop(OpScheduler['Drop']):
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
-                          future: Optional[Delayed[Drop]] = None
                           ) -> Delayed[Drop]:
             board = drop.pad.board
-            if future is None:
-                future = Delayed[Drop]()
+            future = Delayed[Drop]()
                 
-            real_future: Delayed[Drop] = future
             assert mode.is_gated
             def before_tick() -> None:
-                MixInstance.join_mix(drop, real_future, self.fully_mixed)
+                MixInstance.join_mix(drop, future, self.fully_mixed)
             board.before_tick(before_tick, delta=mode.gated_delay(after))
             return future
 
@@ -373,7 +355,7 @@ class MixInstance:
         self.drops = [None] * (len(secondary_locs)+1)
         self.drops[0] = lead_drop
         self.pad_indices = { p: i+1 for i,p in enumerate(secondary_locs)}
-        print(map_str(self.pad_indices))
+        # print(map_str(self.pad_indices))
         
     def install(self) -> bool:
         pending_drops = 0
