@@ -307,13 +307,19 @@ class Operation(Generic[T, V]):
              after: Optional[DelayType] = None,
              ) -> Operation[T,V2]:
         return CombinedOperation[T,V,V2](self, op, after=after)
-    def then_compute(self, fn: Callable[[V], V2]) -> Operation[T,V2]:
+    def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> Operation[T,V2]:
         return self.then(ComputeOp[V,V2](fn))
-    def then_call(self, fn: Callable[[V], Any]) -> Operation[T,V]:
+    def then_call(self, fn: Callable[[V], V2]) -> Operation[T,V2]:
+        def fn2(obj: V):
+            future = Delayed[V2]()
+            future.post(fn(obj))
+            return future
+        return self.then_compute(fn2)
+    def then_process(self, fn: Callable[[V], Any]) -> Operation[T,V]:
         def fn2(obj: V) -> V:
             fn(obj)
             return obj
-        return self.then_compute(fn2)
+        return self.then_call(fn2)
     
 class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
     first: Operation[T,V]
@@ -345,8 +351,8 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
         
 
 class ComputeOp(Operation[T,V]):
-    def __init__(self, function: Callable[[T],V]) -> None:
-        self.function: Final[Callable[[T],V]] = function
+    def __init__(self, function: Callable[[T],Delayed[V]]) -> None:
+        self.function: Final[Callable[[T],Delayed[V]]] = function
         
     def __repr__(self) -> str:
         return f"ComputeOp({self.function})"
@@ -360,9 +366,7 @@ class ComputeOp(Operation[T,V]):
         assert after == None
         assert post_result == True
         assert mode is RunMode.GATED
-        future = Delayed[V]()
-        future.post(self.function(obj))
-        return future
+        return self.function(obj)
             
             
 class CommunicationScheduler(Protocol):
@@ -436,13 +440,19 @@ class StaticOperation(Generic[V]):
              after: Optional[DelayType] = None,
              ) -> StaticOperation[V2]:
         return CombinedStaticOperation[V,V2](self, op, after=after)
-    def then_compute(self, fn: Callable[[V], V2]) -> StaticOperation[V2]:
+    def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> StaticOperation[V2]:
         return self.then(ComputeOp[V,V2](fn))
-    def then_call(self, fn: Callable[[V], Any]) -> StaticOperation[V]:
+    def then_call(self, fn: Callable[[V], V2]) -> StaticOperation[V2]:
+        def fn2(obj: V) -> Delayed[V2]:
+            future = Delayed[V2]()
+            future.post(fn(obj))
+            return future
+        return self.then_compute(fn2)
+    def then_process(self, fn: Callable[[V], Any]) -> StaticOperation[V]:
         def fn2(obj: V) -> V:
             fn(obj)
             return obj
-        return self.then_compute(fn2)
+        return self.then_call(fn2)
     
     
 class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
