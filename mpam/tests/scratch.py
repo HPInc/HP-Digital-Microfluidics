@@ -58,4 +58,8 @@ print(type(s*m))
 #
 # class Area(Quant): ...
 #
-print(1/0)
+
+for i in range(8):
+    print(f"{i//3}, {i%3}")
+
+print(f"{0.1:.1%}")

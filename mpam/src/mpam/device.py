@@ -570,6 +570,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
             self._contents += volume
             liquid -= volume
+            self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
             
     def transfer_out(self, volume: Volume, *,
@@ -583,6 +584,7 @@ class Well(OpScheduler['Well'], BoardComponent):
             reagent = self._contents.reagent
             # print(f"Removing {volume} from {self._contents}")
             self._contents -= volume
+        self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
         return Liquid(reagent, volume)
 

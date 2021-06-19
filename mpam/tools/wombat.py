@@ -2,7 +2,8 @@ from __future__ import annotations
 from argparse import ArgumentParser, ArgumentTypeError, _SubParsersAction,\
     Namespace
 from quantities.dimensions import Time, Volume
-from typing import Mapping, Final, Union, Optional, Any, Sequence
+from typing import Mapping, Final, Union, Optional, Any, Sequence, NamedTuple,\
+    ClassVar, Callable
 from quantities.core import Unit
 from quantities.SI import us, sec, ms, ns, minutes, hr, uL, secs, days
 from re import Pattern, Match
@@ -11,8 +12,9 @@ from mpam.device import System, Pad, Well, Heater, Magnet
 from devices.wombat import Board
 from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
     XYCoord, Operation, StaticOperation, RunMode, Reagent, tick
-from mpam.drop import Drop, Mix2, Mix3, Mix4
+from mpam.drop import Drop, Mix2, Mix3, Mix4, MixingType
 from quantities.temperature import TemperaturePoint, abs_C
+from erk.stringutils import map_str
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
     "ns": ns,
@@ -429,8 +431,104 @@ class WombatTest(Task):
                 .schedule_for(board.heaters[3], mode = async_mode)
             Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
 
-
 class Mix(Task):
+    class Mixer(NamedTuple):
+        type: MixingType
+        n_rows: int
+        n_cols: int
+        
+    mixers: Final[ClassVar[Mapping[int, Mixer]]] = {
+            2: Mixer(Mix2(Dir.LEFT), 1, 2),
+            3: Mixer(Mix3(Dir.LEFT, Dir.LEFT), 1, 3),
+            4: Mixer(Mix4(Dir.LEFT, Dir.DOWN), 2, 2),
+        }
+    
+    @classmethod
+    def add_task_args(cls, subparsers: _SubParsersAction):
+        desc = "Dispense n drops, walk them out and mix them together"
+        parser = subparsers.add_parser("mix", 
+                                       help=desc, description=desc
+                                       )
+        
+        choices=list(cls.mixers)
+        parser.add_argument('num_drops', type=int, metavar='NUM-DROPS',                              
+                           choices=choices,
+                           help=f""""The number of drops to mix.
+                                     Choices are {map_str(choices)}""")
+        group = parser.add_argument_group(title="task-specific options")
+        default_tolerance = 0.1
+        group.add_argument('-t', '--tolerance', type=float, default=default_tolerance, metavar="FLOAT",
+                           help=f"""Maximum allowed deviation between max and min proportion (relative to min).
+                                    Default is {default_tolerance} ({100*default_tolerance:g}%%)""")
+        group.add_argument('-f', '--full', action='store_true',  
+                            help="Fully mix all drops")
+        group.add_argument('--shuttles', type=int, metavar='INT', default=0,
+                            help="The number of extra shuttles to perform.  Default is zero.")
+        default_pause_before = 0
+        group.add_argument('-pb', '--pause-before', type=int, metavar='TICKS', default=default_pause_before,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_before*ticks:.0f}.")
+        default_pause_after= 0
+        group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
+        cls.add_common_args(parser)
+        parser.set_defaults(task=Mix())
+        
+    def create_path(self, i: int, well: Well, args: Namespace) -> StaticOperation[None]:
+        n_drops: int = args.num_drops
+        mixer = self.mixers[n_drops]
+        row = i//mixer.n_cols
+        col = i%mixer.n_cols
+        
+        reagent = Reagent(f"R{i+1}")
+        
+        def change_reagent(r: Reagent) -> Callable[[Drop], None]:
+            def fn(drop: Drop) -> None:
+                drop.reagent = r
+            return fn
+        mixop: Operation[Drop,Drop]
+        if i == 0:
+            mixop = Drop.Mix(mixer.type, 
+                             tolerance=args.tolerance,
+                             n_shuttles=args.shuttles)
+        else:
+            mixop = Drop.InMix(fully_mixed=args.full)
+        towell: Operation[Drop,Drop]
+        if i == 0:
+            towell = Drop.Move(Dir.RIGHT, steps=6) \
+                        .then(Drop.Move(Dir.UP))
+        else:
+            towell = Drop.Move(Dir.RIGHT, steps=6+2*col) \
+                        .then(Drop.Move(Dir.DOWN, steps = 5-2*row))
+                        
+        delay = row*(2*mixer.n_cols+4)+col + (3 if i>0 else 0)
+
+        op = Drop.DispenseFrom(well) \
+                .then_process(change_reagent(reagent)) \
+                .then(Drop.Move(Dir.DOWN, steps=row*2+1)) \
+                .then(Drop.Move(Dir.RIGHT, steps = 12-2*col)) \
+                .then(mixop) \
+                .then(towell, after=delay*ticks) \
+                .then(Drop.EnterWell)
+                
+                
+        return op
+        
+
+    def run(self, board: Board, system: System, args: Namespace) -> None:
+        print(args)
+        n_drops: int = args.num_drops
+        drops = board.drop_size.as_unit("drops", singular="drop")
+        
+        well = board.wells[2]
+        well.contains(Liquid(unknown_reagent, n_drops*drops))
+        paths = [self.create_path(i, well, args) for i in range(n_drops)]
+        
+        system.clock.start(args.clock_speed)
+        with system.batched():
+            for i,p in enumerate(paths):
+                p.schedule(after=i*4*ticks)
+
+class RealMix(Task):
     @classmethod
     def add_task_args(cls, subparsers: _SubParsersAction):
         desc = "Dispense two drops, walk them out and mix them together"
@@ -446,7 +544,7 @@ class Mix(Task):
         group.add_argument('--shuttles', type=int, metavar='INT', default=0,
                             help="The number of extra shuttles to perform.  Default is zero.")
         cls.add_common_args(parser)
-        parser.set_defaults(task=Mix())
+        parser.set_defaults(task=RealMix())
         
     def run2(self, board: Board, system: System, args: Namespace) -> None:
         well1 = board.wells[2]

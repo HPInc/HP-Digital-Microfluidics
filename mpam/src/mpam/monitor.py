@@ -505,7 +505,7 @@ class WellMonitor:
             # self.reagent_volume_circle.set_clip_path(self.volume_rectangle)
             # self.content_description.set_text(str(liquid))
             units=self.board_monitor.drop_unit
-            self.content_description.set_text(f"{liquid.volume.in_units(units)} of {liquid.reagent}")
+            self.content_description.set_text(f"{liquid.volume.in_units(units):g} of {liquid.reagent}")
             self.content_description.set_visible(True)
         
 
