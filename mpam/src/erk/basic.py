@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, Callable
+from typing import TypeVar, Generic, Optional, Callable, Hashable
 from threading import Lock
 from re import Pattern
 import re
 
 _T = TypeVar('_T')
+_H = TypeVar('_H', bound=Hashable)
 
 _ValTuple = tuple[bool, _T]
 
@@ -36,3 +37,24 @@ class Lazy(Generic[_T]):
 class LazyPattern(Lazy[Pattern]):
     def __init__(self, pattern: str, flags: int = 0):
         super().__init__(lambda: re.compile(pattern, flags))
+        
+        
+class Count(dict[_H,int]):
+    def __missing__(self, elt: _H) -> int:  # @UnusedVariable
+        return 0
+    
+    def inc(self, elt: _H) -> int:
+        self[elt] += 1
+        return self[elt]
+    
+    def dec(self, elt: _H) -> int:
+        old = self[elt]
+        new = old-1
+        if old == 0:
+            raise KeyError(f"No count for {elt} in Count object")
+        elif new == 0:
+            del self[elt]
+        else:
+            self[elt] = new
+        return new
+        

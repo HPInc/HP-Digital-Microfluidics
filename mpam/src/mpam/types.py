@@ -1103,7 +1103,4 @@ class ColorAllocator(Generic[H]):
         self.reserve_color(key, c)
         return c
     
-
-
-        
-
+            

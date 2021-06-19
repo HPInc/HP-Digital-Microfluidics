@@ -10,7 +10,6 @@ from quantities.SI import uL
 from threading import Lock
 from quantities.dimensions import Volume
 from enum import Enum, auto
-from mpam.engine import ClockCallback
 import math
 from erk.stringutils import map_str
 

@@ -25,6 +25,9 @@ from quantities.timestamp import time_now
 from quantities.core import Unit
 from matplotlib.artist import Artist
 from matplotlib.backend_bases import PickEvent
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.legend import Legend
+from erk.basic import Count
 
 
 class PadMonitor(object):
@@ -176,6 +179,75 @@ class PadMonitor(object):
             if old.status is not DropStatus.IN_MIX:
                 del self.board_monitor.drop_map[old]
                 
+                
+class ReagentLegend:
+    board_monitor: Final[BoardMonitor]
+    contents: Final[dict[Reagent, Patch]]
+    contents_count: Final[Count[Reagent]]
+    mixtures_count: Final[Count[Reagent]]
+    pending_redraw: bool
+    legend: Optional[Legend] = None
+    
+    def __init__(self, board_monitor: BoardMonitor) -> None:
+        self.board_monitor = board_monitor
+        self.contents = {}
+        self.contents_count = Count[Reagent]()
+        self.mixtures_count = Count[Reagent]()
+        self.pending_redraw = False
+        self.redraw()
+        
+    def redraw(self) -> None:
+        self.pending_redraw = False
+        on_board = [(r.name,p) for r,p in self.contents.items()]
+        on_board.sort(key=lambda t:t[0])
+        handles = [t[1] for t in on_board]
+        old = self.legend
+        if old is not None:
+            old.remove()
+        self.legend = self.board_monitor.figure.legend(handles=handles,
+                                                       title="Reagents",
+                                                       # handler_map={Circle: self.HandlerCircle}
+                                                       )
+        
+    class HandlerCircle(HandlerPatch):
+        def create_artists(self, legend, orig_handle, 
+                           xdescent: float, ydescent: float, 
+                           width: float, height: float, 
+                           fontsize, trans):  # @UnusedVariable
+            center = 0.5*width-0.5*xdescent, 0.5*height-0.5*ydescent
+            p = Circle(xy=center, radius=min(width+xdescent, height+ydescent))
+            self.update_prop(p, orig_handle, legend)
+            p.set_transform(trans)
+            return [p]
+        
+    def changed_reagent(self, old: Optional[Reagent], new: Optional[Reagent]):
+        need_redraw: bool = False
+        mc = self.mixtures_count
+        cc = self.contents_count
+        if new is not None:
+            if mc.inc(new) == 1:
+                for r,_ in new.mixture:
+                    if cc.inc(r) == 1:
+                        color = self.board_monitor.reagent_color(r)
+                        key = Circle((0,0), 
+                                     facecolor=color.rgba,
+                                     edgecolor="black",
+                                     alpha=0.5,
+                                     label=r.name)
+                        self.contents[r] = key
+                        need_redraw = True
+        if old is not None:
+            if mc.dec(old) == 0:
+                for r,_ in old.mixture:
+                    if cc.dec(r) == 0:
+                        del self.contents[r]
+                        need_redraw = True
+        if need_redraw and not self.pending_redraw:
+            self.pending_redraw = True
+            self.board_monitor.in_display_thread(lambda: self.redraw())
+            
+            
+                
 class ReagentCircle:
     board_monitor: Final[BoardMonitor]
     _center: tuple[float,float]
@@ -191,9 +263,14 @@ class ReagentCircle:
     
     @visible.setter
     def visible(self, val: bool) -> None:
-        self._visible = val
-        for s in self.slices:
-            s.set_visible(val)
+        if val != self.visible:
+            self._visible = val
+            for s in self.slices:
+                s.set_visible(val)
+            if val:
+                self.board_monitor.legend.changed_reagent(None, self._reagent)
+            else:
+                self.board_monitor.legend.changed_reagent(self._reagent, None)
     
     @property
     def center(self) -> tuple[float,float]:
@@ -221,6 +298,11 @@ class ReagentCircle:
     
     @reagent.setter
     def reagent(self, val: Optional[Reagent]) -> None:
+        if val is self._reagent:
+            return
+        if self.visible:
+            self.board_monitor.legend.changed_reagent(self.reagent, val)
+        self._reagent = val
         slices = self.slices
         if len(slices) == 1 and val is not None and val.is_pure:
             # If we've got a whole circle and we want a whole circle, we can just change the color
@@ -271,7 +353,7 @@ class ReagentCircle:
         self._center = center
         self._radius = radius
         self.alpha = alpha
-        self.reagent = reagent
+        self._reagent = reagent
         
     
     
@@ -442,6 +524,7 @@ class BoardMonitor:
     drop_unit: Final[Unit[Volume]]
     click_id: Final[MutableMapping[Artist, BinaryComponent]]
     close_event: Final[Event]
+    legend: Final[ReagentLegend]
 
     
     min_x: float
@@ -486,6 +569,7 @@ class BoardMonitor:
                 waste_reagent: Color.find("xkcd:black"),
             }
         self.color_allocator = ColorAllocator[Reagent](reserved_colors)
+        self.legend = ReagentLegend(self)
 
         for heater in board.heaters:       
             self.setup_heater_poll(heater) 
@@ -569,6 +653,7 @@ class BoardMonitor:
         with self.lock:
             for cb in self.update_callbacks:
                 cb()
+            self.update_callbacks.clear()
                 
     def keep_alive(self, *, 
                    min_time: Time = 0*sec, 
