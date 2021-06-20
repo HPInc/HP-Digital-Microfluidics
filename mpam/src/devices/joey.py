@@ -194,7 +194,7 @@ class Board(device.Board):
             self._well(7, right_group, self.pad_at(18,0)),
             ))
         
-        magnets.append(Magnet(self, pads = (self.pad_at(13, 3), self.pad_at(13, 15),)))
+        magnets.append(Magnet(self, pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
         
         heaters.append(Heater(0, self, region=GridRegion(XYCoord(0,12),3,7)))
         heaters.append(Heater(1, self, region=GridRegion(XYCoord(0,0),3,7)))
@@ -203,9 +203,9 @@ class Board(device.Board):
         heaters.append(Heater(4, self, region=GridRegion(XYCoord(16,12),3,7)))
         heaters.append(Heater(5, self, region=GridRegion(XYCoord(16,0),3,7)))
         
-        extraction_points.append(ExtractionPoint(self.pad_at(4,3)))
-        extraction_points.append(ExtractionPoint(self.pad_at(4,9)))
-        extraction_points.append(ExtractionPoint(self.pad_at(4,15)))
+        extraction_points.append(ExtractionPoint(self.pad_at(13,3)))
+        extraction_points.append(ExtractionPoint(self.pad_at(13,9)))
+        extraction_points.append(ExtractionPoint(self.pad_at(13,15)))
         
     def update_state(self):
         pass

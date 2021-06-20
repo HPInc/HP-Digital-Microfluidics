@@ -12,6 +12,8 @@ from matplotlib._color_data import XKCD_COLORS
 from weakref import WeakKeyDictionary, finalize
 from _weakref import ReferenceType, ref
 from _collections import deque
+from fractions import Fraction
+import math
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -720,7 +722,7 @@ class ProcessStep:
                 cls._known[description] = ps
             return ps
                 
-MixtureSpec = Tuple[tuple['Reagent', float], ...]
+MixtureSpec = Tuple[tuple['Reagent', Fraction], ...]
         
 class Reagent:
     name: Final[str]
@@ -759,7 +761,7 @@ class Reagent:
     
     @property
     def mixture(self) -> MixtureSpec:
-        return ((self, 1),)
+        return ((self, Fraction.from_float(1)),)
     
     @property
     def is_pure(self) -> bool:
@@ -841,11 +843,12 @@ class Mixture(Reagent):
     @classmethod
     def new_mixture(cls, r1: Reagent, r2: Reagent, ratio: float, name: Optional[str] = None) -> Reagent:
         fraction = ratio/(ratio+1)
-        mixture = {r: f*fraction for r,f in r1.mixture}
+        as_frac = Fraction.from_float(fraction)
+        mixture = {r: f*as_frac for r,f in r1.mixture}
         composition = {chem: conc*fraction for chem, conc in r1.composition.items()}
         fraction = 1-fraction
         for r,f in r2.mixture:
-            cpt = f*fraction
+            cpt = f*as_frac
             f1 = mixture.get(r, None)
             mixture[r] = cpt if f1 is None else cpt+f1
         for chem, conc in r2.composition.items():
@@ -869,7 +872,9 @@ class Mixture(Reagent):
         m = cls._instances.get(t, None)
         if m is None:
             if name is None:
-                name = ' + '.join(f"{f:.3g} {r.name}" for r,f in seq)
+                lcm = math.lcm(*(f.denominator for _,f in seq))
+                mapped = tuple((r, f*lcm) for r,f in seq)
+                name = ' + '.join(f"{f.numerator:,} {r.name}" for r,f in mapped)
             m = Mixture(name, t, composition=composition)
             cls._instances[t] = m
         return m

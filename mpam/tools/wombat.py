@@ -515,7 +515,6 @@ class Mix(Task):
         
 
     def run(self, board: Board, system: System, args: Namespace) -> None:
-        print(args)
         n_drops: int = args.num_drops
         drops = board.drop_size.as_unit("drops", singular="drop")
         
