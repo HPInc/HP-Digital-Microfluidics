@@ -11,7 +11,6 @@ from threading import Lock
 from quantities.dimensions import Volume
 from enum import Enum, auto
 import math
-from erk.stringutils import map_str
 
 class DropStatus(Enum):
     ON_BOARD = auto()

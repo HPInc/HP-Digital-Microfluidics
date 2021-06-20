@@ -497,10 +497,15 @@ class Mix(Task):
             towell = Drop.Move(Dir.RIGHT, steps=6) \
                         .then(Drop.Move(Dir.UP))
         else:
-            towell = Drop.Move(Dir.RIGHT, steps=6+2*col) \
-                        .then(Drop.Move(Dir.DOWN, steps = 5-2*row))
+            towell = Drop.Move(Dir.DOWN, steps=2*(2-row)) \
+                        .then(Drop.Move(Dir.RIGHT, steps=6+2*col)) \
+                        .then(Drop.Move(Dir.DOWN))
+            
+            # towell = Drop.Move(Dir.RIGHT, steps=6+2*col) \
+                        # .then(Drop.Move(Dir.DOWN, steps = 5-2*row))
                         
-        delay = row*(2*mixer.n_cols+4)+col + (3 if i>0 else 0)
+        # delay = row*(2*mixer.n_cols+4)+col + (3 if i>0 else 0)
+        delay = (mixer.n_rows-row-1)*(3*mixer.n_cols-2) if i>0 else 0
 
         op = Drop.DispenseFrom(well) \
                 .then_process(change_reagent(reagent)) \
