@@ -519,7 +519,7 @@ class BoardMonitor:
     plot: Final[Axes]
     drop_map: Final[dict[Drop, DropMonitor]]
     lock: Final[RLock]
-    update_callbacks: Final[list[Callback]]
+    update_callbacks: Optional[list[Callback]]
     color_allocator: Final[ColorAllocator[Reagent]]
     drop_unit: Final[Unit[Volume]]
     click_id: Final[MutableMapping[Artist, BinaryComponent]]
@@ -548,7 +548,7 @@ class BoardMonitor:
         self.board = board
         self.drop_map = dict[Drop, DropMonitor]()
         self.lock = RLock()
-        self.update_callbacks = []
+        self.update_callbacks = None
         self.click_id = {}
         self.close_event = Event()
         
@@ -647,13 +647,19 @@ class BoardMonitor:
     
     def in_display_thread(self, cb: Callback) -> None:
         with self.lock:
-            self.update_callbacks.append(cb)
+            cbs = self.update_callbacks
+            if cbs is None:
+                self.update_callbacks = [cb]
+            else:
+                cbs.append(cb)
             
     def process_display_updates(self) -> None:
-        with self.lock:
-            for cb in self.update_callbacks:
+        cbs = self.update_callbacks
+        if cbs is not None:
+            with self.lock:
+                self.update_callbacks = None
+            for cb in cbs:
                 cb()
-            self.update_callbacks.clear()
                 
     def keep_alive(self, *, 
                    min_time: Time = 0*sec, 

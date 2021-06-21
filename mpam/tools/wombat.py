@@ -505,7 +505,12 @@ class Mix(Task):
                         # .then(Drop.Move(Dir.DOWN, steps = 5-2*row))
                         
         # delay = row*(2*mixer.n_cols+4)+col + (3 if i>0 else 0)
-        delay = (mixer.n_rows-row-1)*(3*mixer.n_cols-2) if i>0 else 0
+        delay = 0
+        if i > 0:
+            # The delay is such that the row hits the bottom just as the previous row
+            # clears.  The adjustment for the top row takes advantage of the fact 
+            # that the lead drop goes to the upper well.
+            delay = (mixer.n_rows-row-1)*(3*mixer.n_cols-2) - (3 if row==0 else 0)
 
         op = Drop.DispenseFrom(well) \
                 .then_process(change_reagent(reagent)) \

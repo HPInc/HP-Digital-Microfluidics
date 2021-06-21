@@ -568,8 +568,7 @@ class Well(OpScheduler['Well'], BoardComponent):
             r = self._contents.reagent
             on_reagent_mismatch.expect_true(self._can_accept(liquid),
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
-            self._contents += volume
-            liquid -= volume
+            self._contents.mix_in(liquid)
             self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
             
