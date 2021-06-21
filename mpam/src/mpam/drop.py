@@ -330,7 +330,6 @@ class MixInstance:
     full_mix: Final[set[Drop]]
     secondary_locs: Final[Sequence[Pad]]
     board: Final[Board]
-    script: Final[MixSequence]
     pending_drops: int
     
     global_lock: Final[Lock] = Lock()
@@ -340,7 +339,6 @@ class MixInstance:
                  lead_drop: Drop,
                  lead_future: Delayed[Drop],
                  secondary_locs: Sequence[Pad],
-                 script: MixSequence
                  ) -> None:
         self.mix_type = op.mix_type
         self.tolerance = op.tolerance
@@ -350,7 +348,6 @@ class MixInstance:
         self.full_mix = { lead_drop }
         self.secondary_locs = secondary_locs
         self.board = lead_drop.pad.board
-        self.script = script
         self.drops = [None] * (len(secondary_locs)+1)
         self.drops[0] = lead_drop
         self.pad_indices = { p: i+1 for i,p in enumerate(secondary_locs)}
@@ -398,37 +395,20 @@ class MixInstance:
             inst.run()
             
     def play_script(self) -> Iterator[Optional[Ticks]]:
-        script = self.script
-        unsatisfied = self.full_mix.copy()
-        tolerances = {d: self.tolerance if d in unsatisfied else math.inf for d in self.futures}
         def checked(d: Optional[Drop]) -> Drop:
             assert d is not None
             return d
         drops = tuple(checked(d) for d in self.drops)
-        n_shuttles = self.n_shuttles
-        error = {d: math.inf for d in drops}
+        i = self.mix_type.perform(full_mix = self.full_mix,
+                                  tolerance = self.tolerance,
+                                  drops = drops,
+                                  n_shuttles = self.n_shuttles
+                                  )
         one_tick = 1*tick
-        for step in script:
-            drop_pads = tuple(d.pad for d in drops)
-            for shuttle in range(n_shuttles+1):
-                for mergep in (True, False):
-                    for action in step:
-                        e = action.schedule(shuttle, mergep, drops, drop_pads)
-                        error.update(e)
-                    if not mergep and shuttle == n_shuttles:
-                        for d in unsatisfied.copy():
-                            if error[d] <= tolerances[d]:
-                                unsatisfied.remove(d)
-                    if unsatisfied:
-                        yield one_tick
-                    else:
-                        self.schedule_post()
-                        yield None
-        min_tolerance = min(tolerances[d] for d in unsatisfied)
-        min_error = min(error[d] for d in unsatisfied)
-        n = len(drops)
-        raise MPAMError(f"""Requested driving error to {min_tolerance} in {n}-way mix.  
-                                        Could only get to {min_error} on at least one drop""")
+        while next(i):
+            yield one_tick
+        self.schedule_post()
+        yield None
         
     def run(self) -> None: 
         iterator = self.play_script()
@@ -504,16 +484,13 @@ class MixingType:
     def __init__(self, script: MixSequence):
         self.script = script
     def start_mix(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> None:
-        inst = self.new_instance(op, lead_drop, future)
+        secondary = self.secondary_pads(lead_drop) 
+        inst = MixInstance(op, lead_drop, future, secondary)
         if inst.install():
             inst.run()
             
     def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:
         raise NotImplementedError()
-    
-    def new_instance(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> MixInstance:
-        secondary = self.secondary_pads(lead_drop) 
-        return MixInstance(op, lead_drop, future, secondary, self.script)
     
     def two_steps_from(self, pad: Pad, direction: Dir) -> Pad:
         m = pad.neighbor(direction)
@@ -521,6 +498,38 @@ class MixingType:
         p = m.neighbor(direction)
         assert p is not None
         return p
+    
+    def perform(self, *,
+                full_mix: set[Drop], 
+                tolerance: float,
+                drops: tuple[Drop,...],
+                n_shuttles: int,
+                ) -> Iterator[bool]:
+        script = self.script
+        unsatisfied = full_mix.intersection(drops)
+        tolerances = {d: tolerance if d in unsatisfied else math.inf for d in drops}
+        error = {d: math.inf for d in drops}
+        for step in script:
+            drop_pads = tuple(d.pad for d in drops)
+            for shuttle in range(n_shuttles+1):
+                for mergep in (True, False):
+                    for action in step:
+                        e = action.schedule(shuttle, mergep, drops, drop_pads)
+                        error.update(e)
+                    if not mergep and shuttle == n_shuttles:
+                        for d in unsatisfied.copy():
+                            if error[d] <= tolerances[d]:
+                                unsatisfied.remove(d)
+                    if unsatisfied:
+                        yield True
+                    else:
+                        yield False
+        min_tolerance = min(tolerances[d] for d in unsatisfied)
+        min_error = min(error[d] for d in unsatisfied)
+        n = len(drops)
+        raise MPAMError(f"""Requested driving error to {min_tolerance} in {n}-way mix.  
+                                        Could only get to {min_error} on at least one drop""")
+    
     
 class Mix2(MixingType):
     to_second: Final[Dir]
