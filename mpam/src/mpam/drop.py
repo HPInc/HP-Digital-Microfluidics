@@ -11,6 +11,7 @@ from threading import Lock
 from quantities.dimensions import Volume
 from enum import Enum, auto
 import math
+from abc import ABC, abstractmethod
 
 class DropStatus(Enum):
     ON_BOARD = auto()
@@ -310,11 +311,12 @@ class Drop(OpScheduler['Drop']):
             board.before_tick(before_tick, delta=mode.gated_delay(after))
             return future
 
-class MixSequenceStep:
-    def schedule(self, shuttle_no: int, mergep: bool, 
-                 drops: Sequence[Drop], 
-                 pads: Sequence[Pad]) -> Mapping[Drop, float]:
-        raise NotImplementedError()
+class MixSequenceStep(ABC):
+    @abstractmethod
+    def schedule(self, shuttle_no: int, mergep: bool,           # @UnusedVariable
+                 drops: Sequence[Drop],                         # @UnusedVariable
+                 pads: Sequence[Pad]) -> Mapping[Drop, float]:  # @UnusedVariable
+        ...
     
 MixSequence = Sequence[Sequence[MixSequenceStep]]
         
@@ -478,20 +480,25 @@ class MixStep(MixSequenceStep):
         return {drop1: e, drop2: e}
                  
 
-class MixingType:
-    script: Final[MixSequence]
-    
-    def __init__(self, script: MixSequence):
-        self.script = script
+class MixingType(ABC):
     def start_mix(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> None:
         secondary = self.secondary_pads(lead_drop) 
         inst = MixInstance(op, lead_drop, future, secondary)
         if inst.install():
             inst.run()
-            
-    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:
-        raise NotImplementedError()
-    
+
+    @abstractmethod            
+    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]: ...  # @UnusedVariable
+
+    @abstractmethod    
+    def perform(self, *,
+                full_mix: set[Drop],        # @UnusedVariable
+                tolerance: float,           # @UnusedVariable
+                drops: tuple[Drop,...],     # @UnusedVariable
+                n_shuttles: int,            # @UnusedVariable
+                ) -> Iterator[bool]:
+        ...
+        
     def two_steps_from(self, pad: Pad, direction: Dir) -> Pad:
         m = pad.neighbor(direction)
         assert m is not None
@@ -499,17 +506,22 @@ class MixingType:
         assert p is not None
         return p
     
+class PureMix(MixingType):
+    script: Final[MixSequence]
+    
+    def __init__(self, script: MixSequence):
+        self.script = script
+    
     def perform(self, *,
                 full_mix: set[Drop], 
                 tolerance: float,
                 drops: tuple[Drop,...],
                 n_shuttles: int,
                 ) -> Iterator[bool]:
-        script = self.script
         unsatisfied = full_mix.intersection(drops)
         tolerances = {d: tolerance if d in unsatisfied else math.inf for d in drops}
         error = {d: math.inf for d in drops}
-        for step in script:
+        for step in self.script:
             drop_pads = tuple(d.pad for d in drops)
             for shuttle in range(n_shuttles+1):
                 for mergep in (True, False):
@@ -531,7 +543,7 @@ class MixingType:
                                         Could only get to {min_error} on at least one drop""")
     
     
-class Mix2(MixingType):
+class Mix2(PureMix):
     to_second: Final[Dir]
     
     the_script: Final[ClassVar[MixSequence]] = (
@@ -547,7 +559,7 @@ class Mix2(MixingType):
         p2 = self.two_steps_from(p1, self.to_second)
         return (p2,)
 
-class Mix3(MixingType):
+class Mix3(PureMix):
     to_second: Final[Dir]
     to_third: Final[Dir]
     
@@ -575,7 +587,7 @@ class Mix3(MixingType):
         p3 = self.two_steps_from(p2, self.to_third)
         return (p2,p3)
 
-class Mix4(MixingType):
+class Mix4(PureMix):
     to_second: Final[Dir]
     to_third: Final[Dir]
     

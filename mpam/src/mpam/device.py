@@ -20,6 +20,7 @@ from erk.errors import ErrorHandler, PRINT
 from quantities.temperature import TemperaturePoint, abs_F
 import random
 from quantities.SI import sec, ms
+from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -764,7 +765,7 @@ class ExtractionPoint:
         self.pad = pad
         pad._extraction_point = self
     
-class SystemComponent:
+class SystemComponent(ABC):
     system: Optional[System] = None
     _after_update: Final[list[Callback]]
     _monitor_callbacks: Final[list[Callback]]
@@ -781,8 +782,9 @@ class SystemComponent:
         assert system is not None
         return system
     
+    @abstractmethod
     def update_state(self) -> None:
-        raise NotImplementedError(f"{self.__class__}.update_state() not defined")
+        ...
     
     def add_monitor(self, cb: Callback) -> None:
         self._monitor_callbacks.append(cb)
@@ -895,7 +897,7 @@ class Board(SystemComponent):
     
     @property
     def well_groups(self) -> Mapping[str, WellGroup]:
-        cache = getattr(self, '_well_groups', None)
+        cache: Optional[Mapping[str, WellGroup]] = getattr(self, '_well_groups', None)
         if cache is None:
             cache = {well.group.name: well.group for well in self.wells}
             self._well_groups = cache
@@ -903,7 +905,7 @@ class Board(SystemComponent):
     
     @property
     def drop_size(self) -> Volume:
-        cache = getattr(self, '_drop_size', None)
+        cache: Optional[Volume] = getattr(self, '_drop_size', None)
         if cache is None:
             cache = self.wells[0].dispensed_volume
             assert all(w.dispensed_volume==cache for w in self.wells), "Not all wells dispense the same volume"

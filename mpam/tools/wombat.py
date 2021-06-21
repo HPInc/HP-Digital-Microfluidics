@@ -15,6 +15,7 @@ from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
 from mpam.drop import Drop, Mix2, Mix3, Mix4, MixingType
 from quantities.temperature import TemperaturePoint, abs_C
 from erk.stringutils import map_str
+from abc import ABC, abstractmethod
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
     "ns": ns,
@@ -86,9 +87,10 @@ def volume_arg(arg: str) -> Union[Volume,float]:
     val = n*unit
     return val
 
-class Task:
-    def run(self, board: Board, system: System, args: Namespace) -> None:
-        raise NotImplementedError(f"Task.run() not implemented for {self}")
+class Task(ABC):
+    @abstractmethod
+    def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
+        ...
     
     @classmethod
     def fmt_time(self, t: Time) -> str:
@@ -157,11 +159,11 @@ class Dispense(Task):
         cls.add_common_args(parser)
         
     def run(self, board: Board, system: System, args: Namespace) -> None:
-        well_no = args.well
+        well_no: int = args.well
         well = board.wells[well_no]
 
         drops = board.drop_size.as_unit("drops")
-        volume: Union[Volume, float] = args.volume
+        volume: Optional[Union[Volume, float]] = args.volume
         if volume is None:
             volume = well.capacity
         elif isinstance(volume, float):
@@ -224,14 +226,14 @@ class DispenseAndWalk(Task):
         parser.set_defaults(task=DispenseAndWalk())
         
     def run(self, board: Board, system: System, args: Namespace) -> None:
-        well_no = args.well
+        well_no: int = args.well
         well = board.wells[well_no]
         hdir = Dir.RIGHT if well_no == 2 or well_no == 3 else Dir.LEFT
         vdir1 = Dir.DOWN if well_no == 2 or well_no == 6 else Dir.UP
         vdir2 = Dir.UP if well_no == 2 or well_no == 6 else Dir.DOWN
         
         drops = board.drop_size.as_unit("drops")
-        volume: Union[Volume, float] = args.volume
+        volume: Optional[Union[Volume, float]] = args.volume
         if volume is None:
             volume = well.capacity
         elif isinstance(volume, float):
@@ -289,12 +291,13 @@ class WalkPath(Task):
     def run(self, board: Board, system: System, args: Namespace) -> None:
         path: str = args.path.upper()
 
-        if args.start_well is not None:
-            well = board.wells[args.start_well]
+        start_well: Optional[int] = args.start_well
+        if start_well is not None:
+            well = board.wells[start_well]
             # seq: StaticOperation = Drop.DispenseFrom(well)
             start_pad: Pad = well.exit_pad
             drops = board.drop_size.as_unit("drops")
-            volume: Union[Volume, float] = args.volume
+            volume: Optional[Union[Volume, float]] = args.volume
             if volume is None:
                 volume = well.capacity
             elif isinstance(volume, float):

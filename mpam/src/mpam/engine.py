@@ -9,6 +9,7 @@ from typing import Optional, Literal, Protocol, Any, Sequence,\
     Iterable, Final, Union, Callable
 from types import TracebackType
 from mpam.types import TickNumber, ticks, Ticks
+from abc import ABC, abstractmethod
 
 def _in_secs(t: Time) -> float:
     return t.as_number(sec)
@@ -156,7 +157,7 @@ class Engine:
         self.clock_thread.on_tick(reqs)
         
         
-class WorkerThread(Thread, Worker):
+class WorkerThread(Thread, Worker, ABC):
     engine: Engine
     state: State
     lock: Lock
@@ -169,8 +170,9 @@ class WorkerThread(Thread, Worker):
         self.state = State.NEW
         self.lock = Lock()
         
+    @abstractmethod
     def wake_up(self) -> None:
-        raise NotImplementedError()
+        ...
     
     def request_abort(self) -> None:
         if self.state is State.RUNNING:
@@ -184,6 +186,10 @@ class WorkerThread(Thread, Worker):
             with self.lock:
                 self.state = State.SHUTDOWN_REQUESTED
                 self.wake_up()
+                
+    # If I do this inline, MyPy complains about "non-overlapping identity check"
+    def abort_requested(self) -> bool:
+        return self.state is State.ABORT_REQUESTED
             
     # called with lock
     def ensure_running(self) -> None:
@@ -229,7 +235,7 @@ class DevCommThread(WorkerThread):
                 with self.lock:
                     while self.state is State.RUNNING and not queue:
                         condition.wait(_wait_timeout)
-                    if self.state is State.ABORT_REQUESTED:
+                    if self.abort_requested():
                         return
                     # we don't want to be holding the lock when we process the requests,
                     # because they may want to add to the queue.  (Probably shouldn't, 
@@ -354,7 +360,7 @@ class TimerThread(WorkerThread):
                             or
                             self.state is State.SHUTDOWN_REQUESTED and self.timer is not None):
                         condition.wait(_wait_timeout)
-                    if self.state is State.ABORT_REQUESTED:
+                    if self.abort_requested():
                         return
                     if self.state is State.SHUTDOWN_REQUESTED and self.is_idle:
                         return
@@ -499,7 +505,7 @@ class ClockThread(WorkerThread):
                 while not tick_event.wait(_wait_timeout):
                     pass
                 tick_event.clear()
-                if self.state is State.ABORT_REQUESTED:
+                if self.abort_requested():
                     return
                 now = time_now()
                 elapsed = now-last_time

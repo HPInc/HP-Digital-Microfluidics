@@ -14,6 +14,7 @@ from _weakref import ReferenceType, ref
 from _collections import deque
 from fractions import Fraction
 import math
+from abc import ABC, abstractmethod
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -280,14 +281,15 @@ ValTuple = tuple[bool, T]
 class Missing: ...
 MISSING: Final[Missing] = Missing()
 
-class Operation(Generic[T, V]):
-    
-    def _schedule_for(self, obj: T, *,
-                      mode: RunMode = RunMode.GATED, 
-                      after: Optional[DelayType] = None,
-                      post_result: bool = True,
+class Operation(Generic[T, V], ABC):
+
+    @abstractmethod    
+    def _schedule_for(self, obj: T, *,                      # @UnusedVariable
+                      mode: RunMode = RunMode.GATED,        # @UnusedVariable
+                      after: Optional[DelayType] = None,    # @UnusedVariable
+                      post_result: bool = True,             # @UnusedVariable
                       ) -> Delayed[V]:
-        raise NotImplementedError()
+        ...
     def schedule_for(self, obj: Union[T, Delayed[T]], *,
                      mode: RunMode = RunMode.GATED, 
                      after: Optional[DelayType] = None,
@@ -411,14 +413,15 @@ class OpScheduler(Generic[CS]):
             self.event = event
         
 
-class StaticOperation(Generic[V]):
+class StaticOperation(Generic[V], ABC):
     
+    @abstractmethod
     def _schedule(self, *,
-                  mode: RunMode = RunMode.GATED, 
-                  after: Optional[DelayType] = None,
-                  post_result: bool = True,
+                  mode: RunMode = RunMode.GATED,        # @UnusedVariable
+                  after: Optional[DelayType] = None,    # @UnusedVariable
+                  post_result: bool = True,             # @UnusedVariable
                   ) -> Delayed[V]:
-        raise NotImplementedError()
+        ...
     
     
     def schedule(self, *,
@@ -1107,9 +1110,9 @@ class ColorAllocator(Generic[H]):
         assignments = self.color_assignments
         with self._lock:
             old = assignments.get(key, None)
-            if old is color:
-                return
             if old is not None:
+                if old[0] is color:
+                    return
                 self._lose_mapping(old[0])
                 old[1].detach()
             assignments[key] = (color, finalize(key, self._lose_mapping_on_gc, color, ref(self)))
@@ -1134,7 +1137,8 @@ class ColorAllocator(Generic[H]):
                     return c
             self.next_reagent_color = bound
         try:
-            return self.returned_colors.popleft()
+            color: Color = self.returned_colors.popleft()
+            return color
         except IndexError:
                 raise IndexError(f"All colors in use")
     

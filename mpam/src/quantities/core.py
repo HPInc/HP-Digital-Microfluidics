@@ -36,7 +36,9 @@ DimOpCache = MutableMapping[T, 'Dimensionality']
 AbbrExp = tuple[Union[str, tuple[str,str]], int]
 
 D = TypeVar('D', bound='Quantity')
+D2 = TypeVar('D2', bound='Quantity')
 ND = TypeVar('ND', bound='NamedDim')
+BD = TypeVar('BD', bound='BaseDim')
 
 Quant = Union['UnknownDimQuant', 'NamedDim[ND]']
 QuantOrUnit = Union[D, 'UnitExpr[D]']
@@ -126,7 +128,7 @@ class Dimensionality(Generic[D]):
 
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format
-        cd = getattr(self, "_cached_description", None)
+        cd: Optional[str] = getattr(self, "_cached_description", None)
         if cd is None or self._desc_expt_fmt is not exponent_fmt: 
             self._desc_expt_fmt = exponent_fmt
 
@@ -198,8 +200,8 @@ class Dimensionality(Generic[D]):
         return res
 
     def __pow__(self, n: int) -> Dimensionality:
-        if not isinstance(n, numbers.Integral):
-            raise TypeError(f"Exponent not integral: {n}")
+        # if not isinstance(n, numbers.Integral):
+            # raise TypeError(f"Exponent not integral: {n}")
         cache: Optional[DimOpCache[int]] = getattr(self, "_cached_power", None)
         if cache is None:
             self._cached_power = cache = {}
@@ -215,7 +217,7 @@ class Dimensionality(Generic[D]):
         if d is not None:
             return d
         if issubclass(self.quant_class, NamedDim):
-            c = self.quant_class.restricted(restriction)
+            c: type[BaseDim] = self.quant_class.restricted(restriction)
             d = c._dim
             self._restrictions[restriction] = d
             return d
@@ -236,7 +238,7 @@ class Dimensionality(Generic[D]):
         return self.of(restriction)
         
     
-class BaseDimension(Dimensionality[ND]):
+class BaseDimension(Dimensionality[BD]):
     _sort_name: str
     
     def __init__(self, name: str) -> None:
@@ -249,8 +251,8 @@ class BaseDimension(Dimensionality[ND]):
     def description(self, *, exponent_fmt: ExptFormatter = None) -> str:  # @UnusedVariable
         return self._sort_name
 
-    def base_unit(self, abbr: str, singular: Optional[str]=None) -> Unit[ND]:
-        unit = Unit[ND](abbr, cast(ND, self.make_quantity(1)), singular=singular)
+    def base_unit(self, abbr: str, singular: Optional[str]=None) -> Unit[BD]:
+        unit = Unit[BD](abbr, self.make_quantity(1), singular=singular)
         if self._default_units is None: 
             self.default_units = (unit,)
         return unit
@@ -344,24 +346,24 @@ class Quantity(Generic[D]):
         if not isinstance(rhs, Quantity):
             raise TypeError(f"RHS not a Quantity: {rhs}")
         new_dim = self.dimensionality*rhs.dimensionality
-        return new_dim.make_quantity(self.magnitude*rhs.magnitude)
+        return cast(Quant, new_dim.make_quantity(self.magnitude*rhs.magnitude))
                         
     def divide_by(self, rhs: Quant) -> Quant:
         if not isinstance(rhs, Quantity):
             raise TypeError(f"RHS not a Quantity: {rhs}")
         new_dim = self.dimensionality/rhs.dimensionality
-        return new_dim.make_quantity(self.magnitude/rhs.magnitude)
+        return cast(Quant, new_dim.make_quantity(self.magnitude/rhs.magnitude))
     def in_denom(self, lhs: float) -> Quant:
-        if not isinstance(lhs, numbers.Real):
-            raise TypeError(f"LHS not a Quantity: {lhs}")
+        # if not isinstance(lhs, numbers.Real):
+            # raise TypeError(f"LHS not a Quantity: {lhs}")
         new_dim = self.dimensionality**(-1)
-        return new_dim.make_quantity(lhs/self.magnitude)
+        return cast(Quant, new_dim.make_quantity(lhs/self.magnitude))
     
     def to_power(self, rhs: int) -> Quant:
-        if not isinstance(rhs, numbers.Integral):
-            raise TypeError(f"RHS not an integer: {rhs}")
+        # if not isinstance(rhs, numbers.Integral):
+            # raise TypeError(f"RHS not an integer: {rhs}")
         new_dim = self.dimensionality**rhs
-        return new_dim.make_quantity(self.magnitude**rhs)
+        return cast(Quant, new_dim.make_quantity(self.magnitude**rhs))
 
     @overload
     def __mul__(self, rhs: float) -> D: ...  # @UnusedVariable
@@ -376,10 +378,11 @@ class Quantity(Generic[D]):
             return self.multiply_by(rhs.quantity)
         return self.multiply_by(rhs)
 
-    def __rmul__(self, lhs: float) -> D:
-        if not isinstance(lhs, numbers.Real):
-            raise TypeError(f"LHS not a real number: {lhs}")
-        return self.dimensionality.make_quantity(lhs*self.magnitude)
+    def __rmul__(self: D, lhs: float) -> D:
+        # if not isinstance(lhs, numbers.Real):
+            # raise TypeError(f"LHS not a real number: {lhs}")
+        dim: Dimensionality[D] = self.dimensionality
+        return dim.make_quantity(lhs*self.magnitude)
 
     @overload
     def __truediv__(self, rhs: float) -> D: ...  # @UnusedVariable
@@ -438,7 +441,7 @@ class Quantity(Generic[D]):
     
     def of(self, restriction: T, *, dim: Optional[str] = None) -> BaseDim:
         d = self.dimensionality.of(restriction, dim=dim)
-        return d.make_quantity(self.magnitude)
+        return cast(BaseDim, d.make_quantity(self.magnitude))
     
     def __getitem__(self, restriction: T) -> BaseDim:
         return self.of(restriction)
@@ -725,7 +728,7 @@ class UnitExpr(Generic[D]):
             
     def description(self, *, mag: float, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format
-        cd = getattr(self, "_cached_description", None)
+        cd: Optional[str] = getattr(self, "_cached_description", None)
         if cd is None or self._desc_expt_fmt is not exponent_fmt: 
             self._desc_expt_fmt = exponent_fmt
             num = [self.choose_abbr(mag, a)+exponent_fmt(e) for (a, e) in self.num]
@@ -811,9 +814,10 @@ class UnitExpr(Generic[D]):
         return res
 
     def __rmul__(self, n: float) -> D:
-        if not isinstance(n, numbers.Real):
-            raise TypeError(f"LHS is not a real number: {n}")
-        return n*self.quantity
+        # if not isinstance(n, numbers.Real):
+        #     raise TypeError(f"LHS is not a real number: {n}")
+        q: Quantity[D] = self.quantity
+        return n*q
     
     @overload
     def __truediv__(self, rhs: float) -> D: ...  # @UnusedVariable
@@ -837,17 +841,17 @@ class UnitExpr(Generic[D]):
         return res
 
 
-    def __rtruediv__(self, n: float) -> D:
-        if not isinstance(n, numbers.Real):
-            raise TypeError(f"LHS is not a real number: {n}")
+    def __rtruediv__(self, n: float) -> Quant:
+        # if not isinstance(n, numbers.Real):
+        #     raise TypeError(f"LHS is not a real number: {n}")
         return n/self.quantity
         
     # def qpow(self, rhs: int) -> UnknownDimQuant:
         # return cast(UnknownDimQuant, self.quantity**rhs)
 
-    def __pow__(self, rhs: int) -> UnitExpr[UnknownDimQuant]:
-        if not isinstance(rhs, numbers.Integral):
-            raise TypeError(f"LHS not an integer: {rhs}")
+    def __pow__(self, rhs: int) -> UnitExpr:
+        # if not isinstance(rhs, numbers.Integral):
+        #     raise TypeError(f"LHS not an integer: {rhs}")
         if rhs == 1:
             return self
         if rhs == 0:
@@ -880,7 +884,9 @@ class UnitExpr(Generic[D]):
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, UnitExpr): 
             return False
-        return self.quantity == other.quantity
+        q: Quantity[D] = self.quantity
+        val: bool = q == other.quantity
+        return val
     def __hash__(self) -> int:
         return hash(self.quantity)
     def __lt__(self, other: UnitExpr[D]) -> bool:
@@ -930,8 +936,8 @@ class Prefix:
     multiplier: float
     
     def __init__(self, prefix: str, mult: float) -> None:
-        if not isinstance(mult, numbers.Real):
-            raise TypeError(f"Multipler is not a real number: {mult}")
+        # if not isinstance(mult, numbers.Real):
+        #     raise TypeError(f"Multipler is not a real number: {mult}")
         self.prefix = prefix
         self.multiplier = mult
 
@@ -971,7 +977,8 @@ class NamedDim(Quantity[ND]):
         # @property here, mypy complains that it has method type.  If I make it
         # a propery in the metaclasses (the correct approach), I can't type it 
         # properly, because the metaclasses can't get the ND parameter.
-        return getattr(cls, "_zero")
+        val: ND = getattr(cls, "_zero")
+        return val
     
     @classmethod
     def default_units(cls, units: Union[UnitExpr[ND], Sequence[UnitExpr[ND]]]) -> None:
@@ -981,9 +988,9 @@ class NamedDim(Quantity[ND]):
             units = tuple(units)
         cls.dim().default_units = units
         
-    _restriction_classes: ClassVar[dict[Any, type[BaseDim[ND]]]]
+    _restriction_classes: ClassVar[dict[Any, type[BaseDim]]]
     @classmethod
-    def restricted(cls, restriction: T) -> type[BaseDim[ND]]:
+    def restricted(cls, restriction: T) -> type[BaseDim]:
         c = cls._restriction_classes.get(restriction, None)
         if c is not None:
             return c
@@ -1055,14 +1062,14 @@ class BaseDimMeta(type):
         cls._zero = cls(0)
         cls._restriction_classes: dict[Any, type[BaseDim]] = {}
 
-class BaseDim(NamedDim[ND], metaclass=BaseDimMeta): 
-    _dim: ClassVar[BaseDimension[ND]]
+class BaseDim(NamedDim[BD], metaclass=BaseDimMeta): 
+    _dim: ClassVar[BaseDimension[BD]]
     
     @classmethod
-    def base_unit(cls: type[BaseDim[ND]], abbr: str) -> Unit[ND]:
+    def base_unit(cls: type[BaseDim[BD]], abbr: str) -> Unit[BD]:
         return cls._dim.base_unit(abbr)
     
-class CountDim(BaseDim[ND]):
+class CountDim(BaseDim[BD]):
     @property
     def count(self) -> int:
         return math.floor(self.magnitude)
@@ -1075,12 +1082,12 @@ class CountDim(BaseDim[ND]):
             raise ValueError(f"{self} has non-integral magnitude")
         return n
     
-    def __add__(self: ND, rhs: Union[float,ND]) -> ND:
+    def __add__(self: ND, rhs: Union[float,BD]) -> BD:
         rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
-        return cast(ND, self.dimensionality.make_quantity(self.magnitude+rmag))
+        return cast(BD, self.dimensionality.make_quantity(self.magnitude+rmag))
     
-    def __radd__(self, lhs: float) -> ND:
-        return cast(ND, self.dimensionality.make_quantity(self.magnitude+lhs))
+    def __radd__(self, lhs: float) -> BD:
+        return self.dimensionality.make_quantity(self.magnitude+lhs)
     
     # I'm getting rid of the in-place operations because it's maddeningly frustrating to 
     # track down errors due to ZERO() changing because it was used in a context in
@@ -1091,12 +1098,12 @@ class CountDim(BaseDim[ND]):
     #     self.magnitude += rmag
     #     return self.cast()
     
-    def __sub__(self: ND, rhs: Union[float,ND]) -> ND:
+    def __sub__(self: BD, rhs: Union[float,BD]) -> BD:
         rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
-        return cast(ND, self.dimensionality.make_quantity(self.magnitude-rmag))
+        return cast(BD, self.dimensionality.make_quantity(self.magnitude-rmag))
     
-    def __rsub__(self, lhs: float) -> ND:
-        return cast(ND, self.dimensionality.make_quantity(lhs-self.magnitude))
+    def __rsub__(self, lhs: float) -> BD:
+        return self.dimensionality.make_quantity(lhs-self.magnitude)
         
     # def __isub__(self, rhs: Union[float,ND]) -> ND:
     #     rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
@@ -1111,30 +1118,30 @@ class CountDim(BaseDim[ND]):
         self._ensure_dim_match(rhs, "==")
         return self.magnitude == rhs.magnitude
     
-    def __lt__(self, rhs: Union[float,ND]) -> bool:
+    def __lt__(self, rhs: Union[float,BD]) -> bool:
         if isinstance(rhs, (int, float)):
             return self.magnitude < rhs
         self._ensure_dim_match(rhs, "<")
         return self.magnitude < rhs.magnitude
-    def __gt__(self, rhs: Union[float,ND]) -> bool:
+    def __gt__(self, rhs: Union[float,BD]) -> bool:
         if isinstance(rhs, (int, float)):
             return self.magnitude > rhs
         self._ensure_dim_match(rhs, ">")
         return self.magnitude > rhs.magnitude
     
-    def __le__(self, rhs: Union[float,ND]) -> bool:
+    def __le__(self, rhs: Union[float,BD]) -> bool:
         if isinstance(rhs, (int, float)):
             return self.magnitude <= rhs
         self._ensure_dim_match(rhs, "<=")
         return self.magnitude <= rhs.magnitude
-    def __ge__(self, rhs: Union[float,ND]) -> bool:
+    def __ge__(self, rhs: Union[float,BD]) -> bool:
         if isinstance(rhs, (int, float)):
             return self.magnitude >= rhs
         self._ensure_dim_match(rhs, ">=")
         return self.magnitude >= rhs.magnitude
 
     @classmethod
-    def base_unit(cls: type[CountDim[ND]], singular: str, *, plural: Optional[str] = None) -> Unit[ND]:
+    def base_unit(cls: type[CountDim[BD]], singular: str, *, plural: Optional[str] = None) -> Unit[BD]:
         if plural is None:
             plural = infer_plural(singular)
         return cls._dim.base_unit(plural, singular=singular)

@@ -1,10 +1,13 @@
+from __future__ import annotations
 from typing import Callable, Final, TextIO, NoReturn
 import sys
+from abc import ABC, abstractmethod
 
-class ErrorHandler:
-    def __call__(self, msg: str) -> None:
-        raise NotImplementedError()
-    
+class ErrorHandler(ABC):
+    @abstractmethod
+    def __call__(self, msg: str) -> None:  # @UnusedVariable
+        ...
+        
     def expect_true(self,
                     cond: bool, 
                     msg_fn: Callable[[], str]) -> None:

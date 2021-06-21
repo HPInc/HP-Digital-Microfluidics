@@ -161,7 +161,8 @@ class PadMonitor(object):
         annotation.set_color(color)
             
     def drop_radius(self, drop: Drop) -> float:
-        return 0.45*self.square.get_width()*math.sqrt(drop.volume.ratio(self.capacity))
+        square_width: int = self.square.get_width()
+        return 0.45*square_width*math.sqrt(drop.volume.ratio(self.capacity))
             
     def note_drop_change(self, old: Optional[Drop], new: Optional[Drop]) -> None:
         # print(f"{self.pad}'s drop changed from {old} to {new}")

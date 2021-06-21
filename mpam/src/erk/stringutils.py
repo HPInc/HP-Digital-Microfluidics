@@ -1,3 +1,4 @@
+from __future__ import annotations
 from re import Pattern
 from typing import Optional, Final, Mapping, Union, cast, Sequence
 import re
