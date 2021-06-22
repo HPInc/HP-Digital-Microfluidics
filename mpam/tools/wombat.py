@@ -12,7 +12,7 @@ from mpam.device import System, Pad, Well, Heater, Magnet
 from devices.wombat import Board
 from mpam.types import Dir, Liquid, unknown_reagent, ticks,\
     XYCoord, Operation, StaticOperation, RunMode, Reagent, tick
-from mpam.drop import Drop, Mix2, Mix3, Mix4, MixingType
+from mpam.drop import Drop, Mix2, Mix3, Mix4, MixingType, Mix6, Mix9
 from quantities.temperature import TemperaturePoint, abs_C
 from erk.stringutils import map_str
 from abc import ABC, abstractmethod
@@ -444,6 +444,8 @@ class Mix(Task):
             2: Mixer(Mix2(Dir.LEFT), 1, 2),
             3: Mixer(Mix3(Dir.LEFT, Dir.LEFT), 1, 3),
             4: Mixer(Mix4(Dir.LEFT, Dir.DOWN), 2, 2),
+            6: Mixer(Mix6(Dir.LEFT, Dir.DOWN), 2, 3),
+            9: Mixer(Mix9(Dir.LEFT, Dir.DOWN), 3, 3),
         }
     
     @classmethod
@@ -501,7 +503,7 @@ class Mix(Task):
                         .then(Drop.Move(Dir.UP))
         else:
             towell = Drop.Move(Dir.DOWN, steps=2*(2-row)) \
-                        .then(Drop.Move(Dir.RIGHT, steps=6+2*col)) \
+                        .then(Drop.Move(Dir.RIGHT, steps=6+2*col), after=(col+1 if row==2 else 0)*ticks) \
                         .then(Drop.Move(Dir.DOWN))
             
             # towell = Drop.Move(Dir.RIGHT, steps=6+2*col) \

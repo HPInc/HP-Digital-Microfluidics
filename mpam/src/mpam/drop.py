@@ -144,6 +144,10 @@ class Drop(OpScheduler['Drop']):
             steps = self.steps
             # allow_unsafe_motion = self.allow_unsafe_motion
             future = Delayed[Drop]()
+            
+            if steps == 0:
+                future.post(drop)
+                return future
                 
             one_tick: Ticks = 1*tick
             assert mode.is_gated
@@ -318,8 +322,6 @@ class MixSequenceStep(ABC):
                  pads: Sequence[Pad]) -> Mapping[Drop, float]:  # @UnusedVariable
         ...
     
-MixSequence = Sequence[Sequence[MixSequenceStep]]
-        
 
 class MixInstance:
     mix_type: Final[MixingType]
@@ -429,6 +431,7 @@ class MixInstance:
             result = self.result
             for drop, future in self.futures.items():
                 if drop in self.full_mix:
+                    print(f"result is {drop.liquid}")
                     if result is not None:
                         drop.reagent = result
                 else:
@@ -479,16 +482,11 @@ class MixStep(MixSequenceStep):
         e = self.error
         return {drop1: e, drop2: e}
                  
-
-class MixingType(ABC):
-    def start_mix(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> None:
-        secondary = self.secondary_pads(lead_drop) 
-        inst = MixInstance(op, lead_drop, future, secondary)
-        if inst.install():
-            inst.run()
-
-    @abstractmethod            
-    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]: ...  # @UnusedVariable
+class MixingBase(ABC):
+    is_approximate: Final[bool]
+    
+    def __init__(self, *, is_approximate: bool) -> None:
+        self.is_approximate = is_approximate
 
     @abstractmethod    
     def perform(self, *,
@@ -498,6 +496,18 @@ class MixingType(ABC):
                 n_shuttles: int,            # @UnusedVariable
                 ) -> Iterator[bool]:
         ...
+
+class MixingType(MixingBase):
+    
+    def start_mix(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> None:
+        secondary = self.secondary_pads(lead_drop) 
+        inst = MixInstance(op, lead_drop, future, secondary)
+        if inst.install():
+            inst.run()
+
+    @abstractmethod            
+    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]: ...  # @UnusedVariable
+
         
     def two_steps_from(self, pad: Pad, direction: Dir) -> Pad:
         m = pad.neighbor(direction)
@@ -506,10 +516,14 @@ class MixingType(ABC):
         assert p is not None
         return p
     
+    
+MixSequence = Sequence[Sequence[MixSequenceStep]]
+    
 class PureMix(MixingType):
     script: Final[MixSequence]
     
-    def __init__(self, script: MixSequence):
+    def __init__(self, script: MixSequence, *, is_approximate: bool):
+        super().__init__(is_approximate = is_approximate)
         self.script = script
     
     def perform(self, *,
@@ -519,6 +533,8 @@ class PureMix(MixingType):
                 n_shuttles: int,
                 ) -> Iterator[bool]:
         unsatisfied = full_mix.intersection(drops)
+        if not unsatisfied:
+            yield False
         tolerances = {d: tolerance if d in unsatisfied else math.inf for d in drops}
         error = {d: math.inf for d in drops}
         for step in self.script:
@@ -541,6 +557,75 @@ class PureMix(MixingType):
         n = len(drops)
         raise MPAMError(f"""Requested driving error to {min_tolerance} in {n}-way mix.  
                                         Could only get to {min_error} on at least one drop""")
+        
+
+class Submix(MixingBase):
+    mix_type: Final[MixingType]
+    indices: Final[Sequence[int]]
+    need_all: Final[bool]
+
+    def __init__(self, mix_type: MixingType, indices: Sequence[int], need_all: bool) -> None:
+        super().__init__(is_approximate = mix_type.is_approximate)
+        self.mix_type = mix_type
+        self.indices = indices
+        self.need_all = need_all
+    
+    def perform(self, *,
+                full_mix: set[Drop], 
+                tolerance: float,
+                drops: tuple[Drop,...],
+                n_shuttles: int,
+                ) -> Iterator[bool]:
+        used = tuple(drops[i] for i in self.indices)
+        return self.mix_type.perform(full_mix = set(used) if self.need_all else full_mix,
+                                     tolerance = tolerance,
+                                     drops = used,
+                                     n_shuttles = n_shuttles)
+        
+MixPhases = Sequence[Sequence[Submix]]
+
+class CompositeMix(MixingType):
+    phases: Final[MixPhases]
+    n_approximate: Final[int]
+    
+    def __init__(self, phases: MixPhases):
+        approximate_phases = 0
+        for phase in phases:
+            if any(submix.is_approximate for submix in phase):
+                approximate_phases += 1
+        self.n_approximate = approximate_phases
+        
+        super().__init__(is_approximate = approximate_phases > 0)
+        self.phases = phases
+    
+    def perform(self, *,
+                full_mix: set[Drop], 
+                tolerance: float,
+                drops: tuple[Drop,...],
+                n_shuttles: int,
+                ) -> Iterator[bool]:
+        # print(drops)
+        approximate_phases = self.n_approximate
+        if approximate_phases > 1:
+            tolerance = (1+tolerance)**(1/approximate_phases)-1
+            print(f"Adjusted tolerance is {tolerance}")
+        
+        last_phase = len(self.phases)-1
+        for p,phase in enumerate(self.phases):
+            iters = {i: submix.perform(full_mix=full_mix,
+                                       tolerance=tolerance,
+                                       drops=drops,
+                                       n_shuttles=n_shuttles) 
+                        for i,submix in enumerate(phase)}
+            while iters:
+                current = tuple(iters.items())
+                for i,iterator in current:
+                    if not next(iterator):
+                        del iters[i]
+                        
+                done = p==last_phase and not iters
+                yield not done
+        
     
     
 class Mix2(PureMix):
@@ -551,7 +636,7 @@ class Mix2(PureMix):
         ,)
 
     def __init__(self, to_second: Dir) -> None:
-        super().__init__(Mix2.the_script)
+        super().__init__(Mix2.the_script, is_approximate = False)
         self.to_second = to_second
         
     def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
@@ -577,7 +662,7 @@ class Mix3(PureMix):
         )
 
     def __init__(self, to_second: Dir, to_third: Dir) -> None:
-        super().__init__(Mix3.the_script)
+        super().__init__(Mix3.the_script, is_approximate = True)
         self.to_second = to_second
         self.to_third = to_third
         
@@ -587,19 +672,18 @@ class Mix3(PureMix):
         p3 = self.two_steps_from(p2, self.to_third)
         return (p2,p3)
 
-class Mix4(PureMix):
+class Mix4(CompositeMix):
     to_second: Final[Dir]
     to_third: Final[Dir]
     
-    the_script: Final[ClassVar[MixSequence]] = (
-        (MixStep(0,1,math.inf),
-         MixStep(2,3,math.inf)),
-        (MixStep(0,2,0.0),
-         MixStep(1,3,0.0))
-        )
 
     def __init__(self, to_second: Dir, to_third: Dir) -> None:
-        super().__init__(Mix4.the_script)
+        phases = ((Submix(Mix2(to_second), (0,1), True),
+                   Submix(Mix2(to_second), (2,3), True)),
+                  (Submix(Mix2(to_third), (0,2), False),
+                   Submix(Mix2(to_third), (1,3), False))
+                )
+        super().__init__(phases)
         self.to_second = to_second
         self.to_third = to_third
         
@@ -609,5 +693,59 @@ class Mix4(PureMix):
         p3 = self.two_steps_from(p1, self.to_third)
         p4 = self.two_steps_from(p3, self.to_second)
         return (p2,p3,p4)
+
+class Mix6(CompositeMix):
+    major_dir: Final[Dir]
+    minor_dir: Final[Dir]
+    
+
+    def __init__(self, major_dir: Dir, minor_dir: Dir) -> None:
+        phases = ((Submix(Mix2(minor_dir), (0,3), True),
+                   Submix(Mix2(minor_dir), (1,4), True),
+                   Submix(Mix2(minor_dir), (2,5), True)),
+                  (Submix(Mix3(major_dir, major_dir), (0,1,2), False),
+                   Submix(Mix3(major_dir, major_dir), (3,4,5), False))
+                )
+        super().__init__(phases)
+        self.major_dir = major_dir
+        self.minor_dir = minor_dir
+        
+    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
+        p1 = lead_drop.pad
+        p2 = self.two_steps_from(p1, self.major_dir)
+        p3 = self.two_steps_from(p2, self.major_dir)
+        p4 = self.two_steps_from(p1, self.minor_dir)
+        p5 = self.two_steps_from(p4, self.major_dir)
+        p6 = self.two_steps_from(p5, self.major_dir)
+        return (p2,p3,p4,p5,p6)
+
+class Mix9(CompositeMix):
+    major_dir: Final[Dir]
+    minor_dir: Final[Dir]
+    
+
+    def __init__(self, major_dir: Dir, minor_dir: Dir) -> None:
+        phases = ((Submix(Mix3(minor_dir, minor_dir), (0,3,6), True),
+                   Submix(Mix3(minor_dir, minor_dir), (1,4,7), True),
+                   Submix(Mix3(minor_dir, minor_dir), (2,5,8), True)),
+                  (Submix(Mix3(major_dir, major_dir), (0,1,2), False),
+                   Submix(Mix3(major_dir, major_dir), (3,4,5), False),
+                   Submix(Mix3(major_dir, major_dir), (6,7,8), False))
+                )
+        super().__init__(phases)
+        self.major_dir = major_dir
+        self.minor_dir = minor_dir
+        
+    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
+        p1 = lead_drop.pad
+        p2 = self.two_steps_from(p1, self.major_dir)
+        p3 = self.two_steps_from(p2, self.major_dir)
+        p4 = self.two_steps_from(p1, self.minor_dir)
+        p5 = self.two_steps_from(p4, self.major_dir)
+        p6 = self.two_steps_from(p5, self.major_dir)
+        p7 = self.two_steps_from(p4, self.minor_dir)
+        p8 = self.two_steps_from(p7, self.major_dir)
+        p9 = self.two_steps_from(p8, self.major_dir)
+        return (p2,p3,p4,p5,p6,p7,p8,p9)
 
 
