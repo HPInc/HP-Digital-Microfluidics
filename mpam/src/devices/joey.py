@@ -208,7 +208,7 @@ class Board(device.Board):
         extraction_points.append(ExtractionPoint(self.pad_at(13,15)))
         
     def update_state(self):
-        pass
+        super().update_state()
                        
     def stop(self)->None:
         # if self._port is not None:

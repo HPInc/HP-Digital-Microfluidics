@@ -781,10 +781,10 @@ class SystemComponent(ABC):
         system = self.system
         assert system is not None
         return system
-    
-    @abstractmethod
+
+    @abstractmethod    
     def update_state(self) -> None:
-        ...
+        self.finish_update()
     
     def add_monitor(self, cb: Callback) -> None:
         self._monitor_callbacks.append(cb)

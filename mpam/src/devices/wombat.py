@@ -204,4 +204,4 @@ class Board(joey.Board):
             # but then the next round will use that extra byte.  Sending everything
             # twice seems to do the job.  I'll look into this further.
             self._port.write(self._states)
-        self.finish_update()
+        super().update_state()

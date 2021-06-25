@@ -464,7 +464,7 @@ class MixStep(MixSequenceStep):
             def update(_) -> None:
                 drop2.status = DropStatus.IN_MIX
                 l1.mix_in(l2)
-                # print(f"Merging: now {l1.reagent}.  Error is {self.error}")
+                print(f"Merging: now {l1.reagent}.  Error is {self.error}")
                 pad2.drop = None
                 drop1.pad = middle
             pad1.schedule(Pad.TurnOff, post_result = False)
