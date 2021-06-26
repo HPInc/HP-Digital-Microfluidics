@@ -391,26 +391,52 @@ class OpScheduler(Generic[CS]):
             op = op()
         return op.schedule_for(self, mode=mode, after=after, post_result=post_result)
     
-    class WaitUntil(Operation[CS,CS]):
-        event: Final[Event]
+    class WaitAt(Operation[CS,CS]):
+        barrier: Barrier[CS]
+        def __init__(self, barrier: Barrier):
+            self.barrier = barrier
+            
         def _schedule_for(self, obj: CS, *,
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
-                          post_result: bool = True,
+                          post_result: bool = True,  # @UnusedVariable
+                          ) -> Delayed[CS]:
+            
+            future = Delayed[CS]()
+            if after is None:
+                self.barrier.reach(obj, future)
+            else:
+                def cb() -> None:
+                    self.barrier.reach(obj, future)                    
+                obj.schedule_communication(cb, mode, after=after)
+            return future
+
+    
+    class WaitFor(Operation[CS,CS]):
+        waitable: Union[Trigger, Delayed[Any]]
+        def _schedule_for(self, obj: CS, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,  # @UnusedVariable
                           ) -> Delayed[CS]:
             
             future = Delayed[CS]()
             
-            def cb() -> Optional[Callback]:
-                self.event.wait()
-                finish: Optional[Callback] = None if not post_result else (lambda : future.post(obj))
-                return finish
+            waitable = self.waitable
             
-            obj.schedule_communication(cb, mode, after=after)
+            def cb() -> None:
+                if isinstance(waitable, Delayed):
+                    waitable.when_value(lambda _: future.post(obj))
+                else:
+                    waitable.wait(obj, future)
+            if after is None:
+                cb()
+            else:
+                obj.schedule_communication(cb, mode, after=after)
             return future
         
-        def __init__(self, event: Event) -> None:
-            self.event = event
+        def __init__(self, waitable: Union[Trigger, Delayed[Any]]) -> None:
+            self.waitable = waitable
         
 
 class StaticOperation(Generic[V], ABC):
@@ -592,6 +618,70 @@ class Delayed(Generic[T]):
         else:
             for f in futures:
                 f.wait()
+                
+class Barrier(Generic[T]):
+    required: Final[int]
+    participants: list[tuple[T,Delayed[T]]]
+    lock: Final[Lock]
+    
+    @property
+    def count(self) -> int:
+        return len(self.participants)
+
+    
+    def __init__(self, required: int) -> None:
+        self.required = required
+        self.participants = []
+        self.lock = Lock()
+        
+    def reach(self, val: T, future: Delayed[T]) -> bool:
+        with self.lock:
+            participants = self.participants
+            if len(participants) == self.required-1:
+                for v,f in participants:
+                    f.post(v)
+                future.post(val)
+                participants.clear()
+                return True
+            else:
+                participants.append((val, future))
+                return False
+    
+    def reset(self) -> None:
+        with self.lock:
+            self.participants.clear()
+            
+        
+class Trigger:
+    waiting: Final[list[tuple[Any,Delayed]]]
+    lock: Final[Lock]
+    
+    @property
+    def count(self) -> int:
+        return len(self.waiting)
+    
+    def __init__(self) -> None:
+        self.waiting = []
+        self.lock = Lock()
+        
+    def wait(self, val: Any, future: Delayed) -> None:
+        with self.lock:
+            self.waiting.append((val, future))
+            
+    def fire(self) -> int:
+        with self.lock:
+            waiting = self.waiting
+            val = len(waiting)
+            for v,f in waiting:
+                f.post(v)
+            return val
+    
+    def reset(self) -> None:
+        with self.lock:
+            self.waiting.clear()
+    
+    
+    
 
 def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
              mode: RunMode = RunMode.GATED, 
