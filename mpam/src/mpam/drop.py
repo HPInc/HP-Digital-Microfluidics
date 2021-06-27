@@ -2,7 +2,7 @@ from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
     StaticOperation, Reagent, Callback, waste_reagent
-from mpam.device import Pad, Board, Well, WellGroup, WellState
+from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint
 from mpam.exceptions import NoSuchPad, NotAtWell, MPAMError
 from typing import Optional, Final, Union, Sequence, Callable, Mapping, ClassVar,\
     Iterator
@@ -111,6 +111,38 @@ class Drop(OpScheduler['Drop']):
             future = Delayed[Drop]()
             assert mode.is_gated
             pad = self.pad
+            def make_drop(_) -> None:
+                drop = Drop(pad=pad, liquid=self.liquid)
+                if post_result:
+                    future.post(drop)
+            pad.schedule(Pad.TurnOn, mode=mode, after=after) \
+                .then_call(make_drop)
+            return future
+            
+    class TeleportInTo(StaticOperation['Drop']):
+        extraction_point: Final[ExtractionPoint]
+        liquid: Final[Liquid]
+        
+        def __init__(self, extraction_point: ExtractionPoint,
+                     liquid: Optional[Liquid] = None,
+                     reagent: Optional[Reagent] = None,
+                     ) -> None:
+            self.extraction_point = extraction_point
+            board = extraction_point.pad.board 
+            if liquid is None:
+                if reagent is None:
+                    reagent = unknown_reagent
+                liquid = Liquid(reagent, board.drop_size)
+            self.liquid = liquid
+            
+        def _schedule(self, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,  
+                      ) -> Delayed[Drop]:
+            future = Delayed[Drop]()
+            assert mode.is_gated
+            pad = self.extraction_point.pad
             def make_drop(_) -> None:
                 drop = Drop(pad=pad, liquid=self.liquid)
                 if post_result:
