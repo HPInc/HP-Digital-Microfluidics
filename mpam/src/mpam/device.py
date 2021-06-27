@@ -122,6 +122,8 @@ BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
 class Pad(BinaryComponent['Pad']):
     location: Final[XYCoord]
     exists: Final[bool]
+    
+    reserved: bool = False
     # broken: bool
     
     _pads: Final[PadArray]
@@ -220,11 +222,31 @@ class Pad(BinaryComponent['Pad']):
             return None
         return p
     
+    @property
     def empty(self) -> bool:
         return self.drop is None
     
+    @property
     def safe(self) -> bool:
-        return self.empty and all(map(lambda n : n.empty, self.all_neighbors))
+        w = self.well
+        if w is not None and (w.gate_on or w.gate_reserved):
+            return False
+        return self.empty and all(map(lambda n : n.empty and not n.reserved, self.all_neighbors))
+    
+    def safe_except(self, padOrWell: Union[Pad, Well]) -> bool:
+        w = self.well
+        if w is not None and w is not padOrWell and (w.gate_on or w.gate_reserved):
+            return False
+        for p in self.all_neighbors:
+            if p is not padOrWell and (not p.empty or p.reserved):
+                return False
+        return True
+    
+    def reserve(self) -> bool:
+        if self.reserved:
+            return False
+        self.reserved = True
+        return True
     
     def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
         self._drop_change_callbacks.add(cb, key=key)
@@ -233,6 +255,10 @@ WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
 class WellPad(BinaryComponent['WellPad']):
     loc: WellPadLoc
+    
+    @property
+    def has_fluid(self) -> bool:
+        return self.current_state is OnOff.ON
         
     def __init__(self, board: Board, 
                  initial_state: OnOff = OnOff.OFF, *, 
@@ -298,6 +324,12 @@ class WellMotion:
             return False
         # The other one wants to go to the same place we are, and either we haven't turned 
         # any gates on yet or we just did in this tick.
+        
+        # If we're dispensing and we already have any of that motion's gates in our set,
+        # it'll have to wait until we're done with this one.
+        if self.target is WellState.DISPENSED and (self.well_gates & other.well_gates):
+            return False
+        
         # print(f"Piggybacking")
         self.well_gates.update(other.well_gates)
         if self.gate_status is GateStatus.JUST_ON:
@@ -316,6 +348,7 @@ class WellMotion:
         # can piggyback onto another motion (or just return) 
         if self.next_step == 0:
             # print(f"New motion to {self.target}, gates = {self.well_gates}: {self}")
+            
             with group.lock:
                 current = group.motion
                 if current is not None:
@@ -352,8 +385,26 @@ class WellMotion:
         for pad_index in self.sequence[self.next_step]:
             if pad_index == -1:
                 gate_state = OnOff.ON
+                # If we're turning the gates on to dispense, we need to make sure that the 
+                # corresponding exit pads aren't occupied (or we'll slurp the drop back).  
+                # If any are, we just return and try again next time.
+                if self.target is WellState.DISPENSED:
+                    for g in self.well_gates:
+                        w = g.loc
+                        assert isinstance(w, Well)
+                        if not w.exit_pad.empty:
+                            return self.one_tick
+                
             else:
                 states[pad_index] = OnOff.ON
+        # if we're on the last step and we would turn on any exit pads, we need to 
+        # make sure that they're safe
+        if self.next_step == len(self.sequence) - 1:
+            for (pad, state) in self.pad_states.items():
+                pw = pad.well
+                assert pw is not None
+                if state is OnOff.ON and not pad.safe_except(pw):
+                    return self.one_tick 
         for (i, shared) in enumerate(shared_pads):
             shared.schedule(WellPad.SetState(states[i]), post_result=False)
         for gate in self.well_gates:
@@ -474,11 +525,12 @@ class Well(OpScheduler['Well'], BoardComponent):
     is_voidable: Final[bool]
     exit_pad: Final[Pad]
     gate: Final[WellPad]
+    gate_reserved: bool = False
     _contents: Optional[Liquid]
     _shape: Final[Optional[WellShape]]
     
     _liquid_change_callbacks: Final[ChangeCallbackList[Optional[Liquid]]]
-    
+   
     @property
     def contents(self) -> Optional[Liquid]:
         return self._contents
@@ -513,6 +565,10 @@ class Well(OpScheduler['Well'], BoardComponent):
     def available(self) -> bool:
         c = self._contents
         return c is None or c.volume==Volume.ZERO() and not c.inexact
+    
+    @property
+    def gate_on(self) -> bool:
+        return self.gate.current_state is OnOff.ON
     
     def __init__(self, *,
                  board: Board,
@@ -595,6 +651,12 @@ class Well(OpScheduler['Well'], BoardComponent):
         self._contents = None
         self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
         # print(f"Volume is now {self.volume}")
+        
+    def reserve_gate(self) -> bool:
+        if self.gate_reserved:
+            return False
+        self.gate_reserved = True
+        return True
         
     def on_liquid_change(self, cb: ChangeCallback[Optional[Liquid]], *, key: Optional[Hashable] = None) -> None:
         self._liquid_change_callbacks.add(cb, key=key)
@@ -849,6 +911,8 @@ class Board(SystemComponent):
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
     _drop_size: Volume
+    _reserved_well_gates: list[Well]
+    _lock: Final[Lock]
     
     def __init__(self, *, 
                  pads: PadArray,
@@ -866,6 +930,8 @@ class Board(SystemComponent):
         self.extraction_points = [] if extraction_points is None else extraction_points
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
+        self._lock = Lock()
+        self._reserved_well_gates = []
 
     def stop(self) -> None:
         pass    
@@ -911,7 +977,9 @@ class Board(SystemComponent):
             assert all(w.dispensed_volume==cache for w in self.wells), "Not all wells dispense the same volume"
             self._drop_size = cache
         return cache
+    
         
+
         
     
 class UserOperation(Worker):

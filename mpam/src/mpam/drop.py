@@ -155,6 +155,7 @@ class Drop(OpScheduler['Drop']):
     class Move(Operation['Drop','Drop']):
         direction: Final[Dir]
         steps: Final[int]
+        allow_unsafe: Final[bool]
         
         # I originally had an "allow_unsafe_motion" parameter that was used in a test to see whether 
         # a step would be in the neighborhood of a drop, but it was reasoning based on the current state,
@@ -182,31 +183,45 @@ class Drop(OpScheduler['Drop']):
                 return future
                 
             one_tick: Ticks = 1*tick
+            allow_unsafe = self.allow_unsafe
             assert mode.is_gated
-            def before_tick() -> Optional[Ticks]:
-                nonlocal steps
+            def before_tick() -> Iterator[Optional[Ticks]]:
                 last_pad = drop.pad
-                with system.batched():
+                for i in range(steps):
                     next_pad = last_pad.neighbor(direction)
-                    # print(f"Moving drop from {last_pad} to {next_pad}")
                     if next_pad is None or next_pad.broken:
                         raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
-                    next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False)
-                    last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False)
-                    board.after_tick(drop._update_pad_fn(last_pad, next_pad))
-                    steps -= 1
-                    # print(f"steps is now {steps}")
-                    if steps > 0:
-                        return one_tick
-                    if post_result:
-                        board.after_tick(lambda : future.post(drop))
-                return None
-            board.before_tick(before_tick, delta=mode.gated_delay(after))
+                    if not allow_unsafe:
+                        while not next_pad.safe_except(last_pad):
+                            # print(f"unsafe: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
+                            yield one_tick
+                    while not next_pad.reserve():
+                        if allow_unsafe:
+                            break
+                        yield one_tick
+                    with system.batched():
+                        # print(f"Tick number {system.clock.next_tick}")
+                        # print(f"Moving drop from {last_pad} to {next_pad}")
+                        assert last_pad == drop.pad, f"{i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}"
+                        next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False)
+                        last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False)
+                        board.after_tick(drop._update_pad_fn(last_pad, next_pad))
+                        # print(f"i = {i}, steps = {steps}, drop = {drop}, lp = {last_pad}, np = {next_pad}")
+                        if post_result and i == steps-1:
+                            board.after_tick(lambda : future.post(drop))
+                    last_pad = next_pad
+                    if i < steps-1:
+                        yield one_tick
+                yield None
+            iterator = before_tick()
+            board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
             return future
         
-        def __init__(self, direction: Dir, *, steps: int = 1) -> None:
+        def __init__(self, direction: Dir, *, steps: int = 1, 
+                     allow_unsafe: bool = False) -> None:
             self.direction = direction
             self.steps = steps
+            self.allow_unsafe = allow_unsafe
          
             
     class DispenseFrom(StaticOperation['Drop']):
@@ -321,6 +336,7 @@ class Drop(OpScheduler['Drop']):
             assert to_pad.drop is None, f"Moving {self} to non-empty {to_pad}"
             # print(f"Moved drop from {from_pad} to {to_pad}")
             self.pad = to_pad
+            to_pad.reserved = False
             # print(f"Drop now at {to_pad}")
         return fn
     
@@ -496,7 +512,7 @@ class MixStep(MixSequenceStep):
             def update(_) -> None:
                 drop2.status = DropStatus.IN_MIX
                 l1.mix_in(l2)
-                print(f"Merging: now {l1.reagent}.  Error is {self.error}")
+                # print(f"Merging: now {l1.reagent}.  Error is {self.error}")
                 pad2.drop = None
                 drop1.pad = middle
             pad1.schedule(Pad.TurnOff, post_result = False)
@@ -640,7 +656,7 @@ class CompositeMix(MixingType):
         approximate_phases = self.n_approximate
         if approximate_phases > 1:
             tolerance = (1+tolerance)**(1/approximate_phases)-1
-            print(f"Adjusted tolerance is {tolerance}")
+            # print(f"Adjusted tolerance is {tolerance}")
         
         last_phase = len(self.phases)-1
         for p,phase in enumerate(self.phases):

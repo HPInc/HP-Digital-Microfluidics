@@ -9,7 +9,7 @@ from mpam.device import Board, System
 from mpam.exerciser import Exerciser, Task
 from quantities.SI import ms
 from quantities.dimensions import Time
-from mpam.types import Reagent, schedule, Liquid, Dir, tick
+from mpam.types import Reagent, schedule, Liquid, Dir
 from mpam.drop import Drop, Mix2
 
 
@@ -65,7 +65,7 @@ class Prepare(Task):
                 .then(Drop.Move(Dir.LEFT, steps=5)) \
                 .then(Drop.Move(Dir.DOWN)) \
                 .then(Drop.InMix(fully_mixed=True)) \
-                .then(Drop.Move(Dir.DOWN, steps=5), after=1*tick) \
+                .then(Drop.Move(Dir.DOWN, steps=5)) \
                 .then(Drop.Move(Dir.RIGHT, steps=2))
         
         

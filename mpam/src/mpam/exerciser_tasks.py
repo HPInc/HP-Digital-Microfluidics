@@ -263,26 +263,18 @@ class Mix(Task):
                         .then(Drop.Move(Dir.UP))
         else:
             towell = Drop.Move(Dir.DOWN, steps=2*(2-row)) \
-                        .then(Drop.Move(Dir.RIGHT, steps=6+2*col), after=(col+1 if row==2 else 0)*ticks) \
+                        .then(Drop.Move(Dir.RIGHT, steps=6+2*col)) \
                         .then(Drop.Move(Dir.DOWN))
             
             # towell = Drop.Move(Dir.RIGHT, steps=6+2*col) \
                         # .then(Drop.Move(Dir.DOWN, steps = 5-2*row))
                         
-        # delay = row*(2*mixer.n_cols+4)+col + (3 if i>0 else 0)
-        delay = 0
-        if i > 0:
-            # The delay is such that the row hits the bottom just as the previous row
-            # clears.  The adjustment for the top row takes advantage of the fact 
-            # that the lead drop goes to the upper well.
-            delay = (mixer.n_rows-row-1)*(3*mixer.n_cols-2) - (3 if row==0 else 0)
-
         op = Drop.DispenseFrom(well) \
                 .then_process(change_reagent(reagent)) \
                 .then(Drop.Move(Dir.DOWN, steps=row*2+1)) \
                 .then(Drop.Move(Dir.RIGHT, steps = 12-2*col)) \
                 .then(mixop) \
-                .then(towell, after=delay*ticks) \
+                .then(towell) \
                 .then(Drop.EnterWell)
                 
                 
@@ -298,7 +290,7 @@ class Mix(Task):
         paths = [self.create_path(i, well, args) for i in range(n_drops)]
         
         with system.batched():
-            for i,p in enumerate(paths):
-                p.schedule(after=i*4*ticks)
+            for p in paths:
+                p.schedule()
 
 
