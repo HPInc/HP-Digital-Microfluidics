@@ -234,6 +234,8 @@ class Pad(BinaryComponent['Pad']):
         return self.empty and all(map(lambda n : n.empty and not n.reserved, self.all_neighbors))
     
     def safe_except(self, padOrWell: Union[Pad, Well]) -> bool:
+        if not self.empty:
+            return False
         w = self.well
         if w is not None and w is not padOrWell and (w.gate_on or w.gate_reserved):
             return False
