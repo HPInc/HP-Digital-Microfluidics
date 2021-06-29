@@ -66,6 +66,7 @@ class Dir(Enum):
     def cardinals(cls) -> Sequence[Dir]:
         return (Dir.N, Dir.S, Dir.E, Dir.W)
     
+    @property
     def opposite(self) -> Dir:
         return self._opposites[self]
     
@@ -124,6 +125,13 @@ class Orientation(Enum):
     def neighbor(self, direction: Dir, coord: XYCoord, *, steps: int=1  ) -> XYCoord:
         (dx, dy) = self.offset[direction]
         return XYCoord(coord.x+dx*steps, coord.y+dy*steps)
+    
+    @property
+    def pos_x(self) -> Dir:
+        return Dir.E if self.offset[Dir.E][0] > 0 else Dir.W
+    @property
+    def pos_y(self) -> Dir:
+        return Dir.N if self.offset[Dir.N][1] > 0 else Dir.S
     
     def __repr__(self):
         return f"Orientation.{self.name}"

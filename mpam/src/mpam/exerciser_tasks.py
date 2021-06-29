@@ -102,7 +102,7 @@ class WalkPath(Task):
         #                     The gap between drops.  Default is 8
         #                     """)
         
-    def run(self, board: Board, system: System, args: Namespace) -> None:
+    def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
         path: str = args.path.upper()
 
         start_well: Optional[int] = args.start_well
@@ -259,20 +259,25 @@ class Mix(Task):
             mixop = Drop.InMix(fully_mixed=args.full)
         towell: Operation[Drop,Drop]
         if i == 0:
-            towell = Drop.Move(Dir.RIGHT, steps=6) \
+            # towell = Drop.Move(Dir.RIGHT, steps=6) \
+            #             .then(Drop.Move(Dir.UP))
+            towell = Drop.ToCol(18) \
                         .then(Drop.Move(Dir.UP))
         else:
-            towell = Drop.Move(Dir.DOWN, steps=2*(2-row)) \
-                        .then(Drop.Move(Dir.RIGHT, steps=6+2*col)) \
+            # towell = Drop.Move(Dir.DOWN, steps=2*(2-row)) \
+            #             .then(Drop.Move(Dir.RIGHT, steps=6+2*col)) \
+            #             .then(Drop.Move(Dir.DOWN))
+            towell = Drop.ToRow(1) \
+                        .then(Drop.ToCol(18)) \
                         .then(Drop.Move(Dir.DOWN))
             
-            # towell = Drop.Move(Dir.RIGHT, steps=6+2*col) \
-                        # .then(Drop.Move(Dir.DOWN, steps = 5-2*row))
                         
+                # .then(Drop.Move(Dir.DOWN, steps=row*2+1)) \
+                # .then(Drop.Move(Dir.RIGHT, steps = 12-2*col)) \
         op = Drop.DispenseFrom(well) \
                 .then_process(change_reagent(reagent)) \
-                .then(Drop.Move(Dir.DOWN, steps=row*2+1)) \
-                .then(Drop.Move(Dir.RIGHT, steps = 12-2*col)) \
+                .then(Drop.ToRow(5-2*row)) \
+                .then(Drop.ToCol(12-2*col)) \
                 .then(mixop) \
                 .then(towell) \
                 .then(Drop.EnterWell)

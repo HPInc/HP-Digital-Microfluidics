@@ -17,6 +17,67 @@ class DropStatus(Enum):
     ON_BOARD = auto()
     IN_WELL = auto()
     IN_MIX = auto()
+    
+class MotionOp(Operation['Drop', 'Drop'], ABC):
+    allow_unsafe: Final[bool]
+    
+    def __init__(self, *, allow_unsafe: bool):
+        self.allow_unsafe = allow_unsafe
+    
+    @abstractmethod
+    def dirAndSteps(self, drop: Drop) -> tuple[Dir, int]: ...  # @UnusedVariable
+    def _schedule_for(self, drop: Drop, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,
+                      ) -> Delayed[Drop]:
+        board = drop.pad.board
+        system = board.in_system()
+        
+        direction, steps = self.dirAndSteps(drop)
+        # allow_unsafe_motion = self.allow_unsafe_motion
+        future = Delayed[Drop]()
+        
+        if steps == 0:
+            future.post(drop)
+            return future
+            
+        one_tick: Ticks = 1*tick
+        allow_unsafe = self.allow_unsafe
+        assert mode.is_gated
+        def before_tick() -> Iterator[Optional[Ticks]]:
+            last_pad = drop.pad
+            for i in range(steps):
+                next_pad = last_pad.neighbor(direction)
+                if next_pad is None or next_pad.broken:
+                    raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
+                if not allow_unsafe:
+                    while not next_pad.safe_except(last_pad):
+                        # print(f"unsafe: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
+                        yield one_tick
+                while not next_pad.reserve():
+                    if allow_unsafe:
+                        break
+                    yield one_tick
+                with system.batched():
+                    # print(f"Tick number {system.clock.next_tick}")
+                    # print(f"Moving drop from {last_pad} to {next_pad}")
+                    assert last_pad == drop.pad, f"{i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}"
+                    next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False)
+                    last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False)
+                    board.after_tick(drop._update_pad_fn(last_pad, next_pad))
+                    # print(f"i = {i}, steps = {steps}, drop = {drop}, lp = {last_pad}, np = {next_pad}")
+                    if post_result and i == steps-1:
+                        board.after_tick(lambda : future.post(drop))
+                last_pad = next_pad
+                if i < steps-1:
+                    yield one_tick
+            yield None
+        iterator = before_tick()
+        board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
+        return future
+    
+     
 
 class Drop(OpScheduler['Drop']):
     liquid: Liquid
@@ -150,78 +211,58 @@ class Drop(OpScheduler['Drop']):
             pad.schedule(Pad.TurnOn, mode=mode, after=after) \
                 .then_call(make_drop)
             return future
-            
     
-    class Move(Operation['Drop','Drop']):
+    class Move(MotionOp):
         direction: Final[Dir]
         steps: Final[int]
-        allow_unsafe: Final[bool]
-        
-        # I originally had an "allow_unsafe_motion" parameter that was used in a test to see whether 
-        # a step would be in the neighborhood of a drop, but it was reasoning based on the current state,
-        # so it really didn't make any sense.
-
-        # allow_unsafe_motion: Final[bool]
         
         def __repr__(self) -> str:
             return f"<Drop.Move: {self.steps} {self.direction}>"
         
-        def _schedule_for(self, drop: Drop, *,
-                          mode: RunMode = RunMode.GATED, 
-                          after: Optional[DelayType] = None,
-                          post_result: bool = True,
-                          ) -> Delayed[Drop]:
-            board = drop.pad.board
-            system = board.in_system()
-            direction = self.direction
-            steps = self.steps
-            # allow_unsafe_motion = self.allow_unsafe_motion
-            future = Delayed[Drop]()
-            
-            if steps == 0:
-                future.post(drop)
-                return future
-                
-            one_tick: Ticks = 1*tick
-            allow_unsafe = self.allow_unsafe
-            assert mode.is_gated
-            def before_tick() -> Iterator[Optional[Ticks]]:
-                last_pad = drop.pad
-                for i in range(steps):
-                    next_pad = last_pad.neighbor(direction)
-                    if next_pad is None or next_pad.broken:
-                        raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
-                    if not allow_unsafe:
-                        while not next_pad.safe_except(last_pad):
-                            # print(f"unsafe: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
-                            yield one_tick
-                    while not next_pad.reserve():
-                        if allow_unsafe:
-                            break
-                        yield one_tick
-                    with system.batched():
-                        # print(f"Tick number {system.clock.next_tick}")
-                        # print(f"Moving drop from {last_pad} to {next_pad}")
-                        assert last_pad == drop.pad, f"{i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}"
-                        next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False)
-                        last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False)
-                        board.after_tick(drop._update_pad_fn(last_pad, next_pad))
-                        # print(f"i = {i}, steps = {steps}, drop = {drop}, lp = {last_pad}, np = {next_pad}")
-                        if post_result and i == steps-1:
-                            board.after_tick(lambda : future.post(drop))
-                    last_pad = next_pad
-                    if i < steps-1:
-                        yield one_tick
-                yield None
-            iterator = before_tick()
-            board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
-            return future
-        
         def __init__(self, direction: Dir, *, steps: int = 1, 
                      allow_unsafe: bool = False) -> None:
+            super().__init__(allow_unsafe=allow_unsafe)
             self.direction = direction
             self.steps = steps
-            self.allow_unsafe = allow_unsafe
+            
+        def dirAndSteps(self, drop: Drop)->tuple[Dir, int]:  # @UnusedVariable
+            return self.direction, self.steps
+            
+    class ToCol(MotionOp):
+        col: Final[int]
+        
+        def __repr__(self) -> str:
+            return f"<Drop.ToCol: {self.col}>"
+
+        def __init__(self, col: int, *, allow_unsafe: bool = False) -> None:
+            super().__init__(allow_unsafe=allow_unsafe)
+            self.col = col
+            
+        def dirAndSteps(self, drop: Drop)->tuple[Dir, int]:
+            pad = drop.pad
+            direction = pad.board.orientation.pos_x
+            current = pad.column
+            steps = self.col-current
+            return (direction, steps) if steps >=0 else (direction.opposite, -steps)
+            
+    class ToRow(MotionOp):
+        row: Final[int]
+        
+        def __repr__(self) -> str:
+            return f"<Drop.ToRow: {self.row}>"
+
+        def __init__(self, row: int, *, allow_unsafe: bool = False) -> None:
+            super().__init__(allow_unsafe=allow_unsafe)
+            self.row = row
+            
+        def dirAndSteps(self, drop: Drop)->tuple[Dir, int]:
+            pad = drop.pad
+            direction = pad.board.orientation.pos_y
+            current = pad.row
+            steps = self.row-current
+            return (direction, steps) if steps >=0 else (direction.opposite, -steps)
+            
+            
          
             
     class DispenseFrom(StaticOperation['Drop']):
