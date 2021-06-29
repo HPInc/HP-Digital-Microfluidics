@@ -77,7 +77,59 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
         return future
     
-     
+class Path:
+    def _walk_op(self, direction: Dir, steps: int, allow_unsafe: bool) -> Drop.Move:
+        return Drop.Move(direction, steps=steps, allow_unsafe=allow_unsafe)
+
+class PathFragment(Path):
+    ...
+    
+class ExtensiblePathFragment(Path):
+    op: Final[Operation[Drop, Drop]]
+    
+    def __init__(self, op: Operation[Drop, Drop]) -> None:
+        self.op = op
+        
+    def _extended(self, op: Operation[Drop,Drop], after: Optional[DelayType]) -> ExtensiblePathFragment:
+        return ExtensiblePathFragment(self.op.then(op,after=after))
+    
+    def walk(self, direction: Dir, *,
+             steps: int = 1,
+             allow_unsafe: bool = False,
+             after: Optional[DelayType] = None
+             ) -> ExtensiblePathFragment:
+        return self._extended(self._walk_op(direction, steps, allow_unsafe), after)
+
+class ExtensibleBasedPath(Path):
+    op: Final[StaticOperation[Drop]]
+    
+    def __init__(self, op: StaticOperation[Drop]) -> None:
+        self.op = op
+        
+    def _extended(self, op: Operation[Drop,Drop], after: Optional[DelayType]) -> ExtensibleBasedPath:
+        return ExtensibleBasedPath(self.op.then(op,after=after))
+    
+    def walk(self, direction: Dir, *,
+             steps: int = 1,
+             allow_unsafe: bool = False,
+             after: Optional[DelayType] = None
+             ) -> ExtensibleBasedPath:
+        return self._extended(self._walk_op(direction, steps, allow_unsafe), after)
+class BasedPath(Path):
+    ...
+
+
+    
+class TerminatedPathFragment(Path):
+    op: Operation[Drop, None]
+
+    
+    
+    
+class FullPath(Path):
+    op: StaticOperation[None]
+    
+    
 
 class Drop(OpScheduler['Drop']):
     liquid: Liquid
