@@ -155,13 +155,15 @@ class Path:
                 result: Optional[Reagent] = None,
                 tolerance: float = 0.1,
                 n_shuttles: int = 0, 
+                fully_mix: Union[bool, Sequence[int]] = False,
                 after: Optional[Ticks] = None) -> Path.Start:
             return self._extend(Path.MixStep(mix_type, result=result,
                                              tolerance=tolerance, n_shuttles=n_shuttles,
+                                             fully_mix=fully_mix,
                                              after=after))
-        def in_mix(self, fully_mixed: bool, *,
+        def in_mix(self, *,
                    after: Optional[Ticks] = None) -> Path.Start:
-            return self._extend(Path.InMixStep(fully_mixed=fully_mixed, after=after))
+            return self._extend(Path.InMixStep(after=after))
         
         def then_process(self, fn: Callable[[Drop], Any]) -> Path.Start:
             return self._extend(Path.CallStep(fn))
@@ -215,13 +217,15 @@ class Path:
                 result: Optional[Reagent] = None,
                 tolerance: float = 0.1,
                 n_shuttles: int = 0, 
+                fully_mix: Union[bool, Sequence[int]] = True,
                 after: Optional[Ticks] = None) -> Path.Middle:
             return self._extend(Path.MixStep(mix_type, result=result,
                                              tolerance=tolerance, n_shuttles=n_shuttles,
+                                             fully_mix=fully_mix,
                                              after=after))
-        def in_mix(self, fully_mixed: bool, *,
+        def in_mix(self, *,
                    after: Optional[Ticks] = None) -> Path.Middle:
-            return self._extend(Path.InMixStep(fully_mixed=fully_mixed, after=after))
+            return self._extend(Path.InMixStep(after=after))
         
         def then_process(self, fn: Callable[[Drop], Any]) -> Path.Middle:
             return self._extend(Path.CallStep(fn))
@@ -330,14 +334,17 @@ class Path:
                      result: Optional[Reagent] = None,
                      tolerance: float = 0.1,
                      n_shuttles: int = 0, 
+                     fully_mix: Union[bool, Sequence[int]] = False,
                      after: Optional[Ticks] = None) -> None:
-            super().__init__(Drop.Mix(mix_type, result=result, 
-                                      tolerance=tolerance, n_shuttles=n_shuttles), after)
+            super().__init__(Drop.Start(MixProcess(mix_type, result=result,
+                                                   tolerance=tolerance,
+                                                   n_shuttles=n_shuttles,
+                                                   fully_mix=fully_mix)), 
+                                        after)
     class InMixStep(MiddleStep):
         def __init__(self, 
-                     fully_mixed: bool = False, 
                      after: Optional[Ticks] = None) -> None:
-            super().__init__(Drop.InMix(fully_mixed=fully_mixed), after)
+            super().__init__(Drop.Join(), after)
         
             
     class CallStep(MiddleStep):
@@ -669,23 +676,26 @@ class Drop(OpScheduler['Drop']):
             self.well = well
         
             
-    class Mix(Operation['Drop','Drop']):
-        mix_type: Final[MixingType]
-        result: Final[Optional[Reagent]]
-        tolerance: Final[float]
-        n_shuttles: Final[int]
+        
+    def _update_pad_fn(self, from_pad: Pad, to_pad: Pad):
+        def fn() -> None:
+            assert from_pad.drop is self, f"Moved {self}, but thought it was at {from_pad}"
+            assert to_pad.drop is None, f"Moving {self} to non-empty {to_pad}"
+            # print(f"Moved drop from {from_pad} to {to_pad}")
+            self.pad = to_pad
+            to_pad.reserved = False
+            # print(f"Drop now at {to_pad}")
+        return fn
+    
+        
+    class Start(Operation['Drop','Drop']):
+        process_type: Final[MultiDropProcessType]
         
         def __repr__(self) -> str:
-            return f"<Drop.Mix: {self.mix_type}, result={self.result}, tol={self.tolerance:%}, shuttles:{self.n_shuttles}>"
+            return f"<Drop.Start: {self.process_type}>"
         
-        def __init__(self, mix_type: MixingType, *,
-                     result: Optional[Reagent] = None,
-                     tolerance: float = 0.1,
-                     n_shuttles: int = 0) -> None:
-            self.mix_type = mix_type
-            self.result = result
-            self.tolerance = tolerance
-            self.n_shuttles = n_shuttles
+        def __init__(self, process_type: MultiDropProcessType) -> None:
+            self.process_type = process_type
 
         def _schedule_for(self, drop: Drop, *,
                           mode: RunMode = RunMode.GATED, 
@@ -700,29 +710,15 @@ class Drop(OpScheduler['Drop']):
                 # If all the other drops are waiting, this will install a callback on the next tick and then
                 # call it immediately to do the first step.  Otherwise, that will happen when the last 
                 # drop shows up.
-                self.mix_type.start_mix(self, drop, future)
+                self.process_type.start(drop, future)
             board.before_tick(before_tick, delta=mode.gated_delay(after))
             return future
         
-    def _update_pad_fn(self, from_pad: Pad, to_pad: Pad):
-        def fn() -> None:
-            assert from_pad.drop is self, f"Moved {self}, but thought it was at {from_pad}"
-            assert to_pad.drop is None, f"Moving {self} to non-empty {to_pad}"
-            # print(f"Moved drop from {from_pad} to {to_pad}")
-            self.pad = to_pad
-            to_pad.reserved = False
-            # print(f"Drop now at {to_pad}")
-        return fn
-    
-    class InMix(Operation['Drop','Drop']):
-        fully_mixed: Final[bool]
+    class Join(Operation['Drop','Drop']):
         
         def __repr__(self) -> str:
-            return f"<Drop.InMix: fully_mixed={self.fully_mixed}>"
+            return f"<Drop.Join>"
         
-        def __init__(self, *, fully_mixed: bool = False) -> None:
-            self.fully_mixed = fully_mixed
-
         def _schedule_for(self, drop: Drop, *,
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
@@ -733,10 +729,141 @@ class Drop(OpScheduler['Drop']):
                 
             assert mode.is_gated
             def before_tick() -> None:
-                MixInstance.join_mix(drop, future, self.fully_mixed)
+                MultiDropProcess.join(drop, future)
             board.before_tick(before_tick, delta=mode.gated_delay(after))
             return future
 
+class MultiDropProcessType(ABC):
+    n_drops: Final[int]
+    
+    def __init__(self, n_drops: int) -> None:
+        self.n_drops = n_drops
+    
+    # returns True if the iterator still has work to do
+    @abstractmethod
+    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[bool]:  # @UnusedVariable
+        ...
+        
+    # returns True if the futures should be posted.
+    def finish(self, drops: Sequence[Drop],                  # @UnusedVariable
+               futures: dict[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
+        return True
+    
+    @abstractmethod
+    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:  # @UnusedVariable
+        ...
+        
+    def start(self, lead_drop: Drop, future: Delayed[Drop]) -> None:
+        process = MultiDropProcess(self, lead_drop, future)
+        process.start()
+
+    
+class MultiDropProcess:
+    process_type: Final[MultiDropProcessType]
+    futures: Final[dict[Drop, Delayed[Drop]]]
+    drops: Final[list[Optional[Drop]]]
+    
+    global_lock: Final[Lock] = Lock()
+    
+    def __init__(self, process_type: MultiDropProcessType,
+                 lead_drop: Drop,
+                 lead_future: Delayed[Drop]
+                 ) -> None:
+        self.process_type = process_type
+        self.futures = {lead_drop: lead_future}
+        self.drops = [None] * process_type.n_drops
+        self.drops[0] = lead_drop
+        
+    def start(self) -> None:
+        drops = self.drops
+        lead_drop = drops[0]
+        assert lead_drop is not None
+        secondary_pads = self.process_type.secondary_pads(lead_drop)
+        futures = self.futures
+        pending_drops = 0
+        lock = self.global_lock
+        
+        def on_join_factory(i: int) -> Callable[[Drop, Delayed[Drop]],
+                                         Optional[Callback]]:
+            # Called with global_lock locked.  Returns true if last one.
+            def on_join(drop: Drop, future: Delayed[Drop]) -> Optional[Callback]:
+                nonlocal pending_drops
+                drops[i+1] = drop
+                futures[drop] = future
+                if pending_drops == 1:
+                    return lambda: self.run()
+                else:
+                    pending_drops -= 1
+                    return None
+            return on_join
+        
+        with lock:
+            for i,p in enumerate(secondary_pads):
+                future: Optional[Delayed[Drop]] = getattr(p, "_waiting_to_join", None)
+                if future is None:
+                    setattr(p, "_on_join", on_join_factory(i))
+                    pending_drops += 1
+                else:
+                    setattr(p, "_waiting_to_join", None)
+                    d = p.drop
+                    assert d is not None
+                    futures[d] = future
+                    drops[i] = d
+            ready = (pending_drops == 0)
+        if ready:
+            self.run()
+
+
+    @classmethod
+    def join(cls, drop: Drop, future: Delayed[Drop]) -> None:
+        p = drop.pad
+        with cls.global_lock:
+            fn: Optional[Callable[[Drop,Delayed[Drop]],
+                                  Optional[Callback]]] = getattr(p, "_on_join", None)
+            if fn is None:
+                setattr(p, "_waiting_to_join", future)
+                return
+            else:
+                setattr(p, "_on_join", None)
+                cb = fn(drop, future)
+        if cb is not None:
+            cb()
+            
+    def iterator(self, board: Board, drops: Sequence[Drop]) -> Iterator[Optional[Ticks]]:
+        process_type = self.process_type
+        futures = self.futures
+        def checked(d: Optional[Drop]) -> Drop:
+            assert d is not None
+            return d
+        drops = tuple(checked(d) for d in drops)
+        i = process_type.iterator(drops = drops)
+        one_tick = 1*tick
+        while next(i):
+            yield one_tick
+        def do_post() -> None:
+            if process_type.finish(drops, futures):
+                for drop, future in futures.items():
+                    future.post(drop)
+        board.after_tick(do_post)
+        yield None
+        
+            
+    def run(self) -> None:
+        def checked(d: Optional[Drop]) -> Drop:
+            assert d is not None
+            return d
+        drops = tuple(checked(d) for d in self.drops)
+        lead_drop = drops[0]
+        assert lead_drop is not None
+        board = lead_drop.pad.board
+        iterator = self.iterator(board, drops)
+        
+        # We're inside a before_tick, so we run the first step here.  Then we install
+        # the callback before the next tick to do the rest
+        after_first = next(iterator)
+        if after_first is not None: 
+            board.before_tick(lambda: next(iterator))
+        
 class MixSequenceStep(ABC):
     @abstractmethod
     def schedule(self, shuttle_no: int, mergep: bool,           # @UnusedVariable
@@ -745,122 +872,6 @@ class MixSequenceStep(ABC):
         ...
     
 
-class MixInstance:
-    mix_type: Final[MixingType]
-    tolerance: Final[float]
-    result: Final[Optional[Reagent]]
-    n_shuttles: Final[int]
-    drops: Final[list[Optional[Drop]]]
-    pad_indices: Final[Mapping[Pad, int]]
-    futures: Final[dict[Drop, Delayed[Drop]]]
-    full_mix: Final[set[Drop]]
-    secondary_locs: Final[Sequence[Pad]]
-    board: Final[Board]
-    pending_drops: int
-    
-    global_lock: Final[Lock] = Lock()
-    
-    def __init__(self, 
-                 op: Drop.Mix,
-                 lead_drop: Drop,
-                 lead_future: Delayed[Drop],
-                 secondary_locs: Sequence[Pad],
-                 ) -> None:
-        self.mix_type = op.mix_type
-        self.tolerance = op.tolerance
-        self.result = op.result
-        self.n_shuttles = op.n_shuttles
-        self.futures = {lead_drop: lead_future}
-        self.full_mix = { lead_drop }
-        self.secondary_locs = secondary_locs
-        self.board = lead_drop.pad.board
-        self.drops = [None] * (len(secondary_locs)+1)
-        self.drops[0] = lead_drop
-        self.pad_indices = { p: i+1 for i,p in enumerate(secondary_locs)}
-        # print(map_str(self.pad_indices))
-        
-    def install(self) -> bool:
-        pending_drops = 0
-        with self.global_lock:
-            for p in self.secondary_locs:
-                t: Optional[tuple[Delayed[Drop], bool]] = getattr(p, "_waiting_for_mix", None)
-                if t is None:
-                    setattr(p, "_mix_waiting", self)
-                    pending_drops += 1
-                else:
-                    setattr(p, "_waiting_for_mix", None)
-                    d = p.drop
-                    assert d is not None
-                    self.futures[d] = t[0]
-                    self.drops[self.pad_indices[p]] = d
-                    if t[1]:
-                        self.full_mix.add(d)
-            if pending_drops > 0:
-                self.pending_drops = pending_drops
-            return pending_drops == 0
-        
-    
-    @classmethod        
-    def join_mix(cls, drop: Drop, future: Delayed[Drop], fully_mixed: bool) -> None:
-        ready: bool = False
-        with cls.global_lock:
-            p = drop.pad
-            inst: Optional[MixInstance] = getattr(p, "_mix_waiting", None)
-            if inst is None:
-                setattr(p, "_waiting_for_mix", (future, fully_mixed))
-                return
-            else:
-                setattr(p, "_mix_waiting", None)
-                inst.futures[drop] = future
-                inst.drops[inst.pad_indices[p]] = drop
-                if fully_mixed:
-                    inst.full_mix.add(drop)
-                inst.pending_drops -= 1
-                ready = inst.pending_drops == 0
-        if ready:
-            inst.run()
-            
-    def play_script(self) -> Iterator[Optional[Ticks]]:
-        def checked(d: Optional[Drop]) -> Drop:
-            assert d is not None
-            return d
-        drops = tuple(checked(d) for d in self.drops)
-        i = self.mix_type.perform(full_mix = self.full_mix,
-                                  tolerance = self.tolerance,
-                                  drops = drops,
-                                  n_shuttles = self.n_shuttles
-                                  )
-        one_tick = 1*tick
-        while next(i):
-            yield one_tick
-        self.schedule_post()
-        yield None
-        
-    def run(self) -> None: 
-        iterator = self.play_script()
-        
-        # We're inside a before_tick, so we run the first step here.  Then we install
-        # the callback before the next tick to do the rest
-        after_first = next(iterator)
-        assert after_first is not None
-        self.board.before_tick(lambda: next(iterator))
-
-               
-        
-    
-    def schedule_post(self) -> None:
-        def do_post() -> None:
-            result = self.result
-            for drop, future in self.futures.items():
-                if drop in self.full_mix:
-                    print(f"result is {drop.liquid}")
-                    if result is not None:
-                        drop.reagent = result
-                else:
-                    drop.reagent = waste_reagent
-                future.post(drop)
-        self.board.after_tick(do_post)
-        
 class MixStep(MixSequenceStep):
     d1_index: Final[int]
     d2_index: Final[int]
@@ -904,10 +915,79 @@ class MixStep(MixSequenceStep):
         e = self.error
         return {drop1: e, drop2: e}
                  
+
+
+class MixProcess(MultiDropProcessType):
+    mix_type: Final[MixingType]
+    result: Final[Optional[Reagent]]
+    tolerance: Final[float]
+    n_shuttles: Final[int]
+    fully_mix: Final[Union[bool, Sequence[int]]]
+    def __init__(self, mix_type: MixingType, *,
+                 result: Optional[Reagent] = None,
+                 tolerance: float = 0.1,
+                 n_shuttles: int = 0,
+                 fully_mix: Union[bool, Sequence[int]] = False,
+                 ) -> None:
+        super().__init__(mix_type.n_drops)
+        self.mix_type = mix_type
+        self.result = result
+        self.tolerance = tolerance
+        self.n_shuttles = n_shuttles
+        self.fully_mix = fully_mix
+        
+    def __repr__(self) -> str:
+        return f"""<MixProcess: {self.mix_type}, 
+                        result={self.result}, 
+                        tol={self.tolerance:%}, 
+                        shuttles={self.n_shuttles}
+                        fully_mix={self.fully_mix}>"""
+        
+        
+    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:  # @UnusedVariable
+        return self.mix_type.secondary_pads(lead_drop)
+    
+    # returns True if the iterator still has work to do
+    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[bool]:  # @UnusedVariable
+        fm = self.fully_mix
+        if isinstance(fm, bool):
+            fully_mix = set(drops) if fm else {drops[0]}
+        else:
+            fully_mix = { drops[i] for i in fm }
+        return self.mix_type.perform(full_mix = fully_mix,
+                                     tolerance = self.tolerance,
+                                     drops = drops,
+                                     n_shuttles = self.n_shuttles
+                                     )
+
+    # returns True if the futures should be posted.
+    def finish(self, drops: Sequence[Drop],             
+               futures: dict[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
+        result = self.result
+        fm = self.fully_mix
+        if isinstance(fm, bool):
+            fully_mix = set(drops) if fm else {drops[0]}
+        else:
+            fully_mix = { drops[i] for i in fm }
+        print(f"mix result is {drops[0].liquid}")
+        for drop in drops:
+            if drop in fully_mix:
+                if result is not None:
+                    drop.reagent = result
+            else:
+                drop.reagent = waste_reagent
+        return True
+                
+            
+        
+        
+        
 class MixingBase(ABC):
     is_approximate: Final[bool]
+    n_drops: Final[int]
     
-    def __init__(self, *, is_approximate: bool) -> None:
+    def __init__(self, *, n_drops: int, is_approximate: bool) -> None:
+        self.n_drops = n_drops
         self.is_approximate = is_approximate
 
     @abstractmethod    
@@ -921,11 +1001,6 @@ class MixingBase(ABC):
 
 class MixingType(MixingBase):
     
-    def start_mix(self, op: Drop.Mix, lead_drop: Drop, future: Delayed[Drop]) -> None:
-        secondary = self.secondary_pads(lead_drop) 
-        inst = MixInstance(op, lead_drop, future, secondary)
-        if inst.install():
-            inst.run()
 
     @abstractmethod            
     def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]: ...  # @UnusedVariable
@@ -944,8 +1019,10 @@ MixSequence = Sequence[Sequence[MixSequenceStep]]
 class PureMix(MixingType):
     script: Final[MixSequence]
     
-    def __init__(self, script: MixSequence, *, is_approximate: bool):
-        super().__init__(is_approximate = is_approximate)
+    def __init__(self, script: MixSequence, *,
+                 n_drops: int, 
+                 is_approximate: bool):
+        super().__init__(n_drops = n_drops, is_approximate = is_approximate)
         self.script = script
     
     def perform(self, *,
@@ -987,7 +1064,7 @@ class Submix(MixingBase):
     need_all: Final[bool]
 
     def __init__(self, mix_type: MixingType, indices: Sequence[int], need_all: bool) -> None:
-        super().__init__(is_approximate = mix_type.is_approximate)
+        super().__init__(n_drops = len(indices), is_approximate = mix_type.is_approximate)
         self.mix_type = mix_type
         self.indices = indices
         self.need_all = need_all
@@ -1010,14 +1087,14 @@ class CompositeMix(MixingType):
     phases: Final[MixPhases]
     n_approximate: Final[int]
     
-    def __init__(self, phases: MixPhases):
+    def __init__(self, phases: MixPhases, *, n_drops: int):
         approximate_phases = 0
         for phase in phases:
             if any(submix.is_approximate for submix in phase):
                 approximate_phases += 1
         self.n_approximate = approximate_phases
         
-        super().__init__(is_approximate = approximate_phases > 0)
+        super().__init__(n_drops=n_drops, is_approximate = approximate_phases > 0)
         self.phases = phases
     
     def perform(self, *,
@@ -1058,7 +1135,7 @@ class Mix2(PureMix):
         ,)
 
     def __init__(self, to_second: Dir) -> None:
-        super().__init__(Mix2.the_script, is_approximate = False)
+        super().__init__(Mix2.the_script, n_drops=2, is_approximate = False)
         self.to_second = to_second
         
     def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
@@ -1084,7 +1161,7 @@ class Mix3(PureMix):
         )
 
     def __init__(self, to_second: Dir, to_third: Dir) -> None:
-        super().__init__(Mix3.the_script, is_approximate = True)
+        super().__init__(Mix3.the_script, n_drops=3, is_approximate = True)
         self.to_second = to_second
         self.to_third = to_third
         
@@ -1105,7 +1182,7 @@ class Mix4(CompositeMix):
                   (Submix(Mix2(to_third), (0,2), False),
                    Submix(Mix2(to_third), (1,3), False))
                 )
-        super().__init__(phases)
+        super().__init__(phases, n_drops=4)
         self.to_second = to_second
         self.to_third = to_third
         
@@ -1128,7 +1205,7 @@ class Mix6(CompositeMix):
                   (Submix(Mix3(major_dir, major_dir), (0,1,2), False),
                    Submix(Mix3(major_dir, major_dir), (3,4,5), False))
                 )
-        super().__init__(phases)
+        super().__init__(phases, n_drops=6)
         self.major_dir = major_dir
         self.minor_dir = minor_dir
         
@@ -1154,7 +1231,7 @@ class Mix9(CompositeMix):
                    Submix(Mix3(major_dir, major_dir), (3,4,5), False),
                    Submix(Mix3(major_dir, major_dir), (6,7,8), False))
                 )
-        super().__init__(phases)
+        super().__init__(phases, n_drops=9)
         self.major_dir = major_dir
         self.minor_dir = minor_dir
         

@@ -10,7 +10,7 @@ from mpam.exerciser import Exerciser, Task
 from quantities.SI import ms
 from quantities.dimensions import Time
 from mpam.types import Reagent, schedule, Liquid, Dir
-from mpam.drop import Drop, Mix2
+from mpam.drop import Mix2, Path
 
 
 class Prepare(Task):
@@ -55,19 +55,18 @@ class Prepare(Task):
         
         r1 = Reagent("R1")
         
-        p1 = Drop.TeleportInTo(ep, reagent = pmo) \
-                .then(Drop.Mix(Mix2(Dir.UP), n_shuttles=shuttles,
-                               result=r1)) \
-                .then(Drop.Move(Dir.DOWN, steps=5)) \
-                .then(Drop.Move(Dir.RIGHT, steps=2))
-                
-        p2 = Drop.DispenseFrom(mm_well) \
-                .then(Drop.Move(Dir.LEFT, steps=5)) \
-                .then(Drop.Move(Dir.DOWN)) \
-                .then(Drop.InMix(fully_mixed=True)) \
-                .then(Drop.Move(Dir.DOWN, steps=5)) \
-                .then(Drop.Move(Dir.RIGHT, steps=2))
-        
+        p1 = Path.teleport_into(ep, reagent = pmo) \
+                .mix(Mix2(Dir.UP), n_shuttles=shuttles, result=r1) \
+                .to_row(4) \
+                .to_col(15)
+
+        p2 = Path.dispense_from(mm_well) \
+                .to_col(13) \
+                .walk(Dir.DOWN) \
+                .in_mix(fully_mixed=True) \
+                .to_row(6) \
+                .to_col(15)
+
         
         with system.batched():
             schedule(p1)

@@ -259,9 +259,10 @@ class Mix(Task):
         if i == 0:
             path = path.mix(mixer.type, 
                              tolerance=args.tolerance,
-                             n_shuttles=args.shuttles)
+                             n_shuttles=args.shuttles,
+                             fully_mix = args.full)
         else:
-            path = path.in_mix(fully_mixed=args.full)
+            path = path.in_mix()
 
         if i == 0:
             path = path.to_col(18).walk(Dir.UP)

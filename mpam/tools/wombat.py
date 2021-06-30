@@ -5,7 +5,7 @@ from typing import Union, Optional, Sequence
 
 from devices import wombat
 from mpam.device import System, Well, Heater, Magnet, Board
-from mpam.drop import Drop, Mix2, Mix3, Mix4
+from mpam.drop import Mix2, Mix3, Mix4, Path
 from mpam.exerciser import Task, volume_arg, Exerciser
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, RunMode, Reagent, tick
@@ -15,7 +15,7 @@ from quantities.temperature import TemperaturePoint, abs_C
 from joey import JoeyExerciser
 
 
-class DispenseAndWalk(Task):
+class DispenseAndWalk(Task): 
     def __init__(self) -> None:
         super().__init__(name="walk",
                          description="""Dispense a drop from a given well and 
@@ -53,13 +53,13 @@ class DispenseAndWalk(Task):
             volume = volume*drops
         well.contains(Liquid(unknown_reagent, volume))
         
-        seq = Drop.DispenseFrom(well) \
-                .then(Drop.Move(hdir)) \
-                .then(Drop.Move(vdir1, steps=2)) \
-                .then(Drop.Move(hdir, steps=16)) \
-                .then(Drop.Move(vdir2, steps=2)) \
-                .then(Drop.Move(hdir)) \
-                .then(Drop.EnterWell)
+        seq = Path.dispense_from(well) \
+                .walk(hdir) \
+                .walk(vdir1, steps=2) \
+                .walk(hdir, steps=16) \
+                .walk(vdir2, steps=2) \
+                .walk(hdir) \
+                .enter_well()
                 
         with system.batched():
             for i in range(args.drops):
@@ -81,13 +81,13 @@ class WombatTest(Task):
                     turn1: Dir,
                     turn2: Dir,
                     ) -> StaticOperation[None]:
-        return Drop.DispenseFrom(well) \
-                .then(Drop.Move(direction)) \
-                .then(Drop.Move(turn1, steps=2)) \
-                .then(Drop.Move(direction, steps=16)) \
-                .then(Drop.Move(turn2, steps=2)) \
-                .then(Drop.Move(direction)) \
-                .then(Drop.EnterWell)
+        return Path.dispense_from(well) \
+                .walk(direction) \
+                .walk(turn1, steps=2) \
+                .walk(direction, steps=16) \
+                .walk(turn2, steps=2) \
+                .walk(direction) \
+                .enter_well()
     
     def ramp_heater(self, temps: Sequence[TemperaturePoint]) -> Operation[Heater, Heater]:
         op: Operation[Heater,Heater] = Heater.SetTemperature(temps[0])
@@ -143,25 +143,25 @@ class RealMix(Task):
         well1.contains(Liquid(r1, well1.capacity))
         well2.contains(Liquid(r2, well2.capacity))
         
-        seq1 = Drop.DispenseFrom(well1) \
-                .then(Drop.Move(Dir.RIGHT, steps=2)) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT, steps=10)) \
-                .then(Drop.Mix(Mix2(Dir.DOWN), n_shuttles=args.shuttles)) \
-                .then(Drop.Move(Dir.RIGHT, steps=5)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT)) \
-                .then(Drop.EnterWell)
+        seq1 = Path.dispense_from(well1) \
+                .walk(Dir.RIGHT, steps=2) \
+                .walk(Dir.DOWN, steps=2) \
+                .walk(Dir.RIGHT, steps=10) \
+                .mix(Mix2(Dir.DOWN), n_shuttles=args.shuttles, fully_mix=args.full) \
+                .walk(Dir.RIGHT, steps=5) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.RIGHT) \
+                .enter_well()
                 
-        seq2 = Drop.DispenseFrom(well2) \
-                .then(Drop.Move(Dir.RIGHT, steps=2)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT, steps=10)) \
-                .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=5)) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT)) \
-                .then(Drop.EnterWell)
+        seq2 = Path.dispense_from(well2) \
+                .walk(Dir.RIGHT, steps=2) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.RIGHT, steps=10) \
+                .in_mix() \
+                .walk(Dir.RIGHT, steps=5) \
+                .walk(Dir.DOWN, steps=2) \
+                .walk(Dir.RIGHT) \
+                .enter_well()
         with system.batched():
             seq1.schedule()
             seq2.schedule()
@@ -180,33 +180,33 @@ class RealMix(Task):
         well2.contains(Liquid(r2, 1*drop))
         well3.contains(Liquid(r3, 1*drop))
         
-        seq1 = Drop.DispenseFrom(well1) \
-                .then(Drop.Move(Dir.RIGHT, steps=2)) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT, steps=10)) \
-                .then(Drop.Mix(Mix3(Dir.DOWN, Dir.RIGHT), n_shuttles=args.shuttles)) \
-                .then(Drop.Move(Dir.RIGHT, steps=5)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT)) \
-                .then(Drop.EnterWell)
+        seq1 = Path.dispense_from(well1) \
+                .walk(Dir.RIGHT, steps=2) \
+                .walk(Dir.DOWN, steps=2) \
+                .walk(Dir.RIGHT, steps=10) \
+                .mix(Mix3(Dir.DOWN, Dir.RIGHT), n_shuttles=args.shuttles, fully_mix=args.full) \
+                .walk(Dir.RIGHT, steps=5) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.RIGHT) \
+                .enter_well()
                 
-        seq2 = Drop.DispenseFrom(well2) \
-                .then(Drop.Move(Dir.RIGHT, steps=2)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT, steps=10)) \
-                .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=6), after=2*ticks) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.EnterWell)
+        seq2 = Path.dispense_from(well2) \
+                .walk(Dir.RIGHT, steps=2) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.RIGHT, steps=10) \
+                .in_mix() \
+                .walk(Dir.RIGHT, steps=6, after=2*ticks) \
+                .walk(Dir.DOWN, steps=2) \
+                .enter_well()
                 
-        seq3 = Drop.DispenseFrom(well3) \
-                .then(Drop.Move(Dir.LEFT, steps=2)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.LEFT, steps=2)) \
-                .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=4)) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.EnterWell)
+        seq3 = Path.dispense_from(well3) \
+                .walk(Dir.LEFT, steps=2) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.LEFT, steps=2) \
+                .in_mix() \
+                .walk(Dir.RIGHT, steps=4) \
+                .walk(Dir.DOWN, steps=2) \
+                .enter_well()
         with system.batched():
             seq1.schedule()
             seq2.schedule()
@@ -229,41 +229,41 @@ class RealMix(Task):
         well3.contains(Liquid(r3, 1*drop))
         well4.contains(Liquid(r4, 1*drop))
         
-        seq1 = Drop.DispenseFrom(well1) \
-                .then(Drop.Move(Dir.RIGHT, steps=2)) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT, steps=10)) \
-                .then(Drop.Mix(Mix4(Dir.DOWN, Dir.RIGHT), n_shuttles=args.shuttles)) \
-                .then(Drop.Move(Dir.RIGHT, steps=5), after=1*tick) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT)) \
-                .then(Drop.EnterWell)
+        seq1 = Path.dispense_from(well1) \
+                .walk(Dir.RIGHT, steps=2) \
+                .walk(Dir.DOWN, steps=2) \
+                .walk(Dir.RIGHT, steps=10) \
+                .mix(Mix4(Dir.DOWN, Dir.RIGHT), n_shuttles=args.shuttles, fully_mix=args.full) \
+                .walk(Dir.RIGHT, steps=5, after=1*tick) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.RIGHT) \
+                .enter_well()
                 
-        seq2 = Drop.DispenseFrom(well2) \
-                .then(Drop.Move(Dir.RIGHT, steps=2)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.RIGHT, steps=10)) \
-                .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=6), after=3*ticks) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.EnterWell)
+        seq2 = Path.dispense_from(well2) \
+                .walk(Dir.RIGHT, steps=2) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.RIGHT, steps=10) \
+                .in_mix() \
+                .walk(Dir.RIGHT, steps=6, after=3*ticks) \
+                .walk(Dir.DOWN, steps=2) \
+                .enter_well()
                 
-        seq3 = Drop.DispenseFrom(well3) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.Move(Dir.LEFT, steps=4)) \
-                .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=4)) \
-                .then(Drop.Move(Dir.DOWN, steps=4)) \
-                .then(Drop.EnterWell)
+        seq3 = Path.dispense_from(well3) \
+                .walk(Dir.DOWN, steps=2) \
+                .walk(Dir.LEFT, steps=4) \
+                .in_mix() \
+                .walk(Dir.RIGHT, steps=4) \
+                .walk(Dir.DOWN, steps=4) \
+                .enter_well()
 
-        seq4 = Drop.DispenseFrom(well4) \
-                .then(Drop.Move(Dir.LEFT, steps=2)) \
-                .then(Drop.Move(Dir.UP, steps=2)) \
-                .then(Drop.Move(Dir.LEFT, steps=2)) \
-                .then(Drop.InMix(fully_mixed = args.full)) \
-                .then(Drop.Move(Dir.RIGHT, steps=4)) \
-                .then(Drop.Move(Dir.DOWN, steps=2)) \
-                .then(Drop.EnterWell)
+        seq4 = Path.dispense_from(well4) \
+                .walk(Dir.LEFT, steps=2) \
+                .walk(Dir.UP, steps=2) \
+                .walk(Dir.LEFT, steps=2) \
+                .in_mix() \
+                .walk(Dir.RIGHT, steps=4) \
+                .walk(Dir.DOWN, steps=2) \
+                .enter_well()
 
         with system.batched():
             seq1.schedule()
