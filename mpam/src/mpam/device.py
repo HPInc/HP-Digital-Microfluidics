@@ -633,7 +633,7 @@ class Well(OpScheduler['Well'], BoardComponent):
             
     def transfer_out(self, volume: Volume, *,
                      on_empty: ErrorHandler = PRINT) -> Liquid:
-        on_empty.expect_true(self.volume>= volume,
+        on_empty.expect_true(self.volume>= 0.99*volume,
                     lambda : f"Tried to draw {volume} from {self}, which only has {self.volume}")
         reagent: Reagent
         if self._contents is None:

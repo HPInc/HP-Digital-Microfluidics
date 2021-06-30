@@ -8,10 +8,10 @@ from typing import Optional, Union, Any, NamedTuple, Final, ClassVar, Mapping, \
 
 from erk.stringutils import map_str
 from mpam.device import Board, System, Pad, Well
-from mpam.drop import Drop, MixingType, Mix2, Mix3, Mix4, Mix6, Mix9
+from mpam.drop import Drop, MixingType, Mix2, Mix3, Mix4, Mix6, Mix9, Path
 from mpam.exerciser import Task, volume_arg, Exerciser
 from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, \
-    StaticOperation, Reagent
+    Reagent
 from quantities.dimensions import Volume
 
 
@@ -238,7 +238,7 @@ class Mix(Task):
         group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
         
-    def create_path(self, i: int, well: Well, args: Namespace) -> StaticOperation[None]:
+    def create_path(self, i: int, well: Well, args: Namespace) -> Path.Full:
         n_drops: int = args.num_drops
         mixer = self.mixers[n_drops]
         row = i//mixer.n_cols
@@ -250,40 +250,25 @@ class Mix(Task):
             def fn(drop: Drop) -> None:
                 drop.reagent = r
             return fn
-        mixop: Operation[Drop,Drop]
+                
+        path = Path.dispense_from(well) \
+                .then_process(change_reagent(reagent)) \
+                .to_row(5-2*row) \
+                .to_col(12-2*col)
+
         if i == 0:
-            mixop = Drop.Mix(mixer.type, 
+            path = path.mix(mixer.type, 
                              tolerance=args.tolerance,
                              n_shuttles=args.shuttles)
         else:
-            mixop = Drop.InMix(fully_mixed=args.full)
-        towell: Operation[Drop,Drop]
+            path = path.in_mix(fully_mixed=args.full)
+
         if i == 0:
-            # towell = Drop.Move(Dir.RIGHT, steps=6) \
-            #             .then(Drop.Move(Dir.UP))
-            towell = Drop.ToCol(18) \
-                        .then(Drop.Move(Dir.UP))
+            path = path.to_col(18).walk(Dir.UP)
         else:
-            # towell = Drop.Move(Dir.DOWN, steps=2*(2-row)) \
-            #             .then(Drop.Move(Dir.RIGHT, steps=6+2*col)) \
-            #             .then(Drop.Move(Dir.DOWN))
-            towell = Drop.ToRow(1) \
-                        .then(Drop.ToCol(18)) \
-                        .then(Drop.Move(Dir.DOWN))
-            
-                        
-                # .then(Drop.Move(Dir.DOWN, steps=row*2+1)) \
-                # .then(Drop.Move(Dir.RIGHT, steps = 12-2*col)) \
-        op = Drop.DispenseFrom(well) \
-                .then_process(change_reagent(reagent)) \
-                .then(Drop.ToRow(5-2*row)) \
-                .then(Drop.ToCol(12-2*col)) \
-                .then(mixop) \
-                .then(towell) \
-                .then(Drop.EnterWell)
-                
-                
-        return op
+            path = path.to_row(1).to_col(18).walk(Dir.DOWN)
+        
+        return path.enter_well()
         
 
     def run(self, board: Board, system: System, args: Namespace) -> None:

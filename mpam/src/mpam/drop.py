@@ -1,11 +1,11 @@
 from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
-    StaticOperation, Reagent, Callback, waste_reagent
+    StaticOperation, Reagent, Callback, waste_reagent, schedule, ComputeOp
 from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint
 from mpam.exceptions import NoSuchPad, NotAtWell, MPAMError
 from typing import Optional, Final, Union, Sequence, Callable, Mapping, ClassVar,\
-    Iterator
+    Iterator, Any
 from quantities.SI import uL
 from threading import Lock
 from quantities.dimensions import Volume
@@ -78,56 +78,337 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         return future
     
 class Path:
-    def _walk_op(self, direction: Dir, steps: int, allow_unsafe: bool) -> Drop.Move:
-        return Drop.Move(direction, steps=steps, allow_unsafe=allow_unsafe)
-
-class PathFragment(Path):
-    ...
+    class StartStep:
+        op: Final[StaticOperation[Drop]]
     
-class ExtensiblePathFragment(Path):
-    op: Final[Operation[Drop, Drop]]
+        def __init__(self, op: StaticOperation[Drop]):
+            self.op = op
+            
+    class MiddleStep:
+        op: Final[Operation[Drop, Drop]]
+        after: Final[Optional[Ticks]]
     
-    def __init__(self, op: Operation[Drop, Drop]) -> None:
-        self.op = op
+        def __init__(self, op: Operation[Drop,Drop], after: Optional[Ticks]) -> None:
+            self.op = op
+            self.after = after
+            
+        def _schedule_after(self, future: Delayed[Drop], *,
+                            is_last: bool, post_result: bool) -> Delayed[Drop]:
+            return future.then_schedule(self.op, mode=RunMode.GATED, after=self.after,
+                                        post_result=post_result if is_last else True)
+            
+    class EndStep:
+        op: Final[Operation[Drop, None]]
+        after: Final[Optional[Ticks]]
+    
+        def __init__(self, op: Operation[Drop,None], after: Optional[Ticks]) -> None:
+            self.op = op
+            self.after = after
+            
+        def _schedule_after(self, future: Delayed[Drop], *,
+                            post_result: bool) -> Delayed[None]:
+            return future.then_schedule(self.op, mode=RunMode.GATED, after=self.after,
+                                        post_result=post_result)
+            
+    
+            
+    class Start(StaticOperation['Drop']):
+        start: Final[Path.StartStep]
+        middle: Final[tuple[Path.MiddleStep, ...]]
         
-    def _extended(self, op: Operation[Drop,Drop], after: Optional[DelayType]) -> ExtensiblePathFragment:
-        return ExtensiblePathFragment(self.op.then(op,after=after))
+        def __init__(self, start: Path.StartStep, 
+                     middle: tuple[Path.MiddleStep,...]) -> None:
+            self.start = start
+            self.middle = middle
+            
+        def _extend(self, step: Path.MiddleStep) -> Path.Start:
+            return Path.Start(start=self.start, middle = self.middle+(step,))
     
-    def walk(self, direction: Dir, *,
-             steps: int = 1,
-             allow_unsafe: bool = False,
-             after: Optional[DelayType] = None
-             ) -> ExtensiblePathFragment:
-        return self._extended(self._walk_op(direction, steps, allow_unsafe), after)
-
-class ExtensibleBasedPath(Path):
-    op: Final[StaticOperation[Drop]]
-    
-    def __init__(self, op: StaticOperation[Drop]) -> None:
-        self.op = op
+        def _schedule(self, *,
+                      mode: RunMode = RunMode.GATED,     
+                      after: Optional[DelayType] = None, 
+                      post_result: bool = True,          
+                      ) -> Delayed[Drop]:
+            middle = self.middle
+            last = len(middle) - 1
+            future = schedule(self.start.op, mode=mode, after=after,
+                              post_result = post_result if last == -1 else True)
+            for i,step in enumerate(middle):
+                future = step._schedule_after(future, post_result=post_result, is_last = i==last)
+            return future
         
-    def _extended(self, op: Operation[Drop,Drop], after: Optional[DelayType]) -> ExtensibleBasedPath:
-        return ExtensibleBasedPath(self.op.then(op,after=after))
-    
-    def walk(self, direction: Dir, *,
-             steps: int = 1,
-             allow_unsafe: bool = False,
-             after: Optional[DelayType] = None
-             ) -> ExtensibleBasedPath:
-        return self._extended(self._walk_op(direction, steps, allow_unsafe), after)
-class BasedPath(Path):
-    ...
+            
+        def walk(self, direction: Dir, *,
+                 steps: int = 1,
+                 allow_unsafe: bool = False,
+                 after: Optional[Ticks] = None) -> Path.Start:
+            return self._extend(Path.WalkStep(direction, steps, allow_unsafe, after))
+        def to_col(self, col: int, *,
+                   allow_unsafe: bool = False,
+                   after: Optional[Ticks] = None) -> Path.Start:
+            return self._extend(Path.ToColStep(col, allow_unsafe, after))
+        def to_row(self, row: int, *,
+                   allow_unsafe: bool = False,
+                   after: Optional[Ticks] = None) -> Path.Start:
+            return self._extend(Path.ToRowStep(row, allow_unsafe, after))
+        def mix(self, mix_type: MixingType, *,
+                result: Optional[Reagent] = None,
+                tolerance: float = 0.1,
+                n_shuttles: int = 0, 
+                after: Optional[Ticks] = None) -> Path.Start:
+            return self._extend(Path.MixStep(mix_type, result=result,
+                                             tolerance=tolerance, n_shuttles=n_shuttles,
+                                             after=after))
+        def in_mix(self, fully_mixed: bool, *,
+                   after: Optional[Ticks] = None) -> Path.Start:
+            return self._extend(Path.InMixStep(fully_mixed=fully_mixed, after=after))
+        
+        def then_process(self, fn: Callable[[Drop], Any]) -> Path.Start:
+            return self._extend(Path.CallStep(fn))
+        
+        def enter_well(self, *,
+                       after: Optional[Ticks] = None) -> Path.Full:
+            return Path.Full(self.start, self.middle, Path.EnterWellStep(after=after))
+        
+            
+    class Middle(Operation['Drop','Drop']):
+        middle: Final[tuple[Path.MiddleStep, ...]]
+        
+        def __init__(self, middle: tuple[Path.MiddleStep, ...]) -> None:
+            self.middle =  middle
+            
+        def _extend(self, step: Path.MiddleStep) -> Path.Middle:
+            return Path.Middle(self.middle+(step,))
 
+        def _schedule_for(self, obj: Drop, *,
+                          mode: RunMode = RunMode.GATED,     
+                          after: Optional[DelayType] = None, 
+                          post_result: bool = True,          
+                          ) -> Delayed[Drop]:
+            assert mode is RunMode.GATED
+            future = Delayed[Drop]()
+            if after is None:
+                future.post(obj)
+            else:
+                obj.pad.board.before_tick(lambda: future.post(obj), delta=mode.gated_delay(after))
+            
+            middle = self.middle
+            last = len(middle) - 1
+            for i,step in enumerate(middle):
+                future = step._schedule_after(future, post_result=post_result, is_last = i==last)
+            return future
+
+        def walk(self, direction: Dir, *,
+                 steps: int = 1,
+                 allow_unsafe: bool = False,
+                 after: Optional[Ticks] = None) -> Path.Middle:
+            return self._extend(Path.WalkStep(direction, steps, allow_unsafe, after))
+        def to_col(self, col: int, *,
+                   allow_unsafe: bool = False,
+                   after: Optional[Ticks] = None) -> Path.Middle:
+            return self._extend(Path.ToColStep(col, allow_unsafe, after))
+        def to_row(self, row: int, *,
+                   allow_unsafe: bool = False,
+                   after: Optional[Ticks] = None) -> Path.Middle:
+            return self._extend(Path.ToRowStep(row, allow_unsafe, after))
+        def mix(self, mix_type: MixingType, *,
+                result: Optional[Reagent] = None,
+                tolerance: float = 0.1,
+                n_shuttles: int = 0, 
+                after: Optional[Ticks] = None) -> Path.Middle:
+            return self._extend(Path.MixStep(mix_type, result=result,
+                                             tolerance=tolerance, n_shuttles=n_shuttles,
+                                             after=after))
+        def in_mix(self, fully_mixed: bool, *,
+                   after: Optional[Ticks] = None) -> Path.Middle:
+            return self._extend(Path.InMixStep(fully_mixed=fully_mixed, after=after))
+        
+        def then_process(self, fn: Callable[[Drop], Any]) -> Path.Middle:
+            return self._extend(Path.CallStep(fn))
+        
+        def enter_well(self, *,
+                       after: Optional[Ticks] = None) -> Path.End:
+            return Path.End(self.middle, Path.EnterWellStep(after=after))
+
+        
+    class End(Operation['Drop', None]):
+        middle: Final[tuple[Path.MiddleStep,...]]
+        end: Final[Path.EndStep]
+        
+        def __init__(self, 
+                     middle: tuple[Path.MiddleStep,...],
+                     end: Path.EndStep) -> None:
+            self.middle = middle
+            self.end = end
+            
+        def _schedule_for(self, obj: Drop, *,
+                          mode: RunMode = RunMode.GATED,     
+                          after: Optional[DelayType] = None, 
+                          post_result: bool = True,          
+                          ) -> Delayed[None]:
+            assert mode is RunMode.GATED
+            future = Delayed[Drop]()
+            if after is None:
+                future.post(obj)
+            else:
+                obj.pad.board.before_tick(lambda: future.post(obj), delta=mode.gated_delay(after))
+            
+            middle = self.middle
+            for step in middle:
+                future = step._schedule_after(future, post_result=True, is_last = False)
+            return self.end._schedule_after(future, post_result=post_result)
+        
+    class Full(StaticOperation[None]):
+        start: Final[Path.StartStep]
+        middle: Final[tuple[Path.MiddleStep, ...]]
+        end: Final[Path.EndStep]
+        
+        def __init__(self, 
+                     start: Path.StartStep,
+                     middle: tuple[Path.MiddleStep,...],
+                     end: Path.EndStep) -> None:
+            self.start = start
+            self.middle = middle
+            self.end = end
+            
+        def _schedule(self, *,
+                      mode: RunMode = RunMode.GATED,     
+                      after: Optional[DelayType] = None, 
+                      post_result: bool = True,          
+                      ) -> Delayed[None]:
+            middle = self.middle
+            future = schedule(self.start.op, mode=mode, after=after,
+                              post_result = True)
+            for step in middle:
+                future = step._schedule_after(future, post_result=True, is_last = False)
+            return self.end._schedule_after(future, post_result=post_result)
+        
+    @classmethod
+    def dispense_from(cls, well: Well) -> Path.Start:
+        return Path.Start(Path.DispenseStep(well), ())
+    
+    @classmethod
+    def teleport_into(cls, extraction_point: ExtractionPoint, *,
+                      liquid: Optional[Liquid] = None,
+                      reagent: Optional[Reagent] = None) -> Path.Start:
+        return Path.Start(Path.TeleportInStep(extraction_point, liquid=liquid, reagent=reagent), ())
+
+        
+    class DispenseStep(StartStep):
+        def __init__(self, well: Well) -> None:
+            super().__init__(Drop.DispenseFrom(well))
+    class TeleportInStep(StartStep):
+        def __init__(self, extraction_point: ExtractionPoint, *,
+                     liquid: Optional[Liquid] = None,
+                     reagent: Optional[Reagent] = None
+                     ) -> None:
+            super().__init__(Drop.TeleportInTo(extraction_point, liquid=liquid, reagent=reagent))
+            
+    class EnterWellStep(EndStep):
+        def __init__(self, *, 
+                     after: Optional[Ticks]) -> None:
+            super().__init__(Drop.EnterWell(), after)
+        
+
+    class WalkStep(MiddleStep):
+        def __init__(self, direction: Dir, steps: int, allow_unsafe: bool, 
+                     after: Optional[Ticks]) -> None:
+            super().__init__(Drop.Move(direction, steps=steps, allow_unsafe=allow_unsafe), after)
+            
+    class ToColStep(MiddleStep):
+        def __init__(self, col: int, allow_unsafe: bool, 
+                     after: Optional[Ticks]) -> None:
+            super().__init__(Drop.ToCol(col, allow_unsafe=allow_unsafe), after)
+            
+    class ToRowStep(MiddleStep):
+        def __init__(self, row: int, allow_unsafe: bool, 
+                     after: Optional[Ticks]) -> None:
+            super().__init__(Drop.ToRow(row, allow_unsafe=allow_unsafe), after)
+            
+    class MixStep(MiddleStep):
+        def __init__(self, mix_type: MixingType,
+                     result: Optional[Reagent] = None,
+                     tolerance: float = 0.1,
+                     n_shuttles: int = 0, 
+                     after: Optional[Ticks] = None) -> None:
+            super().__init__(Drop.Mix(mix_type, result=result, 
+                                      tolerance=tolerance, n_shuttles=n_shuttles), after)
+    class InMixStep(MiddleStep):
+        def __init__(self, 
+                     fully_mixed: bool = False, 
+                     after: Optional[Ticks] = None) -> None:
+            super().__init__(Drop.InMix(fully_mixed=fully_mixed), after)
+        
+            
+    class CallStep(MiddleStep):
+        def __init__(self, fn: Callable[[Drop], Any],
+                     after: Optional[Ticks] = None) -> None:
+            def fn2(drop: Drop) -> Delayed[Drop]:
+                future = Delayed[Drop]()
+                fn(drop)
+                future.post(drop)
+                return future
+            super().__init__(ComputeOp['Drop','Drop'](fn2), after)
 
     
-class TerminatedPathFragment(Path):
-    op: Operation[Drop, None]
+class PathStart:
+    _start: Final[StaticOperation[Drop]]
+    
+    def __init__(self, start: StaticOperation[Drop]):
+        self._start = start
 
     
-    
-    
-class FullPath(Path):
-    op: StaticOperation[None]
+# class Path:
+#     def _walk_op(self, direction: Dir, steps: int, allow_unsafe: bool) -> Drop.Move:
+#         return Drop.Move(direction, steps=steps, allow_unsafe=allow_unsafe)
+#
+# class PathFragment(Path):
+#     ...
+#
+# class ExtensiblePathFragment(Path):
+#     op: Final[Operation[Drop, Drop]]
+#
+#     def __init__(self, op: Operation[Drop, Drop]) -> None:
+#         self.op = op
+#
+#     def _extended(self, op: Operation[Drop,Drop], after: Optional[DelayType]) -> ExtensiblePathFragment:
+#         return ExtensiblePathFragment(self.op.then(op,after=after))
+#
+#     def walk(self, direction: Dir, *,
+#              steps: int = 1,
+#              allow_unsafe: bool = False,
+#              after: Optional[DelayType] = None
+#              ) -> ExtensiblePathFragment:
+#         return self._extended(self._walk_op(direction, steps, allow_unsafe), after)
+#
+# class ExtensibleBasedPath(Path):
+#     op: Final[StaticOperation[Drop]]
+#
+#     def __init__(self, op: StaticOperation[Drop]) -> None:
+#         self.op = op
+#
+#     def _extended(self, op: Operation[Drop,Drop], after: Optional[DelayType]) -> ExtensibleBasedPath:
+#         return ExtensibleBasedPath(self.op.then(op,after=after))
+#
+#     def walk(self, direction: Dir, *,
+#              steps: int = 1,
+#              allow_unsafe: bool = False,
+#              after: Optional[DelayType] = None
+#              ) -> ExtensibleBasedPath:
+#         return self._extended(self._walk_op(direction, steps, allow_unsafe), after)
+# class BasedPath(Path):
+#     ...
+#
+#
+#
+# class TerminatedPathFragment(Path):
+#     op: Operation[Drop, None]
+#
+#
+#
+#
+# class FullPath(Path):
+#     op: StaticOperation[None]
     
     
 
@@ -236,8 +517,8 @@ class Drop(OpScheduler['Drop']):
         extraction_point: Final[ExtractionPoint]
         liquid: Final[Liquid]
         
-        def __init__(self, extraction_point: ExtractionPoint,
-                     liquid: Optional[Liquid] = None,
+        def __init__(self, extraction_point: ExtractionPoint, *,
+                     liquid: Optional[Liquid] = None, 
                      reagent: Optional[Reagent] = None,
                      ) -> None:
             self.extraction_point = extraction_point
@@ -439,7 +720,7 @@ class Drop(OpScheduler['Drop']):
         def __repr__(self) -> str:
             return f"<Drop.InMix: fully_mixed={self.fully_mixed}>"
         
-        def __init__(self, *, fully_mixed = False) -> None:
+        def __init__(self, *, fully_mixed: bool = False) -> None:
             self.fully_mixed = fully_mixed
 
         def _schedule_for(self, drop: Drop, *,
