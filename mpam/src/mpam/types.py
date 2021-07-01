@@ -661,7 +661,7 @@ class Barrier(Generic[T]):
             
         
 class Trigger:
-    waiting: Final[list[tuple[Any,Delayed]]]
+    waiting: list[tuple[Any,Delayed]]
     lock: Final[Lock]
     
     @property
@@ -677,12 +677,13 @@ class Trigger:
             self.waiting.append((val, future))
             
     def fire(self) -> int:
+        waiting = self.waiting
         with self.lock:
-            waiting = self.waiting
-            val = len(waiting)
-            for v,f in waiting:
-                f.post(v)
-            return val
+            self.waiting = []
+        val = len(waiting)
+        for v,f in waiting:
+            f.post(v)
+        return val
     
     def reset(self) -> None:
         with self.lock:

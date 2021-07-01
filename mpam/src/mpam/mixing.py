@@ -92,6 +92,14 @@ class MixingBase(ABC):
                 n_shuttles: int,            # @UnusedVariable
                 ) -> Iterator[bool]:
         ...
+        
+    def two_steps_from(self, pad: Pad, direction: Dir) -> Pad:
+        m = pad.neighbor(direction)
+        assert m is not None
+        p = m.neighbor(direction)
+        assert p is not None
+        return p
+        
 
 class MixSequenceStep(ABC):
     @abstractmethod
@@ -151,12 +159,6 @@ class MixingType(MixingBase):
     def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]: ...  # @UnusedVariable
 
         
-    def two_steps_from(self, pad: Pad, direction: Dir) -> Pad:
-        m = pad.neighbor(direction)
-        assert m is not None
-        p = m.neighbor(direction)
-        assert p is not None
-        return p
     
     
 MixSequence = Sequence[Sequence[MixSequenceStep]]
