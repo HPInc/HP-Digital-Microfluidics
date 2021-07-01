@@ -21,7 +21,7 @@ from numbers import Number
 from quantities.temperature import abs_C
 from quantities.SI import ms, sec
 import random
-from quantities.timestamp import time_now
+from quantities.timestamp import time_now, Timestamp
 from quantities.core import Unit
 from matplotlib.artist import Artist
 from matplotlib.backend_bases import PickEvent
@@ -589,15 +589,21 @@ class BoardMonitor:
                 elif key == "shift":
                     if isinstance(cpt, Pad):
                         on_neighbors = [p for p in cpt.all_neighbors if p.current_state]
+                        def print_time(_) -> None:
+                            # print(f"    Time is {Timestamp.now()}")
+                            pass                            
                         def back_on(val: OnOff) -> None:  # @UnusedVariable
                             with board.in_system().batched():
-                                print(f"  Turning off {cpt}.  Turning on {map_str(on_neighbors)}")
-                                cpt.schedule(Pad.SetState(OnOff.OFF))
+                                print(f"  Turning off {cpt}.  Turning on {map_str(on_neighbors)}.")
+                                cpt.schedule(Pad.SetState(OnOff.OFF)) \
+                                    .then_call(print_time)
                                 for p in on_neighbors:
                                     p.schedule(Pad.SetState(OnOff.ON))
                         with board.in_system().batched():
-                            print(f"  Turning on {cpt}.  Turning off {map_str(on_neighbors)}")
-                            cpt.schedule(Pad.SetState(OnOff.ON)).then_call(back_on)
+                            print(f"  Turning on {cpt}.  Turning off {map_str(on_neighbors)}.")
+                            cpt.schedule(Pad.SetState(OnOff.ON)) \
+                                .then_call(print_time) \
+                                .then_call(back_on) 
                             for p in on_neighbors:
                                 p.schedule(Pad.SetState(OnOff.OFF))
                 else:
