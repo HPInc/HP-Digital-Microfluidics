@@ -8,8 +8,10 @@ from typing import Optional, Union, Any, NamedTuple, Final, ClassVar, Mapping, \
 
 from erk.stringutils import map_str
 from mpam.device import Board, System, Pad, Well
-from mpam.drop import Drop, MixingType, Mix2, Mix3, Mix4, Mix6, Mix9, Path
+from mpam.drop import Drop
 from mpam.exerciser import Task, volume_arg, Exerciser
+from mpam.mixing import MixingType, Mix2, Mix3, Mix4, Mix6, Mix9
+from mpam.paths import Path
 from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, \
     Reagent
 from quantities.dimensions import Volume
@@ -250,7 +252,7 @@ class Mix(Task):
             def fn(drop: Drop) -> None:
                 drop.reagent = r
             return fn
-                
+            
         path = Path.dispense_from(well) \
                 .then_process(change_reagent(reagent)) \
                 .to_row(5-2*row) \

@@ -4,15 +4,16 @@ from argparse import ArgumentParser, Namespace, _ArgumentGroup
 from typing import Union, Optional, Sequence 
 
 from devices import wombat
+from joey import JoeyExerciser
 from mpam.device import System, Well, Heater, Magnet, Board
-from mpam.drop import Mix2, Mix3, Mix4, Path
 from mpam.exerciser import Task, volume_arg, Exerciser
+from mpam.mixing import Mix2, Mix3, Mix4
+from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, RunMode, Reagent, tick
 from quantities.SI import sec, ms
 from quantities.dimensions import Time, Volume
 from quantities.temperature import TemperaturePoint, abs_C
-from joey import JoeyExerciser
 
 
 class DispenseAndWalk(Task): 
