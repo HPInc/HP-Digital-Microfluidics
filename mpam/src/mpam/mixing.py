@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 import math
-from typing import Final, Optional, Union, Sequence, Iterator, ClassVar, Mapping
+from typing import Final, Optional, Union, Sequence, Iterator, ClassVar, Mapping,\
+    MutableMapping
 
 from mpam.device import Pad
 from mpam.drop import Drop, DropStatus
 from mpam.exceptions import MPAMError
-from mpam.processes import MultiDropProcessType
+from mpam.processes import MultiDropProcessType, FinishFunction
 from mpam.types import Reagent, Delayed, waste_reagent, Dir
 
 
@@ -41,37 +42,32 @@ class MixProcess(MultiDropProcessType):
     def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:  # @UnusedVariable
         return self.mix_type.secondary_pads(lead_drop_pad)
     
-    # returns True if the iterator still has work to do
-    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[bool]:  # @UnusedVariable
+    
+    # returns the finish function when done
+    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
         fm = self.fully_mix
         if isinstance(fm, bool):
             fully_mix = set(drops) if fm else {drops[0]}
         else:
             fully_mix = { drops[i] for i in fm }
-        return self.mix_type.perform(full_mix = fully_mix,
+        i = self.mix_type.perform(full_mix = fully_mix,
                                      tolerance = self.tolerance,
                                      drops = drops,
                                      n_shuttles = self.n_shuttles
                                      )
-
-    # returns True if the futures should be posted.
-    def finish(self, drops: Sequence[Drop],             
-               futures: dict[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
-        result = self.result
-        fm = self.fully_mix
-        if isinstance(fm, bool):
-            fully_mix = set(drops) if fm else {drops[0]}
-        else:
-            fully_mix = { drops[i] for i in fm }
-        print(f"mix result is {drops[0].liquid}")
-        for drop in drops:
-            if drop in fully_mix:
-                if result is not None:
-                    drop.reagent = result
-            else:
-                drop.reagent = waste_reagent
-        return True
+        while next(i):
+            yield None
                 
+        result = self.result
+        def finish(futures: MutableMapping[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
+            for drop in drops:
+                if drop in fully_mix:
+                    if result is not None:
+                        drop.reagent = result
+                else:
+                    drop.reagent = waste_reagent
+            return True
+        yield finish
             
         
         

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from threading import Lock
-from typing import Final, Iterator, Sequence, Optional, Callable
+from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
 
 from mpam.device import Pad, Board
 from mpam.drop import Drop
@@ -12,6 +12,7 @@ from mpam.types import Delayed, Callback, Ticks, tick, Operation, RunMode, \
 
     
 
+FinishFunction = Callable[[MutableMapping[Drop, Delayed[Drop]]], bool]
 
 class MultiDropProcessType(ABC):
     n_drops: Final[int]
@@ -19,15 +20,17 @@ class MultiDropProcessType(ABC):
     def __init__(self, n_drops: int) -> None:
         self.n_drops = n_drops
     
-    # returns True if the iterator still has work to do
+    # returns None if the iterator still has work to do.  Otherwise, returns a function that will 
+    # be called after the last tick.  This function returns True if the passed-in futures should 
+    # be posted.
     @abstractmethod
-    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[bool]:  # @UnusedVariable
+    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
         ...
         
-    # returns True if the futures should be posted.
-    def finish(self, drops: Sequence[Drop],                  # @UnusedVariable
-               futures: dict[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
-        return True
+    # # returns True if the futures should be posted.
+    # def finish(self, drops: Sequence[Drop],                  # @UnusedVariable
+    #            futures: dict[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
+    #     return True
     
     @abstractmethod
     def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:  # @UnusedVariable
@@ -118,14 +121,19 @@ class MultiDropProcess:
         drops = tuple(checked(d) for d in drops)
         i = process_type.iterator(drops = drops)
         one_tick = 1*tick
-        while next(i):
+        while True:
+            finish = next(i)
+            if finish is not None:
+                break
             yield one_tick
+        real_finish = finish
         def do_post() -> None:
-            if process_type.finish(drops, futures):
+            if real_finish(futures):
                 for drop, future in futures.items():
                     future.post(drop)
         board.after_tick(do_post)
         yield None
+                
         
             
     def run(self) -> None:
