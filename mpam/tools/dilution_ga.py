@@ -42,11 +42,14 @@ class Candidate:
 
     @staticmethod
     def evaluate(mixes: MixSeq, *,
-                 folds: int,
-                 tolerance: float) -> tuple[Evaluation,MixSeq]:
+                 folds: float,
+                 tolerance: float,
+                 full: bool) -> tuple[Evaluation,MixSeq]:
         current: dict[int,tuple[float, set[int]]] = {0: (1,set())}
         error = Candidate.error_for(1, folds=folds)
         last_step = 0
+        n_drops: int = math.ceil(folds)
+        
         for mix in mixes:
             d1,d2 = mix.drops
             v1,used1 = current.get(d1, (0,set()))
@@ -56,7 +59,23 @@ class Candidate:
                 used = used1 | used2 | {last_step}
                 current[d1] = current[d2] = (val, used)
                 mix.value = val
-                if d1 == 0 or d2 == 0:
+                if full:
+                    min_val: float = 1
+                    max_val: float = 0
+                    assert isinstance(n_drops, int)
+                    for d in range(n_drops):
+                        val, used = current.get(d,(0,set()))
+                        if val < min_val:
+                            min_val = val
+                        if val > max_val:
+                            max_val = val
+                    error = math.inf if min_val == 0 else max_val/min_val-1
+                    if error < tolerance:
+                        # print(f"drops: {n_drops}, max: {max_val}, min: {min_val}, error: {error}")
+                        # print(current)
+                        # assert False
+                        break
+                elif d1 == 0 or d2 == 0:
                     error = Candidate.error_for(val, folds=folds)
                     if error < tolerance:
                         break
@@ -84,7 +103,7 @@ class Candidate:
                 d1,d0 = d0,d1
             return Mix(d0, d1, value=m.value)
         
-        useful_steps = current.get(0, (0, set()))[1]
+        useful_steps = range(0, last_step+1) if full else current.get(0, (0, set()))[1]
         reduced = [remap_mix(m) for i,m in enumerate(mixes) if i in useful_steps]
 
         return (Evaluation(miss, next_drop-1, len(reduced), error), reduced)
@@ -95,23 +114,26 @@ class Candidate:
                  seq_len: int, 
                  n_drops: int, 
                  folds: int,
-                 tolerance: float) -> Candidate:
+                 tolerance: float,
+                 full: bool) -> Candidate:
         def random_mix() -> Mix:
             return Mix(randint(0, n_drops), randint(0,n_drops))
         mixes = [random_mix() for _ in range(seq_len)]
-        return Candidate(mixes, folds=folds, tolerance=tolerance)
+        return Candidate(mixes, folds=folds, tolerance=tolerance, full=full)
         
     
     
     def __init__(self, mixes: MixSeq, *,
                  folds: int,
-                 tolerance: float) -> None:
+                 tolerance: float,
+                 full: bool) -> None:
         self.mixes = mixes
-        self.eval, self.reduced = self.evaluate(mixes, folds=folds, tolerance=tolerance)
+        self.eval, self.reduced = self.evaluate(mixes, folds=folds, tolerance=tolerance, full=full)
 
     def cross(self, other: Candidate, *,
               folds: int,
               tolerance: float,
+              full: bool,
               one_point: bool,
               preserve_size: bool) -> Candidate:
 
@@ -134,7 +156,7 @@ class Candidate:
             mixes.extend(self.mixes[:my_a])
             mixes.extend(other.mixes[their_a:their_b])
             mixes.extend(self.mixes[my_b:])
-        return Candidate(mixes, folds=folds, tolerance=tolerance)
+        return Candidate(mixes, folds=folds, tolerance=tolerance, full=full)
             
             
 
@@ -162,6 +184,7 @@ def tournament(size: int, pop: Sequence[Candidate]) -> tuple[Candidate,Candidate
 def run(*, 
         folds: int,
         tolerance: float,
+        full: bool,
         max_drops: int,
         candidate_size: int,
         tourney_size: int,
@@ -177,13 +200,14 @@ def run(*,
     pop = [checked(Candidate.generate(seq_len = candidate_size,
                                       n_drops = max_drops,
                                       folds=folds,
-                                      tolerance=tolerance)) for _ in range(pop_size)]
+                                      tolerance=tolerance,
+                                      full=full)) for _ in range(pop_size)]
     for gen in range(1, max_gens):
         print(f"*** Generation {gen:,} ***")
         for _ in range(pop_size):
             m,f,worst = tournament(tourney_size, pop)
             new = m.cross(f, one_point=one_point, preserve_size=preserve_size,
-                          folds=folds, tolerance=tolerance)
+                          folds=folds, tolerance=tolerance, full=full)
             if new.eval < pop[worst].eval:
                 pop[worst] = checked(new)
     
@@ -201,8 +225,11 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--tolerance", type=float, default=default_tolerance, metavar="FLOAT",
                         help=f"The required tolerance.  Default it {default_tolerance:g} ({100*default_tolerance:g}%%)")
     default_drops = 20
-    parser.add_argument("-d", "--max-drops", type=int, default=default_drops, metavar="INT",
-                        help=f"The maximum number of drops to use.  Default is {default_drops}.")
+    drops_group = parser.add_mutually_exclusive_group()
+    drops_group.add_argument("-d", "--max-drops", type=int, default=default_drops, metavar="INT",
+                             help=f"The maximum number of drops to use.  Default is {default_drops}.")
+    drops_group.add_argument("-f", "--full", action="store_true",
+                             help=f"Find sequence that evenly mixes all drops")
     default_size = 50
     parser.add_argument("-s", "--size", type=int, default=default_size, metavar="INT",
                         help=f"The initial length of candidate sequences.  Default is {default_size}.")
@@ -226,7 +253,8 @@ if __name__ == '__main__':
     args: Namespace = parser.parse_args()
     folds: int = args.folds
     tolerance: float = args.tolerance
-    max_drops: int = args.max_drops
+    full: bool = args.full
+    max_drops: int = math.ceil(folds)-1 if full else args.max_drops
     size: int = args.size
     tourney_size: int = args.tourney_size
     pop_size: int = args.pop_size
@@ -234,7 +262,7 @@ if __name__ == '__main__':
     one_point: bool = args.one_point
     preserve_size: bool = args.preserve_size
     
-    run(folds=folds, tolerance=tolerance, max_drops=max_drops, 
+    run(folds=folds, tolerance=tolerance, full=full, max_drops=max_drops, 
         candidate_size=size, tourney_size=tourney_size, pop_size=pop_size,
         max_gens=max_gens, one_point=one_point, preserve_size=preserve_size)
     
