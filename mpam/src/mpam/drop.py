@@ -5,15 +5,15 @@ from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
 from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint
 from mpam.exceptions import NoSuchPad, NotAtWell
 from typing import Optional, Final, Union, Sequence, Callable, \
-    Iterator, TYPE_CHECKING
+    Iterator
 from quantities.SI import uL
 from threading import Lock
 from quantities.dimensions import Volume
 from enum import Enum, auto
 from abc import ABC, abstractmethod
 
-if TYPE_CHECKING:
-    from mpam.processes import MultiDropProcessType
+# if TYPE_CHECKING:
+    # from mpam.processes import MultiDropProcessType
 
 class DropStatus(Enum):
     ON_BOARD = auto()

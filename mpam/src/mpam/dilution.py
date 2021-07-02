@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Final, Optional, Union, Sequence
 
 from mpam.device import Pad
-from mpam.drop import Drop
 from mpam.processes import MultiDropProcessType
 from mpam.types import Reagent
 from mpam.mixing import MixingBase
@@ -33,13 +32,13 @@ class DilutionProcess(MultiDropProcessType):
                         result={self.result}, 
                         shuttles={self.n_shuttles}>"""
 
-    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:  # @UnusedVariable
-        return self.dilution_type.secondary_pads(lead_drop)
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:  # @UnusedVariable
+        return self.dilution_type.secondary_pads(lead_drop_pad)
         
         
 class DilutionType(MixingBase):
     @abstractmethod            
-    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]: ...  # @UnusedVariable
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]: ...  # @UnusedVariable
     
     
     

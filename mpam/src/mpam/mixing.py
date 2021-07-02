@@ -38,8 +38,8 @@ class MixProcess(MultiDropProcessType):
                         fully_mix={self.fully_mix}>"""
         
         
-    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:  # @UnusedVariable
-        return self.mix_type.secondary_pads(lead_drop)
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:  # @UnusedVariable
+        return self.mix_type.secondary_pads(lead_drop_pad)
     
     # returns True if the iterator still has work to do
     def iterator(self, drops: tuple[Drop, ...]) -> Iterator[bool]:  # @UnusedVariable
@@ -156,7 +156,7 @@ class MixingType(MixingBase):
     
 
     @abstractmethod            
-    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]: ...  # @UnusedVariable
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]: ...  # @UnusedVariable
 
         
     
@@ -285,8 +285,8 @@ class Mix2(PureMix):
         super().__init__(Mix2.the_script, n_drops=2, is_approximate = False)
         self.to_second = to_second
         
-    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
-        p1 = lead_drop.pad
+    def secondary_pads(self, lead_drop_pad: Pad)->Sequence[Pad]:
+        p1 = lead_drop_pad
         p2 = self.two_steps_from(p1, self.to_second)
         return (p2,)
 
@@ -312,8 +312,8 @@ class Mix3(PureMix):
         self.to_second = to_second
         self.to_third = to_third
         
-    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
-        p1 = lead_drop.pad
+    def secondary_pads(self, lead_drop_pad: Pad)->Sequence[Pad]:
+        p1 = lead_drop_pad
         p2 = self.two_steps_from(p1, self.to_second)
         p3 = self.two_steps_from(p2, self.to_third)
         return (p2,p3)
@@ -333,8 +333,8 @@ class Mix4(CompositeMix):
         self.to_second = to_second
         self.to_third = to_third
         
-    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
-        p1 = lead_drop.pad
+    def secondary_pads(self, lead_drop_pad: Pad)->Sequence[Pad]:
+        p1 = lead_drop_pad
         p2 = self.two_steps_from(p1, self.to_second)
         p3 = self.two_steps_from(p1, self.to_third)
         p4 = self.two_steps_from(p3, self.to_second)
@@ -356,8 +356,8 @@ class Mix6(CompositeMix):
         self.major_dir = major_dir
         self.minor_dir = minor_dir
         
-    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
-        p1 = lead_drop.pad
+    def secondary_pads(self, lead_drop_pad: Pad)->Sequence[Pad]:
+        p1 = lead_drop_pad
         p2 = self.two_steps_from(p1, self.major_dir)
         p3 = self.two_steps_from(p2, self.major_dir)
         p4 = self.two_steps_from(p1, self.minor_dir)
@@ -382,8 +382,8 @@ class Mix9(CompositeMix):
         self.major_dir = major_dir
         self.minor_dir = minor_dir
         
-    def secondary_pads(self, lead_drop:Drop)->Sequence[Pad]:
-        p1 = lead_drop.pad
+    def secondary_pads(self, lead_drop_pad: Pad)->Sequence[Pad]:
+        p1 = lead_drop_pad
         p2 = self.two_steps_from(p1, self.major_dir)
         p3 = self.two_steps_from(p2, self.major_dir)
         p4 = self.two_steps_from(p1, self.minor_dir)

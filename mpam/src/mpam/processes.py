@@ -30,7 +30,7 @@ class MultiDropProcessType(ABC):
         return True
     
     @abstractmethod
-    def secondary_pads(self, lead_drop: Drop) -> Sequence[Pad]:  # @UnusedVariable
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:  # @UnusedVariable
         ...
         
     def start(self, lead_drop: Drop, future: Delayed[Drop]) -> None:
@@ -58,7 +58,7 @@ class MultiDropProcess:
         drops = self.drops
         lead_drop = drops[0]
         assert lead_drop is not None
-        secondary_pads = self.process_type.secondary_pads(lead_drop)
+        secondary_pads = self.process_type.secondary_pads(lead_drop.pad)
         futures = self.futures
         pending_drops = 0
         lock = self.global_lock

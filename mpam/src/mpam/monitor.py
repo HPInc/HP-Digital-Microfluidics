@@ -21,7 +21,7 @@ from numbers import Number
 from quantities.temperature import abs_C
 from quantities.SI import ms, sec
 import random
-from quantities.timestamp import time_now, Timestamp
+from quantities.timestamp import time_now
 from quantities.core import Unit
 from matplotlib.artist import Artist
 from matplotlib.backend_bases import PickEvent
