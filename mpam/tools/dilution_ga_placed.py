@@ -7,28 +7,37 @@ from erk.stringutils import map_str
 import random
 from mpam.types import Dir, XYCoord, Orientation
 
-class Mix:
-    drop: Final[XYCoord]
-    direction: Final[Dir]
-    value: float
+class Mix(NamedTuple):
+    drop: XYCoord
+    direction: Dir
     
-    def __init__(self, drop: XYCoord, direction: Dir, *,
-                 value: float = -1) -> None:
-        self.drop = drop
-        self.direction = direction
-        self.value = value
-        
     def __repr__(self) -> str:
-        return f"Mix({self.drop}, {self.direction}: {self.value})"
+        return f"({self.drop.x},{self.drop.y})-{self.direction.name}"
     
-    
+class EvaluatedMix(NamedTuple):
+    mix: Mix
+    value: float
+
 MixSeq = Sequence[Mix]
+EvaluatedMixSeq = Sequence[EvaluatedMix]
+
+class NamedMix(NamedTuple):
+    step: int
+    mix: Mix
+    value: float
+    d1: str
+    d2: str
+    
+    def __repr__(self) -> str:
+        return f"Mix({self.step}: {self.d1}{self.d2}, {self.mix}: {self.value})"
+
 
 class Evaluation(NamedTuple):
     miss: float
     drops_used: int
-    useful_mixes: int
+    steps: int
     error: float
+    useful_mixes: int
     
 swap_p = dict[tuple[XYCoord, XYCoord], bool]()
 def need_swap(d1: XYCoord, d2: XYCoord) -> bool:
@@ -41,7 +50,7 @@ def need_swap(d1: XYCoord, d2: XYCoord) -> bool:
 class Candidate:
     mixes: Final[MixSeq]
     eval: Final[Evaluation]
-    reduced: Final[MixSeq]
+    reduced: Final[EvaluatedMixSeq]
     
     
     @staticmethod
@@ -52,7 +61,7 @@ class Candidate:
     def evaluate(mixes: MixSeq, *,
                  folds: float,
                  tolerance: float,
-                 full: bool) -> tuple[Evaluation,MixSeq]:
+                 full: bool) -> tuple[Evaluation,EvaluatedMixSeq]:
 
         lead = XYCoord(0,0)
         
@@ -62,9 +71,10 @@ class Candidate:
         n_drops: int = math.ceil(folds)
 
         orientation = Orientation.NORTH_POS_EAST_POS
+        values: list[float] = [-1] * len(mixes)
         
         
-        for mix in mixes:
+        for i,mix in enumerate(mixes):
             this_step = last_step
             last_step = last_step + 1
             d1 = mix.drop
@@ -78,7 +88,7 @@ class Candidate:
             val = (v1+v2)/2
             used = used1 | used2 | {this_step}
             current[d1] = current[d2] = (val, used)
-            mix.value = val
+            values[i] = val
             if full:
                 if len(current) == n_drops:
                     min_val: float = 1
@@ -104,25 +114,6 @@ class Candidate:
         miss = max(error-tolerance, 0)
         
         
-        next_drop = 1
-        mapped_drops = {XYCoord(0,0): 0}
-        
-        def remap_drop(drop: XYCoord) -> int:
-            nonlocal next_drop
-            mapped: Optional[int] = mapped_drops.get(drop, None)
-            if mapped is None:
-                mapped = next_drop
-                next_drop += 1
-                mapped_drops[drop] = mapped
-            return mapped
-        def remap_mix(m: Mix) -> Mix:
-            d1 = m.drop
-            d2 = orientation.neighbor(m.direction, m.drop)
-            remap_drop(d1)
-            remap_drop(d2)
-            if need_swap(d1, d2):
-                return Mix(d2, m.direction.opposite, value=m.value)
-            return m
         
         if full:
             useful_steps = set[int]()
@@ -132,11 +123,64 @@ class Candidate:
             useful_steps = current.get(XYCoord(0,0), (0, set()))[1]
         sorted_steps = list(useful_steps)
         sorted_steps.sort()
-        reduced = [remap_mix(m) for i,m in enumerate(mixes) if i in useful_steps]
+        # reduced = [remap_mix(m) for i,m in enumerate(mixes) if i in useful_steps]
+        reduced = [EvaluatedMix(m, values[i]) for i,m in enumerate(mixes) if i in useful_steps]
+        # if reduced and not reduced[0].value == 0.5:
+            # assert False
+            
+        # used_drops = { XYCoord(0,0)}
+        step_used = { XYCoord(0,0): 0 }
+        max_step = 0
+        for em in reduced:
+            mix = em.mix
+            d1 = mix.drop
+            d2 = orientation.neighbor(mix.direction, d1)
+            step_no = max(step_used.get(d1, 0), step_used.get(d2, 0)) + 1
+            step_used[d1] = step_used[d2] = step_no
+            if step_no > max_step:
+                max_step = step_no
+            # used_drops.add(d1)
+            # used_drops.add(d2)
 
-        return (Evaluation(miss, next_drop-1, len(reduced), error), reduced)
+        return (Evaluation(miss, len(step_used)-1, max_step, error, len(reduced)), reduced)
+    
+    def reduced_mixes(self) -> Sequence[NamedMix]:
+        next_drop = 1
+        mapped_drops = {XYCoord(0,0): "A"}
+        orientation = Orientation.NORTH_POS_EAST_POS
         
-
+        last_set = dict[str, int]()
+        
+        def remap_drop(drop: XYCoord) -> str:
+            nonlocal next_drop
+            mapped: Optional[str] = mapped_drops.get(drop, None)
+            if mapped is None:
+                if next_drop < 26:
+                    mapped = chr(ord("A")+next_drop)
+                else:
+                    mapped = f"<{next_drop}>"
+                next_drop += 1
+                mapped_drops[drop] = mapped
+            return mapped
+        def remap_mix(m: EvaluatedMix) -> NamedMix:
+            mix = m.mix
+            d1 = mix.drop
+            d2 = orientation.neighbor(mix.direction, d1)
+            s1 = remap_drop(d1)
+            s2 = remap_drop(d2)
+            step = max(last_set.get(s1, 0), last_set.get(s2, 0)) + 1
+            last_set[s1] = last_set[s2] = step
+            if need_swap(d1, d2):
+                return NamedMix(step, Mix(d2, mix.direction.opposite), m.value, s2, s1)
+            else:
+                return NamedMix(step, mix, m.value, s1, s2)
+            
+        mixes = [remap_mix(m) for m in self.reduced]
+        mixes.sort(key=lambda nm: (nm.step, nm.d1))
+            
+        return mixes
+        
+    
     @classmethod
     def generate(cls, *,
                  seq_len: int, 
@@ -165,7 +209,8 @@ class Candidate:
               tolerance: float,
               full: bool,
               one_point: bool,
-              preserve_size: bool) -> Candidate:
+              preserve_size: bool,
+              max_size: int) -> Candidate:
 
         def pick_point(c: Candidate) -> int:
             return randint(0, len(c.mixes))
@@ -186,6 +231,8 @@ class Candidate:
             mixes.extend(self.mixes[:my_a])
             mixes.extend(other.mixes[their_a:their_b])
             mixes.extend(self.mixes[my_b:])
+        if len(mixes) > max_size:
+            mixes = mixes[:max_size]
         return Candidate(mixes, folds=folds, tolerance=tolerance, full=full)
             
             
@@ -200,7 +247,7 @@ class Monitor:
             self.best_gen = gen
             print("---------")
             print(f"New best in generation {gen}: {candidate.eval}")
-            print(f"  {map_str(candidate.reduced)}")
+            print(f"  {map_str(candidate.reduced_mixes())}")
             return True
         return False
     
@@ -215,12 +262,13 @@ def run(*,
         folds: int,
         tolerance: float,
         full: bool,
-        max_drops: int,
+        max_drops: int,  # @UnusedVariable
         radius: int,
         candidate_size: int,
         tourney_size: int,
         pop_size: int,
         max_gens: int,
+        max_size: int,
         one_point: bool,
         preserve_size: bool) -> Candidate:
     monitor = Monitor()
@@ -238,6 +286,7 @@ def run(*,
         for _ in range(pop_size):
             m,f,worst = tournament(tourney_size, pop)
             new = m.cross(f, one_point=one_point, preserve_size=preserve_size,
+                          max_size=max_size,
                           folds=folds, tolerance=tolerance, full=full)
             if new.eval < pop[worst].eval:
                 pop[worst] = checked(new)
@@ -280,8 +329,13 @@ if __name__ == '__main__':
     
     parser.add_argument("--one_point", action='store_true',
                         help=f"Use one-point crossover rather than two-point crossover")
-    parser.add_argument("--preserve_size", action='store_true',
+    size_group = parser.add_mutually_exclusive_group()
+    size_group.add_argument("--preserve_size", action='store_true',
                         help=f"Preserve candidate size during crossover")
+    default_ms = 500
+    size_group.add_argument("-ms", "--max-size", type=int, default=default_ms, metavar="INT",
+                        help=f"""The maximum length of a candidate mixing sequence.
+                                 Default is {default_ms:,}.""")
     
 
     args: Namespace = parser.parse_args()
@@ -294,12 +348,14 @@ if __name__ == '__main__':
     tourney_size: int = args.tourney_size
     pop_size: int = args.pop_size
     max_gens: int = args.max_gens
+    max_size: int = args.max_size
     one_point: bool = args.one_point
     preserve_size: bool = args.preserve_size
     
     run(folds=folds, tolerance=tolerance, full=full, max_drops=max_drops, radius=radius,
         candidate_size=size, tourney_size=tourney_size, pop_size=pop_size,
-        max_gens=max_gens, one_point=one_point, preserve_size=preserve_size)
+        max_gens=max_gens, max_size=max_size, 
+        one_point=one_point, preserve_size=preserve_size)
     
     # c = Candidate.generate(seq_len=size, n_drops=max_drops, folds=folds, tolerance=tolerance)
     # print(map_str(c.mixes))
