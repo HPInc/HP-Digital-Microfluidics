@@ -2,24 +2,24 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from typing import Final, Sequence, NamedTuple, Optional
 import math
-from random import randint
+from random import randint, choice
 from erk.stringutils import map_str
 import random
+from mpam.types import Dir, XYCoord, Orientation
 
 class Mix:
-    drops: Final[tuple[int,int]]
+    drop: Final[XYCoord]
+    direction: Final[Dir]
     value: float
     
-    def __init__(self, drop1: int, drop2: int, *,
+    def __init__(self, drop: XYCoord, direction: Dir, *,
                  value: float = -1) -> None:
-        self.drops = (drop1,drop2)
+        self.drop = drop
+        self.direction = direction
         self.value = value
         
     def __repr__(self) -> str:
-        return f"Mix({self.drops[0]}, {self.drops[1]}: {self.value})"
-    
-    def useful(self, useful_drops: set[int]) -> bool:
-        return self.drops[0] in useful_drops or self.drops[1] in useful_drops
+        return f"Mix({self.drop}, {self.direction}: {self.value})"
     
     
 MixSeq = Sequence[Mix]
@@ -30,6 +30,14 @@ class Evaluation(NamedTuple):
     useful_mixes: int
     error: float
     
+swap_p = dict[tuple[XYCoord, XYCoord], bool]()
+def need_swap(d1: XYCoord, d2: XYCoord) -> bool:
+    val = swap_p.get((d1,d2), None)
+    if val is None:
+        val = math.fabs(d2.x) < math.fabs(d1.x) or math.fabs(d2.y) < math.fabs(d1.y)
+        swap_p[(d1,d2)] = val
+    return val
+
 class Candidate:
     mixes: Final[MixSeq]
     eval: Final[Evaluation]
@@ -45,26 +53,38 @@ class Candidate:
                  folds: float,
                  tolerance: float,
                  full: bool) -> tuple[Evaluation,MixSeq]:
-        current: dict[int,tuple[float, set[int]]] = {0: (1,set())}
+
+        lead = XYCoord(0,0)
+        
+        current: dict[XYCoord,tuple[float, set[int]]] = {lead: (1,set())}
         error = Candidate.error_for(1, folds=folds)
         last_step = 0
         n_drops: int = math.ceil(folds)
+
+        orientation = Orientation.NORTH_POS_EAST_POS
+        
         
         for mix in mixes:
-            d1,d2 = mix.drops
+            this_step = last_step
+            last_step = last_step + 1
+            d1 = mix.drop
+            d2 = orientation.neighbor(mix.direction, d1)
             v1,used1 = current.get(d1, (0,set()))
             v2,used2 = current.get(d2, (0,set()))
-            if v1 != v2:
-                val = (v1+v2)/2
-                used = used1 | used2 | {last_step}
-                current[d1] = current[d2] = (val, used)
-                mix.value = val
-                if full:
+            if v1 == v2:
+                continue
+            if full and len(current) == n_drops and (v1 == 0 or v2 == 0):
+                continue
+            val = (v1+v2)/2
+            used = used1 | used2 | {this_step}
+            current[d1] = current[d2] = (val, used)
+            mix.value = val
+            if full:
+                if len(current) == n_drops:
                     min_val: float = 1
                     max_val: float = 0
                     assert isinstance(n_drops, int)
-                    for d in range(n_drops):
-                        val, used = current.get(d,(0,set()))
+                    for val,used in current.values():
                         if val < min_val:
                             min_val = val
                         if val > max_val:
@@ -75,40 +95,43 @@ class Candidate:
                         # print(current)
                         # assert False
                         break
-                elif d1 == 0 or d2 == 0:
-                    error = Candidate.error_for(val, folds=folds)
-                    if error < tolerance:
-                        break
-            last_step += 1
+            elif d1 == lead or d2 == lead:
+                error = Candidate.error_for(val, folds=folds)
+                if error < tolerance:
+                    break
         if error < 0:
             error = -error
         miss = max(error-tolerance, 0)
         
         
         next_drop = 1
-        mapped_drops = {0: 0}
-        def remap_drop(drop: int) -> int:
+        mapped_drops = {XYCoord(0,0): 0}
+        
+        def remap_drop(drop: XYCoord) -> int:
             nonlocal next_drop
-            mapped: Optional[int] = mapped_drops.get(drop)
+            mapped: Optional[int] = mapped_drops.get(drop, None)
             if mapped is None:
                 mapped = next_drop
                 next_drop += 1
                 mapped_drops[drop] = mapped
             return mapped
         def remap_mix(m: Mix) -> Mix:
-            drops = m.drops
-            d0 = remap_drop(drops[0])
-            d1 = remap_drop(drops[1])
-            if d1 < d0:
-                d1,d0 = d0,d1
-            return Mix(d0, d1, value=m.value)
+            d1 = m.drop
+            d2 = orientation.neighbor(m.direction, m.drop)
+            remap_drop(d1)
+            remap_drop(d2)
+            if need_swap(d1, d2):
+                return Mix(d2, m.direction.opposite, value=m.value)
+            return m
         
         if full:
             useful_steps = set[int]()
             for s in current.values():
                 useful_steps |= s[1] 
         else:
-            useful_steps = current.get(0, (0, set()))[1]
+            useful_steps = current.get(XYCoord(0,0), (0, set()))[1]
+        sorted_steps = list(useful_steps)
+        sorted_steps.sort()
         reduced = [remap_mix(m) for i,m in enumerate(mixes) if i in useful_steps]
 
         return (Evaluation(miss, next_drop-1, len(reduced), error), reduced)
@@ -117,12 +140,14 @@ class Candidate:
     @classmethod
     def generate(cls, *,
                  seq_len: int, 
-                 n_drops: int, 
+                 radius: int, 
                  folds: int,
                  tolerance: float,
                  full: bool) -> Candidate:
         def random_mix() -> Mix:
-            return Mix(randint(0, n_drops), randint(0,n_drops))
+            return Mix(XYCoord(randint(-radius, radius), 
+                               randint(-radius, radius)),
+                        choice(Dir.cardinals()))
         mixes = [random_mix() for _ in range(seq_len)]
         return Candidate(mixes, folds=folds, tolerance=tolerance, full=full)
         
@@ -191,6 +216,7 @@ def run(*,
         tolerance: float,
         full: bool,
         max_drops: int,
+        radius: int,
         candidate_size: int,
         tourney_size: int,
         pop_size: int,
@@ -203,7 +229,7 @@ def run(*,
         monitor.see(c, gen)
         return c
     pop = [checked(Candidate.generate(seq_len = candidate_size,
-                                      n_drops = max_drops,
+                                      radius = radius,
                                       folds=folds,
                                       tolerance=tolerance,
                                       full=full)) for _ in range(pop_size)]
@@ -226,6 +252,9 @@ if __name__ == '__main__':
     parser.add_argument("folds", type=float, 
                         help="""The number of times to dilute (e.g., 8 for an 8x dilution).  
                                 Does not need to be an integer""")
+    default_radius = 5
+    parser.add_argument("-r", "--radius", type=int, default=default_radius, metavar="INT",
+                        help = f"The maximum deviation from the lead drop.  Default is {default_radius}")
     default_tolerance = 0.1
     parser.add_argument("-t", "--tolerance", type=float, default=default_tolerance, metavar="FLOAT",
                         help=f"The required tolerance.  Default it {default_tolerance:g} ({100*default_tolerance:g}%%)")
@@ -260,6 +289,7 @@ if __name__ == '__main__':
     tolerance: float = args.tolerance
     full: bool = args.full
     max_drops: int = math.ceil(folds)-1 if full else args.max_drops
+    radius: int = args.radius
     size: int = args.size
     tourney_size: int = args.tourney_size
     pop_size: int = args.pop_size
@@ -267,7 +297,7 @@ if __name__ == '__main__':
     one_point: bool = args.one_point
     preserve_size: bool = args.preserve_size
     
-    run(folds=folds, tolerance=tolerance, full=full, max_drops=max_drops, 
+    run(folds=folds, tolerance=tolerance, full=full, max_drops=max_drops, radius=radius,
         candidate_size=size, tourney_size=tourney_size, pop_size=pop_size,
         max_gens=max_gens, one_point=one_point, preserve_size=preserve_size)
     
