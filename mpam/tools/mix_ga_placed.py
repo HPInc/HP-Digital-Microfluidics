@@ -1,11 +1,15 @@
 from __future__ import annotations
-from argparse import ArgumentParser, Namespace
-from typing import Final, Sequence, NamedTuple, Optional
+from argparse import ArgumentParser, Namespace, ArgumentTypeError
+from typing import Final, Sequence, NamedTuple, Optional, TextIO
 import math
 from random import randint, choice
 from erk.stringutils import map_str
 import random
 from mpam.types import Dir, XYCoord, Orientation
+from sys import stdout
+from contextlib import redirect_stdout
+import os.path
+from quantities.timestamp import time_now
 
 class Mix(NamedTuple):
     drop: XYCoord
@@ -26,12 +30,17 @@ class NamedMix(NamedTuple):
     step: int
     mix: Mix
     error: float
-    d1: str
-    d2: str
+    d1: int
+    d2: int
     
     def __repr__(self) -> str:
-        return f"Mix({self.step}: {self.d1}{self.d2}, {self.mix}: {self.error})"
+        def tag(i: int) -> str:
+            return chr(ord("A")+i) if i < 26 else f"<{i}>"
+        return f"Mix({self.step}: {tag(self.d1)}{tag(self.d2)}, {self.mix}: {self.error})"
+    
+        
 
+    
 
 class Evaluation(NamedTuple):
     miss: float
@@ -48,6 +57,38 @@ def need_swap(d1: XYCoord, d2: XYCoord) -> bool:
         swap_p[(d1,d2)] = val
     return val
 
+
+def log_mixes(mixes: Sequence[NamedMix], *,
+              evaluation: Evaluation,
+              file: TextIO = stdout) -> None:
+    orientation = Orientation.NORTH_POS_EAST_POS
+    loc = dict[int, XYCoord]()
+    steps = dict[int, list[NamedMix]]()
+    for m in mixes:
+        mix = m.mix
+        loc[m.d1] = mix.drop
+        loc[m.d2] = orientation.neighbor(mix.direction, mix.drop)
+        s = steps.get(m.step, None)
+        if s is None:
+            s = steps[m.step] = []
+        s.append(m)
+    locs = "("+" ".join(f"({xy.x},{xy.y})," for _,xy in sorted(loc.items()))+")"
+
+    with redirect_stdout(file):
+        print() 
+        print(f"# {evaluation}")
+        print(f"MixingSeq({evaluation.error},")
+        print(f"  {locs},")
+        print(f"  (")
+        for _, step_mixes in sorted(steps.items()):
+            print("   (" 
+                  + " ".join(f"PM({m.d1},{m.d2})," for m in step_mixes)
+                  +"),")
+        print("  ))")
+        for m in mixes:
+            print(f"# {m}") 
+
+
 class Candidate:
     mixes: Final[MixSeq]
     eval: Final[Evaluation]
@@ -59,6 +100,7 @@ class Candidate:
     def evaluate(mixes: MixSeq, *,
                  n_drops: int,
                  tolerance: float,
+                 slop: float,
                  full: bool) -> tuple[Evaluation,EvaluatedMixSeq]:
 
         lead = XYCoord(0,0)
@@ -114,12 +156,14 @@ class Candidate:
                     error = max(e for val, used, e in current.values())
             elif d1 == lead or d2 == lead:
                 error = e
-            if error < tolerance:
+            if error < tolerance+slop:
                 break
             
         if error < 0:
             error = -error
         miss = max(error-tolerance, 0)
+        if miss < slop:
+            miss = 0
         
         
         
@@ -157,21 +201,17 @@ class Candidate:
     
     def reduced_mixes(self) -> Sequence[NamedMix]:
         next_drop = 1
-        mapped_drops = {XYCoord(0,0): "A"}
+        mapped_drops = {XYCoord(0,0): 0}
         orientation = Orientation.NORTH_POS_EAST_POS
         
-        last_set = dict[str, int]()
+        last_set = dict[int, int]()
         
-        def remap_drop(drop: XYCoord) -> str:
+        def remap_drop(drop: XYCoord) -> int:
             nonlocal next_drop
-            mapped: Optional[str] = mapped_drops.get(drop, None)
+            mapped: Optional[int] = mapped_drops.get(drop, None)
             if mapped is None:
-                if next_drop < 26:
-                    mapped = chr(ord("A")+next_drop)
-                else:
-                    mapped = f"<{next_drop}>"
+                mapped = mapped_drops[drop] = next_drop
                 next_drop += 1
-                mapped_drops[drop] = mapped
             return mapped
         def remap_mix(m: EvaluatedMix) -> NamedMix:
             mix = m.mix
@@ -198,26 +238,30 @@ class Candidate:
                  radius: int, 
                  n_drops: int,
                  tolerance: float,
+                 slop: float,
                  full: bool) -> Candidate:
         def random_mix() -> Mix:
             return Mix(XYCoord(randint(-radius, radius), 
                                randint(-radius, radius)),
                         choice(Dir.cardinals()))
         mixes = [random_mix() for _ in range(seq_len)]
-        return Candidate(mixes, n_drops=n_drops, tolerance=tolerance, full=full)
+        return Candidate(mixes, n_drops=n_drops, tolerance=tolerance, full=full, slop=slop)
         
     
     
     def __init__(self, mixes: MixSeq, *,
                  n_drops: int,
                  tolerance: float,
+                 slop: float,
                  full: bool) -> None:
         self.mixes = mixes
-        self.eval, self.reduced = self.evaluate(mixes, n_drops=n_drops, tolerance=tolerance, full=full)
+        self.eval, self.reduced = self.evaluate(mixes, n_drops=n_drops, tolerance=tolerance, slop=slop, 
+                                                full=full)
 
     def cross(self, other: Candidate, *,
               n_drops: int,
               tolerance: float,
+              slop: float,
               full: bool,
               one_point: bool,
               preserve_size: bool,
@@ -244,7 +288,7 @@ class Candidate:
             mixes.extend(self.mixes[my_b:])
         if len(mixes) > max_size:
             mixes = mixes[:max_size]
-        return Candidate(mixes, n_drops=n_drops, tolerance=tolerance, full=full)
+        return Candidate(mixes, n_drops=n_drops, tolerance=tolerance, full=full, slop=slop)
             
             
 
@@ -252,16 +296,37 @@ class Monitor:
     best: Optional[Candidate] = None
     best_gen: int = 0
     seen: int = 0
+    log_file_name: Final[str]
+    log_file: Optional[TextIO] = None
+    
+    
+    def __init__(self, log_file_name: str) -> None:
+        self.log_file_name = log_file_name
+    
     def see(self, candidate: Candidate, gen: int) -> bool:
         best = self.best
         self.seen += 1
         if best is None or candidate.eval < best.eval:
             self.best = candidate
             self.best_gen = gen
+            reduced = candidate.reduced_mixes()
             print("---------")
             print(f"New best in generation {gen} ({self.seen:,}): {candidate.eval}")
-            print(f"  {map_str(candidate.reduced_mixes())}")
+            print(f"  {map_str(reduced)}")
+            if (candidate.eval.miss == 0):
+                if self.log_file is None:
+                    self.log_file = open(self.log_file_name, "w").__enter__()
+                log_mixes(reduced, evaluation=candidate.eval, file = self.log_file)
+                self.log_file.flush()
             return True
+        return False
+    
+    def __enter__(self) -> Monitor:
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
+        if self.log_file is not None:
+            return self.log_file.__exit__(exc_type, exc_val, exc_tb)
         return False
     
     
@@ -282,32 +347,36 @@ def run(*,
         max_gens: int,
         max_size: int,
         one_point: bool,
-        preserve_size: bool) -> Candidate:
-    monitor = Monitor()
-    gen: int = 0
-    def checked(c: Candidate) -> Candidate:
-        monitor.see(c, gen)
-        return c
-    pop = [checked(Candidate.generate(seq_len = candidate_size,
-                                      radius = radius,
-                                      n_drops=n_drops,
-                                      tolerance=tolerance,
-                                      full=full)) for _ in range(pop_size)]
-    for gen in range(1, max_gens):
-        print(f"*** Generation {gen:,} ({monitor.seen:,}) ***")
-        for _ in range(pop_size):
-            m,f,worst = tournament(tourney_size, pop)
-            new = m.cross(f, one_point=one_point, preserve_size=preserve_size,
-                          max_size=max_size,
-                          n_drops=n_drops, tolerance=tolerance, full=full)
-            if new.eval < pop[worst].eval:
-                pop[worst] = checked(new)
-            else:
-                monitor.seen += 1
-    
-    best = monitor.best
-    assert best is not None
-    return best
+        preserve_size: bool,
+        log_file: str,
+        slop: float) -> Candidate:
+    with Monitor(log_file) as monitor:
+        gen: int = 0
+        def checked(c: Candidate) -> Candidate:
+            monitor.see(c, gen)
+            return c
+        pop = [checked(Candidate.generate(seq_len = candidate_size,
+                                          radius = radius,
+                                          n_drops=n_drops,
+                                          tolerance=tolerance,
+                                          full=full,
+                                          slop=slop)) for _ in range(pop_size)]
+        for gen in range(1, max_gens):
+            print(f"*** Generation {gen:,} ({monitor.seen:,}) ***")
+            for _ in range(pop_size):
+                m,f,worst = tournament(tourney_size, pop)
+                new = m.cross(f, one_point=one_point, preserve_size=preserve_size,
+                              max_size=max_size,
+                              n_drops=n_drops, tolerance=tolerance, full=full,
+                              slop=slop)
+                if new.eval < pop[worst].eval:
+                    pop[worst] = checked(new)
+                else:
+                    monitor.seen += 1
+        
+        best = monitor.best
+        assert best is not None
+        return best
 
 
 if __name__ == '__main__':
@@ -350,6 +419,23 @@ if __name__ == '__main__':
                         help=f"""The maximum length of a candidate mixing sequence.
                                  Default is {default_ms:,}.""")
     
+    def dir_path(d: str) -> str:
+        if os.path.isdir(d):
+            return d
+        else:
+            raise ArgumentTypeError(f"Not a directory: '{d}'")
+    
+    default_logdir = os.path.join(".", "logs")
+    parser.add_argument("--log_dir", type=dir_path, default=default_logdir,
+                        help=f"The directory for log files.  Default is {default_logdir}.")
+    
+    default_slop = 0.00001
+    parser.add_argument("--slop", type=float, default=default_slop,
+                        help=f"""The amount that a solution is allowed to 
+                                 exceed the stated tolerance.  This helps with floating-point
+                                 rounding inequalities.  Default is {default_slop}
+                        """)
+    
 
     args: Namespace = parser.parse_args()
     print(args)
@@ -364,11 +450,17 @@ if __name__ == '__main__':
     max_size: int = args.max_size
     one_point: bool = args.one_point
     preserve_size: bool = args.preserve_size
+    logdir: str = args.log_dir
+    slop: float = args.slop
+    
+    ts = time_now().strftime(fmt="%Y%m%d_%H%M%S")
+    logfile = os.path.join(logdir, f"mix-{n_drops}{'-full' if full else ''}-t{tolerance}.{ts}")
     
     run(n_drops=n_drops, tolerance=tolerance, full=full, radius=radius,
         candidate_size=size, tourney_size=tourney_size, pop_size=pop_size,
         max_gens=max_gens, max_size=max_size, 
-        one_point=one_point, preserve_size=preserve_size)
+        one_point=one_point, preserve_size=preserve_size,log_file = logfile,
+        slop=slop)
     
     # c = Candidate.generate(seq_len=size, n_drops=max_drops, folds=folds, tolerance=tolerance)
     # print(map_str(c.mixes))

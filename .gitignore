@@ -58,3 +58,5 @@ perf.*
 trace
 
 *.pyc
+
+mpam/logs
