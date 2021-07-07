@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from threading import Lock
-from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
+from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping,\
+    NamedTuple, Iterable
 
 from mpam.device import Pad, Board
-from mpam.drop import Drop
+from mpam.drop import Drop, DropStatus
 from mpam.types import Delayed, Callback, Ticks, tick, Operation, RunMode, \
-    DelayType
+    DelayType, Reagent, waste_reagent
+from enum import Enum
+from _collections import defaultdict
+import sys
 
 
     
@@ -91,7 +95,7 @@ class MultiDropProcess:
                     d = p.drop
                     assert d is not None
                     futures[d] = future
-                    drops[i] = d
+                    drops[i+1] = d
             ready = (pending_drops == 0)
         if ready:
             self.run()
@@ -197,3 +201,290 @@ class JoinProcess(Operation[Drop,Drop]):
             MultiDropProcess.join(drop, future)
         board.before_tick(before_tick, delta=mode.gated_delay(after))
         return future
+    
+class PairwiseMix(NamedTuple):
+    drop1_index: int
+    drop2_index: int
+    
+    def merge(self, drops: tuple[Drop,...]) -> None:
+        drop1 = drops[self.drop1_index]
+        drop2 = drops[self.drop2_index]
+        pad1 = drop1.pad
+        pad2 = drop2.pad
+        middle = pad1.between_pads[pad2]
+        l1 = drop1.liquid
+        l2 = drop2.liquid
+        def update(_) -> None:
+            drop2.status = DropStatus.IN_MIX
+            l1.mix_in(l2)
+            pad2.drop = None
+            drop1.pad = middle
+        pad1.schedule(Pad.TurnOff, post_result = False)
+        pad2.schedule(Pad.TurnOff, post_result = False)
+        middle.schedule(Pad.TurnOn).then_call(update)
+        
+    def split(self, drops: tuple[Drop,...], pads: tuple[Pad,...]) -> None:
+        drop1 = drops[self.drop1_index]
+        drop2 = drops[self.drop2_index]
+        pad1 = pads[self.drop1_index]
+        pad2 = pads[self.drop2_index]
+        middle = pad1.between_pads[pad2]
+        l1 = drop1.liquid
+        l2 = drop2.liquid
+        def update(_) -> None:
+            l1.split_to(l2)
+            drop2.status = DropStatus.ON_BOARD
+            drop1.pad = pad1
+            pad2.drop = drop2
+        pad1.schedule(Pad.TurnOn, post_result = False)
+        pad2.schedule(Pad.TurnOn, post_result = False)
+        middle.schedule(Pad.TurnOff).then_call(update)
+            
+    
+PM = PairwiseMix
+    
+class MixSequence(NamedTuple):
+    error: float
+    locations: Sequence[tuple[int,int]]
+    steps: Sequence[Sequence[PairwiseMix]]
+    fully_mixed: Sequence[int]
+    size: tuple[int, int]
+    lead_offset: tuple[int, int]
+    
+    def iterator(self, drops: tuple[Drop, ...], n_shuttles: int) -> Iterator[bool]:
+        last_step = len(self.steps)-1
+        pads = tuple(d.pad for d in drops)
+        for i, step in enumerate(self.steps):
+            for shuttle in range(n_shuttles+1):
+                for mix in step:
+                    mix.merge(drops)
+                yield True
+                for mix in step:
+                    mix.split(drops, pads)
+                yield i<last_step or shuttle<n_shuttles
+                
+    def transformed(self, transform: Transform) -> MixSequence:
+        if transform is Transform.NONE:
+            return self
+        tx, ty = transform.apply_to(*self.size)
+        lx, ly = transform.apply_to(*self.lead_offset)
+        if lx < 0:
+            lx -= (tx+1)
+        if ly < 0:
+            ly -= (ty+1)
+        sx,sy = self.size
+        if transform.swap:
+            sx,sy = sy,sx
+        ms = MixSequence(self.error, 
+                           tuple(transform.apply_to(x,y) for x,y in self.locations),
+                           self.steps,
+                           fully_mixed = self.fully_mixed,
+                           size = (sx,sy),
+                           lead_offset = (lx, ly)
+                           )
+        # print(f"{self} transformed {transform} is")
+        # print(f"{ms}")
+        return ms
+                
+class Transform(Enum):
+    x_neg: Final[bool]
+    y_neg: Final[bool]
+    swap: Final[bool]
+    NONE = (False, False, False)
+    CLOCKWISE = (True, False, True)
+    COUNTERCLOCKWISE = (False, True, True)
+    ONE_EIGHTY = (True, True, True)
+    FLIP_X = (True, False, False)
+    FLIP_Y = (False, True, False)
+    
+    def __init__(self, x_neg: bool, y_neg: bool, swap: bool) -> None: 
+        self.x_neg = x_neg
+        self.y_neg = y_neg
+        self.swap = swap
+        # print(f"{self}(1,2) = {self(1,2)}")
+        
+    def __repr__(self):
+        return f"Transform.{self.name}"
+    
+    def __call__(self, x: int, y: int) -> tuple[int,int]:
+        if self.x_neg:
+            x = -x
+        if self.y_neg:
+            y = -y
+        return (y,x) if self.swap else (x,y)
+    
+    def apply_to(self, x: int, y: int) -> tuple[int,int]:
+        if self.x_neg:
+            x = -x
+        if self.y_neg:
+            y = -y
+        return (y,x) if self.swap else (x,y)
+    
+    
+class DropCombinationProcessType(MultiDropProcessType):
+    mix_seq: Final[MixSequence]
+    result: Final[Optional[Reagent]]
+    n_shuttles: Final[int]
+    def __init__(self, mix_seq: MixSequence, *, 
+                 result: Optional[Reagent] = None,
+                 n_shuttles: int = 0) -> None:
+        super().__init__(len(mix_seq.locations))
+        self.mix_seq = mix_seq
+        self.result = result
+        self.n_shuttles = n_shuttles
+        
+    def secondary_pads(self, lead_drop_pad: Pad)->Sequence[Pad]:
+        board = lead_drop_pad.board
+        lead_loc = lead_drop_pad.location
+        orientation = board.orientation
+        return tuple(board.pads[orientation.up_right(lead_loc, 2*x, 2*y)]
+                     for x,y in self.mix_seq.locations 
+                     if x!=0 or y!=0)
+    
+    # returns the finish function when done
+    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
+        i = self.mix_seq.iterator(drops, self.n_shuttles)
+        while next(i):
+            yield None
+        result = self.result
+        fully_mixed = { drops[i] for i in self.mix_seq.fully_mixed }
+        def finish(futures: MutableMapping[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
+            printed = False
+            for drop in drops:
+                if drop in fully_mixed:
+                    if not printed:
+                        print(f"Result is {drop.reagent}")
+                        printed = True
+                    if result is not None:
+                        drop.reagent = result
+                else:
+                    drop.reagent = waste_reagent
+            return True
+        yield finish
+    
+class PlacedMixSequence:
+    mix_seq: Final[MixSequence]
+    lead_drop_pad: Final[Pad]
+    _pads: Optional[Sequence[Pad]] = None
+    _fully_mixed_pads: Optional[Sequence[Pad]] = None
+    
+    def __init__(self, mix_seq: MixSequence, lead_drop_pad: Pad) -> None:
+        self.mix_seq = mix_seq
+        self.lead_drop_pad = lead_drop_pad
+        
+    def _place(self, seq: Iterable[tuple[int, int]]) -> tuple[Pad, ...]:
+        ldp = self.lead_drop_pad
+        pad_array = ldp.board.pad_array
+        orientation = ldp.board.orientation
+        ldp_loc = ldp.location
+        return tuple(pad_array[orientation.up_right(ldp_loc, 2*x,2*y)]
+                     for x,y in seq)
+        
+    @property
+    def pads(self) -> Sequence[Pad]:
+        val = self._pads
+        if val is None:
+            val = self._pads = self._place(self.mix_seq.locations)
+            # val = self._place(self.mix_seq.locations)
+        return val
+    
+    @property
+    def fully_mixed_pads(self) -> Sequence[Pad]:
+        val = self._fully_mixed_pads
+        if val is None:
+            locs = self.mix_seq.locations
+            val = self._fully_mixed_pads = self._place(locs[i] for i in self.mix_seq.fully_mixed)
+        return val
+    
+    def as_process(self, *, 
+                   result: Optional[Reagent] = None,
+                   n_shuttles: int = 0) -> DropCombinationProcessType:
+        return DropCombinationProcessType(self.mix_seq, result=result,n_shuttles=n_shuttles)
+
+class MSL_Cache_Key(NamedTuple):
+    n: float
+    fullp: bool
+    tolerance: float
+    rows: int
+    cols: int
+    
+class MixSequenceLibrary:
+    registered: Final[dict[float, list[MixSequence]]]
+    cache: Final[dict[MSL_Cache_Key, MixSequence]]
+    lock: Final[Lock]
+    
+    def __init__(self) -> None:
+        self.registered = defaultdict(list)
+        self.cache = {}
+        self.lock = Lock()
+        
+    def register(self, n: float, mix_seq: MixSequence) -> None:
+        with self.lock:
+            self.registered[n].append(mix_seq)
+            
+    def lookup(self, n: float, *,
+               full: bool, 
+               tolerance: float = 0.1,
+               rows: int = sys.maxsize,
+               cols: int = sys.maxsize,
+               allow_best_match: bool = False) -> MixSequence:
+        key = MSL_Cache_Key(n, full, tolerance, rows, cols)
+        with self.lock:
+            cached = self.cache.get(key, None)
+            if cached is None:
+                best: Optional[MixSequence] = None
+                best_len: int = sys.maxsize
+                rotate_best: bool = False
+                for ms in self.registered[n]:
+                    # If we want a full one, and this isn't, we go on to the next 
+                    if full and len(ms.fully_mixed) < len(ms.locations):
+                        continue
+                    c,r = ms.size
+                    c = c*2-1
+                    r = r*2-1
+                    # if it won't fit into the region (even turned), we go on to the next
+                    if (c>cols or r>rows) and (c>rows or r>cols):
+                        continue
+                    # if the error is too big and we don't allow best effort, we go on to the next
+                    if ms.error > tolerance and not allow_best_match:
+                        continue
+                    new_len = len(ms.steps)
+                    if best is not None:
+                        # if it's longer than the current best, skip it
+                        if new_len > best_len:
+                            continue
+                        # if it's the same length, but doesn't have better error, skip it
+                        if new_len == best_len and ms.error >= best.error:
+                            continue
+                    # if we've gotten here, either we didn't have a best before or the current
+                    # one is better than the one we had
+                    
+                    # if it doesn't fit as is, we have to rotate it
+                    best = ms
+                    rotate_best = (c>cols or r>rows)
+                    best_len = new_len
+                if best is None:
+                    raise KeyError(f"No mixing sequence satisfying f{key}")
+                if rotate_best:
+                    best = best.transformed(Transform.CLOCKWISE)
+                cached = self.cache[key] = best
+            return cached
+    def lookup_placed(self, n: float, *,
+                      lower_left: Pad,
+                      full: bool, 
+                      tolerance: float = 0.1,
+                      rows: Optional[int] = None,
+                      cols: Optional[int] = None,
+                      allow_best_match: bool = False) -> PlacedMixSequence:
+        mix = self.lookup(n, full=full, tolerance=tolerance,
+                          rows=sys.maxsize if rows is None else rows, 
+                          cols=sys.maxsize if cols is None else cols, 
+                          allow_best_match=allow_best_match)
+        pads = lower_left.board.pad_array
+        width,height = (2*i-1 for i in mix.size)
+        bx = 0 if cols is None else (cols-width)//2
+        by = 0 if rows is None else (rows-height)//2
+        orientation = lower_left.board.orientation
+        lox,loy = (2*i for i in mix.lead_offset)
+        lead_drop_pad = pads[orientation.up_right(lower_left.location, bx+lox, by+loy)]
+        return PlacedMixSequence(mix, lead_drop_pad)

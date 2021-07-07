@@ -86,15 +86,21 @@ class XYCoord:
     x: int
     y: int
     
-    def __init__(self, x: int, y: int):
+    def __init__(self, x: int, y: int) -> None:
         self.x = x
         self.y = y
         
-    def row(self):
+    @property
+    def row(self) -> int:
         return self.y
     
-    def col(self):
+    @property
+    def col(self) -> int:
         return self.x
+    
+    @property
+    def coords(self) -> tuple[int, int]:
+        return (self.x, self.y)
         
     def __eq__(self, other: object):
         if not isinstance(other, XYCoord): return False
@@ -106,9 +112,13 @@ class XYCoord:
     def __repr__(self):
         return f"XYCoord({self.x},{self.y})"
     
+    def __add__(self, offset: tuple[int, int]) -> XYCoord:
+        return XYCoord(self.x+offset[0], self.y+offset[1])
+    
 
 class Orientation(Enum):
     offset: Final[Mapping[Dir, tuple[Minus1To1, Minus1To1]]]
+    up_right_delta: tuple[Minus1To1, Minus1To1]
     
     NORTH_POS_EAST_POS = {Dir.N: (0,1), Dir.NE: (1,1), Dir.E: (1,0), Dir.SE: (1,-1),
                           Dir.S: (0,-1), Dir.SW: (-1,-1), Dir.W: (-1,0), Dir.NW: (-1,1)}
@@ -121,10 +131,16 @@ class Orientation(Enum):
     
     def __init__(self, offset: Mapping[Dir, tuple[Minus1To1, Minus1To1]]) -> None:
         self.offset = offset
+        self.up_right_delta = (offset[Dir.E][0], offset[Dir.N][1])
+        # print(f"{self}.up_right_delta = {self.up_right_delta}")
         
     def neighbor(self, direction: Dir, coord: XYCoord, *, steps: int=1  ) -> XYCoord:
         (dx, dy) = self.offset[direction]
         return XYCoord(coord.x+dx*steps, coord.y+dy*steps)
+    
+    def up_right(self, coord: XYCoord, x: int, y: int) -> XYCoord:
+        dx,dy = self.up_right_delta
+        return XYCoord(coord.x+dx*x, coord.y+dy*y)
     
     @property
     def pos_x(self) -> Dir:
@@ -968,16 +984,20 @@ class Mixture(Reagent):
                 r_conc = unknown_concentration
             composition[chem] = r_conc
             
-        seq = [(r,f) for r,f in mixture.items()]
-        seq.sort()
+        seq = sorted(mixture.items())
         t = tuple(seq)
         m = cls._instances.get(t, None)
         if m is None:
             if name is None:
-                lcm = math.lcm(*(f.denominator for _,f in seq))
-                mapped = tuple((r, f*lcm) for r,f in seq)
-                name = ' + '.join(f"{f.numerator:,} {r.name}" for r,f in mapped)
+                max_denom = 10000
+                lcm = min(math.lcm(*(f.denominator for _,f in seq)), max_denom)
+                def portion(f: Fraction) -> int:
+                    return round(float(f)*lcm)
+                mapped = tuple((r, portion(f)) for r,f in seq)
+                name = ' + '.join(f"{p:,} {r.name}" for r,p in mapped)
             m = Mixture(name, t, composition=composition)
+            # print(f"{ratio} {r1} x {r2} is")
+            # print(f"{m}")
             cls._instances[t] = m
         return m
     

@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from typing import Final, Optional, Union, Sequence, Callable, Any
+from typing import Final, Optional, Callable, Any
 
 from mpam.device import Well, ExtractionPoint
 from mpam.drop import Drop
-from mpam.mixing import MixingType, MixProcess
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
     DelayType, schedule, Dir, Reagent, Liquid, ComputeOp
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
@@ -90,16 +89,16 @@ class Path:
             return self._extend(Path.StartProcessStep(process_type, after=after))
         
         
-        def mix(self, mix_type: MixingType, *,
-                result: Optional[Reagent] = None,
-                tolerance: float = 0.1,
-                n_shuttles: int = 0, 
-                fully_mix: Union[bool, Sequence[int]] = False,
-                after: Optional[Ticks] = None) -> Path.Start:
-            return self._extend(Path.MixStep(mix_type, result=result,
-                                             tolerance=tolerance, n_shuttles=n_shuttles,
-                                             fully_mix=fully_mix,
-                                             after=after))
+        # def mix(self, mix_type: MixingType, *,
+        #         result: Optional[Reagent] = None,
+        #         tolerance: float = 0.1,
+        #         n_shuttles: int = 0, 
+        #         fully_mix: Union[bool, Sequence[int]] = False,
+        #         after: Optional[Ticks] = None) -> Path.Start:
+        #     return self._extend(Path.MixStep(mix_type, result=result,
+        #                                      tolerance=tolerance, n_shuttles=n_shuttles,
+        #                                      fully_mix=fully_mix,
+        #                                      after=after))
         def join(self, *,
                  after: Optional[Ticks] = None) -> Path.Start:
             return self._extend(Path.JoinProcessStep(after=after))
@@ -159,17 +158,18 @@ class Path:
                   after: Optional[Ticks] = None) -> Path.Middle:
             return self._extend(Path.StartProcessStep(process_type, after=after))
         
-        def mix(self, mix_type: MixingType, *,
-                result: Optional[Reagent] = None,
-                tolerance: float = 0.1,
-                n_shuttles: int = 0, 
-                fully_mix: Union[bool, Sequence[int]] = True,
-                after: Optional[Ticks] = None) -> Path.Middle:
-            return self._extend(Path.MixStep(mix_type, result=result,
-                                             tolerance=tolerance, n_shuttles=n_shuttles,
-                                             fully_mix=fully_mix,
-                                             after=after))
-            
+        # def mix(self, mix_type: MixingType, *,
+        #         result: Optional[Reagent] = None,
+        #         tolerance: float = 0.1,
+        #         n_shuttles: int = 0, 
+        #         fully_mix: Union[bool, Sequence[int]] = True,
+        #         after: Optional[Ticks] = None) -> Path.Middle:
+        #     return self._extend(Path.MixStep(mix_type, result=result,
+        #                                      tolerance=tolerance, n_shuttles=n_shuttles,
+        #                                      fully_mix=fully_mix,
+        #                                      after=after))
+        #
+
         def join(self, *,
                  after: Optional[Ticks] = None) -> Path.Middle:
             return self._extend(Path.JoinProcessStep(after=after))
@@ -282,18 +282,18 @@ class Path:
         def __init__(self, process_type: MultiDropProcessType,
                      after: Optional[Ticks] = None) -> None:
             super().__init__(StartProcess(process_type), after)
-    class MixStep(StartProcessStep):
-        def __init__(self, mix_type: MixingType,
-                     result: Optional[Reagent] = None,
-                     tolerance: float = 0.1,
-                     n_shuttles: int = 0, 
-                     fully_mix: Union[bool, Sequence[int]] = False,
-                     after: Optional[Ticks] = None) -> None:
-            super().__init__(MixProcess(mix_type, result=result,
-                                        tolerance=tolerance,
-                                        n_shuttles=n_shuttles,
-                                        fully_mix=fully_mix), 
-                                        after)
+    # class MixStep(StartProcessStep):
+    #     def __init__(self, mix_type: MixingType,
+    #                  result: Optional[Reagent] = None,
+    #                  tolerance: float = 0.1,
+    #                  n_shuttles: int = 0, 
+    #                  fully_mix: Union[bool, Sequence[int]] = False,
+    #                  after: Optional[Ticks] = None) -> None:
+    #         super().__init__(MixProcess(mix_type, result=result,
+    #                                     tolerance=tolerance,
+    #                                     n_shuttles=n_shuttles,
+    #                                     fully_mix=fully_mix), 
+    #                                     after)
     class JoinProcessStep(MiddleStep):
         def __init__(self, 
                      after: Optional[Ticks] = None) -> None:

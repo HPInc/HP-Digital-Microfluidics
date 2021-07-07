@@ -3,18 +3,17 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 from re import Pattern, Match
 import re
-from typing import Optional, Union, Any, NamedTuple, Final, ClassVar, Mapping, \
-    Callable
+from typing import Optional, Union, Any, Callable
 
-from erk.stringutils import map_str
 from mpam.device import Board, System, Pad, Well
 from mpam.drop import Drop
 from mpam.exerciser import Task, volume_arg, Exerciser
-from mpam.mixing import MixingType, Mix2, Mix3, Mix4, Mix6, Mix9
 from mpam.paths import Path
 from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, \
     Reagent
 from quantities.dimensions import Volume
+from mpam.mixing import mixing_sequences
+from mpam.processes import PlacedMixSequence
 
 
 class Dispense(Task):
@@ -199,19 +198,6 @@ class DisplayOnly(Task):
 
 
 class Mix(Task):
-    class Mixer(NamedTuple):
-        type: MixingType
-        n_rows: int
-        n_cols: int
-        
-    mixers: Final[ClassVar[Mapping[int, Mixer]]] = {
-            2: Mixer(Mix2(Dir.LEFT), 1, 2),
-            3: Mixer(Mix3(Dir.LEFT, Dir.LEFT), 1, 3),
-            4: Mixer(Mix4(Dir.LEFT, Dir.DOWN), 2, 2),
-            6: Mixer(Mix6(Dir.LEFT, Dir.DOWN), 2, 3),
-            9: Mixer(Mix9(Dir.LEFT, Dir.DOWN), 3, 3),
-        }
-    
     def __init__(self) -> None:
         super().__init__(name="mix",
                          description="Dispense n drops, walk them out and mix them together")
@@ -219,11 +205,8 @@ class Mix(Task):
     def add_args_to(self, parser: ArgumentParser, *,  
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
-        choices=list(self.mixers)
         parser.add_argument('num_drops', type=int, metavar='NUM-DROPS',                              
-                           choices=choices,
-                           help=f""""The number of drops to mix.
-                                     Choices are {map_str(choices)}""")
+                           help=f""""The number of drops to mix.""")
         group = self.arg_group_in(parser)
         default_tolerance = 0.1
         group.add_argument('-t', '--tolerance', type=float, default=default_tolerance, metavar="FLOAT",
@@ -240,11 +223,10 @@ class Mix(Task):
         group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
         
-    def create_path(self, i: int, well: Well, args: Namespace) -> Path.Full:
-        n_drops: int = args.num_drops
-        mixer = self.mixers[n_drops]
-        row = i//mixer.n_cols
-        col = i%mixer.n_cols
+    def create_path(self, i: int, pad: Pad, well: Well,
+                    pms: PlacedMixSequence, 
+                    args: Namespace, *,
+                    is_lead: bool) -> Path.Full:
         
         reagent = Reagent(f"R{i+1}")
         
@@ -253,21 +235,19 @@ class Mix(Task):
                 drop.reagent = r
             return fn
             
+        loc = pad.location
         path = Path.dispense_from(well) \
                 .then_process(change_reagent(reagent)) \
-                .to_row(5-2*row) \
-                .to_col(12-2*col)
+                .to_row(loc.row) \
+                .to_col(loc.col)
 
-        if i == 0:
-            path = path.mix(mixer.type, 
-                             tolerance=args.tolerance,
-                             n_shuttles=args.shuttles,
-                             fully_mix = args.full)
+        if is_lead:
+            path = path.start(pms.as_process(n_shuttles=args.shuttles))
         else:
             path = path.in_mix()
 
-        if i == 0:
-            path = path.to_col(18).walk(Dir.UP)
+        if is_lead:
+            path = path.to_col(18).to_row(6)
         else:
             path = path.to_row(1).to_col(18).walk(Dir.DOWN)
         
@@ -278,9 +258,22 @@ class Mix(Task):
         n_drops: int = args.num_drops
         drops = board.drop_size.as_unit("drops", singular="drop")
         
+        pms = mixing_sequences.lookup_placed(n_drops, 
+                                             lower_left=board.pad_at(3,1),
+                                             full=args.full,
+                                             tolerance=args.tolerance,
+                                             rows=5, cols=13)
+        def sort_key(pad: Pad) -> tuple[int,int]:
+            x,y = pad.location.coords
+            # we want the first (smallest) to be the lowest row and furthest column
+            return (-x, y)
+        pads = sorted(pms.pads, key=sort_key)
+        lead_pad = pms.fully_mixed_pads[0]
+        
         well = board.wells[2]
         well.contains(Liquid(unknown_reagent, n_drops*drops))
-        paths = [self.create_path(i, well, args) for i in range(n_drops)]
+        paths = [self.create_path(i, pad, well, pms, args,
+                                  is_lead=pad is lead_pad) for i,pad in enumerate(pads)]
         
         with system.batched():
             for p in paths:

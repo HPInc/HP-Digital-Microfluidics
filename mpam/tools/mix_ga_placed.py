@@ -60,6 +60,7 @@ def need_swap(d1: XYCoord, d2: XYCoord) -> bool:
 
 def log_mixes(mixes: Sequence[NamedMix], *,
               evaluation: Evaluation,
+              full: bool,
               file: TextIO = stdout) -> None:
     orientation = Orientation.NORTH_POS_EAST_POS
     loc = dict[int, XYCoord]()
@@ -73,18 +74,34 @@ def log_mixes(mixes: Sequence[NamedMix], *,
             s = steps[m.step] = []
         s.append(m)
     locs = "("+" ".join(f"({xy.x},{xy.y})," for _,xy in sorted(loc.items()))+")"
-
+    
+    min_x = min((xy.x for xy in loc.values()), default=-math.inf)
+    min_y = min((xy.y for xy in loc.values()), default=-math.inf)
+    max_x = max((xy.x for xy in loc.values()), default=math.inf)
+    max_y = max((xy.y for xy in loc.values()), default=math.inf)
+    
+    if full:
+        fully_mixed = tuple(range(len(loc)))
+    else:
+        last = mixes[-1]
+        fully_mixed = (last.d1, last.d2)
+        
     with redirect_stdout(file):
         print() 
         print(f"# {evaluation}")
-        print(f"MixingSeq({evaluation.error},")
-        print(f"  {locs},")
-        print(f"  (")
+        print(f"  MixSequence({evaluation.error},")
+        print(f"    {locs},")
+        print(f"    (")
         for _, step_mixes in sorted(steps.items()):
-            print("   (" 
+            print("     (" 
                   + " ".join(f"PM({m.d1},{m.d2})," for m in step_mixes)
                   +"),")
-        print("  ))")
+        print("    ),")
+        print(f"    fully_mixed={map_str(fully_mixed)},")
+        print(f"    size=({max_x-min_x+1}, {max_y-min_y+1}),")
+        print(f"    lead_offset=({-min_x}, {-min_y})")
+        
+        print("   )")
         for m in mixes:
             print(f"# {m}") 
 
@@ -93,6 +110,7 @@ class Candidate:
     mixes: Final[MixSeq]
     eval: Final[Evaluation]
     reduced: Final[EvaluatedMixSeq]
+    full: Final[bool]
     
     
 
@@ -255,6 +273,7 @@ class Candidate:
                  slop: float,
                  full: bool) -> None:
         self.mixes = mixes
+        self.full = full
         self.eval, self.reduced = self.evaluate(mixes, n_drops=n_drops, tolerance=tolerance, slop=slop, 
                                                 full=full)
 
@@ -316,7 +335,9 @@ class Monitor:
             if (candidate.eval.miss == 0):
                 if self.log_file is None:
                     self.log_file = open(self.log_file_name, "w").__enter__()
-                log_mixes(reduced, evaluation=candidate.eval, file = self.log_file)
+                log_mixes(reduced, evaluation=candidate.eval,
+                          full = candidate.full, 
+                          file = self.log_file)
                 self.log_file.flush()
             return True
         return False
@@ -383,7 +404,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description="Find optimal mixing sequences")
     parser.add_argument("n_drops", type=int, 
                         help="""The number of drops to mix""")
-    default_radius = 5
+    default_radius = 4
     parser.add_argument("-r", "--radius", type=int, default=default_radius, metavar="INT",
                         help = f"The maximum deviation from the lead drop.  Default is {default_radius}")
     default_tolerance = 0.1

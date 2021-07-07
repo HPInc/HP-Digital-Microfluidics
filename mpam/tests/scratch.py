@@ -1,5 +1,8 @@
 from __future__ import annotations
 from math import floor
+import math
+from mpam.processes import Transform
+from mpam.types import Orientation
 
 def tobin(d: float, max_places=20) -> str:
     intpart = floor(d)
@@ -22,3 +25,10 @@ print(tobin(1/4))
 print(tobin(1/5))
 print(tobin(1/7))
 print(tobin(1/10))
+
+print(math.fmod(0.00102451, 0.00001))
+t = Transform.CLOCKWISE
+print(t)
+
+o = Orientation.NORTH_POS_EAST_POS
+print(o)
