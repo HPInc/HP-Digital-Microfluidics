@@ -4,7 +4,8 @@ from argparse import Namespace
 from typing import Sequence
 
 from mpam.exerciser import Exerciser
-from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix
+from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix,\
+    Dilute
 from quantities.SI import ms
 from quantities.dimensions import Time
 from devices import joey
@@ -19,6 +20,7 @@ class JoeyExerciser(Exerciser):
         self.add_task(DisplayOnly())
         self.add_task(WalkPath())
         self.add_task(Mix())
+        self.add_task(Dilute())
         
         
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable

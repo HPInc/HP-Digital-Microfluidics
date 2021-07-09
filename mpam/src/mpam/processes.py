@@ -251,6 +251,14 @@ class MixSequence(NamedTuple):
     size: tuple[int, int]
     lead_offset: tuple[int, int]
     
+    @property
+    def num_steps(self) -> int:
+        return len(self.steps)
+    
+    @property
+    def num_drops(self) -> int:
+        return len(self.locations)
+    
     def iterator(self, drops: tuple[Drop, ...], n_shuttles: int) -> Iterator[bool]:
         last_step = len(self.steps)-1
         pads = tuple(d.pad for d in drops)
@@ -325,6 +333,15 @@ class DropCombinationProcessType(MultiDropProcessType):
     mix_seq: Final[MixSequence]
     result: Final[Optional[Reagent]]
     n_shuttles: Final[int]
+    
+    @property
+    def num_drops(self) -> int:
+        return self.mix_seq.num_drops
+
+    @property
+    def num_steps(self) -> int:
+        return self.mix_seq.num_steps
+    
     def __init__(self, mix_seq: MixSequence, *, 
                  result: Optional[Reagent] = None,
                  n_shuttles: int = 0) -> None:
@@ -367,6 +384,14 @@ class PlacedMixSequence:
     lead_drop_pad: Final[Pad]
     _pads: Optional[Sequence[Pad]] = None
     _fully_mixed_pads: Optional[Sequence[Pad]] = None
+    
+    @property
+    def num_drops(self) -> int:
+        return self.mix_seq.num_drops
+
+    @property
+    def num_steps(self) -> int:
+        return self.mix_seq.num_steps
     
     def __init__(self, mix_seq: MixSequence, lead_drop_pad: Pad) -> None:
         self.mix_seq = mix_seq

@@ -14,6 +14,7 @@ from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, 
 from quantities.dimensions import Volume
 from mpam.mixing import mixing_sequences
 from mpam.processes import PlacedMixSequence
+from mpam.dilution import dilution_sequences
 
 
 class Dispense(Task):
@@ -197,6 +198,7 @@ class DisplayOnly(Task):
         ...
 
 
+
 class Mix(Task):
     def __init__(self) -> None:
         super().__init__(name="mix",
@@ -271,6 +273,93 @@ class Mix(Task):
         lead_pad = pms.fully_mixed_pads[0]
         
         well = board.wells[2]
+        well.contains(Liquid(unknown_reagent, n_drops*drops))
+        paths = [self.create_path(i, pad, well, pms, args,
+                                  is_lead=pad is lead_pad) for i,pad in enumerate(pads)]
+        
+        with system.batched():
+            for p in paths:
+                p.schedule()
+
+
+
+
+class Dilute(Task):
+    def __init__(self) -> None:
+        super().__init__(name="dilute",
+                         description="Perform an n-fold dilution")
+
+    def add_args_to(self, parser: ArgumentParser, *,  
+                    exerciser: Exerciser  # @UnusedVariable
+                    ) -> None:
+        parser.add_argument('fold', type=int, 
+                           help=f""""The number of fold of the dilution (e.g., 8 for 8x). 
+                                     Does not need to be an integer""")
+        group = self.arg_group_in(parser)
+        default_tolerance = 0.1
+        group.add_argument('-t', '--tolerance', type=float, default=default_tolerance, metavar="FLOAT",
+                           help=f"""Maximum allowed deviation between max and min proportion (relative to min).
+                                    Default is {default_tolerance} ({100*default_tolerance:g}%%)""")
+        group.add_argument('-f', '--full', action='store_true',  
+                            help="Fully mix all drops")
+        group.add_argument('--shuttles', type=int, metavar='INT', default=0,
+                            help="The number of extra shuttles to perform.  Default is zero.")
+        default_pause_before = 0
+        group.add_argument('-pb', '--pause-before', type=int, metavar='TICKS', default=default_pause_before,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_before*ticks:.0f}.")
+        default_pause_after= 0
+        group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
+        
+    def create_path(self, i: int, pad: Pad, well: Well,
+                    pms: PlacedMixSequence, 
+                    args: Namespace, *,
+                    is_lead: bool) -> Path.Full:
+        
+        reagent = Reagent.find("Reagent") if is_lead else Reagent.find("Solvent")
+        
+        def change_reagent(r: Reagent) -> Callable[[Drop], None]:
+            def fn(drop: Drop) -> None:
+                drop.reagent = r
+            return fn
+            
+        loc = pad.location
+        path = Path.dispense_from(well) \
+                .then_process(change_reagent(reagent)) \
+                .to_row(loc.row) \
+                .to_col(loc.col)
+
+        if is_lead:
+            path = path.start(pms.as_process(n_shuttles=args.shuttles))
+        else:
+            path = path.in_mix()
+
+        if is_lead:
+            path = path.to_col(18).to_row(6)
+        else:
+            path = path.to_row(1).to_col(18).walk(Dir.DOWN)
+        
+        return path.enter_well()
+        
+
+    def run(self, board: Board, system: System, args: Namespace) -> None:
+        fold: float = args.fold
+        drops = board.drop_size.as_unit("drops", singular="drop")
+        
+        pms = dilution_sequences.lookup_placed(fold,
+                                               lower_left=board.pad_at(3,1),
+                                               full=args.full,
+                                               tolerance=args.tolerance,
+                                               rows=5, cols=13)
+        def sort_key(pad: Pad) -> tuple[int,int]:
+            x,y = pad.location.coords
+            # we want the first (smallest) to be the lowest row and furthest column
+            return (-x, y)
+        pads = sorted(pms.pads, key=sort_key)
+        lead_pad = pms.fully_mixed_pads[0]
+        
+        well = board.wells[2]
+        n_drops = pms.num_drops
         well.contains(Liquid(unknown_reagent, n_drops*drops))
         paths = [self.create_path(i, pad, well, pms, args,
                                   is_lead=pad is lead_pad) for i,pad in enumerate(pads)]
