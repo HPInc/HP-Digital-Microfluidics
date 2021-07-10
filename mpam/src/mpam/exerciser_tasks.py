@@ -377,21 +377,24 @@ class Dilute(Task):
         top_row = 5
         bottom_row = 1
         
-        def sort_key(pad: Pad) -> tuple[int,int]:
+        def sort_key(pad: Pad) -> tuple[bool, int,int]:
+            # first, we want the ones on the other side of the lead pad.
+            # So we start with False for that situation and True for others.
+            # Otherwise (and even in that row, we go with the furthest one out
+            # and bottom to top
             x,y = pad.location.coords
-            # we want the first (smallest) to be the lowest row and furthest column
-            return (-x, y)
+            return (y != lead_pad.row, -x, y)
         solvent_pads = sorted(pms.secondary_pads, key=sort_key)
         
         def solvent_path(p: Pad) -> Path.Full:
             path = Path.dispense_from(solvent_well)
             if p.row == lead_pad.row and p.column > lead_pad.column:
-                if lead_pad.row == bottom_row:
+                if lead_pad.row == bottom_row or lead_pad.row == bottom_row+1:
                     path = path.to_row(lead_pad.row+2) \
                                 .to_col(p.column) \
                                 .to_row(p.row)
                 else:
-                    path = path.to_row(lead_pad.row+2) \
+                    path = path.to_row(lead_pad.row-2) \
                                 .to_col(p.column) \
                                 .to_row(p.row)
             else:
