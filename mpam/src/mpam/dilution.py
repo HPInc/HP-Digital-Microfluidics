@@ -327,7 +327,7 @@ dilution_sequences.register(9,
 
 dilution_sequences.register(9,
   MixSequence(0.0714285714285714,
-    ((0,0), (0,-1), (-1,-1), (0,1), (1,0), (0,2), (-1,0), (1,1), (1,-1),),
+    ((0,0), (0,-1), (-1,-1), (0,1), (1,0), (-1, 1), (-1,0), (1,1), (1,-1),),
     (
      (PM(0,1),),
      (PM(0,3), PM(1,2),),
@@ -338,7 +338,7 @@ dilution_sequences.register(9,
      (PM(3,5),),
     ),
     fully_mixed=(0, 1, 2, 3, 4, 5, 6, 7, 8),
-    size=(3, 4),
+    size=(3, 3),
     lead_offset=(1, 1)
    )
 )

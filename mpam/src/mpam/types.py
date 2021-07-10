@@ -970,6 +970,7 @@ class Mixture(Reagent):
         mixture = {r: f*as_frac for r,f in r1.mixture}
         composition = {chem: conc*fraction for chem, conc in r1.composition.items()}
         fraction = 1-fraction
+        as_frac = Fraction.from_float(fraction)
         for r,f in r2.mixture:
             cpt = f*as_frac
             f1 = mixture.get(r, None)
