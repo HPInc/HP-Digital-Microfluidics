@@ -10,7 +10,7 @@ from mpam.drop import Drop
 from mpam.exerciser import Task, volume_arg, Exerciser
 from mpam.paths import Path
 from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, \
-    Reagent
+    Reagent, Trigger
 from quantities.dimensions import Volume
 from mpam.mixing import mixing_sequences
 from mpam.processes import PlacedMixSequence
@@ -344,28 +344,73 @@ class Dilute(Task):
 
     def run(self, board: Board, system: System, args: Namespace) -> None:
         fold: float = args.fold
-        drops = board.drop_size.as_unit("drops", singular="drop")
+        drop = drops = board.drop_size.as_unit("drops", singular="drop")
+        
+        reagent = Reagent.find("Reagent")
+        solvent = Reagent.find("Solvent")
         
         pms = dilution_sequences.lookup_placed(fold,
                                                lower_left=board.pad_at(3,1),
                                                full=args.full,
                                                tolerance=args.tolerance,
                                                rows=5, cols=13)
+        
+        reagent_well = board.wells[2]
+        reagent_well.contains(Liquid(reagent, 1*drop))
+        solvent_well = board.wells[3]
+        solvent_well.contains(Liquid(solvent, (pms.num_drops-1)*drops))
+        
+        lead_pad = pms.fully_mixed_pads[0]
+        
+        trigger = Trigger()
+
+        lead_path = Path.dispense_from(reagent_well) \
+            .to_row(lead_pad.row) \
+            .to_col(lead_pad.column) \
+            .then_process(lambda _: trigger.fire()) \
+            .start(pms.as_process(n_shuttles=args.shuttles)) \
+            .to_col(18) \
+            .to_row(6) \
+            .enter_well()
+            
+            
+        top_row = 5
+        bottom_row = 1
+        
         def sort_key(pad: Pad) -> tuple[int,int]:
             x,y = pad.location.coords
             # we want the first (smallest) to be the lowest row and furthest column
             return (-x, y)
-        pads = sorted(pms.pads, key=sort_key)
-        lead_pad = pms.fully_mixed_pads[0]
+        solvent_pads = sorted(pms.secondary_pads, key=sort_key)
         
-        well = board.wells[2]
-        n_drops = pms.num_drops
-        well.contains(Liquid(unknown_reagent, n_drops*drops))
-        paths = [self.create_path(i, pad, well, pms, args,
-                                  is_lead=pad is lead_pad) for i,pad in enumerate(pads)]
+        def solvent_path(p: Pad) -> Path.Full:
+            path = Path.dispense_from(solvent_well)
+            if p.row == lead_pad.row and p.column > lead_pad.column:
+                if lead_pad.row == bottom_row:
+                    path = path.to_row(lead_pad.row+2) \
+                                .to_col(p.column) \
+                                .to_row(p.row)
+                else:
+                    path = path.to_row(lead_pad.row+2) \
+                                .to_col(p.column) \
+                                .to_row(p.row)
+            else:
+                path = path.to_row(p.row) \
+                            .to_col(p.column)
+            
+            path = path.in_mix() \
+                    .to_row(1).to_col(18).walk(Dir.DOWN)
+            return path.enter_well()
         
-        with system.batched():
-            for p in paths:
-                p.schedule()
+        solvent_paths = (solvent_path(p) for p in solvent_pads)
+        
+        def fire_solvents() -> None:
+            with system.batched():
+                for p in solvent_paths:
+                    p.schedule()
+        
+        trigger.on_trigger(fire_solvents)
+        
+        lead_path.schedule()
 
 

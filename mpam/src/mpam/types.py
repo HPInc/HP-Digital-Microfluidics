@@ -692,6 +692,11 @@ class Trigger:
         with self.lock:
             self.waiting.append((val, future))
             
+    def on_trigger(self, fn: Callable[[], Any]) -> None:
+        future = Delayed[None]()
+        future.then_call(lambda _: fn())
+        self.wait(None, future)
+            
     def fire(self) -> int:
         waiting = self.waiting
         with self.lock:

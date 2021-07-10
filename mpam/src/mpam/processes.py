@@ -413,6 +413,12 @@ class PlacedMixSequence:
             # val = self._place(self.mix_seq.locations)
         return val
     
+        
+    @property
+    def secondary_pads(self) -> Sequence[Pad]:
+        return tuple(p for p in self.pads if p is not self.lead_drop_pad) 
+
+    
     @property
     def fully_mixed_pads(self) -> Sequence[Pad]:
         val = self._fully_mixed_pads
