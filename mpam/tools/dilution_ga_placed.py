@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
 import math
-from ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
-    Regression, Mix
-from mpam.types import XYCoord, Orientation, Dir
+from mpam.ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
+    Regression
+from mpam.types import XYCoord, Orientation
 
 
 class DilutionCandidate(Candidate['DilutionCandidate']):    
