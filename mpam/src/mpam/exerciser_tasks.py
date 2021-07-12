@@ -311,36 +311,6 @@ class Dilute(Task):
         group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
         
-    def create_path(self, i: int, pad: Pad, well: Well,
-                    pms: PlacedMixSequence, 
-                    args: Namespace, *,
-                    is_lead: bool) -> Path.Full:
-        
-        reagent = Reagent.find("Reagent") if is_lead else Reagent.find("Solvent")
-        
-        def change_reagent(r: Reagent) -> Callable[[Drop], None]:
-            def fn(drop: Drop) -> None:
-                drop.reagent = r
-            return fn
-            
-        loc = pad.location
-        path = Path.dispense_from(well) \
-                .then_process(change_reagent(reagent)) \
-                .to_row(loc.row) \
-                .to_col(loc.col)
-
-        if is_lead:
-            path = path.start(pms.as_process(n_shuttles=args.shuttles))
-        else:
-            path = path.in_mix()
-
-        if is_lead:
-            path = path.to_col(18).to_row(6)
-        else:
-            path = path.to_row(1).to_col(18).walk(Dir.DOWN)
-        
-        return path.enter_well()
-        
 
     def run(self, board: Board, system: System, args: Namespace) -> None:
         fold: float = args.fold
@@ -374,7 +344,6 @@ class Dilute(Task):
             .enter_well()
             
             
-        top_row = 5
         bottom_row = 1
         
         def sort_key(pad: Pad) -> tuple[bool, int,int]:

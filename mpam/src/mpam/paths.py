@@ -246,6 +246,46 @@ class Path:
                       reagent: Optional[Reagent] = None) -> Path.Start:
         return Path.Start(Path.TeleportInStep(extraction_point, liquid=liquid, reagent=reagent), ())
 
+    @classmethod
+    def walk(cls, direction: Dir, *,
+             steps: int = 1,
+             allow_unsafe: bool = False,
+             after: Optional[Ticks] = None) -> Path.Middle:
+        return Path.Middle((Path.WalkStep(direction, steps, allow_unsafe, after),))
+    
+    @classmethod
+    def to_col(cls, col: int, *,
+               allow_unsafe: bool = False,
+               after: Optional[Ticks] = None) -> Path.Middle:
+        return Path.Middle((Path.ToColStep(col, allow_unsafe, after),))
+    @classmethod
+    def to_row(cls, row: int, *,
+               allow_unsafe: bool = False,
+               after: Optional[Ticks] = None) -> Path.Middle:
+        return Path.Middle((Path.ToRowStep(row, allow_unsafe, after),))
+    
+    @classmethod
+    def start(cls, process_type: MultiDropProcessType, *,
+              after: Optional[Ticks] = None) -> Path.Middle:
+        return Path.Middle((Path.StartProcessStep(process_type, after=after),))
+        
+    @classmethod
+    def join(cls, *,
+             after: Optional[Ticks] = None) -> Path.Middle:
+        return Path.Middle((Path.JoinProcessStep(after=after),))
+    
+    in_mix = join
+    
+    @classmethod
+    def then_process(cls, fn: Callable[[Drop], Any]) -> Path.Middle:
+        return Path.Middle((Path.CallStep(fn),))
+    
+    @classmethod
+    def enter_well(cls, *,
+                   after: Optional[Ticks] = None) -> Path.End:
+        return Path.End((), Path.EnterWellStep(after=after))
+
+    
         
     class DispenseStep(StartStep):
         def __init__(self, well: Well) -> None:

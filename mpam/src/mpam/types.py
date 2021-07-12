@@ -642,43 +642,10 @@ class Delayed(Generic[T]):
         else:
             for f in futures:
                 f.wait()
-                
-class Barrier(Generic[T]):
-    required: Final[int]
-    participants: list[tuple[T,Delayed[T]]]
-    lock: Final[Lock]
-    
-    @property
-    def count(self) -> int:
-        return len(self.participants)
-
-    
-    def __init__(self, required: int) -> None:
-        self.required = required
-        self.participants = []
-        self.lock = Lock()
-        
-    def reach(self, val: T, future: Delayed[T]) -> bool:
-        with self.lock:
-            participants = self.participants
-            if len(participants) == self.required-1:
-                for v,f in participants:
-                    f.post(v)
-                future.post(val)
-                participants.clear()
-                return True
-            else:
-                participants.append((val, future))
-                return False
-    
-    def reset(self) -> None:
-        with self.lock:
-            self.participants.clear()
-            
         
 class Trigger:
     waiting: list[tuple[Any,Delayed]]
-    lock: Final[Lock]
+    lock: Final[RLock]
     
     @property
     def count(self) -> int:
@@ -686,7 +653,7 @@ class Trigger:
     
     def __init__(self) -> None:
         self.waiting = []
-        self.lock = Lock()
+        self.lock = RLock()
         
     def wait(self, val: Any, future: Delayed) -> None:
         with self.lock:
@@ -711,6 +678,39 @@ class Trigger:
             self.waiting.clear()
     
     
+                
+class Barrier(Trigger, Generic[T]):
+    required: Final[int]
+    waiting_for: int
+    
+    @property
+    def at_barrier(self) -> int:
+        return self.required-self.waiting_for
+
+    
+    def __init__(self, required: int) -> None:
+        super().__init__()
+        self.required = required
+        self.waiting_for = required
+    def reach(self, val: T, future: Optional[Delayed[T]] = None) -> int:
+        with self.lock:
+            if self.waiting_for == 1:
+                self.fire()
+                if future is not None:
+                    future.post(val)
+                return self.at_barrier
+            else:
+                if future is not None:
+                    self.wait(val, future)
+                self.waiting_for -= 1
+                return self.at_barrier-1
+    
+    def reset(self) -> None:
+        with self.lock:
+            self.waiting_for = self.required
+            super().reset()
+            
+            
     
 
 def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,

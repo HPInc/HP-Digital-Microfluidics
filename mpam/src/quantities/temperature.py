@@ -69,5 +69,7 @@ class Unit:
 abs_K = Unit('K', 0, 1)
 abs_C = Unit('°C', -273.15, 1)
 abs_F = Unit('°F', -459.67, (5/9))
+
+absolute_zero: Final[TemperaturePoint] = 0*abs_K
     
 TemperaturePoint.default_units = abs_C

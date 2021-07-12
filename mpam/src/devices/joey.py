@@ -1,17 +1,21 @@
 from __future__ import annotations
-import mpam.device as device
-from typing import Optional, Sequence, ClassVar
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed
-from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
+
+import random
+from typing import Optional, Sequence, ClassVar, Final
+
+from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, ExtractionPoint, WellShape
+import mpam.device as device
+from mpam.paths import Path
+from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed
 from quantities.SI import uL, ms, deg_C, sec
+from quantities.core import DerivedDim
+from quantities.dimensions import Temperature, Time
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import Timestamp, time_now
-from quantities.dimensions import Temperature, Time
-from quantities.core import DerivedDim
-import random
 
-        
+
 class Pad(device.Pad):
     def __init__(self, loc: XYCoord, board: Board, *, exists: bool):
         super().__init__(loc, board, exists=exists)
@@ -38,10 +42,14 @@ class Heater(device.Heater):
     ambient_temperature: ClassVar[TemperaturePoint] = 72*abs_F
 
     def __init__(self, num: int, board: Board, *, 
-                 region: GridRegion) -> None:
+                 regions: Sequence[GridRegion]) -> None:
+        pads = list[device.Pad]()
+        for region in regions:
+            pads += (board.pad_array[xy] for xy in region)
+        
         super().__init__(num, board,
                          polling_interval = 200*ms,
-                         pads = [board.pad_array[xy] for xy in region])
+                         pads = pads)
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
         self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
@@ -84,10 +92,9 @@ class Heater(device.Heater):
         future.post(self._last_reading)
         return future
     
-    
-        
-
 class Board(device.Board):
+    thermocycler: Final[Thermocycler]
+    
     def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
         return Pad(XYCoord(x, y), self, exists=exists)
     
@@ -196,16 +203,56 @@ class Board(device.Board):
         
         magnets.append(Magnet(self, pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
         
-        heaters.append(Heater(0, self, region=GridRegion(XYCoord(0,12),3,7)))
-        heaters.append(Heater(1, self, region=GridRegion(XYCoord(0,0),3,7)))
-        heaters.append(Heater(2, self, region=GridRegion(XYCoord(8,12),3,7)))
-        heaters.append(Heater(3, self, region=GridRegion(XYCoord(8,0),3,7)))
-        heaters.append(Heater(4, self, region=GridRegion(XYCoord(16,12),3,7)))
-        heaters.append(Heater(5, self, region=GridRegion(XYCoord(16,0),3,7)))
+        heaters.append(Heater(0, self, regions=[GridRegion(XYCoord(0,12),3,7),
+                                                GridRegion(XYCoord(0,0),3,7)]))
+        heaters.append(Heater(1, self, regions=[GridRegion(XYCoord(8,12),3,7),
+                                                GridRegion(XYCoord(8,0),3,7)]))
+        heaters.append(Heater(2, self, regions=[GridRegion(XYCoord(16,12),3,7),
+                                                GridRegion(XYCoord(16,0),3,7)]))
         
         extraction_points.append(ExtractionPoint(self.pad_at(13,3)))
         extraction_points.append(ExtractionPoint(self.pad_at(13,9)))
         extraction_points.append(ExtractionPoint(self.pad_at(13,15)))
+        
+        
+        def tc_channel(row: int,
+                       heaters: tuple[int,int],
+                       thresholds: tuple[int,int],
+                       entries: tuple[int,int]
+                       ) -> Channel:
+            return (ChannelEndpoint(heaters[0], 
+                                    self.pad_at(thresholds[0], row),
+                                    self.pad_at(entries[0], row),
+                                    Path.to_col(thresholds[1])), 
+                    ChannelEndpoint(heaters[1], 
+                                    self.pad_at(thresholds[1], row),
+                                    self.pad_at(entries[1], row),
+                                    Path.to_col(thresholds[0])))
+            
+        left_heaters = (1, 0)
+        right_heaters = (1, 2) 
+        left_thresholds = (7, 3)
+        right_thresholds = (11, 15)
+        left_entries = (8, 2)
+        right_entries = (10, 16)
+        
+        def left_tc_channel(row: int) -> Channel:
+            return tc_channel(row, left_heaters, left_thresholds, left_entries)
+        def right_tc_channel(row: int) -> Channel:
+            return tc_channel(row, right_heaters, right_thresholds, right_entries)
+        tc_channels = (
+                left_tc_channel(18), left_tc_channel(16), left_tc_channel(14), left_tc_channel(12),
+                left_tc_channel(6), left_tc_channel(4), left_tc_channel(2), left_tc_channel(0),
+                right_tc_channel(18), right_tc_channel(16), right_tc_channel(14), right_tc_channel(12),
+                right_tc_channel(6), right_tc_channel(4), right_tc_channel(2), right_tc_channel(0),
+            )
+        self.thermocycler = Thermocycler(
+            heaters = heaters,
+            channels = tc_channels,
+            adjacent_channels = ((0,1), (2,3), (4,5), (6,7), (8,9), (10,11), (12,13), (14,15)),
+            opposite_channels = ((0,8), (1,9), (2,10), (3,11), (4,12), (5,13), (6,14), (7,15)))
+            
+                        
         
     def update_state(self):
         super().update_state()
@@ -216,6 +263,3 @@ class Board(device.Board):
         #     self._port = None
         super().stop()
         
-    # def electrode(self, i: int) -> Electrode:
-    #     return Electrode(i, self._states)
-    
