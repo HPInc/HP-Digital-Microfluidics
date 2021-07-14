@@ -52,7 +52,7 @@ class Dispense(Task):
 
 class Absorb(Task):
     def __init__(self) -> None:
-        super().__init__(name="absort",
+        super().__init__(name="absorb",
                          description="Absorb a drop assumed to be on a well's exit pad.",
                          aliases=["abs"])
 

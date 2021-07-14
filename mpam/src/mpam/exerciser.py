@@ -11,6 +11,8 @@ from mpam.device import Board, System
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume
+from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
+from quantities import temperature
 
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
@@ -80,6 +82,28 @@ def volume_arg(arg: str) -> Union[Volume,float]:
     unit = volume_arg_units.get(ustr, None)
     if unit is None:
         raise ValueError(f"{ustr} is not a known volume unit")
+    val = n*unit
+    return val
+
+temperature_arg_units: Final[Mapping[str, temperature.Unit]] = {
+    "C": abs_C,
+    "K": abs_K,
+    "F": abs_F,
+    }
+
+temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(temperature_arg_units)})")
+
+def temperature_arg(arg: str) -> TemperaturePoint:
+    m = temperature_arg_re.fullmatch(arg)
+    if m is None:
+        raise ArgumentTypeError(f"""
+                    {arg} not parsable as a temperature value.  
+                    Requires a number followed immediately by units, e.g. '40C' or '200F'""")
+    n = float(m.group(1))
+    ustr = m.group(2)
+    unit = temperature_arg_units.get(ustr, None)
+    if unit is None:
+        raise ValueError(f"{ustr} is not a known temperature unit")
     val = n*unit
     return val
 

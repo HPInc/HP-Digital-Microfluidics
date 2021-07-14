@@ -237,6 +237,10 @@ class Path:
             return self.last_step._schedule_after(future, post_result=post_result)
         
     @classmethod
+    def empty(cls) -> Path.Middle:
+        return Path.Middle(())
+        
+    @classmethod
     def dispense_from(cls, well: Well) -> Path.Start:
         return Path.Start(Path.DispenseStep(well), ())
     

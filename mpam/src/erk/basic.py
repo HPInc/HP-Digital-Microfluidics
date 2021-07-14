@@ -57,4 +57,8 @@ class Count(dict[_H,int]):
         else:
             self[elt] = new
         return new
+    
+def not_None(x: Optional[_T]) -> _T:
+    assert x is not None
+    return x
         

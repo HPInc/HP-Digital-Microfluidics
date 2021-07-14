@@ -8,7 +8,7 @@ from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds, \
 import mpam.device as device
 from mpam.paths import Path
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.core import DerivedDim
 from quantities.dimensions import Temperature, Time
@@ -218,39 +218,45 @@ class Board(device.Board):
         def tc_channel(row: int,
                        heaters: tuple[int,int],
                        thresholds: tuple[int,int],
-                       entries: tuple[int,int]
+                       in_dir: Dir,
+                       adjacent_step: Dir,
                        ) -> Channel:
             return (ChannelEndpoint(heaters[0], 
                                     self.pad_at(thresholds[0], row),
-                                    self.pad_at(entries[0], row),
+                                    in_dir,
+                                    adjacent_step,
                                     Path.to_col(thresholds[1])), 
                     ChannelEndpoint(heaters[1], 
                                     self.pad_at(thresholds[1], row),
-                                    self.pad_at(entries[1], row),
+                                    in_dir.opposite,
+                                    adjacent_step,
                                     Path.to_col(thresholds[0])))
-            
         left_heaters = (1, 0)
         right_heaters = (1, 2) 
         left_thresholds = (7, 3)
         right_thresholds = (11, 15)
-        left_entries = (8, 2)
-        right_entries = (10, 16)
+
+        def left_tc_channel(row: int, step_dir: Dir) -> Channel:
+            return tc_channel(row, left_heaters, left_thresholds, 
+                              Dir.RIGHT, step_dir)
+        def right_tc_channel(row: int, step_dir: Dir) -> Channel:
+            return tc_channel(row, right_heaters, right_thresholds, 
+                              Dir.LEFT, step_dir)
         
-        def left_tc_channel(row: int) -> Channel:
-            return tc_channel(row, left_heaters, left_thresholds, left_entries)
-        def right_tc_channel(row: int) -> Channel:
-            return tc_channel(row, right_heaters, right_thresholds, right_entries)
+        
         tc_channels = (
-                left_tc_channel(18), left_tc_channel(16), left_tc_channel(14), left_tc_channel(12),
-                left_tc_channel(6), left_tc_channel(4), left_tc_channel(2), left_tc_channel(0),
-                right_tc_channel(18), right_tc_channel(16), right_tc_channel(14), right_tc_channel(12),
-                right_tc_channel(6), right_tc_channel(4), right_tc_channel(2), right_tc_channel(0),
+                left_tc_channel(18, Dir.DOWN), left_tc_channel(16, Dir.UP), 
+                left_tc_channel(14, Dir.DOWN), left_tc_channel(12, Dir.UP),
+                left_tc_channel(6, Dir.DOWN), left_tc_channel(4, Dir.UP), 
+                left_tc_channel(2, Dir.DOWN), left_tc_channel(0, Dir.UP),
+                right_tc_channel(18, Dir.DOWN), right_tc_channel(16, Dir.UP), 
+                right_tc_channel(14, Dir.DOWN), right_tc_channel(12, Dir.UP),
+                right_tc_channel(6, Dir.DOWN), right_tc_channel(4, Dir.UP), 
+                right_tc_channel(2, Dir.DOWN), right_tc_channel(0, Dir.UP),
             )
         self.thermocycler = Thermocycler(
             heaters = heaters,
-            channels = tc_channels,
-            adjacent_channels = ((0,1), (2,3), (4,5), (6,7), (8,9), (10,11), (12,13), (14,15)),
-            opposite_channels = ((0,8), (1,9), (2,10), (3,11), (4,12), (5,13), (6,14), (7,15)))
+            channels = tc_channels)
             
                         
         

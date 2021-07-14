@@ -45,7 +45,7 @@ class TemperaturePoint:
         return f"{self.as_number(unit):.2f} {unit.abbr}"
     
     def __repr__(self) -> str:
-        return f"Timepoint({self.absolute})"
+        return f"TemperaturePoint({self.absolute})"
     
     def __str__(self) -> str:
         return self.in_units(TemperaturePoint.default_units)

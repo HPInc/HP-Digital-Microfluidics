@@ -8,7 +8,7 @@ from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
 from mpam.device import Pad, Board
 from mpam.drop import Drop, DropStatus
 from mpam.types import Delayed, Callback, Ticks, tick, Operation, RunMode, \
-    DelayType, Reagent, waste_reagent
+    DelayType, Reagent, waste_reagent, OnOff
 from enum import Enum
 from _collections import defaultdict
 import sys
@@ -206,7 +206,8 @@ class PairwiseMix(NamedTuple):
     drop1_index: int
     drop2_index: int
     
-    def merge(self, drops: tuple[Drop,...]) -> None:
+    def merge(self, drops: tuple[Drop,...]) -> Delayed[OnOff]:
+        # print(f"Merging {[d for d in drops]}")
         drop1 = drops[self.drop1_index]
         drop2 = drops[self.drop2_index]
         pad1 = drop1.pad
@@ -219,11 +220,14 @@ class PairwiseMix(NamedTuple):
             l1.mix_in(l2)
             pad2.drop = None
             drop1.pad = middle
+            # print(f"Merged {[d for d in drops]}")
+            
         pad1.schedule(Pad.TurnOff, post_result = False)
         pad2.schedule(Pad.TurnOff, post_result = False)
-        middle.schedule(Pad.TurnOn).then_call(update)
+        return middle.schedule(Pad.TurnOn).then_call(update)
         
-    def split(self, drops: tuple[Drop,...], pads: tuple[Pad,...]) -> None:
+    def split(self, drops: tuple[Drop,...], pads: tuple[Pad,...]) -> Delayed[OnOff]:
+        # print(f"Splitting {pads} ({[d for d in drops]})")
         drop1 = drops[self.drop1_index]
         drop2 = drops[self.drop2_index]
         pad1 = pads[self.drop1_index]
@@ -236,10 +240,11 @@ class PairwiseMix(NamedTuple):
             drop2.status = DropStatus.ON_BOARD
             drop1.pad = pad1
             pad2.drop = drop2
+            # print(f"Split {pads} ({[d for d in drops]})")
         pad1.schedule(Pad.TurnOn, post_result = False)
         pad2.schedule(Pad.TurnOn, post_result = False)
-        middle.schedule(Pad.TurnOff).then_call(update)
-            
+        return middle.schedule(Pad.TurnOff).then_call(update)
+    
     
 PM = PairwiseMix
     
@@ -259,10 +264,14 @@ class MixSequence(NamedTuple):
     def num_drops(self) -> int:
         return len(self.locations)
     
-    def iterator(self, drops: tuple[Drop, ...], n_shuttles: int) -> Iterator[bool]:
-        last_step = len(self.steps)-1
+    @classmethod
+    def run_script(cls, mixes: Sequence[Sequence[PairwiseMix]],
+                   drops: tuple[Drop,...], 
+                   *, 
+                   n_shuttles: int = 0) -> Iterator[bool]:
+        last_step = len(mixes)-1
         pads = tuple(d.pad for d in drops)
-        for i, step in enumerate(self.steps):
+        for i, step in enumerate(mixes):
             for shuttle in range(n_shuttles+1):
                 for mix in step:
                     mix.merge(drops)
@@ -270,7 +279,23 @@ class MixSequence(NamedTuple):
                 for mix in step:
                     mix.split(drops, pads)
                 yield i<last_step or shuttle<n_shuttles
-                
+            
+    
+    
+    def iterator(self, drops: tuple[Drop, ...], n_shuttles: int) -> Iterator[bool]:
+        return self.run_script(self.steps, drops, n_shuttles=n_shuttles)
+        # last_step = len(self.steps)-1
+        # pads = tuple(d.pad for d in drops)
+        # for i, step in enumerate(self.steps):
+        #     for shuttle in range(n_shuttles+1):
+        #         for mix in step:
+        #             mix.merge(drops)
+        #         yield True
+        #         for mix in step:
+        #             mix.split(drops, pads)
+        #         yield i<last_step or shuttle<n_shuttles
+        #
+
     def transformed(self, transform: Transform) -> MixSequence:
         if transform is Transform.NONE:
             return self
