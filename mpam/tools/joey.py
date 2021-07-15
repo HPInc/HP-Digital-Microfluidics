@@ -32,6 +32,8 @@ class Thermocycle(Task):
                         )
         cg.add_argument('-ac', '--all-channels', action='store_true',
                         help=f"""Use all thermocycler channels""")
+        cg.add_argument('-wc', '--wombat-channels', action='store_true',
+                        help=f"""Use the thermocycler channels available on the wombat board""")
         cg.add_argument('-c', '--channels', type=int, nargs='+', metavar='INT',
                         help=f"""Specific thermocycler channels to use.""")
                         
@@ -91,6 +93,8 @@ class Thermocycle(Task):
             channels = args.channels
         elif args.all_channels:
             channels = list(range(len(tc.channels)))
+        elif args.wombat_channels:
+            channels = [5,6,13,14]
         else:
             channels = list(range(args.n_drops))
             
@@ -101,7 +105,7 @@ class Thermocycle(Task):
         pads = sorted([tc.channels[i][end].threshold for i in channels],
                       key = lambda pad : (-pad.location.x, pad.location.y))
         drops = board.drop_size.as_unit("drops", singular="drop")
-        well = board.wells[0]
+        well = board.wells[2]
         well.contains(Liquid(unknown_reagent, len(pads)*drops))
         paths = [self.create_path(i, pad, well, ptype) for i,pad in enumerate(pads)]
         
