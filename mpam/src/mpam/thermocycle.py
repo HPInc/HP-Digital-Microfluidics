@@ -48,6 +48,12 @@ class Thermocycler:
                  channels: Sequence[Channel]):
         self.heaters = heaters
         self.channels = channels
+        
+    def as_process(self, *,
+                   phases: Sequence[ThermocyclePhase],
+                   channels: Sequence[int],
+                   n_iterations: int) -> ThermocycleProcessType:
+        return ThermocycleProcessType(self, phases=phases, channels=channels, n_iterations=n_iterations)
 
 class ThermocyclePhase(NamedTuple):
     name: str

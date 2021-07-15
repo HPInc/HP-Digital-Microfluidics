@@ -7,11 +7,13 @@ from devices import joey
 from erk.stringutils import map_str
 from mpam.device import Board, System
 from mpam.exerciser import Exerciser, Task
-from mpam.mixing import Mix2
+from mpam.mixing import mixing_sequences
 from mpam.paths import Path
-from mpam.types import Reagent, schedule, Liquid, Dir
-from quantities.SI import ms
+from mpam.types import Reagent, schedule, Liquid
+from quantities.SI import ms, second, seconds
 from quantities.dimensions import Time
+from quantities.temperature import abs_C
+from mpam.thermocycle import ThermocyclePhase
 
 
 class Prepare(Task):
@@ -32,9 +34,10 @@ class Prepare(Task):
                            ''')
         
     def run(self, board: Board, system: System, args: Namespace)->None:
-        speedup = args.speed_up
-        cycles = args.cycles
-        shuttles = args.shuttles
+        assert isinstance(board, joey.Board)
+        speedup: int = args.speed_up
+        cycles: int = args.cycles
+        shuttles: int = args.shuttles
         
         drops = board.drop_size.as_unit("drops", singular="drop")
         
@@ -52,21 +55,30 @@ class Prepare(Task):
         primer_well = board.wells[4]
         primer_well.contains(Liquid(primer, 16*drops))
         
+        thermocycler = board.thermocycler
+        tc_phases = (ThermocyclePhase("denaturation", 95*abs_C, 1*second),
+                     ThermocyclePhase("annealing", 64*abs_C, 1*second),
+                     ThermocyclePhase("elongation", 80*abs_C, 3*seconds)) 
+        
         ep = board.extraction_points[1]
         
         r1 = Reagent("R1")
+        mix2 = mixing_sequences.lookup(2, full=True).placed(ep.pad)
+        tc2 = thermocycler.as_process(phases=tc_phases, channels=(12,13), n_iterations=cycles)
         
         p1 = Path.teleport_into(ep, reagent = pmo) \
-                .mix(Mix2(Dir.UP), n_shuttles=shuttles, result=r1, fully_mix=True) \
+                .start(mix2.as_process(n_shuttles=shuttles, result=r1)) \
                 .to_row(4) \
-                .to_col(15)
+                .to_col(15) \
+                .start(tc2)
 
         p2 = Path.dispense_from(mm_well) \
-                .to_col(13) \
-                .walk(Dir.DOWN) \
-                .in_mix() \
+                .to_row(mix2.pads[1].row) \
+                .to_col(mix2.pads[1].column) \
+                .join() \
                 .to_row(6) \
-                .to_col(15)
+                .to_col(15) \
+                .join()
 
         
         with system.batched():

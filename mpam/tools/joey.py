@@ -100,7 +100,7 @@ class Thermocycle(Task):
             
         n_iters: int = args.repetitions
         
-        ptype = ThermocycleProcessType(tc, channels=channels,phases=phases,n_iterations=n_iters)
+        ptype = tc.as_process(channels=channels,phases=phases,n_iterations=n_iters)
         end = 0 if args.middle else 1
         pads = sorted([tc.channels[i][end].threshold for i in channels],
                       key = lambda pad : (-pad.location.x, pad.location.y))

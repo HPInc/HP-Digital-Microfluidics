@@ -318,6 +318,9 @@ class MixSequence(NamedTuple):
         # print(f"{self} transformed {transform} is")
         # print(f"{ms}")
         return ms
+    
+    def placed(self, lead_drop_pad: Pad) -> PlacedMixSequence:
+        return PlacedMixSequence(self, lead_drop_pad)
                 
 class Transform(Enum):
     x_neg: Final[bool]
@@ -543,4 +546,4 @@ class MixSequenceLibrary:
         orientation = lower_left.board.orientation
         lox,loy = (2*i for i in mix.lead_offset)
         lead_drop_pad = pads[orientation.up_right(lower_left.location, bx+lox, by+loy)]
-        return PlacedMixSequence(mix, lead_drop_pad)
+        return mix.placed(lead_drop_pad)
