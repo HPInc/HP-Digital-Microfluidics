@@ -486,7 +486,8 @@ class MixSequenceLibrary:
                tolerance: float = 0.1,
                rows: int = sys.maxsize,
                cols: int = sys.maxsize,
-               allow_best_match: bool = False) -> MixSequence:
+               allow_best_match: bool = False,
+               slop: float=1e-4) -> MixSequence:
         key = MSL_Cache_Key(n, full, tolerance, rows, cols)
         with self.lock:
             cached = self.cache.get(key, None)
@@ -505,7 +506,7 @@ class MixSequenceLibrary:
                     if (c>cols or r>rows) and (c>rows or r>cols):
                         continue
                     # if the error is too big and we don't allow best effort, we go on to the next
-                    if ms.error > tolerance and not allow_best_match:
+                    if ms.error > tolerance+slop and not allow_best_match:
                         continue
                     new_len = len(ms.steps)
                     if best is not None:
@@ -534,11 +535,14 @@ class MixSequenceLibrary:
                       tolerance: float = 0.1,
                       rows: Optional[int] = None,
                       cols: Optional[int] = None,
-                      allow_best_match: bool = False) -> PlacedMixSequence:
+                      allow_best_match: bool = False,
+                      slop: float=1e-4
+                      ) -> PlacedMixSequence:
         mix = self.lookup(n, full=full, tolerance=tolerance,
                           rows=sys.maxsize if rows is None else rows, 
                           cols=sys.maxsize if cols is None else cols, 
-                          allow_best_match=allow_best_match)
+                          allow_best_match=allow_best_match,
+                          slop=slop)
         pads = lower_left.board.pad_array
         width,height = (2*i-1 for i in mix.size)
         bx = 0 if cols is None else (cols-width)//2

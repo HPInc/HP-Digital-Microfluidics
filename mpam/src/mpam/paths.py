@@ -1,12 +1,17 @@
-from __future__ import annotations
+from __future__ import  annotations
 
-from typing import Final, Optional, Callable, Any
+from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence
 
-from mpam.device import Well, ExtractionPoint
+from mpam.device import Well, ExtractionPoint, Pad, System
 from mpam.drop import Drop
-from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
-    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
+from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
+    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord
+
+
+Schedulable = Union['Path.Start', 'Path.Full',
+                    tuple[Union[Drop, Delayed[Drop]], 
+                          Union['Path.Middle', 'Path.End']]]
 
 
 class Path:
@@ -84,10 +89,28 @@ class Path:
                    after: Optional[Ticks] = None) -> Path.Start:
             return self._extend(Path.ToRowStep(row, allow_unsafe, after))
         
+        def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
+                   *, 
+                   row_first: bool = True,
+                   allow_unsafe: bool = False,
+                   after: Optional[Ticks] = None) -> Path.Start:
+            r: int
+            c: int
+            if isinstance(target, Pad):
+                r,c = target.row, target.column
+            elif isinstance(target, XYCoord):
+                r,c = target.row, target.col
+            else:
+                c,r = target
+            if row_first:
+                return self.to_row(r, allow_unsafe=allow_unsafe, after=after).to_col(c)
+            else:
+                return self.to_col(c, allow_unsafe=allow_unsafe, after=after).to_row(r)
+                
+        
         def start(self, process_type: MultiDropProcessType, *,
                   after: Optional[Ticks] = None) -> Path.Start:
             return self._extend(Path.StartProcessStep(process_type, after=after))
-        
         
         # def mix(self, mix_type: MixingType, *,
         #         result: Optional[Reagent] = None,
@@ -154,6 +177,24 @@ class Path:
                    after: Optional[Ticks] = None) -> Path.Middle:
             return self._extend(Path.ToRowStep(row, allow_unsafe, after))
         
+        def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
+                   *, 
+                   row_first: bool = True,
+                   allow_unsafe: bool = False,
+                   after: Optional[Ticks] = None) -> Path.Middle:
+            r: int
+            c: int
+            if isinstance(target, Pad):
+                r,c = target.row, target.column
+            elif isinstance(target, XYCoord):
+                r,c = target.row, target.col
+            else:
+                c,r = target
+            if row_first:
+                return self.to_row(r, allow_unsafe=allow_unsafe, after=after).to_col(c)
+            else:
+                return self.to_col(c, allow_unsafe=allow_unsafe, after=after).to_row(r)
+
         def start(self, process_type: MultiDropProcessType, *,
                   after: Optional[Ticks] = None) -> Path.Middle:
             return self._extend(Path.StartProcessStep(process_type, after=after))
@@ -269,6 +310,25 @@ class Path:
         return Path.Middle((Path.ToRowStep(row, allow_unsafe, after),))
     
     @classmethod
+    def to_pad(cls, target: Union[Pad, XYCoord, tuple[int, int]],
+               *, 
+               row_first: bool = True,
+               allow_unsafe: bool = False,
+               after: Optional[Ticks] = None) -> Path.Middle:
+        r: int
+        c: int
+        if isinstance(target, Pad):
+            r,c = target.row, target.column
+        elif isinstance(target, XYCoord):
+            r,c = target.row, target.col
+        else:
+            c,r = target
+        if row_first:
+            return Path.to_row(r, allow_unsafe=allow_unsafe, after=after).to_col(c)
+        else:
+            return Path.to_col(c, allow_unsafe=allow_unsafe, after=after).to_row(r)
+        
+    @classmethod
     def start(cls, process_type: MultiDropProcessType, *,
               after: Optional[Ticks] = None) -> Path.Middle:
         return Path.Middle((Path.StartProcessStep(process_type, after=after),))
@@ -288,7 +348,32 @@ class Path:
     def enter_well(cls, *,
                    after: Optional[Ticks] = None) -> Path.End:
         return Path.End((), Path.EnterWellStep(after=after))
-
+    
+    @classmethod
+    def schedule_paths(cls, paths: Iterable[Schedulable], *,
+                       system: System,
+                       on_future: Optional[Delayed[Any]] = None,
+                       mode: RunMode = RunMode.GATED, 
+                       after: Optional[DelayType] = None,
+                       ) -> Sequence[Union[Delayed[Drop], Delayed[None]]]:
+        def scheduled(path: Schedulable) -> Union[Delayed[Drop], Delayed[None]]:
+            if isinstance(path, Path.Start) or isinstance(path, Path.Full):
+                return path.schedule(on_future=on_future, mode=mode, after=after)
+            else:
+                return path[1].schedule_for(path[0], mode=mode, after=after)
+        with system.batched():
+            return [scheduled(p) for p in paths]
+    
+    @classmethod
+    def run_paths(cls, paths: Iterable[Schedulable], *,
+                  system: System,
+                  on_future: Optional[Delayed[Any]] = None,
+                  mode: RunMode = RunMode.GATED, 
+                  after: Optional[DelayType] = None,
+                  ) -> Sequence[Drop]:
+        values = (f.value for f in cls.schedule_paths(paths, system=system,
+                                                      on_future=on_future, mode=mode, after=after))
+        return [d for d in values if d is not None]
     
         
     class DispenseStep(StartStep):
