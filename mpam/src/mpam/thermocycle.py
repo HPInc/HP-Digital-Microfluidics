@@ -186,6 +186,10 @@ class ThermocycleProcessType(MultiDropProcessType):
         
         return tuple(c[end].threshold for c in channels if c[end].threshold is not lead_drop_pad)
     
+    def pads(self, end: ChannelEnd) -> Sequence[Pad]:
+        tc = self.thermocycler
+        return tuple(tc.channels[i][end].threshold for i in self.channels)
+    
     # returns None if the iterator still has work to do.  Otherwise, returns a function that will 
     # be called after the last tick.  This function returns True if the passed-in futures should 
     # be posted.
