@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
-from typing import Sequence, Union
+from typing import Sequence, Union, Optional
 
 from devices import joey
 from erk.basic import not_None
@@ -14,10 +14,11 @@ from mpam.mixing import mixing_sequences
 from mpam.paths import Path, Schedulable
 from mpam.processes import PlacedMixSequence
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
-from mpam.types import Reagent, schedule, Liquid, Dir
+from mpam.types import Reagent, schedule, Liquid, Dir, Color
 from quantities.SI import ms, second, seconds
 from quantities.dimensions import Time
 from quantities.temperature import abs_C
+from mpam.monitor import BoardMonitor
 
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
@@ -52,6 +53,7 @@ def down_then_right(loc: Union[Drop,Pad]) -> tuple[int, int]:
 
 class PCRTask(Task):
     board: joey.Board
+    monitor: Optional[BoardMonitor] 
     tc_phases: Sequence[ThermocyclePhase]
     tc_cycles: int
     full_tc: ThermocycleProcessType
@@ -62,6 +64,7 @@ class PCRTask(Task):
               args: Namespace) -> None:
         
         self.board = board
+        self.monitor = board.in_system().monitor
         
         self.tc_cycles = args.cycles
         self.shuttles = args.shuttles
@@ -73,6 +76,15 @@ class PCRTask(Task):
         self.full_tc = board.thermocycler.as_process(phases=self.tc_phases, 
                                                      channels=tuple(range(16)), 
                                                      n_iterations=self.tc_cycles)
+        
+    def reagent(self, name: str, *,
+                color: Optional[Union[Color, str, tuple[float,float,float]]] = None) -> Reagent:
+        r = Reagent.find(name)
+        if color is not None and self.monitor is not None:
+            if not isinstance(color, Color):
+                color = Color.find(color)
+            self.monitor.reserve_color(r, color)
+        return r
       
 class Prepare(PCRTask):
     # board: joey.Board
@@ -132,8 +144,9 @@ class Prepare(PCRTask):
         super().setup(board, args=args)
         
         self.park_R1 = board.pad_at(18, 10)
-        self.park_R3 = (board.pad_at(0, 10), board.pad_at(2, 10), board.pad_at(4,10),
-                        board.pad_at(0, 8), board.pad_at(2, 8))
+        self.park_R3 = (board.pad_at(0, 10), board.pad_at(2, 10), 
+                        board.pad_at(0, 8), board.pad_at(2, 8),
+                        board.pad_at(18, 10))
         self.park_R4 = (board.pad_at(18,8), board.pad_at(16,8))
         
         self.dilution = dilution_sequences.lookup_placed(8, full=True,
@@ -146,11 +159,11 @@ class Prepare(PCRTask):
       
         drops = board.drop_size.as_unit("drops", singular="drop")
         
-        self.pmo = Reagent.find("Pre-Mixed Oligos_i")
-        mm = self.mm = Reagent.find("Master Mix")
-        bd = self.bd = Reagent.find("Dilution Buffer")
-        primer = self.primer = Reagent("Primer_i")
-
+        self.pmo = self.reagent("Pre-Mixed Oligos_i")
+        mm = self.mm = self.reagent("Master Mix")
+        bd = self.bd = self.reagent("Dilution Buffer")
+        primer = self.primer = self.reagent("Primer_i")
+        
         self.pmo_ep = board.extraction_points[1]
         
         self.mm_well = board.wells[5]
@@ -167,7 +180,8 @@ class Prepare(PCRTask):
     def initial_mix_and_tc(self) -> Drop:
         thermocycler = self.board.thermocycler
     
-        r1 = Reagent.find("R1")
+        r1 = self.reagent("R1", color="yellow")
+        
         mix2 = mixing_sequences.lookup(2, full=True).placed(self.pmo_ep.pad)
         tc2 = thermocycler.as_process(phases=self.tc_phases, 
                                       channels=(12,13), 
@@ -189,8 +203,8 @@ class Prepare(PCRTask):
         drops = Path.run_paths((p1,p2), system=self.board.in_system())
         return drops[1]
     
-    def dilute_1(self, r1_drop: Drop) -> Sequence[Drop]:
-        r3 = Reagent.find("R3")
+    def dilute(self, r1_drop: Drop) -> Sequence[Drop]:
+        r3 = self.reagent("R3", color="darkblue")
         d_mix = self.dilution
         
         r1_pad = d_mix.lead_drop_pad
@@ -211,26 +225,40 @@ class Prepare(PCRTask):
                             # .to_pad((p.column, p.row+2))
                             # .to_pad(p)
                         # for p in d_mix.secondary_pads)
-        drops = sorted(Path.run_paths(paths, system=self.board.in_system()),
-                       key=right_then_up)
+        return Path.run_paths(paths, system=self.board.in_system())
         
+    def dilute_1(self, r1_drop: Drop) -> Sequence[Drop]:
+        drops = sorted(self.dilute(r1_drop), key=right_then_up)
         n_parked = 2
         parking = [(drops[i], Path.to_pad(self.park_R3[i], row_first=False))
                     for i in range(n_parked)]
         Path.run_paths(parking, system=self.board.in_system())
         return drops[n_parked:]
     
-    def mix_3(self, drops: Sequence[Drop]) -> Sequence[Drop]:
+    
+    def dilute_2(self) -> Sequence[Drop]:
+        r1_drop = self.parked_R1()
+        Path.run_paths([(r1_drop, Path.to_col(14))], system=self.board.in_system())
+        drops = sorted(self.dilute(r1_drop), key=right_then_up)
+        parking = [(drops[0], Path.to_pad(self.park_R3[2], row_first=False)),
+                   (drops[1], Path.to_pad(self.park_R3[3], row_first=False)),
+                   (drops[-1], Path.to_col(14).to_pad(self.park_R3[4])),
+                   ]
+        Path.run_paths(parking, system=self.board.in_system())
+        return drops[2:-1]
+    
+    
+    def mix_3(self, drops: Sequence[Drop], *, row_first: bool=False) -> Sequence[Drop]:
         paths = list[Schedulable]()
         
         
-        r4 = Reagent.find("R4")
+        r4 = self.reagent("R4", color="purple")
 
         for i,d in enumerate(sorted(drops, key=up_then_right)):
             mix = self.mix3[i]
             pads = mix.pads
             print(pads)
-            d_path = Path.to_pad(pads[0], row_first=False) \
+            d_path = Path.to_pad(pads[0], row_first=row_first) \
                                 .start(mix.as_process(result=r4,
                                                       n_shuttles=self.shuttles))
             primer_path = Path.dispense_from(self.primer_well) \
@@ -241,7 +269,7 @@ class Prepare(PCRTask):
                         # .to_pad(pads[2])
             paths.extend(((d,d_path), primer_path))
         for i in range(len(drops)):
-            if i > 3:
+            if i > 3 and len(drops) == 6:
                 i = 9-i
             mix = self.mix3[i]
             pads = mix.pads
@@ -260,6 +288,20 @@ class Prepare(PCRTask):
                     for i in range(n_parked)]
         Path.run_paths(parking, system=self.board.in_system())
         return drops[n_parked:]
+    
+    def mix_3_2(self, drops: Sequence[Drop]) -> Sequence[Drop]:
+        drops = sorted(self.mix_3(drops), key=left_then_down)
+        return drops
+    def mix_3_3(self) -> Sequence[Drop]:
+        drops = [self.parked_R3(i) for i in range(5)]
+        Path.run_paths([(self.parked_R3(4), Path.to_col(14).to_row(1)),
+                        (self.parked_R3(2), Path.to_col(4).to_row(1)),
+                        (self.parked_R3(3), Path.to_col(6).to_row(1)),
+                        (self.parked_R3(0), Path.to_row(1)),
+                        (self.parked_R3(1), Path.to_row(1)),
+                        ], system=self.board.in_system())
+        drops = sorted(self.mix_3(drops, row_first=True), key=left_then_down)
+        return drops
     
     def tc_1(self, drops: Sequence[Drop]) -> Sequence[Drop]:
         tc = self.full_tc
@@ -296,6 +338,43 @@ class Prepare(PCRTask):
         drops = Path.run_paths(paths, system=self.board.in_system())
         return drops
         
+    def tc_23(self, drops: Sequence[Drop], parked: int) -> Sequence[Drop]:
+        tc = self.full_tc
+        paths = list[Schedulable]()
+        drops = sorted(drops, key=right_then_down)
+        drops.append(self.parked_R4(parked))
+        print(map_str([d.pad.location.coords for d in drops]))
+        pads = tc.pads(0)
+        
+        def add_path(d_no: int, path: Path.Middle) -> None:
+            if d_no == 0:
+                path = path.start(self.full_tc)
+            else:
+                path = path.join()
+            path = path.to_col(5).to_pad(self.output_well.exit_pad)
+            paths.append((drops[d_no], path.enter_well()))
+            
+        for i in (12, 13, 14):
+            add_path(i, Path.to_col(13).to_pad(pads[i-4]))
+            
+        add_path(7, Path.to_col(9).to_pad(pads[12]))
+    
+        for i in (9, 10, 11):
+            add_path(i, Path.to_pad(pads[i+4]))
+            
+        add_path(6, Path.to_pad(pads[4]))
+        add_path(8, Path.to_pad(pads[5]))
+        add_path(4, Path.to_pad(pads[6]))
+        add_path(5, Path.to_pad(pads[7]))
+        add_path(3, Path.to_pad(pads[0]))
+        add_path(1, Path.to_col(4).to_pad(pads[1]))
+        add_path(2, Path.to_col(4).to_pad(pads[2]))
+        add_path(0, Path.to_row(2).to_col(4).to_pad(pads[3]))
+        add_path(15, Path.to_pad(pads[11]))
+    
+        drops = Path.run_paths(paths, system=self.board.in_system())
+        return drops
+        
         
         
     def run(self, 
@@ -312,16 +391,24 @@ class Prepare(PCRTask):
         
         # Path.run_paths([(parked_r1_drop, Path.to_pad(self.park_R1))], system=system)
         
-        diluted = sorted(self.dilute_1(r1_drop), key=right_then_up)
+        diluted: Sequence[Drop] = sorted(self.dilute_1(r1_drop), key=right_then_up)
         print(f"diluted: {map_str(diluted)}")
 
         mixed = self.mix_3_1(diluted) 
         print(mixed)
         thermocycled = self.tc_1(mixed)
         print("Done with tcycle")
+        assert len(thermocycled) == 0
         
+        diluted = self.dilute_2()
+        print(f"{len(diluted)} diluted drops")
 
-        
+        mixed = self.mix_3_2(diluted)
+        print(f"Done with second dilution: {len(mixed)}")
+        thermocycled = self.tc_23(mixed, 1)
+        mixed = self.mix_3_3()
+        self.tc_23(mixed, 0)
+        print(f"Done")
 
 
 class PCRDriver(Exerciser):

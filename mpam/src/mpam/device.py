@@ -24,6 +24,7 @@ from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
+    from mpam.monitor import BoardMonitor
 
 PadArray = Mapping[XYCoord, 'Pad']
 
@@ -1159,6 +1160,7 @@ class System:
     clock: Clock
     _batch_lock: Final[Lock]
     _batch: Optional[Batch]
+    monitor: Optional[BoardMonitor] = None
     
     def __init__(self, *, board: Board):
         self.board = board
@@ -1219,7 +1221,7 @@ class System:
                       min_time: Time = 0*sec, 
                       max_time: Optional[Time] = None, 
                       update_interval: Time = 20*ms) -> T:
-        from mpam.monitor import BoardMonitor
+        from mpam.monitor import BoardMonitor  # @Reimport
         val: T
         
         done = Event()
@@ -1231,6 +1233,7 @@ class System:
 
         thread = Thread(target=run_it)
         monitor = BoardMonitor(self.board)
+        self.monitor = monitor
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),
                            min_time = min_time,
