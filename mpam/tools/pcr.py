@@ -1,23 +1,54 @@
 from __future__ import annotations
 
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
-from typing import Sequence
+from typing import Sequence, Union
 
 from devices import joey
+from erk.basic import not_None
 from erk.stringutils import map_str
 from mpam.device import Board, System, Pad, Well, ExtractionPoint
+from mpam.dilution import dilution_sequences
+from mpam.drop import Drop
 from mpam.exerciser import Exerciser, Task
 from mpam.mixing import mixing_sequences
 from mpam.paths import Path, Schedulable
+from mpam.processes import PlacedMixSequence
+from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
 from mpam.types import Reagent, schedule, Liquid, Dir
 from quantities.SI import ms, second, seconds
 from quantities.dimensions import Time
 from quantities.temperature import abs_C
-from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
-from mpam.processes import PlacedMixSequence
-from mpam.dilution import dilution_sequences
-from erk.basic import not_None
-from mpam.drop import Drop
+
+
+def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
+    if isinstance(loc, Drop):
+        loc = loc.pad
+    x,y = loc.location.coords
+    return x,y
+
+def right_then_down(loc: Union[Drop,Pad]) -> tuple[int, int]:
+    if isinstance(loc, Drop):
+        loc = loc.pad
+    x,y = loc.location.coords
+    return x,-y
+
+def left_then_down(loc: Union[Drop,Pad]) -> tuple[int, int]:
+    if isinstance(loc, Drop):
+        loc = loc.pad
+    x,y = loc.location.coords
+    return -x,-y
+
+def up_then_right(loc: Union[Drop,Pad]) -> tuple[int, int]:
+    if isinstance(loc, Drop):
+        loc = loc.pad
+    x,y = loc.location.coords
+    return y,x
+
+def down_then_right(loc: Union[Drop,Pad]) -> tuple[int, int]:
+    if isinstance(loc, Drop):
+        loc = loc.pad
+    x,y = loc.location.coords
+    return -y,x
 
 class PCRTask(Task):
     board: joey.Board
@@ -67,6 +98,7 @@ class Prepare(PCRTask):
     mm_well: Well
     bd_well: Well
     primer_well: Well
+    output_well: Well
     
     def __init__(self) -> None:
         super().__init__(name="prepare", 
@@ -130,7 +162,7 @@ class Prepare(PCRTask):
         self.primer_well = board.wells[7]
         self.primer_well.contains(Liquid(primer, 16*drops))
 
-
+        self.output_well = board.wells[3]
 
     def initial_mix_and_tc(self) -> Drop:
         thermocycler = self.board.thermocycler
@@ -165,7 +197,7 @@ class Prepare(PCRTask):
         paths: list[Schedulable] = [(r1_drop, Path.to_pad(r1_pad)
                                                 .start(d_mix.as_process(result=r3,
                                                                         n_shuttles=self.shuttles)))]
-        for p in sorted(d_mix.secondary_pads, key=lambda p: p.location.coords):
+        for p in sorted(d_mix.secondary_pads, key=right_then_up):
             path = Path.dispense_from(self.bd_well)
             if p.row == r1_pad.row and p.column < r1_pad.column:
                 path = path.to_row(r1_pad.row-2) \
@@ -180,7 +212,7 @@ class Prepare(PCRTask):
                             # .to_pad(p)
                         # for p in d_mix.secondary_pads)
         drops = sorted(Path.run_paths(paths, system=self.board.in_system()),
-                       key=lambda d: d.pad.location.coords)
+                       key=right_then_up)
         
         n_parked = 2
         parking = [(drops[i], Path.to_pad(self.park_R3[i], row_first=False))
@@ -191,13 +223,10 @@ class Prepare(PCRTask):
     def mix_3(self, drops: Sequence[Drop]) -> Sequence[Drop]:
         paths = list[Schedulable]()
         
-        def bottom_first(d: Drop) -> tuple[int, int]:
-            x,y = d.pad.location.coords
-            return y,x
         
         r4 = Reagent.find("R4")
 
-        for i,d in enumerate(sorted(drops, key=bottom_first)):
+        for i,d in enumerate(sorted(drops, key=up_then_right)):
             mix = self.mix3[i]
             pads = mix.pads
             print(pads)
@@ -221,9 +250,58 @@ class Prepare(PCRTask):
                         .to_pad(pads[2]) \
                         .join()
             paths.append(mm_path)
-        return Path.run_paths(paths, system=self.board.in_system())
+        drops = Path.run_paths(paths, system=self.board.in_system())
+        return drops
         
-    def run(self, board: Board, system: System, args: Namespace) -> None:
+    def mix_3_1(self, drops: Sequence[Drop]) -> Sequence[Drop]:
+        drops = sorted(self.mix_3(drops), key=left_then_down)
+        n_parked = 2
+        parking = [(drops[i], Path.to_pad(self.park_R4[i], row_first=False))
+                    for i in range(n_parked)]
+        Path.run_paths(parking, system=self.board.in_system())
+        return drops[n_parked:]
+    
+    def tc_1(self, drops: Sequence[Drop]) -> Sequence[Drop]:
+        tc = self.full_tc
+        paths = list[Schedulable]()
+        drops = sorted(drops, key=right_then_down)
+        print(map_str([d.pad.location.coords for d in drops]))
+        pads = tc.pads(0)
+        
+        def add_path(d_no: int, path: Path.Middle) -> None:
+            if d_no == 0:
+                path = path.start(self.full_tc)
+            else:
+                path = path.join()
+            path = path.to_col(5).to_pad(self.output_well.exit_pad)
+            paths.append((drops[d_no], path.enter_well()))
+            
+        for i in (12, 13, 14, 15):
+            add_path(i, Path.to_col(13).to_pad(pads[i-4]))
+            
+        add_path(7, Path.to_col(9).to_pad(pads[12]))
+    
+        for i in (9, 10, 11):
+            add_path(i, Path.to_pad(pads[i+4]))
+            
+        add_path(6, Path.to_pad(pads[4]))
+        add_path(8, Path.to_pad(pads[5]))
+        add_path(4, Path.to_pad(pads[6]))
+        add_path(5, Path.to_pad(pads[7]))
+        add_path(3, Path.to_pad(pads[0]))
+        add_path(1, Path.to_col(4).to_pad(pads[1]))
+        add_path(2, Path.to_col(4).to_pad(pads[2]))
+        add_path(0, Path.to_row(2).to_col(4).to_pad(pads[3]))
+    
+        drops = Path.run_paths(paths, system=self.board.in_system())
+        return drops
+        
+        
+        
+    def run(self, 
+            board: Board, 
+            system: System,                 # @UnusedVariable
+            args: Namespace) -> None:
         assert isinstance(board, joey.Board)
         # speedup: int = args.speed_up
         # cycles: int = args.cycles
@@ -234,11 +312,13 @@ class Prepare(PCRTask):
         
         # Path.run_paths([(parked_r1_drop, Path.to_pad(self.park_R1))], system=system)
         
-        diluted = sorted(self.dilute_1(r1_drop), key=lambda d: d.pad.location.coords)
+        diluted = sorted(self.dilute_1(r1_drop), key=right_then_up)
         print(f"diluted: {map_str(diluted)}")
 
-        mixed = self.mix_3(diluted) 
+        mixed = self.mix_3_1(diluted) 
         print(mixed)
+        thermocycled = self.tc_1(mixed)
+        print("Done with tcycle")
         
 
         
