@@ -271,6 +271,11 @@ class MixSequence(NamedTuple):
                    n_shuttles: int = 0) -> Iterator[bool]:
         last_step = len(mixes)-1
         pads = tuple(d.pad for d in drops)
+        # We reserve the pads to make sure that nobody walks closer while
+        # we're in a merge. We don't have to worry about contention, because we're
+        # already sitting on the pad.
+        for pad in pads:
+            pad.reserve()
         for i, step in enumerate(mixes):
             for shuttle in range(n_shuttles+1):
                 for mix in step:
@@ -278,7 +283,12 @@ class MixSequence(NamedTuple):
                 yield True
                 for mix in step:
                     mix.split(drops, pads)
-                yield i<last_step or shuttle<n_shuttles
+                if i == last_step and shuttle == n_shuttles:
+                    for pad in pads:
+                        pad.reserved = False
+                    yield False
+                else:
+                    yield True
             
     
     

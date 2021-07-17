@@ -14,11 +14,12 @@ from mpam.mixing import mixing_sequences
 from mpam.paths import Path, Schedulable
 from mpam.processes import PlacedMixSequence
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
-from mpam.types import Reagent, schedule, Liquid, Dir, Color
+from mpam.types import Reagent, Liquid, Dir, Color, ticks
 from quantities.SI import ms, second, seconds
 from quantities.dimensions import Time
 from quantities.temperature import abs_C
 from mpam.monitor import BoardMonitor
+from serial.tools.miniterm import Out
 
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
@@ -50,6 +51,12 @@ def down_then_right(loc: Union[Drop,Pad]) -> tuple[int, int]:
         loc = loc.pad
     x,y = loc.location.coords
     return -y,x
+
+def down_then_left(loc: Union[Drop,Pad]) -> tuple[int, int]:
+    if isinstance(loc, Drop):
+        loc = loc.pad
+    x,y = loc.location.coords
+    return -y,-x
 
 class PCRTask(Task):
     board: joey.Board
@@ -114,7 +121,7 @@ class Prepare(PCRTask):
     
     def __init__(self) -> None:
         super().__init__(name="prepare", 
-                         description="Run preparation the phase.")
+                         description="Run the preparation phase.")
         
     def add_args_to(self, parser:ArgumentParser, *, 
                     exerciser:Exerciser)->None:  # @UnusedVariable
@@ -409,12 +416,64 @@ class Prepare(PCRTask):
         mixed = self.mix_3_3()
         self.tc_23(mixed, 0)
         print(f"Done")
+        
+class MixPrep(PCRTask):
+    def __init__(self) -> None:
+        super().__init__(name="mix-prep", 
+                         description="Mix four outputs of the preparation phase.")
+        
+    # def add_args_to(self, parser:ArgumentParser, *, 
+    #                 exerciser:Exerciser)->None:  # @UnusedVariable
+    #     ...
+    
+    def run(self, board:Board, 
+            system:System, 
+            args:Namespace) -> None:
+        assert isinstance(board, joey.Board)
+        super().setup(board, args = args)
+        
+        input_wells = list(board.wells[0:4])
+        output_wells = list(board.wells[4:])
+        
+        # it's easier if the last two output wells are swapped
+        input_wells[2], input_wells[3] = input_wells[3], input_wells[2]
+        
+        well_colors = ("red", "yellow", "blue", "green")
+        drops = board.drop_size.as_unit("drops", singular="drop")
+        n_drops = 48
+        
+        for i,w in enumerate(input_wells):
+            reagent = self.reagent(f"R4-{i}", color=well_colors[i])
+            w.contains(Liquid(reagent, n_drops*drops))
+            
+        mix4 = mixing_sequences.lookup_placed(4, full=True,
+                                              lower_left=board.pad_at(12, 8),
+                                              rows=3, cols=5)
+        
+        pads = sorted(mix4.pads, key=down_then_left)
+        print(pads)
+        paths = list[Schedulable]()
+        for i,w in enumerate(input_wells):
+            path = Path.dispense_from(w).to_pad(pads[i], row_first=False)#, after=3*ticks)
+            if pads[i] is mix4.pads[0]:
+                path = path.start(mix4.as_process(n_shuttles=self.shuttles))
+            else:
+                path = path.join()
+            path = path.to_col(18).to_pad(output_wells[i].exit_pad)
+            paths.append(path.enter_well())
+            
+        paths = paths * n_drops
+        
+        Path.run_paths(paths, system=system)
+
+        
 
 
 class PCRDriver(Exerciser):
     def __init__(self) -> None:
         super().__init__(description=f"Mockup of PCR tasks on Joey board")
         self.add_task(Prepare())
+        self.add_task(MixPrep())
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
         return joey.Board()
