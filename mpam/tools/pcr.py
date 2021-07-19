@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
+import time
 from typing import Sequence, Union, Optional
 
 from devices import joey
@@ -11,14 +12,14 @@ from mpam.dilution import dilution_sequences
 from mpam.drop import Drop
 from mpam.exerciser import Exerciser, Task
 from mpam.mixing import mixing_sequences
+from mpam.monitor import BoardMonitor
 from mpam.paths import Path, Schedulable
 from mpam.processes import PlacedMixSequence
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
-from mpam.types import Reagent, Liquid, Dir, Color
+from mpam.types import Reagent, Liquid, Dir, Color, RunMode
 from quantities.SI import ms, second, seconds
 from quantities.dimensions import Time
 from quantities.temperature import abs_C
-from mpam.monitor import BoardMonitor
 
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
@@ -465,7 +466,30 @@ class MixPrep(PCRTask):
         
         Path.run_paths(paths, system=system)
 
-        
+
+class CombSynth(PCRTask):
+
+    def __init__(self) -> None:
+        super().__init__(name = "combinatorial-synthesis", aliases = ["comb-synth", "cs"],
+                         description = "Mix four outputs of the preparation phase.")
+
+    # def add_args_to(self, parser:ArgumentParser, *,
+    #                 exerciser:Exerciser)->None:  # @UnusedVariable
+    #     ...
+
+    def run(self, board:Board,
+            system:System,
+            args:Namespace) -> None:
+        assert isinstance(board, joey.Board)
+        super().setup(board, args = args)
+
+        ep = board.extraction_points[1]
+
+        r = Reagent.find("R")
+        future = ep.schedule(ep.TransferIn(r))
+
+        future.then_call(lambda _: ep.schedule(ep.TransferOut, after = 5*seconds,
+                                               mode = RunMode.asynchronous(100*ms)))
 
 
 class PCRDriver(Exerciser):
@@ -473,6 +497,7 @@ class PCRDriver(Exerciser):
         super().__init__(description=f"Mockup of PCR tasks on Joey board")
         self.add_task(Prepare())
         self.add_task(MixPrep())
+        self.add_task(CombSynth())
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
         return joey.Board()

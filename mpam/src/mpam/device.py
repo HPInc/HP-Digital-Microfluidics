@@ -1,30 +1,33 @@
 from __future__ import annotations
-from typing import Optional, Final, Mapping, Callable, Literal,\
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any
-from types import TracebackType
-from quantities.dimensions import Time, Volume, Frequency
-from quantities.timestamp import time_now, Timestamp
-from threading import Event, Lock, Thread
 
-from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType,\
-    Operation, OpScheduler, Orientation, TickNumber, tick, Ticks,\
-    unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback,\
-    Callback
-from mpam.engine import DevCommRequest, TimerFunc, ClockCallback,\
-    Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,\
-    ClockCommRequest, TimerDeltaRequest, IdleBarrier
-from mpam.exceptions import PadBrokenError
+from abc import ABC, abstractmethod
 from enum import Enum, auto
 import itertools
-from erk.errors import ErrorHandler, PRINT
-from quantities.temperature import TemperaturePoint, abs_F
 import random
+from threading import Event, Lock, Thread
+from types import TracebackType
+from typing import Optional, Final, Mapping, Callable, Literal, \
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator
+
+from erk.basic import not_None
+from erk.errors import ErrorHandler, PRINT
+from mpam.engine import DevCommRequest, TimerFunc, ClockCallback, \
+    Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest, \
+    ClockCommRequest, TimerDeltaRequest, IdleBarrier
+from mpam.exceptions import PadBrokenError
+from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType, \
+    Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
+    unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
+    Callback
 from quantities.SI import sec, ms
-from abc import ABC, abstractmethod
+from quantities.dimensions import Time, Volume, Frequency
+from quantities.temperature import TemperaturePoint, abs_F
+from quantities.timestamp import time_now, Timestamp
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
     from mpam.monitor import BoardMonitor
+    from mpam.pipettor import PipettingArm
 
 PadArray = Mapping[XYCoord, 'Pad']
 
@@ -823,12 +826,118 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         def __init__(self, target: Optional[TemperaturePoint]) -> None:
             self.target = target
     
-class ExtractionPoint:
+class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
     pad: Final[Pad]
     
     def __init__(self, pad: Pad) -> None:
+        BoardComponent.__init__(self, pad.board)
         self.pad = pad
         pad._extraction_point = self
+
+    def pipetting_arm(self) -> Optional[PipettingArm]:
+        return None
+
+    def transfer_out(self, *,
+                     liquid: Optional[Liquid] = None,
+                     on_no_sink: ErrorHandler = PRINT
+                     ) -> Delayed[Liquid]:
+        arm = self.pipetting_arm()
+        assert arm is not None, f"{self} has no pipetting arm and transfer_out() not overridden"
+        if liquid is None:
+            drop = not_None(self.pad.drop)
+            liquid = drop.liquid
+        arm_future = arm.schedule(arm.Extract(liquid.volume, self,
+                                             on_no_sink = on_no_sink))
+        return arm_future
+
+    def transfer_in(self, liquid: Liquid, *,                            # @UnusedVariable
+                     mix_result: Optional[Union[Reagent, str]]=None,    # @UnusedVariable
+                     on_insufficient: ErrorHandler=PRINT,               # @UnusedVariable
+                     on_no_source: ErrorHandler=PRINT                   # @UnusedVariable
+                     ) -> Delayed[Drop]:
+        arm = self.pipetting_arm()
+        assert arm is not None, f"{self} has no pipetting arm and transfer_in() not overridden"
+        arm_future = arm.schedule(arm.Supply(liquid, self,
+                                             mix_result = mix_result,
+                                             on_insufficient = on_insufficient,
+                                             on_no_source = on_no_source))
+        from mpam.drop import Drop # @Reimport
+        future = Delayed[Drop]()
+        arm_future.post_transformed_to(future, lambda _: not_None(self.pad.drop))
+        return future
+       
+    def reserve_pad(self) -> Delayed[None]:
+        pad = self.pad
+        return pad.board.on_condition(lambda: pad.reserve(), lambda: None)
+        
+    def ensure_drop(self) -> Delayed[None]:
+        pad = self.pad
+        return pad.board.on_condition(lambda: pad.drop is not None, lambda: None)
+
+    class TransferIn(Operation['ExtractionPoint', 'Drop']):
+        reagent: Final[Reagent]
+        volume: Final[Optional[Volume]]
+        mix_result: Final[Optional[Union[Reagent, str]]]
+        on_insufficient: Final[ErrorHandler]
+        on_no_source: Final[ErrorHandler]
+        
+        def __init__(self, reagent: Reagent, volume: Optional[Volume] = None, *,
+                     mix_result: Optional[Union[Reagent, str]] = None,
+                     on_insufficient: ErrorHandler = PRINT,
+                     on_no_source: ErrorHandler = PRINT
+                     ) -> None:
+            self.reagent = reagent
+            self.volume = volume
+            self.mix_result = mix_result
+            self.on_insufficient = on_insufficient
+            self.on_no_source = on_no_source
+            
+        def _schedule_for(self, extraction_point: ExtractionPoint, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True, # @UnusedVariable
+                          ) -> Delayed[Drop]:
+            from mpam.drop import Drop # @Reimport
+            liquid = Liquid(self.reagent, 
+                            extraction_point.board.drop_size if self.volume is None else self.volume)
+            future = Delayed[Drop]()
+            def do_it() -> None:
+                extraction_point.transfer_in(liquid,
+                                             mix_result = self.mix_result,
+                                             on_insufficient = self.on_insufficient,
+                                             on_no_source = self.on_no_source
+                                             ).post_to(future)
+
+            extraction_point.board.schedule(do_it, mode, after=after)
+            return future
+
+    class TransferOut(Operation['ExtractionPoint', 'Liquid']):
+        volume: Final[Optional[Volume]]
+        on_no_sink: Final[ErrorHandler]
+
+        def __init__(self, volume: Optional[Volume] = None, *,
+                     on_no_sink: ErrorHandler = PRINT
+                     ) -> None:
+            self.volume = volume
+            self.on_no_sink = on_no_sink
+
+        def _schedule_for(self, extraction_point: ExtractionPoint, *,
+                          mode: RunMode = RunMode.GATED,
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True, # @UnusedVariable
+                          ) -> Delayed[Liquid]:
+            future = Delayed[Liquid]()
+            def do_it() -> None:
+                drop = not_None(extraction_point.pad.drop)
+                liquid = Liquid(drop.reagent,
+                                drop.volume if self.volume is None else self.volume)
+                extraction_point.transfer_out(liquid = liquid,
+                                              on_no_sink = self.on_no_sink
+                                             ).post_to(future)
+
+            extraction_point.board.schedule(do_it, mode, after = after)
+            return future
+        
     
 class SystemComponent(ABC):
     system: Optional[System] = None
@@ -843,9 +952,7 @@ class SystemComponent(ABC):
         self.system = system
         
     def in_system(self) -> System:
-        system = self.system
-        assert system is not None
-        return system
+        return not_None(self.system)
 
     @abstractmethod    
     def update_state(self) -> None:
@@ -901,6 +1008,23 @@ class SystemComponent(ABC):
             self.on_tick(cb, delta=mode.gated_delay(after))
         else:
             self.communicate(cb, delta=mode.asynchronous_delay(after))
+      
+    def user_operation(self) -> UserOperation:
+        return UserOperation(not_None(self.system).engine.idle_barrier)
+    
+    def on_condition(self, pred: Callable[[], bool],
+                     val_fn: Callable[[], T]) -> Delayed[T]:
+        if pred():
+            return Delayed.complete(val_fn())
+        future = Delayed[T]()
+        one_tick = 1 * tick
+        def keep_trying() -> Iterator[Optional[Ticks]]:
+            while not pred():
+                yield one_tick
+            future.post(val_fn())
+            yield None
+
+        return future
        
     # def schedule_before(self, cb: C):
 
@@ -980,10 +1104,6 @@ class Board(SystemComponent):
             assert all(w.dispensed_volume==cache for w in self.wells), "Not all wells dispense the same volume"
             self._drop_size = cache
         return cache
-    
-        
-
-        
     
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier) -> None:
@@ -1153,7 +1273,6 @@ class Batch:
                 self.system._batch = self.nested
         return False
     
-
 class System:
     board: Board
     engine: Engine

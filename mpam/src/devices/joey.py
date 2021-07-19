@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+from _collections import defaultdict
+from enum import Enum, auto
 import random
+from threading import Lock
+from time import sleep
 from typing import Optional, Sequence, ClassVar, Final
 
+from mpam import pipettor
 from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds, \
-    HeatingMode, ExtractionPoint, WellShape
+    HeatingMode, WellShape, System
 import mpam.device as device
 from mpam.paths import Path
+from mpam.pipettor import Target
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir
-from quantities.SI import uL, ms, deg_C, sec
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, Reagent, \
+    Liquid
+from quantities.SI import uL, ms, deg_C, sec, seconds, second
 from quantities.core import DerivedDim
 from quantities.dimensions import Temperature, Time
 from quantities.temperature import TemperaturePoint, abs_F
@@ -91,9 +98,106 @@ class Heater(device.Heater):
         self._update_temp(self.target)
         future.post(self._last_reading)
         return future
+
     
+class WellBlock(pipettor.WellBlock):
+
+    reservoirs: Final[dict[Reagent, WellBlock.Reservoir]]
+
+    def __init__(self, pipettor: Pipettor) -> None:
+        super().__init__(pipettor)
+        self.reservoirs = defaultdict(lambda: WellBlock.Reservoir(self))
+
+    def reservoir_for(self, reagent: Reagent) -> WellBlock.Reservoir:
+        return self.reservoirs[reagent]
+
+class ArmPos(Enum):
+    BOARD = auto()
+    TIPS = auto()
+    BLOCK = auto()
+
+
+class PipettingArm(pipettor.PipettingArm):
+    position: ArmPos
+    lock: Final[Lock]
+    
+    dip_time = 0.25*seconds
+    short_transit_time = 0.5*seconds
+    long_transit_time = 1*second
+
+
+    def __init__(self, pipettor: Pipettor) -> None:
+        super().__init__(pipettor)
+        self.position = ArmPos.TIPS
+        self.lock = Lock()
+        
+    def _sleep_for(self, time: Time) -> None:
+        sleep(time.as_number(seconds))
+        
+    def _dip(self) -> None:
+        print(">> Dipping")
+        self._sleep_for(self.dip_time)
+        print("<< Dipped")
+
+    def _move(self, to: ArmPos) -> None:
+        with self.lock:
+            pos = self.position
+            if pos is to:
+                return
+            delay = (self.long_transit_time if (pos is ArmPos.BOARD or to is ArmPos.BOARD)
+                     else self.short_transit_time)
+            print(f">> Moving to {to.name} from {pos.name}")
+            self._sleep_for(delay)
+            print(f"<< Moved to {to.name} from {pos.name}")
+            self.position = to
+
+    def acquire_liquid(self, liquid: Liquid) -> Liquid:
+        self._dip()
+        return liquid
+
+    def deposit_liquid(self) -> None:
+        self._dip()
+
+    def move_to(self, target: Target) -> None:
+        if isinstance(target, WellBlock.Reservoir):
+            self._move(ArmPos.BLOCK)
+        else:
+            self._move(ArmPos.BOARD)
+
+    def to_ready_state(self) -> None:
+        self._move(ArmPos.TIPS)
+        self._dip()
+
+
+
+class Pipettor(pipettor.Pipettor):
+    arm: Final[PipettingArm]
+    well_block: Final[WellBlock]
+
+    def __init__(self) -> None:
+        self.arm = PipettingArm(self)
+        self.well_block = WellBlock(self)
+        super().__init__(well_blocks = (self.well_block,),
+                         arms = (self.arm,))
+
+    def update_state(self):
+        pass
+
+    
+class ExtractionPoint(device.ExtractionPoint):
+    arm: Final[PipettingArm]
+
+    def __init__(self, pad: device.Pad, pipettor: Pipettor) -> None:
+        super().__init__(pad)
+        self.arm = pipettor.arm
+
+    def pipetting_arm(self) -> Optional[PipettingArm]:
+        return self.arm
+
+
 class Board(device.Board):
     thermocycler: Final[Thermocycler]
+    pipettor: Final[Pipettor]
     
     def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
         return Pad(XYCoord(x, y), self, exists=exists)
@@ -210,10 +314,11 @@ class Board(device.Board):
         heaters.append(Heater(2, self, regions=[GridRegion(XYCoord(16,12),3,7),
                                                 GridRegion(XYCoord(16,0),3,7)]))
         
-        extraction_points.append(ExtractionPoint(self.pad_at(13,3)))
-        extraction_points.append(ExtractionPoint(self.pad_at(13,9)))
-        extraction_points.append(ExtractionPoint(self.pad_at(13,15)))
-        
+        pipettor = self.pipettor = Pipettor()
+
+        extraction_points.append(ExtractionPoint(self.pad_at(13, 3), pipettor))
+        extraction_points.append(ExtractionPoint(self.pad_at(13, 9), pipettor))
+        extraction_points.append(ExtractionPoint(self.pad_at(13, 15), pipettor))
         
         def tc_channel(row: int,
                        heaters: tuple[int,int],
@@ -257,8 +362,10 @@ class Board(device.Board):
         self.thermocycler = Thermocycler(
             heaters = heaters,
             channels = tc_channels)
-            
                         
+    def join_system(self, system: System) -> None:
+        super().join_system(system)
+        self.pipettor.join_system(system)
         
     def update_state(self):
         super().update_state()

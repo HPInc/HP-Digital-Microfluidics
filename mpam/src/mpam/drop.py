@@ -19,6 +19,7 @@ class DropStatus(Enum):
     ON_BOARD = auto()
     IN_WELL = auto()
     IN_MIX = auto()
+    OFF_BOARD = auto()
     
 class MotionOp(Operation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]

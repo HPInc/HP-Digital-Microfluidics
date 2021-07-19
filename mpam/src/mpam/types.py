@@ -3,7 +3,7 @@ from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence,\
     Generator, Protocol
-from threading import Event, Lock, RLock
+from threading import Event, Lock, RLock, Thread
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
 from quantities.SI import ml, uL, ms
@@ -612,6 +612,11 @@ class Delayed(Generic[T]):
 
     def post_to(self, other: Delayed[T]) -> Delayed[T]:
         self.when_value(lambda val: other.post(val))
+        return self
+    
+    def post_transformed_to(self, other: Delayed[V],
+                            transform: Callable[[T], V]) -> Delayed[T]:
+        self.when_value(lambda val: other.post(transform(val)))
         return self
 
     def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:
@@ -1293,5 +1298,85 @@ class ColorAllocator(Generic[H]):
         c = self._next_color()
         self.reserve_color(key, c)
         return c
+
     
-            
+class _AFS_Thread(Thread):
+    serializer: Final[AsyncFunctionSerializer]
+    before_task: Final[Optional[Callback]]
+    after_task: Final[Optional[Callback]]
+    queue: Final[deque[Callback]]
+
+    def __init__(self,
+                 serializer: AsyncFunctionSerializer,
+                 first_callback: Callback,
+                 *,
+                 name: Optional[str]=None,
+                 daemon: bool=False,
+                 before_task: Optional[Callback]=None,
+                 after_task: Optional[Callback]=None
+                 ) -> None:
+        super().__init__(name=name, daemon=daemon)
+        self.serializer = serializer
+        self.before_task = before_task
+        self.after_task = after_task
+        self.queue = deque[Callback]((first_callback,))
+
+    def run(self) -> None:
+        queue = self.queue
+        before_task = self.before_task
+        after_task = self.after_task
+        func: Callback = queue.popleft()
+        while True:
+            if before_task is not None:
+                before_task()
+            func()
+            if after_task is not None:
+                after_task()
+            with self.serializer.lock:
+                if len(queue) == 0:
+                    # There's nothing left to do, and since we hold the lock, nothing will be added, 
+                    # so we can just get rid of ourself.
+                    self.serializer.thread = None
+                    return
+                else:
+                    func = queue.popleft()
+
+    def enqueue(self, fn: Callback) -> None:
+        # This is only called by the serializer while its lock is locked.
+        self.queue.append(fn)
+
+
+class AsyncFunctionSerializer:
+    thread: Optional[_AFS_Thread] = None
+    lock: Final[Lock]
+
+    thread_name: Final[Optional[str]]
+    daemon_thread: Final[bool]
+    before_task: Final[Optional[Callback]]
+    after_task: Final[Optional[Callback]]
+
+    def __init__(self, *,
+                 thread_name: Optional[str]=None,
+                 daemon_thread: bool=False,
+                 before_task: Optional[Callback]=None,
+                 after_task: Optional[Callback]=None
+                 ) -> None:
+        self.lock = Lock()
+        self.thread_name = thread_name
+        self.daemon_thread = daemon_thread
+        self.before_task = before_task
+        self.after_task = after_task
+
+    def enqueue(self, fn: Callback) -> None:
+        with self.lock:
+            thread = self.thread
+            if thread is None:
+                thread = _AFS_Thread(self, fn,
+                                     name=self.thread_name,
+                                     daemon=self.daemon_thread,
+                                     before_task=self.before_task,
+                                     after_task=self.after_task)
+                self.thread = thread
+                thread.start()
+            else:
+                thread.enqueue(fn)

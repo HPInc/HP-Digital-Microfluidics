@@ -61,4 +61,8 @@ class Count(dict[_H,int]):
 def not_None(x: Optional[_T]) -> _T:
     assert x is not None
     return x
+
+
+def always(val: _T) -> Callable[[], _T]:
+    return lambda: val
         
