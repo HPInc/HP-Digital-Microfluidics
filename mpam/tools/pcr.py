@@ -14,12 +14,11 @@ from mpam.mixing import mixing_sequences
 from mpam.paths import Path, Schedulable
 from mpam.processes import PlacedMixSequence
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
-from mpam.types import Reagent, Liquid, Dir, Color, ticks
+from mpam.types import Reagent, Liquid, Dir, Color
 from quantities.SI import ms, second, seconds
 from quantities.dimensions import Time
 from quantities.temperature import abs_C
 from mpam.monitor import BoardMonitor
-from serial.tools.miniterm import Out
 
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
@@ -454,7 +453,7 @@ class MixPrep(PCRTask):
         print(pads)
         paths = list[Schedulable]()
         for i,w in enumerate(input_wells):
-            path = Path.dispense_from(w).to_pad(pads[i], row_first=False)#, after=3*ticks)
+            path = Path.dispense_from(w).to_pad(pads[i], row_first=False)
             if pads[i] is mix4.pads[0]:
                 path = path.start(mix4.as_process(n_shuttles=self.shuttles))
             else:

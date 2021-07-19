@@ -582,6 +582,12 @@ class Delayed(Generic[T]):
         self.wait()
         return self._val[1]
     
+    @classmethod
+    def complete(cls, val: T) -> Delayed[T]:
+        future = Delayed[T]()
+        future._val = (True, val)
+        return future
+    
     def then_schedule(self, op: Union[Operation[T,V], StaticOperation[V],
                                       Callable[[], Operation[T,V]],
                                       Callable[[], StaticOperation[V]]], *, 
@@ -594,7 +600,19 @@ class Delayed(Generic[T]):
             return op.schedule_for(self, mode=mode, after=after, post_result=post_result)
         else:
             return self.then_schedule(op(), mode=mode, after=after, post_result=post_result)
+        
+    def chain(self, fn: Callable[[T], Delayed[V]]) -> Delayed[V]:
+        future = Delayed[V]()
+        self.when_value(lambda val: fn(val).post_to(future))
+        return future
+    
+    def then_trigger(self, trigger: Trigger) -> Delayed[T]:
+        self.when_value(lambda _: trigger.fire())
+        return self
 
+    def post_to(self, other: Delayed[T]) -> Delayed[T]:
+        self.when_value(lambda val: other.post(val))
+        return self
 
     def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:
         v = self._val
