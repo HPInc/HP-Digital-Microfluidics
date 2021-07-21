@@ -6,7 +6,8 @@ from mpam.device import Well, ExtractionPoint, Pad, System
 from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
-    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord
+    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T
+from quantities.dimensions import Volume
 
 
 Schedulable = Union['Path.Start', 'Path.Full',
@@ -131,9 +132,27 @@ class Path:
         def then_process(self, fn: Callable[[Drop], Any]) -> Path.Start:
             return self._extend(Path.CallStep(fn))
         
+        def then_do(self, fn: Callable[[Drop], Delayed[T]]) -> Path.Start:
+            return self._extend(Path.CallAndWaitStep(fn))
+        
         def enter_well(self, *,
                        after: Optional[Ticks] = None) -> Path.Full:
             return Path.Full(self.first_step, self.middle_steps, Path.EnterWellStep(after=after))
+        
+        def teleport_out(self, *,
+                         volume: Optional[Volume] = None,
+                         after: Optional[Ticks] = None) -> Path.Full:
+            return Path.Full(self.first_step, self.middle_steps,
+                             Path.TeleportOutStep(volume=volume, after=after))
+
+        def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Start:
+            return self._extend(Path.BarrierStep(barrier, wait=wait))
+        
+        
+        def extended(self, path: Path.Middle) -> Path.Start:
+            return Path.Start(self.first_step, self.middle_steps+path.middle_steps)
+
+
         
             
     class Middle(Operation[Drop,Drop]):
@@ -220,9 +239,24 @@ class Path:
         def then_process(self, fn: Callable[[Drop], Any]) -> Path.Middle:
             return self._extend(Path.CallStep(fn))
         
+        def then_do(self, fn: Callable[[Drop], Delayed[T]]) -> Path.Middle:
+            return self._extend(Path.CallAndWaitStep(fn))
+        
         def enter_well(self, *,
                        after: Optional[Ticks] = None) -> Path.End:
             return Path.End(self.middle_steps, Path.EnterWellStep(after=after))
+        
+        def teleport_out(self, *,
+                         volume: Optional[Volume] = None,
+                         after: Optional[Ticks] = None) -> Path.End:
+            return Path.End(self.middle_steps, Path.TeleportOutStep(volume=volume, after=after))
+        
+        
+        def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Middle:
+            return self._extend(Path.BarrierStep(barrier, wait=wait))
+            
+        def extended(self, path: Path.Middle) -> Path.Middle:
+            return Path.Middle(self.middle_steps+path.middle_steps)
 
         
     class End(Operation[Drop, None]):
@@ -290,6 +324,7 @@ class Path:
                       liquid: Optional[Liquid] = None,
                       reagent: Optional[Reagent] = None) -> Path.Start:
         return Path.Start(Path.TeleportInStep(extraction_point, liquid=liquid, reagent=reagent), ())
+
 
     @classmethod
     def walk(cls, direction: Dir, *,
@@ -386,6 +421,12 @@ class Path:
                      ) -> None:
             super().__init__(Drop.TeleportInTo(extraction_point, liquid=liquid, reagent=reagent))
             
+    class TeleportOutStep(EndStep):
+        def __init__(self, *,
+                     volume: Optional[Volume] = None,
+                     after: Optional[Ticks]
+                     ) -> None:
+            super().__init__(Drop.TeleportOut(volume=volume), after)
     class EnterWellStep(EndStep):
         def __init__(self, *, 
                      after: Optional[Ticks]) -> None:
@@ -438,4 +479,25 @@ class Path:
                 future.post(drop)
                 return future
             super().__init__(ComputeOp[Drop,Drop](fn2), after)
+
+    class CallAndWaitStep(MiddleStep):
+        def __init__(self, fn: Callable[[Drop], Delayed[Any]],
+                     after: Optional[Ticks] = None) -> None:
+            def fn2(drop: Drop) -> Delayed[Drop]:
+                future = Delayed[Drop]()
+                fn(drop).then_call(lambda _: future.post(drop))
+                return future
+            super().__init__(ComputeOp[Drop,Drop](fn2), after)
+
+    class BarrierStep(MiddleStep):
+        def __init__(self, barrier: Barrier, *,
+                     wait: bool = True,
+                     after: Optional[Ticks] = None) -> None:
+            def pass_through(drop: Drop) -> Delayed[Drop]:
+                future = Delayed[Drop]()
+                barrier.pass_through(drop)
+                future.post(drop)
+                return future
+            op: Operation[Drop, Drop] = Drop.WaitAt(barrier) if wait else ComputeOp[Drop,Drop](pass_through) 
+            super().__init__(op, after)
 

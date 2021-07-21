@@ -1,7 +1,10 @@
 from __future__ import annotations
+
 from mypy.types import NoneType
 
-x = NoneType()
+from mpam.types import Liquid, unknown_reagent
+from quantities.SI import uL
 
-# reveal_type(NoneType)
-print(x)
+
+liquid = Liquid(unknown_reagent, 0.5*uL)
+print(liquid)

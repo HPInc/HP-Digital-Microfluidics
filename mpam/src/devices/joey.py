@@ -135,9 +135,9 @@ class PipettingArm(pipettor.PipettingArm):
         sleep(time.as_number(seconds))
         
     def _dip(self) -> None:
-        print(">> Dipping")
+        # print(">> Dipping")
         self._sleep_for(self.dip_time)
-        print("<< Dipped")
+        # print("<< Dipped")
 
     def _move(self, to: ArmPos) -> None:
         with self.lock:
@@ -146,9 +146,9 @@ class PipettingArm(pipettor.PipettingArm):
                 return
             delay = (self.long_transit_time if (pos is ArmPos.BOARD or to is ArmPos.BOARD)
                      else self.short_transit_time)
-            print(f">> Moving to {to.name} from {pos.name}")
+            # print(f">> Moving to {to.name} from {pos.name}")
             self._sleep_for(delay)
-            print(f"<< Moved to {to.name} from {pos.name}")
+            # print(f"<< Moved to {to.name} from {pos.name}")
             self.position = to
 
     def acquire_liquid(self, liquid: Liquid) -> Liquid:
@@ -316,9 +316,9 @@ class Board(device.Board):
         
         pipettor = self.pipettor = Pipettor()
 
-        extraction_points.append(ExtractionPoint(self.pad_at(13, 3), pipettor))
-        extraction_points.append(ExtractionPoint(self.pad_at(13, 9), pipettor))
         extraction_points.append(ExtractionPoint(self.pad_at(13, 15), pipettor))
+        extraction_points.append(ExtractionPoint(self.pad_at(13, 9), pipettor))
+        extraction_points.append(ExtractionPoint(self.pad_at(13, 3), pipettor))
         
         def tc_channel(row: int,
                        heaters: tuple[int,int],

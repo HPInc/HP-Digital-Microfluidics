@@ -408,7 +408,7 @@ class DropCombinationProcessType(MultiDropProcessType):
             for drop in drops:
                 if drop in fully_mixed:
                     if not printed:
-                        print(f"Result is {drop.reagent}")
+                        # print(f"Result is {drop.reagent}")
                         printed = True
                     if result is not None:
                         drop.reagent = result

@@ -428,10 +428,30 @@ class OpScheduler(Generic[CS]):
             
             future = Delayed[CS]()
             if after is None:
-                self.barrier.reach(obj, future)
+                self.barrier.pause(obj, future)
             else:
                 def cb() -> None:
-                    self.barrier.reach(obj, future)                    
+                    self.barrier.pause(obj, future)                    
+                obj.schedule_communication(cb, mode, after=after)
+            return future
+
+    class Reach(Operation[CS,CS]):
+        barrier: Barrier[CS]
+        def __init__(self, barrier: Barrier):
+            self.barrier = barrier
+            
+        def _schedule_for(self, obj: CS, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,  # @UnusedVariable
+                          ) -> Delayed[CS]:
+            
+            future = Delayed[CS]()
+            if after is None:
+                self.barrier.pass_through(obj)
+            else:
+                def cb() -> None:
+                    self.barrier.pass_through(obj)
                 obj.schedule_communication(cb, mode, after=after)
             return future
 
@@ -703,21 +723,30 @@ class Trigger:
     
                 
 class Barrier(Trigger, Generic[T]):
-    required: Final[int]
+    required: int
     waiting_for: int
+    name: Final[Optional[str]]
     
     @property
     def at_barrier(self) -> int:
         return self.required-self.waiting_for
 
     
-    def __init__(self, required: int) -> None:
+    def __init__(self, required: int, *, name: Optional[str] = None) -> None:
         super().__init__()
         self.required = required
         self.waiting_for = required
+        self.name = name
+    def __str__(self) -> str:
+        name = (self.name+", ") if self.name is not None else ""
+        return f"Barrier({name}{self.required}, {self.waiting_for})"
     def reach(self, val: T, future: Optional[Delayed[T]] = None) -> int:
         with self.lock:
+            # if self.name is not None:
+            #     print(f"Reached {self}: {val}")
             if self.waiting_for == 1:
+                # if self.name is not None:
+                #     print(f"-- Firing {self}")
                 self.fire()
                 if future is not None:
                     future.post(val)
@@ -727,10 +756,20 @@ class Barrier(Trigger, Generic[T]):
                     self.wait(val, future)
                 self.waiting_for -= 1
                 return self.at_barrier-1
+            
+    def pause(self, val: T, future: Delayed[T]) -> int:
+        return self.reach(val, future)
     
-    def reset(self) -> None:
+    def pass_through(self, val: T) -> int:
+        return self.reach(val)
+    
+    def reset(self, required: Optional[int] = None) -> None:
         with self.lock:
+            if required is not None:
+                self.required = required
             self.waiting_for = self.required
+            # if self.name is not None:
+            #     print(f"Reset {self} to {required}")
             super().reset()
             
             
@@ -1118,7 +1157,7 @@ class Liquid:
         return f"Liquid[{'~' if self.inexact else ''}{self.volume.in_units(uL)}, {self.reagent}]"
 
     def __str__(self) -> str:
-        return f"{'~' if self.inexact else ''}{self.volume.in_units(uL)} of {self.reagent}"
+        return f"{'~' if self.inexact else ''}{self.volume.in_units(uL):g} of {self.reagent}"
         
     def __iadd__(self, rhs: Volume) -> Liquid:
         self.volume = max(self.volume+rhs, 0*ml)

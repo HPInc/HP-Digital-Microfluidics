@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from argparse import Namespace, _ArgumentGroup, ArgumentParser
-import time
-from typing import Sequence, Union, Optional
+from argparse import Namespace, _ArgumentGroup, ArgumentParser, \
+    ArgumentTypeError
+from collections import deque
+from random import sample
+import random
+from re import Pattern
+import re
+from typing import Sequence, Union, Optional, Final, NamedTuple
 
 from devices import joey
 from erk.basic import not_None
@@ -14,11 +19,14 @@ from mpam.exerciser import Exerciser, Task
 from mpam.mixing import mixing_sequences
 from mpam.monitor import BoardMonitor
 from mpam.paths import Path, Schedulable
-from mpam.processes import PlacedMixSequence
-from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
-from mpam.types import Reagent, Liquid, Dir, Color, RunMode
-from quantities.SI import ms, second, seconds
-from quantities.dimensions import Time
+from mpam.pipettor import PipettingArm
+from mpam.processes import PlacedMixSequence, Transform
+from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
+    Thermocycler, ShuttleDir
+from mpam.types import Reagent, Liquid, Dir, Color, waste_reagent, Barrier, \
+    schedule, Delayed
+from quantities.SI import ms, second, seconds, uL
+from quantities.dimensions import Time, Volume
 from quantities.temperature import abs_C
 
 
@@ -83,6 +91,15 @@ class PCRTask(Task):
         self.full_tc = board.thermocycler.as_process(phases=self.tc_phases, 
                                                      channels=tuple(range(16)), 
                                                      n_iterations=self.tc_cycles)
+        
+        ps: Optional[float] = args.pipettor_speed
+        if ps is not None:
+            print(f"Speeding up pipettor arm by a factor of {ps}")
+            arm = board.pipettor.arm
+            arm.dip_time /= ps
+            arm.short_transit_time /= ps
+            arm.long_transit_time /= ps
+            
         
     def reagent(self, name: str, *,
                 color: Optional[Union[Color, str, tuple[float,float,float]]] = None) -> Reagent:
@@ -466,30 +483,539 @@ class MixPrep(PCRTask):
         
         Path.run_paths(paths, system=system)
 
+weighted_size_arg_re: Final[Pattern] = re.compile(f"([1-8])(?::(\\d+(?:\\.\\d+)?))?")
+
+class WeightedSize(NamedTuple):
+    size: int
+    weight: float = 1
+    
+    def __repr__(self) -> str:
+        return f"{self.size}:{self.weight:.1f}"
+
+    
+
+def weighted_size_arg(arg: str) -> WeightedSize:
+    m = weighted_size_arg_re.fullmatch(arg)
+    if m is None:
+        raise ArgumentTypeError(f"""
+                    {arg} not parsable as an integer or an integer and a float separated by a colon.""")
+    n = int(m.group(1))
+    wg = m.group(2)
+    w = float(wg) if wg is not None else 1
+    return WeightedSize(n, w)
+    
 
 class CombSynth(PCRTask):
+    n_combinations: int
+    fragments: Sequence[Reagent]
+    sizes: Sequence[int]
+    size_weights: Sequence[float]
+
+    phase_1_ep: ExtractionPoint
+    phase_4_ep: ExtractionPoint
+    phase_6_ep: ExtractionPoint
+    
+    phase_2_dilution: PlacedMixSequence
+    phase_2_mix: PlacedMixSequence
+    
+    phase_3_dilution: PlacedMixSequence
+
+    phase_4_mix: PlacedMixSequence
+    phase_4_dilution: PlacedMixSequence
+    
+    phase_5_mix: PlacedMixSequence
+
+    phase_barrier: Barrier[Drop]
+    
+    thermocycler: Thermocycler
+    
+    waste_well: Well    
+    pm_well: Well
+    db_well: Well
+    mm_well: Well
+    rsm_well: Well
+    
+    pf: Reagent
+    
+    combo_colors: Final[Sequence[str]]
+    
+    @property
+    def n_fragments(self) -> int:
+        return len(self.fragments)
 
     def __init__(self) -> None:
         super().__init__(name = "combinatorial-synthesis", aliases = ["comb-synth", "cs"],
                          description = "Mix four outputs of the preparation phase.")
+        self.combo_colors = ("red", "green", "yellow", "darkblue", "brown", 
+                             "purple", "silver", "orange", "pink", "darkgreen")
 
-    # def add_args_to(self, parser:ArgumentParser, *,
+    def add_args_to(self, parser: ArgumentParser, *,
+                    exerciser:Exerciser)->None:  # @UnusedVariable
+        default_n = 10
+        parser.add_argument("n", type=int, metavar="N", default=default_n, nargs="?",
+                            help=f"The number of combinations to run.  Default is {default_n}")
+        group = self.arg_group_in(parser)
+        
+        default_sizes = (WeightedSize(2), WeightedSize(3,2), WeightedSize(4,5), WeightedSize(5))
+        group.add_argument("-s", "--sizes", type=weighted_size_arg, nargs="*", default=default_sizes,
+                           metavar="INT[:FLOAT]",
+                           help=f'''
+                            The allowed combination sizes.  Multiple sizes may be specified.
+                            Each size is either an integer or an integer immediately followed by a colon
+                            and a floating-point number representing the relative weight.
+                            Default is {default_sizes}
+                           ''')
+        
+        default_n_fragments = 30
+        group.add_argument("-nf", "--fragments", type=int, metavar="INT", default=default_n_fragments,
+                           help=f'''
+                            The number of fragments to combine.
+                            Default is {default_n_fragments}
+                           ''')
+
+
+    def setup(self, board: joey.Board, *,
+              args: Namespace) -> None:
+        
+        super().setup(board, args=args)
+        self.n_combinations = args.n
+        n_fragments: int = args.fragments
+        self.fragments = tuple(Reagent.find(f"Fragment-{i+1}") for i in range(n_fragments))
+        sizes: Sequence[WeightedSize] = args.sizes
+        self.sizes = tuple(s.size for s in sizes)
+        self.size_weights = tuple(s.weight for s in sizes)
+        self.phase_1_ep = board.extraction_points[0]
+        self.phase_5_ep = board.extraction_points[1]
+        self.phase_6_ep = board.extraction_points[2]
+        
+        self.phase_barrier = Barrier(0, name="phase-end")
+        
+        
+        self.phase_2_dilution = dilution_sequences.lookup(8, full=False,
+                                                          rows=3, cols=5) \
+                                            .transformed(Transform.FLIP_Y) \
+                                            .placed(board.pad_at(14,12))
+
+        self.phase_2_mix = mixing_sequences.lookup_placed(3, full=False,
+                                                          lower_left=board.pad_at(18,10),
+                                                          rows=5, cols=1)
+        
+        self.phase_3_dilution = dilution_sequences.lookup(5, full=False,
+                                                          rows=3, cols=3) \
+                                            .transformed(Transform.ONE_EIGHTY) \
+                                            .placed(board.pad_at(16, 0))
+                                            
+        self.phase_4_mix = mixing_sequences.lookup(2, full=False,
+                                                   rows=3, cols=1) \
+                                            .placed(board.pad_at(18,4))
+        self.phase_4_dilution = (dilution_sequences.lookup(3, full=False,
+                                                           rows=3, cols=3) 
+                                            .placed(board.pad_at(18,4)))
+        
+        self.phase_5_mix = mixing_sequences.lookup(2, full=False,
+                                                   rows=3, cols=1) \
+                                            .placed(board.pad_at(13,7))
+        
+                                            
+        def well(n: int, r: str) -> Well:
+            w = board.wells[n]
+            w.contains(Liquid(Reagent.find(r), w.capacity))
+            return w 
+            
+        
+        self.waste_well = board.wells[0]
+        self.pm_well = well(4, "PM Primers")
+        self.db_well = well(5, "Dilution Buffer")
+        self.mm_well = well(6, "Master Mix")
+        self.rsm_well = well(7, "Prep Mixture")
+        
+        self.pf = Reagent.find("PF Primers")
+        
+    def ensure_waste_well_capacity(self, drop: Drop) -> Delayed[Drop]:
+        well = self.waste_well
+        if well.remaining_capacity >= drop.volume:
+            # print(f"Well can hold {well.capacity}")
+            return Delayed.complete(drop)
+        print(f"Well is full, scheduling removal")
+        future = Delayed[Drop]()
+        def finish(liquid: Liquid) -> None:
+            print(f"Removed {liquid} from {well}")
+            # print(f"Well can now {well.capacity}")
+            future.post(drop)
+        self.board.pipettor.arm.schedule(PipettingArm.Extract(volume=None, target=well)).then_call(finish)
+        return future
+        
+    def to_waste_from_row(self, row: int) -> Path.Middle:
+        def now_waste(drop: Drop) -> None:
+            drop.reagent = waste_reagent
+        
+        path = Path.empty().then_process(now_waste)
+        if row <= 7:
+            path = path.to_col(11).to_row(7).to_col(6).to_row(11)
+        elif row <= 12:
+            path = path.to_col(13).to_row(13)
+        path = (path.to_col(11).to_row(18).to_col(5)
+                .reach(self.phase_barrier, wait=False).to_col(0)
+                .then_do(self.ensure_waste_well_capacity))
+        return path
+    
+    def mix_to_tcycle(self, row: int) -> Path.Middle:
+        path = (Path.empty().reach(self.phase_barrier)
+                        .to_col(15)
+                        .to_row(0)
+                        .to_col(11)
+                        .to_row(6)
+                        .to_col(5)
+                        .to_row(row)
+                        .to_col(7))
+        return path
+    
+    def tcycle_to_mix(self, col: int, row: int) -> Path.Middle:
+        path = (Path.empty().reach(self.phase_barrier)
+                        .to_col(5)
+                        .to_row(18)
+                        .to_col(15)
+                        .to_row(row)
+                        .to_col(col))
+        return path
+    
+    class Combination:
+        serial_number: Final[int]
+        task: Final[CombSynth]
+        fragments: Final[Sequence[Reagent]]
+        drop_color: Final[Color]
+        lead_drop: Drop
+        
+        def __init__(self, serial_number: int, task: CombSynth) -> None:
+            self.serial_number = serial_number
+            self.task = task
+            size = random.choices(task.sizes, task.size_weights)
+            self.fragments = sample(task.fragments, size[0])
+            self.drop_color = Color.find(task.combo_colors[serial_number % len(task.combo_colors)])
+            
+        def __repr__(self) -> str:
+            return f"Combination({self.serial_number})"
+        
+        def my_reagent(self, prefix: str) -> Reagent:
+            return self.task.reagent(f"{prefix} #{self.serial_number}", color=self.drop_color)
+        
+            
+            
+    def pipleline_mixes(self, 
+                        mixing: Sequence[Optional[CombSynth.Combination]]
+                        ) -> list[Schedulable]:
+
+        n_shuttles = self.shuttles
+        board = self.board
+        
+        paths = list[Schedulable]()
+        
+        assert len(mixing) == 6
+        
+        c1,c2,c3,c4,c5,c6 = mixing
+        # We'll get c6 out out of the way first so it doesn't block the others.
+        if c6 is not None:
+            paths.append((c6.lead_drop,
+                          Path.empty()
+                            .reach(self.phase_barrier, wait=False)
+                            .then_process(lambda drop: print(f"Extracting {drop.liquid}"))
+                            .teleport_out())
+                         )
+            
+        if c1 is not None:
+            n = len(c1.fragments)
+            mix = mixing_sequences.lookup_placed(n, full=False,
+                                                  lower_left=board.pad_at(13,16),
+                                                  rows=3, cols=6)
+            pads = sorted(mix.pads, key=down_then_left)
+            ep = self.phase_1_ep
+            result = c1.my_reagent("R1")
+            passed_by = Barrier[Drop](n)
+            for pad, frag in zip(pads, c1.fragments):
+                path = Path.teleport_into(ep, reagent=frag).to_pad(pad)
+                if pad is mix.lead_drop_pad:
+                    def remember_lead_drop(drop: Drop) -> None:
+                        assert c1 is not None
+                        c1.lead_drop = drop
+                    paths.append(path.start(mix.as_process(n_shuttles=n_shuttles, result=result))
+                                 .then_process(remember_lead_drop)
+                                 .to_pad(ep.pad)
+                                 .reach(passed_by)
+                                 .to_row(16)
+                                 .extended(self.mix_to_tcycle(0)))
+                else:
+                    paths.append(path.join()
+                                 .to_col(11)
+                                 .reach(passed_by, wait=False)
+                                 # .to_row(18)
+                                 .extended(self.to_waste_from_row(pad.row))
+                                 .enter_well()
+                                 )
+
+        if c2 is not None:
+            rdiluted = c2.my_reagent("R1[diluted]")
+            result = c2.my_reagent("R2")
+            in_pos = Barrier[Drop](2)
+            passed_by = Barrier[Drop](2)
+            
+            paths.append((c2.lead_drop,
+                          Path.empty().reach(in_pos)
+                                .to_pad((16,12))
+                                .start(self.phase_2_dilution.as_process(n_shuttles=n_shuttles,
+                                                                        result=rdiluted))
+                                .to_row(10).reach(passed_by)
+                                .to_pad((18,12))
+                                .start(self.phase_2_mix.as_process(n_shuttles=n_shuttles,
+                                                                   result=result))
+                                .extended(self.mix_to_tcycle(2))
+                                ))                          
+
+            paths.append(Path.dispense_from(self.pm_well).to_row(14)
+                            .join()
+                            .extended(self.to_waste_from_row(14))
+                            .enter_well())
+            
+            paths.append(Path.dispense_from(self.mm_well).to_row(10)
+                            .join()
+                            .to_col(14).to_row(13)
+                            .extended(self.to_waste_from_row(13))
+                            .enter_well())
+            
+            paths.append(Path.dispense_from(self.db_well)
+                            .to_pad((14,12))
+                            .join()
+                            .extended(self.to_waste_from_row(12))
+                            .enter_well()
+                            )
+
+            paths.append(Path.dispense_from(self.db_well)
+                            .to_pad((16,14), row_first=False)
+                            .reach(in_pos)
+                            .join()
+                            .to_row(12)
+                            .extended(self.to_waste_from_row(12))
+                            .enter_well()
+                            )
+            paths.append(Path.dispense_from(self.db_well)
+                            .join()
+                            .to_col(14)
+                            .reach(passed_by, wait=False)
+                            .extended(self.to_waste_from_row(12))
+                            .enter_well()
+                            )
+            
+        # We do c4 before c3, because we need to get the rsm drops here first
+        if c4 is not None:
+            rmixed = c4.my_reagent("R3[mixed]")
+            result = c4.my_reagent("R4")
+            
+            mix_done = Barrier[Drop](2)
+            
+            paths.append((c4.lead_drop,
+                          Path.start(self.phase_4_mix.as_process(n_shuttles=n_shuttles, result=rmixed))
+                                .start(self.phase_4_dilution.as_process(n_shuttles=n_shuttles, result=result))
+                                .extended(self.mix_to_tcycle(14))
+                                ))   
+            
+            paths.append(Path.dispense_from(self.rsm_well)
+                            .to_row(2).to_col(16).to_row(6)
+                            .reach(mix_done).to_col(18)
+                            .join()
+                            .to_col(15).to_row(4)
+                            .extended(self.to_waste_from_row(4))
+                            .enter_well()
+                            )                       
+
+            paths.append(Path.dispense_from(self.rsm_well)
+                            .to_row(2).to_col(16).to_row(4)   
+                            .join()
+                            .extended(self.to_waste_from_row(4))
+                            .enter_well()
+                            )                       
+
+            paths.append(Path.dispense_from(self.mm_well)
+                            .join()
+                            .reach(mix_done, wait = False)
+                            .to_row(8)
+                            .to_col(15).to_row(4)
+                            .extended(self.to_waste_from_row(4))
+                            .enter_well()
+                            )                       
+
+        
+
+        if c3 is not None:
+            result = c3.my_reagent("R3")
+            
+            paths.append((c3.lead_drop,
+                          Path.start(self.phase_3_dilution.as_process(n_shuttles=n_shuttles,
+                                                                        result=result))
+                                .extended(self.mix_to_tcycle(4))
+                                ))   
+            
+            paths.append(Path.dispense_from(self.rsm_well)
+                            .to_row(2).to_col(16)   
+                            .join()
+                            .extended(self.to_waste_from_row(2))
+                            .enter_well()
+                            )                       
+            paths.append(Path.dispense_from(self.rsm_well)
+                            .to_row(2)   
+                            .join()
+                            .extended(self.to_waste_from_row(2))
+                            .enter_well()
+                            )                       
+            paths.append(Path.dispense_from(self.rsm_well)
+                            .join()
+                            .to_row(2)
+                            .extended(self.to_waste_from_row(2))
+                            .enter_well()
+                            )    
+            
+        if c5 is not None:
+            result = c5.my_reagent("R5")
+            
+            paths.append((c5.lead_drop,
+                          Path.start(self.phase_5_mix.as_process(n_shuttles=n_shuttles,
+                                                                 result=result))
+                                .extended(self.mix_to_tcycle(16))
+                                ))   
+            paths.append(Path.teleport_into(self.phase_5_ep, reagent=self.pf)
+                                .join()
+                                .to_row(13)
+                                .extended(self.to_waste_from_row(9))
+                                .enter_well()
+                         )
+            
+                               
+                    
+        # TODO: The rest
+        
+        return paths
+
+    def pipleline_tcycle(self, 
+                         tcycling: Sequence[Optional[CombSynth.Combination]]
+                         ) -> list[Schedulable]:
+        paths = list[Schedulable]()
+        
+        channels = (7,6,5,2,1)
+        
+        channels_used = tuple(channels[i] for i,c in enumerate(tcycling) if c is not None)
+        tc = self.board.thermocycler.as_process(phases=self.tc_phases,
+                                                channels=channels_used,
+                                                n_iterations=self.tc_cycles,
+                                                shuttle_dir=ShuttleDir.ROW_ONLY)
+        
+        started = False
+        
+        def to_mix(col: int, row: int) -> Path.Middle:
+            nonlocal started
+            path = Path.empty()
+            really_tcycle = True
+            if really_tcycle:
+                if started:
+                    path = path.join()
+                else:
+                    started = True
+                    path = path.start(tc)
+            path = (path.extended(self.tcycle_to_mix(col, row))
+                    )
+            return path
+
+        in_pos = Barrier[Drop](len(tuple(x for x in tcycling if x is not None)))
+        c1,c2,c3,c4,c5 = tcycling
+        if c1 is not None:
+            paths.append((c1.lead_drop, to_mix(17,10).reach(in_pos).to_col(16)))
+        if c2 is not None:
+            paths.append((c2.lead_drop, to_mix(17,0).reach(in_pos).to_col(16)))
+        if c3 is not None:
+            paths.append((c3.lead_drop, to_mix(18,4).reach(in_pos)))
+        if c4 is not None:
+            paths.append((c4.lead_drop, to_mix(13,7).reach(in_pos)))
+        if c5 is not None:
+            paths.append((c5.lead_drop, to_mix(13,3).reach(in_pos)))
+        
+        # TODO: The rest
+        
+        return paths
+
+            
+    def pipeline_phase(self, 
+                       mixing: Sequence[Optional[CombSynth.Combination]],
+                       tcycling: Sequence[Optional[CombSynth.Combination]]
+                       ) -> Sequence[Schedulable]:
+        mixing_paths = self.pipleline_mixes(mixing)
+        tcycle_paths = self.pipleline_tcycle(tcycling)
+        
+        # print(f"{len(mixing_paths)} mixing, {len(tcycle_paths)} thermocycles")
+        
+        return mixing_paths+tcycle_paths
+        
+        
+        
+    def run(self, board: Board,
+            system: System,
+            args: Namespace) -> None:
+        assert isinstance(board, joey.Board)
+        self.setup(board, args = args)
+        
+
+        combinations = deque(self.Combination(i+1, self) for i in range(self.n_combinations))
+
+        mixing: list[Optional[CombSynth.Combination]] = [None] * 6
+        tcycling: list[Optional[CombSynth.Combination]] = [None] * 5
+        
+        # mixing_fns: tuple[Callable[[CombSynth.Combination, Barrier], Sequence[Schedulable]], ...] = (
+        #         self.Combination.phase_1,
+        #     )
+        
+        
+        n_left = len(combinations)
+        
+        while n_left > 0:
+            mixing, tcycling = (tcycling, mixing[:-1])
+            mixing.insert(0, combinations.popleft() if len(combinations) > 0 else None)
+            if mixing[-1] is not None:
+                n_left -= 1
+            
+            paths = self.pipeline_phase(mixing, tcycling)
+            
+            # paths: list[Schedulable] = []
+            # for i,c in enumerate(mixing):
+            #     if c is not None:
+            #         fn = mixing_fns[i]
+            #         paths.extend(fn(c, barrier))
+            #
+            # for i,c in enumerate(tcycling):
+            #     if c is not None:
+            #         path = Path.empty().reach(barrier).extended(self.after_tcycle[i])
+            #         paths.append((c.lead_drop, path))
+
+            self.phase_barrier.reset(len(paths))
+            Path.run_paths(paths, system=system)
+        
+
+class Test(Task):
+    def __init__(self) -> None:
+        super().__init__(name="test", 
+                         description="Test Extraction Points")
+        
+    # def add_args_to(self, parser:ArgumentParser, *, 
     #                 exerciser:Exerciser)->None:  # @UnusedVariable
     #     ...
-
-    def run(self, board:Board,
-            system:System,
+    
+    def run(self, board:Board, 
+            system:System, 
             args:Namespace) -> None:
         assert isinstance(board, joey.Board)
-        super().setup(board, args = args)
-
-        ep = board.extraction_points[1]
-
-        r = Reagent.find("R")
-        future = ep.schedule(ep.TransferIn(r))
-
-        future.then_call(lambda _: ep.schedule(ep.TransferOut, after = 5*seconds,
-                                               mode = RunMode.asynchronous(100*ms)))
+        
+        ep1 = board.extraction_points[1]
+        ep2 = board.extraction_points[2]
+        
+        path = Path.teleport_into(ep1).to_pad(ep2.pad).teleport_out()
+        schedule(path)
+        
+     
 
 
 class PCRDriver(Exerciser):
@@ -498,6 +1024,7 @@ class PCRDriver(Exerciser):
         self.add_task(Prepare())
         self.add_task(MixPrep())
         self.add_task(CombSynth())
+        self.add_task(Test())
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
         return joey.Board()
@@ -522,9 +1049,15 @@ class PCRDriver(Exerciser):
                                  Default is {default_shuttles}.
                                  ''')
     
+        group.add_argument('-ps', '--pipettor-speed', type=float, metavar='MULT',
+                           help=f'''
+                                 A speed-up factor for pipettor operations.
+                                 ''')
+    
 
 if __name__ == '__main__':
     Time.default_units(ms)
+    Volume.default_units(uL)
     exerciser = PCRDriver()
     exerciser.parse_args_and_run()
 

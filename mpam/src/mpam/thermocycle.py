@@ -14,6 +14,7 @@ from quantities.dimensions import Time
 from quantities.temperature import TemperaturePoint, absolute_zero
 from quantities.timestamp import time_now, Timestamp
 from erk.basic import not_None
+from enum import Enum, auto
 
 
 class ChannelEndpoint(NamedTuple):
@@ -30,14 +31,24 @@ class ChannelEndpoint(NamedTuple):
     def out_path(self) -> Path.Middle:
         return Path.walk(self.in_dir.opposite)
 
-    def step_target(self, drop: Drop, i: int) -> Pad:
-        d = self.adjacent_step_dir if i%2==0 else self.in_dir
+    def step_target(self, drop: Drop, i: int, shuttle_dir: ShuttleDir) -> Pad:
+        if shuttle_dir is ShuttleDir.FULL:
+            d = self.adjacent_step_dir if i%2==0 else self.in_dir
+        elif shuttle_dir is ShuttleDir.ROW_ONLY:
+            d = self.in_dir
+        else:
+            d = self.adjacent_step_dir
         return not_None(drop.pad.neighbor(d))
     
 
 Channel = tuple[ChannelEndpoint, ChannelEndpoint]
 
 ChannelEnd = Union[Literal[0], Literal[1]]
+
+class ShuttleDir(Enum):
+    FULL = auto()
+    ROW_ONLY = auto()
+    COL_ONLY = auto()
 
 class Thermocycler:
     heaters: Final[Sequence[Heater]]
@@ -52,8 +63,11 @@ class Thermocycler:
     def as_process(self, *,
                    phases: Sequence[ThermocyclePhase],
                    channels: Sequence[int],
-                   n_iterations: int) -> ThermocycleProcessType:
-        return ThermocycleProcessType(self, phases=phases, channels=channels, n_iterations=n_iterations)
+                   n_iterations: int,
+                   shuttle_dir: ShuttleDir = ShuttleDir.FULL
+                   ) -> ThermocycleProcessType:
+        return ThermocycleProcessType(self, phases=phases, channels=channels, n_iterations=n_iterations,
+                                      shuttle_dir=shuttle_dir)
 
 class ThermocyclePhase(NamedTuple):
     name: str
@@ -116,9 +130,9 @@ class BoundChannel(NamedTuple):
             .then_process(lambda _: rendezvous.reached()) \
             .schedule_for(self.drop)
             
-    def step_target(self, end: ChannelEnd, i: int) -> Pad:
+    def step_target(self, end: ChannelEnd, i: int, shuttle_dir: ShuttleDir) -> Pad:
         ep = self.channel[end]
-        return ep.step_target(self.drop, i)
+        return ep.step_target(self.drop, i, shuttle_dir)
     
 class Rendezvous:
     n_required: Final[int]
@@ -153,6 +167,7 @@ class ThermocycleProcessType(MultiDropProcessType):
     phases: Final[Sequence[ThermocyclePhase]]
     n_iterations: Final[int]
     channels: Final[Sequence[int]]
+    shuttle_dir: Final[ShuttleDir]
     
     class FindLeadResult(NamedTuple):
         index_in_seq: int
@@ -165,12 +180,14 @@ class ThermocycleProcessType(MultiDropProcessType):
                  *,
                  channels: Sequence[int],
                  phases: Sequence[ThermocyclePhase],
-                 n_iterations: int) -> None:
+                 n_iterations: int,
+                 shuttle_dir: ShuttleDir = ShuttleDir.FULL) -> None:
         super().__init__(len(channels))
         self.thermocycler = thermocycler
         self.channels = channels
         self.phases = phases
         self.n_iterations = n_iterations
+        self.shuttle_dir = shuttle_dir
         
     def find_lead(self, lead_drop_pad: Pad) -> FindLeadResult:
         for index,c in enumerate(self.thermocycler.channels[i] for i in self.channels):
@@ -196,6 +213,7 @@ class ThermocycleProcessType(MultiDropProcessType):
    
     def iterator(self, drops: tuple[Drop, ...])->Iterator[Optional[FinishFunction]]:
         tc = self.thermocycler
+        shuttle_dir = self.shuttle_dir
         channels_used = set(self.channels)
         
         channels = tuple(tc.channels[i] for i in channels_used)
@@ -279,7 +297,7 @@ class ThermocycleProcessType(MultiDropProcessType):
                 # print(f"step number {step_no}, end={this_end}")
                 targets = defaultdict[Pad, list[Drop]](list)
                 for bc in bound:
-                    t = bc.step_target(this_end, step_no)
+                    t = bc.step_target(this_end, step_no, shuttle_dir)
                     targets[t].append(bc.drop)
                 # print(f"Targets = {targets}")
                 rendezvous.reset()

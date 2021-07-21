@@ -43,6 +43,10 @@ class BoardComponent:
                                after: Optional[DelayType] = None) -> None:  
         return self.board.schedule(cb, mode=mode, after=after)
     
+    def delayed(self, function: Callable[[], T], *,
+                after: Optional[DelayType]) -> Delayed[T]:
+        return self.board.delayed(function, after=after)
+ 
     def user_operation(self) -> UserOperation:
         return UserOperation(self.board.in_system().engine.idle_barrier)
 
@@ -893,7 +897,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
             self.on_no_source = on_no_source
             
         def _schedule_for(self, extraction_point: ExtractionPoint, *,
-                          mode: RunMode = RunMode.GATED, 
+                          mode: RunMode = RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Drop]:
@@ -908,7 +912,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
                                              on_no_source = self.on_no_source
                                              ).post_to(future)
 
-            extraction_point.board.schedule(do_it, mode, after=after)
+            extraction_point.delayed(do_it, after=after)
             return future
 
     class TransferOut(Operation['ExtractionPoint', 'Liquid']):
@@ -935,7 +939,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
                                               on_no_sink = self.on_no_sink
                                              ).post_to(future)
 
-            extraction_point.board.schedule(do_it, mode, after = after)
+            extraction_point.delayed(do_it, after=after)
             return future
         
     
@@ -1001,6 +1005,10 @@ class SystemComponent(ABC):
     def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO()):
         req = self.make_request(cb)
         self.in_system().on_tick(req, delta=delta)
+        
+    def delayed(self, function: Callable[[], T], *,
+                after: Optional[DelayType]) -> Delayed[T]:
+        return self.in_system().delayed(function, after=after)
  
     def schedule(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *, 
                  after: Optional[DelayType] = None) -> None:
@@ -1328,6 +1336,25 @@ class System:
 
     def on_tick(self, req: DevCommRequest, *, delta: Ticks = Ticks.ZERO()):
         self._channel().on_tick([(delta, req)])
+        
+    def delayed(self, function: Callable[[], T], *,
+                after: Optional[DelayType]) -> Delayed[T]:
+        if after is None:
+            return Delayed.complete(function())
+        future = Delayed[T]()
+        def run_then_post() -> None:
+            future.post(function())
+        if isinstance(after, Time):
+            if after > Time.ZERO():
+                self.call_after(after, run_then_post)
+            else:
+                return Delayed.complete(function())
+        else:
+            if after > Ticks.ZERO():
+                self.before_tick(run_then_post, delta = after)
+            else:
+                return Delayed.complete(function())
+        return future
         
     def batched(self) -> Batch:
         with self._batch_lock:

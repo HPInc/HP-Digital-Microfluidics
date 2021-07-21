@@ -3,9 +3,10 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from typing import Final, Union, Callable, Optional, Sequence
 
-from mpam.device import SystemComponent, Well, ExtractionPoint, UserOperation
+from mpam.device import SystemComponent, Well, ExtractionPoint, UserOperation,\
+    Pad
 from mpam.types import Reagent, OpScheduler, Callback, RunMode, DelayType, \
-    Liquid, Operation, Delayed, AsyncFunctionSerializer
+    Liquid, Operation, Delayed, AsyncFunctionSerializer, T
 from mpam.drop import Drop, DropStatus
 from erk.errors import ErrorHandler, PRINT
 from quantities.dimensions import Volume
@@ -21,6 +22,10 @@ class PipettorComponent:
                                after: Optional[DelayType] = None) -> None:  
         return self.pipettor.schedule(cb, mode=mode, after=after)
     
+    def delayed(self, function: Callable[[], T], *,
+                after: Optional[DelayType]) -> Delayed[T]:
+        return self.pipettor.delayed(function, after=after)
+ 
     def user_operation(self) -> UserOperation:
         return UserOperation(self.pipettor.in_system().engine.idle_barrier)
 
@@ -108,6 +113,7 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
                     drop = target.pad.drop
                     if drop is None:
                         drop = Drop(target.pad, got)
+                        drop.pad.schedule(Pad.TurnOn)
                     else:
                         drop.liquid.mix_in(got, result=self.mix_result)
                     target.pad.reserved = False
@@ -116,7 +122,7 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
                 if post_result:
                     future.post(got)
 
-            arm.pipettor.schedule(lambda: arm.run_serialized(do_it), mode, after=after)
+            arm.pipettor.delayed(lambda: arm.run_serialized(do_it), after=after)
             return future
 
     class Extract(Operation['PipettingArm', Liquid]):
@@ -165,6 +171,7 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
                     if isinstance(target, ExtractionPoint):
                         # I'm pretty sure that drop should still be defined here.
                         if drop.volume == got.volume:
+                            drop.pad.schedule(Pad.TurnOff)
                             drop.status = DropStatus.OFF_BOARD
                             drop.pad.drop = None
                         else:
@@ -176,7 +183,7 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
                     arm.move_to(reservoir)
                     arm.deposit_liquid()
 
-            arm.pipettor.schedule(lambda: arm.run_serialized(do_it), mode, after=after)
+            arm.pipettor.delayed(lambda: arm.run_serialized(do_it), after=after)
             return future
 
 

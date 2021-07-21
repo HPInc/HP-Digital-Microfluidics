@@ -188,10 +188,11 @@ class Drop(OpScheduler['Drop']):
     class TeleportInTo(StaticOperation['Drop']):
         extraction_point: Final[ExtractionPoint]
         liquid: Final[Liquid]
-        
+        mix_result: Final[Optional[Union[Reagent,str]]]
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None, 
                      reagent: Optional[Reagent] = None,
+                     mix_result: Optional[Union[Reagent,str]] = None,
                      ) -> None:
             self.extraction_point = extraction_point
             board = extraction_point.pad.board 
@@ -200,23 +201,40 @@ class Drop(OpScheduler['Drop']):
                     reagent = unknown_reagent
                 liquid = Liquid(reagent, board.drop_size)
             self.liquid = liquid
+            self.mix_result = mix_result
             
         def _schedule(self, *,
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  
                       ) -> Delayed[Drop]:
-            future = Delayed[Drop]()
-            assert mode.is_gated
-            pad = self.extraction_point.pad
-            def make_drop(_) -> None:
-                drop = Drop(pad=pad, liquid=self.liquid)
-                if post_result:
-                    future.post(drop)
-            pad.schedule(Pad.TurnOn, mode=mode, after=after) \
-                .then_call(make_drop)
-            return future
+            liquid = self.liquid
+            op = ExtractionPoint.TransferIn(liquid.reagent, liquid.volume, mix_result=self.mix_result)
+            return self.extraction_point.schedule(op, mode=mode, after=after, post_result=post_result)
     
+    class TeleportOut(Operation['Drop', None]):
+        volume: Final[Optional[Volume]]
+        
+        def __init__(self, *,
+                     volume: Optional[Volume]
+                     ) -> None:
+            self.volume = volume
+            
+        def _schedule_for(self, drop: Drop, *,
+                      mode: RunMode = RunMode.GATED, 
+                      after: Optional[DelayType] = None,
+                      post_result: bool = True,  # @UnusedVariable
+                      ) -> Delayed[None]:
+            op = ExtractionPoint.TransferOut(volume=self.volume)
+            future = Delayed[None]()
+            
+            def do_it() -> None:
+                ep = drop.pad.extraction_point
+                assert ep is not None, f"{drop} is not at an extraction point"
+                ep.schedule(op).then_call(lambda _: future.post(None))
+            drop.pad.delayed(do_it, after=after)
+            return future
+
     class Move(MotionOp):
         direction: Final[Dir]
         steps: Final[int]
