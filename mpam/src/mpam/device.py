@@ -311,7 +311,8 @@ class WellMotion:
     post_result: Final[bool]
     well_gates: Final[set[WellPad]]
     pad_states: Final[dict[Pad, OnOff]]
-    next_step: int
+    # next_step: int
+    on_last_step: bool = False
     one_tick: Final[ClassVar[Ticks]] = 1*tick
     sequence: WellOpStepSeq
     gate_status: GateStatus
@@ -324,8 +325,7 @@ class WellMotion:
         self.post_result = post_result
         self.well_gates = set[WellPad]()
         self.pad_states = {}
-        self.next_step = 0
-        self.callback: ClockCallback = lambda : self.do_step()
+        # self.next_step = 0
         self.gate_status = GateStatus.NOT_YET
         
     def try_adopt(self, other: WellMotion) -> bool:
@@ -346,106 +346,115 @@ class WellMotion:
             for gate in other.well_gates:
                 gate.schedule(WellPad.TurnOn, post_result = False)
         self.pad_states.update(other.pad_states)
-        if self.next_step == len(self.sequence):
+        if self.on_last_step:
             for pad,state in other.pad_states.items():
                 pad.schedule(Pad.SetState(state), post_result=False)
         self.future.when_value(lambda g: other.future.post(g))
         return True
         
-    def do_step(self) -> Optional[Ticks]:
+    # Returns True if it should keep going
+    def iterator(self) -> Iterator[bool]:
         group = self.group
         # On the first step, we need to see if this is really necessary or if we 
         # can piggyback onto another motion (or just return) 
-        if self.next_step == 0:
-            # print(f"New motion to {self.target}, gates = {self.well_gates}: {self}")
-            
-            with group.lock:
-                current = group.motion
-                if current is not None:
-                    # print(f"There already is a motion going to {current.target} (gate_status = {current.gate_status}): {current}")
-                    if current.try_adopt(self):
-                        # If we can piggyback, we do.
-                        return None
-                    else:
-                        # Otherwise, we'll try again next time.  (I was going to reschedule 
-                        # when the current one was done, but it's almost certainly cheaper to
-                        # just check each tick.
-                        # print(f"Deferring")
-                        return self.one_tick
-                # print(f"We're the first")
-                if group.state is self.target:
-                    # There's no motion, and we're already where we want to be.
-                    # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
-                    # without using our gates, so we need to go through READY again
-                    if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
-                        self.future.post(group)
-                        # print(f"Already at {self.target}")
-                        return None
-                if group.state is WellState.READY or self.target is WellState.READY:
-                    self.sequence = group.sequences[(group.state, self.target)]
+        
+        # print(f"New motion to {self.target}, gates = {self.well_gates}: {self}")
+        
+        with group.lock:
+            current = group.motion
+            if current is not None:
+                # print(f"There already is a motion going to {current.target} (gate_status = {current.gate_status}): {current}")
+                if current.try_adopt(self):
+                    # If we can piggyback, we do.
+                    yield False
                 else:
-                    self.sequence = list(group.sequences[(group.state, WellState.READY)])
-                    self.sequence += group.sequences[(WellState.READY, self.target)]
-                # print(f"Switching from {group.state} to {self.target}: {self.sequence}")
-                assert len(self.sequence) > 0
-                group.motion = self
+                    # Otherwise, we'll try again next time.  (I was going to reschedule 
+                    # when the current one was done, but it's almost certainly cheaper to
+                    # just check each tick.
+                    # print(f"Deferring")
+                    yield True
+            # print(f"We're the first")
+            if group.state is self.target:
+                # There's no motion, and we're already where we want to be.
+                # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
+                # without using our gates, so we need to go through READY again
+                if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
+                    self.future.post(group)
+                    # print(f"Already at {self.target}")
+                    yield False
+            if group.state is WellState.READY or self.target is WellState.READY:
+                self.sequence = group.sequences[(group.state, self.target)]
+            else:
+                self.sequence = list(group.sequences[(group.state, WellState.READY)])
+                self.sequence += group.sequences[(WellState.READY, self.target)]
+            # print(f"Switching from {group.state} to {self.target}: {self.sequence}")
+            assert len(self.sequence) > 0
+            group.motion = self
+            
         shared_pads = group.shared_pads
         states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
         gate_state = OnOff.OFF
-        for pad_index in self.sequence[self.next_step]:
-            if pad_index == -1:
-                gate_state = OnOff.ON
-                # If we're turning the gates on to dispense, we need to make sure that the 
-                # corresponding exit pads aren't occupied (or we'll slurp the drop back).  
-                # If any are, we just return and try again next time.
-                if self.target is WellState.DISPENSED:
-                    for g in self.well_gates:
-                        w = g.loc
-                        assert isinstance(w, Well)
-                        if not w.exit_pad.empty:
-                            return self.one_tick
+        
+        last_step = self.sequence[-1]
+        
+        for step in self.sequence:
+            on_last_step = step is last_step
+            # We squirrel it away so that it can be used in try_adopt()
+            self.on_last_step = on_last_step
+            for pad_index in step:
+                if pad_index == -1:
+                    gate_state = OnOff.ON
+                    # If we're turning the gates on to dispense, we need to make sure that the 
+                    # corresponding exit pads aren't occupied (or we'll slurp the drop back).  
+                    # If any are, we just return and try again next time.
+                    if self.target is WellState.DISPENSED:
+                        for g in self.well_gates:
+                            w = g.loc
+                            assert isinstance(w, Well)
+                            if not w.exit_pad.empty:
+                                yield True
+                else:
+                    states[pad_index] = OnOff.ON
+
+            # if we're on the last step and we would turn on any exit pads, we need to 
+            # make sure that they're safe
+            # TODO: Do I need to reserve them? (Probably)
+            if on_last_step:
+                for (pad, state) in self.pad_states.items():
+                    pw = pad.well
+                    assert pw is not None
+                    if state is OnOff.ON and not pad.safe_except(pw):
+                        yield True
+            for (i, shared) in enumerate(shared_pads):
+                shared.schedule(WellPad.SetState(states[i]), post_result=False)
+            for gate in self.well_gates:
+                gate.schedule(WellPad.SetState(gate_state), post_result=False)
+                gs = self.gate_status
+                if gate_state is OnOff.ON:
+                    self.gate_status = GateStatus.JUST_ON if gs is GateStatus.NOT_YET else GateStatus.UNSAFE
+                elif gs is GateStatus.JUST_ON:
+                    self.gate_status = GateStatus.UNSAFE
                 
+            if on_last_step:
+                # we're done.  If there are any (exit) pads to twiddle, we do it now.
+                for (pad, state) in self.pad_states.items():
+                    # print(f"Exit pad {pad} going to {state}")
+                    pad.schedule(Pad.SetState(state), post_result=False)
+                # And on the other side, we clean up
+                def cb() -> None:
+                    # Any gates we turned on, we turn off at the next tick
+                    for gate in self.well_gates:
+                        gate.schedule(WellPad.TurnOff, post_result=False)
+                    with group.lock:
+                        group.motion = None
+                        group.state = self.target
+                        if self.post_result:
+                            self.future.post(group)
+                group.board.after_tick(cb)
+                yield False
             else:
-                states[pad_index] = OnOff.ON
-        # if we're on the last step and we would turn on any exit pads, we need to 
-        # make sure that they're safe
-        if self.next_step == len(self.sequence) - 1:
-            for (pad, state) in self.pad_states.items():
-                pw = pad.well
-                assert pw is not None
-                if state is OnOff.ON and not pad.safe_except(pw):
-                    return self.one_tick 
-        for (i, shared) in enumerate(shared_pads):
-            shared.schedule(WellPad.SetState(states[i]), post_result=False)
-        for gate in self.well_gates:
-            gate.schedule(WellPad.SetState(gate_state), post_result=False)
-            gs = self.gate_status
-            if gate_state is OnOff.ON:
-                self.gate_status = GateStatus.JUST_ON if gs is GateStatus.NOT_YET else GateStatus.UNSAFE
-            elif gs is GateStatus.JUST_ON:
-                self.gate_status = GateStatus.UNSAFE
-                
-        self.next_step += 1
-        if self.next_step == len(self.sequence):
-            # we're done.  If there are any (exit) pads to twiddle, we do it now.
-            for (pad, state) in self.pad_states.items():
-                # print(f"Exit pad {pad} going to {state}")
-                pad.schedule(Pad.SetState(state), post_result=False)
-            # And on the other side, we clean up
-            def cb() -> None:
-                # Any gates we turned on, we turn off at the next tick
-                for gate in self.well_gates:
-                    gate.schedule(WellPad.TurnOff, post_result=False)
-                with group.lock:
-                    group.motion = None
-                    group.state = self.target
-                    if self.post_result:
-                        self.future.post(group)
-            group.board.after_tick(cb)
-            return None
-        else:
-            # Otherwise we do the next step the next time around
-            return self.one_tick
+                # Otherwise we do the next step the next time around
+                yield True
             
                     
     
@@ -506,7 +515,14 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
                 # assert target is WellState.DISPENSED or target is WellState.ABSORBED, \
                     # f"Well provided on transition to {target}"
                 motion.pad_states[well.exit_pad] = OnOff.ON if target is WellState.DISPENSED else OnOff.OFF
-            board.before_tick(motion.callback, delta=mode.gated_delay(after))
+            
+            def before_tick() -> Iterator[Optional[Ticks]]:
+                iterator = motion.iterator()
+                one_tick = 1*tick
+                while next(iterator):
+                    yield one_tick
+                yield None
+            board.before_tick(lambda: next(before_tick()), delta=mode.gated_delay(after))
             return motion.future
     
 PadBounds = Sequence[tuple[float,float]]
@@ -526,6 +542,8 @@ class WellShape:
         self.shared_pad_bounds = shared_pad_bounds
         self.reagent_id_circle_center = reagent_id_circle_center
         self.reagent_id_circle_radius = reagent_id_circle_radius
+        
+WellVolumeSpec = Union[Volume, Callable[[], Volume]]
     
 class Well(OpScheduler['Well'], BoardComponent):
     number: Final[int]
@@ -558,6 +576,14 @@ class Well(OpScheduler['Well'], BoardComponent):
             return Volume.ZERO()
         else:
             return c.volume
+        
+    @property
+    def reagent(self) -> Reagent:
+        c = self._contents
+        if c is None:
+            return unknown_reagent
+        else:
+            return c.reagent
 
     @property    
     def remaining_capacity(self) -> Volume:
@@ -579,6 +605,50 @@ class Well(OpScheduler['Well'], BoardComponent):
     @property
     def gate_on(self) -> bool:
         return self.gate.current_state is OnOff.ON
+    
+    # refill if dispensing would take you to this level
+    _min_fill: Optional[WellVolumeSpec] = None
+    
+    @property
+    def min_fill(self) -> Volume:
+        return self.volume_from_spec(self._min_fill, lambda: self.dispensed_volume)
+    
+    @min_fill.setter
+    def min_fill(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._min_fill = volume
+    
+    # empty if absorbing would take you above this level
+    _max_fill: Optional[WellVolumeSpec] = None
+
+    @property
+    def max_fill(self) -> Volume:
+        return self.volume_from_spec(self._max_fill, lambda: Volume.ZERO())
+    
+    @max_fill.setter
+    def max_fill(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._max_fill = volume
+    
+    # when refilling, fill to this level
+    _fill_to: Optional[WellVolumeSpec] = None
+
+    @property
+    def fill_to(self) -> Volume:
+        return self.volume_from_spec(self._fill_to, lambda: self.capacity)
+    
+    @fill_to.setter
+    def fill_to(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._fill_to = volume
+        
+    # when emptying, empty to this level
+    _empty_to: Optional[WellVolumeSpec] = None
+    
+    @property
+    def empty_to(self) -> Volume:
+        return self.volume_from_spec(self._empty_to, lambda: Volume.ZERO())
+    
+    @empty_to.setter
+    def empty_to(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._empty_to = volume
     
     def __init__(self, *,
                  board: Board,
@@ -602,25 +672,31 @@ class Well(OpScheduler['Well'], BoardComponent):
         self._contents = None
         self._shape = shape
         self._liquid_change_callbacks = ChangeCallbackList()
+        
 
         group.add_well(self)
         assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
         exit_pad._well = self
         gate.set_location(self)
         
+    def volume_from_spec(self, spec: Optional[WellVolumeSpec], default_fn: Callable[[], Volume]) -> Volume:
+        if spec is None:
+            return default_fn()
+        if isinstance(spec, Volume):
+            return spec
+        return spec()
+        
     def __repr__(self) -> str:
         return f"Well[{self.number} <> {self.exit_pad}]"
     
-    def _can_accept(self, liquid: Liquid) -> bool:
-        c = self._contents
-        if c is None: return True
-        my_r = c.reagent
-        their_r = liquid.reagent
-        return (my_r == their_r 
+    def _can_accept(self, reagent: Reagent) -> bool:
+        if self.available: return True
+        my_r = self.reagent
+        return (my_r == reagent
                 or my_r == unknown_reagent 
-                or their_r == unknown_reagent
+                or reagent == unknown_reagent
                 or my_r == waste_reagent) 
-    
+        
     def transfer_in(self, liquid: Liquid, *,
                     volume: Optional[Volume] = None, 
                     on_overflow: ErrorHandler = PRINT,
@@ -629,14 +705,16 @@ class Well(OpScheduler['Well'], BoardComponent):
             volume = liquid.volume
         on_overflow.expect_true(self.remaining_capacity >= volume,
                     lambda : f"Tried to add {volume} to {self}.  Remaining capacity only {self.remaining_capacity}")
+        # available implies _contents is not None, but MyPy can't do the inference for the else
+        # clause if I don't check it here.
         if self._contents is None or self.available:
             self.contents = Liquid(liquid.reagent, volume)
         else:
             r = self._contents.reagent
-            on_reagent_mismatch.expect_true(self._can_accept(liquid),
+            on_reagent_mismatch.expect_true(self._can_accept(liquid.reagent),
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
             self._contents.mix_in(liquid)
-            self._liquid_change_callbacks.process(self._contents, self._contents)
+        self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
             
     def transfer_out(self, volume: Volume, *,
@@ -654,8 +732,12 @@ class Well(OpScheduler['Well'], BoardComponent):
         # print(f"{self} now contains {self.contents}")
         return Liquid(reagent, volume)
 
-    def contains(self, liquid: Liquid,
+    def contains(self, content: Union[Liquid, Reagent],
                  *, on_overflow: ErrorHandler = PRINT) -> None:
+        if isinstance(content, Reagent):
+            liquid = Liquid(content, Volume.ZERO())
+        else:
+            liquid = content
         on_overflow.expect_true(liquid.volume <= self.capacity,
                                 lambda : f"Asserted {self} contains {liquid}. Capacity only {self.capacity}")
         self._contents = None
@@ -667,7 +749,48 @@ class Well(OpScheduler['Well'], BoardComponent):
             return False
         self.gate_reserved = True
         return True
+    
+    def pipetting_arm(self) -> Optional[PipettingArm]:
+        return None
+
+    def add(self, liquid: Liquid, *,
+            mix_result: Optional[Union[Reagent, str]] = None,
+            on_insufficient: ErrorHandler = PRINT,
+            on_no_source: ErrorHandler = PRINT
+            ) -> Delayed[Well]:
+        arm = self.pipetting_arm()
+        assert arm is not None, f"{self} has no pipetting arm and add() was not overridden"
         
+        arm_future = arm.schedule(arm.Supply(liquid, self,
+                                             mix_result=mix_result,
+                                             on_insufficient=on_insufficient,
+                                             on_no_source=on_no_source))
+        return arm_future.triggering(value=self)
+    
+    def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
+        volume = self.fill_to - self.volume
+        assert volume > Volume.ZERO(), f"refill(volume={volume}) called on {self}"
+        if reagent is None:
+            reagent = self.reagent
+        return self.add(Liquid(reagent, volume))
+    
+
+    def ensure_content(self, 
+                       volume: Optional[Volume] = None,
+                       reagent: Optional[Reagent] = None,
+                       *, on_reagent_mismatch: ErrorHandler = PRINT
+                       ) -> Delayed[Well]:
+        if volume is None:
+            volume = self.dispensed_volume
+        if reagent is not None:
+            on_reagent_mismatch.expect_true(self._can_accept(reagent),
+                                            lambda : f"Adding {reagent} to {self} containing {self.reagent}")
+        current_volume = self.volume
+        resulting_volume = current_volume - volume
+        if resulting_volume >= self.min_fill:
+            return Delayed.complete(self)
+        return self.refill(reagent=reagent)
+                    
     def on_liquid_change(self, cb: ChangeCallback[Optional[Liquid]], *, key: Optional[Hashable] = None) -> None:
         self._liquid_change_callbacks.add(cb, key=key)
         

@@ -306,13 +306,14 @@ class Drop(OpScheduler['Drop']):
                 if post_result:
                     future.post(drop)
                 
-                
-            # Note, we post the drop as soon as we get to the DISPENSED state, even theough
-            # we continue on to READY
-            group = self.well.group
-            group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well), mode=mode, after=after) \
-                .then_call(make_drop) \
-                .then_schedule(WellGroup.TransitionTo(WellState.READY))
+            def run_group(_) -> None:
+                # Note, we post the drop as soon as we get to the DISPENSED state, even theough
+                # we continue on to READY
+                group = self.well.group
+                group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well), mode=mode, after=after) \
+                    .then_call(make_drop) \
+                    .then_schedule(WellGroup.TransitionTo(WellState.READY))
+            well.ensure_content().then_call(run_group)
             return future
             
         

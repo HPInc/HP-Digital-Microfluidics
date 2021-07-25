@@ -8,7 +8,7 @@ from time import sleep
 from typing import Optional, Sequence, ClassVar, Final
 
 from mpam import pipettor
-from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds, \
+from mpam.device import WellGroup, WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System
 import mpam.device as device
 from mpam.paths import Path
@@ -18,7 +18,7 @@ from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, Reagent, 
     Liquid
 from quantities.SI import uL, ms, deg_C, sec, seconds, second
 from quantities.core import DerivedDim
-from quantities.dimensions import Temperature, Time
+from quantities.dimensions import Temperature, Time, Volume
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import Timestamp, time_now
 
@@ -40,6 +40,34 @@ class WellPad(device.WellPad):
     def __init__(self, board: Board, *, live: bool = True):
         super().__init__(board, live=live)
         self.set_device_state = lambda _: None
+        
+class Well(device.Well):
+    arm: Final[PipettingArm]
+    
+    def __init__(self, 
+                 *, board:Board, 
+                 number:int, 
+                 group:WellGroup, 
+                 exit_pad:device.Pad, 
+                 gate:WellPad, 
+                 capacity:Volume, 
+                 dispensed_volume:Volume, 
+                 is_voidable:bool=False, 
+                 shape:Optional[WellShape]=None,
+                 pipettor: Pipettor)-> None:
+        super().__init__(board=board,
+                         number=number,
+                         group=group,
+                         exit_pad=exit_pad,
+                         gate=gate,
+                         capacity=capacity,
+                         dispensed_volume=dispensed_volume,
+                         is_voidable=is_voidable,
+                         shape=shape)
+        self.arm=pipettor.arm
+        
+    def pipetting_arm(self)->Optional[PipettingArm]:
+        return self.arm
 
 class Heater(device.Heater):
     _last_read_time: Timestamp
@@ -216,7 +244,7 @@ class Board(device.Board):
     def _make_well_gate(self, well: int) -> WellPad:  # @UnusedVariable
         return WellPad(board=self)
     
-    def _well(self, num: int, group: WellGroup, exit_pad: device.Pad):
+    def _well(self, num: int, group: WellGroup, exit_pad: device.Pad, pipettor: Pipettor):
         epx = exit_pad.location.x
         epy = exit_pad.location.y
         outdir = -1 if epx == 0 else 1
@@ -245,7 +273,8 @@ class Board(device.Board):
                     gate=self._make_well_gate(num),
                     capacity=54.25*uL,
                     dispensed_volume=0.5*uL,
-                    shape = shape
+                    shape = shape,
+                    pipettor = pipettor
                                          # self._rectangle(epx+5*outdir,epy-1.5,outdir,1,4),
                     # shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
                     #                      self._side_pad_bounds(exit_pad.location),
@@ -293,16 +322,17 @@ class Board(device.Board):
                                 tuple(self._make_well_pad('right', n) for n in range(9)),
                                 sequences)
         
+        pipettor = self.pipettor = Pipettor()
         
         wells.extend((
-            self._well(0, left_group, self.pad_at(0,18)),
-            self._well(1, left_group, self.pad_at(0,12)),
-            self._well(2, left_group, self.pad_at(0,6)),
-            self._well(3, left_group, self.pad_at(0,0)),
-            self._well(4, right_group, self.pad_at(18,18)),
-            self._well(5, right_group, self.pad_at(18,12)),
-            self._well(6, right_group, self.pad_at(18,6)),
-            self._well(7, right_group, self.pad_at(18,0)),
+            self._well(0, left_group, self.pad_at(0,18), pipettor),
+            self._well(1, left_group, self.pad_at(0,12), pipettor),
+            self._well(2, left_group, self.pad_at(0,6), pipettor),
+            self._well(3, left_group, self.pad_at(0,0), pipettor),
+            self._well(4, right_group, self.pad_at(18,18), pipettor),
+            self._well(5, right_group, self.pad_at(18,12), pipettor),
+            self._well(6, right_group, self.pad_at(18,6), pipettor),
+            self._well(7, right_group, self.pad_at(18,0), pipettor),
             ))
         
         magnets.append(Magnet(self, pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
@@ -314,7 +344,6 @@ class Board(device.Board):
         heaters.append(Heater(2, self, regions=[GridRegion(XYCoord(16,12),3,7),
                                                 GridRegion(XYCoord(16,0),3,7)]))
         
-        pipettor = self.pipettor = Pipettor()
 
         extraction_points.append(ExtractionPoint(self.pad_at(13, 15), pipettor))
         extraction_points.append(ExtractionPoint(self.pad_at(13, 9), pipettor))

@@ -619,7 +619,7 @@ class CombSynth(PCRTask):
                                             
         def well(n: int, r: str) -> Well:
             w = board.wells[n]
-            w.contains(Liquid(Reagent.find(r), w.capacity))
+            w.contains(Reagent.find(r))
             return w 
             
         
