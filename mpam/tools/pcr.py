@@ -668,9 +668,7 @@ class CombSynth(PCRTask):
             start = Path.dispense_from(source)
         else:
             start = Path.teleport_into(source[0], reagent=source[1])
-        return (start.extended(path)
-                    .extended(self.to_waste_from_row(waste_row))
-                    .enter_well())
+        return (start+path+self.to_waste_from_row(waste_row)).enter_well()
                               
     
     def mix_to_tcycle(self, row: int) -> Path.Middle:
@@ -893,8 +891,8 @@ class CombSynth(PCRTask):
                 else:
                     started = True
                     path = path.start(tc)
-            path = (path.extended(self.tcycle_to_mix(col, row))
-                    )
+            path += self.tcycle_to_mix(col, row)
+
             return path
 
         in_pos = Barrier[Drop](len(tuple(x for x in tcycling if x is not None)))

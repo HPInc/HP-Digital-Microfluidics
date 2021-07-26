@@ -1,6 +1,7 @@
 from __future__ import  annotations
 
-from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence
+from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence,\
+    overload
 
 from mpam.device import Well, ExtractionPoint, Pad, System
 from mpam.drop import Drop
@@ -59,8 +60,24 @@ class Path:
             self.first_step = start
             self.middle_steps = middle
             
-        def _extend(self, step: Path.MiddleStep) -> Path.Start:
-            return Path.Start(start=self.first_step, middle = self.middle_steps+(step,))
+        @overload
+        def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Start: ...
+        @overload
+        def __add__(self, other: Union[Path.EndStep, Path.End]) -> Path.Full: ...
+        def __add__(self, other: Union[Path.MiddleStep,
+                                       Path.EndStep, 
+                                       Path.Middle,
+                                       Path.End]):
+            if isinstance(other, Path.MiddleStep):
+                return Path.Start(self.first_step, self.middle_steps+(other,))
+            if isinstance(other, Path.Middle):
+                return Path.Start(self.first_step, self.middle_steps+other.middle_steps)
+            if isinstance(other, Path.EndStep):
+                return Path.Full(self.first_step, self.middle_steps, other)
+            return Path.Full(self.first_step, self.middle_steps+other.middle_steps, other.last_step)
+
+        # def _extend(self, step: Path.MiddleStep) -> Path.Start:
+        #     return Path.Start(start=self.first_step, middle = self.middle_steps+(step,))
     
         def _schedule(self, *,
                       mode: RunMode = RunMode.GATED,     
@@ -80,15 +97,15 @@ class Path:
                  steps: int = 1,
                  allow_unsafe: bool = False,
                  after: Optional[Ticks] = None) -> Path.Start:
-            return self._extend(Path.WalkStep(direction, steps, allow_unsafe, after))
+            return self+Path.WalkStep(direction, steps, allow_unsafe, after)
         def to_col(self, col: int, *,
                    allow_unsafe: bool = False,
                    after: Optional[Ticks] = None) -> Path.Start:
-            return self._extend(Path.ToColStep(col, allow_unsafe, after))
+            return self+Path.ToColStep(col, allow_unsafe, after)
         def to_row(self, row: int, *,
                    allow_unsafe: bool = False,
                    after: Optional[Ticks] = None) -> Path.Start:
-            return self._extend(Path.ToRowStep(row, allow_unsafe, after))
+            return self+Path.ToRowStep(row, allow_unsafe, after)
         
         def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
                    *, 
@@ -111,7 +128,7 @@ class Path:
         
         def start(self, process_type: MultiDropProcessType, *,
                   after: Optional[Ticks] = None) -> Path.Start:
-            return self._extend(Path.StartProcessStep(process_type, after=after))
+            return self+Path.StartProcessStep(process_type, after=after)
         
         # def mix(self, mix_type: MixingType, *,
         #         result: Optional[Reagent] = None,
@@ -125,32 +142,31 @@ class Path:
         #                                      after=after))
         def join(self, *,
                  after: Optional[Ticks] = None) -> Path.Start:
-            return self._extend(Path.JoinProcessStep(after=after))
+            return self+Path.JoinProcessStep(after=after)
         
         in_mix = join
         
         def then_process(self, fn: Callable[[Drop], Any]) -> Path.Start:
-            return self._extend(Path.CallStep(fn))
+            return self+Path.CallStep(fn)
         
         def then_do(self, fn: Callable[[Drop], Delayed[T]]) -> Path.Start:
-            return self._extend(Path.CallAndWaitStep(fn))
+            return self+Path.CallAndWaitStep(fn)
         
         def enter_well(self, *,
                        after: Optional[Ticks] = None) -> Path.Full:
-            return Path.Full(self.first_step, self.middle_steps, Path.EnterWellStep(after=after))
+            return self+Path.EnterWellStep(after=after)
         
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
                          after: Optional[Ticks] = None) -> Path.Full:
-            return Path.Full(self.first_step, self.middle_steps,
-                             Path.TeleportOutStep(volume=volume, after=after))
+            return self+Path.TeleportOutStep(volume=volume, after=after)
 
         def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Start:
-            return self._extend(Path.BarrierStep(barrier, wait=wait))
+            return self+Path.BarrierStep(barrier, wait=wait)
         
         
         def extended(self, path: Path.Middle) -> Path.Start:
-            return Path.Start(self.first_step, self.middle_steps+path.middle_steps)
+            return self+path
 
 
         
@@ -161,8 +177,24 @@ class Path:
         def __init__(self, middle: tuple[Path.MiddleStep, ...]) -> None:
             self.middle_steps =  middle
             
-        def _extend(self, step: Path.MiddleStep) -> Path.Middle:
-            return Path.Middle(self.middle_steps+(step,))
+        @overload
+        def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Middle: ...
+        @overload
+        def __add__(self, other: Union[Path.EndStep, Path.End]) -> Path.End: ...
+        def __add__(self, other: Union[Path.MiddleStep,
+                                       Path.EndStep, 
+                                       Path.Middle,
+                                       Path.End]):
+            if isinstance(other, Path.MiddleStep):
+                return Path.Middle(self.middle_steps+(other,))
+            if isinstance(other, Path.Middle):
+                return Path.Middle(self.middle_steps+other.middle_steps)
+            if isinstance(other, Path.EndStep):
+                return Path.End(self.middle_steps, other)
+            return Path.End(self.middle_steps+other.middle_steps, other.last_step)
+            
+        # def _extend(self, step: Path.MiddleStep) -> Path.Middle:
+            # return Path.Middle(self.middle_steps+(step,))
 
         def _schedule_for(self, obj: Drop, *,
                           mode: RunMode = RunMode.GATED,     
@@ -186,15 +218,15 @@ class Path:
                  steps: int = 1,
                  allow_unsafe: bool = False,
                  after: Optional[Ticks] = None) -> Path.Middle:
-            return self._extend(Path.WalkStep(direction, steps, allow_unsafe, after))
+            return self+Path.WalkStep(direction, steps, allow_unsafe, after)
         def to_col(self, col: int, *,
                    allow_unsafe: bool = False,
                    after: Optional[Ticks] = None) -> Path.Middle:
-            return self._extend(Path.ToColStep(col, allow_unsafe, after))
+            return self+Path.ToColStep(col, allow_unsafe, after)
         def to_row(self, row: int, *,
                    allow_unsafe: bool = False,
                    after: Optional[Ticks] = None) -> Path.Middle:
-            return self._extend(Path.ToRowStep(row, allow_unsafe, after))
+            return self+Path.ToRowStep(row, allow_unsafe, after)
         
         def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
                    *, 
@@ -216,7 +248,7 @@ class Path:
 
         def start(self, process_type: MultiDropProcessType, *,
                   after: Optional[Ticks] = None) -> Path.Middle:
-            return self._extend(Path.StartProcessStep(process_type, after=after))
+            return self+Path.StartProcessStep(process_type, after=after)
         
         # def mix(self, mix_type: MixingType, *,
         #         result: Optional[Reagent] = None,
@@ -232,31 +264,30 @@ class Path:
 
         def join(self, *,
                  after: Optional[Ticks] = None) -> Path.Middle:
-            return self._extend(Path.JoinProcessStep(after=after))
+            return self+Path.JoinProcessStep(after=after)
         
         in_mix = join
         
         def then_process(self, fn: Callable[[Drop], Any]) -> Path.Middle:
-            return self._extend(Path.CallStep(fn))
+            return self+Path.CallStep(fn)
         
         def then_do(self, fn: Callable[[Drop], Delayed[T]]) -> Path.Middle:
-            return self._extend(Path.CallAndWaitStep(fn))
+            return self+Path.CallAndWaitStep(fn)
         
         def enter_well(self, *,
                        after: Optional[Ticks] = None) -> Path.End:
-            return Path.End(self.middle_steps, Path.EnterWellStep(after=after))
+            return self+Path.EnterWellStep(after=after)
         
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
                          after: Optional[Ticks] = None) -> Path.End:
-            return Path.End(self.middle_steps, Path.TeleportOutStep(volume=volume, after=after))
-        
+            return self+Path.TeleportOutStep(volume=volume, after=after)
         
         def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Middle:
-            return self._extend(Path.BarrierStep(barrier, wait=wait))
+            return self+Path.BarrierStep(barrier, wait=wait)
             
         def extended(self, path: Path.Middle) -> Path.Middle:
-            return Path.Middle(self.middle_steps+path.middle_steps)
+            return self+path
 
         
     class End(Operation[Drop, None]):
