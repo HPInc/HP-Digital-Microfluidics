@@ -110,7 +110,7 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
                                                              only got {got.volume}""")
                 arm.move_to(target)
                 if isinstance(target, ExtractionPoint):
-                    target.reserve_pad(self.expect_drop).wait()
+                    target.reserve_pad(expect_drop=self.expect_drop).wait()
                 arm.deposit_liquid()
                 if isinstance(target, ExtractionPoint):
                     drop = target.pad.drop
