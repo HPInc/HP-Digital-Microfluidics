@@ -870,9 +870,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
         arm_future.post_transformed_to(future, lambda _: not_None(self.pad.drop))
         return future
        
-    def reserve_pad(self) -> Delayed[None]:
+    def reserve_pad(self, *, expect_drop: bool = False) -> Delayed[None]:
         pad = self.pad
-        return pad.board.on_condition(lambda: pad.reserve(), lambda: None)
+        return pad.board.on_condition(lambda: expect_drop == (pad.drop is not None) 
+                                                and pad.reserve(),
+                                      lambda: None)
         
     def ensure_drop(self) -> Delayed[None]:
         pad = self.pad
@@ -1031,7 +1033,9 @@ class SystemComponent(ABC):
                 yield one_tick
             future.post(val_fn())
             yield None
-
+            
+        iterator = keep_trying()
+        self.before_tick(lambda: next(iterator))
         return future
        
     # def schedule_before(self, cb: C):

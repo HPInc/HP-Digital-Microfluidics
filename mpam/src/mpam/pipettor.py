@@ -70,11 +70,13 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
         liquid: Final[Liquid]
         target: Final[Union[Well, ExtractionPoint]]
         mix_result: Final[Optional[Union[Reagent, str]]]
+        expect_drop: Final[bool]
         on_insufficient: Final[ErrorHandler]
         on_no_source: Final[ErrorHandler]
 
         def __init__(self, liquid: Liquid, target: Union[Well, ExtractionPoint], *,
                      mix_result: Optional[Union[Reagent, str]]=None,
+                     expect_drop: bool = False,
                      on_insufficient: ErrorHandler=PRINT,
                      on_no_source: ErrorHandler=PRINT
 
@@ -82,6 +84,7 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
             self.liquid = liquid
             self.target = target
             self.mix_result = mix_result
+            self.expect_drop = expect_drop
             self.on_insufficient = on_insufficient
             self.on_no_source = on_no_source
 
@@ -107,7 +110,7 @@ class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
                                                              only got {got.volume}""")
                 arm.move_to(target)
                 if isinstance(target, ExtractionPoint):
-                    target.reserve_pad().wait()
+                    target.reserve_pad(expect_drop=self.expect_drop).wait()
                 arm.deposit_liquid()
                 if isinstance(target, ExtractionPoint):
                     drop = target.pad.drop
