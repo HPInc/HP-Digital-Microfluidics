@@ -575,7 +575,7 @@ class ClockThread(WorkerThread):
             self.work += len(reqs)
 
     def on_tick(self, reqs: Sequence[ClockCommRequest]) -> None:
-        assert self.state is State.RUNNING or self.state is State.NEW
+        assert self.state is State.RUNNING or self.state is State.NEW, f"{self.state}"
         with self.lock:
             self.on_tick_queue.extend(reqs)
             if self.running:

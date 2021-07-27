@@ -360,36 +360,44 @@ class WellMotion:
         
         # print(f"New motion to {self.target}, gates = {self.well_gates}: {self}")
         
-        with group.lock:
-            current = group.motion
-            if current is not None:
-                # print(f"There already is a motion going to {current.target} (gate_status = {current.gate_status}): {current}")
-                if current.try_adopt(self):
-                    # If we can piggyback, we do.
-                    yield False
+        def with_lock() -> Optional[bool]:
+            with group.lock:
+                current = group.motion
+                if current is not None:
+                    # print(f"There already is a motion going to {current.target} (gate_status = {current.gate_status}): {current}")
+                    if current.try_adopt(self):
+                        # If we can piggyback, we do.
+                        return False
+                    else:
+                        # Otherwise, we'll try again next time.  (I was going to reschedule 
+                        # when the current one was done, but it's almost certainly cheaper to
+                        # just check each tick.
+                        # print(f"Deferring")
+                        return True
+                # print(f"We're the first")
+                elif group.state is self.target:
+                    # There's no motion, and we're already where we want to be.
+                    # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
+                    # without using our gates, so we need to go through READY again
+                    if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
+                        self.future.post(group)
+                        # print(f"Already at {self.target}")
+                        return False
+                if group.state is WellState.READY or self.target is WellState.READY:
+                    self.sequence = group.sequences[(group.state, self.target)]
                 else:
-                    # Otherwise, we'll try again next time.  (I was going to reschedule 
-                    # when the current one was done, but it's almost certainly cheaper to
-                    # just check each tick.
-                    # print(f"Deferring")
-                    yield True
-            # print(f"We're the first")
-            if group.state is self.target:
-                # There's no motion, and we're already where we want to be.
-                # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
-                # without using our gates, so we need to go through READY again
-                if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
-                    self.future.post(group)
-                    # print(f"Already at {self.target}")
-                    yield False
-            if group.state is WellState.READY or self.target is WellState.READY:
-                self.sequence = group.sequences[(group.state, self.target)]
-            else:
-                self.sequence = list(group.sequences[(group.state, WellState.READY)])
-                self.sequence += group.sequences[(WellState.READY, self.target)]
-            # print(f"Switching from {group.state} to {self.target}: {self.sequence}")
-            assert len(self.sequence) > 0
-            group.motion = self
+                    self.sequence = list(group.sequences[(group.state, WellState.READY)])
+                    self.sequence += group.sequences[(WellState.READY, self.target)]
+                # print(f"Switching from {group.state} to {self.target}: {self.sequence}")
+                assert len(self.sequence) > 0
+                group.motion = self            
+                return None
+       
+        # This needs to be done as a separate call, because we need to release 
+        # the lock each time.
+                
+        while val := with_lock() is not None:
+            yield val
             
         shared_pads = group.shared_pads
         states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
@@ -411,7 +419,7 @@ class WellMotion:
                         for g in self.well_gates:
                             w = g.loc
                             assert isinstance(w, Well)
-                            if not w.exit_pad.empty:
+                            while not w.exit_pad.empty:
                                 yield True
                 else:
                     states[pad_index] = OnOff.ON
@@ -423,7 +431,7 @@ class WellMotion:
                 for (pad, state) in self.pad_states.items():
                     pw = pad.well
                     assert pw is not None
-                    if state is OnOff.ON and not pad.safe_except(pw):
+                    while state is OnOff.ON and not pad.safe_except(pw):
                         yield True
             for (i, shared) in enumerate(shared_pads):
                 shared.schedule(WellPad.SetState(states[i]), post_result=False)
@@ -522,7 +530,8 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
                 while next(iterator):
                     yield one_tick
                 yield None
-            board.before_tick(lambda: next(before_tick()), delta=mode.gated_delay(after))
+            iterator = before_tick()
+            board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
             return motion.future
     
 PadBounds = Sequence[tuple[float,float]]
@@ -993,9 +1002,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
         arm_future.post_transformed_to(future, lambda _: not_None(self.pad.drop))
         return future
        
-    def reserve_pad(self) -> Delayed[None]:
+    def reserve_pad(self, expect_drop: bool) -> Delayed[None]:
         pad = self.pad
-        return pad.board.on_condition(lambda: pad.reserve(), lambda: None)
+        return pad.board.on_condition(lambda: pad.reserve() 
+                                                and expect_drop == (pad.drop is not None),
+                                      lambda: None)
         
     def ensure_drop(self) -> Delayed[None]:
         pad = self.pad
@@ -1154,6 +1165,9 @@ class SystemComponent(ABC):
                 yield one_tick
             future.post(val_fn())
             yield None
+            
+        iterator = keep_trying()
+        self.before_tick(lambda: next(iterator))
 
         return future
        
