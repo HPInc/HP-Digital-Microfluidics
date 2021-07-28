@@ -375,7 +375,7 @@ class WellMotion:
                         # print(f"Deferring")
                         return True
                 # print(f"We're the first")
-                elif group.state is self.target:
+                if group.state is self.target:
                     # There's no motion, and we're already where we want to be.
                     # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
                     # without using our gates, so we need to go through READY again
@@ -396,8 +396,14 @@ class WellMotion:
         # This needs to be done as a separate call, because we need to release 
         # the lock each time.
                 
-        while val := with_lock() is not None:
+        # last_yield: Optional[bool] = None
+        while (val := with_lock()) is not None:
+            # print(f"Yielding {val}")
+            # last_yield = val
             yield val
+            
+        # print(f"After loop ({val})")
+        # assert last_yield != False
             
         shared_pads = group.shared_pads
         states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
@@ -443,26 +449,26 @@ class WellMotion:
                 elif gs is GateStatus.JUST_ON:
                     self.gate_status = GateStatus.UNSAFE
                 
-            if on_last_step:
-                # we're done.  If there are any (exit) pads to twiddle, we do it now.
-                for (pad, state) in self.pad_states.items():
-                    # print(f"Exit pad {pad} going to {state}")
-                    pad.schedule(Pad.SetState(state), post_result=False)
-                # And on the other side, we clean up
-                def cb() -> None:
-                    # Any gates we turned on, we turn off at the next tick
-                    for gate in self.well_gates:
-                        gate.schedule(WellPad.TurnOff, post_result=False)
-                    with group.lock:
-                        group.motion = None
-                        group.state = self.target
-                        if self.post_result:
-                            self.future.post(group)
-                group.board.after_tick(cb)
-                yield False
-            else:
-                # Otherwise we do the next step the next time around
+            if not on_last_step:
+                # We do the next step the next time around
                 yield True
+        # we're done.  If there are any (exit) pads to twiddle, we do it now.
+        for (pad, state) in self.pad_states.items():
+            # print(f"Exit pad {pad} going to {state}")
+            pad.schedule(Pad.SetState(state), post_result=False)
+        # And on the other side, we clean up
+        def cb() -> None:
+            # Any gates we turned on, we turn off at the next tick
+            for gate in self.well_gates:
+                gate.schedule(WellPad.TurnOff, post_result=False)
+            with group.lock:
+                group.motion = None
+                group.state = self.target
+                if self.post_result:
+                    self.future.post(group)
+        group.board.after_tick(cb)
+        yield False
+
             
                     
     
