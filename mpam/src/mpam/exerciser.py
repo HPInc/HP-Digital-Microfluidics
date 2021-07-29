@@ -13,6 +13,7 @@ from quantities.core import Unit
 from quantities.dimensions import Time, Volume
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from quantities import temperature
+from threading import Event
 
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
@@ -175,7 +176,10 @@ class Exerciser(ABC):
             task.run(board, system, args)
     
         def do_run() -> None:
-            system.call_after(args.initial_delay, prepare_and_run)
+            event = Event()
+            system.call_after(args.initial_delay, lambda: event.set())
+            event.wait()
+            prepare_and_run()
     
         if not args.use_display:
             with system:

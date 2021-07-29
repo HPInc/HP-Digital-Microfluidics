@@ -1,20 +1,25 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
+import os.path
 from re import Pattern, Match
 import re
 from typing import Optional, Union, Any, Callable
 
 from mpam.device import Board, System, Pad, Well
+from mpam.dilution import dilution_sequences
 from mpam.drop import Drop
 from mpam.exerciser import Task, volume_arg, Exerciser
-from mpam.paths import Path
-from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, \
-    Reagent, Trigger
-from quantities.dimensions import Volume
 from mpam.mixing import mixing_sequences
+from mpam.paths import Path
 from mpam.processes import PlacedMixSequence
-from mpam.dilution import dilution_sequences
+from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, \
+    Reagent, Trigger, Delayed, ComputeOp
+from quantities.SI import seconds, Hz, ms
+from quantities.core import CountDim
+from quantities.dimensions import Volume
+from quantities.timestamp import Timestamp, time_now, time_since
+from contextlib import redirect_stdout
 
 
 class Dispense(Task):
@@ -97,6 +102,16 @@ class WalkPath(Task):
                             ''')
         group.add_argument('-v', '--volume', type=volume_arg, metavar='VOLUME',
                             help="The initial volume of the starting well.  Default is a full well.")
+        
+        time_group = parser.add_argument_group("timing characterization options")
+        time_group.add_argument('-t', '--time-motion', action='store_true',
+                                help='''Print total path time, path length, and whether or not the 
+                                display was used.
+                                ''')
+        time_group.add_argument('--csv-file', metavar='FILE',
+                                help='''Log total path time, path length, and whether or not the
+                                display was used as CSV data appended to this file.
+                                ''')
         # group.add_argument('-d', '--drops', type=int, default=1, metavar='N',
                             # help="The number of drops to walk along the path.  Default is 1")
         # parser.add_argument('-g', '--gap', type=int, default=8, metavar='N',
@@ -123,12 +138,65 @@ class WalkPath(Task):
             assert args.start_pad is not None
             loc = XYCoord(args.start_pad[0], args.start_pad[1])
             start_pad = board.pad_array[loc]
+            
+        print_time: bool = args.time_motion
+        csv_file: str = args.csv_file
+        
+        path_len = 0
+                
         # print(f"Starting at {start_pad}")
         seq: Optional[Operation[Drop, Drop]] = None
+        
+        start_time: Timestamp
+        def start_timer(drop: Drop) -> Delayed[Drop]:
+            nonlocal start_time
+            start_time = time_now() # @UnusedVariable
+            return Delayed.complete(drop)
+        
+        seq = ComputeOp(start_timer)
+        
+        class Steps(CountDim['Steps']): ...
+        steps = Steps.base_unit("step")
+
+        def end_timer(drop: Drop) -> Drop:
+            elapsed = time_since(start_time)
+            plen = path_len*steps
+            clock = system.clock
+            
+            dstatus = "on" if args.use_display else "off"
+            
+            if print_time:
+                print(f"{plen:g} took {elapsed.in_units(seconds):g} ({elapsed/plen:g})")
+                print(f"  Display was {dstatus}.")  
+                print(f"  Clock speed was {clock.update_interval:g} ({clock.update_rate.in_units(Hz):g}).")
+
+            if csv_file:
+                new_csv = not os.path.exists(csv_file)
+                with open(csv_file, "a") as out:
+                    with redirect_stdout(out):
+                        if new_csv:
+                            print(",".join(["Path length (fluxels)",
+                                            "Clock speed (ms)",
+                                            "Display on",
+                                            "Elapsed time (ms)",
+                                            "Movement time (ms/fluxel)"]))
+                        print(",".join([f"{path_len}",                         
+                                        f"{clock.update_interval.as_number(ms):g}",
+                                        "TRUE" if args.use_display else "FALSE",
+                                        f"{elapsed.as_number(ms):g}",
+                                        f"{elapsed.as_number(ms)/path_len:g}"
+                                    
+                            ]))
+                        
+            
+            
+            return drop
+        
         current_pad = start_pad
         step_re: Pattern = re.compile('(\\d*)([UDLRNSEWA])')
         full_path = path
         enter_well_at_end: bool = False
+
         while path:
             m: Optional[Match[str]] = step_re.match(path)
             if m is None:
@@ -136,6 +204,8 @@ class WalkPath(Task):
             path = path[m.end():]
             n = int(m.group(1)) if len(m.group(1)) else 1
             d = m.group(2)
+            
+            path_len += n
             if d == 'U' or d == 'N':
                 direction: Dir = Dir.UP
             elif d == 'D' or d == 'S':
@@ -147,6 +217,7 @@ class WalkPath(Task):
             elif d == 'A':
                 if n != 1:
                     raise ValueError(f"Can't specify a number of steps with 'A': '{full_path}'")
+                path_len -= 1
                 if path:
                     raise ValueError(f"'A' not at end: '{full_path}'")
                 if current_pad.well is None:
@@ -164,11 +235,15 @@ class WalkPath(Task):
                 if p is None:
                     raise ValueError(f"Can't walk {d} ({direction}) from {current_pad} in '{full_path}'")
                 current_pad = p
+
+        seq = seq.then_call(end_timer)
+        
+        full_op: Optional[Operation[Drop,Any]] = seq.then(Drop.EnterWell) if enter_well_at_end else seq
                 
-        if seq is not None:
-            full_op: Optional[Operation[Drop,Any]] = seq.then(Drop.EnterWell) if enter_well_at_end else seq
-        else:
-            full_op = Drop.EnterWell() if enter_well_at_end else None
+        # if seq is not None:
+        #     full_op: Optional[Operation[Drop,Any]] = seq.then(Drop.EnterWell) if enter_well_at_end else seq
+        # else:
+        #     full_op = Drop.EnterWell() if enter_well_at_end else None
                 
         if args.start_well is not None:
             if full_op is None:
