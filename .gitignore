@@ -60,3 +60,4 @@ trace
 *.pyc
 
 mpam/logs
+mpam/unused

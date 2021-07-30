@@ -145,7 +145,7 @@ class WalkPath(Task):
         path_len = 0
                 
         # print(f"Starting at {start_pad}")
-        seq: Optional[Operation[Drop, Drop]] = None
+        # seq: Optional[Operation[Drop, Drop]] = None
         
         start_time: Timestamp
         def start_timer(drop: Drop) -> Delayed[Drop]:
@@ -153,7 +153,7 @@ class WalkPath(Task):
             start_time = time_now() # @UnusedVariable
             return Delayed.complete(drop)
         
-        seq = ComputeOp(start_timer)
+        seq: Operation[Drop, Drop] = ComputeOp(start_timer)
         
         class Steps(CountDim['Steps']): ...
         steps = Steps.base_unit("step")
