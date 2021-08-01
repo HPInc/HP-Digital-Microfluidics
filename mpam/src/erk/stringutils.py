@@ -36,7 +36,7 @@ def infer_plural(singular: str) -> str:
         return singular+"es"
     if _plurals_in_ies_re is None:
         _plurals_in_ies_re = re.compile('[^aeiou]y$')
-    if _plurals_in_es_re.search(singular):
+    if _plurals_in_ies_re.search(singular):
         return singular[:-1]+"ies"
     if singular.endswith("man"):
         return singular[:-3]+"men"

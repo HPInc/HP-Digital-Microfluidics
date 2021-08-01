@@ -100,4 +100,4 @@ def time_in(delta: dimensions.Time) -> Timestamp:
     return time_now()+delta
 
 def time_since(ts: Timestamp) -> dimensions.Time:
-    return ts-time_now()
+    return time_now()-ts
