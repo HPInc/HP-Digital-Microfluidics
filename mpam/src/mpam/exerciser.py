@@ -172,6 +172,7 @@ class Exerciser(ABC):
         system = System(board=board)
     
         def prepare_and_run() -> None:
+            system.clock.adjustment = args.speed_adjustment
             system.clock.start(args.clock_speed)
             task.run(board, system, args)
     
@@ -225,6 +226,13 @@ class Exerciser(ABC):
                             The amount of time between clock ticks.  
                             Default is {default_clock_interval.in_units(ms)}.
                             ''')
+        default_speed_adjustment=10*ms
+        group.add_argument('--speed-adjustment', type=time_arg, default=default_speed_adjustment, metavar='TIME',
+                           help=f'''
+                            An adjustment to the clock speed to make it closer to norminal.
+                            Default is {default_speed_adjustment.in_units(ms)}
+                            '''
+                           )
         group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=self.default_initial_delay,
                             help=f'''
                             The amount of time to wait before running the task.

@@ -19,7 +19,7 @@ _wait_timeout: float = _in_secs(0.5*sec)
 TimerFunc = Callable[[], Optional[Union[Time,Timestamp]]]
 ClockCallback = Callable[[], Optional[Ticks]]
 
-_trace_ticks: bool = False
+_trace_ticks: bool = True
 
 class  State(Enum): 
     NEW = auto()
@@ -433,7 +433,7 @@ class ClockThread(WorkerThread):
             if not self.cancelled:
                 self.clock.tick_event.set()
                 # return next_tick
-                return self.clock.update_interval
+                return self.clock.adjusted_update_interval
             return None
                 
         def cancel(self) -> None:
@@ -447,10 +447,15 @@ class ClockThread(WorkerThread):
     post_tick_queue: list[CT]
     on_tick_queue: list[tuple[Ticks, DevCommRequest]]
     update_interval: Time
+    update_interval_adjustment: Time
     work: int
     next_tick: TickNumber
     last_tick_time: Timestamp
     outstanding_tick_request: Optional[TickRequest]
+    
+    @property
+    def adjusted_update_interval(self) -> Time:
+        return self.update_interval-self.update_interval_adjustment
     
     def __init__(self, engine, *, default_clock_interval: Time):
         super().__init__(engine, "Clock Thread")
@@ -464,6 +469,7 @@ class ClockThread(WorkerThread):
         self.last_tick_time = Timestamp.never()
         self.outstanding_tick_request = None
         self.update_interval = default_clock_interval
+        self.update_interval_adjustment = Time.ZERO()
         
     def _process_queue(self, queue: Sequence[CT], *, tag: Optional[str]=None) -> list[CT]:
         new_queue: list[CT] = []
@@ -584,7 +590,6 @@ class ClockThread(WorkerThread):
                 self.ensure_running()
             self.work += len(reqs)
             
-
     def start_clock(self, interval: Optional[Time] = None) -> None:
         with self.lock:
             assert not self.running
@@ -593,7 +598,7 @@ class ClockThread(WorkerThread):
                 self.update_interval = interval
             self.running = True
             tr = self.outstanding_tick_request = self.TickRequest(self)
-            self.engine.call_after([(self.update_interval, tr, True)])
+            self.engine.call_after([(self.adjusted_update_interval, tr, True)])
             self.ensure_running()
             self.wake_up()
             

@@ -1169,6 +1169,14 @@ class Clock:
     def running(self) -> bool:
         return self.clock_thread.running
     
+    @property
+    def adjustment(self) -> Time:
+        return self.clock_thread.update_interval_adjustment
+    
+    @adjustment.setter
+    def adjustment(self, amount: Time) -> None:
+        self.clock_thread.update_interval_adjustment = amount
+    
     def before_tick(self, fn: ClockCallback, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.before_tick() called with both tick and delta specified"
