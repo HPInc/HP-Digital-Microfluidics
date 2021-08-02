@@ -19,12 +19,11 @@ from mpam.exerciser import Exerciser, Task
 from mpam.mixing import mixing_sequences
 from mpam.monitor import BoardMonitor
 from mpam.paths import Path, Schedulable
-from mpam.pipettor import PipettingArm
 from mpam.processes import PlacedMixSequence, Transform
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
 from mpam.types import Reagent, Liquid, Dir, Color, waste_reagent, Barrier, \
-    schedule, Delayed
+    schedule
 from quantities.SI import ms, second, seconds, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import abs_C
@@ -534,6 +533,8 @@ class CombSynth(PCRTask):
     db_well: Well
     mm_well: Well
     rsm_well: Well
+
+    drops_needed: dict[Well, int]
     
     pf: Reagent
     
@@ -616,34 +617,26 @@ class CombSynth(PCRTask):
                                                    rows=3, cols=1) \
                                             .placed(board.pad_at(13,7))
         
+                              
+        self.drops_needed = {}
                                             
-        def well(n: int, r: str) -> Well:
+        def well(n: int, r: str, drops_per_target: int) -> Well:
             w = board.wells[n]
             w.contains(Reagent.find(r))
+            self.drops_needed[w] = drops_per_target*self.n_combinations
+            # The +1 is a kludge needed because the drop being dispensed will already have been subtracted
+            # out when the path was scheduled.
+            w.compute_fill_to(lambda: min(w.capacity, (self.drops_needed[w]+1)*w.dispensed_volume))
             return w 
             
         
         self.waste_well = board.wells[0]
-        self.pm_well = well(4, "PM Primers")
-        self.db_well = well(5, "Dilution Buffer")
-        self.mm_well = well(6, "Master Mix")
-        self.rsm_well = well(7, "Prep Mixture")
+        self.pm_well = well(4, "PM Primers", 1)
+        self.db_well = well(5, "Dilution Buffer", 3)
+        self.mm_well = well(6, "Master Mix", 2)
+        self.rsm_well = well(7, "Prep Mixture", 5)
         
         self.pf = Reagent.find("PF Primers")
-        
-    def ensure_waste_well_capacity(self, drop: Drop) -> Delayed[Drop]:
-        well = self.waste_well
-        if well.remaining_capacity >= drop.volume:
-            # print(f"Well can hold {well.capacity}")
-            return Delayed.complete(drop)
-        print(f"Well is full, scheduling removal")
-        future = Delayed[Drop]()
-        def finish(liquid: Liquid) -> None:
-            print(f"Removed {liquid} from {well}")
-            # print(f"Well can now {well.capacity}")
-            future.post(drop)
-        self.board.pipettor.arm.schedule(PipettingArm.Extract(volume=None, target=well)).then_call(finish)
-        return future
         
     def to_waste_from_row(self, row: int) -> Path.Middle:
         def now_waste(drop: Drop) -> None:
@@ -657,7 +650,6 @@ class CombSynth(PCRTask):
         path = (path.to_col(11).to_row(18).to_col(5)
                 .reach(self.phase_barrier, wait=False).to_col(0)
                 )
-                # .then_do(self.ensure_waste_well_capacity))
         return path
     
     def waste_drop(self, 
@@ -667,6 +659,7 @@ class CombSynth(PCRTask):
                    ) -> Path.Full:
         if isinstance(source, Well):
             start = Path.dispense_from(source)
+            self.drops_needed[source] -= 1
         else:
             start = Path.teleport_into(source[0], reagent=source[1])
         return (start+path+self.to_waste_from_row(waste_row)).enter_well()

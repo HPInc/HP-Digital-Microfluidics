@@ -23,7 +23,6 @@ from quantities.SI import sec, ms
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
-from numpy.lib.arraysetops import isin
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -670,6 +669,13 @@ class Well(OpScheduler['Well'], BoardComponent):
     @min_fill.setter
     def min_fill(self, volume: Optional[WellVolumeSpec]) -> None:
         self._min_fill = volume
+        
+    # The compute_V() functions are there because currently, MyPy will complain if you try to
+    # assign a value of a type that doesn't match the *getter*. (MyPy issue #3004.  They agree 
+    # that it should be fixed, but it still isn't as of 8/2/21.)
+    
+    def compute_min_fill(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._min_fill = volume
     
     # empty if absorbing would take you above this level
     _max_fill: Optional[WellVolumeSpec] = None
@@ -680,6 +686,9 @@ class Well(OpScheduler['Well'], BoardComponent):
     
     @max_fill.setter
     def max_fill(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._max_fill = volume
+
+    def compute_max_fill(self, volume: Optional[WellVolumeSpec]) -> None:
         self._max_fill = volume
     
     # when refilling, fill to this level
@@ -692,6 +701,10 @@ class Well(OpScheduler['Well'], BoardComponent):
     @fill_to.setter
     def fill_to(self, volume: Optional[WellVolumeSpec]) -> None:
         self._fill_to = volume
+
+    def compute_fill_to(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._fill_to = volume
+        
         
     # when emptying, empty to this level
     _empty_to: Optional[WellVolumeSpec] = None
@@ -702,6 +715,9 @@ class Well(OpScheduler['Well'], BoardComponent):
     
     @empty_to.setter
     def empty_to(self, volume: Optional[WellVolumeSpec]) -> None:
+        self._empty_to = volume
+    
+    def compute_empty_to(self, volume: Optional[WellVolumeSpec]) -> None:
         self._empty_to = volume
     
     def __init__(self, *,
