@@ -23,6 +23,7 @@ from quantities.SI import sec, ms
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
+from numpy.lib.arraysetops import isin
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -311,6 +312,7 @@ class WellMotion:
     post_result: Final[bool]
     well_gates: Final[set[WellPad]]
     pad_states: Final[dict[Pad, OnOff]]
+    guard: Final[Optional[Iterator[bool]]]
     # next_step: int
     on_last_step: bool = False
     one_tick: Final[ClassVar[Ticks]] = 1*tick
@@ -318,6 +320,7 @@ class WellMotion:
     gate_status: GateStatus
     
     def __init__(self, group: WellGroup, target: WellState, *,
+                 guard: Optional[Iterator[bool]] = None,
                  post_result: bool = True) -> None:
         self.group = group
         self.target = target
@@ -325,6 +328,7 @@ class WellMotion:
         self.post_result = post_result
         self.well_gates = set[WellPad]()
         self.pad_states = {}
+        self.guard = guard
         # self.next_step = 0
         self.gate_status = GateStatus.NOT_YET
         
@@ -355,6 +359,7 @@ class WellMotion:
     # Returns True if it should keep going
     def iterator(self) -> Iterator[bool]:
         group = self.group
+        target = self.target
         # On the first step, we need to see if this is really necessary or if we 
         # can piggyback onto another motion (or just return) 
         
@@ -375,27 +380,57 @@ class WellMotion:
                         # print(f"Deferring")
                         return True
                 # print(f"We're the first")
-                if group.state is self.target:
+                if group.state is target:
                     # There's no motion, and we're already where we want to be.
                     # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
                     # without using our gates, so we need to go through READY again
-                    if self.target is WellState.READY or self.target is WellState.EXTRACTABLE:
+                    if target is WellState.READY or target is WellState.EXTRACTABLE:
                         self.future.post(group)
-                        # print(f"Already at {self.target}")
+                        # print(f"Already at {target}")
                         return False
-                if group.state is WellState.READY or self.target is WellState.READY:
-                    self.sequence = group.sequences[(group.state, self.target)]
+                if group.state is WellState.READY or target is WellState.READY:
+                    self.sequence = group.sequences[(group.state, target)]
                 else:
                     self.sequence = list(group.sequences[(group.state, WellState.READY)])
-                    self.sequence += group.sequences[(WellState.READY, self.target)]
-                # print(f"Switching from {group.state} to {self.target}: {self.sequence}")
+                    self.sequence += group.sequences[(WellState.READY, target)]
+                # print(f"Switching from {group.state} to {target}: {self.sequence}")
                 assert len(self.sequence) > 0
                 group.motion = self            
                 return None
-       
+
+        # Even before we try to be adopted, if we're trying to dispense, we need to reserve the exit pad 
+        # (which means we won't have to later) and refill the well, if necessary.  If we're trying to absorb,
+        # we wait until there's a drop there.  This is encapsulated in the object's guard
+        
+        guard = self.guard
+        if guard is not None:
+            while (next(guard)):
+                yield True
+        
+        # def well() -> Well:
+        #     assert len(self.well_gates) == 1
+        #     (wg,) = self.well_gates
+        #     loc = wg.loc
+        #     assert isinstance(loc, Well)
+        #     return loc
+        #
+        # if target is WellState.DISPENSED:
+        #     # First, we reserve the pad
+        #     w = well()
+        #     pad = w.exit_pad
+        #     while not pad.reserve():
+        #         yield True
+        #     # At this point, we know that no further fluid will be taken out.  We then, make sure that there's
+        #     # enough there for us and refill if not.
+        #     well_ready = w.ensure_content()
+        #
+        #     ...
+        # elif target is WellState.ABSORBED:
+        #     ...
+                
         # This needs to be done as a separate call, because we need to release 
         # the lock each time.
-                
+
         # last_yield: Optional[bool] = None
         while (val := with_lock()) is not None:
             # print(f"Yielding {val}")
@@ -509,11 +544,15 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
     class TransitionTo(Operation['WellGroup','WellGroup']):
         target: Final[WellState]
         well: Final[Optional[Well]]
+        guard: Final[Optional[Iterator[bool]]]
         
         def __init__(self, target: WellState, *,
-                     well: Optional[Well] = None) -> None:
+                     well: Optional[Well] = None,
+                     guard: Optional[Iterator[bool]] = None
+                     ) -> None:
             self.target = target
             self.well = well
+            self.guard = guard
             
         def _schedule_for(self, group: WellGroup, *,
                           mode: RunMode = RunMode.GATED, 
@@ -521,7 +560,7 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
                           post_result: bool = True,
                           )-> Delayed[WellGroup]:
             board = group.board
-            motion = WellMotion(group, self.target, post_result=post_result)
+            motion = WellMotion(group, self.target, post_result=post_result, guard=self.guard)
             well = self.well
             if well is not None:
                 motion.well_gates.add(well.gate)
@@ -626,7 +665,7 @@ class Well(OpScheduler['Well'], BoardComponent):
     
     @property
     def min_fill(self) -> Volume:
-        return self.volume_from_spec(self._min_fill, lambda: self.dispensed_volume)
+        return self.volume_from_spec(self._min_fill, lambda: Volume.ZERO())
     
     @min_fill.setter
     def min_fill(self, volume: Optional[WellVolumeSpec]) -> None:
@@ -637,7 +676,7 @@ class Well(OpScheduler['Well'], BoardComponent):
 
     @property
     def max_fill(self) -> Volume:
-        return self.volume_from_spec(self._max_fill, lambda: Volume.ZERO())
+        return self.volume_from_spec(self._max_fill, lambda: self.capacity)
     
     @max_fill.setter
     def max_fill(self, volume: Optional[WellVolumeSpec]) -> None:
@@ -712,6 +751,16 @@ class Well(OpScheduler['Well'], BoardComponent):
                 or reagent == unknown_reagent
                 or my_r == waste_reagent) 
         
+    def _can_provide(self, reagent: Reagent) -> bool:
+        # If we're empty, there's no mismatch, but ensure_conent() will refil.  Otherwise, we can
+        # do it if we don't know or care what we want or we don't know what we have  
+        if self.available: return True
+        my_r = self.reagent
+        return (my_r == reagent
+                or my_r == unknown_reagent 
+                or reagent == unknown_reagent
+                or reagent == waste_reagent) 
+        
     def transfer_in(self, liquid: Liquid, *,
                     volume: Optional[Volume] = None, 
                     on_overflow: ErrorHandler = PRINT,
@@ -782,12 +831,27 @@ class Well(OpScheduler['Well'], BoardComponent):
                                              on_no_source=on_no_source))
         return arm_future.triggering(value=self)
     
+    def remove(self, volume: Volume, *,
+               on_no_sink: ErrorHandler = PRINT
+               ) -> Delayed[Well]:
+        arm = self.pipetting_arm()
+        assert arm is not None, f"{self} has no pipetting arm and remove() was not overridden"
+        
+        arm_future = arm.schedule(arm.Extract(volume, self,
+                                              on_no_sink=on_no_sink))
+        return arm_future.triggering(value=self)
+    
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         volume = self.fill_to - self.volume
         assert volume > Volume.ZERO(), f"refill(volume={volume}) called on {self}"
         if reagent is None:
             reagent = self.reagent
         return self.add(Liquid(reagent, volume))
+    
+    def empty_well(self) -> Delayed[Well]:
+        volume = self.volume - self.empty_to
+        assert volume > Volume.ZERO(), f"empty_well(volume={volume}) called on {self}"
+        return self.remove(volume)
     
 
     def ensure_content(self, 
@@ -798,13 +862,31 @@ class Well(OpScheduler['Well'], BoardComponent):
         if volume is None:
             volume = self.dispensed_volume
         if reagent is not None:
-            on_reagent_mismatch.expect_true(self._can_accept(reagent),
-                                            lambda : f"Adding {reagent} to {self} containing {self.reagent}")
+            on_reagent_mismatch.expect_true(self._can_provide(reagent),
+                                            lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
         current_volume = self.volume
         resulting_volume = current_volume - volume
         if resulting_volume >= self.min_fill:
             return Delayed.complete(self)
         return self.refill(reagent=reagent)
+    
+    def ensure_space(self, 
+                     volume: Volume,
+                     reagent: Optional[Reagent] = None,
+                     *, on_reagent_mismatch: ErrorHandler = PRINT
+                     ) -> Delayed[Well]:
+        if reagent is not None:
+            on_reagent_mismatch.expect_true(self._can_provide(reagent),
+                                            lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
+        current_volume = self.volume
+        resulting_volume = current_volume + volume
+        if resulting_volume <= self.max_fill:
+            # print(f"{resulting_volume:g} <= {self.max_fill:g}")
+            return Delayed.complete(self)
+        # print(f"Need to empty well ({resulting_volume:g} > {self.max_fill:g}")
+        return self.empty_well()
+    
+
                     
     def on_liquid_change(self, cb: ChangeCallback[Optional[Liquid]], *, key: Optional[Hashable] = None) -> None:
         self._liquid_change_callbacks.add(cb, key=key)

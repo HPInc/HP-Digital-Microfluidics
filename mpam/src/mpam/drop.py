@@ -11,6 +11,7 @@ from threading import Lock
 from quantities.dimensions import Volume
 from enum import Enum, auto
 from abc import ABC, abstractmethod
+from erk.errors import FIX_BY, PRINT
 
 # if TYPE_CHECKING:
     # from mpam.processes import MultiDropProcessType
@@ -289,7 +290,10 @@ class Drop(OpScheduler['Drop']):
          
             
     class DispenseFrom(StaticOperation['Drop']):
-        well: Well
+        well: Final[Well]
+        volume: Final[Optional[Volume]]
+        reagent: Final[Optional[Reagent]]
+        empty_wrong_reagent: Final[bool]
         
         def _schedule(self, *,
                       mode: RunMode = RunMode.GATED, 
@@ -298,19 +302,39 @@ class Drop(OpScheduler['Drop']):
                       ) -> Delayed[Drop]:
             future = Delayed[Drop]()
             well = self.well
+            pad = self.well.exit_pad
+            volume = self.volume if self.volume is not None else well.dispensed_volume
             def make_drop(_) -> None:
-                v = well.dispensed_volume
-                pad = self.well.exit_pad
-                liquid = well.transfer_out(v)
+                liquid = well.transfer_out(volume)
                 drop = Drop(pad=pad, liquid=liquid)
+                pad.reserved = False
                 if post_result:
                     future.post(drop)
+                    
+            # The guard will be iterated when the motion is started, after any delay, but before the created
+            # WellMotion tries to either get adopted by an in-progress motion or make changes on the well pads.
+            def guard() -> Iterator[bool]:
+                # First, we reserve the pad.  If there's a dispense in progress for this well, it will already have
+                # the pad reserved, and we will spin until it's done.
+                while not pad.reserve():
+                    yield True
+                # Next, we make sure that there's enough of the right reagent for us.
+                def empty_first() -> None:
+                    well.remove(well.volume)
+                mismatch_behavior = FIX_BY(empty_first) if self.empty_wrong_reagent else PRINT
+                f = well.ensure_content(volume=volume, reagent=self.reagent,
+                                        on_reagent_mismatch=mismatch_behavior)
+                while not f.has_value:
+                    yield True
+                yield False
+                
                 
             def run_group(_) -> None:
                 # Note, we post the drop as soon as we get to the DISPENSED state, even theough
                 # we continue on to READY
                 group = self.well.group
-                group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well), mode=mode, after=after) \
+                group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well, guard=guard()), 
+                               mode=mode, after=after) \
                     .then_call(make_drop) \
                     .then_schedule(WellGroup.TransitionTo(WellState.READY))
             # well.ensure_content().then_call(run_group)
@@ -318,15 +342,21 @@ class Drop(OpScheduler['Drop']):
             return future
             
         
-        def __init__(self, well: Well) -> None:
+        def __init__(self, well: Well, *,
+                     volume: Optional[Volume] = None,
+                     reagent: Optional[Reagent] = None,
+                     empty_wrong_reagent: bool = False) -> None:
             self.well = well
+            self.volume = volume
+            self.reagent = reagent
+            self.empty_wrong_reagent = empty_wrong_reagent
             
     class EnterWell(Operation['Drop',None]):
         well: Final[Optional[Well]]
+        empty_wrong_reagent: Final[bool]
         
         def __repr__(self) -> str:
             return f"<Drop.EnterWell: {self.well}>"
-        
         
         def _schedule_for(self, drop: Drop, *,
                           mode: RunMode = RunMode.GATED, 
@@ -346,19 +376,37 @@ class Drop(OpScheduler['Drop']):
                 drop.pad.drop = None
                 if post_result:
                     future.post(None)
-                
+                    
+            # The guard will be iterated when the motion is started, after any delay, but before the created
+            # WellMotion tries to either get adopted by an in-progress motion or make changes on the well pads.
+            def guard() -> Iterator[bool]:
+                # Unlike with dispensing, we don't need to reserve the pad, because there's a drop there, which
+                # will keep anybody from trying to walk to it.
+
+                # We, do, however, need to make sure that there's room for the drop and that the well can hold
+                # the drop's reagent
+                def empty_first() -> None:
+                    well.remove(well.volume)
+                mismatch_behavior = FIX_BY(empty_first) if self.empty_wrong_reagent else PRINT
+                f = well.ensure_space(volume=drop.volume, reagent=drop.reagent,
+                                        on_reagent_mismatch=mismatch_behavior)
+                while not f.has_value:
+                    yield True
+                yield False
                 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
             group = well.group
-            group.schedule(WellGroup.TransitionTo(WellState.ABSORBED, well=well), mode=mode, after=after) \
+            group.schedule(WellGroup.TransitionTo(WellState.ABSORBED, well=well, guard=guard()), mode=mode, after=after) \
                 .then_call(consume_drop) \
                 .then_schedule(WellGroup.TransitionTo(WellState.READY, well=well))
             return future
             
         
-        def __init__(self, well: Optional[Well] = None) -> None:
+        def __init__(self, well: Optional[Well] = None, *,
+                     empty_wrong_reagent: bool = False) -> None:
             self.well = well
+            self.empty_wrong_reagent = empty_wrong_reagent
         
             
         

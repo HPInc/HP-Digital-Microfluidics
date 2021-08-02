@@ -49,9 +49,27 @@ PRINT = PRINT_TO(sys.stdout)
 PRINT_TO_STDERR = PRINT_TO(sys.stderr)
     
 class RAISE(ErrorHandler):
-    def __init__(self, factory: Callable[[str], BaseException]):
+    def __init__(self, factory: Callable[[str], BaseException]) -> None:
         self.factory: Final[Callable[[str], BaseException]] = factory
         
     def __call__(self, msg: str) -> NoReturn:
         raise self.factory(msg)
+    
+class FIX_BY(ErrorHandler):
+    def __init__(self, function: Callable[[], None]) -> None:
+        self.fixer = function
+        
+    def __call__(self, msg: str) -> None: # @UnusedVariable
+        (self.fixer)()
 
+    def expect_true(self,
+                    cond: bool, 
+                    msg_fn: Callable[[], str]) -> None: # @UnusedVariable
+        if not cond:
+            (self.fixer)()
+
+    def expect_false(self,
+                     cond: bool, 
+                     msg_fn: Callable[[], str]) -> None: # @UnusedVariable
+        if cond:
+            (self.fixer)()

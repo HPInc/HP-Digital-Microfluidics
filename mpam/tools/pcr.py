@@ -656,7 +656,8 @@ class CombSynth(PCRTask):
             path = path.to_col(13).to_row(13)
         path = (path.to_col(11).to_row(18).to_col(5)
                 .reach(self.phase_barrier, wait=False).to_col(0)
-                .then_do(self.ensure_waste_well_capacity))
+                )
+                # .then_do(self.ensure_waste_well_capacity))
         return path
     
     def waste_drop(self, 
