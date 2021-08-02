@@ -454,7 +454,9 @@ class WellMonitor:
     reagent_circle: Final[ReagentCircle]
     # reagent_volume_circle: Final[Circle]
     # volume_rectangle: Final[Rectangle]
-    content_description: Final[Annotation]
+    volume_description: Final[Annotation]
+    reagent_description: Final[Annotation]
+    
 
     
     def __init__(self, well: Well, board_monitor: BoardMonitor) -> None:
@@ -485,21 +487,29 @@ class WellMonitor:
                                             visible = True)
         well.on_liquid_change(lambda _,new: 
                               board_monitor.in_display_thread(lambda: self.note_liquid(new)))
-        cd = board_monitor.plot.annotate(text='This is a test', xy=(0,0),
+        rd = board_monitor.plot.annotate(text='Reagent goes here', xy=(0,0),
                                          xytext=(0.5, -0.1),
                                          xycoords=rc,
                                          horizontalalignment='center',
                                          verticalalignment='top',
                                          fontsize='x-small',
                                          visible=False)
-        self.content_description = cd
-
+        vd = board_monitor.plot.annotate(text='volume goes here', xy=(0,0),
+                                         xytext=(0.5, 1.1),
+                                         xycoords=rc,
+                                         horizontalalignment='center',
+                                         verticalalignment='bottom',
+                                         fontsize='x-small',
+                                         visible=False)
+        self.reagent_description = rd
+        self.volume_description = vd
         
         
     def note_liquid(self, liquid: Optional[Liquid]) -> None:
         if liquid is None:
             self.reagent_circle.reagent = None
-            self.content_description.set_visible(False)
+            self.reagent_description.set_visible(False)
+            self.volume_description.set_visible(False)
         else:
             self.reagent_circle.reagent = liquid.reagent
             # self.reagent_volume_circle.set_facecolor(self.board_monitor.reagent_color(liquid.reagent).rgba)
@@ -509,8 +519,10 @@ class WellMonitor:
             # self.reagent_volume_circle.set_clip_path(self.volume_rectangle)
             # self.content_description.set_text(str(liquid))
             units=self.board_monitor.drop_unit
-            self.content_description.set_text(f"{liquid.volume.in_units(units):g} of {liquid.reagent}")
-            self.content_description.set_visible(True)
+            self.reagent_description.set_text(f"{liquid.reagent}")
+            self.reagent_description.set_visible(True)
+            self.volume_description.set_text(f"{liquid.volume.in_units(units):g}")
+            self.volume_description.set_visible(True)
         
 
             

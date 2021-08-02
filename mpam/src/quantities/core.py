@@ -631,7 +631,7 @@ class _BoundQuantity(Generic[D]):
         sep = d["sep"] or " "
         if sep == "=":
             sep = ""
-        alt = "#" if self.magnitude == 1 else ""
+        alt = "#" if math.isclose(self.magnitude, 1) else ""
         maxw = ("."+d["max"]) if d["max"] else ""
         uspec = d["fill"]+d["align"]+alt+d["min"]+maxw+d["exp"]
         formatted_unit  = self.units.__format__(uspec)
@@ -917,7 +917,8 @@ class Unit(UnitExpr[D]):
         self._restrictions = dict[Any, Unit]()
 
     def description(self, *, mag: float, exponent_fmt: Optional[ExptFormatter] = None) -> str:  # @UnusedVariable
-        return self.singular if mag == 1 else self.abbreviation
+        # return self.singular if mag == 1 else self.abbreviation
+        return self.singular if math.isclose(mag, 1) else self.abbreviation
     
     def of(self, restriction: T, *, dim: Optional[str] = None) -> Unit[D]:
         u = self._restrictions.get(restriction, None)
