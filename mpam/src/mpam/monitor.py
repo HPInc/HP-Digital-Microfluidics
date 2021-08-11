@@ -7,7 +7,7 @@ from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
     HeatingMode, BinaryComponent, WellState
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
-from matplotlib import pyplot
+from matplotlib import pyplot, gridspec
 from matplotlib.patches import Rectangle, Circle, PathPatch, Patch, Wedge
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
     ColorAllocator, Liquid, unknown_reagent, waste_reagent
@@ -29,6 +29,8 @@ from matplotlib.legend_handler import HandlerPatch
 from matplotlib.legend import Legend
 from erk.basic import Count
 from erk.stringutils import map_str
+from matplotlib.widgets import Button
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
 
 
 class PadMonitor(object):
@@ -533,6 +535,7 @@ class BoardMonitor:
     wells: Final[Mapping[Well, WellMonitor]]
     figure: Final[Figure]
     plot: Final[Axes]
+    # controls: Final[Axes]
     drop_map: Final[dict[Drop, DropMonitor]]
     lock: Final[RLock]
     update_callbacks: Optional[list[Callback]]
@@ -541,7 +544,9 @@ class BoardMonitor:
     click_id: Final[MutableMapping[Artist, BinaryComponent]]
     close_event: Final[Event]
     legend: Final[ReagentLegend]
-
+    
+    left_buttons: Final[tuple[Button, ...]]
+    right_buttons: Final[tuple[Button, ...]]
     
     min_x: float
     max_x: float
@@ -571,10 +576,20 @@ class BoardMonitor:
         self.no_bounds = True
         
         self.drop_unit = board.drop_size.as_unit("drops", singular="drop")
+
+        self.figure = pyplot.figure(figsize=(10,8))
+        main_grid = GridSpec(2,1, height_ratios = [5,1])
+        self.plot = pyplot.subplot(main_grid[0, :])
+        # self.controls = pyplot.subplot(main_grid[1, :])
         
-        self.figure = pyplot.figure(figsize=(10,10))
-        self.plot = self.figure.add_subplot(111, aspect='equal')
+
+        # self.figure,(self.plot,
+        #              self.controls) = pyplot.subplots(2,1, figsize=(10,8), 
+        #                           gridspec_kw={'height_ratios': [5,1]})
+        self.figure.tight_layout
+        
         self.plot.axis('off')
+        # self.controls.axis('off')
         self.pads = { pad: PadMonitor(pad, self) for pad in board.pad_array.values()}
         self.wells = { well: WellMonitor(well, self) for well in board.wells if well._shape is not None}
         padding = 0.2
@@ -636,6 +651,31 @@ class BoardMonitor:
             
         self.figure.canvas.mpl_connect('pick_event', on_pick)
         self.figure.canvas.mpl_connect('close_event', lambda _: self.close_event.set())
+        
+        control_cols_grid = GridSpecFromSubplotSpec(1,3,main_grid[1,:],width_ratios=[1,5,1])
+        n_buttons = 4
+        left_button_stack = GridSpecFromSubplotSpec(n_buttons, 1, control_cols_grid[0])
+        right_button_stack = GridSpecFromSubplotSpec(n_buttons, 1, control_cols_grid[2])
+
+        def make_button(i: int, label: str, stack: GridSpecFromSubplotSpec) -> Button:
+            ax = pyplot.subplot(stack[i, 0])
+            label = ""
+            b = Button(ax, label)
+            b.on_clicked(lambda event: print(f"Clicked {label}"))
+            b.set_active(False)
+            return b
+            
+        self.left_buttons = tuple(make_button(i, f"Left {i}", left_button_stack)
+                                                for i in range(n_buttons))
+        self.right_buttons = tuple(make_button(i, f"Right {i}", right_button_stack)
+                                                for i in range(n_buttons))
+
+        # for i in range(n_buttons):
+        #     ax = pyplot.subplot(left_button_stack[i, 0])
+        #     b = Button(ax, f"Left {i}")
+        #     ax = pyplot.subplot(right_button_stack[i, 0])
+        #     b = Button(ax, f"Right {i}")
+        # b = Button(self.controls, "Test")
         
         self.figure.canvas.draw()
         
