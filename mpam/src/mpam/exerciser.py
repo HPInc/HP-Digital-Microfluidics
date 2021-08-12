@@ -178,14 +178,16 @@ class Exerciser(ABC):
         def do_run() -> None:
             event = Event()
             system.call_after(args.initial_delay, lambda: event.set())
+            print("Waiting")
             event.wait()
+            print("Running")
             prepare_and_run()
     
         if not args.use_display:
             with system:
                 do_run()
         else:
-            system.run_monitored(lambda _: prepare_and_run(),
+            system.run_monitored(lambda _: do_run(),
                                  min_time=args.min_time,
                                  max_time=args.max_time,
                                  update_interval=args.update_interval
