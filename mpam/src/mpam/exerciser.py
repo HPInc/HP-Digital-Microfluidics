@@ -178,9 +178,7 @@ class Exerciser(ABC):
         def do_run() -> None:
             event = Event()
             system.call_after(args.initial_delay, lambda: event.set())
-            print("Waiting")
             event.wait()
-            print("Running")
             prepare_and_run()
     
         if not args.use_display:

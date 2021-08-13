@@ -1,15 +1,18 @@
 from __future__ import annotations
-from enum import Enum, auto
-from threading import Thread, Condition, Event, Lock, Timer
-import heapq
-from quantities.SI import sec, ms
-from quantities.timestamp import time_now, time_in, Timestamp
-from quantities.dimensions import Time
-from typing import Optional, Literal, Protocol, Any, Sequence,\
-    Iterable, Final, Union, Callable
-from types import TracebackType
-from mpam.types import TickNumber, ticks, Ticks
+
 from abc import ABC, abstractmethod
+from enum import Enum, auto
+import heapq
+from threading import Thread, Condition, Event, Lock, Timer
+from types import TracebackType
+from typing import Optional, Literal, Protocol, Any, Sequence, \
+    Iterable, Final, Union, Callable
+
+from mpam.types import TickNumber, ticks, Ticks
+from quantities.SI import sec, ms
+from quantities.dimensions import Time
+from quantities.timestamp import time_now, time_in, Timestamp
+
 
 def _in_secs(t: Time) -> float:
     return t.as_number(sec)
@@ -603,6 +606,5 @@ class ClockThread(WorkerThread):
             assert self.outstanding_tick_request
             self.running = False
             self.outstanding_tick_request.cancel()
-            assert self.outstanding_tick_request
             
         

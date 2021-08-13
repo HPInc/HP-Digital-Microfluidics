@@ -2,12 +2,12 @@ from __future__ import annotations
 # import matplotlib
 # matplotlib.use('Agg')
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable,\
-    ClassVar, MutableMapping
+    ClassVar, MutableMapping, Any
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
     HeatingMode, BinaryComponent, WellState
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
-from matplotlib import pyplot, gridspec
+from matplotlib import pyplot
 from matplotlib.patches import Rectangle, Circle, PathPatch, Patch, Wedge
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
     ColorAllocator, Liquid, unknown_reagent, waste_reagent
@@ -29,8 +29,8 @@ from matplotlib.legend_handler import HandlerPatch
 from matplotlib.legend import Legend
 from erk.basic import Count
 from erk.stringutils import map_str
-from matplotlib.widgets import Button
-from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec
+from matplotlib.widgets import Button, TextBox
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
 
 
 class PadMonitor(object):
@@ -545,8 +545,10 @@ class BoardMonitor:
     close_event: Final[Event]
     legend: Final[ReagentLegend]
     
-    left_buttons: Final[tuple[Button, ...]]
-    right_buttons: Final[tuple[Button, ...]]
+    _control_widgets: Final[Any]
+    
+    # left_buttons: Final[tuple[Button, ...]]
+    # right_buttons: Final[tuple[Button, ...]]
     
     min_x: float
     max_x: float
@@ -565,7 +567,9 @@ class BoardMonitor:
             self.min_y = min(y, self.min_y)
             self.max_y = max(y, self.max_y)
     
-    def __init__(self, board: Board) -> None:
+    def __init__(self, board: Board, *,
+                 control_setup: Optional[Callable[[SubplotSpec], Any]] = None,
+                 control_fraction: float = 0.15) -> None:
         self.board = board
         self.drop_map = dict[Drop, DropMonitor]()
         self.lock = RLock()
@@ -577,8 +581,9 @@ class BoardMonitor:
         
         self.drop_unit = board.drop_size.as_unit("drops", singular="drop")
 
-        self.figure = pyplot.figure(figsize=(10,8))
-        main_grid = GridSpec(2,1, height_ratios = [5,1])
+        # self.figure = pyplot.figure(figsize=(10,8), constrained_layout=True)
+        self.figure = pyplot.figure(figsize=(10,8))        
+        main_grid = GridSpec(2,1, height_ratios = [1-control_fraction, control_fraction])
         self.plot = pyplot.subplot(main_grid[0, :])
         # self.controls = pyplot.subplot(main_grid[1, :])
         
@@ -586,7 +591,7 @@ class BoardMonitor:
         # self.figure,(self.plot,
         #              self.controls) = pyplot.subplots(2,1, figsize=(10,8), 
         #                           gridspec_kw={'height_ratios': [5,1]})
-        self.figure.tight_layout
+        # self.figure.tight_layout()
         
         self.plot.axis('off')
         # self.controls.axis('off')
@@ -652,23 +657,142 @@ class BoardMonitor:
         self.figure.canvas.mpl_connect('pick_event', on_pick)
         self.figure.canvas.mpl_connect('close_event', lambda _: self.close_event.set())
         
-        control_cols_grid = GridSpecFromSubplotSpec(1,3,main_grid[1,:],width_ratios=[1,5,1])
-        n_buttons = 4
-        left_button_stack = GridSpecFromSubplotSpec(n_buttons, 1, control_cols_grid[0])
-        right_button_stack = GridSpecFromSubplotSpec(n_buttons, 1, control_cols_grid[2])
-
-        def make_button(i: int, label: str, stack: GridSpecFromSubplotSpec) -> Button:
-            ax = pyplot.subplot(stack[i, 0])
-            label = ""
-            b = Button(ax, label)
-            b.on_clicked(lambda event: print(f"Clicked {label}"))
-            b.set_active(False)
-            return b
+        
+        control_subplot: SubplotSpec = main_grid[1,:]
+        
+        control_widgets = None if control_setup is None else control_setup(control_subplot)
+        if control_widgets is None:
+            control_widgets = self.default_control_widgets(control_subplot)
+        
+        self._control_widgets = control_widgets
             
-        self.left_buttons = tuple(make_button(i, f"Left {i}", left_button_stack)
-                                                for i in range(n_buttons))
-        self.right_buttons = tuple(make_button(i, f"Right {i}", right_button_stack)
-                                                for i in range(n_buttons))
+                
+        
+        self.figure.canvas.draw()
+        
+    def label(self, text: str, spec: SubplotSpec, 
+              *,
+              fontsize: Optional[Any] = None,
+              xy: tuple[float, float] = (0,0.5),
+              frameon: bool = False,
+              xycoords = "axes fraction",
+              va="center",
+              **kwds) -> Annotation:
+        
+        ax = self.figure.add_subplot(spec, frameon=frameon, **kwds)
+        ax.axis('off')
+        a = ax.annotate(text, xy=xy, xycoords=xycoords, va=va, **kwds)
+        if fontsize is not None:
+            a.set_fontsize(fontsize)
+        return a
+    
+    def group(self, spec: SubplotSpec, *, 
+              title: Optional[str] = None,
+              fontsize: Any = "x-small",
+              facecolor: Optional[Any] = "white",
+              edgecolor: Optional[Any] = "black") -> tuple[SubplotSpec, Any]:
+        ax = self.figure.add_subplot(spec, frameon=False)
+        ax.axis('off')
+        border = Rectangle(xy=(0,00.01), width=0.99, height=0.99, 
+                           facecolor=facecolor, edgecolor=edgecolor)
+        ax.add_patch(border)
+        if title is None:
+            grid = GridSpecFromSubplotSpec(3,3,spec, height_ratios=[1,100,1], width_ratios=[1,100,1])
+            return (grid[1,1], (border,))
+        else:
+            grid = GridSpecFromSubplotSpec(4,3,spec, height_ratios=[1,2,100,1], width_ratios=[1,100,1])
+            # self.figure.add_subplot(grid[2,1]).add_patch(Rectangle(xy=(0,0), width=1, height=1))
+            tlabel = self.label(title, grid[1,0:], fontsize=fontsize)
+            return (grid[2,1], (border, tlabel))
+
+        
+    
+    def clock_widgets(self, spec: SubplotSpec) -> Any:
+        clock = self.board.in_system().clock
+        
+        whole, group = self.group(spec, title="Clock:")
+        grid = GridSpecFromSubplotSpec(1,5, whole, width_ratios=[1,1,1,1,0.5])
+        fig = self.figure
+        
+        
+
+        # label = self.label("Clock:", grid[0,0:], fontsize="x-small")
+
+        def pr_label() -> str:
+            return "Pause" if clock.running else "Run"
+        pause_run = Button(fig.add_subplot(grid[0,0]), pr_label())
+        pause_run.label.set_fontsize("small")
+        def toggle_running(event) -> None: # @UnusedVariable
+            if clock.running:
+                clock.pause()
+            else:
+                clock.start()
+        pause_run.on_clicked(toggle_running)
+        def update_pr_label() -> None:
+            pause_run.label.set_text(pr_label())
+        def pr_cb(old: bool, new: bool) -> None: # @UnusedVariable
+            self.in_display_thread(lambda: update_pr_label())
+        clock.on_state_change(pr_cb)
+
+        step = Button(fig.add_subplot(grid[0,1]), "Step")
+        if clock.running:
+            step.set_active(False)
+        step.label.set_fontsize("small")
+        def update_step_active() -> None:
+            step.set_active(not clock.running)
+        def step_cb(old: bool, new: bool) -> None: # @UnusedVariable
+            self.in_display_thread(lambda: update_step_active())
+        clock.on_state_change(step_cb)
+        def do_step(event) -> None: # @UnusedVariable
+            assert not clock.running
+            self.board.after_tick(lambda: clock.pause())
+            clock.start()
+        step.on_clicked(do_step)
+        
+        speed = TextBox(fig.add_subplot(grid[0,3]), 
+                        "Tick:", 
+                        initial=f"{clock.update_interval.as_number(ms):g}",
+                        label_pad = 0.2)
+        speed.label.set_fontsize("small")
+        def update_speed(new: Time) -> None:
+            speed.set_val(f"{new.as_number(ms):g}")
+        def interval_cb(old: Time, new: Time) -> None:   # @UnusedVariable
+            self.in_display_thread(lambda: update_speed(new))
+        def new_speed(s: str) -> None:
+            ns = int(s)*ms
+            print(f"Setting tick to {ns}")
+            clock.update_interval=int(s)*ms
+        clock.on_interval_change(interval_cb)
+        speed.on_submit(new_speed)
+        units = self.label("ms", grid[0,4], fontsize="small")
+        
+        
+        return (group, pause_run, step, speed, units)
+    
+    def default_control_widgets(self, spec: SubplotSpec) -> Any:
+        grid = GridSpecFromSubplotSpec(1,2, spec, width_ratios=[1,1])
+        return self.clock_widgets(grid[0,0])
+        # return self.clock_widgets(spec)
+        
+        # control_cols_grid = GridSpecFromSubplotSpec(1,3, spec,width_ratios=[1,5,1])
+        # n_buttons = 4
+        # left_button_stack = GridSpecFromSubplotSpec(n_buttons, 1, control_cols_grid[0])
+        # right_button_stack = GridSpecFromSubplotSpec(n_buttons, 1, control_cols_grid[2])
+        #
+        # def make_button(i: int, label: str, stack: GridSpecFromSubplotSpec) -> Button:
+        #     ax = self.figure.add_subplot(stack[i, 0])
+        #     # label = ""
+        #     b = Button(ax, label)
+        #     b.on_clicked(lambda event: print(f"Clicked {label}")) # @UnusedVariable
+        #     b.set_active(False)
+        #     return b
+        #
+        # left_buttons = tuple(make_button(i, f"Left {i}", left_button_stack)
+        #                                         for i in range(n_buttons))
+        # right_buttons = tuple(make_button(i, f"Right {i}", right_button_stack)
+        #                                         for i in range(n_buttons))
+        #
+        # return left_buttons, right_buttons
 
         # for i in range(n_buttons):
         #     ax = pyplot.subplot(left_button_stack[i, 0])
@@ -676,8 +800,6 @@ class BoardMonitor:
         #     ax = pyplot.subplot(right_button_stack[i, 0])
         #     b = Button(ax, f"Right {i}")
         # b = Button(self.controls, "Test")
-        
-        self.figure.canvas.draw()
         
     def setup_heater_poll(self, heater: Heater) -> None:
         interval = heater.polling_interval

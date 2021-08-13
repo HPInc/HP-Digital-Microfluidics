@@ -1372,10 +1372,16 @@ class Clock:
     system: Final[System]
     engine: Final[Engine]
     clock_thread: Final[ClockThread]
+    
+    interval_change_callbacks: Final[ChangeCallbackList[Time]]
+    state_change_callbacks: Final[ChangeCallbackList[bool]]
+
     def __init__(self, system: System) -> None:
         self.system = system
         self.engine = system.engine
         self.clock_thread = system.engine.clock_thread
+        self.interval_change_callbacks = ChangeCallbackList[Time]()
+        self.state_change_callbacks = ChangeCallbackList[bool]()
         
     @property
     def update_interval(self) -> Time:
@@ -1383,7 +1389,13 @@ class Clock:
     
     @update_interval.setter
     def update_interval(self, interval: Time) -> None:
-        self.clock_thread.update_interval = interval
+        old = self.clock_thread.update_interval
+        if old != interval:
+            self.clock_thread.update_interval = interval
+            self.interval_change_callbacks.process(old, interval)
+        
+    def on_interval_change(self, cb: ChangeCallback[Time], *, key: Optional[Hashable] = None):
+        self.interval_change_callbacks.add(cb, key=key)
         
     @property
     def update_rate(self) -> Frequency:
@@ -1449,14 +1461,21 @@ class Clock:
                 return
         ct.wake_up()
         
+    def on_state_change(self, cb: ChangeCallback[bool], *, key: Optional[Hashable] = None):
+        self.state_change_callbacks.add(cb, key=key)
+    
     def start(self, interval: Optional[Union[Time,Frequency]] = None) -> None:
         assert not self.running, "Clock.start() called while clock is running"
         if isinstance(interval, Frequency):
             interval = (1/interval).a(Time)
+        if interval is not None:
+            self.update_interval = interval
+        self.state_change_callbacks.process(False, True)
         self.clock_thread.start_clock(interval)
         
     def pause(self) -> None:
         assert self.running, "Clock.pause() called while clock is running"
+        self.state_change_callbacks.process(True, False)
         self.clock_thread.pause_clock()
 
 class Batch:
