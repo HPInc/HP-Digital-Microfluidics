@@ -172,7 +172,10 @@ class Exerciser(ABC):
         system = System(board=board)
     
         def prepare_and_run() -> None:
-            system.clock.start(args.clock_speed)
+            if args.start_clock:
+                system.clock.start(args.clock_speed)
+            else:
+                system.clock.update_interval = args.clock_speed 
             task.run(board, system, args)
     
         def do_run() -> None:
@@ -225,6 +228,11 @@ class Exerciser(ABC):
                             The amount of time between clock ticks.  
                             Default is {default_clock_interval.in_units(ms)}.
                             ''')
+        group.add_argument('--paused', action='store_false', dest='start_clock',
+                           help=f'''
+                            Don't start the clock automatically.  Note that operations that are not gated 
+                            by the clock may still run.
+                           ''')
         group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=self.default_initial_delay,
                             help=f'''
                             The amount of time to wait before running the task.
