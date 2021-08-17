@@ -3,12 +3,14 @@ from __future__ import  annotations
 from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence,\
     overload
 
-from mpam.device import Well, ExtractionPoint, Pad, System
+from mpam.device import Well, ExtractionPoint, Pad, System, Board
 from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
     DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T
 from quantities.dimensions import Volume
+import re
+from re import Pattern, Match
 
 
 Schedulable = Union['Path.Start', 'Path.Full',
@@ -355,6 +357,12 @@ class Path:
                       liquid: Optional[Liquid] = None,
                       reagent: Optional[Reagent] = None) -> Path.Start:
         return Path.Start(Path.TeleportInStep(extraction_point, liquid=liquid, reagent=reagent), ())
+    
+    @classmethod
+    def appear_at(cls, pad: Union[Pad, XYCoord, tuple[int, int]], *,
+                  board: Board,
+                  liquid: Optional[Liquid] = None) -> Path.Start:
+        return Path.Start(Path.AppearStep(pad, board=board, liquid=liquid), ())
 
 
     @classmethod
@@ -441,6 +449,43 @@ class Path:
                                                       on_future=on_future, mode=mode, after=after))
         return [d for d in values if d is not None]
     
+    @classmethod
+    def from_spec(cls, spec: str, *, start: Union[Well, Pad]) -> tuple[Middle, Pad, int]:
+        current_pad = start.exit_pad if isinstance(start, Well) else start
+        step_re: Pattern = re.compile(' *(\\d*)([UDLRNSEW]) *')
+        spec = spec.upper()
+        full_spec = spec
+        
+        path = cls.empty()
+        steps = 0
+        
+        dirs = { 
+            'U': Dir.UP, 'N': Dir.UP,
+            'D': Dir.DOWN, 'S': Dir.DOWN,            
+            'R': Dir.RIGHT, 'E': Dir.RIGHT,            
+            'L': Dir.LEFT, 'W': Dir.WEST,            
+            }
+        
+        while spec:
+            m: Optional[Match[str]] = step_re.match(spec)
+            if m is None:
+                raise ValueError(f"Couldn't parse '{spec}' in '{full_spec}'")
+            spec = spec[m.end():]
+            n = int(m.group(1)) if len(m.group(1)) else 1
+            d = m.group(2)
+            
+            steps += n
+            direction = dirs[d]
+            
+            path = path.walk(direction, steps=n)
+            for i in range(n):  # @UnusedVariable
+                p = current_pad.neighbor(direction)
+                if p is None:
+                    raise ValueError(f"Can't walk {d} ({direction}) from {current_pad} in '{full_spec}'")
+                current_pad = p
+
+        return (path, current_pad, steps)
+        
         
     class DispenseStep(StartStep):
         def __init__(self, well: Well) -> None:
@@ -451,6 +496,12 @@ class Path:
                      reagent: Optional[Reagent] = None
                      ) -> None:
             super().__init__(Drop.TeleportInTo(extraction_point, liquid=liquid, reagent=reagent))
+    class AppearStep(StartStep):
+        def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *,
+                     board: Board,
+                     liquid: Optional[Liquid] = None
+                     ) -> None:
+            super().__init__(Drop.AppearAt(pad, board=board, liquid=liquid))
             
     class TeleportOutStep(EndStep):
         def __init__(self, *,

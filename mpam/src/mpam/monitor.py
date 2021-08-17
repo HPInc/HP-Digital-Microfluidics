@@ -1,38 +1,44 @@
 from __future__ import annotations
-# import matplotlib
-# matplotlib.use('Agg')
-from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable,\
-    ClassVar, MutableMapping, Any
-from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater,\
-    HeatingMode, BinaryComponent, WellState
-from matplotlib.axes._axes import Axes
-from matplotlib.figure import Figure
-from matplotlib import pyplot
-from matplotlib.patches import Rectangle, Circle, PathPatch, Patch, Wedge
-from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color,\
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent
-from matplotlib.text import Annotation
-from mpam.drop import Drop, DropStatus
+
 import math
-from quantities.dimensions import Volume, Time
-from threading import RLock, Event
-from matplotlib.path import Path
 from numbers import Number
-from quantities.temperature import abs_C
-from quantities.SI import ms, sec
 import random
-from quantities.timestamp import time_now
-from quantities.core import Unit
+from re import Pattern, Match
+import re
+from threading import RLock, Event
+from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
+    ClassVar, MutableMapping, Any
+
+from matplotlib import pyplot
 from matplotlib.artist import Artist
+from matplotlib.axes._axes import Axes
 from matplotlib.backend_bases import PickEvent
-from matplotlib.legend_handler import HandlerPatch
+from matplotlib.figure import Figure
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
 from matplotlib.legend import Legend
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.patches import Rectangle, Circle, PathPatch, Patch, Wedge
+from matplotlib.path import Path
+from matplotlib.text import Annotation
+from matplotlib.widgets import Button, TextBox
+
 from erk.basic import Count
 from erk.stringutils import map_str
-from matplotlib.widgets import Button, TextBox
-from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
+from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
+    HeatingMode, BinaryComponent, WellState
+from mpam.drop import Drop, DropStatus
+from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent
+from quantities.SI import ms, sec
+from quantities.core import Unit
+from quantities.dimensions import Volume, Time
+from quantities.temperature import abs_C
+from quantities.timestamp import time_now
+from mpam import paths
 
 
+# import matplotlib
+# matplotlib.use('Agg')
 class PadMonitor(object):
     pad: Final[Pad]
     board_monitor: Final[BoardMonitor]
@@ -780,8 +786,25 @@ class BoardMonitor:
         text.label.set_fontsize("small")
         
         apply = Button(fig.add_subplot(grid[0,1]), "Do it")
+        
+        cmd_re: Pattern = re.compile(" *(\\d+) *, *(\\d+) *: *")
         def on_press(event: Event) -> None: # @UnusedVariable
+            spec = text.text
+            m: Optional[Match[str]] = cmd_re.match(spec)
+            if m is None:
+                raise ValueError(f"Path specification must begin with 'x,y:'.  Was '{spec}'.")
+            x,y = int(m.group(1)), int(m.group(2))
+            spec = spec[m.end():]
+            board = self.board
+            start_pad = board.pad_at(x, y)
+            (path, end_pad, path_len) = paths.Path.from_spec(spec, start=start_pad) # @UnusedVariable
+            text.set_val(f"{end_pad.column}, {end_pad.row}: ")
             print(f"Executing '{text.text}'")
+            drop = start_pad.drop
+            if drop is None:
+                (paths.Path.appear_at(start_pad, board=board)+path).schedule()
+            else:
+                path.schedule_for(drop)
         apply.on_clicked(on_press)
         
         return (text, apply)

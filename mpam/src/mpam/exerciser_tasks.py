@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
+from contextlib import redirect_stdout
 import os.path
-from re import Pattern, Match
-import re
-from typing import Optional, Union, Any, Callable
+from typing import Optional, Union, Callable
 
 from mpam.device import Board, System, Pad, Well
 from mpam.dilution import dilution_sequences
@@ -13,13 +12,12 @@ from mpam.exerciser import Task, volume_arg, Exerciser
 from mpam.mixing import mixing_sequences
 from mpam.paths import Path
 from mpam.processes import PlacedMixSequence
-from mpam.types import Liquid, unknown_reagent, XYCoord, Operation, Dir, ticks, \
-    Reagent, Trigger, Delayed, ComputeOp
+from mpam.types import Liquid, unknown_reagent, XYCoord, Dir, ticks, \
+    Reagent, Trigger, Delayed
 from quantities.SI import seconds, Hz, ms
 from quantities.core import CountDim
 from quantities.dimensions import Volume
 from quantities.timestamp import Timestamp, time_now, time_since
-from contextlib import redirect_stdout
 
 
 class Dispense(Task):
@@ -121,6 +119,11 @@ class WalkPath(Task):
         
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
         path: str = args.path.upper()
+        
+        enter_well_at_end = path.endswith("A")
+        if enter_well_at_end:
+            path = path[:-1]
+        
 
         start_well: Optional[int] = args.start_well
         if start_well is not None:
@@ -142,18 +145,16 @@ class WalkPath(Task):
         print_time: bool = args.time_motion
         csv_file: str = args.csv_file
         
-        path_len = 0
-                
-        # print(f"Starting at {start_pad}")
-        # seq: Optional[Operation[Drop, Drop]] = None
+        (drop_path, end_pad, path_len) = Path.from_spec(path, start=start_pad)
+        
+        if enter_well_at_end and end_pad.well is None:
+            raise ValueError(f"Path '{path}' would attempt to enter well at {end_pad}")
         
         start_time: Timestamp
         def start_timer(drop: Drop) -> Delayed[Drop]:
             nonlocal start_time
             start_time = time_now() # @UnusedVariable
             return Delayed.complete(drop)
-        
-        seq: Operation[Drop, Drop] = ComputeOp(start_timer)
         
         class Steps(CountDim['Steps']): ...
         steps = Steps.base_unit("step")
@@ -192,69 +193,22 @@ class WalkPath(Task):
             
             return drop
         
-        current_pad = start_pad
-        step_re: Pattern = re.compile('(\\d*)([UDLRNSEWA])')
-        full_path = path
-        enter_well_at_end: bool = False
-
-        while path:
-            m: Optional[Match[str]] = step_re.match(path)
-            if m is None:
-                raise ValueError(f"Couldn't parse '{path}' in '{full_path} using {step_re}'")
-            path = path[m.end():]
-            n = int(m.group(1)) if len(m.group(1)) else 1
-            d = m.group(2)
-            
-            path_len += n
-            if d == 'U' or d == 'N':
-                direction: Dir = Dir.UP
-            elif d == 'D' or d == 'S':
-                direction = Dir.DOWN
-            elif d == 'L' or d == 'W':
-                direction = Dir.LEFT
-            elif d == 'R' or d == 'E':
-                direction = Dir.RIGHT
-            elif d == 'A':
-                if n != 1:
-                    raise ValueError(f"Can't specify a number of steps with 'A': '{full_path}'")
-                path_len -= 1
-                if path:
-                    raise ValueError(f"'A' not at end: '{full_path}'")
-                if current_pad.well is None:
-                    raise ValueError(f"Path '{full_path}' would attempt to enter well at {current_pad}")
-                enter_well_at_end = True
-                continue
-            else:
-                raise ValueError(f"Unknown step '{d}' in '{full_path}'")
-            # print(f"Walk {n} {direction}")
-            op = Drop.Move(direction, steps=n)
-            seq = op if seq is None else seq.then(op)
-            # print(op, seq)
-            for i in range(n):  # @UnusedVariable
-                p = current_pad.neighbor(direction)
-                if p is None:
-                    raise ValueError(f"Can't walk {d} ({direction}) from {current_pad} in '{full_path}'")
-                current_pad = p
-
-        seq = seq.then_call(end_timer)
         
-        full_op: Optional[Operation[Drop,Any]] = seq.then(Drop.EnterWell) if enter_well_at_end else seq
-                
-        # if seq is not None:
-        #     full_op: Optional[Operation[Drop,Any]] = seq.then(Drop.EnterWell) if enter_well_at_end else seq
-        # else:
-        #     full_op = Drop.EnterWell() if enter_well_at_end else None
-                
+        drop_path = (Path.empty()
+                     .then_process(start_timer)
+                     .extended(drop_path)
+                     .then_process(end_timer)
+                    )
+        
         if args.start_well is not None:
-            if full_op is None:
-                Drop.DispenseFrom(well).schedule()
-            else:
-                Drop.DispenseFrom(well).then(full_op).schedule()
+            path_start = Path.dispense_from(well)+drop_path
         else:
-            if full_op is None:
-                Drop.AppearAt(start_pad, board=board).schedule()
-            else:
-                Drop.AppearAt(start_pad, board=board).then(full_op).schedule()
+            path_start = Path.appear_at(start_pad, board=board)+drop_path
+            
+        if enter_well_at_end:
+            path_start.enter_well().schedule()
+        else:
+            path_start.schedule()
         
             
 class DisplayOnly(Task):
