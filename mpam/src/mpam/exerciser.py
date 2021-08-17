@@ -5,7 +5,7 @@ from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
     _SubParsersAction, _ArgumentGroup
 from re import Pattern
 import re
-from typing import Final, Mapping, Union, Optional, Sequence
+from typing import Final, Mapping, Union, Optional, Sequence, Any
 
 from mpam.device import Board, System
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs
@@ -14,6 +14,8 @@ from quantities.dimensions import Time, Volume
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from quantities import temperature
 from threading import Event
+from matplotlib.gridspec import SubplotSpec
+from mpam.monitor import BoardMonitor
 
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
@@ -130,6 +132,9 @@ class Task(ABC):
                      name: str="task-specific options") -> _ArgumentGroup:
         return parser.add_argument_group(name)
     
+    def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec, exerciser: Exerciser) -> Any:
+        return exerciser.control_setup(monitor, spec)
+    
             
 
         
@@ -150,6 +155,9 @@ class Exerciser(ABC):
     
     @abstractmethod
     def available_wells(self) -> Sequence[int]: ...
+    
+    def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec) -> Any: # @UnusedVariable
+        return None
         
 
     def add_task(self, task: Task, *,
@@ -183,6 +191,9 @@ class Exerciser(ABC):
             system.call_after(args.initial_delay, lambda: event.set())
             event.wait()
             prepare_and_run()
+            
+        def make_controls(monitor: BoardMonitor, spec: SubplotSpec) -> Any:
+            return task.control_setup(monitor, spec, self)
     
         if not args.use_display:
             with system:
@@ -191,7 +202,8 @@ class Exerciser(ABC):
             system.run_monitored(lambda _: do_run(),
                                  min_time=args.min_time,
                                  max_time=args.max_time,
-                                 update_interval=args.update_interval
+                                 update_interval=args.update_interval,
+                                 control_setup = make_controls
                                  )
             
     def parse_args(self, 

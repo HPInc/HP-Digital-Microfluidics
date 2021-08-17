@@ -23,6 +23,7 @@ from quantities.SI import sec, ms
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
+from matplotlib.gridspec import SubplotSpec
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -1625,7 +1626,10 @@ class System:
                       *, 
                       min_time: Time = 0*sec, 
                       max_time: Optional[Time] = None, 
-                      update_interval: Time = 20*ms) -> T:
+                      update_interval: Time = 20*ms,
+                      control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
+                      control_fraction: Optional[float] = None
+                      ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
         
@@ -1637,7 +1641,9 @@ class System:
             done.set()
 
         thread = Thread(target=run_it)
-        monitor = BoardMonitor(self.board)
+        monitor = BoardMonitor(self.board,
+                               control_setup=control_setup,
+                               control_fraction=control_fraction)
         self.monitor = monitor
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),
