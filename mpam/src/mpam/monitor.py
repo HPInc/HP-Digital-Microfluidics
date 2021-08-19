@@ -5,9 +5,9 @@ from numbers import Number
 import random
 from re import Pattern, Match
 import re
-from threading import RLock, Event
+from threading import RLock, Event, Lock
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
-    ClassVar, MutableMapping, Any
+    ClassVar, MutableMapping, Any, Iterator
 
 from matplotlib import pyplot
 from matplotlib.artist import Artist
@@ -28,18 +28,67 @@ from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
     HeatingMode, BinaryComponent, WellState
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent, Ticks, ticks,\
+    StaticOperation
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C
 from quantities.timestamp import time_now
 from mpam import paths
+from _collections import defaultdict
+from abc import ABC, abstractmethod
 
+
+class ClickableMonitor(ABC):
+    component: Final[BinaryComponent]
+    patches: Final[list[Patch]]
+    _neighbors: Optional[Sequence[ClickableMonitor]] = None
+    
+    @property
+    def current_state(self) -> OnOff:
+        return self.component.current_state
+    
+    @property
+    def live(self) -> bool:
+        return self.component.live
+    
+    @property
+    def neighbors(self) -> Sequence[ClickableMonitor]:
+        val = self._neighbors
+        if val is None:
+            val = self._neighbors = self.list_neighbors()
+        return val
+    
+    def __init__(self, component: BinaryComponent) -> None:
+        self.component = component
+        self.patches = []
+        
+    def __repr__(self) -> str:
+        return f"#<Monitor for {self.component}>"
+    
+    @abstractmethod
+    def list_neighbors(self) -> Sequence[ClickableMonitor]: ...
+        
+    def draw(self, width: int, color: str) -> None:
+        for patch in self.patches:
+            patch.set_linewidth(width)
+            patch.set_edgecolor(color)
+            
+    
+        
+    def note_state(self, state: OnOff) -> None:
+        self.draw(3 if state else 1, "green" if state else "black")
+            
+    def preview_state(self, state: OnOff) -> None:
+        self.draw(5, "green" if state else "black")
+    
+            
+        
 
 # import matplotlib
 # matplotlib.use('Agg')
-class PadMonitor(object):
+class PadMonitor(ClickableMonitor):
     pad: Final[Pad]
     board_monitor: Final[BoardMonitor]
     square: Final[Rectangle]
@@ -53,6 +102,7 @@ class PadMonitor(object):
     
     
     def __init__(self, pad: Pad, board_monitor: BoardMonitor):
+        super().__init__(pad)
         self.pad = pad
         self.board_monitor = board_monitor
         plot = board_monitor.plot
@@ -70,7 +120,8 @@ class PadMonitor(object):
                            facecolor='white' if pad.exists else 'black',
                            edgecolor='black',
                            picker=pad.exists)
-        board_monitor.click_id[square] = pad
+        self.patches.append(square)
+        board_monitor.click_id[square] = self
         self.square = square
         self.note_state(pad.current_state)
         board_monitor.plot.add_patch(square)
@@ -119,6 +170,15 @@ class PadMonitor(object):
             pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
             
         
+    def list_neighbors(self)->Sequence[ClickableMonitor]:
+        m = self.board_monitor
+        pad = self.pad
+        neighbors: list[ClickableMonitor] = [m.pads[p] for p in pad.all_neighbors]
+        well = pad.well
+        if well is not None:
+            neighbors.append(m.wells[well].gate_monitor)
+        return neighbors
+        
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
         if state:
@@ -126,6 +186,16 @@ class PadMonitor(object):
             self.square.set_edgecolor('green')
         else:
             self.square.set_linewidth(1)
+            self.square.set_edgecolor('black')
+            
+            
+    def preview_state(self, state: OnOff) -> None:
+        # print(f"{self.pad} will be {state}")
+        if state:
+            self.square.set_linewidth(5)
+            self.square.set_edgecolor('green')
+        else:
+            self.square.set_linewidth(5)
             self.square.set_edgecolor('black')
     
     def note_magnet_state(self, state: OnOff) -> None:
@@ -398,10 +468,10 @@ class DropMonitor:
         self.circle.reagent = reagent
         
         
-class WellPadMonitor:
+class WellPadMonitor(ClickableMonitor):
     board_monitor: Final[BoardMonitor]
     shapes: Final[Sequence[PathPatch]]
-
+    pad: Final[WellPad]
     
     
     def __init__(self, pad: WellPad, board_monitor: BoardMonitor, 
@@ -409,7 +479,9 @@ class WellPadMonitor:
                  *,
                  well: Well,
                  is_gate: bool) -> None:
+        super().__init__(pad)
         self.board_monitor = board_monitor
+        self.pad = pad
         # This is ugly, but I don't see any easier way to do it.
         just_one = isinstance(bounds[0][0], Number)
         if just_one:
@@ -417,6 +489,7 @@ class WellPadMonitor:
         else:
             bounds = cast(Sequence[PadBounds], bounds)
         self.shapes = [ self._make_shape(b, pad, well=well, is_gate=is_gate) for b in bounds ]
+        self.patches.extend(self.shapes)
         
     
     def _make_shape(self, bounds: PadBounds, pad: WellPad, *, well: Well, is_gate:bool) -> PathPatch:  # @UnusedVariable
@@ -433,12 +506,19 @@ class WellPadMonitor:
                           # alpha = 0.5,
                           picker=True
                           )
-        bm.click_id[shape] = pad
+        bm.click_id[shape] = self
         bm.plot.add_patch(shape)
         pad.on_state_change(lambda _,new: bm.in_display_thread(lambda: self.note_state(new)))
         # if not is_gate:
             # well.on_liquid_change(lambda _,new: bm.in_display_thread(lambda: self.note_liquid(new)))
         return shape
+    
+    def list_neighbors(self)->Sequence[ClickableMonitor]:
+        loc = self.pad.loc
+        if isinstance(loc, Well):
+            return [self.board_monitor.pads[loc.exit_pad]]
+        else:
+            return []
 
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
@@ -532,7 +612,64 @@ class WellMonitor:
             self.volume_description.set_text(f"{liquid.volume.in_units(units):g}")
             self.volume_description.set_visible(True)
         
+class ClickHandler:
+    monitor: Final[BoardMonitor]
+    lock: Final[Lock]
+    scheduled: bool
+    
+    changes: Final[set[ClickableMonitor]]
+    
+    
+    def __init__(self, monitor: BoardMonitor) -> None:
+        self.monitor = monitor
+        self.lock = Lock()
+        self.scheduled = False
+        
+        self.changes = set()
+    
+    # called while locked
+    def prepare(self, target: ClickableMonitor) -> bool:
+        changes = self.changes
 
+        state = target.current_state
+        
+        if target in changes:
+            changes.remove(target)
+            target.note_state(state)
+            return False
+        else:
+            changes.add(target)
+            target.preview_state(~state)
+            return True
+            
+    def run(self) -> None:
+        with self.lock:
+            with self.monitor.board.in_system().batched():
+                for p in self.changes:
+                    new_state = ~p.current_state
+                    p.component.schedule(BinaryComponent.SetState(new_state))
+            self.changes.clear()
+            self.scheduled = False
+        
+    def process_click(self, target: ClickableMonitor, *, with_control: bool) -> None:
+        with self.lock:
+            selecting = self.prepare(target)
+            
+            if not with_control and target.current_state is OnOff.OFF:
+                changes = self.changes
+                for p in target.neighbors:
+                    if p.current_state is OnOff.ON: 
+                        if selecting:
+                            changes.add(p)
+                            p.preview_state(OnOff.OFF)
+                        elif p in changes and not any(n in changes for n in p.neighbors):
+                            changes.remove(p)
+                            p.note_state(OnOff.ON)
+            if not self.scheduled:
+                self.scheduled = True
+                self.monitor.board.before_tick(lambda: self.run())
+                
+            
             
 
 class BoardMonitor:
@@ -547,9 +684,10 @@ class BoardMonitor:
     update_callbacks: Optional[list[Callback]]
     color_allocator: Final[ColorAllocator[Reagent]]
     drop_unit: Final[Unit[Volume]]
-    click_id: Final[MutableMapping[Artist, BinaryComponent]]
+    click_id: Final[MutableMapping[Artist, ClickableMonitor]]
     close_event: Final[Event]
     legend: Final[ReagentLegend]
+    click_handler: Final[ClickHandler]
     
     _control_widgets: Final[Any]
     
@@ -582,6 +720,7 @@ class BoardMonitor:
         self.update_callbacks = None
         self.click_id = {}
         self.close_event = Event()
+        self.click_handler = ClickHandler(self)
         
         self.no_bounds = True
         
@@ -620,47 +759,72 @@ class BoardMonitor:
 
         def on_pick(event: PickEvent):
             artist = event.artist
-            cpt = self.click_id[artist]
-            if cpt.live:
+            target = self.click_id[artist]
+            if target.live:
                 key = event.mouseevent.key
-                print(f"Clicked on {cpt} (modifiers: {key})")
-                if key == "control":
-                    cpt.schedule(BinaryComponent.Toggle)
-                elif key == "shift":
-                    if isinstance(cpt, Pad):
-                        on_neighbors = [p for p in cpt.all_neighbors if p.current_state]
-                        def print_time(_) -> None:
-                            # print(f"    Time is {Timestamp.now()}")
-                            pass                            
-                        def back_on(val: OnOff) -> None:  # @UnusedVariable
-                            with board.in_system().batched():
-                                print(f"  Turning off {cpt}.  Turning on {map_str(on_neighbors)}.")
-                                cpt.schedule(Pad.SetState(OnOff.OFF)) \
-                                    .then_call(print_time)
-                                for p in on_neighbors:
-                                    p.schedule(Pad.SetState(OnOff.ON))
-                        with board.in_system().batched():
-                            print(f"  Turning on {cpt}.  Turning off {map_str(on_neighbors)}.")
-                            cpt.schedule(Pad.SetState(OnOff.ON)) \
-                                .then_call(print_time) \
-                                .then_call(back_on) 
-                            for p in on_neighbors:
-                                p.schedule(Pad.SetState(OnOff.OFF))
-                else:
-                    with board.in_system().batched():
-                        for p in board.pad_array.values():
-                            if p.live:
-                                p.schedule(Pad.SetState(OnOff.ON if cpt is p else OnOff.OFF))
-                        for wg in board.well_groups.values():
-                            for wp in wg.shared_pads:
-                                wp.schedule(Pad.SetState(OnOff.ON if cpt is wp else OnOff.OFF))
-                            wg.state = WellState.EXTRACTABLE
-                        for w in board.wells:
-                            g = w.gate
-                            if g.live:
-                                g.schedule(Pad.SetState(OnOff.ON if cpt is g else OnOff.OFF))
+                with_control = key == "control"
+                print(f"Clicked on {target} (modifiers: {key})")
+                self.click_handler.process_click(target,with_control=(key=="control"))
+            #
+            #
+            #     if key == "control":
+            #         cpt.schedule(BinaryComponent.Toggle)
+            #     elif key == "shift":
+            #         if isinstance(cpt, Pad):
+            #             on_neighbors = [p for p in cpt.all_neighbors if p.current_state]
+            #
+            #             def do_it() -> Iterator[Optional[Ticks]]:
+            #                 with board.in_system().batched():
+            #                     print(f"  Turning on {cpt}.  Turning off {map_str(on_neighbors)}.")
+            #                     cpt.schedule(Pad.SetState(OnOff.ON))
+            #                     for p in on_neighbors:
+            #                         p.schedule(Pad.SetState(OnOff.OFF))
+            #                 yield 1*ticks
+            #                 with board.in_system().batched():
+            #                     print(f"  Turning off {cpt}.  Turning on {map_str(on_neighbors)}.")
+            #                     cpt.schedule(Pad.SetState(OnOff.OFF))
+            #                     for p in on_neighbors:
+            #                         p.schedule(Pad.SetState(OnOff.ON))
+            #                 yield None
+            #
+            #
+            #             def print_time(_) -> None:
+            #                 # print(f"    Time is {Timestamp.now()}")
+            #                 pass                            
+            #             def back_on(val: OnOff) -> None:  # @UnusedVariable
+            #                 with board.in_system().batched():
+            #                     print(f"  Turning off {cpt}.  Turning on {map_str(on_neighbors)}.")
+            #                     cpt.schedule(Pad.SetState(OnOff.OFF)) \
+            #                         .then_call(print_time)
+            #                     for p in on_neighbors:
+            #                         p.schedule(Pad.SetState(OnOff.ON))
+            #             with board.in_system().batched():
+            #                 print(f"  Turning on {cpt}.  Turning off {map_str(on_neighbors)}.")
+            #                 cpt.schedule(Pad.SetState(OnOff.ON)) \
+            #                     .then_call(print_time) \
+            #                     .then_call(back_on) 
+            #                 for p in on_neighbors:
+            #                     p.schedule(Pad.SetState(OnOff.OFF))
+            #
+            #             # iterator = do_it()
+            #             # board.before_tick(lambda: next(iterator))
+            #
+            #
+            #     else:
+            #         with board.in_system().batched():
+            #             for p in board.pad_array.values():
+            #                 if p.live:
+            #                     p.schedule(Pad.SetState(OnOff.ON if cpt is p else OnOff.OFF))
+            #             for wg in board.well_groups.values():
+            #                 for wp in wg.shared_pads:
+            #                     wp.schedule(Pad.SetState(OnOff.ON if cpt is wp else OnOff.OFF))
+            #                 wg.state = WellState.EXTRACTABLE
+            #             for w in board.wells:
+            #                 g = w.gate
+            #                 if g.live:
+            #                     g.schedule(Pad.SetState(OnOff.ON if cpt is g else OnOff.OFF))
             else:
-                print(f"{cpt} is not live")
+                print(f"{target} is not live")
             
         self.figure.canvas.mpl_connect('pick_event', on_pick)
         self.figure.canvas.mpl_connect('close_event', lambda _: self.close_event.set())
