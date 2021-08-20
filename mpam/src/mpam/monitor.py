@@ -7,7 +7,7 @@ from re import Pattern, Match
 import re
 from threading import RLock, Event, Lock
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
-    ClassVar, MutableMapping, Any, Iterator
+    ClassVar, MutableMapping, Any, Iterator, Iterable
 
 from matplotlib import pyplot
 from matplotlib.artist import Artist
@@ -22,14 +22,14 @@ from matplotlib.path import Path
 from matplotlib.text import Annotation
 from matplotlib.widgets import Button, TextBox
 
-from erk.basic import Count
+from erk.basic import Count, not_None
 from erk.stringutils import map_str
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
     HeatingMode, BinaryComponent, WellState
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent, Ticks, ticks,\
-    StaticOperation
+    StaticOperation, Barrier
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
@@ -484,7 +484,7 @@ class WellPadMonitor(ClickableMonitor):
         self.pad = pad
         # This is ugly, but I don't see any easier way to do it.
         just_one = isinstance(bounds[0][0], Number)
-        if just_one:
+        if just_one:                                                                                                                                                                                                                    
             bounds = (cast(PadBounds, bounds),)
         else:
             bounds = cast(Sequence[PadBounds], bounds)
@@ -644,10 +644,119 @@ class ClickHandler:
             
     def run(self) -> None:
         with self.lock:
+            
+            pads: dict[Drop, list[ClickableMonitor]] = defaultdict(list)
+            drops: dict[ClickableMonitor, Sequence[Drop]] = {}
+            
+            _current_drop: dict[ClickableMonitor, Drop] = {}
+            
+            changes = self.changes
+            
+            def current_drop(cm: ClickableMonitor) -> Optional[Drop]:
+                if cm.current_state is OnOff.OFF:
+                    return None
+                drop = _current_drop.get(cm, None)
+                if drop is None:
+                    if isinstance(cm, PadMonitor):
+                        drop = cm.pad.drop
+                        assert drop is not None, f"{cm.pad} on, but has no drop"
+                    else:
+                        assert isinstance(cm, WellPadMonitor)
+                        wp = cm.pad
+                        well = wp.loc
+                        assert isinstance(well, Well)
+                        drop = Drop(well.exit_pad, Liquid(well.reagent, well.dispensed_volume), status=DropStatus.IN_WELL)
+                    # if we're keeping it here, we note that
+                    if cm not in changes:
+                        pads[drop].append(cm)
+                        drops[cm] = [drop]
+                    _current_drop[cm] = drop
+                return drop
+            
+            def neighbor_drops(cm: ClickableMonitor) -> Iterable[Drop]:
+                for p in cm.neighbors:
+                    drop = current_drop(p)
+                    if drop is not None:
+                        yield drop
+                        
+                        
+            
+            for p in changes:
+                # if we're turning the pad on
+                if p.current_state is OnOff.OFF:
+                    ds = drops[p] = list(neighbor_drops(p))
+                    for drop in ds:
+                        pads[drop].append(p) 
+            
+            to_remove: set[Drop] = set()
+
+            for p in changes:
+                if isinstance(p, PadMonitor) and p.current_state is OnOff.ON:
+                    drop = not_None(current_drop(p))
+                    if drop not in pads:
+                        to_remove.add(drop)
+            
+            v = self.monitor.board.drop_size
+
+                    
+            def fix_drops() -> None:
+                adopts: dict[ClickableMonitor, Drop] = {}
+                
+                def new_dest(drop: Drop, cms: Sequence[ClickableMonitor]) -> None:
+                    for cm in cms:
+                        if cm not in adopts:
+                            adopts[cm] = drop
+                            return
+                    to_remove.add(drop)
+                    
+                for d,cms in pads.items():
+                    new_dest(d, cms)
+                    
+                for cm in changes:
+                    if isinstance(cm, PadMonitor) and cm.current_state is OnOff.OFF:
+                        drop = cm.pad.drop
+                        print(pads)
+                        if drop is not None and drop not in pads:
+                            to_remove.add(drop)
+                
+                # adopts = {ps[0]: d for (d,ps) in pads.items()}
+                liq = {cm: Liquid.mix_together([(d.liquid,1/len(pads[d])) for d in ds]) for cm,ds in drops.items()}
+                
+                for cm in (cm for cm,ds in drops.items() if len(ds) == 0):
+                    # All the ones turning on that don't get a drop from anywhere
+                    liq[cm] = Liquid(unknown_reagent, v)
+
+                for cm,liquid in liq.items():
+                    drop = adopts.get(cm, None)
+                    if isinstance(cm, PadMonitor):
+                        if drop is None:
+                            Drop(cm.pad, liquid)
+                        else:
+                            drop.liquid.volume = liquid.volume
+                            drop.liquid.reagent = liquid.reagent
+                            drop.status = DropStatus.ON_BOARD
+                            drop.pad = cm.pad
+                    else:
+                        assert isinstance(cm, WellPadMonitor)
+                        well = cm.pad.loc
+                        assert isinstance(well, Well)
+                        if drop is not None:
+                            drop.status = DropStatus.IN_WELL
+                            drop.pad.drop = None
+                            well.transfer_in(liquid)
+                for drop in to_remove:
+                    if drop.status is DropStatus.ON_BOARD:
+                        drop.pad.drop = None
+                        drop.status = DropStatus.OFF_BOARD
+                        
+            
+            barrier = Barrier[OnOff](len(self.changes), name="Click Barrier")
+            barrier.on_trigger(fix_drops)
             with self.monitor.board.in_system().batched():
                 for p in self.changes:
                     new_state = ~p.current_state
-                    p.component.schedule(BinaryComponent.SetState(new_state))
+                    p.component.schedule(BinaryComponent.SetState(new_state)).then_call(lambda s: barrier.pass_through(s))
+                                         
             self.changes.clear()
             self.scheduled = False
         

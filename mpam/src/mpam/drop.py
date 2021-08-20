@@ -115,12 +115,14 @@ class Drop(OpScheduler['Drop']):
     def reagent(self, val: Reagent) -> None:
         self.liquid.reagent = val
     
-    def __init__(self, pad: Pad, liquid: Liquid) -> None:
+    def __init__(self, pad: Pad, liquid: Liquid, *,
+                 status: DropStatus = DropStatus.ON_BOARD) -> None:
         assert pad.drop is None, f"Trying to create a second drop at {pad}"
         self.liquid = liquid
         self._pad = pad
-        self.status = DropStatus.ON_BOARD 
-        pad.drop = self
+        self.status = status
+        if status is DropStatus.ON_BOARD:
+            pad.drop = self
         
     def __repr__(self) -> str:
         return f"Drop[{self.pad}, {self.liquid}]"

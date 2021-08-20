@@ -1,10 +1,23 @@
 from __future__ import annotations
 
-from mypy.types import NoneType
-
-from mpam.types import Liquid, unknown_reagent
+from mpam.types import Liquid, unknown_reagent, Reagent
 from quantities.SI import uL
+from erk.numutils import farey
 
 
-liquid = Liquid(unknown_reagent, 0.5*uL)
-print(liquid)
+
+
+v = 0.5*uL
+
+l1 = Liquid(Reagent("r1"), v)
+l2 = Liquid(Reagent("r2"), v)
+l3 = Liquid(Reagent("r3"), v)
+
+# m = Liquid.mix_together([l1, (l2, 0.5)])
+m = Liquid.mix_together([l1, l2, l3])
+
+print(m)
+
+a = 2.0
+
+print(farey(a/(a+1)))

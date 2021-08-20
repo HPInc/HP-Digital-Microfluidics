@@ -15,6 +15,7 @@ from _collections import deque
 from fractions import Fraction
 import math
 from abc import ABC, abstractmethod
+from erk.numutils import farey
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -1037,11 +1038,14 @@ class Mixture(Reagent):
     @classmethod
     def new_mixture(cls, r1: Reagent, r2: Reagent, ratio: float, name: Optional[str] = None) -> Reagent:
         fraction = ratio/(ratio+1)
-        as_frac = Fraction.from_float(fraction)
+        # as_frac = Fraction.from_float(fraction)
+        as_frac = farey(fraction)
+        print(f"fraction: {as_frac}")
         mixture = {r: f*as_frac for r,f in r1.mixture}
         composition = {chem: conc*fraction for chem, conc in r1.composition.items()}
         fraction = 1-fraction
-        as_frac = Fraction.from_float(fraction)
+        # as_frac = Fraction.from_float(fraction)
+        as_frac = farey(fraction)
         for r,f in r2.mixture:
             cpt = f*as_frac
             f1 = mixture.get(r, None)
@@ -1061,6 +1065,7 @@ class Mixture(Reagent):
                 r_conc = unknown_concentration
             composition[chem] = r_conc
             
+        print(f"{mixture}")
         seq = sorted(mixture.items())
         t = tuple(seq)
         m = cls._instances.get(t, None)
@@ -1238,6 +1243,38 @@ class Liquid:
                   new_composition_function: Optional[Callable[[ChemicalComposition], ChemicalComposition]] = None) -> Liquid:
         self.reagent = self.reagent.processed(step, new_composition_function)
         return self
+    
+    @classmethod
+    def mix_together(cls, liquids: Sequence[Union[Liquid, tuple[Liquid, float]]], *,
+                     result: Optional[Union[Reagent, str]] = None) -> Liquid:
+        if len(liquids) == 0:
+            return Liquid(unknown_reagent, Volume.ZERO())
+        ls = [(liquid, 1) if isinstance(liquid, Liquid) else liquid for liquid in liquids]
+        first, first_frac = ls[0]
+        v = first.volume*first_frac
+        r = first.reagent
+        last = len(ls)-2
+        inexact = first.inexact
+        for i, (liquid, frac) in enumerate(ls[1:]):
+            v2 = liquid.volume * frac
+            if v2 == Volume.ZERO():
+                continue
+            r2 = liquid.reagent
+            if liquid.inexact:
+                inexact = True
+            if i == last and isinstance(result, Reagent):
+                r = result
+            elif r is r2:
+                pass
+            elif r is waste_reagent or r2 is waste_reagent:
+                r = waste_reagent
+            else:
+                ratio = v.ratio(v2)
+                result_name = result if i == last else None
+                assert(not isinstance(result_name, Reagent))
+                r = Mixture.find_or_compute(r, r2, ratio=ratio, name=result_name)
+            v = v+v2
+        return Liquid(r, v, inexact=inexact)
     
 class Color:
     description: Final[str]
