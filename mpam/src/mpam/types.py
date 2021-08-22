@@ -199,6 +199,7 @@ class Ticks(CountDim['Ticks']): ...
 ticks = tick = Ticks.base_unit("tick")
 
 DelayType = Union[Ticks, Time]
+WaitableType = Union[DelayType, 'Trigger', 'Delayed[Any]']
 
 class TickNumber:
     tick: Ticks
@@ -402,6 +403,10 @@ class CommunicationScheduler(Protocol):
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  # @UnusedVariable
                                after: Optional[DelayType] = None) -> None:  # @UnusedVariable
         ...
+    def delayed(self, function: Callable[[], T], *, # @UnusedVariable
+                after: Optional[DelayType]) -> Delayed[T]: # @UnusedVariable
+        ...
+        
         
 CS = TypeVar('CS', bound=CommunicationScheduler)
 
@@ -458,7 +463,7 @@ class OpScheduler(Generic[CS]):
 
     
     class WaitFor(Operation[CS,CS]):
-        waitable: Union[Trigger, Delayed[Any]]
+        waitable: WaitableType
         def _schedule_for(self, obj: CS, *,
                           mode: RunMode = RunMode.GATED, 
                           after: Optional[DelayType] = None,
@@ -472,17 +477,21 @@ class OpScheduler(Generic[CS]):
             def cb() -> None:
                 if isinstance(waitable, Delayed):
                     waitable.when_value(lambda _: future.post(obj))
-                else:
+                elif isinstance(waitable, Trigger):
                     waitable.wait(obj, future)
+                else:
+                    assert isinstance(waitable, Time) or isinstance(waitable, Ticks)
+                    wait_future = obj.delayed(lambda: obj, after=waitable)
+                    wait_future.post_to(future)
             if after is None:
                 cb()
             else:
                 obj.schedule_communication(cb, mode, after=after)
             return future
         
-        def __init__(self, waitable: Union[Trigger, Delayed[Any]]) -> None:
+        def __init__(self, waitable: WaitableType) -> None:
             self.waitable = waitable
-        
+    
 
 class StaticOperation(Generic[V], ABC):
     
@@ -636,7 +645,7 @@ class Delayed(Generic[T]):
         return self
     
     def post_val_to(self, other: Delayed[V], value: V) -> Delayed[T]:
-        self.when_value(lambda val: other.post(value))
+        self.when_value(lambda _: other.post(value))
         return self
     
     def triggering(self, *, future: Optional[Delayed[V]] = None, value: V) -> Delayed[V]:

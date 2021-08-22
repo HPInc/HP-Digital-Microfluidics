@@ -24,7 +24,6 @@ from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
 from matplotlib.gridspec import SubplotSpec
-from math import isclose
 
 if TYPE_CHECKING:
     from mpam.drop import Drop

@@ -7,8 +7,9 @@ from mpam.device import Well, ExtractionPoint, Pad, System, Board
 from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
-    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T
-from quantities.dimensions import Volume
+    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T,\
+    Trigger, WaitableType
+from quantities.dimensions import Volume, Time
 import re
 from re import Pattern, Match
 
@@ -166,6 +167,9 @@ class Path:
         def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Start:
             return self+Path.BarrierStep(barrier, wait=wait)
         
+        def wait_for(self, waitable: WaitableType) -> Path.Start:
+            return self+Path.PauseStep(waitable)
+        
         
         def extended(self, path: Path.Middle) -> Path.Start:
             return self+path
@@ -288,6 +292,9 @@ class Path:
         def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Middle:
             return self+Path.BarrierStep(barrier, wait=wait)
             
+        def wait_for(self, waitable: WaitableType) -> Path.Middle:
+            return self+Path.PauseStep(waitable)
+
         def extended(self, path: Path.Middle) -> Path.Middle:
             return self+path
 
@@ -582,4 +589,9 @@ class Path:
                 return future
             op: Operation[Drop, Drop] = Drop.WaitAt(barrier) if wait else ComputeOp[Drop,Drop](pass_through) 
             super().__init__(op, after)
+
+    class PauseStep(MiddleStep):
+        def __init__(self, waitable: WaitableType,
+                     after: Optional[Ticks] = None) -> None:
+            super().__init__(Drop.WaitFor(waitable), after)
 

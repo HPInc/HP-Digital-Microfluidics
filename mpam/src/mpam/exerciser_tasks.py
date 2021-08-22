@@ -8,15 +8,14 @@ from typing import Optional, Union, Callable
 from mpam.device import Board, System, Pad, Well
 from mpam.dilution import dilution_sequences
 from mpam.drop import Drop
-from mpam.exerciser import Task, volume_arg, Exerciser
+from mpam.exerciser import Task, volume_arg, Exerciser, time_arg
 from mpam.mixing import mixing_sequences
 from mpam.paths import Path
-from mpam.processes import PlacedMixSequence
-from mpam.types import Liquid, unknown_reagent, XYCoord, Dir, ticks, \
-    Reagent, Trigger, Delayed
+from mpam.types import Liquid, unknown_reagent, XYCoord, Dir, \
+    Reagent, Trigger, Delayed, Barrier
 from quantities.SI import seconds, Hz, ms
 from quantities.core import CountDim
-from quantities.dimensions import Volume
+from quantities.dimensions import Volume, Time
 from quantities.timestamp import Timestamp, time_now, time_since
 
 
@@ -247,42 +246,13 @@ class Mix(Task):
                             help="Fully mix all drops")
         group.add_argument('--shuttles', type=int, metavar='INT', default=0,
                             help="The number of extra shuttles to perform.  Default is zero.")
-        default_pause_before = 0
-        group.add_argument('-pb', '--pause-before', type=int, metavar='TICKS', default=default_pause_before,
-                           help=f"Time to pause before the mixing operation.  Default is {default_pause_before*ticks:.0f}.")
-        default_pause_after= 0
-        group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
-                           help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
+        default_pause_before = Time.ZERO()
+        group.add_argument('-pb', '--pause-before', type=time_arg, metavar='TIME', default=default_pause_before,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_before:g}.")
+        default_pause_after= Time.ZERO()
+        group.add_argument('-pa', '--pause-after', type=time_arg, metavar='TIME', default=default_pause_after,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_after:g}.")
         
-    def create_path(self, i: int, pad: Pad, well: Well,
-                    pms: PlacedMixSequence, 
-                    args: Namespace, *,
-                    is_lead: bool) -> Path.Full:
-        
-        reagent = Reagent(f"R{i+1}")
-        
-        def change_reagent(r: Reagent) -> Callable[[Drop], None]:
-            def fn(drop: Drop) -> None:
-                drop.reagent = r
-            return fn
-            
-        loc = pad.location
-        path = Path.dispense_from(well) \
-                .then_process(change_reagent(reagent)) \
-                .to_row(loc.row) \
-                .to_col(loc.col)
-
-        if is_lead:
-            path = path.start(pms.as_process(n_shuttles=args.shuttles))
-        else:
-            path = path.in_mix()
-
-        if is_lead:
-            path = path.to_col(18).to_row(6)
-        else:
-            path = path.to_row(1).to_col(18).walk(Dir.DOWN)
-        
-        return path.enter_well()
         
 
     def run(self, board: Board, system: System, args: Namespace) -> None:
@@ -301,10 +271,57 @@ class Mix(Task):
         pads = sorted(pms.pads, key=sort_key)
         lead_pad = pms.fully_mixed_pads[0]
         
-        well = board.wells[2]
+        pause_before: Time = args.pause_before
+        pause_after: Time = args.pause_after
+        
+        print(n_drops)        
+        pre_barrier = Barrier[Drop](n_drops)
+        post_barrier = Barrier[Drop](n_drops)
+        
+        well: Well = board.wells[2]
         well.contains(Liquid(unknown_reagent, n_drops*drops))
-        paths = [self.create_path(i, pad, well, pms, args,
-                                  is_lead=pad is lead_pad) for i,pad in enumerate(pads)]
+
+        def create_path(i: int, pad: Pad, 
+                        ) -> Path.Full:
+
+            reagent = Reagent(f"R{i+1}")
+            
+            is_lead = pad is lead_pad 
+            
+            def change_reagent(r: Reagent) -> Callable[[Drop], None]:
+                def fn(drop: Drop) -> None:
+                    drop.reagent = r
+                return fn
+                
+            loc = pad.location
+            print(f"drop {i} goes to {loc}")
+            path = (Path.dispense_from(well)
+                    .then_process(change_reagent(reagent))
+                    .to_row(loc.row)
+                    .to_col(loc.col)
+                    .reach(pre_barrier)
+                    )
+    
+            if is_lead:
+                path = (path
+                        .wait_for(pause_before)
+                        .start(pms.as_process(n_shuttles=args.shuttles))
+                        .wait_for(pause_after)
+                        )
+            else:
+                path = path.in_mix()
+                
+            path = path.reach(post_barrier)
+    
+            if is_lead:
+                path = path.to_col(18).to_row(6)
+            else:
+                path = path.to_row(1).to_col(18).walk(Dir.DOWN)
+            
+            return path.enter_well()
+            
+        
+        paths = [create_path(i, pad) for i,pad in enumerate(pads)]
         
         with system.batched():
             for p in paths:
@@ -333,16 +350,20 @@ class Dilute(Task):
                             help="Fully mix all drops")
         group.add_argument('--shuttles', type=int, metavar='INT', default=0,
                             help="The number of extra shuttles to perform.  Default is zero.")
-        default_pause_before = 0
-        group.add_argument('-pb', '--pause-before', type=int, metavar='TICKS', default=default_pause_before,
-                           help=f"Time to pause before the mixing operation.  Default is {default_pause_before*ticks:.0f}.")
-        default_pause_after= 0
-        group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
-                           help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
+        default_pause_before = Time.ZERO()
+        group.add_argument('-pb', '--pause-before', type=time_arg, metavar='TIME', default=default_pause_before,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_before:g}.")
+        default_pause_after= Time.ZERO()
+        group.add_argument('-pa', '--pause-after', type=time_arg, metavar='TIME', default=default_pause_after,
+                           help=f"Time to pause before the mixing operation.  Default is {default_pause_after:g}.")
         
 
     def run(self, board: Board, system: System, args: Namespace) -> None:
         fold: float = args.fold
+        
+        pause_before: Time = args.pause_before
+        pause_after: Time = args.pause_after
+
         drop = drops = board.drop_size.as_unit("drops", singular="drop")
         
         reagent = Reagent.find("Reagent")
@@ -360,21 +381,7 @@ class Dilute(Task):
         solvent_well.contains(Liquid(solvent, (pms.num_drops-1)*drops))
         
         lead_pad = pms.fully_mixed_pads[0]
-        
-        trigger = Trigger()
 
-        lead_path = Path.dispense_from(reagent_well) \
-            .to_row(lead_pad.row) \
-            .to_col(lead_pad.column) \
-            .then_process(lambda _: trigger.fire()) \
-            .start(pms.as_process(n_shuttles=args.shuttles)) \
-            .to_col(18) \
-            .to_row(6) \
-            .enter_well()
-            
-            
-        bottom_row = 1
-        
         def sort_key(pad: Pad) -> tuple[bool, int,int]:
             # first, we want the ones on the other side of the lead pad.
             # So we start with False for that situation and True for others.
@@ -383,6 +390,30 @@ class Dilute(Task):
             x,y = pad.location.coords
             return (y != lead_pad.row, -x, y)
         solvent_pads = sorted(pms.secondary_pads, key=sort_key)
+        
+        n_drops = len(solvent_pads)+1
+        
+        trigger = Trigger()
+        
+        pre_barrier = Barrier[Drop](n_drops)
+        post_barrier = Barrier[Drop](n_drops)
+
+        lead_path = Path.dispense_from(reagent_well) \
+            .to_row(lead_pad.row) \
+            .to_col(lead_pad.column) \
+            .then_process(lambda _: trigger.fire()) \
+            .reach(pre_barrier) \
+            .wait_for(pause_before) \
+            .start(pms.as_process(n_shuttles=args.shuttles)) \
+            .wait_for(pause_after) \
+            .reach(post_barrier) \
+            .to_col(18) \
+            .to_row(6) \
+            .enter_well()
+            
+            
+        bottom_row = 1
+        
         
         def solvent_path(p: Pad) -> Path.Full:
             path = Path.dispense_from(solvent_well)
@@ -399,7 +430,9 @@ class Dilute(Task):
                 path = path.to_row(p.row) \
                             .to_col(p.column)
             
-            path = path.in_mix() \
+            path = path.reach(pre_barrier) \
+                    .in_mix() \
+                    .reach(post_barrier) \
                     .to_row(1).to_col(18).walk(Dir.DOWN)
             return path.enter_well()
         

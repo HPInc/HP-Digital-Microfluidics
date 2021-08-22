@@ -1,7 +1,7 @@
 from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
-    StaticOperation, Reagent, Callback
+    StaticOperation, Reagent, Callback, T
 from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint
 from mpam.exceptions import NoSuchPad, NotAtWell
 from typing import Optional, Final, Union, Sequence, Callable, \
@@ -130,6 +130,11 @@ class Drop(OpScheduler['Drop']):
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
                                after: Optional[DelayType] = None) -> None:  
         self.pad.schedule_communication(cb, mode=mode, after=after)
+        
+    def delayed(self, function: Callable[[], T], *,
+                after: Optional[DelayType]) -> Delayed[T]:
+        return self.pad.delayed(function, after=after)
+        
     
     
     @classmethod
@@ -309,6 +314,7 @@ class Drop(OpScheduler['Drop']):
             def make_drop(_) -> None:
                 liquid = well.transfer_out(volume)
                 drop = Drop(pad=pad, liquid=liquid)
+                well.gate_reserved = False
                 pad.reserved = False
                 if post_result:
                     future.post(drop)
@@ -316,9 +322,9 @@ class Drop(OpScheduler['Drop']):
             # The guard will be iterated when the motion is started, after any delay, but before the created
             # WellMotion tries to either get adopted by an in-progress motion or make changes on the well pads.
             def guard() -> Iterator[bool]:
-                # First, we reserve the pad.  If there's a dispense in progress for this well, it will already have
-                # the pad reserved, and we will spin until it's done.
-                while not pad.reserve():
+                # First, we reserve the gate.  If there's a dispense in progress for this well, it will already have
+                # the gate reserved, and we will spin until it's done.
+                while not well.reserve_gate():
                     yield True
                 # Next, we make sure that there's enough of the right reagent for us.
                 def empty_first() -> None:
@@ -327,6 +333,11 @@ class Drop(OpScheduler['Drop']):
                 f = well.ensure_content(volume=volume, reagent=self.reagent,
                                         on_reagent_mismatch=mismatch_behavior)
                 while not f.has_value:
+                    yield True
+                # Finally, we wait until we can safely reserve the exit pad
+                while not pad.safe_except(well):
+                    yield True
+                while not pad.reserve():
                     yield True
                 yield False
                 
