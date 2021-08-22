@@ -24,6 +24,7 @@ from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
 from matplotlib.gridspec import SubplotSpec
+from math import isclose
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -875,6 +876,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                        volume: Optional[Volume] = None,
                        reagent: Optional[Reagent] = None,
                        *, on_reagent_mismatch: ErrorHandler = PRINT
+                       # slop
                        ) -> Delayed[Well]:
         if volume is None:
             volume = self.dispensed_volume
@@ -883,7 +885,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                                             lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
         current_volume = self.volume
         resulting_volume = current_volume - volume
-        if resulting_volume >= self.min_fill:
+        if resulting_volume >= self.min_fill or resulting_volume.is_close_to(self.min_fill):
             return Delayed.complete(self)
         return self.refill(reagent=reagent)
     
@@ -897,7 +899,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                                             lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
         current_volume = self.volume
         resulting_volume = current_volume + volume
-        if resulting_volume <= self.max_fill:
+        if resulting_volume <= self.max_fill or resulting_volume.is_close_to(self.max_fill):
             # print(f"{resulting_volume:g} <= {self.max_fill:g}")
             return Delayed.complete(self)
         # print(f"Need to empty well ({resulting_volume:g} > {self.max_fill:g}")

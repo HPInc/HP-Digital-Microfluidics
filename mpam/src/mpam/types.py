@@ -1040,7 +1040,7 @@ class Mixture(Reagent):
         fraction = ratio/(ratio+1)
         # as_frac = Fraction.from_float(fraction)
         as_frac = farey(fraction)
-        print(f"fraction: {as_frac}")
+        # print(f"fraction: {as_frac}")
         mixture = {r: f*as_frac for r,f in r1.mixture}
         composition = {chem: conc*fraction for chem, conc in r1.composition.items()}
         fraction = 1-fraction
@@ -1065,7 +1065,7 @@ class Mixture(Reagent):
                 r_conc = unknown_concentration
             composition[chem] = r_conc
             
-        print(f"{mixture}")
+        # print(f"{mixture}")
         seq = sorted(mixture.items())
         t = tuple(seq)
         m = cls._instances.get(t, None)

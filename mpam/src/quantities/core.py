@@ -342,6 +342,20 @@ class Quantity(Generic[D]):
         self._ensure_dim_match(rhs, "<=")
         return self.magnitude <= rhs.magnitude
     
+    def is_close_to(self, other: D, *, 
+                    rel_tol: float = 1e-09, 
+                    abs_tol: Optional[D] = None,
+                    ) -> bool:
+        self._ensure_dim_match(other, "is_close_to")
+        my_mag = self.magnitude
+        their_mag = other.magnitude
+        if abs_tol is not None:
+            self._ensure_dim_match(abs_tol, "is_close_to.abs_tol")
+        tol = abs_tol.magnitude if abs_tol is not None else 1e-9 if their_mag==0 else 0
+        if abs(my_mag-their_mag) < tol:
+            return True
+        return math.isclose(self.magnitude, other.magnitude, rel_tol=rel_tol)
+    
     def multiply_by(self, rhs: Quant) -> Quant:
         if not isinstance(rhs, Quantity):
             raise TypeError(f"RHS not a Quantity: {rhs}")
