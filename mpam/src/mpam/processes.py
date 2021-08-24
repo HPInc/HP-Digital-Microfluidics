@@ -309,24 +309,22 @@ class MixSequence(NamedTuple):
     def transformed(self, transform: Transform) -> MixSequence:
         if transform is Transform.NONE:
             return self
-        tx, ty = transform.apply_to(*self.size)
-        lx, ly = transform.apply_to(*self.lead_offset)
-        if lx < 0:
-            lx -= (tx+1)
-        if ly < 0:
-            ly -= (ty+1)
+        
+        locs = tuple(transform.apply_to(x,y) for x,y in self.locations)
+        lx = -min(x for x,y in locs)
+        ly = -min(y for x,y in locs)
         sx,sy = self.size
         if transform.swap:
             sx,sy = sy,sx
         ms = MixSequence(self.error, 
-                           tuple(transform.apply_to(x,y) for x,y in self.locations),
+                         locs,
                            self.steps,
                            fully_mixed = self.fully_mixed,
                            size = (sx,sy),
                            lead_offset = (lx, ly)
                            )
-        # print(f"{self} transformed {transform} is")
-        # print(f"{ms}")
+        print(f"{self} transformed {transform} is")
+        print(f"{ms}")
         return ms
     
     def placed(self, lead_drop_pad: Pad) -> PlacedMixSequence:
