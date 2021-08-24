@@ -586,16 +586,23 @@ class WellShape:
     shared_pad_bounds: Final[Sequence[Union[PadBounds, Sequence[PadBounds]]]]
     reagent_id_circle_center: tuple[float,float]
     reagent_id_circle_radius: float
+    reagent_box_height: Final[float]
+    reagent_box_width: Final[float]
     
     def __init__(self, *, 
                  gate_pad_bounds: PadBounds,
                  shared_pad_bounds: Sequence[Union[PadBounds, Sequence[PadBounds]]],
                  reagent_id_circle_center: tuple[float, float],
-                 reagent_id_circle_radius: float = 1):
+                 reagent_id_circle_radius: float = 1,
+                 reagent_box_width: Optional[float] = None,
+                 reagent_box_height: Optional[float] = None):
         self.gate_pad_bounds = gate_pad_bounds
         self.shared_pad_bounds = shared_pad_bounds
         self.reagent_id_circle_center = reagent_id_circle_center
         self.reagent_id_circle_radius = reagent_id_circle_radius
+        self.reagent_box_height = reagent_box_height or reagent_id_circle_radius
+        self.reagent_box_width = reagent_box_width or 2*reagent_id_circle_radius 
+        
         
 WellVolumeSpec = Union[Volume, Callable[[], Volume]]
     

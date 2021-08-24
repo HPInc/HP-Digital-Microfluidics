@@ -575,13 +575,27 @@ class WellMonitor:
                                             visible = True)
         well.on_liquid_change(lambda _,new: 
                               board_monitor.in_display_thread(lambda: self.note_liquid(new)))
-        rd = board_monitor.plot.annotate(text='Reagent goes here', xy=(0,0),
-                                         xytext=(0.5, -0.1),
-                                         xycoords=rc,
+        rd_box = Rectangle((rc_center[0]-rc_radius-shape.reagent_box_width/2,
+                            rc_center[1]-rc_radius-shape.reagent_box_height),
+                            shape.reagent_box_width,
+                            shape.reagent_box_height
+                            )
+        board_monitor.plot.add_patch(rd_box)
+        rd = rd_box.axes.text(0,0, "Reagent goes here",
                                          horizontalalignment='center',
                                          verticalalignment='top',
                                          fontsize='x-small',
+                                         wrap=True,
                                          visible=False)
+                            
+        # rd = board_monitor.plot.annotate(text='Reagent goes here', xy=(0,0),
+        #                                  xytext=(0.5, -0.1),
+        #                                  xycoords=rc,
+        #                                  horizontalalignment='center',
+        #                                  verticalalignment='top',
+        #                                  fontsize='x-small',
+        #                                  wrap=True,
+        #                                  visible=False)
         vd = board_monitor.plot.annotate(text='volume goes here', xy=(0,0),
                                          xytext=(0.5, 1.1),
                                          xycoords=rc,
