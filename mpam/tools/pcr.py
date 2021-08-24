@@ -280,7 +280,7 @@ class Prepare(PCRTask):
         for i,d in enumerate(sorted(drops, key=up_then_right)):
             mix = self.mix3[i]
             pads = mix.pads
-            print(pads)
+            # print(pads)
             d_path = Path.to_pad(pads[0], row_first=row_first) \
                                 .start(mix.as_process(result=r4,
                                                       n_shuttles=self.shuttles))
@@ -330,7 +330,7 @@ class Prepare(PCRTask):
         tc = self.full_tc
         paths = list[Schedulable]()
         drops = sorted(drops, key=right_then_down)
-        print(map_str([d.pad.location.coords for d in drops]))
+        # print(map_str([d.pad.location.coords for d in drops]))
         pads = tc.pads(0)
         
         def add_path(d_no: int, path: Path.Middle) -> None:
@@ -366,7 +366,7 @@ class Prepare(PCRTask):
         paths = list[Schedulable]()
         drops = sorted(drops, key=right_then_down)
         drops.append(self.parked_R4(parked))
-        print(map_str([d.pad.location.coords for d in drops]))
+        # print(map_str([d.pad.location.coords for d in drops]))
         pads = tc.pads(0)
         
         def add_path(d_no: int, path: Path.Middle) -> None:
@@ -415,23 +415,23 @@ class Prepare(PCRTask):
         # Path.run_paths([(parked_r1_drop, Path.to_pad(self.park_R1))], system=system)
         
         diluted: Sequence[Drop] = sorted(self.dilute_1(r1_drop), key=right_then_up)
-        print(f"diluted: {map_str(diluted)}")
+        # print(f"diluted: {map_str(diluted)}")
 
         mixed = self.mix_3_1(diluted) 
-        print(mixed)
+        # print(mixed)
         thermocycled = self.tc_1(mixed)
-        print("Done with tcycle")
+        # print("Done with tcycle")
         assert len(thermocycled) == 0
         
         diluted = self.dilute_2()
-        print(f"{len(diluted)} diluted drops")
+        # print(f"{len(diluted)} diluted drops")
 
         mixed = self.mix_3_2(diluted)
-        print(f"Done with second dilution: {len(mixed)}")
+        # print(f"Done with second dilution: {len(mixed)}")
         thermocycled = self.tc_23(mixed, 1)
         mixed = self.mix_3_3()
         self.tc_23(mixed, 0)
-        print(f"Done")
+        # print(f"Done")
         
 class MixPrep(PCRTask):
     def __init__(self) -> None:
