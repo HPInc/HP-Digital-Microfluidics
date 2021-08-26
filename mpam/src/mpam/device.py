@@ -684,7 +684,7 @@ class Well(OpScheduler['Well'], BoardComponent):
     @property
     def available(self) -> bool:
         c = self._contents
-        return c is None or c.volume==Volume.ZERO() and not c.inexact
+        return c is None or c.volume.is_zero and not c.inexact
     
     @property
     def gate_on(self) -> bool:
@@ -890,14 +890,14 @@ class Well(OpScheduler['Well'], BoardComponent):
     
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         volume = self.fill_to - self.volume
-        assert volume > Volume.ZERO(), f"refill(volume={volume}) called on {self}"
+        assert volume.is_positive, f"refill(volume={volume}) called on {self}"
         if reagent is None:
             reagent = self.reagent
         return self.add(Liquid(reagent, volume))
     
     def empty_well(self) -> Delayed[Well]:
         volume = self.volume - self.empty_to
-        assert volume > Volume.ZERO(), f"empty_well(volume={volume}) called on {self}"
+        assert volume.is_positive, f"empty_well(volume={volume}) called on {self}"
         return self.remove(volume)
     
 
@@ -913,9 +913,9 @@ class Well(OpScheduler['Well'], BoardComponent):
             on_reagent_mismatch.expect_true(self._can_provide(reagent),
                                             lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
         current_volume = self.volume
-        if current_volume > Volume.ZERO():
+        if current_volume.is_positive:
             above_line = current_volume-self.min_fill
-            if volume < above_line or volume.is_close_to(above_line):
+            if volume < above_line or above_line.is_positive and volume.is_close_to(above_line):
                 return Delayed.complete(self)
         return self.refill(reagent=reagent)
     
@@ -1256,7 +1256,7 @@ class SystemComponent(ABC):
     def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO()):
         req = self.make_request(cb)
         sys = self.in_system()
-        if delta > Time.ZERO():
+        if delta.is_positive:
             self.call_after(delta, lambda : sys.communicate(req))
         else:
             sys.communicate(req)
@@ -1637,12 +1637,12 @@ class System:
         def run_then_post() -> None:
             future.post(function())
         if isinstance(after, Time):
-            if after > Time.ZERO():
+            if after.is_positive:
                 self.call_after(after, run_then_post)
             else:
                 return Delayed.complete(function())
         else:
-            if after > Ticks.ZERO():
+            if after.is_positive:
                 self.before_tick(run_then_post, delta = after)
             else:
                 return Delayed.complete(function())

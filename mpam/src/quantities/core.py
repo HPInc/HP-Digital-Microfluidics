@@ -351,10 +351,26 @@ class Quantity(Generic[D]):
         their_mag = other.magnitude
         if abs_tol is not None:
             self._ensure_dim_match(abs_tol, "is_close_to.abs_tol")
-        tol = abs_tol.magnitude if abs_tol is not None else 1e-9 if their_mag==0 else 0
-        if abs(my_mag-their_mag) < tol:
-            return True
+            if abs(my_mag-their_mag) < abs_tol.magnitude:
+                return True
         return math.isclose(self.magnitude, other.magnitude, rel_tol=rel_tol)
+    
+    def is_close_to_zero(self, tolerance: D) -> bool:
+        self._ensure_dim_match(tolerance, "is_close_to_zero")
+        return abs(self.magnitude) < tolerance.magnitude
+
+    @property
+    def is_zero(self) -> bool:
+        return self.magnitude == 0
+    @property
+    def is_positive(self) -> bool:
+        return self.magnitude > 0
+    @property
+    def is_nonnegative(self) -> bool:
+        return self.magnitude >= 0
+    @property
+    def is_negative(self) -> bool:
+        return self.magnitude < 0
     
     def multiply_by(self, rhs: Quant) -> Quant:
         if not isinstance(rhs, Quantity):

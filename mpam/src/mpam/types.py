@@ -1266,7 +1266,7 @@ class Liquid:
         inexact = first.inexact
         for i, (liquid, frac) in enumerate(ls[1:]):
             v2 = liquid.volume * frac
-            if v2 == Volume.ZERO():
+            if v2.is_zero:
                 continue
             r2 = liquid.reagent
             if liquid.inexact:
