@@ -55,11 +55,11 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                 next_pad = last_pad.neighbor(direction)
                 if next_pad is None or next_pad.broken:
                     raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
-                if not allow_unsafe:
-                    while not next_pad.safe_except(last_pad):
-                        # print(f"unsafe: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
-                        yield one_tick
-                while not next_pad.reserve():
+                # if not allow_unsafe:
+                #     while not next_pad.safe_except(last_pad):
+                #         # print(f"unsafe: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
+                #         yield one_tick
+                while not next_pad.reserve_for(drop, allow_unsafe=allow_unsafe):
                     if allow_unsafe:
                         break
                     yield one_tick
@@ -335,9 +335,9 @@ class Drop(OpScheduler['Drop']):
                 while not f.has_value:
                     yield True
                 # Finally, we wait until we can safely reserve the exit pad
-                while not pad.safe_except(well):
-                    yield True
-                while not pad.reserve():
+                # while not pad.safe_except(well):
+                #     yield True
+                while not pad.reserve_for(well):
                     yield True
                 yield False
                 

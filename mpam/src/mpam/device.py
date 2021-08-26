@@ -127,12 +127,13 @@ BinaryComponent[BC].TurnOff = BinaryComponent.SetState(OnOff.OFF)
 BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
     
     
+PadReserver = Union['Drop', 'Well', 'ExtractionPoint']
     
 class Pad(BinaryComponent['Pad']):
     location: Final[XYCoord]
     exists: Final[bool]
     
-    reserved: bool = False
+    # reserved: bool = False
     # broken: bool
     
     _pads: Final[PadArray]
@@ -145,6 +146,7 @@ class Pad(BinaryComponent['Pad']):
     _magnet: Optional[Magnet] = None
     _heater: Optional[Heater] = None
     _extraction_point: Optional[ExtractionPoint] = None
+    _reserved_for: Optional[PadReserver] = None
     
     _drop_change_callbacks: Final[ChangeCallbackList[Optional[Drop]]]
         
@@ -211,6 +213,14 @@ class Pad(BinaryComponent['Pad']):
             self._between_pads = bps
         return bps
     
+    @property
+    def reserved(self) -> bool:
+        return self._reserved_for is not None
+    
+    @reserved.setter
+    def reserved(self, val: bool) -> None:
+        self._reserved_for = None
+    
     def __init__(self, loc: XYCoord, board: Board, *, exists: bool = True) -> None:
         BinaryComponent.__init__(self, board, initial_state=OnOff.OFF, live=exists)
         self.location = loc
@@ -235,29 +245,49 @@ class Pad(BinaryComponent['Pad']):
     def empty(self) -> bool:
         return self.drop is None
     
-    @property
-    def safe(self) -> bool:
-        w = self.well
-        if w is not None and (w.gate_on or w.gate_reserved):
-            return False
-        return self.empty and all(map(lambda n : n.empty and not n.reserved, self.all_neighbors))
+    # @property
+    # def safe(self) -> bool:
+    #     w = self.well
+    #     if w is not None and (w.gate_on or w.gate_reserved):
+    #         return False
+    #     return self.empty and all(map(lambda n : n.empty and not n.reserved, self.all_neighbors))
+    #
+    # def safe_except(self, padOrWell: Union[Pad, Well]) -> bool:
+    #     if not self.empty:
+    #         return False
+    #     w = self.well
+    #     if w is not None and w is not padOrWell and (w.gate_on or w.gate_reserved):
+    #         return False
+    #     for p in self.all_neighbors:
+    #         if p is not padOrWell and (not p.empty or p.reserved):
+    #             return False
+    #     return True
+    #
+    # def reserve(self) -> bool:
+    #     if self.reserved:
+    #         return False
+    #     self.reserved = True
+    #     return True
     
-    def safe_except(self, padOrWell: Union[Pad, Well]) -> bool:
-        if not self.empty:
+    def reserve_for(self, reserver: PadReserver, *,
+                    allow_unsafe: bool = False) -> bool:
+        def none_or_reserver(r: Optional[PadReserver]) -> bool:
+            return r is None or r is reserver
+        if not none_or_reserver(self._reserved_for):
             return False
-        w = self.well
-        if w is not None and w is not padOrWell and (w.gate_on or w.gate_reserved):
-            return False
-        for p in self.all_neighbors:
-            if p is not padOrWell and (not p.empty or p.reserved):
+        if not allow_unsafe:
+            if not none_or_reserver(self._drop):
                 return False
+            w = self.well
+            if w is not None and w is not reserver and (w.gate_on or w.gate_reserved):
+                return False
+            for p in self.all_neighbors:
+                if not none_or_reserver(p._drop) or not none_or_reserver(p._reserved_for):
+                    return False
+        self._reserved_for = reserver
         return True
-    
-    def reserve(self) -> bool:
-        if self.reserved:
-            return False
-        self.reserved = True
-        return True
+            
+        
     
     def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
         self._drop_change_callbacks.add(cb, key=key)
@@ -472,7 +502,7 @@ class WellMotion:
                 for (pad, state) in self.pad_states.items():
                     pw = pad.well
                     assert pw is not None
-                    while state is OnOff.ON and not pad.safe_except(pw):
+                    while state is OnOff.ON and not pad.reserve_for(pw):
                         yield True
             for (i, shared) in enumerate(shared_pads):
                 shared.schedule(WellPad.SetState(states[i]), post_result=False)
@@ -769,7 +799,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                 or my_r == waste_reagent) 
         
     def _can_provide(self, reagent: Reagent) -> bool:
-        # If we're empty, there's no mismatch, but ensure_conent() will refil.  Otherwise, we can
+        # If we're empty, there's no mismatch, but ensure_conent() will refill.  Otherwise, we can
         # do it if we don't know or care what we want or we don't know what we have  
         if self.available: return True
         my_r = self.reagent
@@ -883,9 +913,10 @@ class Well(OpScheduler['Well'], BoardComponent):
             on_reagent_mismatch.expect_true(self._can_provide(reagent),
                                             lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
         current_volume = self.volume
-        resulting_volume = current_volume - volume
-        if resulting_volume >= self.min_fill or resulting_volume.is_close_to(self.min_fill):
-            return Delayed.complete(self)
+        if current_volume > Volume.ZERO():
+            above_line = current_volume-self.min_fill
+            if volume < above_line or volume.is_close_to(above_line):
+                return Delayed.complete(self)
         return self.refill(reagent=reagent)
     
     def ensure_space(self, 
@@ -1111,7 +1142,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
     def reserve_pad(self, *, expect_drop: bool = False) -> Delayed[None]:
         pad = self.pad
         return pad.board.on_condition(lambda: expect_drop == (pad.drop is not None) 
-                                                and pad.reserve(),
+                                                and pad.reserve_for(self, allow_unsafe=expect_drop),
                                       lambda: None)
         
     def ensure_drop(self) -> Delayed[None]:

@@ -274,8 +274,8 @@ class MixSequence(NamedTuple):
         # We reserve the pads to make sure that nobody walks closer while
         # we're in a merge. We don't have to worry about contention, because we're
         # already sitting on the pad.
-        for pad in pads:
-            pad.reserve()
+        for d in drops:
+            d.pad.reserve_for(d, allow_unsafe=True)
         for i, step in enumerate(mixes):
             for shuttle in range(n_shuttles+1):
                 for mix in step:
