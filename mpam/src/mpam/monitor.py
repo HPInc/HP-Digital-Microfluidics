@@ -7,7 +7,7 @@ from re import Pattern, Match
 import re
 from threading import RLock, Event, Lock
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
-    ClassVar, MutableMapping, Any, Iterator, Iterable
+    ClassVar, MutableMapping, Any, Iterable
 
 from matplotlib import pyplot
 from matplotlib.artist import Artist
@@ -23,13 +23,11 @@ from matplotlib.text import Annotation
 from matplotlib.widgets import Button, TextBox
 
 from erk.basic import Count, not_None
-from erk.stringutils import map_str
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
-    HeatingMode, BinaryComponent, WellState
+    HeatingMode, BinaryComponent
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent, Ticks, ticks,\
-    StaticOperation, Barrier
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent, Barrier
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
@@ -69,6 +67,15 @@ class ClickableMonitor(ABC):
     
     @abstractmethod
     def list_neighbors(self) -> Sequence[ClickableMonitor]: ...
+    
+    @abstractmethod
+    def current_drop(self) -> Optional[Drop]: ...
+    
+    @abstractmethod
+    def fix_drop(self, drop: Optional[Drop], liquid: Liquid) -> None: ... # @UnusedVariable
+    
+    @abstractmethod
+    def holds_drop(self) -> bool: ...
         
     def draw(self, width: int, color: str) -> None:
         for patch in self.patches:
@@ -178,6 +185,26 @@ class PadMonitor(ClickableMonitor):
         if well is not None:
             neighbors.append(m.wells[well].gate_monitor)
         return neighbors
+    
+    def current_drop(self) -> Optional[Drop]: 
+        if self.current_state is OnOff.OFF:
+            return None
+        drop = self.pad.drop
+        assert drop is not None, f"{self.pad} on but has no drop"
+        return drop
+    
+    def holds_drop(self)->bool:
+        return True
+    
+    def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
+        if drop is None:
+            Drop(self.pad, liquid)
+        else:
+            drop.liquid.volume = liquid.volume
+            drop.liquid.reagent = liquid.reagent
+            drop.status = DropStatus.ON_BOARD
+            drop.pad = self.pad
+    
         
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
@@ -473,7 +500,6 @@ class WellPadMonitor(ClickableMonitor):
     shapes: Final[Sequence[PathPatch]]
     pad: Final[WellPad]
     
-    
     def __init__(self, pad: WellPad, board_monitor: BoardMonitor, 
                  bounds: Union[PadBounds, Sequence[PadBounds]],
                  *,
@@ -519,7 +545,28 @@ class WellPadMonitor(ClickableMonitor):
             return [self.board_monitor.pads[loc.exit_pad]]
         else:
             return []
-
+        
+    def current_drop(self)->Optional[Drop]:
+        well = self.pad.loc
+        if not isinstance(well, Well):
+            return None
+        if self.current_state is OnOff.OFF:
+            return None
+        drop = Drop(well.exit_pad, Liquid(well.reagent, well.dispensed_volume), status=DropStatus.IN_WELL)
+        return drop
+    
+    def holds_drop(self)->bool:
+        return isinstance(self.pad.loc, Well)
+    
+    def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
+        assert isinstance(self, WellPadMonitor)
+        well = self.pad.loc
+        assert isinstance(well, Well)
+        if drop is not None:
+            drop.status = DropStatus.IN_WELL
+            drop.pad.drop = None
+            well.transfer_in(liquid)
+        
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
         for shape in self.shapes:
@@ -657,16 +704,8 @@ class ClickHandler:
                     return None
                 drop = _current_drop.get(cm, None)
                 if drop is None:
-                    if isinstance(cm, PadMonitor):
-                        drop = cm.pad.drop
-                        assert drop is not None, f"{cm.pad} on, but has no drop"
-                    else:
-                        assert isinstance(cm, WellPadMonitor)
-                        wp = cm.pad
-                        well = wp.loc
-                        assert isinstance(well, Well)
-                        drop = Drop(well.exit_pad, Liquid(well.reagent, well.dispensed_volume), status=DropStatus.IN_WELL)
-                    # if we're keeping it here, we note that
+                    drop = cm.current_drop()
+                    assert drop is not None
                     if cm not in changes:
                         pads[drop].append(cm)
                         drops[cm] = [drop]
@@ -683,7 +722,7 @@ class ClickHandler:
             
             for p in changes:
                 # if we're turning the pad on
-                if p.current_state is OnOff.OFF:
+                if p.current_state is OnOff.OFF and p.holds_drop():
                     ds = drops[p] = list(neighbor_drops(p))
                     for drop in ds:
                         pads[drop].append(p) 
@@ -728,22 +767,7 @@ class ClickHandler:
 
                 for cm,liquid in liq.items():
                     drop = adopts.get(cm, None)
-                    if isinstance(cm, PadMonitor):
-                        if drop is None:
-                            Drop(cm.pad, liquid)
-                        else:
-                            drop.liquid.volume = liquid.volume
-                            drop.liquid.reagent = liquid.reagent
-                            drop.status = DropStatus.ON_BOARD
-                            drop.pad = cm.pad
-                    else:
-                        assert isinstance(cm, WellPadMonitor)
-                        well = cm.pad.loc
-                        assert isinstance(well, Well)
-                        if drop is not None:
-                            drop.status = DropStatus.IN_WELL
-                            drop.pad.drop = None
-                            well.transfer_in(liquid)
+                    cm.fix_drop(drop, liquid)
                 for drop in to_remove:
                     if drop.status is DropStatus.ON_BOARD:
                         drop.pad.drop = None
@@ -871,7 +895,7 @@ class BoardMonitor:
             target = self.click_id[artist]
             if target.live:
                 key = event.mouseevent.key
-                with_control = key == "control"
+                # with_control = key == "control"
                 print(f"Clicked on {target} (modifiers: {key})")
                 self.click_handler.process_click(target,with_control=(key=="control"))
             #
