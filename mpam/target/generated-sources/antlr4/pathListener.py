@@ -5,141 +5,153 @@ if __name__ is not None and "." in __name__:
 else:
     from pathParser import pathParser
 
+from mpam.types import Dir 
+
+
 # This class defines a complete listener for a parse tree produced by pathParser.
 class pathListener(ParseTreeListener):
 
-    # Enter a parse tree produced by pathParser#path_def.
-    def enterPath_def(self, ctx:pathParser.Path_defContext):
+    # Enter a parse tree produced by pathParser#paren_expr.
+    def enterParen_expr(self, ctx:pathParser.Paren_exprContext):
         pass
 
-    # Exit a parse tree produced by pathParser#path_def.
-    def exitPath_def(self, ctx:pathParser.Path_defContext):
-        pass
-
-
-    # Enter a parse tree produced by pathParser#drop_def.
-    def enterDrop_def(self, ctx:pathParser.Drop_defContext):
-        pass
-
-    # Exit a parse tree produced by pathParser#drop_def.
-    def exitDrop_def(self, ctx:pathParser.Drop_defContext):
+    # Exit a parse tree produced by pathParser#paren_expr.
+    def exitParen_expr(self, ctx:pathParser.Paren_exprContext):
         pass
 
 
-    # Enter a parse tree produced by pathParser#barrier_def.
-    def enterBarrier_def(self, ctx:pathParser.Barrier_defContext):
+    # Enter a parse tree produced by pathParser#int_expr.
+    def enterInt_expr(self, ctx:pathParser.Int_exprContext):
         pass
 
-    # Exit a parse tree produced by pathParser#barrier_def.
-    def exitBarrier_def(self, ctx:pathParser.Barrier_defContext):
-        pass
-
-
-    # Enter a parse tree produced by pathParser#path.
-    def enterPath(self, ctx:pathParser.PathContext):
-        pass
-
-    # Exit a parse tree produced by pathParser#path.
-    def exitPath(self, ctx:pathParser.PathContext):
+    # Exit a parse tree produced by pathParser#int_expr.
+    def exitInt_expr(self, ctx:pathParser.Int_exprContext):
         pass
 
 
-    # Enter a parse tree produced by pathParser#dir_motion.
-    def enterDir_motion(self, ctx:pathParser.Dir_motionContext):
+    # Enter a parse tree produced by pathParser#coord_expr.
+    def enterCoord_expr(self, ctx:pathParser.Coord_exprContext):
         pass
 
-    # Exit a parse tree produced by pathParser#dir_motion.
-    def exitDir_motion(self, ctx:pathParser.Dir_motionContext):
-        pass
-
-
-    # Enter a parse tree produced by pathParser#to_col.
-    def enterTo_col(self, ctx:pathParser.To_colContext):
-        pass
-
-    # Exit a parse tree produced by pathParser#to_col.
-    def exitTo_col(self, ctx:pathParser.To_colContext):
+    # Exit a parse tree produced by pathParser#coord_expr.
+    def exitCoord_expr(self, ctx:pathParser.Coord_exprContext):
         pass
 
 
-    # Enter a parse tree produced by pathParser#to_row.
-    def enterTo_row(self, ctx:pathParser.To_rowContext):
+    # Enter a parse tree produced by pathParser#horiz_dist.
+    def enterHoriz_dist(self, ctx:pathParser.Horiz_distContext):
         pass
 
-    # Exit a parse tree produced by pathParser#to_row.
-    def exitTo_row(self, ctx:pathParser.To_rowContext):
-        pass
-
-
-    # Enter a parse tree produced by pathParser#to_pad.
-    def enterTo_pad(self, ctx:pathParser.To_padContext):
-        pass
-
-    # Exit a parse tree produced by pathParser#to_pad.
-    def exitTo_pad(self, ctx:pathParser.To_padContext):
+    # Exit a parse tree produced by pathParser#horiz_dist.
+    def exitHoriz_dist(self, ctx:pathParser.Horiz_distContext):
         pass
 
 
-    # Enter a parse tree produced by pathParser#to_well.
-    def enterTo_well(self, ctx:pathParser.To_wellContext):
+    # Enter a parse tree produced by pathParser#injection_expr.
+    def enterInjection_expr(self, ctx:pathParser.Injection_exprContext):
         pass
 
-    # Exit a parse tree produced by pathParser#to_well.
-    def exitTo_well(self, ctx:pathParser.To_wellContext):
-        pass
-
-
-    # Enter a parse tree produced by pathParser#pause_ticks.
-    def enterPause_ticks(self, ctx:pathParser.Pause_ticksContext):
-        pass
-
-    # Exit a parse tree produced by pathParser#pause_ticks.
-    def exitPause_ticks(self, ctx:pathParser.Pause_ticksContext):
+    # Exit a parse tree produced by pathParser#injection_expr.
+    def exitInjection_expr(self, ctx:pathParser.Injection_exprContext):
         pass
 
 
-    # Enter a parse tree produced by pathParser#reach_barrier.
-    def enterReach_barrier(self, ctx:pathParser.Reach_barrierContext):
+    # Enter a parse tree produced by pathParser#drop_expr.
+    def enterDrop_expr(self, ctx:pathParser.Drop_exprContext):
         pass
 
-    # Exit a parse tree produced by pathParser#reach_barrier.
-    def exitReach_barrier(self, ctx:pathParser.Reach_barrierContext):
-        pass
-
-
-    # Enter a parse tree produced by pathParser#pass_barrier.
-    def enterPass_barrier(self, ctx:pathParser.Pass_barrierContext):
-        pass
-
-    # Exit a parse tree produced by pathParser#pass_barrier.
-    def exitPass_barrier(self, ctx:pathParser.Pass_barrierContext):
+    # Exit a parse tree produced by pathParser#drop_expr.
+    def exitDrop_expr(self, ctx:pathParser.Drop_exprContext):
         pass
 
 
-    # Enter a parse tree produced by pathParser#direction.
-    def enterDirection(self, ctx:pathParser.DirectionContext):
+    # Enter a parse tree produced by pathParser#function_expr.
+    def enterFunction_expr(self, ctx:pathParser.Function_exprContext):
         pass
 
-    # Exit a parse tree produced by pathParser#direction.
-    def exitDirection(self, ctx:pathParser.DirectionContext):
-        pass
-
-
-    # Enter a parse tree produced by pathParser#coord.
-    def enterCoord(self, ctx:pathParser.CoordContext):
-        pass
-
-    # Exit a parse tree produced by pathParser#coord.
-    def exitCoord(self, ctx:pathParser.CoordContext):
+    # Exit a parse tree produced by pathParser#function_expr.
+    def exitFunction_expr(self, ctx:pathParser.Function_exprContext):
         pass
 
 
-    # Enter a parse tree produced by pathParser#barrier.
-    def enterBarrier(self, ctx:pathParser.BarrierContext):
+    # Enter a parse tree produced by pathParser#name_expr.
+    def enterName_expr(self, ctx:pathParser.Name_exprContext):
         pass
 
-    # Exit a parse tree produced by pathParser#barrier.
-    def exitBarrier(self, ctx:pathParser.BarrierContext):
+    # Exit a parse tree produced by pathParser#name_expr.
+    def exitName_expr(self, ctx:pathParser.Name_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#addsub_expr.
+    def enterAddsub_expr(self, ctx:pathParser.Addsub_exprContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#addsub_expr.
+    def exitAddsub_expr(self, ctx:pathParser.Addsub_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#muldiv_expr.
+    def enterMuldiv_expr(self, ctx:pathParser.Muldiv_exprContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#muldiv_expr.
+    def exitMuldiv_expr(self, ctx:pathParser.Muldiv_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#attr_expr.
+    def enterAttr_expr(self, ctx:pathParser.Attr_exprContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#attr_expr.
+    def exitAttr_expr(self, ctx:pathParser.Attr_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#horiz_unit.
+    def enterHoriz_unit(self, ctx:pathParser.Horiz_unitContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#horiz_unit.
+    def exitHoriz_unit(self, ctx:pathParser.Horiz_unitContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#vert_unit.
+    def enterVert_unit(self, ctx:pathParser.Vert_unitContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#vert_unit.
+    def exitVert_unit(self, ctx:pathParser.Vert_unitContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#undirected_unit.
+    def enterUndirected_unit(self, ctx:pathParser.Undirected_unitContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#undirected_unit.
+    def exitUndirected_unit(self, ctx:pathParser.Undirected_unitContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#horiz_dir.
+    def enterHoriz_dir(self, ctx:pathParser.Horiz_dirContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#horiz_dir.
+    def exitHoriz_dir(self, ctx:pathParser.Horiz_dirContext):
+        pass
+
+
+    # Enter a parse tree produced by pathParser#vertical_dir.
+    def enterVertical_dir(self, ctx:pathParser.Vertical_dirContext):
+        pass
+
+    # Exit a parse tree produced by pathParser#vertical_dir.
+    def exitVertical_dir(self, ctx:pathParser.Vertical_dirContext):
         pass
 
 
