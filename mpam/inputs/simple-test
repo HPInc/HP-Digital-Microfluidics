@@ -1,3 +1,5 @@
 d = drop @ (3,2);
 
-x = d+2 right: left 2+3 : 1 down;
+x = drop @ d+2 right: left 2+3 : 1 down;
+
+d2 = d: to (5,1);

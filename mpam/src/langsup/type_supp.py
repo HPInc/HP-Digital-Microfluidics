@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Final, Optional, Sequence
+from typing import Final, Optional, Sequence, NamedTuple
+from numpy.testing._private.parameterized import param
 
 
 class Type:
@@ -11,6 +12,7 @@ class Type:
     all_subs: Final[list[Type]]
     
     ANY: Type
+    NONE: Type
     NUMBER: Type
     INT: Type
     FLOAT: Type
@@ -20,13 +22,11 @@ class Type:
     ORIENTED_DROP: Type
     DIR: Type
     ORIENTED_DIR: Type
+    MOTION: MotionType
     DELTA: Type
     ROW: Type
     COLUMN: Type
     BARRIER: Type
-    CALLABLE: Type
-    MACRO: Type
-    BOUND_MACRO: Type
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -63,6 +63,7 @@ class Type:
         return self is rhs or self < rhs
     
 Type.ANY = Type("ANY", is_root=True)
+Type.NONE = Type("NONE")
 Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
 Type.INT = Type("INT", [Type.NUMBER])
@@ -72,13 +73,71 @@ Type.DROP = Type("DROP", [Type.PAD])
 Type.ORIENTED_DROP = Type("ORIENTED_DROP", [Type.DROP])
 Type.DIR = Type("DIR")
 Type.ORIENTED_DIR = Type("ORIENTED_DIR", [Type.DIR])
-Type.CALLABLE = Type("CALLABLE")
-Type.DELTA = Type("DELTA", [Type.CALLABLE])
 Type.ROW = Type("ROW")
 Type.COLUMN = Type("COLUMN")
 Type.BARRIER = Type("BARRIER")
-Type.MACRO = Type("MACRO", [Type.CALLABLE])
-Type.BOUND_MACRO = Type("BOUND_MACRO", [Type.MACRO])
+
+class Signature(NamedTuple):
+    param_types: tuple[Type,...]
+    return_type: Type
+    
+    @classmethod
+    def of(cls, param_types: Sequence[Type], return_type: Type) -> Signature:
+        if not isinstance(param_types, tuple):
+            param_types = tuple(param_types)
+        return Signature(param_types, return_type)
+
+
+class CallableType(Type):
+    sig: Final[Signature]
+    
+    @property
+    def param_types(self) -> Sequence[Type]:
+        return self.sig.param_types
+    
+    @property
+    def return_type(self) -> Type:
+        return self.sig.return_type
+    
+    # param_types: Final[Sequence[Type]]
+    # return_type: Final[Type]
+    
+    def __init__(self,
+                 name: str,  
+                 param_types: Sequence[Type],
+                 return_type: Type,
+                 *,
+                 supers: Optional[Sequence[Type]] = None):
+        super().__init__(name, supers)
+        self.sig = Signature.of(param_types, return_type)
+        
+class MotionType(CallableType):
+    def __init__(self):
+        super().__init__("MOTION", (Type.DROP,), Type.DROP)
+        
+Type.MOTION = MotionType()
+        
+Type.DELTA = Type("DELTA", [Type.MOTION])
+
+
+
+class MacroType(CallableType):
+    instances = dict[Signature, 'MacroType']()
+    
+    def __init__(self, 
+                 param_types: Sequence[Type],
+                 return_type: Type):
+        super().__init__(f"Callable[({','.join(t.name for t in param_types)}),{return_type.name}]", 
+                         param_types, return_type)
+        
+    @classmethod
+    def find(cls, param_types: Sequence[Type], return_type: Type) -> MacroType:
+        sig = Signature.of(param_types, return_type)
+        mt = cls.instances.get(sig, None)
+        if mt is None:
+            mt = MacroType(param_types, return_type)
+            cls.instances[sig] = mt
+        return mt
 
 if __name__ == '__main__':
     def check(lhs: Type, rhs: Type) -> None:
