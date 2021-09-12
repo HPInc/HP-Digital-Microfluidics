@@ -16,14 +16,18 @@ class Type:
     NUMBER: Type
     INT: Type
     FLOAT: Type
+    BINARY_STATE: Type
     WELL: Type
+    BINARY_CPT: Type
     PAD: Type
+    WELL_PAD: Type
     DROP: Type
     ORIENTED_DROP: Type
     DIR: Type
     ORIENTED_DIR: Type
     MOTION: MotionType
     DELTA: Type
+    TWIDDLE_OP: TwiddleOpType
     ROW: Type
     COLUMN: Type
     BARRIER: Type
@@ -68,7 +72,10 @@ Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
 Type.INT = Type("INT", [Type.NUMBER])
 Type.FLOAT = Type("FLOAT", [Type.NUMBER])
-Type.PAD = Type("PAD")
+Type.BINARY_STATE = Type("BINARY_STATE")
+Type.BINARY_CPT = Type("BINARY_CPT")
+Type.PAD = Type("PAD", [Type.BINARY_CPT])
+Type.WELL_PAD = Type("WELL_PAD", [Type.BINARY_CPT])
 Type.DROP = Type("DROP", [Type.PAD])
 Type.ORIENTED_DROP = Type("ORIENTED_DROP", [Type.DROP])
 Type.DIR = Type("DIR")
@@ -118,6 +125,12 @@ class MotionType(CallableType):
 Type.MOTION = MotionType()
         
 Type.DELTA = Type("DELTA", [Type.MOTION])
+
+class TwiddleOpType(CallableType):
+    def __init__(self):
+        super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.BINARY_STATE)
+        
+Type.TWIDDLE_OP = TwiddleOpType()
 
 
 

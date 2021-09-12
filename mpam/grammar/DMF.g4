@@ -13,35 +13,36 @@ from langsup.type_supp import Type
 
 
 macro_file
-  : top_level_stat* EOF
+  : stat* EOF 
   ;
   
 interactive
   : compound EOF  # compound_interactive
   | assignment EOF # assignment_interactive
   | expr EOF # expr_interactive
-  | pad_op EOF # pad_op_interactive 
+//  | pad_op EOF # pad_op_interactive 
   ;
 
 
-top_level_stat
-  : assignment TERMINATOR
-  ;
+//top_level_stat
+//  : assignment TERMINATOR                        # assignment_tls
+//  | which=name ASSIGN macro_header body=compound # macro_def_tls
+//  ;
   
 assignment
   : which=name ASSIGN what=expr
   ;
   
-pad_op
-  : 'turn' which=expr (ON | OFF)
-  | 'turn' (ON|OFF) which=expr
-  | TOGGLE which=expr   
-  ;
+//pad_op
+//  : 'turn'? which=expr (ON | OFF)
+//  | 'turn' (ON|OFF) which=expr
+//  | TOGGLE which=expr   
+//  ;
   
 stat
   : assignment TERMINATOR  # assign_stat
-  | which=name ASSIGN macro_header body=compound # macro_def_stat
-  | pad_op TERMINATOR    # pad_op_stat
+//  | which=name ASSIGN macro_header body=compound # macro_def_stat
+//  | pad_op TERMINATOR    # pad_op_stat
   | expr TERMINATOR      # expr_stat
   | compound             # compound_stat
   ;
@@ -51,8 +52,8 @@ compound
   | '[[' stat* ']]'       # par_block
   ;
 
-expr returns [bool has_side_effect = False]
-  : '(' expr ')' {$ctx.has_side_effect=$expr.has_side_effect} # paren_expr
+expr 
+  : '(' expr ')'  # paren_expr
   | '(' x=expr ',' y=expr ')' 		 # coord_expr
   | '-' rhs=expr                     # neg_expr
   | who=expr '[' which=expr ']'      # index_expr
@@ -64,10 +65,14 @@ expr returns [bool has_side_effect = False]
   | 'well' '#' which=expr            # well_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr
   | well=expr ATTR 'gate'            # gate_expr
+  | well=expr ATTR 'exit' 'pad'      # exit_pad_expr
   | who=expr INJECT what=expr        # injection_expr
   | macro_def                        # macro_expr
-  | param_type ( n=INT )?            # type_name_expr
-  | name  '(' args+=expr (',' args+=expr)* ')' # function_expr
+  | 'turn'? (ON | OFF)               # twiddle_expr
+  | 'toggle' 'state'?                # twiddle_expr
+  | 'the'? param_type                # type_name_expr
+  | param_type n=INT                 # type_name_expr
+  | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
   | INT                              # int_expr
   ;

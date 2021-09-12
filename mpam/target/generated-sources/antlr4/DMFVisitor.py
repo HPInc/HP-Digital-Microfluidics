@@ -36,38 +36,13 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#pad_op_interactive.
-    def visitPad_op_interactive(self, ctx:DMFParser.Pad_op_interactiveContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#top_level_stat.
-    def visitTop_level_stat(self, ctx:DMFParser.Top_level_statContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#assignment.
     def visitAssignment(self, ctx:DMFParser.AssignmentContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#pad_op.
-    def visitPad_op(self, ctx:DMFParser.Pad_opContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#assign_stat.
     def visitAssign_stat(self, ctx:DMFParser.Assign_statContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#macro_def_stat.
-    def visitMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#pad_op_stat.
-    def visitPad_op_stat(self, ctx:DMFParser.Pad_op_statContext):
         return self.visitChildren(ctx)
 
 
@@ -111,6 +86,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#exit_pad_expr.
+    def visitExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#index_expr.
     def visitIndex_expr(self, ctx:DMFParser.Index_exprContext):
         return self.visitChildren(ctx)
@@ -138,6 +118,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#coord_expr.
     def visitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#twiddle_expr.
+    def visitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
         return self.visitChildren(ctx)
 
 

@@ -98,7 +98,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             def cb() -> Optional[Callback]:
                 old = obj.current_state
                 new = mod(old)
-                # print(f"Setting {obj} to {new}")
+                print(f"Setting {obj} to {new}")
                 setter(new)
                 obj.current_state= new
                 # print(f"Back from setting {obj} val = {obj._state}")

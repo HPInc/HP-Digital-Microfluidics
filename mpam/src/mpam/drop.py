@@ -65,7 +65,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     yield one_tick
                 with system.batched():
                     # print(f"Tick number {system.clock.next_tick}")
-                    # print(f"Moving drop from {last_pad} to {next_pad}")
+                    print(f"Moving drop from {last_pad} to {next_pad}")
                     assert last_pad == drop.pad, f"{i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}"
                     next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False)
                     last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False)

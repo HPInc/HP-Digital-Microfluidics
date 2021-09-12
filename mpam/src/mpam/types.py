@@ -636,6 +636,11 @@ class Delayed(Generic[T]):
         self.when_value(lambda val: fn(val).post_to(future))
         return future
     
+    def transformed(self, fn: Callable[[T], V]) -> Delayed[V]:
+        future = Delayed[V]()
+        self.when_value(lambda val: future.post(fn(val)))
+        return future
+    
     def then_trigger(self, trigger: Trigger) -> Delayed[T]:
         self.when_value(lambda _: trigger.fire())
         return self

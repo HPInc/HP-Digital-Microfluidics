@@ -51,24 +51,6 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#pad_op_interactive.
-    def enterPad_op_interactive(self, ctx:DMFParser.Pad_op_interactiveContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#pad_op_interactive.
-    def exitPad_op_interactive(self, ctx:DMFParser.Pad_op_interactiveContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#top_level_stat.
-    def enterTop_level_stat(self, ctx:DMFParser.Top_level_statContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#top_level_stat.
-    def exitTop_level_stat(self, ctx:DMFParser.Top_level_statContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#assignment.
     def enterAssignment(self, ctx:DMFParser.AssignmentContext):
         pass
@@ -78,39 +60,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#pad_op.
-    def enterPad_op(self, ctx:DMFParser.Pad_opContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#pad_op.
-    def exitPad_op(self, ctx:DMFParser.Pad_opContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#assign_stat.
     def enterAssign_stat(self, ctx:DMFParser.Assign_statContext):
         pass
 
     # Exit a parse tree produced by DMFParser#assign_stat.
     def exitAssign_stat(self, ctx:DMFParser.Assign_statContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#macro_def_stat.
-    def enterMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#macro_def_stat.
-    def exitMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#pad_op_stat.
-    def enterPad_op_stat(self, ctx:DMFParser.Pad_op_statContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#pad_op_stat.
-    def exitPad_op_stat(self, ctx:DMFParser.Pad_op_statContext):
         pass
 
 
@@ -186,6 +141,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#exit_pad_expr.
+    def enterExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#exit_pad_expr.
+    def exitExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#index_expr.
     def enterIndex_expr(self, ctx:DMFParser.Index_exprContext):
         pass
@@ -237,6 +201,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#coord_expr.
     def exitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#twiddle_expr.
+    def enterTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#twiddle_expr.
+    def exitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
         pass
 
 
