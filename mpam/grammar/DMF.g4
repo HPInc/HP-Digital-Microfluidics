@@ -20,6 +20,7 @@ interactive
   : compound EOF  # compound_interactive
   | assignment EOF # assignment_interactive
   | expr EOF # expr_interactive
+  | EOF # empty_interactive
 //  | pad_op EOF # pad_op_interactive 
   ;
 
@@ -63,9 +64,9 @@ expr
   | direction dist=expr              # delta_expr
   | 'to' axis? which=expr            # to_expr
   | 'well' '#' which=expr            # well_expr
-  | 'drop' ('@' | 'at') loc=expr     # drop_expr
   | well=expr ATTR 'gate'            # gate_expr
   | well=expr ATTR 'exit' 'pad'      # exit_pad_expr
+  | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | who=expr INJECT what=expr        # injection_expr
   | macro_def                        # macro_expr
   | 'turn'? (ON | OFF)               # twiddle_expr

@@ -241,6 +241,8 @@ class Conversions:
     
 Conversions.register(Type.DROP, Type.PAD,
                      lambda drop: drop.pad)
+Conversions.register(Type.DROP, Type.BINARY_CPT,
+                     lambda drop: drop.pad)
 
 class Executable(NamedTuple):
     return_type: Type
@@ -264,25 +266,39 @@ class DMFInterpreter:
     globals: Final[Environment]
     namespace: Final[TypeMap]
     
-    def __init__(self, file_name: str, *, board: Board, encoding: str='ascii', errors: str='strict') -> None:
+    def __init__(self, file_name: Optional[str], *, board: Board, encoding: str='ascii', errors: str='strict') -> None:
         self.globals = Environment(None, board=board)
-        parser = self.get_parser(FileStream(file_name, encoding, errors))
-        tree = parser.macro_file()
-        assert isinstance(tree, DMFParser.Macro_fileContext)
-        compiler = DMFCompiler()
-        self.namespace = compiler.global_types
-        executable = compiler.visit(tree)
-        assert isinstance(executable, Executable)
-        executable.evaluate(self.globals).wait()
+        if file_name is not None:
+            parser = self.get_parser(FileStream(file_name, encoding, errors))
+            tree = parser.macro_file()
+            assert isinstance(tree, DMFParser.Macro_fileContext)
+            compiler = DMFCompiler()
+            ns = compiler.global_types
+            executable = compiler.visit(tree)
+            assert isinstance(executable, Executable)
+            executable.evaluate(self.globals).wait()
+        else:
+            ns = TypeMap(None)
+        self.namespace = ns
         
-    def evaluate(self, expr: str, required: Optional[Type] = None) -> Delayed[Any]:
+    def set_global(self, name: str, val: Any, vtype: Type):
+        self.namespace[name] = vtype
+        self.globals[name] = val
+        
+        
+    def evaluate(self, expr: str, required: Optional[Type] = None, *, 
+                 cache_as: Optional[str] = None) -> Delayed[Any]:
         parser = self.get_parser(InputStream(expr))
         tree = parser.interactive()
         assert isinstance(tree, DMFParser.InteractiveContext)
         compiler = DMFCompiler(global_types = self.namespace)
         executable = compiler.visit(tree)
         assert isinstance(executable, Executable)
-        return executable.evaluate(self.globals, required=required)
+        future = executable.evaluate(self.globals, required=required)
+        if cache_as is not None and executable.return_type is not Type.IGNORE:
+            cvar = cache_as
+            future.then_call(lambda val: self.set_global(cvar, val, executable.return_type))
+        return future
     
     def get_parser(self, input_stream: InputStream) -> DMFParser:
         lexer = DMFLexer(input_stream)
@@ -311,7 +327,7 @@ class DMFCompiler(DMFVisitor):
         
     def error(self, ctx:ParserRuleContext, return_type: Type, msg:str) -> Executable:
         print(f"line {ctx.start.line}:{ctx.start.column} {msg}")
-        return Executable(return_type, self.default_creators[return_type])
+        return Executable(return_type, lambda env: Delayed.complete(self.default_creators[return_type](env)))
         
     def text_of(self, ctx_or_token: Union[ParserRuleContext, TerminalNode]) -> str:
         if isinstance(ctx_or_token, TerminalNode):
@@ -342,16 +358,19 @@ class DMFCompiler(DMFVisitor):
         return Executable(Type.NONE, run)
 
 
-    def visitCompound_interactive(self, ctx:DMFParser.Compound_interactiveContext):
-        return DMFVisitor.visitCompound_interactive(self, ctx)
+    def visitCompound_interactive(self, ctx:DMFParser.Compound_interactiveContext) -> Executable:
+        return self.visit(ctx.compound())
 
 
-    def visitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext):
-        return DMFVisitor.visitAssignment_interactive(self, ctx)
+    def visitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext) -> Executable:
+        return self.visit(ctx.assignment())
 
 
-    def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext):
-        return DMFVisitor.visitExpr_interactive(self, ctx)
+    def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext) -> Executable:
+        return self.visit(ctx.expr())
+    
+    def visitEmpty_interactive(self, ctx:DMFParser.Empty_interactiveContext) -> Executable:
+        return Executable(Type.IGNORE, lambda env: Delayed.complete(None))
 
     
     # def visitAssignment_tls(self, ctx:DMFParser.Assignment_tlsContext) -> Executable:
@@ -377,7 +396,7 @@ class DMFCompiler(DMFVisitor):
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val) -> Any:
                 env[name] = val
-                print(f"Assigned {name} := {val}")
+                # print(f"Assigned {name} := {val}")
                 return val
             return value.evaluate(env, required_type).transformed(do_assignment)
         return Executable(returned_type, run)
@@ -449,8 +468,18 @@ class DMFCompiler(DMFVisitor):
         return self.visit(ctx.expr())
 
 
-    def visitNeg_expr(self, ctx:DMFParser.Neg_exprContext):
-        return DMFVisitor.visitNeg_expr(self, ctx)
+    def visitNeg_expr(self, ctx:DMFParser.Neg_exprContext) -> Executable:
+        rhs = self.visit(ctx.rhs)
+        if rhs.return_type <= Type.INT:
+            def run(env: Environment) -> Delayed[int]:
+                def compute(x: int):
+                    return -x
+                return rhs.evaluate(env, Type.INT).transformed(compute)
+            return Executable(Type.INT, run)
+        else:
+            return self.error(ctx, Type.NONE,
+                              f"Can't negate {rhs.return_type.name}: {self.text_of(ctx)}")
+
 
 
     def visitInt_expr(self, ctx:DMFParser.Int_exprContext):

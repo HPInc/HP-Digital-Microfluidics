@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
-    _SubParsersAction, _ArgumentGroup
+    _SubParsersAction, _ArgumentGroup, FileType
 from re import Pattern
 import re
 from typing import Final, Mapping, Union, Optional, Sequence, Any
@@ -203,7 +203,8 @@ class Exerciser(ABC):
                                  min_time=args.min_time,
                                  max_time=args.max_time,
                                  update_interval=args.update_interval,
-                                 control_setup = make_controls
+                                 control_setup = make_controls,
+                                 macro_file_name = args.macro_file
                                  )
             
     def parse_args(self, 
@@ -270,4 +271,10 @@ class Exerciser(ABC):
                             The maximum amount of time between display updates.  
                             Default is {self.default_update_interval}.
                             ''')
+        group.add_argument('--macro-file', 
+                           # type=FileType(), 
+                           metavar='FILE', 
+                           help=f'''
+                           A file containing DMF macro definitions.
+                           ''')
 

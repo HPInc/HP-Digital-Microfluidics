@@ -51,6 +51,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#empty_interactive.
+    def enterEmpty_interactive(self, ctx:DMFParser.Empty_interactiveContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#empty_interactive.
+    def exitEmpty_interactive(self, ctx:DMFParser.Empty_interactiveContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#assignment.
     def enterAssignment(self, ctx:DMFParser.AssignmentContext):
         pass

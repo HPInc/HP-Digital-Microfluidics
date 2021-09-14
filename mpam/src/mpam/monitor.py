@@ -36,6 +36,7 @@ from quantities.timestamp import time_now
 from mpam import paths
 from _collections import defaultdict
 from abc import ABC, abstractmethod
+from langsup.dmf_lang import DMFInterpreter
 
 
 class ClickableMonitor(ABC):
@@ -821,6 +822,7 @@ class BoardMonitor:
     close_event: Final[Event]
     legend: Final[ReagentLegend]
     click_handler: Final[ClickHandler]
+    macro_file_name: Final[Optional[str]]
     
     _control_widgets: Final[Any]
     
@@ -846,7 +848,8 @@ class BoardMonitor:
     
     def __init__(self, board: Board, *,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
-                 control_fraction: Optional[float] = None) -> None:
+                 control_fraction: Optional[float] = None,
+                 macro_file_name: Optional[str] = None) -> None:
         self.board = board
         self.drop_map = dict[Drop, DropMonitor]()
         self.lock = RLock()
@@ -854,6 +857,7 @@ class BoardMonitor:
         self.click_id = {}
         self.close_event = Event()
         self.click_handler = ClickHandler(self)
+        self.macro_file_name = macro_file_name
         
         self.no_bounds = True
         
@@ -862,7 +866,8 @@ class BoardMonitor:
             control_fraction = 0.15
 
         # self.figure = pyplot.figure(figsize=(10,8), constrained_layout=True)
-        self.figure = pyplot.figure(figsize=(10,8))        
+        self.figure = pyplot.figure(figsize=(10,8))
+        self.figure.canvas.mpl_disconnect(self.figure.canvas.manager.key_press_handler_id)
         main_grid = GridSpec(2,1, height_ratios = [1-control_fraction, control_fraction])
         self.plot = pyplot.subplot(main_grid[0, :])
         # self.controls = pyplot.subplot(main_grid[1, :])
@@ -1106,12 +1111,36 @@ class BoardMonitor:
         
         return (text, apply)
     
+    def dmf_lang_widgets(self, spec: SubplotSpec) -> Any:
+        grid = GridSpecFromSubplotSpec(1, 2, spec, width_ratios = [5,1])
+        fig = self.figure
+        text = TextBox(fig.add_subplot(grid[0,0]), "Expr:",
+                       # label_pad = 0.2
+                       )
+        text.label.set_fontsize("small")
+        
+        apply = Button(fig.add_subplot(grid[0,1]), "Do it")
+        
+        macro_file: Optional[str] = self.macro_file_name
+        interp = DMFInterpreter(macro_file, board=self.board)
+        def on_press(event: Event) -> None: # @UnusedVariable
+            expr = text.text.strip()
+            if len(expr) > 0:
+                print(f"Interactive cmd: {expr}")
+                interp.evaluate(expr, cache_as="last").then_call(lambda res: print(f"  Interactive cmd val: {res}"))
+                text.set_val("")
+        apply.on_clicked(on_press)
+        text.on_submit(on_press)
+        
+        return (text, apply)
+    
     
     def default_control_widgets(self, spec: SubplotSpec) -> Any:
         grid = GridSpecFromSubplotSpec(1,2, spec, width_ratios=[1,1])
         clock = self.clock_widgets(grid[0,0])
-        path = self.path_widgets(grid[0,1])
-        return (clock, path)
+        # path = self.path_widgets(grid[0,1])
+        cmd = self.dmf_lang_widgets(grid[0,1])
+        return (clock, cmd)
         
     def setup_heater_poll(self, heater: Heater) -> None:
         interval = heater.polling_interval

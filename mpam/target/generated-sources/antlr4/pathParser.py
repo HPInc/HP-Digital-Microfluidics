@@ -193,12 +193,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitParen_expr" ):
                 listener.exitParen_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParen_expr" ):
-                return visitor.visitParen_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Int_exprContext(ExprContext):
 
@@ -216,12 +210,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitInt_expr" ):
                 listener.exitInt_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInt_expr" ):
-                return visitor.visitInt_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Coord_exprContext(ExprContext):
@@ -246,12 +234,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitCoord_expr" ):
                 listener.exitCoord_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCoord_expr" ):
-                return visitor.visitCoord_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Horiz_distContext(ExprContext):
@@ -289,12 +271,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitHoriz_dist" ):
                 listener.exitHoriz_dist(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHoriz_dist" ):
-                return visitor.visitHoriz_dist(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Injection_exprContext(ExprContext):
 
@@ -321,12 +297,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitInjection_expr" ):
                 listener.exitInjection_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInjection_expr" ):
-                return visitor.visitInjection_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Drop_exprContext(ExprContext):
 
@@ -346,12 +316,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitDrop_expr" ):
                 listener.exitDrop_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDrop_expr" ):
-                return visitor.visitDrop_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Function_exprContext(ExprContext):
@@ -380,12 +344,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitFunction_expr" ):
                 listener.exitFunction_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunction_expr" ):
-                return visitor.visitFunction_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Name_exprContext(ExprContext):
 
@@ -404,12 +362,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitName_expr" ):
                 listener.exitName_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitName_expr" ):
-                return visitor.visitName_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Addsub_exprContext(ExprContext):
@@ -439,12 +391,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitAddsub_expr" ):
                 listener.exitAddsub_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAddsub_expr" ):
-                return visitor.visitAddsub_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Muldiv_exprContext(ExprContext):
 
@@ -472,12 +418,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitMuldiv_expr" ):
                 listener.exitMuldiv_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMuldiv_expr" ):
-                return visitor.visitMuldiv_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Attr_exprContext(ExprContext):
@@ -508,12 +448,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitAttr_expr" ):
                 listener.exitAttr_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAttr_expr" ):
-                return visitor.visitAttr_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -843,12 +777,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitHoriz_unit" ):
                 listener.exitHoriz_unit(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHoriz_unit" ):
-                return visitor.visitHoriz_unit(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -923,12 +851,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitVert_unit" ):
                 listener.exitVert_unit(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitVert_unit" ):
-                return visitor.visitVert_unit(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -986,12 +908,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitUndirected_unit" ):
                 listener.exitUndirected_unit(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitUndirected_unit" ):
-                return visitor.visitUndirected_unit(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1077,12 +993,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitHoriz_dir" ):
                 listener.exitHoriz_dir(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitHoriz_dir" ):
-                return visitor.visitHoriz_dir(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1161,12 +1071,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitVertical_dir" ):
                 listener.exitVertical_dir(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitVertical_dir" ):
-                return visitor.visitVertical_dir(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1239,12 +1143,6 @@ class pathParser ( Parser ):
             if hasattr( listener, "exitName" ):
                 listener.exitName(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitName" ):
-                return visitor.visitName(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1295,12 +1193,6 @@ class pathParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitKwd_names" ):
                 listener.exitKwd_names(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKwd_names" ):
-                return visitor.visitKwd_names(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 

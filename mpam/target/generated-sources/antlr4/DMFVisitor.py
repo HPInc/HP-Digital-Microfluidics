@@ -36,6 +36,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#empty_interactive.
+    def visitEmpty_interactive(self, ctx:DMFParser.Empty_interactiveContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#assignment.
     def visitAssignment(self, ctx:DMFParser.AssignmentContext):
         return self.visitChildren(ctx)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Final, Optional, Sequence, NamedTuple
-from numpy.testing._private.parameterized import param
 
 
 class Type:
@@ -13,6 +12,7 @@ class Type:
     
     ANY: Type
     NONE: Type
+    IGNORE: Type
     NUMBER: Type
     INT: Type
     FLOAT: Type
@@ -68,6 +68,7 @@ class Type:
     
 Type.ANY = Type("ANY", is_root=True)
 Type.NONE = Type("NONE")
+Type.IGNORE = Type("IGNORE")
 Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
 Type.INT = Type("INT", [Type.NUMBER])

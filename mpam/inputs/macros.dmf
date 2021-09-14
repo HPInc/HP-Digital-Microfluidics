@@ -1,0 +1,61 @@
+rectangle=macro(d: drop, w: int, h: int) {
+  d : right w : up h : left w : down h;
+};
+
+walk_rectangle = macro(drop) { 
+  rectangle(drop, 5, 3);
+};
+
+ready = macro(w: well) {
+  [[
+    w[0]: off;
+    w[1]: off;
+    w[2]: off;
+    w[3]: off;
+    w[4]: off;
+    w[5]: off;
+    w[6]: on;
+    w[7]: on;
+    w[8]: off;
+    w's gate: off;
+  ]]
+};
+
+disp1 = macro(w: well) {
+  [[ w[3]: on; w[4]: on; w[5]: on; ]]
+  [[ w[0]: on; w[1]: on; w[2]: on; ]]
+  w's gate: on; 
+  w's exit pad: on;
+  [[ w's gate: off;
+     w[0]: off;
+     w[1]: off;
+     w[2]: off;
+     w[3]: off;
+     w[5]: off;
+  ]]
+  [[ w[0]: on; w[1]: on; w[2]: on; ]]
+  w: ready; 
+  drop@w's exit pad;
+};
+
+disp2 = macro(w: well) {
+  [[ w[3]: on; w[4]: on; w[5]: on; w[7]: off; ]]
+  [[ w[0]: on; w[1]: on; w[2]: on; w[6]: off; ]]
+  [[ w's gate: on; 
+     w's exit pad: on;
+     w[3]: off; 
+     w[5]: off; 
+  ]] 
+  w's gate: off;
+  [[ 
+     w[0]: off;
+     w[2]: off;
+     w[6]: on;
+  ]]
+  [[ 
+     w[1]: off; 
+     w[7]: on; 
+  ]]
+  w: ready; 
+  drop@w's exit pad;
+};

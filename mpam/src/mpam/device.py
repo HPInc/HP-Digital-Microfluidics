@@ -98,7 +98,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             def cb() -> Optional[Callback]:
                 old = obj.current_state
                 new = mod(old)
-                print(f"Setting {obj} to {new}")
+                # print(f"Setting {obj} to {new}")
                 setter(new)
                 obj.current_state= new
                 # print(f"Back from setting {obj} val = {obj._state}")
@@ -1629,7 +1629,8 @@ class System:
                       max_time: Optional[Time] = None, 
                       update_interval: Time = 20*ms,
                       control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
-                      control_fraction: Optional[float] = None
+                      control_fraction: Optional[float] = None,
+                      macro_file_name: Optional[str] = None
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -1644,7 +1645,8 @@ class System:
         thread = Thread(target=run_it)
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
-                               control_fraction=control_fraction)
+                               control_fraction=control_fraction,
+                               macro_file_name=macro_file_name)
         self.monitor = monitor
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),

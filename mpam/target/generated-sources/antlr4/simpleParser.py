@@ -232,12 +232,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitMacro_file" ):
                 listener.exitMacro_file(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_file" ):
-                return visitor.visitMacro_file(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -313,12 +307,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitAssign_stat" ):
                 listener.exitAssign_stat(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAssign_stat" ):
-                return visitor.visitAssign_stat(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
     def top_level_stat(self):
@@ -373,12 +361,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitStat" ):
                 listener.exitStat(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitStat" ):
-                return visitor.visitStat(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -453,12 +435,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitPar_block" ):
                 listener.exitPar_block(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitPar_block" ):
-                return visitor.visitPar_block(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class BlockContext(CompoundContext):
 
@@ -480,12 +456,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitBlock" ):
                 listener.exitBlock(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitBlock" ):
-                return visitor.visitBlock(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -580,12 +550,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitParen_expr" ):
                 listener.exitParen_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParen_expr" ):
-                return visitor.visitParen_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Neg_exprContext(ExprContext):
 
@@ -608,12 +572,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitNeg_expr" ):
                 listener.exitNeg_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitNeg_expr" ):
-                return visitor.visitNeg_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Int_exprContext(ExprContext):
 
@@ -631,12 +589,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitInt_expr" ):
                 listener.exitInt_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInt_expr" ):
-                return visitor.visitInt_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Type_name_exprContext(ExprContext):
@@ -659,12 +611,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitType_name_expr" ):
                 listener.exitType_name_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitType_name_expr" ):
-                return visitor.visitType_name_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Index_exprContext(ExprContext):
@@ -690,12 +636,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitIndex_expr" ):
                 listener.exitIndex_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitIndex_expr" ):
-                return visitor.visitIndex_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Macro_exprContext(ExprContext):
 
@@ -715,12 +655,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitMacro_expr" ):
                 listener.exitMacro_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_expr" ):
-                return visitor.visitMacro_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Name_exprContext(ExprContext):
 
@@ -739,12 +673,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitName_expr" ):
                 listener.exitName_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitName_expr" ):
-                return visitor.visitName_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Addsub_exprContext(ExprContext):
@@ -774,12 +702,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitAddsub_expr" ):
                 listener.exitAddsub_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAddsub_expr" ):
-                return visitor.visitAddsub_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Delta_exprContext(ExprContext):
 
@@ -802,12 +724,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitDelta_expr" ):
                 listener.exitDelta_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDelta_expr" ):
-                return visitor.visitDelta_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Coord_exprContext(ExprContext):
@@ -832,12 +748,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitCoord_expr" ):
                 listener.exitCoord_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitCoord_expr" ):
-                return visitor.visitCoord_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Injection_exprContext(ExprContext):
@@ -865,12 +775,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitInjection_expr" ):
                 listener.exitInjection_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitInjection_expr" ):
-                return visitor.visitInjection_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Gate_exprContext(ExprContext):
 
@@ -893,12 +797,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitGate_expr" ):
                 listener.exitGate_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitGate_expr" ):
-                return visitor.visitGate_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Well_exprContext(ExprContext):
 
@@ -919,12 +817,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitWell_expr" ):
                 listener.exitWell_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitWell_expr" ):
-                return visitor.visitWell_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class Drop_exprContext(ExprContext):
 
@@ -944,12 +836,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitDrop_expr" ):
                 listener.exitDrop_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDrop_expr" ):
-                return visitor.visitDrop_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Function_exprContext(ExprContext):
@@ -978,12 +864,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitFunction_expr" ):
                 listener.exitFunction_expr(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitFunction_expr" ):
-                return visitor.visitFunction_expr(self)
-            else:
-                return visitor.visitChildren(self)
-
 
     class To_exprContext(ExprContext):
 
@@ -1006,12 +886,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitTo_expr" ):
                 listener.exitTo_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitTo_expr" ):
-                return visitor.visitTo_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
     class Muldiv_exprContext(ExprContext):
@@ -1040,12 +914,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitMuldiv_expr" ):
                 listener.exitMuldiv_expr(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMuldiv_expr" ):
-                return visitor.visitMuldiv_expr(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1368,12 +1236,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitDirection" ):
                 listener.exitDirection(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitDirection" ):
-                return visitor.visitDirection(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1466,12 +1328,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitAxis" ):
                 listener.exitAxis(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitAxis" ):
-                return visitor.visitAxis(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1541,12 +1397,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitMacro_def" ):
                 listener.exitMacro_def(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitMacro_def" ):
-                return visitor.visitMacro_def(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 
@@ -1633,12 +1483,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitParam" ):
                 listener.exitParam(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParam" ):
-                return visitor.visitParam(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1709,12 +1553,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitParam_type" ):
                 listener.exitParam_type(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitParam_type" ):
-                return visitor.visitParam_type(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1781,12 +1619,6 @@ class simpleParser ( Parser ):
             if hasattr( listener, "exitName" ):
                 listener.exitName(self)
 
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitName" ):
-                return visitor.visitName(self)
-            else:
-                return visitor.visitChildren(self)
-
 
 
 
@@ -1837,12 +1669,6 @@ class simpleParser ( Parser ):
         def exitRule(self, listener:ParseTreeListener):
             if hasattr( listener, "exitKwd_names" ):
                 listener.exitKwd_names(self)
-
-        def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitKwd_names" ):
-                return visitor.visitKwd_names(self)
-            else:
-                return visitor.visitChildren(self)
 
 
 

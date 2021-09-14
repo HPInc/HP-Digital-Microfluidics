@@ -2,7 +2,6 @@ from devices import joey
 from langsup.dmf_lang import DMFInterpreter
 import sys
 from mpam.device import System
-from mpam import engine
     
 if __name__ == '__main__':
     board = joey.Board()

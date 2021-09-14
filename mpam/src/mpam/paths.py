@@ -1,17 +1,17 @@
 from __future__ import  annotations
 
-from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence,\
+from re import Pattern, Match
+import re
+from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence, \
     overload
 
 from mpam.device import Well, ExtractionPoint, Pad, System, Board
 from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
-    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T,\
-    Trigger, WaitableType
-from quantities.dimensions import Volume, Time
-import re
-from re import Pattern, Match
+    DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T, \
+    WaitableType
+from quantities.dimensions import Volume
 
 
 Schedulable = Union['Path.Start', 'Path.Full',
