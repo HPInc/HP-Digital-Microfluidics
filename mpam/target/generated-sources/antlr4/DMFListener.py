@@ -132,6 +132,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#const_rc_expr.
+    def enterConst_rc_expr(self, ctx:DMFParser.Const_rc_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#const_rc_expr.
+    def exitConst_rc_expr(self, ctx:DMFParser.Const_rc_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#int_expr.
     def enterInt_expr(self, ctx:DMFParser.Int_exprContext):
         pass
@@ -165,6 +174,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#index_expr.
     def exitIndex_expr(self, ctx:DMFParser.Index_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#n_rc_expr.
+    def enterN_rc_expr(self, ctx:DMFParser.N_rc_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#n_rc_expr.
+    def exitN_rc_expr(self, ctx:DMFParser.N_rc_exprContext):
         pass
 
 
@@ -291,6 +309,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#direction.
     def exitDirection(self, ctx:DMFParser.DirectionContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#rc.
+    def enterRc(self, ctx:DMFParser.RcContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#rc.
+    def exitRc(self, ctx:DMFParser.RcContext):
         pass
 
 

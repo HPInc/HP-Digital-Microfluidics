@@ -57,13 +57,15 @@ expr
   : '(' expr ')'  # paren_expr
   | '(' x=expr ',' y=expr ')' 		 # coord_expr
   | '-' rhs=expr                     # neg_expr
-  | who=expr '[' which=expr ']'      # index_expr
   | dist=expr direction              # delta_expr
+  | INT rc[$INT.int]           # const_rc_expr
+  | dist=expr rc[0]           # n_rc_expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | direction dist=expr              # delta_expr
   | 'to' axis? which=expr            # to_expr
   | 'well' '#' which=expr            # well_expr
+  | who=expr '[' which=expr ']'      # index_expr
   | well=expr ATTR 'gate'            # gate_expr
   | well=expr ATTR 'exit' 'pad'      # exit_pad_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
@@ -85,6 +87,14 @@ direction returns [Dir d, bool verticalp]
   | ('left' | 'west' ) {$ctx.d = Dir.LEFT}{$ctx.verticalp=False}
   | ('right' | 'east' ) {$ctx.d = Dir.RIGHT}{$ctx.verticalp=False}
   ;
+  
+rc[int n] returns [Dir d, bool verticalp]
+  : {$n==1}? 'row' {$ctx.d = Dir.UP}{$ctx.verticalp=True}
+  | 'rows' {$ctx.d = Dir.UP}{$ctx.verticalp=True}
+  | {$n==1}? ('col' | 'column') {$ctx.d = Dir.RIGHT}{$ctx.verticalp=False}
+  | ('cols' | 'columns') {$ctx.d = Dir.RIGHT}{$ctx.verticalp=False}
+  ;
+  
   
 axis returns [bool verticalp]
   : 'row' {$ctx.verticalp=True}

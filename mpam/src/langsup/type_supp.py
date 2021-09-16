@@ -13,6 +13,7 @@ class Type:
     ANY: Type
     NONE: Type
     IGNORE: Type
+    ERROR: Type
     NUMBER: Type
     INT: Type
     FLOAT: Type
@@ -69,6 +70,7 @@ class Type:
 Type.ANY = Type("ANY", is_root=True)
 Type.NONE = Type("NONE")
 Type.IGNORE = Type("IGNORE")
+Type.ERROR = Type("ERROR")
 Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
 Type.INT = Type("INT", [Type.NUMBER])

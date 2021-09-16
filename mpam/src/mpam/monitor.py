@@ -1127,7 +1127,8 @@ class BoardMonitor:
             expr = text.text.strip()
             if len(expr) > 0:
                 print(f"Interactive cmd: {expr}")
-                interp.evaluate(expr, cache_as="last").then_call(lambda res: print(f"  Interactive cmd val: {res}"))
+                (interp.evaluate(expr, cache_as="last")
+                    .then_call(lambda pair: print(f"  Interactive cmd val ({pair[0].name}): {pair[1]}")))
                 text.set_val("")
         apply.on_clicked(on_press)
         text.on_submit(on_press)

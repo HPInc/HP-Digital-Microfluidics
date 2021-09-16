@@ -40,6 +40,8 @@ Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]
 class Dir(Enum):
     _ignore_ = ["_opposites"]
     _opposites: ClassVar[Mapping[Dir, Dir]]
+    _clockwise: ClassVar[Mapping[Dir, Dir]]
+    _counterclockwise: ClassVar[Mapping[Dir, Dir]]
     
     NORTH = auto()
     N = NORTH
@@ -70,6 +72,12 @@ class Dir(Enum):
     @property
     def opposite(self) -> Dir:
         return self._opposites[self]
+    @property
+    def clockwise(self) -> Dir:
+        return self._clockwise[self]
+    @property
+    def counterclockwise(self) -> Dir:
+        return self._counterclockwise[self]
     
 Dir._opposites = {
         Dir.N: Dir.S,
@@ -80,6 +88,28 @@ Dir._opposites = {
         Dir.SW: Dir.NE,
         Dir.W: Dir.E,
         Dir.NW: Dir.SE
+    }
+
+Dir._clockwise = {
+        Dir.N: Dir.E,
+        Dir.NE: Dir.SE,
+        Dir.E: Dir.S,
+        Dir.SE: Dir.SW,
+        Dir.S: Dir.W,
+        Dir.SW: Dir.NW,
+        Dir.W: Dir.N,
+        Dir.NW: Dir.NE
+    }
+
+Dir._counterclockwise = {
+        Dir.N: Dir.W,
+        Dir.NE: Dir.NW,
+        Dir.E: Dir.N,
+        Dir.SE: Dir.NE,
+        Dir.S: Dir.E,
+        Dir.SW: Dir.SE,
+        Dir.W: Dir.S,
+        Dir.NW: Dir.SW
     }
 
 
