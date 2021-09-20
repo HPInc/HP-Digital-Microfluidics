@@ -14,11 +14,13 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature
 from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
 from mpam.drop import Drop
-from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier
+from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier,\
+    ticks, Ticks, DelayType
 from abc import ABC, abstractmethod
 import typing
 from mpam.paths import Path
-from math import dist
+from quantities.dimensions import Time
+from quantities.core import Unit
 
 
 Name_ = TypeVar("Name_", bound=Hashable)
@@ -152,7 +154,7 @@ class DeltaValue(MotionValue):
     def __str__(self) -> str:
         return f"Delta({self.dist}, {self.direction})"
         
-    def move(self, drop:Drop)->Delayed[Drop]: # @UnusedVariable
+    def move(self, drop:Drop)->Delayed[Drop]:
         path = Path.walk(self.direction, steps = self.dist)
         return path.schedule_for(drop)
     
@@ -162,7 +164,7 @@ class ToPadValue(MotionValue):
     def __init__(self, pad: Pad) -> None:
         self.dest = pad
         
-    def move(self, drop:Drop)->Delayed[Drop]: # @UnusedVariable
+    def move(self, drop:Drop)->Delayed[Drop]:
         path = Path.to_pad(self.dest)
         return path.schedule_for(drop)
 
@@ -174,7 +176,7 @@ class ToRowColValue(MotionValue):
         self.dest = dest
         self.verticalp = verticalp
         
-    def move(self, drop:Drop)->Delayed[Drop]: # @UnusedVariable
+    def move(self, drop:Drop)->Delayed[Drop]:
         if self.verticalp:
             path = Path.to_row(self.dest)
         else:
@@ -187,11 +189,26 @@ class TwiddlePadValue(CallableValue):
     def __init__(self, op: BinaryComponent.ModifyState) -> None:
         self.op = op
         
-    def apply(self, args:Sequence[Any])->Delayed[OnOff]: # @UnusedVariable
+    def apply(self, args:Sequence[Any])->Delayed[OnOff]: 
         assert len(args) == 1
         bc = args[0]
         assert isinstance(bc, BinaryComponent)
         return self.op.schedule_for(bc)
+    
+class PauseValue(CallableValue):
+    duration: Final[DelayType]
+    board: Final[Board]
+    
+    def __init__(self, duration: DelayType, board: Board) -> None:
+        self.duration = duration
+        self.board = board
+        
+    def __str__(self) -> str:
+        return f"Pause({self.duration})"
+        
+    def apply(self, args: Sequence[Any])->Delayed[None]:
+        assert len(args) == 1
+        return self.board.delayed(lambda : None, after=self.duration)
 
 class MacroValue(CallableValue):
     param_names: Final[Sequence[str]]
@@ -223,19 +240,31 @@ rep_types: Mapping[Type, typing.Type] = {
         Type.WELL_PAD: WellPad,
         Type.WELL: Well,
         Type.DELTA: DeltaValue,
-        Type.MOTION: MotionValue
+        Type.MOTION: MotionValue,
+        Type.TIME: Time,
+        Type.TICKS: Ticks,
+        Type.PAUSE: PauseValue,
     }
 
 class Conversions:
     known: ClassVar[dict[tuple[Type,Type], Callable[[Any], Any]]] = {}
+    known_ok: ClassVar[set[tuple[Type,Type]]] = set()
     
     @classmethod
-    def register(self, have: Type, want: Type, converter: Callable[[Any], Any]) -> None:
-        self.known[(have, want)] = converter
+    def register(cls, have: Type, want: Type, converter: Callable[[Any], Any]) -> None:
+        cls.known[(have, want)] = converter
+        
+    @classmethod
+    def ok(cls, have: Type, want: Type) -> None:
+        cls.known_ok.add((have,want))
         
     @classmethod
     def convert(cls, have: Type, want: Type, val: Any) -> Any:
         if have is want:
+            return val
+        if want is Type.ANY:
+            return val
+        if (have,want) in cls.known_ok:
             return val
         converter = cls.known.get((have, want), None)
         if converter is not None:
@@ -249,6 +278,8 @@ Conversions.register(Type.DROP, Type.PAD,
                      lambda drop: drop.pad)
 Conversions.register(Type.DROP, Type.BINARY_CPT,
                      lambda drop: drop.pad)
+Conversions.ok(Type.TIME, Type.DELAY)
+Conversions.ok(Type.TICKS, Type.DELAY)
 
 class Executable:
     return_type: Final[Type]
@@ -349,6 +380,10 @@ class DMFCompiler(DMFVisitor):
         print("Unhandled tree")
         return Executable(Type.ERROR, lambda _: Delayed.complete(None), is_error=True)
         # assert False, "Undefined visitor method"
+        
+    def visitChildren(self, node):
+        print(f"Unhandled tree: {type(node).__name__}")
+        return Executable(Type.ERROR, lambda _: Delayed.complete(None), is_error=True)
     
     def error_val(self, return_type: Type, 
                   value: Optional[Callable[[Environment], Any]] = None) -> Executable:
@@ -475,11 +510,25 @@ class DMFCompiler(DMFVisitor):
     def visitAssign_stat(self, ctx:DMFParser.Assign_statContext) -> Executable:
         return self.visit(ctx.assignment())
 
-
+    def visitPause_stat(self, ctx:DMFParser.Pause_statContext) -> Executable:
+        duration = self.visit(ctx.duration)
+        if e:=self.type_check(Type.DELAY, duration, ctx.duration,
+                              lambda want,have,text: # @UnusedVariable
+                                f"Delay ({have} must be time or ticks: {text}",
+                              return_type=Type.PAUSE):
+            return e
+        def run(env: Environment) -> Delayed[None]:
+            def pause(d: DelayType, env: Environment) -> Delayed[None]:
+                print(f"Delaying for {d}")
+                return env.board.delayed(lambda: None, after=d)
+            return (duration.evaluate(env, Type.DELAY)
+                    .chain(lambda d: pause(d, env)))
+        return Executable(Type.PAUSE, run, (duration,))
 
     def visitExpr_stat(self, ctx:DMFParser.Expr_statContext) -> Executable:
         return self.visit(ctx.expr())
 
+    
 
     def visitCompound_stat(self, ctx:DMFParser.Compound_statContext) -> Executable:
         return self.visit(ctx.compound())
@@ -636,6 +685,23 @@ class DMFCompiler(DMFVisitor):
                         .chain(lambda p: (rhs.evaluate(env, Type.DELTA)
                                           .transformed(lambda d: combine(p,d)))))
             return Executable(Type.PAD, run_delta, (lhs, rhs))
+        elif lhs.return_type <= Type.TIME and rhs.return_type <= Type.TIME:
+            def run_time(env: Environment) -> Delayed[Time]:
+                def combine(x: Time, y: Time) -> Time:
+                    return x+y if addp else x-y
+                future: Delayed[Time] = lhs.evaluate(env, Type.TIME)
+                return future.chain(lambda x: (rhs.evaluate(env, Type.TIME)
+                                               .transformed(lambda y: combine(x,y))))
+            return Executable(Type.TIME, run_time, (lhs,rhs))
+        elif lhs.return_type <= Type.TICKS and rhs.return_type <= Type.TICKS:
+            def run_ticks(env: Environment) -> Delayed[Ticks]:
+                def combine(x: Ticks, y: Ticks) -> Ticks:
+                    return x+y if addp else x-y
+                future: Delayed[Ticks] = lhs.evaluate(env, Type.TICKS)
+                return future.chain(lambda x: (rhs.evaluate(env, Type.TICKS)
+                                               .transformed(lambda y: combine(x,y))))
+            return Executable(Type.TICKS, run_ticks, (lhs,rhs))
+            
         if addp:
             return self.error(ctx, Type.NONE,
                               f"Can't add {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
@@ -706,7 +772,7 @@ class DMFCompiler(DMFVisitor):
                               f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
         first_arg_type = inj_type.param_types[0]
         return_first_arg = inj_type.return_type is Type.NONE
-        return_type = first_arg_type if return_first_arg else inj_type.return_type
+        return_type = who.return_type if return_first_arg else inj_type.return_type
         if e:=self.type_check(first_arg_type, who, ctx.who,
                               lambda want,have,text:
                                 f"Injected value ({have}) '{text}' not compatible with "
@@ -842,6 +908,39 @@ class DMFCompiler(DMFVisitor):
                 return future.chain(lambda x: (rhs.evaluate(env, Type.INT)
                                                .transformed(lambda y: combine(x,y))))
             return Executable(Type.INT, run_int, (lhs, rhs))
+        if mulp and lhs.return_type <= Type.INT and rhs.return_type <= Type.TIME:
+            def run_int_time(env: Environment) -> Delayed[Time]:
+                def combine(x: int, y: Time) -> Time:
+                    return x*y
+                future: Delayed[int] = lhs.evaluate(env, Type.INT)
+                return future.chain(lambda x: (rhs.evaluate(env, Type.TIME)
+                                               .transformed(lambda y: combine(x,y))))
+            return Executable(Type.TIME, run_int_time, (lhs, rhs))
+        if lhs.return_type <= Type.TIME and rhs.return_type <= Type.INT:
+            def run_time_int(env: Environment) -> Delayed[Time]:
+                def combine(x: Time, y: int) -> Time:
+                    return x*y if mulp else x/y
+                future: Delayed[Time] = lhs.evaluate(env, Type.TIME)
+                return future.chain(lambda x: (rhs.evaluate(env, Type.INT)
+                                               .transformed(lambda y: combine(x,y))))
+            return Executable(Type.TIME, run_time_int, (lhs, rhs))
+        if mulp and lhs.return_type <= Type.INT and rhs.return_type <= Type.TICKS:
+            def run_int_ticks(env: Environment) -> Delayed[Ticks]:
+                def combine(x: int, y: Ticks) -> Ticks:
+                    return x*y
+                future: Delayed[int] = lhs.evaluate(env, Type.INT)
+                return future.chain(lambda x: (rhs.evaluate(env, Type.TICKS)
+                                               .transformed(lambda y: combine(x,y))))
+            return Executable(Type.TICKS, run_int_ticks, (lhs, rhs))
+        if lhs.return_type <= Type.TICKS and rhs.return_type <= Type.INT:
+            def run_ticks_int(env: Environment) -> Delayed[Ticks]:
+                def combine(x: Ticks, y: int) -> Ticks:
+                    return x*y if mulp else x/y
+                future: Delayed[Ticks] = lhs.evaluate(env, Type.TICKS)
+                return future.chain(lambda x: (rhs.evaluate(env, Type.INT)
+                                               .transformed(lambda y: combine(x,y))))
+            return Executable(Type.TIME, run_ticks_int, (lhs, rhs))
+            
         if mulp:
             return self.error(ctx, Type.NONE,
                               f"Can't multiply {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
@@ -887,7 +986,36 @@ class DMFCompiler(DMFVisitor):
         return Executable(macro_type, run, (body,))
         
 
-
+    def visitTime_expr(self, ctx:DMFParser.Time_exprContext) -> Executable:
+        duration = self.visit(ctx.duration)
+        unit_ctx: DMFParser.Time_unitContext = ctx.time_unit()
+        unit = cast(Unit[Time], unit_ctx.unit)
+        if e:=self.type_check(Type.INT, duration, ctx.duration, return_type = Type.TIME):
+            return e
+        def run(env: Environment) -> Delayed[Time]:
+            return duration.evaluate(env, Type.INT).transformed(lambda n: cast(int,n)*unit)
+        return Executable(Type.TIME, run, (duration,))
+    
+    def visitTicks_expr(self, ctx:DMFParser.Ticks_exprContext) -> Executable:
+        duration = self.visit(ctx.duration)
+        if e:=self.type_check(Type.INT, duration, ctx.duration, return_type = Type.TICKS):
+            return e
+        def run(env: Environment) -> Delayed[Ticks]:
+            return duration.evaluate(env, Type.INT).transformed(lambda n: cast(int,n)*ticks)
+        return Executable(Type.TICKS, run, (duration,))
+    
+    def visitPause_expr(self, ctx:DMFParser.Pause_exprContext) -> Executable:
+        duration = self.visit(ctx.duration)
+        if e:=self.type_check(Type.DELAY, duration, ctx.duration,
+                              lambda want,have,text: # @UnusedVariable
+                                f"Delay ({have} must be time or ticks: {text}",
+                              return_type=Type.PAUSE):
+            return e
+        def run(env: Environment) -> Delayed[PauseValue]:
+            return (duration.evaluate(env, Type.DELAY)
+                    .transformed(lambda d: PauseValue(d, env.board)))
+        return Executable(Type.PAUSE, run, (duration,))
+                
     def visitMacro_header(self, ctx:DMFParser.Macro_headerContext):
         return DMFVisitor.visitMacro_header(self, ctx)
 

@@ -7,6 +7,7 @@ else:
 
 from mpam.types import Dir, OnOff
 from langsup.type_supp import Type
+from quantities import SI
 
 
 from mpam.types import Dir 
@@ -48,6 +49,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#assign_stat.
     def visitAssign_stat(self, ctx:DMFParser.Assign_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#pause_stat.
+    def visitPause_stat(self, ctx:DMFParser.Pause_statContext):
         return self.visitChildren(ctx)
 
 
@@ -131,6 +137,16 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#time_expr.
+    def visitTime_expr(self, ctx:DMFParser.Time_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#ticks_expr.
+    def visitTicks_expr(self, ctx:DMFParser.Ticks_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#coord_expr.
     def visitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
         return self.visitChildren(ctx)
@@ -138,6 +154,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#twiddle_expr.
     def visitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#pause_expr.
+    def visitPause_expr(self, ctx:DMFParser.Pause_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -208,6 +229,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#param_type.
     def visitParam_type(self, ctx:DMFParser.Param_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#time_unit.
+    def visitTime_unit(self, ctx:DMFParser.Time_unitContext):
         return self.visitChildren(ctx)
 
 

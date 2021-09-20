@@ -9,6 +9,7 @@ options {
 @header {
 from mpam.types import Dir, OnOff
 from langsup.type_supp import Type
+from quantities import SI
 }
 
 
@@ -44,6 +45,7 @@ stat
   : assignment TERMINATOR  # assign_stat
 //  | which=name ASSIGN macro_header body=compound # macro_def_stat
 //  | pad_op TERMINATOR    # pad_op_stat
+  | 'pause' duration=expr TERMINATOR           # pause_stat
   | expr TERMINATOR      # expr_stat
   | compound             # compound_stat
   ;
@@ -60,10 +62,13 @@ expr
   | dist=expr direction              # delta_expr
   | INT rc[$INT.int]           # const_rc_expr
   | dist=expr rc[0]           # n_rc_expr
-  | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr
+  | duration=expr time_unit          # time_expr
+  | duration=expr ('tick' | 'ticks') # ticks_expr
+  | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | direction dist=expr              # delta_expr
   | 'to' axis? which=expr            # to_expr
+  | 'pause' duration=expr            # pause_expr
   | 'well' '#' which=expr            # well_expr
   | who=expr '[' which=expr ']'      # index_expr
   | well=expr ATTR 'gate'            # gate_expr
@@ -119,6 +124,11 @@ param_type returns[Type type]
   | 'pad'  {$ctx.type=Type.PAD}
   | 'well' {$ctx.type=Type.WELL}
   | 'int'  {$ctx.type=Type.INT}
+  ;
+  
+time_unit returns[Unit[Time] unit]
+  : ('s' | 'sec' | 'secs' | 'second' | 'seconds') {$ctx.unit=SI.sec}
+  | ('ms' | 'millisecond' | 'milliseconds') {$ctx.unit=SI.ms}
   ;
 
 name : (ID | kwd_names) ;

@@ -11,6 +11,7 @@ else:
 
 from mpam.types import Dir, OnOff
 from langsup.type_supp import Type
+from quantities import SI
 
 
 from mpam.types import Dir 
@@ -18,124 +19,135 @@ from mpam.types import Dir
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3:")
-        buf.write("\u0106\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3E")
+        buf.write("\u0118\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
         buf.write("\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t\r\4\16")
-        buf.write("\t\16\4\17\t\17\4\20\t\20\3\2\7\2\"\n\2\f\2\16\2%\13\2")
-        buf.write("\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\5\3\63")
-        buf.write("\n\3\3\4\3\4\3\4\3\4\3\5\3\5\3\5\3\5\3\5\3\5\3\5\5\5@")
-        buf.write("\n\5\3\6\3\6\7\6D\n\6\f\6\16\6G\13\6\3\6\3\6\3\6\7\6L")
-        buf.write("\n\6\f\6\16\6O\13\6\3\6\5\6R\n\6\3\7\3\7\3\7\3\7\3\7\3")
-        buf.write("\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7")
-        buf.write("\3\7\5\7h\n\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\5\7")
-        buf.write("s\n\7\3\7\3\7\3\7\5\7x\n\7\3\7\5\7{\n\7\3\7\3\7\3\7\3")
-        buf.write("\7\3\7\3\7\3\7\3\7\3\7\7\7\u0086\n\7\f\7\16\7\u0089\13")
-        buf.write("\7\5\7\u008b\n\7\3\7\3\7\3\7\3\7\5\7\u0091\n\7\3\7\3\7")
+        buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\3\2\7\2$\n\2\f\2\16")
+        buf.write("\2\'\13\2\3\2\3\2\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3\3")
+        buf.write("\3\3\5\3\65\n\3\3\4\3\4\3\4\3\4\3\5\3\5\3\5\3\5\3\5\3")
+        buf.write("\5\3\5\3\5\3\5\3\5\3\5\5\5F\n\5\3\6\3\6\7\6J\n\6\f\6\16")
+        buf.write("\6M\13\6\3\6\3\6\3\6\7\6R\n\6\f\6\16\6U\13\6\3\6\5\6X")
+        buf.write("\n\6\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3")
+        buf.write("\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\5\7n\n\7\3\7\3\7\3\7\3")
+        buf.write("\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\5\7{\n\7\3\7\3\7\3\7\5")
+        buf.write("\7\u0080\n\7\3\7\5\7\u0083\n\7\3\7\3\7\3\7\3\7\3\7\3\7")
+        buf.write("\3\7\3\7\3\7\7\7\u008e\n\7\f\7\16\7\u0091\13\7\5\7\u0093")
+        buf.write("\n\7\3\7\3\7\3\7\3\7\5\7\u0099\n\7\3\7\3\7\3\7\3\7\3\7")
         buf.write("\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3")
-        buf.write("\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\7\7\u00ac\n\7\f")
-        buf.write("\7\16\7\u00af\13\7\3\b\3\b\3\b\3\b\3\b\3\b\3\b\3\b\3\b")
-        buf.write("\3\b\3\b\3\b\5\b\u00bd\n\b\3\t\3\t\3\t\3\t\3\t\3\t\3\t")
-        buf.write("\3\t\3\t\3\t\3\t\3\t\3\t\3\t\5\t\u00cd\n\t\3\n\3\n\3\n")
-        buf.write("\3\n\5\n\u00d3\n\n\3\13\3\13\3\13\5\13\u00d8\n\13\3\f")
-        buf.write("\3\f\3\f\3\f\3\f\7\f\u00df\n\f\f\f\16\f\u00e2\13\f\5\f")
-        buf.write("\u00e4\n\f\3\f\3\f\3\r\3\r\3\r\3\r\5\r\u00ec\n\r\3\r\3")
-        buf.write("\r\3\r\3\r\3\r\3\r\5\r\u00f4\n\r\3\16\3\16\3\16\3\16\3")
-        buf.write("\16\3\16\3\16\3\16\5\16\u00fe\n\16\3\17\3\17\5\17\u0102")
-        buf.write("\n\17\3\20\3\20\3\20\2\3\f\21\2\4\6\b\n\f\16\20\22\24")
-        buf.write("\26\30\32\34\36\2\f\3\2\23\24\3\2/\60\4\2,,..\4\2))\61")
-        buf.write("\61\3\2\30\31\3\2\32\33\3\2\34\35\3\2\36\37\3\2\"#\3\2")
-        buf.write("$%\2\u012c\2#\3\2\2\2\4\62\3\2\2\2\6\64\3\2\2\2\b?\3\2")
-        buf.write("\2\2\nQ\3\2\2\2\f\u0090\3\2\2\2\16\u00bc\3\2\2\2\20\u00cc")
-        buf.write("\3\2\2\2\22\u00d2\3\2\2\2\24\u00d4\3\2\2\2\26\u00d9\3")
-        buf.write("\2\2\2\30\u00f3\3\2\2\2\32\u00fd\3\2\2\2\34\u0101\3\2")
-        buf.write("\2\2\36\u0103\3\2\2\2 \"\5\b\5\2! \3\2\2\2\"%\3\2\2\2")
-        buf.write("#!\3\2\2\2#$\3\2\2\2$&\3\2\2\2%#\3\2\2\2&\'\7\2\2\3\'")
-        buf.write("\3\3\2\2\2()\5\n\6\2)*\7\2\2\3*\63\3\2\2\2+,\5\6\4\2,")
-        buf.write("-\7\2\2\3-\63\3\2\2\2./\5\f\7\2/\60\7\2\2\3\60\63\3\2")
-        buf.write("\2\2\61\63\7\2\2\3\62(\3\2\2\2\62+\3\2\2\2\62.\3\2\2\2")
-        buf.write("\62\61\3\2\2\2\63\5\3\2\2\2\64\65\5\34\17\2\65\66\7*\2")
-        buf.write("\2\66\67\5\f\7\2\67\7\3\2\2\289\5\6\4\29:\7\62\2\2:@\3")
-        buf.write("\2\2\2;<\5\f\7\2<=\7\62\2\2=@\3\2\2\2>@\5\n\6\2?8\3\2")
-        buf.write("\2\2?;\3\2\2\2?>\3\2\2\2@\t\3\2\2\2AE\7\3\2\2BD\5\b\5")
-        buf.write("\2CB\3\2\2\2DG\3\2\2\2EC\3\2\2\2EF\3\2\2\2FH\3\2\2\2G")
-        buf.write("E\3\2\2\2HR\7\4\2\2IM\7\5\2\2JL\5\b\5\2KJ\3\2\2\2LO\3")
-        buf.write("\2\2\2MK\3\2\2\2MN\3\2\2\2NP\3\2\2\2OM\3\2\2\2PR\7\6\2")
-        buf.write("\2QA\3\2\2\2QI\3\2\2\2R\13\3\2\2\2ST\b\7\1\2TU\7\7\2\2")
-        buf.write("UV\5\f\7\2VW\7\b\2\2W\u0091\3\2\2\2XY\7\7\2\2YZ\5\f\7")
-        buf.write("\2Z[\7\t\2\2[\\\5\f\7\2\\]\7\b\2\2]\u0091\3\2\2\2^_\7")
-        buf.write("\61\2\2_\u0091\5\f\7\30`a\7\65\2\2a\u0091\5\20\t\2bc\5")
-        buf.write("\16\b\2cd\5\f\7\22d\u0091\3\2\2\2eg\7\n\2\2fh\5\22\n\2")
-        buf.write("gf\3\2\2\2gh\3\2\2\2hi\3\2\2\2i\u0091\5\f\7\21jk\7\13")
-        buf.write("\2\2kl\7\f\2\2l\u0091\5\f\7\20mn\7\22\2\2no\t\2\2\2o\u0091")
-        buf.write("\5\f\7\fp\u0091\5\24\13\2qs\7\25\2\2rq\3\2\2\2rs\3\2\2")
-        buf.write("\2st\3\2\2\2t\u0091\t\3\2\2uw\7\63\2\2vx\7\26\2\2wv\3")
-        buf.write("\2\2\2wx\3\2\2\2x\u0091\3\2\2\2y{\7\27\2\2zy\3\2\2\2z")
-        buf.write("{\3\2\2\2{|\3\2\2\2|\u0091\5\32\16\2}~\5\32\16\2~\177")
-        buf.write("\7\65\2\2\177\u0091\3\2\2\2\u0080\u0081\5\34\17\2\u0081")
-        buf.write("\u008a\7\7\2\2\u0082\u0087\5\f\7\2\u0083\u0084\7\t\2\2")
-        buf.write("\u0084\u0086\5\f\7\2\u0085\u0083\3\2\2\2\u0086\u0089\3")
-        buf.write("\2\2\2\u0087\u0085\3\2\2\2\u0087\u0088\3\2\2\2\u0088\u008b")
-        buf.write("\3\2\2\2\u0089\u0087\3\2\2\2\u008a\u0082\3\2\2\2\u008a")
-        buf.write("\u008b\3\2\2\2\u008b\u008c\3\2\2\2\u008c\u008d\7\b\2\2")
-        buf.write("\u008d\u0091\3\2\2\2\u008e\u0091\5\34\17\2\u008f\u0091")
-        buf.write("\7\65\2\2\u0090S\3\2\2\2\u0090X\3\2\2\2\u0090^\3\2\2\2")
-        buf.write("\u0090`\3\2\2\2\u0090b\3\2\2\2\u0090e\3\2\2\2\u0090j\3")
-        buf.write("\2\2\2\u0090m\3\2\2\2\u0090p\3\2\2\2\u0090r\3\2\2\2\u0090")
-        buf.write("u\3\2\2\2\u0090z\3\2\2\2\u0090}\3\2\2\2\u0090\u0080\3")
-        buf.write("\2\2\2\u0090\u008e\3\2\2\2\u0090\u008f\3\2\2\2\u0091\u00ad")
-        buf.write("\3\2\2\2\u0092\u0093\f\24\2\2\u0093\u0094\t\4\2\2\u0094")
-        buf.write("\u00ac\5\f\7\25\u0095\u0096\f\23\2\2\u0096\u0097\t\5\2")
-        buf.write("\2\u0097\u00ac\5\f\7\24\u0098\u0099\f\13\2\2\u0099\u009a")
-        buf.write("\7-\2\2\u009a\u00ac\5\f\7\f\u009b\u009c\f\27\2\2\u009c")
-        buf.write("\u00ac\5\16\b\2\u009d\u009e\f\25\2\2\u009e\u00ac\5\20")
-        buf.write("\t\2\u009f\u00a0\f\17\2\2\u00a0\u00a1\7\r\2\2\u00a1\u00a2")
-        buf.write("\5\f\7\2\u00a2\u00a3\7\16\2\2\u00a3\u00ac\3\2\2\2\u00a4")
-        buf.write("\u00a5\f\16\2\2\u00a5\u00a6\7+\2\2\u00a6\u00ac\7\17\2")
-        buf.write("\2\u00a7\u00a8\f\r\2\2\u00a8\u00a9\7+\2\2\u00a9\u00aa")
-        buf.write("\7\20\2\2\u00aa\u00ac\7\21\2\2\u00ab\u0092\3\2\2\2\u00ab")
-        buf.write("\u0095\3\2\2\2\u00ab\u0098\3\2\2\2\u00ab\u009b\3\2\2\2")
-        buf.write("\u00ab\u009d\3\2\2\2\u00ab\u009f\3\2\2\2\u00ab\u00a4\3")
-        buf.write("\2\2\2\u00ab\u00a7\3\2\2\2\u00ac\u00af\3\2\2\2\u00ad\u00ab")
-        buf.write("\3\2\2\2\u00ad\u00ae\3\2\2\2\u00ae\r\3\2\2\2\u00af\u00ad")
-        buf.write("\3\2\2\2\u00b0\u00b1\t\6\2\2\u00b1\u00b2\b\b\1\2\u00b2")
-        buf.write("\u00bd\b\b\1\2\u00b3\u00b4\t\7\2\2\u00b4\u00b5\b\b\1\2")
-        buf.write("\u00b5\u00bd\b\b\1\2\u00b6\u00b7\t\b\2\2\u00b7\u00b8\b")
-        buf.write("\b\1\2\u00b8\u00bd\b\b\1\2\u00b9\u00ba\t\t\2\2\u00ba\u00bb")
-        buf.write("\b\b\1\2\u00bb\u00bd\b\b\1\2\u00bc\u00b0\3\2\2\2\u00bc")
-        buf.write("\u00b3\3\2\2\2\u00bc\u00b6\3\2\2\2\u00bc\u00b9\3\2\2\2")
-        buf.write("\u00bd\17\3\2\2\2\u00be\u00bf\6\t\n\3\u00bf\u00c0\7 \2")
-        buf.write("\2\u00c0\u00c1\b\t\1\2\u00c1\u00cd\b\t\1\2\u00c2\u00c3")
-        buf.write("\7!\2\2\u00c3\u00c4\b\t\1\2\u00c4\u00cd\b\t\1\2\u00c5")
-        buf.write("\u00c6\6\t\13\3\u00c6\u00c7\t\n\2\2\u00c7\u00c8\b\t\1")
-        buf.write("\2\u00c8\u00cd\b\t\1\2\u00c9\u00ca\t\13\2\2\u00ca\u00cb")
-        buf.write("\b\t\1\2\u00cb\u00cd\b\t\1\2\u00cc\u00be\3\2\2\2\u00cc")
-        buf.write("\u00c2\3\2\2\2\u00cc\u00c5\3\2\2\2\u00cc\u00c9\3\2\2\2")
-        buf.write("\u00cd\21\3\2\2\2\u00ce\u00cf\7 \2\2\u00cf\u00d3\b\n\1")
-        buf.write("\2\u00d0\u00d1\t\n\2\2\u00d1\u00d3\b\n\1\2\u00d2\u00ce")
-        buf.write("\3\2\2\2\u00d2\u00d0\3\2\2\2\u00d3\23\3\2\2\2\u00d4\u00d7")
-        buf.write("\5\26\f\2\u00d5\u00d8\5\n\6\2\u00d6\u00d8\5\f\7\2\u00d7")
-        buf.write("\u00d5\3\2\2\2\u00d7\u00d6\3\2\2\2\u00d8\25\3\2\2\2\u00d9")
-        buf.write("\u00da\7&\2\2\u00da\u00e3\7\7\2\2\u00db\u00e0\5\30\r\2")
-        buf.write("\u00dc\u00dd\7\t\2\2\u00dd\u00df\5\30\r\2\u00de\u00dc")
-        buf.write("\3\2\2\2\u00df\u00e2\3\2\2\2\u00e0\u00de\3\2\2\2\u00e0")
-        buf.write("\u00e1\3\2\2\2\u00e1\u00e4\3\2\2\2\u00e2\u00e0\3\2\2\2")
-        buf.write("\u00e3\u00db\3\2\2\2\u00e3\u00e4\3\2\2\2\u00e4\u00e5\3")
-        buf.write("\2\2\2\u00e5\u00e6\7\b\2\2\u00e6\27\3\2\2\2\u00e7\u00e8")
-        buf.write("\5\32\16\2\u00e8\u00eb\b\r\1\2\u00e9\u00ea\7\65\2\2\u00ea")
-        buf.write("\u00ec\b\r\1\2\u00eb\u00e9\3\2\2\2\u00eb\u00ec\3\2\2\2")
-        buf.write("\u00ec\u00f4\3\2\2\2\u00ed\u00ee\5\34\17\2\u00ee\u00ef")
-        buf.write("\7-\2\2\u00ef\u00f0\5\32\16\2\u00f0\u00f1\b\r\1\2\u00f1")
-        buf.write("\u00f2\b\r\1\2\u00f2\u00f4\3\2\2\2\u00f3\u00e7\3\2\2\2")
-        buf.write("\u00f3\u00ed\3\2\2\2\u00f4\31\3\2\2\2\u00f5\u00f6\7\22")
-        buf.write("\2\2\u00f6\u00fe\b\16\1\2\u00f7\u00f8\7\21\2\2\u00f8\u00fe")
-        buf.write("\b\16\1\2\u00f9\u00fa\7\13\2\2\u00fa\u00fe\b\16\1\2\u00fb")
-        buf.write("\u00fc\7\'\2\2\u00fc\u00fe\b\16\1\2\u00fd\u00f5\3\2\2")
-        buf.write("\2\u00fd\u00f7\3\2\2\2\u00fd\u00f9\3\2\2\2\u00fd\u00fb")
-        buf.write("\3\2\2\2\u00fe\33\3\2\2\2\u00ff\u0102\7\64\2\2\u0100\u0102")
-        buf.write("\5\36\20\2\u0101\u00ff\3\2\2\2\u0101\u0100\3\2\2\2\u0102")
-        buf.write("\35\3\2\2\2\u0103\u0104\7(\2\2\u0104\37\3\2\2\2\33#\62")
-        buf.write("?EMQgrwz\u0087\u008a\u0090\u00ab\u00ad\u00bc\u00cc\u00d2")
-        buf.write("\u00d7\u00e0\u00e3\u00eb\u00f3\u00fd\u0101")
+        buf.write("\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\3\7\7\7\u00b8\n")
+        buf.write("\7\f\7\16\7\u00bb\13\7\3\b\3\b\3\b\3\b\3\b\3\b\3\b\3\b")
+        buf.write("\3\b\3\b\3\b\3\b\5\b\u00c9\n\b\3\t\3\t\3\t\3\t\3\t\3\t")
+        buf.write("\3\t\3\t\3\t\3\t\3\t\3\t\3\t\3\t\5\t\u00d9\n\t\3\n\3\n")
+        buf.write("\3\n\3\n\5\n\u00df\n\n\3\13\3\13\3\13\5\13\u00e4\n\13")
+        buf.write("\3\f\3\f\3\f\3\f\3\f\7\f\u00eb\n\f\f\f\16\f\u00ee\13\f")
+        buf.write("\5\f\u00f0\n\f\3\f\3\f\3\r\3\r\3\r\3\r\5\r\u00f8\n\r\3")
+        buf.write("\r\3\r\3\r\3\r\3\r\3\r\5\r\u0100\n\r\3\16\3\16\3\16\3")
+        buf.write("\16\3\16\3\16\3\16\3\16\5\16\u010a\n\16\3\17\3\17\3\17")
+        buf.write("\3\17\5\17\u0110\n\17\3\20\3\20\5\20\u0114\n\20\3\21\3")
+        buf.write("\21\3\21\2\3\f\22\2\4\6\b\n\f\16\20\22\24\26\30\32\34")
+        buf.write("\36 \2\17\3\2\26\27\3\2:;\4\2\67\6799\4\2\64\64<<\3\2")
+        buf.write("\13\f\3\2\33\34\3\2\35\36\3\2\37 \3\2!\"\3\2%&\3\2\'(")
+        buf.write("\3\2+/\3\2\60\62\2\u0142\2%\3\2\2\2\4\64\3\2\2\2\6\66")
+        buf.write("\3\2\2\2\bE\3\2\2\2\nW\3\2\2\2\f\u0098\3\2\2\2\16\u00c8")
+        buf.write("\3\2\2\2\20\u00d8\3\2\2\2\22\u00de\3\2\2\2\24\u00e0\3")
+        buf.write("\2\2\2\26\u00e5\3\2\2\2\30\u00ff\3\2\2\2\32\u0109\3\2")
+        buf.write("\2\2\34\u010f\3\2\2\2\36\u0113\3\2\2\2 \u0115\3\2\2\2")
+        buf.write("\"$\5\b\5\2#\"\3\2\2\2$\'\3\2\2\2%#\3\2\2\2%&\3\2\2\2")
+        buf.write("&(\3\2\2\2\'%\3\2\2\2()\7\2\2\3)\3\3\2\2\2*+\5\n\6\2+")
+        buf.write(",\7\2\2\3,\65\3\2\2\2-.\5\6\4\2./\7\2\2\3/\65\3\2\2\2")
+        buf.write("\60\61\5\f\7\2\61\62\7\2\2\3\62\65\3\2\2\2\63\65\7\2\2")
+        buf.write("\3\64*\3\2\2\2\64-\3\2\2\2\64\60\3\2\2\2\64\63\3\2\2\2")
+        buf.write("\65\5\3\2\2\2\66\67\5\36\20\2\678\7\65\2\289\5\f\7\29")
+        buf.write("\7\3\2\2\2:;\5\6\4\2;<\7=\2\2<F\3\2\2\2=>\7\3\2\2>?\5")
+        buf.write("\f\7\2?@\7=\2\2@F\3\2\2\2AB\5\f\7\2BC\7=\2\2CF\3\2\2\2")
+        buf.write("DF\5\n\6\2E:\3\2\2\2E=\3\2\2\2EA\3\2\2\2ED\3\2\2\2F\t")
+        buf.write("\3\2\2\2GK\7\4\2\2HJ\5\b\5\2IH\3\2\2\2JM\3\2\2\2KI\3\2")
+        buf.write("\2\2KL\3\2\2\2LN\3\2\2\2MK\3\2\2\2NX\7\5\2\2OS\7\6\2\2")
+        buf.write("PR\5\b\5\2QP\3\2\2\2RU\3\2\2\2SQ\3\2\2\2ST\3\2\2\2TV\3")
+        buf.write("\2\2\2US\3\2\2\2VX\7\7\2\2WG\3\2\2\2WO\3\2\2\2X\13\3\2")
+        buf.write("\2\2YZ\b\7\1\2Z[\7\b\2\2[\\\5\f\7\2\\]\7\t\2\2]\u0099")
+        buf.write("\3\2\2\2^_\7\b\2\2_`\5\f\7\2`a\7\n\2\2ab\5\f\7\2bc\7\t")
+        buf.write("\2\2c\u0099\3\2\2\2de\7<\2\2e\u0099\5\f\7\33fg\7@\2\2")
+        buf.write("g\u0099\5\20\t\2hi\5\16\b\2ij\5\f\7\23j\u0099\3\2\2\2")
+        buf.write("km\7\r\2\2ln\5\22\n\2ml\3\2\2\2mn\3\2\2\2no\3\2\2\2o\u0099")
+        buf.write("\5\f\7\22pq\7\3\2\2q\u0099\5\f\7\21rs\7\16\2\2st\7\17")
+        buf.write("\2\2t\u0099\5\f\7\20uv\7\25\2\2vw\t\2\2\2w\u0099\5\f\7")
+        buf.write("\fx\u0099\5\24\13\2y{\7\30\2\2zy\3\2\2\2z{\3\2\2\2{|\3")
+        buf.write("\2\2\2|\u0099\t\3\2\2}\177\7>\2\2~\u0080\7\31\2\2\177")
+        buf.write("~\3\2\2\2\177\u0080\3\2\2\2\u0080\u0099\3\2\2\2\u0081")
+        buf.write("\u0083\7\32\2\2\u0082\u0081\3\2\2\2\u0082\u0083\3\2\2")
+        buf.write("\2\u0083\u0084\3\2\2\2\u0084\u0099\5\32\16\2\u0085\u0086")
+        buf.write("\5\32\16\2\u0086\u0087\7@\2\2\u0087\u0099\3\2\2\2\u0088")
+        buf.write("\u0089\5\36\20\2\u0089\u0092\7\b\2\2\u008a\u008f\5\f\7")
+        buf.write("\2\u008b\u008c\7\n\2\2\u008c\u008e\5\f\7\2\u008d\u008b")
+        buf.write("\3\2\2\2\u008e\u0091\3\2\2\2\u008f\u008d\3\2\2\2\u008f")
+        buf.write("\u0090\3\2\2\2\u0090\u0093\3\2\2\2\u0091\u008f\3\2\2\2")
+        buf.write("\u0092\u008a\3\2\2\2\u0092\u0093\3\2\2\2\u0093\u0094\3")
+        buf.write("\2\2\2\u0094\u0095\7\t\2\2\u0095\u0099\3\2\2\2\u0096\u0099")
+        buf.write("\5\36\20\2\u0097\u0099\7@\2\2\u0098Y\3\2\2\2\u0098^\3")
+        buf.write("\2\2\2\u0098d\3\2\2\2\u0098f\3\2\2\2\u0098h\3\2\2\2\u0098")
+        buf.write("k\3\2\2\2\u0098p\3\2\2\2\u0098r\3\2\2\2\u0098u\3\2\2\2")
+        buf.write("\u0098x\3\2\2\2\u0098z\3\2\2\2\u0098}\3\2\2\2\u0098\u0082")
+        buf.write("\3\2\2\2\u0098\u0085\3\2\2\2\u0098\u0088\3\2\2\2\u0098")
+        buf.write("\u0096\3\2\2\2\u0098\u0097\3\2\2\2\u0099\u00b9\3\2\2\2")
+        buf.write("\u009a\u009b\f\25\2\2\u009b\u009c\t\4\2\2\u009c\u00b8")
+        buf.write("\5\f\7\26\u009d\u009e\f\24\2\2\u009e\u009f\t\5\2\2\u009f")
+        buf.write("\u00b8\5\f\7\25\u00a0\u00a1\f\13\2\2\u00a1\u00a2\78\2")
+        buf.write("\2\u00a2\u00b8\5\f\7\f\u00a3\u00a4\f\32\2\2\u00a4\u00b8")
+        buf.write("\5\16\b\2\u00a5\u00a6\f\30\2\2\u00a6\u00b8\5\20\t\2\u00a7")
+        buf.write("\u00a8\f\27\2\2\u00a8\u00b8\5\34\17\2\u00a9\u00aa\f\26")
+        buf.write("\2\2\u00aa\u00b8\t\6\2\2\u00ab\u00ac\f\17\2\2\u00ac\u00ad")
+        buf.write("\7\20\2\2\u00ad\u00ae\5\f\7\2\u00ae\u00af\7\21\2\2\u00af")
+        buf.write("\u00b8\3\2\2\2\u00b0\u00b1\f\16\2\2\u00b1\u00b2\7\66\2")
+        buf.write("\2\u00b2\u00b8\7\22\2\2\u00b3\u00b4\f\r\2\2\u00b4\u00b5")
+        buf.write("\7\66\2\2\u00b5\u00b6\7\23\2\2\u00b6\u00b8\7\24\2\2\u00b7")
+        buf.write("\u009a\3\2\2\2\u00b7\u009d\3\2\2\2\u00b7\u00a0\3\2\2\2")
+        buf.write("\u00b7\u00a3\3\2\2\2\u00b7\u00a5\3\2\2\2\u00b7\u00a7\3")
+        buf.write("\2\2\2\u00b7\u00a9\3\2\2\2\u00b7\u00ab\3\2\2\2\u00b7\u00b0")
+        buf.write("\3\2\2\2\u00b7\u00b3\3\2\2\2\u00b8\u00bb\3\2\2\2\u00b9")
+        buf.write("\u00b7\3\2\2\2\u00b9\u00ba\3\2\2\2\u00ba\r\3\2\2\2\u00bb")
+        buf.write("\u00b9\3\2\2\2\u00bc\u00bd\t\7\2\2\u00bd\u00be\b\b\1\2")
+        buf.write("\u00be\u00c9\b\b\1\2\u00bf\u00c0\t\b\2\2\u00c0\u00c1\b")
+        buf.write("\b\1\2\u00c1\u00c9\b\b\1\2\u00c2\u00c3\t\t\2\2\u00c3\u00c4")
+        buf.write("\b\b\1\2\u00c4\u00c9\b\b\1\2\u00c5\u00c6\t\n\2\2\u00c6")
+        buf.write("\u00c7\b\b\1\2\u00c7\u00c9\b\b\1\2\u00c8\u00bc\3\2\2\2")
+        buf.write("\u00c8\u00bf\3\2\2\2\u00c8\u00c2\3\2\2\2\u00c8\u00c5\3")
+        buf.write("\2\2\2\u00c9\17\3\2\2\2\u00ca\u00cb\6\t\f\3\u00cb\u00cc")
+        buf.write("\7#\2\2\u00cc\u00cd\b\t\1\2\u00cd\u00d9\b\t\1\2\u00ce")
+        buf.write("\u00cf\7$\2\2\u00cf\u00d0\b\t\1\2\u00d0\u00d9\b\t\1\2")
+        buf.write("\u00d1\u00d2\6\t\r\3\u00d2\u00d3\t\13\2\2\u00d3\u00d4")
+        buf.write("\b\t\1\2\u00d4\u00d9\b\t\1\2\u00d5\u00d6\t\f\2\2\u00d6")
+        buf.write("\u00d7\b\t\1\2\u00d7\u00d9\b\t\1\2\u00d8\u00ca\3\2\2\2")
+        buf.write("\u00d8\u00ce\3\2\2\2\u00d8\u00d1\3\2\2\2\u00d8\u00d5\3")
+        buf.write("\2\2\2\u00d9\21\3\2\2\2\u00da\u00db\7#\2\2\u00db\u00df")
+        buf.write("\b\n\1\2\u00dc\u00dd\t\13\2\2\u00dd\u00df\b\n\1\2\u00de")
+        buf.write("\u00da\3\2\2\2\u00de\u00dc\3\2\2\2\u00df\23\3\2\2\2\u00e0")
+        buf.write("\u00e3\5\26\f\2\u00e1\u00e4\5\n\6\2\u00e2\u00e4\5\f\7")
+        buf.write("\2\u00e3\u00e1\3\2\2\2\u00e3\u00e2\3\2\2\2\u00e4\25\3")
+        buf.write("\2\2\2\u00e5\u00e6\7)\2\2\u00e6\u00ef\7\b\2\2\u00e7\u00ec")
+        buf.write("\5\30\r\2\u00e8\u00e9\7\n\2\2\u00e9\u00eb\5\30\r\2\u00ea")
+        buf.write("\u00e8\3\2\2\2\u00eb\u00ee\3\2\2\2\u00ec\u00ea\3\2\2\2")
+        buf.write("\u00ec\u00ed\3\2\2\2\u00ed\u00f0\3\2\2\2\u00ee\u00ec\3")
+        buf.write("\2\2\2\u00ef\u00e7\3\2\2\2\u00ef\u00f0\3\2\2\2\u00f0\u00f1")
+        buf.write("\3\2\2\2\u00f1\u00f2\7\t\2\2\u00f2\27\3\2\2\2\u00f3\u00f4")
+        buf.write("\5\32\16\2\u00f4\u00f7\b\r\1\2\u00f5\u00f6\7@\2\2\u00f6")
+        buf.write("\u00f8\b\r\1\2\u00f7\u00f5\3\2\2\2\u00f7\u00f8\3\2\2\2")
+        buf.write("\u00f8\u0100\3\2\2\2\u00f9\u00fa\5\36\20\2\u00fa\u00fb")
+        buf.write("\78\2\2\u00fb\u00fc\5\32\16\2\u00fc\u00fd\b\r\1\2\u00fd")
+        buf.write("\u00fe\b\r\1\2\u00fe\u0100\3\2\2\2\u00ff\u00f3\3\2\2\2")
+        buf.write("\u00ff\u00f9\3\2\2\2\u0100\31\3\2\2\2\u0101\u0102\7\25")
+        buf.write("\2\2\u0102\u010a\b\16\1\2\u0103\u0104\7\24\2\2\u0104\u010a")
+        buf.write("\b\16\1\2\u0105\u0106\7\16\2\2\u0106\u010a\b\16\1\2\u0107")
+        buf.write("\u0108\7*\2\2\u0108\u010a\b\16\1\2\u0109\u0101\3\2\2\2")
+        buf.write("\u0109\u0103\3\2\2\2\u0109\u0105\3\2\2\2\u0109\u0107\3")
+        buf.write("\2\2\2\u010a\33\3\2\2\2\u010b\u010c\t\r\2\2\u010c\u0110")
+        buf.write("\b\17\1\2\u010d\u010e\t\16\2\2\u010e\u0110\b\17\1\2\u010f")
+        buf.write("\u010b\3\2\2\2\u010f\u010d\3\2\2\2\u0110\35\3\2\2\2\u0111")
+        buf.write("\u0114\7?\2\2\u0112\u0114\5 \21\2\u0113\u0111\3\2\2\2")
+        buf.write("\u0113\u0112\3\2\2\2\u0114\37\3\2\2\2\u0115\u0116\7\63")
+        buf.write("\2\2\u0116!\3\2\2\2\34%\64EKSWmz\177\u0082\u008f\u0092")
+        buf.write("\u0098\u00b7\u00b9\u00c8\u00d8\u00de\u00e3\u00ec\u00ef")
+        buf.write("\u00f7\u00ff\u0109\u010f\u0113")
         return buf.getvalue()
 
 
@@ -149,14 +161,17 @@ class DMFParser ( Parser ):
 
     sharedContextCache = PredictionContextCache()
 
-    literalNames = [ "<INVALID>", "'{'", "'}'", "'[['", "']]'", "'('", "')'", 
-                     "','", "'to'", "'well'", "'#'", "'['", "']'", "'gate'", 
-                     "'exit'", "'pad'", "'drop'", "'@'", "'at'", "'turn'", 
-                     "'state'", "'the'", "'up'", "'north'", "'down'", "'south'", 
-                     "'left'", "'west'", "'right'", "'east'", "'row'", "'rows'", 
-                     "'col'", "'column'", "'cols'", "'columns'", "'macro'", 
-                     "'int'", "'**__**'", "'+'", "'='", "''s'", "'/'", "':'", 
-                     "'*'", "'off'", "'on'", "'-'", "';'", "'toggle'" ]
+    literalNames = [ "<INVALID>", "'pause'", "'{'", "'}'", "'[['", "']]'", 
+                     "'('", "')'", "','", "'tick'", "'ticks'", "'to'", "'well'", 
+                     "'#'", "'['", "']'", "'gate'", "'exit'", "'pad'", "'drop'", 
+                     "'@'", "'at'", "'turn'", "'state'", "'the'", "'up'", 
+                     "'north'", "'down'", "'south'", "'left'", "'west'", 
+                     "'right'", "'east'", "'row'", "'rows'", "'col'", "'column'", 
+                     "'cols'", "'columns'", "'macro'", "'int'", "'s'", "'sec'", 
+                     "'secs'", "'second'", "'seconds'", "'ms'", "'millisecond'", 
+                     "'milliseconds'", "'**__**'", "'+'", "'='", "''s'", 
+                     "'/'", "':'", "'*'", "'off'", "'on'", "'-'", "';'", 
+                     "'toggle'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
@@ -167,10 +182,13 @@ class DMFParser ( Parser ):
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "<INVALID>", "<INVALID>", "<INVALID>", "ADD", "ASSIGN", 
-                      "ATTR", "DIV", "INJECT", "MUL", "OFF", "ON", "SUB", 
-                      "TERMINATOR", "TOGGLE", "ID", "INT", "FLOAT", "STRING", 
-                      "EOL_COMMENT", "COMMENT", "WS" ]
+                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                      "<INVALID>", "<INVALID>", "ADD", "ASSIGN", "ATTR", 
+                      "DIV", "INJECT", "MUL", "OFF", "ON", "SUB", "TERMINATOR", 
+                      "TOGGLE", "ID", "INT", "FLOAT", "STRING", "EOL_COMMENT", 
+                      "COMMENT", "WS" ]
 
     RULE_macro_file = 0
     RULE_interactive = 1
@@ -185,12 +203,13 @@ class DMFParser ( Parser ):
     RULE_macro_header = 10
     RULE_param = 11
     RULE_param_type = 12
-    RULE_name = 13
-    RULE_kwd_names = 14
+    RULE_time_unit = 13
+    RULE_name = 14
+    RULE_kwd_names = 15
 
     ruleNames =  [ "macro_file", "interactive", "assignment", "stat", "compound", 
                    "expr", "direction", "rc", "axis", "macro_def", "macro_header", 
-                   "param", "param_type", "name", "kwd_names" ]
+                   "param", "param_type", "time_unit", "name", "kwd_names" ]
 
     EOF = Token.EOF
     T__0=1
@@ -231,24 +250,35 @@ class DMFParser ( Parser ):
     T__35=36
     T__36=37
     T__37=38
-    ADD=39
-    ASSIGN=40
-    ATTR=41
-    DIV=42
-    INJECT=43
-    MUL=44
-    OFF=45
-    ON=46
-    SUB=47
-    TERMINATOR=48
-    TOGGLE=49
-    ID=50
-    INT=51
-    FLOAT=52
-    STRING=53
-    EOL_COMMENT=54
-    COMMENT=55
-    WS=56
+    T__38=39
+    T__39=40
+    T__40=41
+    T__41=42
+    T__42=43
+    T__43=44
+    T__44=45
+    T__45=46
+    T__46=47
+    T__47=48
+    T__48=49
+    ADD=50
+    ASSIGN=51
+    ATTR=52
+    DIV=53
+    INJECT=54
+    MUL=55
+    OFF=56
+    ON=57
+    SUB=58
+    TERMINATOR=59
+    TOGGLE=60
+    ID=61
+    INT=62
+    FLOAT=63
+    STRING=64
+    EOL_COMMENT=65
+    COMMENT=66
+    WS=67
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -303,17 +333,17 @@ class DMFParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 33
+            self.state = 35
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__7) | (1 << DMFParser.T__8) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__18) | (1 << DMFParser.T__20) | (1 << DMFParser.T__21) | (1 << DMFParser.T__22) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__35) | (1 << DMFParser.T__36) | (1 << DMFParser.T__37) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
-                self.state = 30
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__1) | (1 << DMFParser.T__3) | (1 << DMFParser.T__5) | (1 << DMFParser.T__10) | (1 << DMFParser.T__11) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__21) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__29) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__48) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
+                self.state = 32
                 self.stat()
-                self.state = 35
+                self.state = 37
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
-            self.state = 36
+            self.state = 38
             self.match(DMFParser.EOF)
         except RecognitionException as re:
             localctx.exception = re
@@ -452,40 +482,40 @@ class DMFParser ( Parser ):
         localctx = DMFParser.InteractiveContext(self, self._ctx, self.state)
         self.enterRule(localctx, 2, self.RULE_interactive)
         try:
-            self.state = 48
+            self.state = 50
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
             if la_ == 1:
                 localctx = DMFParser.Compound_interactiveContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 38
+                self.state = 40
                 self.compound()
-                self.state = 39
+                self.state = 41
                 self.match(DMFParser.EOF)
                 pass
 
             elif la_ == 2:
                 localctx = DMFParser.Assignment_interactiveContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 41
+                self.state = 43
                 self.assignment()
-                self.state = 42
+                self.state = 44
                 self.match(DMFParser.EOF)
                 pass
 
             elif la_ == 3:
                 localctx = DMFParser.Expr_interactiveContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 44
+                self.state = 46
                 self.expr(0)
-                self.state = 45
+                self.state = 47
                 self.match(DMFParser.EOF)
                 pass
 
             elif la_ == 4:
                 localctx = DMFParser.Empty_interactiveContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
-                self.state = 47
+                self.state = 49
                 self.match(DMFParser.EOF)
                 pass
 
@@ -545,11 +575,11 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 4, self.RULE_assignment)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 50
-            localctx.which = self.name()
-            self.state = 51
-            self.match(DMFParser.ASSIGN)
             self.state = 52
+            localctx.which = self.name()
+            self.state = 53
+            self.match(DMFParser.ASSIGN)
+            self.state = 54
             localctx.what = self.expr(0)
         except RecognitionException as re:
             localctx.exception = re
@@ -631,6 +661,34 @@ class DMFParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class Pause_statContext(StatContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a DMFParser.StatContext
+            super().__init__(parser)
+            self.duration = None # ExprContext
+            self.copyFrom(ctx)
+
+        def TERMINATOR(self):
+            return self.getToken(DMFParser.TERMINATOR, 0)
+        def expr(self):
+            return self.getTypedRuleContext(DMFParser.ExprContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterPause_stat" ):
+                listener.enterPause_stat(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitPause_stat" ):
+                listener.exitPause_stat(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitPause_stat" ):
+                return visitor.visitPause_stat(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class Compound_statContext(StatContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a DMFParser.StatContext
@@ -662,31 +720,42 @@ class DMFParser ( Parser ):
         localctx = DMFParser.StatContext(self, self._ctx, self.state)
         self.enterRule(localctx, 6, self.RULE_stat)
         try:
-            self.state = 61
+            self.state = 67
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,2,self._ctx)
             if la_ == 1:
                 localctx = DMFParser.Assign_statContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 54
+                self.state = 56
                 self.assignment()
-                self.state = 55
+                self.state = 57
                 self.match(DMFParser.TERMINATOR)
                 pass
 
             elif la_ == 2:
-                localctx = DMFParser.Expr_statContext(self, localctx)
+                localctx = DMFParser.Pause_statContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 57
-                self.expr(0)
-                self.state = 58
+                self.state = 59
+                self.match(DMFParser.T__0)
+                self.state = 60
+                localctx.duration = self.expr(0)
+                self.state = 61
                 self.match(DMFParser.TERMINATOR)
                 pass
 
             elif la_ == 3:
-                localctx = DMFParser.Compound_statContext(self, localctx)
+                localctx = DMFParser.Expr_statContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 60
+                self.state = 63
+                self.expr(0)
+                self.state = 64
+                self.match(DMFParser.TERMINATOR)
+                pass
+
+            elif la_ == 4:
+                localctx = DMFParser.Compound_statContext(self, localctx)
+                self.enterOuterAlt(localctx, 4)
+                self.state = 66
                 self.compound()
                 pass
 
@@ -780,44 +849,44 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 8, self.RULE_compound)
         self._la = 0 # Token type
         try:
-            self.state = 79
+            self.state = 85
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [DMFParser.T__0]:
+            if token in [DMFParser.T__1]:
                 localctx = DMFParser.BlockContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 63
-                self.match(DMFParser.T__0)
-                self.state = 67
+                self.state = 69
+                self.match(DMFParser.T__1)
+                self.state = 73
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__7) | (1 << DMFParser.T__8) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__18) | (1 << DMFParser.T__20) | (1 << DMFParser.T__21) | (1 << DMFParser.T__22) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__35) | (1 << DMFParser.T__36) | (1 << DMFParser.T__37) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
-                    self.state = 64
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__1) | (1 << DMFParser.T__3) | (1 << DMFParser.T__5) | (1 << DMFParser.T__10) | (1 << DMFParser.T__11) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__21) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__29) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__48) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
+                    self.state = 70
                     self.stat()
-                    self.state = 69
+                    self.state = 75
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 70
-                self.match(DMFParser.T__1)
+                self.state = 76
+                self.match(DMFParser.T__2)
                 pass
-            elif token in [DMFParser.T__2]:
+            elif token in [DMFParser.T__3]:
                 localctx = DMFParser.Par_blockContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 71
-                self.match(DMFParser.T__2)
-                self.state = 75
+                self.state = 77
+                self.match(DMFParser.T__3)
+                self.state = 81
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__7) | (1 << DMFParser.T__8) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__18) | (1 << DMFParser.T__20) | (1 << DMFParser.T__21) | (1 << DMFParser.T__22) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__35) | (1 << DMFParser.T__36) | (1 << DMFParser.T__37) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
-                    self.state = 72
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__1) | (1 << DMFParser.T__3) | (1 << DMFParser.T__5) | (1 << DMFParser.T__10) | (1 << DMFParser.T__11) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__21) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__29) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__48) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
+                    self.state = 78
                     self.stat()
-                    self.state = 77
+                    self.state = 83
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
-                self.state = 78
-                self.match(DMFParser.T__3)
+                self.state = 84
+                self.match(DMFParser.T__4)
                 pass
             else:
                 raise NoViableAltException(self)
@@ -1181,6 +1250,61 @@ class DMFParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class Time_exprContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a DMFParser.ExprContext
+            super().__init__(parser)
+            self.duration = None # ExprContext
+            self.copyFrom(ctx)
+
+        def time_unit(self):
+            return self.getTypedRuleContext(DMFParser.Time_unitContext,0)
+
+        def expr(self):
+            return self.getTypedRuleContext(DMFParser.ExprContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterTime_expr" ):
+                listener.enterTime_expr(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitTime_expr" ):
+                listener.exitTime_expr(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTime_expr" ):
+                return visitor.visitTime_expr(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class Ticks_exprContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a DMFParser.ExprContext
+            super().__init__(parser)
+            self.duration = None # ExprContext
+            self.copyFrom(ctx)
+
+        def expr(self):
+            return self.getTypedRuleContext(DMFParser.ExprContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterTicks_expr" ):
+                listener.enterTicks_expr(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitTicks_expr" ):
+                listener.exitTicks_expr(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTicks_expr" ):
+                return visitor.visitTicks_expr(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class Coord_exprContext(ExprContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a DMFParser.ExprContext
@@ -1235,6 +1359,32 @@ class DMFParser ( Parser ):
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitTwiddle_expr" ):
                 return visitor.visitTwiddle_expr(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class Pause_exprContext(ExprContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a DMFParser.ExprContext
+            super().__init__(parser)
+            self.duration = None # ExprContext
+            self.copyFrom(ctx)
+
+        def expr(self):
+            return self.getTypedRuleContext(DMFParser.ExprContext,0)
+
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterPause_expr" ):
+                listener.enterPause_expr(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitPause_expr" ):
+                listener.exitPause_expr(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitPause_expr" ):
+                return visitor.visitPause_expr(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1458,7 +1608,7 @@ class DMFParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 142
+            self.state = 150
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,12,self._ctx)
             if la_ == 1:
@@ -1466,47 +1616,47 @@ class DMFParser ( Parser ):
                 self._ctx = localctx
                 _prevctx = localctx
 
-                self.state = 82
-                self.match(DMFParser.T__4)
-                self.state = 83
-                self.expr(0)
-                self.state = 84
+                self.state = 88
                 self.match(DMFParser.T__5)
+                self.state = 89
+                self.expr(0)
+                self.state = 90
+                self.match(DMFParser.T__6)
                 pass
 
             elif la_ == 2:
                 localctx = DMFParser.Coord_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 86
-                self.match(DMFParser.T__4)
-                self.state = 87
-                localctx.x = self.expr(0)
-                self.state = 88
-                self.match(DMFParser.T__6)
-                self.state = 89
-                localctx.y = self.expr(0)
-                self.state = 90
+                self.state = 92
                 self.match(DMFParser.T__5)
+                self.state = 93
+                localctx.x = self.expr(0)
+                self.state = 94
+                self.match(DMFParser.T__7)
+                self.state = 95
+                localctx.y = self.expr(0)
+                self.state = 96
+                self.match(DMFParser.T__6)
                 pass
 
             elif la_ == 3:
                 localctx = DMFParser.Neg_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 92
+                self.state = 98
                 self.match(DMFParser.SUB)
-                self.state = 93
-                localctx.rhs = self.expr(22)
+                self.state = 99
+                localctx.rhs = self.expr(25)
                 pass
 
             elif la_ == 4:
                 localctx = DMFParser.Const_rc_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 94
+                self.state = 100
                 localctx._INT = self.match(DMFParser.INT)
-                self.state = 95
+                self.state = 101
                 self.rc((0 if localctx._INT is None else int(localctx._INT.text)))
                 pass
 
@@ -1514,80 +1664,90 @@ class DMFParser ( Parser ):
                 localctx = DMFParser.Delta_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 96
+                self.state = 102
                 self.direction()
-                self.state = 97
-                localctx.dist = self.expr(16)
+                self.state = 103
+                localctx.dist = self.expr(17)
                 pass
 
             elif la_ == 6:
                 localctx = DMFParser.To_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 99
-                self.match(DMFParser.T__7)
-                self.state = 101
+                self.state = 105
+                self.match(DMFParser.T__10)
+                self.state = 107
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__29) | (1 << DMFParser.T__31) | (1 << DMFParser.T__32))) != 0):
-                    self.state = 100
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__32) | (1 << DMFParser.T__34) | (1 << DMFParser.T__35))) != 0):
+                    self.state = 106
                     self.axis()
 
 
-                self.state = 103
-                localctx.which = self.expr(15)
+                self.state = 109
+                localctx.which = self.expr(16)
                 pass
 
             elif la_ == 7:
-                localctx = DMFParser.Well_exprContext(self, localctx)
+                localctx = DMFParser.Pause_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 104
-                self.match(DMFParser.T__8)
-                self.state = 105
-                self.match(DMFParser.T__9)
-                self.state = 106
-                localctx.which = self.expr(14)
+                self.state = 110
+                self.match(DMFParser.T__0)
+                self.state = 111
+                localctx.duration = self.expr(15)
                 pass
 
             elif la_ == 8:
+                localctx = DMFParser.Well_exprContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 112
+                self.match(DMFParser.T__11)
+                self.state = 113
+                self.match(DMFParser.T__12)
+                self.state = 114
+                localctx.which = self.expr(14)
+                pass
+
+            elif la_ == 9:
                 localctx = DMFParser.Drop_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 107
-                self.match(DMFParser.T__15)
-                self.state = 108
+                self.state = 115
+                self.match(DMFParser.T__18)
+                self.state = 116
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__16 or _la==DMFParser.T__17):
+                if not(_la==DMFParser.T__19 or _la==DMFParser.T__20):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-                self.state = 109
+                self.state = 117
                 localctx.loc = self.expr(10)
                 pass
 
-            elif la_ == 9:
+            elif la_ == 10:
                 localctx = DMFParser.Macro_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 110
+                self.state = 118
                 self.macro_def()
                 pass
 
-            elif la_ == 10:
+            elif la_ == 11:
                 localctx = DMFParser.Twiddle_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 112
+                self.state = 120
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==DMFParser.T__18:
-                    self.state = 111
-                    self.match(DMFParser.T__18)
+                if _la==DMFParser.T__21:
+                    self.state = 119
+                    self.match(DMFParser.T__21)
 
 
-                self.state = 114
+                self.state = 122
                 _la = self._input.LA(1)
                 if not(_la==DMFParser.OFF or _la==DMFParser.ON):
                     self._errHandler.recoverInline(self)
@@ -1596,101 +1756,101 @@ class DMFParser ( Parser ):
                     self.consume()
                 pass
 
-            elif la_ == 11:
+            elif la_ == 12:
                 localctx = DMFParser.Twiddle_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 115
+                self.state = 123
                 self.match(DMFParser.TOGGLE)
-                self.state = 117
+                self.state = 125
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,8,self._ctx)
                 if la_ == 1:
-                    self.state = 116
-                    self.match(DMFParser.T__19)
+                    self.state = 124
+                    self.match(DMFParser.T__22)
 
 
-                pass
-
-            elif la_ == 12:
-                localctx = DMFParser.Type_name_exprContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 120
-                self._errHandler.sync(self)
-                _la = self._input.LA(1)
-                if _la==DMFParser.T__20:
-                    self.state = 119
-                    self.match(DMFParser.T__20)
-
-
-                self.state = 122
-                self.param_type()
                 pass
 
             elif la_ == 13:
                 localctx = DMFParser.Type_name_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 123
+                self.state = 128
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+                if _la==DMFParser.T__23:
+                    self.state = 127
+                    self.match(DMFParser.T__23)
+
+
+                self.state = 130
                 self.param_type()
-                self.state = 124
-                localctx.n = self.match(DMFParser.INT)
                 pass
 
             elif la_ == 14:
+                localctx = DMFParser.Type_name_exprContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 131
+                self.param_type()
+                self.state = 132
+                localctx.n = self.match(DMFParser.INT)
+                pass
+
+            elif la_ == 15:
                 localctx = DMFParser.Function_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 126
+                self.state = 134
                 self.name()
-                self.state = 127
-                self.match(DMFParser.T__4)
-                self.state = 136
+                self.state = 135
+                self.match(DMFParser.T__5)
+                self.state = 144
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__4) | (1 << DMFParser.T__7) | (1 << DMFParser.T__8) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__18) | (1 << DMFParser.T__20) | (1 << DMFParser.T__21) | (1 << DMFParser.T__22) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__35) | (1 << DMFParser.T__36) | (1 << DMFParser.T__37) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
-                    self.state = 128
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__5) | (1 << DMFParser.T__10) | (1 << DMFParser.T__11) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__21) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__25) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__29) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__48) | (1 << DMFParser.OFF) | (1 << DMFParser.ON) | (1 << DMFParser.SUB) | (1 << DMFParser.TOGGLE) | (1 << DMFParser.ID) | (1 << DMFParser.INT))) != 0):
+                    self.state = 136
                     localctx._expr = self.expr(0)
                     localctx.args.append(localctx._expr)
-                    self.state = 133
+                    self.state = 141
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
-                    while _la==DMFParser.T__6:
-                        self.state = 129
-                        self.match(DMFParser.T__6)
-                        self.state = 130
+                    while _la==DMFParser.T__7:
+                        self.state = 137
+                        self.match(DMFParser.T__7)
+                        self.state = 138
                         localctx._expr = self.expr(0)
                         localctx.args.append(localctx._expr)
-                        self.state = 135
+                        self.state = 143
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
 
 
 
-                self.state = 138
-                self.match(DMFParser.T__5)
-                pass
-
-            elif la_ == 15:
-                localctx = DMFParser.Name_exprContext(self, localctx)
-                self._ctx = localctx
-                _prevctx = localctx
-                self.state = 140
-                self.name()
+                self.state = 146
+                self.match(DMFParser.T__6)
                 pass
 
             elif la_ == 16:
+                localctx = DMFParser.Name_exprContext(self, localctx)
+                self._ctx = localctx
+                _prevctx = localctx
+                self.state = 148
+                self.name()
+                pass
+
+            elif la_ == 17:
                 localctx = DMFParser.Int_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
-                self.state = 141
+                self.state = 149
                 localctx._INT = self.match(DMFParser.INT)
                 pass
 
 
             self._ctx.stop = self._input.LT(-1)
-            self.state = 171
+            self.state = 183
             self._errHandler.sync(self)
             _alt = self._interp.adaptivePredict(self._input,14,self._ctx)
             while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
@@ -1698,58 +1858,58 @@ class DMFParser ( Parser ):
                     if self._parseListeners is not None:
                         self.triggerExitRuleEvent()
                     _prevctx = localctx
-                    self.state = 169
+                    self.state = 181
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,13,self._ctx)
                     if la_ == 1:
                         localctx = DMFParser.Muldiv_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
                         localctx.lhs = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 144
-                        if not self.precpred(self._ctx, 18):
+                        self.state = 152
+                        if not self.precpred(self._ctx, 19):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 18)")
-                        self.state = 145
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 19)")
+                        self.state = 153
                         _la = self._input.LA(1)
                         if not(_la==DMFParser.DIV or _la==DMFParser.MUL):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 146
-                        localctx.rhs = self.expr(19)
+                        self.state = 154
+                        localctx.rhs = self.expr(20)
                         pass
 
                     elif la_ == 2:
                         localctx = DMFParser.Addsub_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
                         localctx.lhs = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 147
-                        if not self.precpred(self._ctx, 17):
+                        self.state = 155
+                        if not self.precpred(self._ctx, 18):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 17)")
-                        self.state = 148
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 18)")
+                        self.state = 156
                         _la = self._input.LA(1)
                         if not(_la==DMFParser.ADD or _la==DMFParser.SUB):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
                             self.consume()
-                        self.state = 149
-                        localctx.rhs = self.expr(18)
+                        self.state = 157
+                        localctx.rhs = self.expr(19)
                         pass
 
                     elif la_ == 3:
                         localctx = DMFParser.Injection_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
                         localctx.who = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 150
+                        self.state = 158
                         if not self.precpred(self._ctx, 9):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 9)")
-                        self.state = 151
+                        self.state = 159
                         self.match(DMFParser.INJECT)
-                        self.state = 152
+                        self.state = 160
                         localctx.what = self.expr(10)
                         pass
 
@@ -1757,11 +1917,11 @@ class DMFParser ( Parser ):
                         localctx = DMFParser.Delta_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
                         localctx.dist = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 153
-                        if not self.precpred(self._ctx, 21):
+                        self.state = 161
+                        if not self.precpred(self._ctx, 24):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 21)")
-                        self.state = 154
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 24)")
+                        self.state = 162
                         self.direction()
                         pass
 
@@ -1769,62 +1929,91 @@ class DMFParser ( Parser ):
                         localctx = DMFParser.N_rc_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
                         localctx.dist = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 155
-                        if not self.precpred(self._ctx, 19):
+                        self.state = 163
+                        if not self.precpred(self._ctx, 22):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 19)")
-                        self.state = 156
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 22)")
+                        self.state = 164
                         self.rc(0)
                         pass
 
                     elif la_ == 6:
-                        localctx = DMFParser.Index_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
-                        localctx.who = _prevctx
+                        localctx = DMFParser.Time_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
+                        localctx.duration = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 157
-                        if not self.precpred(self._ctx, 13):
+                        self.state = 165
+                        if not self.precpred(self._ctx, 21):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
-                        self.state = 158
-                        self.match(DMFParser.T__10)
-                        self.state = 159
-                        localctx.which = self.expr(0)
-                        self.state = 160
-                        self.match(DMFParser.T__11)
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 21)")
+                        self.state = 166
+                        self.time_unit()
                         pass
 
                     elif la_ == 7:
-                        localctx = DMFParser.Gate_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
-                        localctx.well = _prevctx
+                        localctx = DMFParser.Ticks_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
+                        localctx.duration = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 162
-                        if not self.precpred(self._ctx, 12):
+                        self.state = 167
+                        if not self.precpred(self._ctx, 20):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
-                        self.state = 163
-                        self.match(DMFParser.ATTR)
-                        self.state = 164
-                        self.match(DMFParser.T__12)
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 20)")
+                        self.state = 168
+                        _la = self._input.LA(1)
+                        if not(_la==DMFParser.T__8 or _la==DMFParser.T__9):
+                            self._errHandler.recoverInline(self)
+                        else:
+                            self._errHandler.reportMatch(self)
+                            self.consume()
                         pass
 
                     elif la_ == 8:
-                        localctx = DMFParser.Exit_pad_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
-                        localctx.well = _prevctx
+                        localctx = DMFParser.Index_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
+                        localctx.who = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
-                        self.state = 165
-                        if not self.precpred(self._ctx, 11):
+                        self.state = 169
+                        if not self.precpred(self._ctx, 13):
                             from antlr4.error.Errors import FailedPredicateException
-                            raise FailedPredicateException(self, "self.precpred(self._ctx, 11)")
-                        self.state = 166
-                        self.match(DMFParser.ATTR)
-                        self.state = 167
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 13)")
+                        self.state = 170
                         self.match(DMFParser.T__13)
-                        self.state = 168
+                        self.state = 171
+                        localctx.which = self.expr(0)
+                        self.state = 172
                         self.match(DMFParser.T__14)
                         pass
 
+                    elif la_ == 9:
+                        localctx = DMFParser.Gate_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
+                        localctx.well = _prevctx
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        self.state = 174
+                        if not self.precpred(self._ctx, 12):
+                            from antlr4.error.Errors import FailedPredicateException
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 12)")
+                        self.state = 175
+                        self.match(DMFParser.ATTR)
+                        self.state = 176
+                        self.match(DMFParser.T__15)
+                        pass
+
+                    elif la_ == 10:
+                        localctx = DMFParser.Exit_pad_exprContext(self, DMFParser.ExprContext(self, _parentctx, _parentState))
+                        localctx.well = _prevctx
+                        self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
+                        self.state = 177
+                        if not self.precpred(self._ctx, 11):
+                            from antlr4.error.Errors import FailedPredicateException
+                            raise FailedPredicateException(self, "self.precpred(self._ctx, 11)")
+                        self.state = 178
+                        self.match(DMFParser.ATTR)
+                        self.state = 179
+                        self.match(DMFParser.T__16)
+                        self.state = 180
+                        self.match(DMFParser.T__17)
+                        pass
+
              
-                self.state = 173
+                self.state = 185
                 self._errHandler.sync(self)
                 _alt = self._interp.adaptivePredict(self._input,14,self._ctx)
 
@@ -1873,14 +2062,14 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 12, self.RULE_direction)
         self._la = 0 # Token type
         try:
-            self.state = 186
+            self.state = 198
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [DMFParser.T__21, DMFParser.T__22]:
+            if token in [DMFParser.T__24, DMFParser.T__25]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 174
+                self.state = 186
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__21 or _la==DMFParser.T__22):
+                if not(_la==DMFParser.T__24 or _la==DMFParser.T__25):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -1888,11 +2077,11 @@ class DMFParser ( Parser ):
                 localctx.d = Dir.UP
                 localctx.verticalp=True
                 pass
-            elif token in [DMFParser.T__23, DMFParser.T__24]:
+            elif token in [DMFParser.T__26, DMFParser.T__27]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 177
+                self.state = 189
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__23 or _la==DMFParser.T__24):
+                if not(_la==DMFParser.T__26 or _la==DMFParser.T__27):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -1900,11 +2089,11 @@ class DMFParser ( Parser ):
                 localctx.d = Dir.DOWN
                 localctx.verticalp=True
                 pass
-            elif token in [DMFParser.T__25, DMFParser.T__26]:
+            elif token in [DMFParser.T__28, DMFParser.T__29]:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 180
+                self.state = 192
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__25 or _la==DMFParser.T__26):
+                if not(_la==DMFParser.T__28 or _la==DMFParser.T__29):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -1912,11 +2101,11 @@ class DMFParser ( Parser ):
                 localctx.d = Dir.LEFT
                 localctx.verticalp=False
                 pass
-            elif token in [DMFParser.T__27, DMFParser.T__28]:
+            elif token in [DMFParser.T__30, DMFParser.T__31]:
                 self.enterOuterAlt(localctx, 4)
-                self.state = 183
+                self.state = 195
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__27 or _la==DMFParser.T__28):
+                if not(_la==DMFParser.T__30 or _la==DMFParser.T__31):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -1974,38 +2163,38 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 14, self.RULE_rc)
         self._la = 0 # Token type
         try:
-            self.state = 202
+            self.state = 214
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,16,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 188
+                self.state = 200
                 if not localctx.n==1:
                     from antlr4.error.Errors import FailedPredicateException
                     raise FailedPredicateException(self, "$n==1")
-                self.state = 189
-                self.match(DMFParser.T__29)
+                self.state = 201
+                self.match(DMFParser.T__32)
                 localctx.d = Dir.UP
                 localctx.verticalp=True
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 192
-                self.match(DMFParser.T__30)
+                self.state = 204
+                self.match(DMFParser.T__33)
                 localctx.d = Dir.UP
                 localctx.verticalp=True
                 pass
 
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 195
+                self.state = 207
                 if not localctx.n==1:
                     from antlr4.error.Errors import FailedPredicateException
                     raise FailedPredicateException(self, "$n==1")
-                self.state = 196
+                self.state = 208
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__31 or _la==DMFParser.T__32):
+                if not(_la==DMFParser.T__34 or _la==DMFParser.T__35):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2016,9 +2205,9 @@ class DMFParser ( Parser ):
 
             elif la_ == 4:
                 self.enterOuterAlt(localctx, 4)
-                self.state = 199
+                self.state = 211
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__33 or _la==DMFParser.T__34):
+                if not(_la==DMFParser.T__36 or _la==DMFParser.T__37):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2072,20 +2261,20 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 16, self.RULE_axis)
         self._la = 0 # Token type
         try:
-            self.state = 208
+            self.state = 220
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [DMFParser.T__29]:
+            if token in [DMFParser.T__32]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 204
-                self.match(DMFParser.T__29)
+                self.state = 216
+                self.match(DMFParser.T__32)
                 localctx.verticalp=True
                 pass
-            elif token in [DMFParser.T__31, DMFParser.T__32]:
+            elif token in [DMFParser.T__34, DMFParser.T__35]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 206
+                self.state = 218
                 _la = self._input.LA(1)
-                if not(_la==DMFParser.T__31 or _la==DMFParser.T__32):
+                if not(_la==DMFParser.T__34 or _la==DMFParser.T__35):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -2149,17 +2338,17 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 18, self.RULE_macro_def)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 210
+            self.state = 222
             self.macro_header()
-            self.state = 213
+            self.state = 225
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [DMFParser.T__0, DMFParser.T__2]:
-                self.state = 211
+            if token in [DMFParser.T__1, DMFParser.T__3]:
+                self.state = 223
                 self.compound()
                 pass
-            elif token in [DMFParser.T__4, DMFParser.T__7, DMFParser.T__8, DMFParser.T__14, DMFParser.T__15, DMFParser.T__18, DMFParser.T__20, DMFParser.T__21, DMFParser.T__22, DMFParser.T__23, DMFParser.T__24, DMFParser.T__25, DMFParser.T__26, DMFParser.T__27, DMFParser.T__28, DMFParser.T__35, DMFParser.T__36, DMFParser.T__37, DMFParser.OFF, DMFParser.ON, DMFParser.SUB, DMFParser.TOGGLE, DMFParser.ID, DMFParser.INT]:
-                self.state = 212
+            elif token in [DMFParser.T__0, DMFParser.T__5, DMFParser.T__10, DMFParser.T__11, DMFParser.T__17, DMFParser.T__18, DMFParser.T__21, DMFParser.T__23, DMFParser.T__24, DMFParser.T__25, DMFParser.T__26, DMFParser.T__27, DMFParser.T__28, DMFParser.T__29, DMFParser.T__30, DMFParser.T__31, DMFParser.T__38, DMFParser.T__39, DMFParser.T__48, DMFParser.OFF, DMFParser.ON, DMFParser.SUB, DMFParser.TOGGLE, DMFParser.ID, DMFParser.INT]:
+                self.state = 224
                 self.expr(0)
                 pass
             else:
@@ -2215,32 +2404,32 @@ class DMFParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 215
-            self.match(DMFParser.T__35)
-            self.state = 216
-            self.match(DMFParser.T__4)
-            self.state = 225
+            self.state = 227
+            self.match(DMFParser.T__38)
+            self.state = 228
+            self.match(DMFParser.T__5)
+            self.state = 237
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__8) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__36) | (1 << DMFParser.T__37) | (1 << DMFParser.ID))) != 0):
-                self.state = 217
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__11) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__39) | (1 << DMFParser.T__48) | (1 << DMFParser.ID))) != 0):
+                self.state = 229
                 self.param()
-                self.state = 222
+                self.state = 234
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==DMFParser.T__6:
-                    self.state = 218
-                    self.match(DMFParser.T__6)
-                    self.state = 219
+                while _la==DMFParser.T__7:
+                    self.state = 230
+                    self.match(DMFParser.T__7)
+                    self.state = 231
                     self.param()
-                    self.state = 224
+                    self.state = 236
                     self._errHandler.sync(self)
                     _la = self._input.LA(1)
 
 
 
-            self.state = 227
-            self.match(DMFParser.T__5)
+            self.state = 239
+            self.match(DMFParser.T__6)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2303,31 +2492,31 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 22, self.RULE_param)
         self._la = 0 # Token type
         try:
-            self.state = 241
+            self.state = 253
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [DMFParser.T__8, DMFParser.T__14, DMFParser.T__15, DMFParser.T__36]:
+            if token in [DMFParser.T__11, DMFParser.T__17, DMFParser.T__18, DMFParser.T__39]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 229
+                self.state = 241
                 localctx._param_type = self.param_type()
                 localctx.type=localctx._param_type.type
-                self.state = 233
+                self.state = 245
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
                 if _la==DMFParser.INT:
-                    self.state = 231
+                    self.state = 243
                     localctx._INT = self.match(DMFParser.INT)
                     localctx.n=(0 if localctx._INT is None else int(localctx._INT.text))
 
 
                 pass
-            elif token in [DMFParser.T__37, DMFParser.ID]:
+            elif token in [DMFParser.T__48, DMFParser.ID]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 235
+                self.state = 247
                 localctx._name = self.name()
-                self.state = 236
+                self.state = 248
                 self.match(DMFParser.INJECT)
-                self.state = 237
+                self.state = 249
                 localctx._param_type = self.param_type()
                 localctx.type=localctx._param_type.type
                 localctx.pname=(None if localctx._name is None else self._input.getText(localctx._name.start,localctx._name.stop))
@@ -2378,32 +2567,104 @@ class DMFParser ( Parser ):
         localctx = DMFParser.Param_typeContext(self, self._ctx, self.state)
         self.enterRule(localctx, 24, self.RULE_param_type)
         try:
-            self.state = 251
+            self.state = 263
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [DMFParser.T__15]:
+            if token in [DMFParser.T__18]:
                 self.enterOuterAlt(localctx, 1)
-                self.state = 243
-                self.match(DMFParser.T__15)
+                self.state = 255
+                self.match(DMFParser.T__18)
                 localctx.type=Type.DROP
                 pass
-            elif token in [DMFParser.T__14]:
+            elif token in [DMFParser.T__17]:
                 self.enterOuterAlt(localctx, 2)
-                self.state = 245
-                self.match(DMFParser.T__14)
+                self.state = 257
+                self.match(DMFParser.T__17)
                 localctx.type=Type.PAD
                 pass
-            elif token in [DMFParser.T__8]:
+            elif token in [DMFParser.T__11]:
                 self.enterOuterAlt(localctx, 3)
-                self.state = 247
-                self.match(DMFParser.T__8)
+                self.state = 259
+                self.match(DMFParser.T__11)
                 localctx.type=Type.WELL
                 pass
-            elif token in [DMFParser.T__36]:
+            elif token in [DMFParser.T__39]:
                 self.enterOuterAlt(localctx, 4)
-                self.state = 249
-                self.match(DMFParser.T__36)
+                self.state = 261
+                self.match(DMFParser.T__39)
                 localctx.type=Type.INT
+                pass
+            else:
+                raise NoViableAltException(self)
+
+        except RecognitionException as re:
+            localctx.exception = re
+            self._errHandler.reportError(self, re)
+            self._errHandler.recover(self, re)
+        finally:
+            self.exitRule()
+        return localctx
+
+
+    class Time_unitContext(ParserRuleContext):
+        __slots__ = 'parser'
+
+        def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
+            super().__init__(parent, invokingState)
+            self.parser = parser
+            self.unit = None
+
+
+        def getRuleIndex(self):
+            return DMFParser.RULE_time_unit
+
+        def enterRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "enterTime_unit" ):
+                listener.enterTime_unit(self)
+
+        def exitRule(self, listener:ParseTreeListener):
+            if hasattr( listener, "exitTime_unit" ):
+                listener.exitTime_unit(self)
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitTime_unit" ):
+                return visitor.visitTime_unit(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+
+
+    def time_unit(self):
+
+        localctx = DMFParser.Time_unitContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 26, self.RULE_time_unit)
+        self._la = 0 # Token type
+        try:
+            self.state = 269
+            self._errHandler.sync(self)
+            token = self._input.LA(1)
+            if token in [DMFParser.T__40, DMFParser.T__41, DMFParser.T__42, DMFParser.T__43, DMFParser.T__44]:
+                self.enterOuterAlt(localctx, 1)
+                self.state = 265
+                _la = self._input.LA(1)
+                if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__40) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__44))) != 0)):
+                    self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                localctx.unit=SI.sec
+                pass
+            elif token in [DMFParser.T__45, DMFParser.T__46, DMFParser.T__47]:
+                self.enterOuterAlt(localctx, 2)
+                self.state = 267
+                _la = self._input.LA(1)
+                if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__45) | (1 << DMFParser.T__46) | (1 << DMFParser.T__47))) != 0)):
+                    self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                localctx.unit=SI.ms
                 pass
             else:
                 raise NoViableAltException(self)
@@ -2454,18 +2715,18 @@ class DMFParser ( Parser ):
     def name(self):
 
         localctx = DMFParser.NameContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 26, self.RULE_name)
+        self.enterRule(localctx, 28, self.RULE_name)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 255
+            self.state = 273
             self._errHandler.sync(self)
             token = self._input.LA(1)
             if token in [DMFParser.ID]:
-                self.state = 253
+                self.state = 271
                 self.match(DMFParser.ID)
                 pass
-            elif token in [DMFParser.T__37]:
-                self.state = 254
+            elif token in [DMFParser.T__48]:
+                self.state = 272
                 self.kwd_names()
                 pass
             else:
@@ -2511,11 +2772,11 @@ class DMFParser ( Parser ):
     def kwd_names(self):
 
         localctx = DMFParser.Kwd_namesContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 28, self.RULE_kwd_names)
+        self.enterRule(localctx, 30, self.RULE_kwd_names)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 257
-            self.match(DMFParser.T__37)
+            self.state = 275
+            self.match(DMFParser.T__48)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2539,11 +2800,11 @@ class DMFParser ( Parser ):
 
     def expr_sempred(self, localctx:ExprContext, predIndex:int):
             if predIndex == 0:
-                return self.precpred(self._ctx, 18)
+                return self.precpred(self._ctx, 19)
          
 
             if predIndex == 1:
-                return self.precpred(self._ctx, 17)
+                return self.precpred(self._ctx, 18)
          
 
             if predIndex == 2:
@@ -2551,31 +2812,39 @@ class DMFParser ( Parser ):
          
 
             if predIndex == 3:
-                return self.precpred(self._ctx, 21)
+                return self.precpred(self._ctx, 24)
          
 
             if predIndex == 4:
-                return self.precpred(self._ctx, 19)
+                return self.precpred(self._ctx, 22)
          
 
             if predIndex == 5:
-                return self.precpred(self._ctx, 13)
+                return self.precpred(self._ctx, 21)
          
 
             if predIndex == 6:
-                return self.precpred(self._ctx, 12)
+                return self.precpred(self._ctx, 20)
          
 
             if predIndex == 7:
+                return self.precpred(self._ctx, 13)
+         
+
+            if predIndex == 8:
+                return self.precpred(self._ctx, 12)
+         
+
+            if predIndex == 9:
                 return self.precpred(self._ctx, 11)
          
 
     def rc_sempred(self, localctx:RcContext, predIndex:int):
-            if predIndex == 8:
+            if predIndex == 10:
                 return localctx.n==1
          
 
-            if predIndex == 9:
+            if predIndex == 11:
                 return localctx.n==1
          
 

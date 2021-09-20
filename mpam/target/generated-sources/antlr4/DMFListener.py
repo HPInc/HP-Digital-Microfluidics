@@ -7,6 +7,7 @@ else:
 
 from mpam.types import Dir, OnOff
 from langsup.type_supp import Type
+from quantities import SI
 
 
 from mpam.types import Dir 
@@ -75,6 +76,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#assign_stat.
     def exitAssign_stat(self, ctx:DMFParser.Assign_statContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#pause_stat.
+    def enterPause_stat(self, ctx:DMFParser.Pause_statContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#pause_stat.
+    def exitPause_stat(self, ctx:DMFParser.Pause_statContext):
         pass
 
 
@@ -222,6 +232,24 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#time_expr.
+    def enterTime_expr(self, ctx:DMFParser.Time_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#time_expr.
+    def exitTime_expr(self, ctx:DMFParser.Time_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#ticks_expr.
+    def enterTicks_expr(self, ctx:DMFParser.Ticks_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#ticks_expr.
+    def exitTicks_expr(self, ctx:DMFParser.Ticks_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#coord_expr.
     def enterCoord_expr(self, ctx:DMFParser.Coord_exprContext):
         pass
@@ -237,6 +265,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#twiddle_expr.
     def exitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#pause_expr.
+    def enterPause_expr(self, ctx:DMFParser.Pause_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#pause_expr.
+    def exitPause_expr(self, ctx:DMFParser.Pause_exprContext):
         pass
 
 
@@ -363,6 +400,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#param_type.
     def exitParam_type(self, ctx:DMFParser.Param_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#time_unit.
+    def enterTime_unit(self, ctx:DMFParser.Time_unitContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#time_unit.
+    def exitTime_unit(self, ctx:DMFParser.Time_unitContext):
         pass
 
 

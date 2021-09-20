@@ -29,9 +29,13 @@ class Type:
     MOTION: MotionType
     DELTA: Type
     TWIDDLE_OP: TwiddleOpType
+    PAUSE: PauseType
     ROW: Type
     COLUMN: Type
     BARRIER: Type
+    DELAY: Type
+    TIME: Type
+    TICKS: Type
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -86,6 +90,9 @@ Type.ORIENTED_DIR = Type("ORIENTED_DIR", [Type.DIR])
 Type.ROW = Type("ROW")
 Type.COLUMN = Type("COLUMN")
 Type.BARRIER = Type("BARRIER")
+Type.DELAY = Type("DELAY")
+Type.TIME = Type("TIME", [Type.DELAY])
+Type.TICKS = Type("TICKS", [Type.DELAY])
 
 class Signature(NamedTuple):
     param_types: tuple[Type,...]
@@ -129,13 +136,18 @@ Type.MOTION = MotionType()
         
 Type.DELTA = Type("DELTA", [Type.MOTION])
 
+
 class TwiddleOpType(CallableType):
     def __init__(self):
         super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.BINARY_STATE)
         
 Type.TWIDDLE_OP = TwiddleOpType()
 
-
+class PauseType(CallableType):
+    def __init__(self):
+        super().__init__("PAUSE", (Type.ANY,), Type.NONE)
+        
+Type.PAUSE = PauseType()
 
 class MacroType(CallableType):
     instances = dict[Signature, 'MacroType']()
