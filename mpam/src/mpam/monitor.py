@@ -12,7 +12,7 @@ from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
 from matplotlib import pyplot
 from matplotlib.artist import Artist
 from matplotlib.axes._axes import Axes
-from matplotlib.backend_bases import PickEvent
+from matplotlib.backend_bases import PickEvent, KeyEvent
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
 from matplotlib.legend import Legend
@@ -37,6 +37,7 @@ from mpam import paths
 from _collections import defaultdict
 from abc import ABC, abstractmethod
 from langsup.dmf_lang import DMFInterpreter
+import clipboard
 
 
 class ClickableMonitor(ABC):
@@ -804,7 +805,66 @@ class ClickHandler:
                 self.monitor.board.before_tick(lambda: self.run())
                 
             
-            
+class InputBox(TextBox):
+    history: Final[list[str]]
+    history_pos: int
+    
+    def __init__(self, ax, label, initial='',
+                 color='.95', hovercolor='1', label_pad=.01):
+        super().__init__(ax, label, initial=initial, color=color, hovercolor=hovercolor, label_pad=label_pad)
+        self.history = []
+        self.history_pos = 0
+        
+    def add_to_history(self, text: str) -> None:
+        self.history.append(text)
+        self.history_pos = len(self.history)
+        
+    def _reset_val(self, text: str) -> None:
+        e: bool = super().eventson
+        self.eventson = False
+        self.set_val(text)
+        self.eventson = e
+        
+    def _keypress(self, event: KeyEvent):
+        if self.ignore(event):
+            return
+        key: str = event.key
+        # if len(key) > 1:
+        #     print(f"Pressed '{key}'")
+        if key == "up" and self.history_pos > 0:
+            self.history_pos -= 1
+            t = self.history[self.history_pos]
+            self._reset_val(t)
+            # print(f"Up pressed: '{t}'")
+            return
+        if key == "down" and self.history_pos < len(self.history)-1:
+            self.history_pos += 1
+            t = self.history[self.history_pos]
+            self._reset_val(t)
+            # print(f"Down pressed: '{t}'")
+            return
+        if key == "ctrl+c":
+            t = self.text
+            if len(t) > 0:
+                # print(f"Copy pressed: {t}")
+                clipboard.copy(t)
+            return
+        if key == "ctrl+x":
+            t = self.text
+            if len(t) > 0:
+                # print(f"Copy pressed: {t}")
+                clipboard.copy(t)
+                self._reset_val("")
+                self.history_pos = len(self.history)
+            return
+        if key == "ctrl+v":
+            t = clipboard.paste()
+            if len(t) > 0:
+                # print(f"Paste pressed: {t}")
+                self._reset_val(t)
+                self.add_to_history(t)
+            return
+        return TextBox._keypress(self, event)
 
 class BoardMonitor:
     board: Final[Board]
@@ -1114,7 +1174,7 @@ class BoardMonitor:
     def dmf_lang_widgets(self, spec: SubplotSpec) -> Any:
         grid = GridSpecFromSubplotSpec(1, 2, spec, width_ratios = [5,1])
         fig = self.figure
-        text = TextBox(fig.add_subplot(grid[0,0]), "Expr:",
+        text = InputBox(fig.add_subplot(grid[0,0]), "Expr:",
                        # label_pad = 0.2
                        )
         text.label.set_fontsize("small")
@@ -1123,10 +1183,11 @@ class BoardMonitor:
         
         macro_file: Optional[str] = self.macro_file_name
         interp = DMFInterpreter(macro_file, board=self.board)
-        def on_press(event: Event) -> None: # @UnusedVariable
+        def on_press(event: KeyEvent) -> None: # @UnusedVariable
             expr = text.text.strip()
             if len(expr) > 0:
                 print(f"Interactive cmd: {expr}")
+                text.add_to_history(expr)
                 (interp.evaluate(expr, cache_as="last")
                     .then_call(lambda pair: print(f"  Interactive cmd val ({pair[0].name}): {pair[1]}")))
                 text.set_val("")
