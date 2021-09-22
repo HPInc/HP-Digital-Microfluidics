@@ -823,6 +823,7 @@ class InputBox(TextBox):
         e: bool = super().eventson
         self.eventson = False
         self.set_val(text)
+        self.cursor_index = len(text)
         self.eventson = e
         
     def _keypress(self, event: KeyEvent):
@@ -832,12 +833,19 @@ class InputBox(TextBox):
         # if len(key) > 1:
         #     print(f"Pressed '{key}'")
         if key == "up" and self.history_pos > 0:
+            if len(self.text) > 0:
+                if self.history_pos == len(self.history):
+                    self.history.append(self.text)
+                elif self.text != self.history[self.history_pos]:
+                    self.history[self.history_pos] = self.text
             self.history_pos -= 1
             t = self.history[self.history_pos]
             self._reset_val(t)
             # print(f"Up pressed: '{t}'")
             return
         if key == "down" and self.history_pos < len(self.history)-1:
+            if self.text != self.history[self.history_pos]:
+                self.history[self.history_pos] = self.text
             self.history_pos += 1
             t = self.history[self.history_pos]
             self._reset_val(t)
@@ -861,8 +869,11 @@ class InputBox(TextBox):
             t = clipboard.paste()
             if len(t) > 0:
                 # print(f"Paste pressed: {t}")
-                self._reset_val(t)
-                self.add_to_history(t)
+                ct = self.text
+                ci = self.cursor_index
+                new = ct[:ci]+t+ct[ci:]
+                self._reset_val(new)
+                self.cursor_index += len(t)
             return
         return TextBox._keypress(self, event)
 
