@@ -67,3 +67,4 @@ test = macro(d: drop, time) {
 
 d1 = drop@(2,3);
 t1 = 2 sec;
+w1 = well #2;

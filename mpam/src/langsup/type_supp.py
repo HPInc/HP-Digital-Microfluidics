@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Final, Optional, Sequence, NamedTuple
+from _collections import defaultdict
+from enum import Enum, auto
+from typing import Final, Optional, Sequence, NamedTuple, ClassVar, Callable, \
+    Any
 
 
 class Type:
@@ -199,6 +202,45 @@ class MacroType(CallableType):
     
     def __hash__(self)->int:
         return hash(self.sig)
+    
+class Attr(Enum):
+    _ignore_ = ["_known"]    
+    _known: ClassVar[dict[Attr, dict[Type, tuple[Type, Callable[[Any], Any]]]]]
+
+    GATE = auto()
+    EXIT_PAD = auto()
+    STATE = auto()
+    PAD = auto()
+    DISTANCE = auto()
+    DURATION = auto()
+    ROW = auto()
+    COLUMN = auto()
+    WELL = auto()
+    EXIT_DIR = auto()
+    
+    @property
+    def mappings(self) -> dict[Type, tuple[Type, Callable[[Any], Any]]]:
+        return self._known[self]
+    
+    @property
+    def known_types(self) -> Sequence[Type]:
+        return tuple(self.mappings.keys())
+
+    def register(self, otype: Type, rtype: Type, extractor: Callable[[Any], Any]) -> None:
+        self.mappings[otype] = (rtype, extractor)
+        
+    def __getitem__(self, otype: Type) -> Optional[tuple[Type, Type, Callable[[Any], Any]]]:
+        d = self.mappings
+        best: Optional[Type] = None
+        for t in d:
+            if otype <= t and (best is None or t < best):
+                best = t
+        return None if best is None else (best, *d[best])
+                
+        
+        
+Attr._known = defaultdict(lambda : defaultdict(list))        
+
     
     
 if __name__ == '__main__':

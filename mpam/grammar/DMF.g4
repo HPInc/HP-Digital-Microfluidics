@@ -7,8 +7,8 @@ options {
 }
 
 @header {
-from mpam.types import Dir, OnOff
-from langsup.type_supp import Type
+from mpam.types import Dir, OnOff, Turn
+from langsup.type_supp import Type, Attr
 from quantities import SI
 }
 
@@ -60,6 +60,9 @@ expr
   | '(' x=expr ',' y=expr ')' 		 # coord_expr
   | '-' rhs=expr                     # neg_expr
   | dist=expr direction              # delta_expr
+  | obj=expr ATTR attr             # attr_expr
+  | start_dir=expr 'turned' turn          # turn_expr
+  | dist=expr 'in' ('dir' | 'direction') d=expr # in_dir_expr
   | INT rc[$INT.int]           # const_rc_expr
   | dist=expr rc[0]           # n_rc_expr
   | duration=expr time_unit          # time_expr
@@ -67,17 +70,17 @@ expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | direction dist=expr              # delta_expr
+  | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
   | 'pause' duration=expr            # pause_expr
   | 'well' '#' which=expr            # well_expr
   | who=expr '[' which=expr ']'      # index_expr
-  | well=expr ATTR 'gate'            # gate_expr
-  | well=expr ATTR 'exit' 'pad'      # exit_pad_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | who=expr INJECT what=expr        # injection_expr
   | macro_def                        # macro_expr
   | 'turn'? (ON | OFF)               # twiddle_expr
   | 'toggle' 'state'?                # twiddle_expr
+  | 'remove' ('from' 'the'? 'board')? # remove_expr
   | 'the'? param_type                # type_name_expr
   | param_type n=INT                 # type_name_expr
   | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
@@ -91,6 +94,12 @@ direction returns [Dir d, bool verticalp]
   | ('down' | 'south' ) {$ctx.d = Dir.DOWN}{$ctx.verticalp=True}
   | ('left' | 'west' ) {$ctx.d = Dir.LEFT}{$ctx.verticalp=False}
   | ('right' | 'east' ) {$ctx.d = Dir.RIGHT}{$ctx.verticalp=False}
+  ;
+  
+turn returns [Turn t]
+  : ('right' | 'clockwise') {$ctx.t = Turn.RIGHT}
+  | ('left' | 'counterclockwise') {$ctx.t = Turn.LEFT}
+  | 'around' {$ctx.t = Turn.AROUND}
   ;
   
 rc[int n] returns [Dir d, bool verticalp]
@@ -138,10 +147,23 @@ time_unit returns[Unit[Time] unit]
   : ('s' | 'sec' | 'secs' | 'second' | 'seconds') {$ctx.unit=SI.sec}
   | ('ms' | 'millisecond' | 'milliseconds') {$ctx.unit=SI.ms}
   ;
+  
+attr returns[Attr which]
+  : 'gate' {$ctx.which=Attr.GATE}
+  | 'exit' 'pad' {$ctx.which=Attr.EXIT_PAD}
+  | 'state' {$ctx.which=Attr.STATE}
+  | 'distance' {$ctx.which=Attr.DISTANCE}
+  | 'duration' {$ctx.which=Attr.DURATION}
+  | 'pad' {$ctx.which=Attr.PAD}
+  | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which=Attr.ROW}
+  | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which=Attr.COLUMN}
+  | 'well' {$ctx.which=Attr.WELL}
+  | 'exit' ('dir' | 'direction') {$ctx.which=Attr.EXIT_DIR}
+  ;
 
 name : (ID | kwd_names) ;
 
-kwd_names : 's' | 'ms';
+kwd_names : 's' | 'ms' | 'x' | 'y';
   
 ADD: '+';
 ASSIGN: '=';

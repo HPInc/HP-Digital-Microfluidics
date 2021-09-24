@@ -1,7 +1,7 @@
 from __future__ import annotations
 import mpam.device as device
 from typing import Optional, Final, Sequence
-from mpam.types import OnOff, XYCoord, Orientation
+from mpam.types import OnOff, XYCoord, Orientation, Dir
 from serial import Serial
 from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
     WellShape
@@ -116,7 +116,7 @@ class Board(device.Board):
             epx += 1
         return (epx+5*outdir, epy-0.5)
     
-    def _well(self, num: int, group: WellGroup, gate_loc: XYCoord, exit_pad: device.Pad):
+    def _well(self, num: int, group: WellGroup, exit_dir: Dir, gate_loc: XYCoord, exit_pad: device.Pad):
         shape = WellShape(
                     gate_pad_bounds= self._gate_bounds(exit_pad.location),
                     shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
@@ -128,6 +128,7 @@ class Board(device.Board):
         return Well(number=num,
                     board=self,
                     group=group,
+                    exit_dir=exit_dir,
                     exit_pad=exit_pad,
                     gate=WellGatePad(Electrode(gate_loc.x, gate_loc.y, self._states), self),
                     capacity=12*uL,
@@ -178,10 +179,10 @@ class Board(device.Board):
                                                Electrode(15, 4, self._states), self)),
                                 sequences)
         
-        upper_left = self._well(0, left_group, XYCoord(0,0), self.pad_at(1,1))
-        upper_right = self._well(1, right_group, XYCoord(15,0), self.pad_at(14,1))
-        lower_left = self._well(2, left_group, XYCoord(0,7), self.pad_at(1,6))
-        lower_right = self._well(3, right_group, XYCoord(15,7), self.pad_at(14,6))
+        upper_left = self._well(0, left_group, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1))
+        upper_right = self._well(1, right_group, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1))
+        lower_left = self._well(2, left_group, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6))
+        lower_right = self._well(3, right_group, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6))
         wells.extend((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:

@@ -1,26 +1,27 @@
 from __future__ import annotations
 
 from _collections import defaultdict
+from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
     Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List
+import typing
 
-from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext,\
+from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext, \
     Token
 from antlr4.tree.Tree import TerminalNode
 
 from DMFLexer import DMFLexer
 from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
-from langsup.type_supp import Type, CallableType, MacroType, Signature
+from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr
 from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
-from mpam.drop import Drop
-from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier,\
-    ticks, Ticks, DelayType
-from abc import ABC, abstractmethod
-import typing
+from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
-from quantities.dimensions import Time
+from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
+    ticks, Ticks, DelayType, Turn
 from quantities.core import Unit
+from quantities.dimensions import Time
+from erk.stringutils import map_str
 
 
 Name_ = TypeVar("Name_", bound=Hashable)
@@ -158,6 +159,16 @@ class DeltaValue(MotionValue):
         path = Path.walk(self.direction, steps = self.dist)
         return path.schedule_for(drop)
     
+class RemoveDropValue(MotionValue):
+    def move(self, drop:Drop)->Delayed[Drop]:
+        if drop.status is not DropStatus.ON_BOARD:
+            print(f"{drop} is not on board.  Cannot remove")
+        else:
+            if drop.status is DropStatus.ON_BOARD:
+                drop.pad.drop = None
+            drop.status = DropStatus.OFF_BOARD
+        return Delayed.complete(drop)
+    
 class ToPadValue(MotionValue):
     dest: Final[Pad]
     
@@ -231,19 +242,43 @@ class MacroValue(CallableValue):
         params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
         return f"macro({params})->{self.sig.return_type}"
     
+class WellPadValue(NamedTuple):
+    pad: WellPad
+    well: Well
+    
+    def __str__(self) -> str:
+        pad = self.pad
+        if isinstance(pad.loc, Well):
+            return str(pad)
+        else:
+            return f"({pad}, {self.well})"
+    
+Attr.GATE.register(Type.WELL, Type.WELL_PAD, lambda well: WellPadValue(well.gate, well))
+Attr.EXIT_PAD.register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
+Attr.STATE.register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
+Attr.DISTANCE.register(Type.DELTA, Type.INT, lambda delta: delta.dist)
+Attr.DURATION.register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
+Attr.PAD.register(Type.DROP, Type.PAD, lambda drop: drop.pad)
+Attr.ROW.register(Type.PAD, Type.INT, lambda pad: pad.row)
+Attr.COLUMN.register(Type.PAD, Type.INT, lambda pad: pad.column)
+# Attr.WELL.register(Type.WELL_PAD, Type.WELL, lambda wp: wp.)
+Attr.EXIT_DIR.register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
+
 rep_types: Mapping[Type, typing.Type] = {
         Type.DROP: Drop,
         Type.INT: int,
         Type.BINARY_STATE: OnOff,
         Type.BINARY_CPT: BinaryComponent,
         Type.PAD: Pad,
-        Type.WELL_PAD: WellPad,
+        Type.WELL_PAD: WellPadValue,
         Type.WELL: Well,
         Type.DELTA: DeltaValue,
         Type.MOTION: MotionValue,
         Type.TIME: Time,
         Type.TICKS: Ticks,
         Type.PAUSE: PauseValue,
+        Type.DIR: Dir,
+        Type.BOOL: bool,
     }
 
 class Conversions:
@@ -280,6 +315,10 @@ Conversions.register(Type.DROP, Type.BINARY_CPT,
                      lambda drop: drop.pad)
 Conversions.ok(Type.TIME, Type.DELAY)
 Conversions.ok(Type.TICKS, Type.DELAY)
+Conversions.register(Type.WELL_PAD, Type.BINARY_CPT,
+                     lambda wp: wp.pad)
+
+
 
 class Executable:
     return_type: Final[Type]
@@ -313,6 +352,9 @@ class Executable:
         #     if check is not None:
         #         assert isinstance(val, check), f"Expected {check}, got {val}"
         return future
+    
+    
+    
     
 class DMFInterpreter:
     globals: Final[Environment]
@@ -636,10 +678,11 @@ class DMFCompiler(DMFVisitor):
                                return_type=Type.WELL_PAD)):
             return e
                                
-        def run(env: Environment) -> Delayed[WellPad]:
+        def run(env: Environment) -> Delayed[WellPadValue]:
             f: Delayed[Well] = well.evaluate(env, Type.WELL)
             return f.chain(lambda w: (which.evaluate(env, Type.INT)
-                                            .transformed(lambda n: w.group.shared_pads[cast(int, n)]))
+                                            .transformed(lambda n: WellPadValue(w.group.shared_pads[cast(int, n)],
+                                                                                w)))
                 )
         return Executable(Type.WELL_PAD, run, (well, which))
     
@@ -724,6 +767,38 @@ class DMFCompiler(DMFVisitor):
                     .transformed(lambda n: DeltaValue(n, direction))
                     )
         return Executable(Type.DELTA, run, (dist,))
+
+    def visitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext) -> Executable: 
+        dist = self.visit(ctx.dist)
+        direction = self.visit(ctx.d)
+        if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
+            return e
+        if e:=self.type_check(Type.DIR, direction, ctx.d, return_type=Type.DELTA):
+            return e
+        def run(env: Environment) -> Delayed[DeltaValue]:
+                def combine(n: int, d: Dir) -> DeltaValue:
+                    return DeltaValue(n, d)
+                future: Delayed[int] = dist.evaluate(env, Type.INT)
+                return future.chain(lambda n: (direction.evaluate(env, Type.DIR)
+                                               .transformed(lambda d: combine(n,d))))
+        return Executable(Type.DELTA, run, (dist, direction))
+
+
+    
+    def visitDir_expr(self, ctx:DMFParser.Dir_exprContext) -> Executable:
+        direction: Dir = ctx.direction().d
+        return Executable(Type.DIR, lambda _: Delayed.complete(direction))
+    
+    def visitTurn_expr(self, ctx:DMFParser.Turn_exprContext) -> Executable:
+        start = self.visit(ctx.start_dir) 
+        if e:=self.type_check(Type.DIR, start, ctx.start_dir, return_type=Type.DIR):
+            return e
+        t: Turn = ctx.turn().t
+        def run(env: Environment) -> Delayed[Dir]:
+            return (start.evaluate(env, Type.DIR)
+                    .transformed(lambda d: cast(Dir, d).turned(t))
+                    )
+        return Executable(Type.DIR, run, (start,))
     
     def visitN_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
         dist = self.visit(ctx.dist)
@@ -794,26 +869,52 @@ class DMFCompiler(DMFVisitor):
         # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
         return Executable(return_type, run, (who, what))
             
-        
-
-
-    def visitGate_expr(self, ctx:DMFParser.Gate_exprContext) -> Executable:
-        well = self.visit(ctx.well)
-        if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.WELL_PAD):
-            return e
-        def run(env: Environment) -> Delayed[WellPad]:
-            f: Delayed[Well] = well.evaluate(env, Type.WELL)
-            return f.transformed(lambda w: w.gate)
-        return Executable(Type.WELL_PAD, run, (well,))
     
-    def visitExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext) -> Executable:
-        well = self.visit(ctx.well)
-        if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.PAD):
+    def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext) -> Executable:
+        obj = self.visit(ctx.obj)
+        attr: Attr = ctx.attr().which
+        desc = attr[obj.return_type]
+        if desc is not None:
+            ot, rt, extractor = desc
+            def run(env: Environment) -> Delayed[Any]:
+                f: Delayed = obj.evaluate(env, ot)
+                return f.transformed(extractor)
+            return Executable(rt, run, (obj,))
+        types = attr.known_types
+        if len(types) == 0:
+            return self.error(ctx.attr(), Type.NONE,
+                              lambda txt: f"{txt} is an attribute, but I don't know what to do with it")
+        if len(types) == 1:
+            e = self.type_check(types[0], obj.return_type, ctx.obj)
+            assert e is not None
             return e
-        def run(env: Environment) -> Delayed[Pad]:
-            f: Delayed[Well] = well.evaluate(env, Type.WELL)
-            return f.transformed(lambda w: w.exit_pad)
-        return Executable(Type.PAD, run, (well,))
+        
+        a = self.text_of(ctx.attr())
+        otn = obj.return_type.name
+        tns = map_str(tuple(t.name for t in types))
+        
+        def emessage(text: str) -> str:
+            return f"{otn}.{a} not defined, requires one of {tns}: {text}"
+        return self.error(ctx.obj, Type.NONE, emessage)
+
+
+    # def visitGate_expr(self, ctx:DMFParser.Gate_exprContext) -> Executable:
+    #     well = self.visit(ctx.well)
+    #     if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.WELL_PAD):
+    #         return e
+    #     def run(env: Environment) -> Delayed[WellPad]:
+    #         f: Delayed[Well] = well.evaluate(env, Type.WELL)
+    #         return f.transformed(lambda w: w.gate)
+    #     return Executable(Type.WELL_PAD, run, (well,))
+    #
+    # def visitExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext) -> Executable:
+    #     well = self.visit(ctx.well)
+    #     if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.PAD):
+    #         return e
+    #     def run(env: Environment) -> Delayed[Pad]:
+    #         f: Delayed[Well] = well.evaluate(env, Type.WELL)
+    #         return f.transformed(lambda w: w.exit_pad)
+    #     return Executable(Type.PAD, run, (well,))
 
 
     def visitWell_expr(self, ctx:DMFParser.Well_exprContext) -> Executable:
@@ -897,6 +998,11 @@ class DMFCompiler(DMFVisitor):
             def run(env: Environment) -> Delayed[MotionValue]:
                 return which.evaluate(env, Type.PAD).transformed(lambda n: ToRowColValue(n, verticalp))
         return Executable(Type.MOTION, run, (which,))
+    
+    def visitRemove_expr(self, ctx:DMFParser.Remove_exprContext) -> Executable: # @UnusedVariable
+        def run(env: Environment) -> Delayed[MotionValue]: # @UnusedVariable
+            return Delayed.complete(RemoveDropValue())
+        return Executable(Type.MOTION, run, ())
 
 
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
