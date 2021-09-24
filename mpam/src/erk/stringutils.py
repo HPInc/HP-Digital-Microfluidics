@@ -1,18 +1,15 @@
 from __future__ import annotations
-from re import Pattern
 from typing import Optional, Final, Mapping, Union, cast, Sequence
-import re
+from erk.basic import LazyPattern
 
-_camel_case_re: Optional[Pattern] = None
+_camel_case_re = LazyPattern('(?:^[a-z]|[A-z])[a-z0-9_]*')
 
 def split_camel_case(s: str) -> list[str]:
     global _camel_case_re
-    if _camel_case_re is None:
-        _camel_case_re = re.compile('(?:^[a-z]|[A-z])[a-z0-9_]*')
-    return _camel_case_re.findall(s)
+    return _camel_case_re.value.findall(s)
 
-_plurals_in_es_re: Optional[Pattern] = None
-_plurals_in_ies_re: Optional[Pattern] = None
+_plurals_in_es_re = LazyPattern('(?:[sz]h?|ch|x)$')
+_plurals_in_ies_re = LazyPattern('[^aeiou]y$') 
 
 irregular_plurals: Final[dict[str,str]] = {
     "fish": "fish",
@@ -23,24 +20,43 @@ irregular_plurals: Final[dict[str,str]] = {
     "human": "humans"
     }
 
+_cached_plurals: dict[str,str] = {}
+
 def infer_plural(singular: str) -> str:
-    global _plurals_in_es_re
-    global _plurals_in_ies_re
-    global irregular_plurals
-    p = irregular_plurals.get(singular, None)
+    p = _cached_plurals.get(singular, None)
     if p is not None:
         return p
-    if _plurals_in_es_re is None:
-        _plurals_in_es_re = re.compile('(?:[sz]h?|ch)$')
-    if _plurals_in_es_re.search(singular):
-        return singular+"es"
-    if _plurals_in_ies_re is None:
-        _plurals_in_ies_re = re.compile('[^aeiou]y$')
-    if _plurals_in_ies_re.search(singular):
-        return singular[:-1]+"ies"
-    if singular.endswith("man"):
-        return singular[:-3]+"men"
-    return singular+"s"
+    if len(singular) == 0:
+        raise ValueError(f"Empty string in infer_plural")
+    lowered = singular.lower()
+    def found_plural(stem: str, suffix: str) -> str:
+        if singular[-1].isupper():
+            suffix = suffix.upper()
+        plural = stem+suffix 
+        _cached_plurals[singular] = plural
+        return plural
+
+    p = irregular_plurals.get(lowered, None)
+    if p is not None:
+        return found_plural("", p)
+    elif _plurals_in_es_re.value.search(lowered):
+        return found_plural(singular, "es")        
+    elif _plurals_in_ies_re.value.search(lowered):
+        return found_plural(singular[:-1], "ies")
+    elif lowered.endswith("man"):
+        return found_plural(singular[:-3], "men")
+    else:
+        return found_plural(singular, "s")
+
+def noun(n: float, singular: str, plural: Optional[str] = None,
+         *, tolerance: float = 0):
+    if tolerance == 0:
+        if n == 1:
+            return singular
+    elif n >= 1-tolerance and n <= 1+tolerance:
+        return singular
+    return plural if plural is not None else infer_plural(singular)
+    
     
 def map_str(d: Union[Mapping, set, tuple, Sequence]) -> str:
     if getattr(d, "items", None) is not None:
@@ -55,8 +71,6 @@ def map_str(d: Union[Mapping, set, tuple, Sequence]) -> str:
 
 def fmt_dict(d: Mapping) -> str:
     return f"{{{', '.join(f'{k}: {v}' for k,v in d.items())}}}"
-
-    
 
 if __name__ == '__main__':
     print(split_camel_case("ThisIsATest"))

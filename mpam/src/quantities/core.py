@@ -2,7 +2,7 @@ from __future__ import annotations
 import numbers
 from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
     overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable,\
-    Literal, Mapping
+    Literal, Mapping, Type
 from erk.stringutils import split_camel_case, infer_plural
 import math
 from erk.basic import LazyPattern, Lazy
@@ -598,15 +598,21 @@ class _DecomposedQuantity(Generic[D]):
     
     
 class _BoundQuantity(Generic[D]):
-    magnitude: float
+    magnitude: Final[float]
     units: UnitExpr[D]
+    is_count: Final[bool]
+    
     def __init__(self, quant: D, units: UnitExpr[D]) -> None:
         self.magnitude = quant.magnitude/units.quantity.magnitude
         self.units = units
+        self.is_count = isinstance(quant, CountDim) and self.magnitude.is_integer()
 
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         desc = self.units.description(exponent_fmt=exponent_fmt, mag=self.magnitude)
-        return f"{self.magnitude:g} {desc}"
+        if self.is_count:
+            return f"{int(self.magnitude):,d} {desc}"
+        else:
+            return f"{self.magnitude:g} {desc}"
 
     def __repr__(self) -> str:
         return self.description()
@@ -668,7 +674,11 @@ class _BoundQuantity(Generic[D]):
             width = int(d["width"])-len(formatted_unit)-len(sep)
             wspec = "" if width < 1 else str(width)
             nspec = d["fill"]+d["align"]+d["mid"]+wspec+d["rest"]
-        formatted_number = self.magnitude.__format__(nspec)
+        as_float = nspec.endswith("f") or nspec.endswith("g")
+        if not as_float and self.is_count:
+            formatted_number = int(self.magnitude).__format__(nspec)
+        else:
+            formatted_number = self.magnitude.__format__(nspec)
         res = (formatted_number+sep+formatted_unit).__format__(sspec)
         return res
 
@@ -1160,3 +1170,19 @@ class CountDim(BaseDim[BD]):
         if plural is None:
             plural = infer_plural(singular)
         return cls._dim.base_unit(plural, singular=singular)
+    
+    noun_units: ClassVar[dict[str, Unit]] = {}
+    
+    @classmethod
+    def for_noun(cls, singular: str, *, plural: Optional[str] = None) -> Unit:
+        unit = cls.noun_units.get(singular, None)
+        if unit is None:
+            cname = f"count_of_{singular}"
+            c: Type[CountDim] = type(cname, (CountDim,), {}) 
+            unit = c.base_unit(singular, plural=plural)
+            cls.noun_units[singular] = unit
+        return unit
+    
+def qstr(n: float, singular: str, *, plural: Optional[str] = None) -> Quantity:
+    q: Quantity = n*CountDim.for_noun(singular, plural=plural)
+    return q
