@@ -59,3 +59,11 @@ disp2 = macro(w: well) {
   w: ready; 
   drop@w's exit pad;
 };
+
+
+test = macro(d: drop, time) {
+  d: right 1: pause time: right 2;
+};
+
+d1 = drop@(2,3);
+t1 = 2 sec;

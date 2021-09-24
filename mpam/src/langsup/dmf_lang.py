@@ -328,7 +328,10 @@ class DMFInterpreter:
             ns = compiler.global_types
             executable = compiler.visit(tree)
             assert isinstance(executable, Executable)
-            executable.evaluate(self.globals).wait()
+            if executable.contains_error:
+                print(f"Macro file '{file_name}' contained error, not loading.")
+            else:
+                executable.evaluate(self.globals).wait()
         else:
             ns = TypeMap(None)
         self.namespace = ns
@@ -869,7 +872,7 @@ class DMFCompiler(DMFVisitor):
                 future = future.transformed(lambda arg: args.append(arg))
             if future is None:
                 future = Delayed.complete(None)
-            future = future.chain(lambda _: cast(Delayed[Any], func.apply(env, args)))
+            future = future.chain(lambda _: cast(Delayed[Any], func.apply(args)))
             return future
         
         return Executable(ret_type, run, arg_execs)
@@ -957,13 +960,33 @@ class DMFCompiler(DMFVisitor):
         return DMFVisitor.visitAxis(self, ctx)
 
     def param_def(self, ctx: DMFParser.ParamContext) -> tuple[str, Type]:
-        param_type: Type = cast(Type, ctx.type)
+        param_type: Optional[Type] = cast(Optional[Type], ctx.type)
+        if param_type is None:
+            param_type = Type.ERROR
+            self.error(ctx, Type.IGNORE, lambda txt: f"No type specified for parameter '{txt}'")
         name_ctx: Optional[str] = ctx.name()
         if name_ctx is None:
             name = self.type_name_var(ctx.param_type(), ctx.n)
         else:
             name = self.text_of(name_ctx)
         return (name, param_type)
+    
+    def check_macro_params(self, names: Sequence[str],
+                           types: Sequence[Type], 
+                           ctxts: Sequence[DMFParser.ParamContext]) -> Optional[Executable]:
+        seen = set[str]()
+        saw_duplicate = False
+        saw_untyped = any(t is Type.ERROR for t in types)
+        for i,n in enumerate(names):
+            if n in seen:
+                self.error(ctxts[i], Type.IGNORE, lambda txt: f"Duplicate parameter: '{txt}'")
+                saw_duplicate = True
+            else:
+                seen.add(n)
+        if not saw_duplicate and not saw_untyped:
+            return None
+        macro_type = MacroType.find(types, Type.NONE)
+        return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
 
     def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
         header: DMFParser.Macro_defContext = ctx.macro_header()
@@ -973,13 +996,16 @@ class DMFCompiler(DMFVisitor):
         param_names = tuple(pdef[0] for pdef in param_defs)
         param_types = tuple(pdef[1] for pdef in param_defs)
         
+        if e := self.check_macro_params(param_names, param_types, param_contexts):
+            return e
+        
         with self.current_types.push(dict(param_defs)): 
             body: Executable
             if ctx.compound() is not None:
                 body = self.visit(ctx.compound())
             else:
                 body = self.visit(ctx.expr())
-            macro_type = MacroType(param_types, body.return_type)
+            macro_type = MacroType.find(param_types, body.return_type)
         
         def run(env: Environment) -> Delayed[MacroValue]: # @UnusedVariable
             return Delayed.complete(MacroValue(macro_type, env, param_names, body))

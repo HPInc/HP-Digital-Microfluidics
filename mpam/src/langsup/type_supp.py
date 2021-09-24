@@ -36,6 +36,7 @@ class Type:
     DELAY: Type
     TIME: Type
     TICKS: Type
+    BOOL: Type
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -93,6 +94,7 @@ Type.BARRIER = Type("BARRIER")
 Type.DELAY = Type("DELAY")
 Type.TIME = Type("TIME", [Type.DELAY])
 Type.TICKS = Type("TICKS", [Type.DELAY])
+Type.BOOL = Type("BOOL")
 
 class Signature(NamedTuple):
     param_types: tuple[Type,...]
@@ -103,6 +105,21 @@ class Signature(NamedTuple):
         if not isinstance(param_types, tuple):
             param_types = tuple(param_types)
         return Signature(param_types, return_type)
+    
+    # We are less than the rhs if our types are the same or wider than 
+    # its and our return is the same or narrower, and at least one is different
+    def __lt__(self, rhs) -> bool:
+        if not isinstance(rhs, Signature):
+            return False
+        if self.return_type > rhs.return_type:
+            return False
+        narrower = self.return_type < rhs.return_type
+        for mine,theirs in zip(self.param_types, rhs.param_types):
+            if mine < theirs:
+                return False
+            if mine > theirs:
+                narrower = True
+        return narrower
 
 
 class CallableType(Type):
@@ -127,6 +144,7 @@ class CallableType(Type):
                  supers: Optional[Sequence[Type]] = None):
         super().__init__(name, supers)
         self.sig = Signature.of(param_types, return_type)
+        
         
 class MotionType(CallableType):
     def __init__(self):
@@ -155,7 +173,7 @@ class MacroType(CallableType):
     def __init__(self, 
                  param_types: Sequence[Type],
                  return_type: Type):
-        super().__init__(f"Callable[({','.join(t.name for t in param_types)}),{return_type.name}]", 
+        super().__init__(f"Macro[({','.join(t.name for t in param_types)}),{return_type.name}]", 
                          param_types, return_type)
         
     @classmethod
@@ -166,7 +184,23 @@ class MacroType(CallableType):
             mt = MacroType(param_types, return_type)
             cls.instances[sig] = mt
         return mt
-
+    
+    # I'm not sure if it's really correct to put this here, but
+    # it will probably do the right thing.
+    def __lt__(self, rhs:Type)->bool:
+        if isinstance(rhs, MacroType):
+            return self.sig < rhs.sig
+        return Type.__lt__(self, rhs)
+    
+    # def __eq__(self, rhs:object)->bool:
+    #     if isinstance(rhs, MacroType):
+    #         return self.sig == rhs.sig
+    #     return CallableType.__eq__(self, rhs)
+    
+    def __hash__(self)->int:
+        return hash(self.sig)
+    
+    
 if __name__ == '__main__':
     def check(lhs: Type, rhs: Type) -> None:
         print(f"Comparing {lhs} and {rhs}:")

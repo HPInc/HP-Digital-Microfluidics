@@ -123,7 +123,15 @@ param_type returns[Type type]
   : 'drop' {$ctx.type=Type.DROP}
   | 'pad'  {$ctx.type=Type.PAD}
   | 'well' {$ctx.type=Type.WELL}
+  | 'well' 'pad' {$ctx.type=Type.WELL_PAD}
   | 'int'  {$ctx.type=Type.INT}
+  | 'state' {$ctx.type=Type.BINARY_STATE}
+  | 'component' {$ctx.type=Type.BINARY_CPT}
+  | 'delta' {$ctx.type=Type.DELTA}
+  | 'motion' {$ctx.type=Type.MOTION}
+  | 'delay' {$ctx.type=Type.DELAY}
+  | 'time' {$ctx.type=Type.TIME}
+  | 'ticks' {$ctx.type=Type.TICKS}
   ;
   
 time_unit returns[Unit[Time] unit]
@@ -133,7 +141,7 @@ time_unit returns[Unit[Time] unit]
 
 name : (ID | kwd_names) ;
 
-kwd_names : '**__**';
+kwd_names : 's' | 'ms';
   
 ADD: '+';
 ASSIGN: '=';
