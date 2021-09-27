@@ -6,7 +6,7 @@ else:
     from DMFParser import DMFParser
 
 from mpam.types import Dir, OnOff, Turn
-from langsup.type_supp import Type, Attr
+from langsup.type_supp import Type, Attr, Rel
 from quantities import SI
 
 
@@ -85,6 +85,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#pause_stat.
     def exitPause_stat(self, ctx:DMFParser.Pause_statContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#if_stat.
+    def enterIf_stat(self, ctx:DMFParser.If_statContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#if_stat.
+    def exitIf_stat(self, ctx:DMFParser.If_statContext):
         pass
 
 
@@ -169,12 +178,30 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#rel_expr.
+    def enterRel_expr(self, ctx:DMFParser.Rel_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#rel_expr.
+    def exitRel_expr(self, ctx:DMFParser.Rel_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#time_expr.
     def enterTime_expr(self, ctx:DMFParser.Time_exprContext):
         pass
 
     # Exit a parse tree produced by DMFParser#time_expr.
     def exitTime_expr(self, ctx:DMFParser.Time_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#not_expr.
+    def enterNot_expr(self, ctx:DMFParser.Not_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#not_expr.
+    def exitNot_expr(self, ctx:DMFParser.Not_exprContext):
         pass
 
 
@@ -187,12 +214,30 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#and_expr.
+    def enterAnd_expr(self, ctx:DMFParser.And_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#and_expr.
+    def exitAnd_expr(self, ctx:DMFParser.And_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#in_dir_expr.
     def enterIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext):
         pass
 
     # Exit a parse tree produced by DMFParser#in_dir_expr.
     def exitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#or_expr.
+    def enterOr_expr(self, ctx:DMFParser.Or_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#or_expr.
+    def exitOr_expr(self, ctx:DMFParser.Or_exprContext):
         pass
 
 
@@ -241,12 +286,30 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#bool_const_expr.
+    def enterBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#bool_const_expr.
+    def exitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#int_expr.
     def enterInt_expr(self, ctx:DMFParser.Int_exprContext):
         pass
 
     # Exit a parse tree produced by DMFParser#int_expr.
     def exitInt_expr(self, ctx:DMFParser.Int_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#has_expr.
+    def enterHas_expr(self, ctx:DMFParser.Has_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#has_expr.
+    def exitHas_expr(self, ctx:DMFParser.Has_exprContext):
         pass
 
 
@@ -265,6 +328,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#turn_expr.
     def exitTurn_expr(self, ctx:DMFParser.Turn_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#cond_expr.
+    def enterCond_expr(self, ctx:DMFParser.Cond_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#cond_expr.
+    def exitCond_expr(self, ctx:DMFParser.Cond_exprContext):
         pass
 
 
@@ -454,6 +526,24 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#attr.
     def exitAttr(self, ctx:DMFParser.AttrContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#rel.
+    def enterRel(self, ctx:DMFParser.RelContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#rel.
+    def exitRel(self, ctx:DMFParser.RelContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#bool_val.
+    def enterBool_val(self, ctx:DMFParser.Bool_valContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#bool_val.
+    def exitBool_val(self, ctx:DMFParser.Bool_valContext):
         pass
 
 

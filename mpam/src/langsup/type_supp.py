@@ -3,7 +3,7 @@ from __future__ import annotations
 from _collections import defaultdict
 from enum import Enum, auto
 from typing import Final, Optional, Sequence, NamedTuple, ClassVar, Callable, \
-    Any
+    Any, Mapping
 
 
 class Type:
@@ -12,34 +12,42 @@ class Type:
     all_supers: Final[Sequence[Type]]
     direct_subs: Final[list[Type]]
     all_subs: Final[list[Type]]
+    _maybe: Optional[MaybeType] = None
     
-    ANY: Type
-    NONE: Type
-    IGNORE: Type
-    ERROR: Type
-    NUMBER: Type
-    INT: Type
-    FLOAT: Type
-    BINARY_STATE: Type
-    WELL: Type
-    BINARY_CPT: Type
-    PAD: Type
-    WELL_PAD: Type
-    DROP: Type
-    ORIENTED_DROP: Type
-    DIR: Type
-    ORIENTED_DIR: Type
-    MOTION: MotionType
-    DELTA: Type
-    TWIDDLE_OP: TwiddleOpType
-    PAUSE: PauseType
-    ROW: Type
-    COLUMN: Type
-    BARRIER: Type
-    DELAY: Type
-    TIME: Type
-    TICKS: Type
-    BOOL: Type
+    @property
+    def maybe(self) -> MaybeType:
+        mt = self._maybe
+        if mt is None:
+            mt = self._maybe = MaybeType(self)
+        return mt
+    
+    ANY: ClassVar[Type]
+    NONE: ClassVar[Type]
+    IGNORE: ClassVar[Type]
+    ERROR: ClassVar[Type]
+    NUMBER: ClassVar[Type]
+    INT: ClassVar[Type]
+    FLOAT: ClassVar[Type]
+    BINARY_STATE: ClassVar[Type]
+    WELL: ClassVar[Type]
+    BINARY_CPT: ClassVar[Type]
+    PAD: ClassVar[Type]
+    WELL_PAD: ClassVar[Type]
+    DROP: ClassVar[Type]
+    ORIENTED_DROP: ClassVar[Type]
+    DIR: ClassVar[Type]
+    ORIENTED_DIR: ClassVar[Type]
+    MOTION: ClassVar[MotionType]
+    DELTA: ClassVar[Type]
+    TWIDDLE_OP: ClassVar[TwiddleOpType]
+    PAUSE: ClassVar[PauseType]
+    ROW: ClassVar[Type]
+    COLUMN: ClassVar[Type]
+    BARRIER: ClassVar[Type]
+    DELAY: ClassVar[Type]
+    TIME: ClassVar[Type]
+    TICKS: ClassVar[Type]
+    BOOL: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -71,6 +79,8 @@ class Type:
     def __eq__(self, rhs: object) -> bool:
         return self is rhs
     def __lt__(self, rhs: Type) -> bool:
+        if isinstance(rhs, MaybeType):
+            return self <= rhs.if_there_type
         return  self in rhs.all_subs
     def __le__(self, rhs: Type) -> bool:
         return self is rhs or self < rhs
@@ -98,6 +108,26 @@ Type.DELAY = Type("DELAY")
 Type.TIME = Type("TIME", [Type.DELAY])
 Type.TICKS = Type("TICKS", [Type.DELAY])
 Type.BOOL = Type("BOOL")
+
+class MaybeType(Type):
+    if_there_type: Final[Type]
+    
+    def __init__(self, if_there_type: Type) -> None:
+        super().__init__(f"MAYBE({if_there_type.name})")
+        self.if_there_type = if_there_type
+        
+    @property
+    def maybe(self)->MaybeType:
+        return self
+        
+    def __repr__(self) -> str:
+        return f"Maybe({self.if_there_type})"
+    
+    def __lt__(self, rhs: Type) -> bool:
+        if isinstance(rhs, MaybeType):
+            return self.if_there_type < rhs.if_there_type
+        return super().__lt__(rhs)
+    
 
 class Signature(NamedTuple):
     param_types: tuple[Type,...]
@@ -217,6 +247,7 @@ class Attr(Enum):
     COLUMN = auto()
     WELL = auto()
     EXIT_DIR = auto()
+    DROP = auto()
     
     @property
     def mappings(self) -> dict[Type, tuple[Type, Callable[[Any], Any]]]:
@@ -237,9 +268,34 @@ class Attr(Enum):
                 best = t
         return None if best is None else (best, *d[best])
                 
-        
-        
-Attr._known = defaultdict(lambda : defaultdict(list))        
+Attr._known = defaultdict(lambda : defaultdict(list))
+
+class Rel(Enum):
+    _ignore_ = ["_known"]    
+    _known: ClassVar[Mapping[Rel, Callable[[Any,Any], Any]]]
+    
+    EQ = auto()
+    NE = auto()
+    LT = auto()
+    LE = auto()
+    GT = auto()
+    GE = auto()
+    
+    def test(self, x, y) -> bool:
+        fn = self._known[self]
+        res = fn(x, y)
+        assert isinstance(res, bool)
+        return res
+    
+Rel._known = {
+    Rel.EQ: lambda x,y: x == y,
+    Rel.NE: lambda x,y: x != y,
+    Rel.LT: lambda x,y: x < y,
+    Rel.LE: lambda x,y: x <= y,
+    Rel.GT: lambda x,y: x > y,
+    Rel.GE: lambda x,y: x >= y,
+    }
+    
 
     
     

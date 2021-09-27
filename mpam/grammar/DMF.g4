@@ -8,7 +8,7 @@ options {
 
 @header {
 from mpam.types import Dir, OnOff, Turn
-from langsup.type_supp import Type, Attr
+from langsup.type_supp import Type, Attr, Rel
 from quantities import SI
 }
 
@@ -46,6 +46,9 @@ stat
 //  | which=name ASSIGN macro_header body=compound # macro_def_stat
 //  | pad_op TERMINATOR    # pad_op_stat
   | 'pause' duration=expr TERMINATOR           # pause_stat
+  | 'if' tests+=expr bodies+=compound 
+     ('else' 'if' tests+=expr bodies+=compound)*
+     ('else' else_body=compound)?              # if_stat
   | expr TERMINATOR      # expr_stat
   | compound             # compound_stat
   ;
@@ -69,6 +72,11 @@ expr
   | duration=expr ('tick' | 'ticks') # ticks_expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
+  | lhs=expr rel rhs=expr            # rel_expr
+  | obj=expr 'has' ('a' | 'an') attr # has_expr
+  | 'not' expr                       # not_expr
+  | lhs=expr 'and' rhs=expr          # and_expr
+  | lhs=expr 'or' rhs=expr           # or_expr
   | direction dist=expr              # delta_expr
   | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
@@ -77,12 +85,14 @@ expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | who=expr INJECT what=expr        # injection_expr
+  | first=expr 'if' cond=expr 'else' second=expr  # cond_expr
   | macro_def                        # macro_expr
   | 'turn'? (ON | OFF)               # twiddle_expr
   | 'toggle' 'state'?                # twiddle_expr
   | 'remove' ('from' 'the'? 'board')? # remove_expr
   | 'the'? param_type                # type_name_expr
   | param_type n=INT                 # type_name_expr
+  | val=bool_val                     # bool_const_expr
   | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
   | INT                              # int_expr
@@ -141,6 +151,7 @@ param_type returns[Type type]
   | 'delay' {$ctx.type=Type.DELAY}
   | 'time' {$ctx.type=Type.TIME}
   | 'ticks' {$ctx.type=Type.TICKS}
+  | 'bool' {$ctx.type=Type.BOOL}
   ;
   
 time_unit returns[Unit[Time] unit]
@@ -159,6 +170,21 @@ attr returns[Attr which]
   | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which=Attr.COLUMN}
   | 'well' {$ctx.which=Attr.WELL}
   | 'exit' ('dir' | 'direction') {$ctx.which=Attr.EXIT_DIR}
+  | 'drop' {$ctx.which=Attr.DROP}
+  ;
+  
+rel returns[Rel which]
+  : '==' {$ctx.which=Rel.EQ}
+  | '!=' {$ctx.which=Rel.NE}
+  | '<' {$ctx.which=Rel.LT}
+  | '<=' {$ctx.which=Rel.LE}
+  | '>' {$ctx.which=Rel.GT}
+  | '>=' {$ctx.which=Rel.GE}
+  ;
+  
+bool_val returns[bool val]
+  : ('True' | 'true' | 'TRUE' | 'Yes' | 'yes' | 'YES') {$ctx.val=True}
+  | ('False' | 'false' | 'FALSE' | 'No' | 'no' | 'NO') {$ctx.val=False}
   ;
 
 name : (ID | kwd_names) ;

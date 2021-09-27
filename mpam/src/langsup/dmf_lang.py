@@ -13,7 +13,8 @@ from antlr4.tree.Tree import TerminalNode
 from DMFLexer import DMFLexer
 from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
-from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr
+from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
+    Rel, MaybeType
 from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
@@ -24,8 +25,15 @@ from quantities.dimensions import Time
 from erk.stringutils import map_str
 
 
+
 Name_ = TypeVar("Name_", bound=Hashable)
 Val_ = TypeVar("Val_")
+
+class EvaluationError(RuntimeError): ...
+
+class MaybeNotSatisfiedError(EvaluationError): ...
+        
+
 
 class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
@@ -261,8 +269,10 @@ Attr.DURATION.register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
 Attr.PAD.register(Type.DROP, Type.PAD, lambda drop: drop.pad)
 Attr.ROW.register(Type.PAD, Type.INT, lambda pad: pad.row)
 Attr.COLUMN.register(Type.PAD, Type.INT, lambda pad: pad.column)
-# Attr.WELL.register(Type.WELL_PAD, Type.WELL, lambda wp: wp.)
 Attr.EXIT_DIR.register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
+Attr.WELL.register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
+Attr.WELL.register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
+Attr.DROP.register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
 
 rep_types: Mapping[Type, typing.Type] = {
         Type.DROP: Drop,
@@ -299,6 +309,15 @@ class Conversions:
             return val
         if want is Type.ANY:
             return val
+        if want is Type.NONE:
+            return None
+        if isinstance(want, MaybeType):
+            if val is None:
+                return val
+            elif isinstance(have, MaybeType):
+                return cls.convert(have.if_there_type, want.if_there_type, val)
+            else:
+                return cls.convert(have, want.if_there_type, val)
         if (have,want) in cls.known_ok:
             return val
         converter = cls.known.get((have, want), None)
@@ -459,7 +478,7 @@ class DMFCompiler(DMFVisitor):
         
 
     def type_check(self, 
-                   want: Type,
+                   want: Union[Type,Sequence[Type]],
                    have: Union[Type,Executable],
                    ctx: ParserRuleContext, 
                    msg: Optional[Union[str, Callable[[str, str, str], str]]] = None,
@@ -469,8 +488,16 @@ class DMFCompiler(DMFVisitor):
                    ) -> Optional[Executable]:
         if isinstance(have, Executable):
             have = have.return_type
-        if have <= want:
-            return None
+        if isinstance(want, Type):
+            if have <= want:
+                return None
+            else:
+                wname = want.name
+        else:
+            if any(have <= w for w in want):
+                return None
+            else:
+                wname = map_str(tuple(w.name for w in want))
         # if what we have is Type.NONE, we've already found something we can't recover from,
         # so we don't bother with a message
         if have is Type.NONE:
@@ -484,7 +511,7 @@ class DMFCompiler(DMFVisitor):
             msg_fn = msg
             h = have
             def msg_factory(text) -> str:
-                return msg_fn(want.name, h.name, text)
+                return msg_fn(wname, h.name, text)
             m = msg_factory
         return self.error(ctx, return_type, m, value=value)
         
@@ -626,7 +653,55 @@ class DMFCompiler(DMFVisitor):
                     se.evaluate(local_env).then_call(lambda v: barrier.reach(v))
             return future
         return Executable(ret_type, run, stat_execs)
+    
+    def visitIf_stat(self, ctx:DMFParser.If_statContext) -> Executable:
+        test_ctxts: Sequence[DMFParser.ExprContext] = ctx.tests
+        tests = [self.visit(ctx) for ctx in test_ctxts]
+        body_ctxts: Sequence[DMFParser.CompoundContext] = ctx.bodies
+        bodies = [self.visit(ctx) for ctx in body_ctxts]
+        else_ctxt = cast(Optional[DMFParser.CompoundContext], ctx.else_body)
+        else_body = self.visit(else_ctxt) if else_ctxt is not None else None
+        
+        for t,c in zip(tests, test_ctxts):
+            if e := self.type_check(Type.BOOL, t, c):
+                return e
 
+        result_type: Optional[Type] = None
+        def check_result_type(t: Type) -> bool:
+            nonlocal result_type
+            if result_type is None or result_type <= t:
+                result_type = t
+                return False
+            result_type = Type.NONE
+            return True
+        
+        if else_body is None:
+            result_type = Type.NONE
+            children = (*tests, *bodies)
+        else:
+            result_type = else_body.return_type
+            children = (*tests, *bodies, else_body)
+            
+            for b in bodies:
+                if check_result_type(b.return_type):
+                    break
+        
+        def run(env: Environment) -> Delayed:
+            n_tests = len(tests)
+            def check(i: int) -> Delayed:
+                if i == n_tests:
+                    if else_body is None:
+                        return Delayed.complete(None)
+                    else:
+                        return else_body.evaluate(env, result_type)
+                return (tests[i].evaluate(env, Type.BOOL)
+                        .chain(lambda v: (bodies[i].evaluate(env, result_type)
+                                          if v else check(i+1))))
+            return check(0)
+        
+        
+        return Executable(result_type, run, children)
+    
 
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
@@ -707,6 +782,9 @@ class DMFCompiler(DMFVisitor):
             return Delayed.complete(env[name])
         return Executable(var_type, run)
 
+    def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
+        val = ctx.bool_val().val
+        return Executable(Type.BOOL, lambda _: Delayed.complete(val))
 
     def visitAddsub_expr(self, ctx:DMFParser.Addsub_exprContext) -> Executable:
         lhs = self.visit(ctx.lhs)
@@ -756,6 +834,118 @@ class DMFCompiler(DMFVisitor):
                               f"Can't subtract {rhs.return_type.name} from {lhs.return_type.name}: {self.text_of(ctx)}")
             
 
+
+    def visitRel_expr(self, ctx:DMFParser.Rel_exprContext) -> Executable:
+        lhs = self.visit(ctx.lhs)
+        rhs = self.visit(ctx.rhs)
+        rel: Rel = ctx.rel().which
+        ok_types = (Type.INT, Type.TIME, Type.TICKS)
+        if rel is not Rel.EQ and rel is not Rel.NE:
+            if e:=self.type_check(ok_types, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
+                return e
+        if lhs.return_type is not rhs.return_type:
+            return self.error(ctx, Type.BOOL,
+                              f"Can't compare {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
+        def run(env: Environment) -> Delayed[bool]:
+            def combine(x, y) -> bool:
+                return rel.test(x, y) 
+            future: Delayed = lhs.evaluate(env)
+            return future.chain(lambda x: (rhs.evaluate(env)
+                                            .transformed(lambda y: combine(x,y))))
+        return Executable(Type.BOOL, run, (lhs,rhs))
+    
+    def visitHas_expr(self, ctx:DMFParser.Has_exprContext) -> Executable:
+        obj = self.visit(ctx.obj)
+        attr: Attr = ctx.attr().which
+        desc = attr[obj.return_type]
+        if desc is not None:
+            ot, rt, extractor = desc
+            if not isinstance(rt, MaybeType):
+                self.error(ctx.attr(), Type.BOOL,
+                           lambda txt:  f"{txt} is not a 'maybe' attribute. 'has' will always return True.")
+                return Executable(Type.BOOL, (lambda _: Delayed.complete(True)), (obj,))
+            def run(env: Environment) -> Delayed[Any]:
+                f: Delayed = obj.evaluate(env, ot)
+                return f.transformed(lambda o: extractor(o) is not None)
+            return Executable(Type.BOOL, run, (obj,))
+        types = attr.known_types
+        if len(types) == 0:
+            return self.error(ctx.attr(), Type.NONE,
+                              lambda txt: f"{txt} is an attribute, but I don't know what to do with it")
+        if len(types) == 1:
+            e = self.type_check(types[0], obj.return_type, ctx.obj)
+            assert e is not None
+            return e
+        
+        a = self.text_of(ctx.attr())
+        otn = obj.return_type.name
+        tns = map_str(tuple(t.name for t in types))
+        
+        def emessage(text: str) -> str:
+            return f"{otn}.{a} not defined, requires one of {tns}: {text}"
+        return self.error(ctx.obj, Type.NONE, emessage)
+
+    def visitNot_expr(self, ctx:DMFParser.Not_exprContext) -> Executable:
+        arg = self.visit(ctx.expr())
+        if e := self.type_check(Type.BOOL, arg.return_type, ctx.expr(), return_type=Type.BOOL):
+            return e
+        def run(env: Environment) -> Delayed[bool]:
+            return arg.evaluate(env, Type.BOOL).transformed(lambda v: not v)
+        return Executable(Type.BOOL, run, (arg,))
+    
+    def visitAnd_expr(self, ctx:DMFParser.And_exprContext) -> Executable:
+        lhs = self.visit(ctx.lhs)
+        rhs = self.visit(ctx.rhs)
+        if e := self.type_check(Type.BOOL, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
+            return e
+        if e := self.type_check(Type.BOOL, rhs.return_type, ctx.rhs, return_type=Type.BOOL):
+            return e
+        def run(env: Environment) -> Delayed[bool]:
+            def combine(x: bool, y: bool) -> bool:
+                return x and y
+            future: Delayed = lhs.evaluate(env, Type.BOOL)
+            return future.chain(lambda x: (rhs.evaluate(env, Type.BOOL)
+                                            .transformed(lambda y: combine(x,y))))
+        return Executable(Type.BOOL, run, (lhs,rhs))
+    
+    def visitOr_expr(self, ctx:DMFParser.Or_exprContext) -> Executable:
+        lhs = self.visit(ctx.lhs)
+        rhs = self.visit(ctx.rhs)
+        if e := self.type_check(Type.BOOL, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
+            return e
+        if e := self.type_check(Type.BOOL, rhs.return_type, ctx.rhs, return_type=Type.BOOL):
+            return e
+        def run(env: Environment) -> Delayed[bool]:
+            def combine(x: bool, y: bool) -> bool:
+                return x or y
+            future: Delayed = lhs.evaluate(env, Type.BOOL)
+            return future.chain(lambda x: (rhs.evaluate(env, Type.BOOL)
+                                            .transformed(lambda y: combine(x,y))))
+        return Executable(Type.BOOL, run, (lhs,rhs))
+    
+    def visitCond_expr(self, ctx:DMFParser.Cond_exprContext) -> Executable:
+        first = self.visit(ctx.first)
+        cond = self.visit(ctx.cond)
+        second = self.visit(ctx.second)
+        if e := self.type_check(Type.BOOL, cond, ctx.cond):
+            return e
+        if first.return_type <= second.return_type:
+            result_type = second.return_type
+        elif second.return_type < first.return_type:
+            result_type = first.return_type
+        else:
+            t1 = first.return_type.name
+            t2 = second.return_type.name
+            return self.error(ctx, Type.ANY, 
+                              lambda txt: f"Conditional expression branches incompatible ({t1} and {t2}): {txt}")
+        def run(env: Environment) -> Delayed:
+            def branch(c: bool) -> Delayed:
+                if c:
+                    return first.evaluate(env, result_type)
+                else:
+                    return second.evaluate(env, result_type)
+            return cond.evaluate(env, Type.BOOL).chain(lambda v: branch(v))
+        return Executable(result_type, run, (first, cond, second))
 
     def visitDelta_expr(self, ctx:DMFParser.Delta_exprContext) -> Executable:
         dist = self.visit(ctx.dist)
@@ -876,6 +1066,14 @@ class DMFCompiler(DMFVisitor):
         desc = attr[obj.return_type]
         if desc is not None:
             ot, rt, extractor = desc
+            if isinstance(rt, MaybeType):
+                real_extractor = extractor
+                def extractor(obj):
+                    v = real_extractor(obj)
+                    if v is None:
+                        raise MaybeNotSatisfiedError(f"{obj} does not have {attr}")
+                    return v
+                rt = rt.if_there_type
             def run(env: Environment) -> Delayed[Any]:
                 f: Delayed = obj.evaluate(env, ot)
                 return f.transformed(extractor)
