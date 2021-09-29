@@ -1,23 +1,19 @@
 from __future__ import annotations
-
-from mpam.types import Liquid, unknown_reagent, Reagent
+from quantities.core import qstr
+from erk.stringutils import noun
 from quantities.SI import uL
-from erk.numutils import farey
 
+print(qstr(2000, 'file'))
+print(f"{qstr(2, 'sheep')}")
+print(f"{qstr(2, 'fix')}")
+print(f"{qstr(2, 'monkey')}")
+print(f"{qstr(2, 'lady')}")
 
+print(f"{qstr(2000, 'FILE'):,}")
+print(f"{qstr(2, 'FIX')}")
+print(f"{qstr(2, 'MONKEY')}")
+print(f"{qstr(2, 'LADY')}")
 
+print(f"{noun(2, 'file')}")
 
-v = 0.5*uL
-
-l1 = Liquid(Reagent("r1"), v)
-l2 = Liquid(Reagent("r2"), v)
-l3 = Liquid(Reagent("r3"), v)
-
-# m = Liquid.mix_together([l1, (l2, 0.5)])
-m = Liquid.mix_together([l1, l2, l3])
-
-print(m)
-
-a = 2.0
-
-print(farey(a/(a+1)))
+print(f"{(2*uL).in_units(uL)}")

@@ -1,30 +1,39 @@
 from __future__ import annotations
 
 from _collections import defaultdict
+from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
     Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List
+import typing
 
-from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext,\
+from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext, \
     Token
 from antlr4.tree.Tree import TerminalNode
 
 from DMFLexer import DMFLexer
 from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
-from langsup.type_supp import Type, CallableType, MacroType, Signature
+from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
+    Rel, MaybeType
 from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
-from mpam.drop import Drop
-from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier,\
-    ticks, Ticks, DelayType
-from abc import ABC, abstractmethod
-import typing
+from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
-from quantities.dimensions import Time
+from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
+    ticks, Ticks, DelayType, Turn
 from quantities.core import Unit
+from quantities.dimensions import Time
+from erk.stringutils import map_str
+
 
 
 Name_ = TypeVar("Name_", bound=Hashable)
 Val_ = TypeVar("Val_")
+
+class EvaluationError(RuntimeError): ...
+
+class MaybeNotSatisfiedError(EvaluationError): ...
+        
+
 
 class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
@@ -158,6 +167,16 @@ class DeltaValue(MotionValue):
         path = Path.walk(self.direction, steps = self.dist)
         return path.schedule_for(drop)
     
+class RemoveDropValue(MotionValue):
+    def move(self, drop:Drop)->Delayed[Drop]:
+        if drop.status is not DropStatus.ON_BOARD:
+            print(f"{drop} is not on board.  Cannot remove")
+        else:
+            if drop.status is DropStatus.ON_BOARD:
+                drop.pad.drop = None
+            drop.status = DropStatus.OFF_BOARD
+        return Delayed.complete(drop)
+    
 class ToPadValue(MotionValue):
     dest: Final[Pad]
     
@@ -231,19 +250,45 @@ class MacroValue(CallableValue):
         params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
         return f"macro({params})->{self.sig.return_type}"
     
+class WellPadValue(NamedTuple):
+    pad: WellPad
+    well: Well
+    
+    def __str__(self) -> str:
+        pad = self.pad
+        if isinstance(pad.loc, Well):
+            return str(pad)
+        else:
+            return f"({pad}, {self.well})"
+    
+Attr.GATE.register(Type.WELL, Type.WELL_PAD, lambda well: WellPadValue(well.gate, well))
+Attr.EXIT_PAD.register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
+Attr.STATE.register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
+Attr.DISTANCE.register(Type.DELTA, Type.INT, lambda delta: delta.dist)
+Attr.DURATION.register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
+Attr.PAD.register(Type.DROP, Type.PAD, lambda drop: drop.pad)
+Attr.ROW.register(Type.PAD, Type.INT, lambda pad: pad.row)
+Attr.COLUMN.register(Type.PAD, Type.INT, lambda pad: pad.column)
+Attr.EXIT_DIR.register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
+Attr.WELL.register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
+Attr.WELL.register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
+Attr.DROP.register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
+
 rep_types: Mapping[Type, typing.Type] = {
         Type.DROP: Drop,
         Type.INT: int,
         Type.BINARY_STATE: OnOff,
         Type.BINARY_CPT: BinaryComponent,
         Type.PAD: Pad,
-        Type.WELL_PAD: WellPad,
+        Type.WELL_PAD: WellPadValue,
         Type.WELL: Well,
         Type.DELTA: DeltaValue,
         Type.MOTION: MotionValue,
         Type.TIME: Time,
         Type.TICKS: Ticks,
         Type.PAUSE: PauseValue,
+        Type.DIR: Dir,
+        Type.BOOL: bool,
     }
 
 class Conversions:
@@ -264,6 +309,15 @@ class Conversions:
             return val
         if want is Type.ANY:
             return val
+        if want is Type.NONE:
+            return None
+        if isinstance(want, MaybeType):
+            if val is None:
+                return val
+            elif isinstance(have, MaybeType):
+                return cls.convert(have.if_there_type, want.if_there_type, val)
+            else:
+                return cls.convert(have, want.if_there_type, val)
         if (have,want) in cls.known_ok:
             return val
         converter = cls.known.get((have, want), None)
@@ -280,6 +334,10 @@ Conversions.register(Type.DROP, Type.BINARY_CPT,
                      lambda drop: drop.pad)
 Conversions.ok(Type.TIME, Type.DELAY)
 Conversions.ok(Type.TICKS, Type.DELAY)
+Conversions.register(Type.WELL_PAD, Type.BINARY_CPT,
+                     lambda wp: wp.pad)
+
+
 
 class Executable:
     return_type: Final[Type]
@@ -314,6 +372,9 @@ class Executable:
         #         assert isinstance(val, check), f"Expected {check}, got {val}"
         return future
     
+    
+    
+    
 class DMFInterpreter:
     globals: Final[Environment]
     namespace: Final[TypeMap]
@@ -328,7 +389,10 @@ class DMFInterpreter:
             ns = compiler.global_types
             executable = compiler.visit(tree)
             assert isinstance(executable, Executable)
-            executable.evaluate(self.globals).wait()
+            if executable.contains_error:
+                print(f"Macro file '{file_name}' contained error, not loading.")
+            else:
+                executable.evaluate(self.globals).wait()
         else:
             ns = TypeMap(None)
         self.namespace = ns
@@ -414,7 +478,7 @@ class DMFCompiler(DMFVisitor):
         
 
     def type_check(self, 
-                   want: Type,
+                   want: Union[Type,Sequence[Type]],
                    have: Union[Type,Executable],
                    ctx: ParserRuleContext, 
                    msg: Optional[Union[str, Callable[[str, str, str], str]]] = None,
@@ -424,8 +488,16 @@ class DMFCompiler(DMFVisitor):
                    ) -> Optional[Executable]:
         if isinstance(have, Executable):
             have = have.return_type
-        if have <= want:
-            return None
+        if isinstance(want, Type):
+            if have <= want:
+                return None
+            else:
+                wname = want.name
+        else:
+            if any(have <= w for w in want):
+                return None
+            else:
+                wname = map_str(tuple(w.name for w in want))
         # if what we have is Type.NONE, we've already found something we can't recover from,
         # so we don't bother with a message
         if have is Type.NONE:
@@ -439,7 +511,7 @@ class DMFCompiler(DMFVisitor):
             msg_fn = msg
             h = have
             def msg_factory(text) -> str:
-                return msg_fn(want.name, h.name, text)
+                return msg_fn(wname, h.name, text)
             m = msg_factory
         return self.error(ctx, return_type, m, value=value)
         
@@ -581,7 +653,55 @@ class DMFCompiler(DMFVisitor):
                     se.evaluate(local_env).then_call(lambda v: barrier.reach(v))
             return future
         return Executable(ret_type, run, stat_execs)
+    
+    def visitIf_stat(self, ctx:DMFParser.If_statContext) -> Executable:
+        test_ctxts: Sequence[DMFParser.ExprContext] = ctx.tests
+        tests = [self.visit(ctx) for ctx in test_ctxts]
+        body_ctxts: Sequence[DMFParser.CompoundContext] = ctx.bodies
+        bodies = [self.visit(ctx) for ctx in body_ctxts]
+        else_ctxt = cast(Optional[DMFParser.CompoundContext], ctx.else_body)
+        else_body = self.visit(else_ctxt) if else_ctxt is not None else None
+        
+        for t,c in zip(tests, test_ctxts):
+            if e := self.type_check(Type.BOOL, t, c):
+                return e
 
+        result_type: Optional[Type] = None
+        def check_result_type(t: Type) -> bool:
+            nonlocal result_type
+            if result_type is None or result_type <= t:
+                result_type = t
+                return False
+            result_type = Type.NONE
+            return True
+        
+        if else_body is None:
+            result_type = Type.NONE
+            children = (*tests, *bodies)
+        else:
+            result_type = else_body.return_type
+            children = (*tests, *bodies, else_body)
+            
+            for b in bodies:
+                if check_result_type(b.return_type):
+                    break
+        
+        def run(env: Environment) -> Delayed:
+            n_tests = len(tests)
+            def check(i: int) -> Delayed:
+                if i == n_tests:
+                    if else_body is None:
+                        return Delayed.complete(None)
+                    else:
+                        return else_body.evaluate(env, result_type)
+                return (tests[i].evaluate(env, Type.BOOL)
+                        .chain(lambda v: (bodies[i].evaluate(env, result_type)
+                                          if v else check(i+1))))
+            return check(0)
+        
+        
+        return Executable(result_type, run, children)
+    
 
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
@@ -633,10 +753,11 @@ class DMFCompiler(DMFVisitor):
                                return_type=Type.WELL_PAD)):
             return e
                                
-        def run(env: Environment) -> Delayed[WellPad]:
+        def run(env: Environment) -> Delayed[WellPadValue]:
             f: Delayed[Well] = well.evaluate(env, Type.WELL)
             return f.chain(lambda w: (which.evaluate(env, Type.INT)
-                                            .transformed(lambda n: w.group.shared_pads[cast(int, n)]))
+                                            .transformed(lambda n: WellPadValue(w.group.shared_pads[cast(int, n)],
+                                                                                w)))
                 )
         return Executable(Type.WELL_PAD, run, (well, which))
     
@@ -661,6 +782,9 @@ class DMFCompiler(DMFVisitor):
             return Delayed.complete(env[name])
         return Executable(var_type, run)
 
+    def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
+        val = ctx.bool_val().val
+        return Executable(Type.BOOL, lambda _: Delayed.complete(val))
 
     def visitAddsub_expr(self, ctx:DMFParser.Addsub_exprContext) -> Executable:
         lhs = self.visit(ctx.lhs)
@@ -711,6 +835,118 @@ class DMFCompiler(DMFVisitor):
             
 
 
+    def visitRel_expr(self, ctx:DMFParser.Rel_exprContext) -> Executable:
+        lhs = self.visit(ctx.lhs)
+        rhs = self.visit(ctx.rhs)
+        rel: Rel = ctx.rel().which
+        ok_types = (Type.INT, Type.TIME, Type.TICKS)
+        if rel is not Rel.EQ and rel is not Rel.NE:
+            if e:=self.type_check(ok_types, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
+                return e
+        if lhs.return_type is not rhs.return_type:
+            return self.error(ctx, Type.BOOL,
+                              f"Can't compare {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
+        def run(env: Environment) -> Delayed[bool]:
+            def combine(x, y) -> bool:
+                return rel.test(x, y) 
+            future: Delayed = lhs.evaluate(env)
+            return future.chain(lambda x: (rhs.evaluate(env)
+                                            .transformed(lambda y: combine(x,y))))
+        return Executable(Type.BOOL, run, (lhs,rhs))
+    
+    def visitHas_expr(self, ctx:DMFParser.Has_exprContext) -> Executable:
+        obj = self.visit(ctx.obj)
+        attr: Attr = ctx.attr().which
+        desc = attr[obj.return_type]
+        if desc is not None:
+            ot, rt, extractor = desc
+            if not isinstance(rt, MaybeType):
+                self.error(ctx.attr(), Type.BOOL,
+                           lambda txt:  f"{txt} is not a 'maybe' attribute. 'has' will always return True.")
+                return Executable(Type.BOOL, (lambda _: Delayed.complete(True)), (obj,))
+            def run(env: Environment) -> Delayed[Any]:
+                f: Delayed = obj.evaluate(env, ot)
+                return f.transformed(lambda o: extractor(o) is not None)
+            return Executable(Type.BOOL, run, (obj,))
+        types = attr.known_types
+        if len(types) == 0:
+            return self.error(ctx.attr(), Type.NONE,
+                              lambda txt: f"{txt} is an attribute, but I don't know what to do with it")
+        if len(types) == 1:
+            e = self.type_check(types[0], obj.return_type, ctx.obj)
+            assert e is not None
+            return e
+        
+        a = self.text_of(ctx.attr())
+        otn = obj.return_type.name
+        tns = map_str(tuple(t.name for t in types))
+        
+        def emessage(text: str) -> str:
+            return f"{otn}.{a} not defined, requires one of {tns}: {text}"
+        return self.error(ctx.obj, Type.NONE, emessage)
+
+    def visitNot_expr(self, ctx:DMFParser.Not_exprContext) -> Executable:
+        arg = self.visit(ctx.expr())
+        if e := self.type_check(Type.BOOL, arg.return_type, ctx.expr(), return_type=Type.BOOL):
+            return e
+        def run(env: Environment) -> Delayed[bool]:
+            return arg.evaluate(env, Type.BOOL).transformed(lambda v: not v)
+        return Executable(Type.BOOL, run, (arg,))
+    
+    def visitAnd_expr(self, ctx:DMFParser.And_exprContext) -> Executable:
+        lhs = self.visit(ctx.lhs)
+        rhs = self.visit(ctx.rhs)
+        if e := self.type_check(Type.BOOL, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
+            return e
+        if e := self.type_check(Type.BOOL, rhs.return_type, ctx.rhs, return_type=Type.BOOL):
+            return e
+        def run(env: Environment) -> Delayed[bool]:
+            def combine(x: bool, y: bool) -> bool:
+                return x and y
+            future: Delayed = lhs.evaluate(env, Type.BOOL)
+            return future.chain(lambda x: (rhs.evaluate(env, Type.BOOL)
+                                            .transformed(lambda y: combine(x,y))))
+        return Executable(Type.BOOL, run, (lhs,rhs))
+    
+    def visitOr_expr(self, ctx:DMFParser.Or_exprContext) -> Executable:
+        lhs = self.visit(ctx.lhs)
+        rhs = self.visit(ctx.rhs)
+        if e := self.type_check(Type.BOOL, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
+            return e
+        if e := self.type_check(Type.BOOL, rhs.return_type, ctx.rhs, return_type=Type.BOOL):
+            return e
+        def run(env: Environment) -> Delayed[bool]:
+            def combine(x: bool, y: bool) -> bool:
+                return x or y
+            future: Delayed = lhs.evaluate(env, Type.BOOL)
+            return future.chain(lambda x: (rhs.evaluate(env, Type.BOOL)
+                                            .transformed(lambda y: combine(x,y))))
+        return Executable(Type.BOOL, run, (lhs,rhs))
+    
+    def visitCond_expr(self, ctx:DMFParser.Cond_exprContext) -> Executable:
+        first = self.visit(ctx.first)
+        cond = self.visit(ctx.cond)
+        second = self.visit(ctx.second)
+        if e := self.type_check(Type.BOOL, cond, ctx.cond):
+            return e
+        if first.return_type <= second.return_type:
+            result_type = second.return_type
+        elif second.return_type < first.return_type:
+            result_type = first.return_type
+        else:
+            t1 = first.return_type.name
+            t2 = second.return_type.name
+            return self.error(ctx, Type.ANY, 
+                              lambda txt: f"Conditional expression branches incompatible ({t1} and {t2}): {txt}")
+        def run(env: Environment) -> Delayed:
+            def branch(c: bool) -> Delayed:
+                if c:
+                    return first.evaluate(env, result_type)
+                else:
+                    return second.evaluate(env, result_type)
+            return cond.evaluate(env, Type.BOOL).chain(lambda v: branch(v))
+        return Executable(result_type, run, (first, cond, second))
+
     def visitDelta_expr(self, ctx:DMFParser.Delta_exprContext) -> Executable:
         dist = self.visit(ctx.dist)
         direction: Dir = ctx.direction().d
@@ -721,6 +957,38 @@ class DMFCompiler(DMFVisitor):
                     .transformed(lambda n: DeltaValue(n, direction))
                     )
         return Executable(Type.DELTA, run, (dist,))
+
+    def visitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext) -> Executable: 
+        dist = self.visit(ctx.dist)
+        direction = self.visit(ctx.d)
+        if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
+            return e
+        if e:=self.type_check(Type.DIR, direction, ctx.d, return_type=Type.DELTA):
+            return e
+        def run(env: Environment) -> Delayed[DeltaValue]:
+                def combine(n: int, d: Dir) -> DeltaValue:
+                    return DeltaValue(n, d)
+                future: Delayed[int] = dist.evaluate(env, Type.INT)
+                return future.chain(lambda n: (direction.evaluate(env, Type.DIR)
+                                               .transformed(lambda d: combine(n,d))))
+        return Executable(Type.DELTA, run, (dist, direction))
+
+
+    
+    def visitDir_expr(self, ctx:DMFParser.Dir_exprContext) -> Executable:
+        direction: Dir = ctx.direction().d
+        return Executable(Type.DIR, lambda _: Delayed.complete(direction))
+    
+    def visitTurn_expr(self, ctx:DMFParser.Turn_exprContext) -> Executable:
+        start = self.visit(ctx.start_dir) 
+        if e:=self.type_check(Type.DIR, start, ctx.start_dir, return_type=Type.DIR):
+            return e
+        t: Turn = ctx.turn().t
+        def run(env: Environment) -> Delayed[Dir]:
+            return (start.evaluate(env, Type.DIR)
+                    .transformed(lambda d: cast(Dir, d).turned(t))
+                    )
+        return Executable(Type.DIR, run, (start,))
     
     def visitN_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
         dist = self.visit(ctx.dist)
@@ -791,26 +1059,60 @@ class DMFCompiler(DMFVisitor):
         # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
         return Executable(return_type, run, (who, what))
             
-        
-
-
-    def visitGate_expr(self, ctx:DMFParser.Gate_exprContext) -> Executable:
-        well = self.visit(ctx.well)
-        if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.WELL_PAD):
-            return e
-        def run(env: Environment) -> Delayed[WellPad]:
-            f: Delayed[Well] = well.evaluate(env, Type.WELL)
-            return f.transformed(lambda w: w.gate)
-        return Executable(Type.WELL_PAD, run, (well,))
     
-    def visitExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext) -> Executable:
-        well = self.visit(ctx.well)
-        if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.PAD):
+    def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext) -> Executable:
+        obj = self.visit(ctx.obj)
+        attr: Attr = ctx.attr().which
+        desc = attr[obj.return_type]
+        if desc is not None:
+            ot, rt, extractor = desc
+            if isinstance(rt, MaybeType):
+                real_extractor = extractor
+                def extractor(obj):
+                    v = real_extractor(obj)
+                    if v is None:
+                        raise MaybeNotSatisfiedError(f"{obj} does not have {attr}")
+                    return v
+                rt = rt.if_there_type
+            def run(env: Environment) -> Delayed[Any]:
+                f: Delayed = obj.evaluate(env, ot)
+                return f.transformed(extractor)
+            return Executable(rt, run, (obj,))
+        types = attr.known_types
+        if len(types) == 0:
+            return self.error(ctx.attr(), Type.NONE,
+                              lambda txt: f"{txt} is an attribute, but I don't know what to do with it")
+        if len(types) == 1:
+            e = self.type_check(types[0], obj.return_type, ctx.obj)
+            assert e is not None
             return e
-        def run(env: Environment) -> Delayed[Pad]:
-            f: Delayed[Well] = well.evaluate(env, Type.WELL)
-            return f.transformed(lambda w: w.exit_pad)
-        return Executable(Type.PAD, run, (well,))
+        
+        a = self.text_of(ctx.attr())
+        otn = obj.return_type.name
+        tns = map_str(tuple(t.name for t in types))
+        
+        def emessage(text: str) -> str:
+            return f"{otn}.{a} not defined, requires one of {tns}: {text}"
+        return self.error(ctx.obj, Type.NONE, emessage)
+
+
+    # def visitGate_expr(self, ctx:DMFParser.Gate_exprContext) -> Executable:
+    #     well = self.visit(ctx.well)
+    #     if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.WELL_PAD):
+    #         return e
+    #     def run(env: Environment) -> Delayed[WellPad]:
+    #         f: Delayed[Well] = well.evaluate(env, Type.WELL)
+    #         return f.transformed(lambda w: w.gate)
+    #     return Executable(Type.WELL_PAD, run, (well,))
+    #
+    # def visitExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext) -> Executable:
+    #     well = self.visit(ctx.well)
+    #     if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.PAD):
+    #         return e
+    #     def run(env: Environment) -> Delayed[Pad]:
+    #         f: Delayed[Well] = well.evaluate(env, Type.WELL)
+    #         return f.transformed(lambda w: w.exit_pad)
+    #     return Executable(Type.PAD, run, (well,))
 
 
     def visitWell_expr(self, ctx:DMFParser.Well_exprContext) -> Executable:
@@ -869,7 +1171,7 @@ class DMFCompiler(DMFVisitor):
                 future = future.transformed(lambda arg: args.append(arg))
             if future is None:
                 future = Delayed.complete(None)
-            future = future.chain(lambda _: cast(Delayed[Any], func.apply(env, args)))
+            future = future.chain(lambda _: cast(Delayed[Any], func.apply(args)))
             return future
         
         return Executable(ret_type, run, arg_execs)
@@ -894,6 +1196,11 @@ class DMFCompiler(DMFVisitor):
             def run(env: Environment) -> Delayed[MotionValue]:
                 return which.evaluate(env, Type.PAD).transformed(lambda n: ToRowColValue(n, verticalp))
         return Executable(Type.MOTION, run, (which,))
+    
+    def visitRemove_expr(self, ctx:DMFParser.Remove_exprContext) -> Executable: # @UnusedVariable
+        def run(env: Environment) -> Delayed[MotionValue]: # @UnusedVariable
+            return Delayed.complete(RemoveDropValue())
+        return Executable(Type.MOTION, run, ())
 
 
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
@@ -957,13 +1264,33 @@ class DMFCompiler(DMFVisitor):
         return DMFVisitor.visitAxis(self, ctx)
 
     def param_def(self, ctx: DMFParser.ParamContext) -> tuple[str, Type]:
-        param_type: Type = cast(Type, ctx.type)
+        param_type: Optional[Type] = cast(Optional[Type], ctx.type)
+        if param_type is None:
+            param_type = Type.ERROR
+            self.error(ctx, Type.IGNORE, lambda txt: f"No type specified for parameter '{txt}'")
         name_ctx: Optional[str] = ctx.name()
         if name_ctx is None:
             name = self.type_name_var(ctx.param_type(), ctx.n)
         else:
             name = self.text_of(name_ctx)
         return (name, param_type)
+    
+    def check_macro_params(self, names: Sequence[str],
+                           types: Sequence[Type], 
+                           ctxts: Sequence[DMFParser.ParamContext]) -> Optional[Executable]:
+        seen = set[str]()
+        saw_duplicate = False
+        saw_untyped = any(t is Type.ERROR for t in types)
+        for i,n in enumerate(names):
+            if n in seen:
+                self.error(ctxts[i], Type.IGNORE, lambda txt: f"Duplicate parameter: '{txt}'")
+                saw_duplicate = True
+            else:
+                seen.add(n)
+        if not saw_duplicate and not saw_untyped:
+            return None
+        macro_type = MacroType.find(types, Type.NONE)
+        return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
 
     def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
         header: DMFParser.Macro_defContext = ctx.macro_header()
@@ -973,13 +1300,16 @@ class DMFCompiler(DMFVisitor):
         param_names = tuple(pdef[0] for pdef in param_defs)
         param_types = tuple(pdef[1] for pdef in param_defs)
         
+        if e := self.check_macro_params(param_names, param_types, param_contexts):
+            return e
+        
         with self.current_types.push(dict(param_defs)): 
             body: Executable
             if ctx.compound() is not None:
                 body = self.visit(ctx.compound())
             else:
                 body = self.visit(ctx.expr())
-            macro_type = MacroType(param_types, body.return_type)
+            macro_type = MacroType.find(param_types, body.return_type)
         
         def run(env: Environment) -> Delayed[MacroValue]: # @UnusedVariable
             return Delayed.complete(MacroValue(macro_type, env, param_names, body))

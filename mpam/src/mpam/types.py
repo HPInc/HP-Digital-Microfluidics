@@ -37,11 +37,21 @@ class OnOff(Enum):
     
 Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]
 
+    
+class Turn(Enum):
+    NONE = auto()
+    LEFT = auto()
+    RIGHT = auto()
+    AROUND = auto()
+    
+
+
 class Dir(Enum):
-    _ignore_ = ["_opposites"]
+    _ignore_ = ["_opposites", "_clockwise", "_counterclockwise", "_turns"]
     _opposites: ClassVar[Mapping[Dir, Dir]]
     _clockwise: ClassVar[Mapping[Dir, Dir]]
     _counterclockwise: ClassVar[Mapping[Dir, Dir]]
+    _turns: ClassVar[Mapping[Turn, Mapping[Dir, Dir]]]
     
     NORTH = auto()
     N = NORTH
@@ -79,6 +89,11 @@ class Dir(Enum):
     def counterclockwise(self) -> Dir:
         return self._counterclockwise[self]
     
+    def turned(self, turn: Turn) -> Dir:
+        if turn is Turn.NONE:
+            return self
+        return self._turns[turn][self]
+    
 Dir._opposites = {
         Dir.N: Dir.S,
         Dir.NE: Dir.SW,
@@ -110,6 +125,12 @@ Dir._counterclockwise = {
         Dir.SW: Dir.SE,
         Dir.W: Dir.S,
         Dir.NW: Dir.SW
+    }
+
+Dir._turns = {
+    Turn.RIGHT: Dir._clockwise,
+    Turn.LEFT: Dir._counterclockwise,
+    Turn.AROUND: Dir._opposites
     }
 
 

@@ -12,6 +12,7 @@ from quantities.dimensions import Volume
 from enum import Enum, auto
 from abc import ABC, abstractmethod
 from erk.errors import FIX_BY, PRINT
+from quantities.core import qstr
 
 # if TYPE_CHECKING:
     # from mpam.processes import MultiDropProcessType
@@ -40,11 +41,14 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
-        future = Delayed[Drop]()
+        
+        if drop.status is not DropStatus.ON_BOARD:
+            print(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
+            return Delayed.complete(drop)
         
         if steps == 0:
-            future.post(drop)
-            return future
+            return Delayed.complete(drop)
+        future = Delayed[Drop]()
             
         one_tick: Ticks = 1*tick
         allow_unsafe = self.allow_unsafe
@@ -125,7 +129,9 @@ class Drop(OpScheduler['Drop']):
             pad.drop = self
         
     def __repr__(self) -> str:
-        return f"Drop[{self.pad}, {self.liquid}]"
+        st = self.status
+        place = f"{st.name}: " if st is not DropStatus.ON_BOARD else ""
+        return f"Drop[{place}{self.pad}, {self.liquid}]"
     
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
                                after: Optional[DelayType] = None) -> None:  

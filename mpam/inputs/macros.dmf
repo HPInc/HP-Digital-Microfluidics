@@ -59,3 +59,36 @@ disp2 = macro(w: well) {
   w: ready; 
   drop@w's exit pad;
 };
+
+
+test = macro(d: drop, time) {
+  d: right 1: pause time: right 2;
+};
+
+max = macro(x: int, y: int) {
+  if x > y {
+    x;
+  } else {
+    y;
+  }
+};
+
+compare = macro(x: int, y: int) {
+  if x > y {
+    1;
+  } else if x < y {
+    -1;
+  } else {
+    0;
+  }
+};
+
+maybe_move = macro(drop, dist: int) {
+  if dist > 0 {
+    drop: dist right;
+  }
+};
+
+d1 = drop@(2,3);
+t1 = 2 sec;
+w1 = well #2;

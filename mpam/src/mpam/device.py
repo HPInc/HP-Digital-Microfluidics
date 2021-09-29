@@ -607,6 +607,7 @@ class Well(OpScheduler['Well'], BoardComponent):
     is_voidable: Final[bool]
     exit_pad: Final[Pad]
     gate: Final[WellPad]
+    exit_dir: Final[Dir]
     gate_reserved: bool = False
     _contents: Optional[Liquid]
     _shape: Final[Optional[WellShape]]
@@ -729,6 +730,7 @@ class Well(OpScheduler['Well'], BoardComponent):
                  gate: WellPad,
                  capacity: Volume,
                  dispensed_volume: Volume,
+                 exit_dir: Dir,
                  is_voidable: bool = False,
                  shape: Optional[WellShape] = None,
                  ) -> None:
@@ -739,6 +741,7 @@ class Well(OpScheduler['Well'], BoardComponent):
         self.gate = gate
         self.capacity = capacity
         self.dispensed_volume = dispensed_volume
+        self.exit_dir = exit_dir
         self.is_voidable = is_voidable
         self._contents = None
         self._shape = shape
