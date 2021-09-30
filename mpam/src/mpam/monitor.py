@@ -36,7 +36,7 @@ from quantities.timestamp import time_now
 from mpam import paths
 from _collections import defaultdict
 from abc import ABC, abstractmethod
-from langsup.dmf_lang import DMFInterpreter
+from langsup.dmf_lang import DMFInterpreter, EvaluationError
 import clipboard
 
 
@@ -1198,8 +1198,10 @@ class BoardMonitor:
             expr = text.text.strip()
             if len(expr) > 0:
                 print(f"Interactive cmd: {expr}")
+                def on_error(ex: BaseException) -> None:
+                    print(f"  Evaluation raised exception: {ex}")
                 text.add_to_history(expr)
-                (interp.evaluate(expr, cache_as="last")
+                (interp.evaluate(expr, cache_as="last", on_error={EvaluationError: on_error})
                     .then_call(lambda pair: print(f"  Interactive cmd val ({pair[0].name}): {pair[1]}")))
                 text.set_val("")
         apply.on_clicked(on_press)

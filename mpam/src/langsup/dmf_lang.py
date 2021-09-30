@@ -19,7 +19,7 @@ from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    ticks, Ticks, DelayType, Turn
+    ticks, Ticks, DelayType, Turn, EHSpec
 from quantities.core import Unit
 from quantities.dimensions import Time
 from erk.stringutils import map_str
@@ -403,7 +403,9 @@ class DMFInterpreter:
         
         
     def evaluate(self, expr: str, required: Optional[Type] = None, *, 
-                 cache_as: Optional[str] = None) -> Delayed[tuple[Type, Any]]:
+                 cache_as: Optional[str] = None,
+                 on_error: Optional[EHSpec] = None
+                 ) -> Delayed[tuple[Type, Any]]:
         parser = self.get_parser(InputStream(expr))
         tree = parser.interactive()
         assert isinstance(tree, DMFParser.InteractiveContext)
@@ -413,7 +415,8 @@ class DMFInterpreter:
         if executable.contains_error:
             print("Expression contained error, not evaluating.")
             return Delayed.complete((executable.return_type, None))
-        future = executable.evaluate(self.globals, required=required)
+        future = Delayed.computed(lambda :executable.evaluate(self.globals, required=required),
+                                  on_error=on_error)
         if cache_as is not None and executable.return_type is not Type.IGNORE:
             cvar = cache_as
             future.then_call(lambda val: self.set_global(cvar, val, executable.return_type))

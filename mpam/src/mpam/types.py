@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence,\
-    Generator, Protocol
+    Generator, Protocol, Type
 from threading import Event, Lock, RLock, Thread
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -21,6 +21,7 @@ T = TypeVar('T')
 V = TypeVar('V')
 V2 = TypeVar('V2')
 H = TypeVar('H', bound=Hashable)
+Ex = TypeVar('Ex', bound=BaseException)
 
 Callback = Callable[[], Any]
 
@@ -614,15 +615,95 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
                       ) -> Delayed[V2]:
         return self.first._schedule(mode=mode, after=after) \
                     .then_schedule(self.second, mode=mode, after=self.after, post_result=post_result)
+                    
+                    
+EHAction = Union['Delayed[Ex]', Callable[[Ex], Any]]
+EHTypes = Union[Type[Ex], Tuple[Type[Ex],...]]
+EHDict = dict[EHTypes, EHAction]
+EHSpec = Union[EHAction, EHDict]
+EHMatch = tuple[Type[Ex], EHAction[Ex]]
+
+class ErrorHandler:
+    spec: Final[EHSpec]
+    pred: Final[Optional[ErrorHandler]]
+    default_handler: ClassVar[ErrorHandler]
     
-# In an earlier iteration, Delayed[T] took a mandatory "guess" argument, and had "initial_guess" and "best_guess"
-# properties (the latter returned the value if it was there and the initial guess otherwise).  This seemed to 
-# unnecessarily complicate things and made me have to do things like creating a drop before it actually existed,
-# which enabled errors.
+    def __init__(self, spec: EHSpec, *, pred: Optional[ErrorHandler] = None) -> None:
+        self.spec = spec
+        self.pred = pred
+        
+    def extended(self, spec: Optional[EHSpec]) -> ErrorHandler:
+        if spec is None:
+            return self
+        return ErrorHandler(spec, pred = self)
+    
+    @classmethod
+    def extend(cls, pred: Optional[ErrorHandler], spec: Optional[EHSpec]) -> Optional[ErrorHandler]:
+        if spec is None:
+            return pred
+        return ErrorHandler(spec, pred = pred)
+            
+    
+    def match(self, ex: BaseException, types: EHTypes) -> Optional[Type]:
+        if not isinstance(ex, types):
+            return None
+        if isinstance(types, type):
+            return type
+        assert isinstance(types, tuple)
+        best: Optional[Type] = None
+        for t in types:
+            if isinstance(ex, t):
+                if best is None or issubclass(t, best):
+                    best = t
+        return best
+        
+    def find_handler(self, exception: BaseException) -> Optional[EHAction]: 
+        spec = self.spec
+        if isinstance(spec, Delayed) or not isinstance(spec, dict):
+            return spec
+        assert isinstance(spec, dict)
+        tightest: Optional[Type] = None
+        best_action: EHAction
+        for types, action in spec.items():
+            t = self.match(exception, types)
+            if t is not None and (tightest is None or issubclass(t, tightest)):
+                tightest = t
+                best_action = action
+        if tightest is not None:
+            return best_action
+        return None if self.pred is None else self.pred.find_handler(exception)
+    
+    @classmethod
+    def default_action(cls, exception: BaseException) -> None:
+        # raise LookupError(f"No handler for '{exception}'") from exception
+        raise exception
+    
+    @classmethod
+    def handle_using(cls, exception: BaseException, handler: Optional[ErrorHandler]) -> None:
+        action = None if handler is None else handler.find_handler(exception)
+        if action is None:
+            cls.default_action(exception)
+        elif isinstance(action, Delayed):
+            action.post(exception)
+        else:
+            action(exception)
+            
+ErrorHandler.default_handler = ErrorHandler(lambda ex: ErrorHandler.default_action(ex))
+            
 class Delayed(Generic[T]):
     _val: ValTuple[T] = (False, cast(T, None))
     _maybe_lock: Optional[Lock] = None
-    _callbacks: list[Callable[[T], Any]]
+    _callbacks: list[tuple[Callable[[T], Any], Optional[EHSpec]]]
+    _on_error: Final[Optional[ErrorHandler]]
+    
+    def __init__(self, *, on_error: Optional[Union[ErrorHandler, EHSpec]] = None):
+        if on_error is None:
+            eh = None
+        elif isinstance(on_error, ErrorHandler):
+            eh = on_error
+        else:
+            eh = ErrorHandler(on_error)
+        self._on_error = eh
     
     @property
     def _lock(self) -> Lock:
@@ -669,6 +750,15 @@ class Delayed(Generic[T]):
         future._val = (True, val)
         return future
     
+    @classmethod
+    def computed(cls, fn: Callable[[], Delayed[V]], *,
+                 on_error: Optional[EHSpec] = None) -> Delayed[V]:
+        future = Delayed.complete(None)
+        return future.chain(lambda _ : fn(), on_error=on_error)
+    
+    def extend_error_handler(self, on_error: Optional[EHSpec]) -> Optional[ErrorHandler]:
+        return ErrorHandler.extend(self._on_error, on_error)
+    
     def then_schedule(self, op: Union[Operation[T,V], StaticOperation[V],
                                       Callable[[], Operation[T,V]],
                                       Callable[[], StaticOperation[V]]], *, 
@@ -682,39 +772,56 @@ class Delayed(Generic[T]):
         else:
             return self.then_schedule(op(), mode=mode, after=after, post_result=post_result)
         
-    def chain(self, fn: Callable[[T], Delayed[V]]) -> Delayed[V]:
-        future = Delayed[V]()
-        self.when_value(lambda val: fn(val).post_to(future))
+    def chain(self, fn: Callable[[T], Delayed[V]], *,
+              on_error: Optional[EHSpec] = None) -> Delayed[V]:
+        future = Delayed[V](on_error = self.extend_error_handler(on_error))
+        self.when_value(lambda val: fn(val).post_to(future), on_error=on_error)
         return future
     
-    def transformed(self, fn: Callable[[T], V]) -> Delayed[V]:
-        future = Delayed[V]()
-        self.when_value(lambda val: future.post(fn(val)))
+    def transformed(self, fn: Callable[[T], V], *,
+                    on_error: Optional[EHSpec] = None) -> Delayed[V]:
+        future = Delayed[V](on_error = self.extend_error_handler(on_error))
+        self.when_value(lambda val: future.post(fn(val)), on_error=on_error)
         return future
     
-    def then_trigger(self, trigger: Trigger) -> Delayed[T]:
-        self.when_value(lambda _: trigger.fire())
+    def then_trigger(self, trigger: Trigger, *,
+                     on_error: Optional[EHSpec] = None) -> Delayed[T]:
+        self.when_value(lambda _: trigger.fire(), on_error=on_error)
         return self
 
-    def post_to(self, other: Delayed[T]) -> Delayed[T]:
-        self.when_value(lambda val: other.post(val))
+    def post_to(self, other: Delayed[T], *,
+                on_error: Optional[EHSpec] = None) -> Delayed[T]:
+        self.when_value(lambda val: other.post(val), on_error=on_error)
         return self
     
-    def post_val_to(self, other: Delayed[V], value: V) -> Delayed[T]:
-        self.when_value(lambda _: other.post(value))
+    def post_val_to(self, other: Delayed[V], value: V, *,
+                    on_error: Optional[EHSpec] = None) -> Delayed[T]:
+        self.when_value(lambda _: other.post(value), on_error=on_error)
         return self
     
-    def triggering(self, *, future: Optional[Delayed[V]] = None, value: V) -> Delayed[V]:
-        f = Delayed[V]() if future is None else future
-        self.when_value(lambda _: f.post(value))
+    def triggering(self, *, 
+                   future: Optional[Delayed[V]] = None, 
+                   value: V,
+                   on_error: Optional[EHSpec] = None) -> Delayed[V]:
+        f = Delayed[V](on_error=self.extend_error_handler(on_error)) if future is None else future
+        self.when_value(lambda _: f.post(value), on_error=on_error)
         return f
     
     def post_transformed_to(self, other: Delayed[V],
-                            transform: Callable[[T], V]) -> Delayed[T]:
-        self.when_value(lambda val: other.post(transform(val)))
+                            transform: Callable[[T], V], *,
+                            on_error: Optional[EHSpec] = None) -> Delayed[T]:
+        self.when_value(lambda val: other.post(transform(val)), on_error=on_error)
         return self
+    
+    def call_fn(self, val: T, fn: Callable[[T], Any], on_error: Optional[EHSpec]) -> None:
+        try:
+            fn(val)
+        except BaseException as ex:
+            handler = ErrorHandler.extend(self._on_error, on_error)
+            ErrorHandler.handle_using(ex, handler)
 
-    def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:
+    def when_value(self, fn: Callable[[T], Any], *,
+                   on_error: Optional[EHSpec] = None) -> Delayed[T]:
         v = self._val
         just_run: bool = v[0]
         if not just_run:
@@ -723,9 +830,9 @@ class Delayed(Generic[T]):
                 v = self._val
                 just_run = v[0]
                 if not just_run:
-                    self._callbacks.append(fn)
+                    self._callbacks.append((fn, on_error))
         if just_run:
-            fn(v[1])
+            self.call_fn(v[1], fn, on_error)
         return self
             
     # or maybe then_call should create a new future, posted at the end.            
@@ -747,8 +854,8 @@ class Delayed(Generic[T]):
         lock = self._maybe_lock
         if lock is not None:
             with lock:
-                for fn in self._callbacks:
-                    fn(val)
+                for fn, on_error in self._callbacks:
+                    self.call_fn(val, fn, on_error)
                 # Just in case this object gets stuck somewhere.
                 # The callbacks are never going to be needed again
                 del self._callbacks
