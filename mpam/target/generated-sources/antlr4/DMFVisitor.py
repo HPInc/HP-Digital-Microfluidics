@@ -232,6 +232,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#vol_expr.
+    def visitVol_expr(self, ctx:DMFParser.Vol_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#twiddle_expr.
     def visitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
         return self.visitChildren(ctx)
@@ -249,6 +254,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#attr_expr.
     def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#drop_vol_expr.
+    def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -294,6 +304,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#time_unit.
     def visitTime_unit(self, ctx:DMFParser.Time_unitContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#vol_unit.
+    def visitVol_unit(self, ctx:DMFParser.Vol_unitContext):
         return self.visitChildren(ctx)
 
 

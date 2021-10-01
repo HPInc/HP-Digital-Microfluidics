@@ -48,6 +48,7 @@ class Type:
     TIME: ClassVar[Type]
     TICKS: ClassVar[Type]
     BOOL: ClassVar[Type]
+    VOLUME: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -91,8 +92,8 @@ Type.IGNORE = Type("IGNORE")
 Type.ERROR = Type("ERROR")
 Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
-Type.INT = Type("INT", [Type.NUMBER])
 Type.FLOAT = Type("FLOAT", [Type.NUMBER])
+Type.INT = Type("INT", [Type.FLOAT])
 Type.BINARY_STATE = Type("BINARY_STATE")
 Type.BINARY_CPT = Type("BINARY_CPT")
 Type.PAD = Type("PAD", [Type.BINARY_CPT])
@@ -108,6 +109,7 @@ Type.DELAY = Type("DELAY")
 Type.TIME = Type("TIME", [Type.DELAY])
 Type.TICKS = Type("TICKS", [Type.DELAY])
 Type.BOOL = Type("BOOL")
+Type.VOLUME = Type("VOLUME")
 
 class MaybeType(Type):
     if_there_type: Final[Type]

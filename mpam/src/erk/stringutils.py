@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Final, Mapping, Union, cast, Sequence
+from typing import Optional, Final, Mapping, Union, cast, Sequence, Any
 from erk.basic import LazyPattern
 
 _camel_case_re = LazyPattern('(?:^[a-z]|[A-z])[a-z0-9_]*')
@@ -68,6 +68,21 @@ def map_str(d: Union[Mapping, set, tuple, Sequence]) -> str:
     if getattr(d, "__iter__", None) is not None:
         return f"[{', '.join(f'{v}' for v in d)}]"
     assert False, f"{d} is somehow not a Mapping, set, tuple, or Sequence"
+    
+def conj_str(seq: Sequence[Any], *,
+             conj: str = "and", 
+             oxford_comma: bool = True) -> str:
+    if len(seq) == 0:
+        return ""
+    if len(seq) == 1:
+        return str(seq[0])
+    if len(seq) == 2:
+        return f"{seq[0]} {conj} {seq[1]}"
+    prefix = ", ".join(str(e) for e in seq[:-1])
+    if oxford_comma:
+        conj = ", "+conj
+    return f"{prefix} {conj} {seq[-1]}"
+
 
 def fmt_dict(d: Mapping) -> str:
     return f"{{{', '.join(f'{k}: {v}' for k,v in d.items())}}}"

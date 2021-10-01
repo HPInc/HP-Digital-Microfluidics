@@ -403,6 +403,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#vol_expr.
+    def enterVol_expr(self, ctx:DMFParser.Vol_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#vol_expr.
+    def exitVol_expr(self, ctx:DMFParser.Vol_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#twiddle_expr.
     def enterTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
         pass
@@ -436,6 +445,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#attr_expr.
     def exitAttr_expr(self, ctx:DMFParser.Attr_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#drop_vol_expr.
+    def enterDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#drop_vol_expr.
+    def exitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext):
         pass
 
 
@@ -517,6 +535,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#time_unit.
     def exitTime_unit(self, ctx:DMFParser.Time_unitContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#vol_unit.
+    def enterVol_unit(self, ctx:DMFParser.Vol_unitContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#vol_unit.
+    def exitVol_unit(self, ctx:DMFParser.Vol_unitContext):
         pass
 
 

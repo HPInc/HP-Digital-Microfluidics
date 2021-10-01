@@ -70,6 +70,8 @@ expr
   | dist=expr rc[0]           # n_rc_expr
   | duration=expr time_unit          # time_expr
   | duration=expr ('tick' | 'ticks') # ticks_expr
+  | amount=expr vol_unit             # vol_expr
+  | amount=expr ('drop' | 'drops')   # drop_vol_expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | lhs=expr rel rhs=expr            # rel_expr
@@ -159,6 +161,10 @@ time_unit returns[Unit[Time] unit]
   | ('ms' | 'millisecond' | 'milliseconds') {$ctx.unit=SI.ms}
   ;
   
+vol_unit returns[Unit[Volume] unit]
+  : ('uL' | 'ul' | 'microliter' | 'microlitre' | 'microliters' | 'microlitres') {$ctx.unit=SI.uL}
+  | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
+  ;  
 attr returns[Attr which]
   : 'gate' {$ctx.which=Attr.GATE}
   | 'exit' 'pad' {$ctx.which=Attr.EXIT_PAD}

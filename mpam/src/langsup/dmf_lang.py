@@ -21,8 +21,8 @@ from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     ticks, Ticks, DelayType, Turn
 from quantities.core import Unit
-from quantities.dimensions import Time
-from erk.stringutils import map_str
+from quantities.dimensions import Time, Volume
+from erk.stringutils import map_str, conj_str
 
 
 
@@ -336,6 +336,7 @@ Conversions.ok(Type.TIME, Type.DELAY)
 Conversions.ok(Type.TICKS, Type.DELAY)
 Conversions.register(Type.WELL_PAD, Type.BINARY_CPT,
                      lambda wp: wp.pad)
+Conversions.register(Type.INT, Type.FLOAT, float)
 
 
 
@@ -464,6 +465,27 @@ class DMFCompiler(DMFVisitor):
             msg = msg(self.text_of(ctx))
         print(f"line {ctx.start.line}:{ctx.start.column} {msg}")
         return self.error_val(return_type, value)
+    
+    def args_error(self, args: Sequence[Union[Executable, Type]], 
+                   arg_ctxts: Sequence[ParserRuleContext], 
+                   whole: ParserRuleContext,
+                   return_type: Type, 
+                   *,
+                   verb: Optional[str] = None,
+                   value: Optional[Callable[[Environment], Any]] = None,
+                   msg: Optional[Union[str, Callable[[Sequence[Type], 
+                                                      Sequence[str],
+                                                      str], str]]] = None) -> Executable:
+        
+        arg_types = [arg.return_type if isinstance(arg, Executable) else arg for arg in args]
+        if msg is None:
+            if verb is None:
+                verb = "combine"
+            msg = f"Cannot {verb} {conj_str(arg_types)}: {self.text_of(whole)}"
+        if not isinstance(msg, str):
+            msg = msg(arg_types, [self.text_of(a) for a in arg_ctxts], self.text_of(whole))
+        return self.error(whole, return_type, msg, value=value)
+
         
     def text_of(self, ctx_or_token: Union[ParserRuleContext, TerminalNode]) -> str:
         if isinstance(ctx_or_token, TerminalNode):
@@ -514,6 +536,15 @@ class DMFCompiler(DMFVisitor):
                 return msg_fn(wname, h.name, text)
             m = msg_factory
         return self.error(ctx, return_type, m, value=value)
+    
+    def arg_dispatch(self, args: Sequence[Executable],
+                     param_types: Sequence[Type],
+                     ret_type: Type,
+                     func: Callable[[Environment], Delayed[Any]]
+                     ) -> Optional[Executable]:
+        if not all(arg.return_type <= pt for arg, pt in zip(args, param_types)):
+            return None
+        return Executable(ret_type, func, args)
         
     def visit(self, tree) -> Executable:
         return cast(Executable, DMFVisitor.visit(self, tree))
@@ -790,50 +821,38 @@ class DMFCompiler(DMFVisitor):
         lhs = self.visit(ctx.lhs)
         rhs = self.visit(ctx.rhs)
         addp = ctx.ADD() is not None
-        if lhs.return_type <= Type.INT and rhs.return_type <= Type.INT:
-            def run_int(env: Environment) -> Delayed[int]:
-                def combine(x: int, y: int) -> int:
+        
+        def dispatch(lhs_t: Type, rhs_t: Type, ret_t: Type) -> Optional[Executable]:
+            def run(env: Environment) -> Delayed[Any]:
+                def combine(x, y):
                     return x+y if addp else x-y
-                future: Delayed[int] = lhs.evaluate(env, Type.INT)
-                return future.chain(lambda x: (rhs.evaluate(env, Type.INT)
+                future: Delayed = lhs.evaluate(env, lhs_t)
+                return future.chain(lambda x: (rhs.evaluate(env, rhs_t)
                                                .transformed(lambda y: combine(x,y))))
-            return Executable(Type.INT, run_int, (lhs,rhs))
-        elif lhs.return_type <= Type.PAD and rhs.return_type <= Type.DELTA:
-            def run_delta(env: Environment) -> Delayed[Pad]:
-                def combine(p: Pad, d: DeltaValue) -> Pad:
-                    n = d.dist if addp else -d.dist
-                    board = env.board
-                    loc = board.orientation.neighbor(d.direction, p.location, steps=n)
-                    return board.pads[loc]
-                return (lhs.evaluate(env, Type.PAD)
-                        .chain(lambda p: (rhs.evaluate(env, Type.DELTA)
-                                          .transformed(lambda d: combine(p,d)))))
-            return Executable(Type.PAD, run_delta, (lhs, rhs))
-        elif lhs.return_type <= Type.TIME and rhs.return_type <= Type.TIME:
-            def run_time(env: Environment) -> Delayed[Time]:
-                def combine(x: Time, y: Time) -> Time:
-                    return x+y if addp else x-y
-                future: Delayed[Time] = lhs.evaluate(env, Type.TIME)
-                return future.chain(lambda x: (rhs.evaluate(env, Type.TIME)
-                                               .transformed(lambda y: combine(x,y))))
-            return Executable(Type.TIME, run_time, (lhs,rhs))
-        elif lhs.return_type <= Type.TICKS and rhs.return_type <= Type.TICKS:
-            def run_ticks(env: Environment) -> Delayed[Ticks]:
-                def combine(x: Ticks, y: Ticks) -> Ticks:
-                    return x+y if addp else x-y
-                future: Delayed[Ticks] = lhs.evaluate(env, Type.TICKS)
-                return future.chain(lambda x: (rhs.evaluate(env, Type.TICKS)
-                                               .transformed(lambda y: combine(x,y))))
-            return Executable(Type.TICKS, run_ticks, (lhs,rhs))
+            return self.arg_dispatch((lhs, rhs), (lhs_t, rhs_t), ret_t, run)
+        if e := dispatch(Type.INT, Type.INT, Type.INT):
+            return e
+        if e := dispatch(Type.TIME, Type.TIME, Type.TIME):
+            return e
+        if e := dispatch(Type.TICKS, Type.TICKS, Type.TICKS):
+            return e
+        if e := dispatch(Type.VOLUME, Type.VOLUME, Type.VOLUME):
+            return e
+        def run_delta(env: Environment) -> Delayed[Pad]:
+            def combine(p: Pad, d: DeltaValue) -> Pad:
+                n = d.dist if addp else -d.dist
+                board = env.board
+                loc = board.orientation.neighbor(d.direction, p.location, steps=n)
+                return board.pads[loc]
+            return (lhs.evaluate(env, Type.PAD)
+                    .chain(lambda p: (rhs.evaluate(env, Type.DELTA)
+                                      .transformed(lambda d: combine(p,d)))))
+        if e:= self.arg_dispatch((lhs, rhs), (Type.PAD, Type.DELTA), Type.PAD, run_delta):
+            return e
+        
+        return self.args_error((lhs, rhs), (ctx.lhs, ctx.rhs), ctx, Type.NONE,
+                               verb="add" if addp else "subtract")
             
-        if addp:
-            return self.error(ctx, Type.NONE,
-                              f"Can't add {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
-        else:
-            return self.error(ctx, Type.NONE,
-                              f"Can't subtract {rhs.return_type.name} from {lhs.return_type.name}: {self.text_of(ctx)}")
-            
-
 
     def visitRel_expr(self, ctx:DMFParser.Rel_exprContext) -> Executable:
         lhs = self.visit(ctx.lhs)
@@ -1333,6 +1352,16 @@ class DMFCompiler(DMFVisitor):
         def run(env: Environment) -> Delayed[Ticks]:
             return duration.evaluate(env, Type.INT).transformed(lambda n: cast(int,n)*ticks)
         return Executable(Type.TICKS, run, (duration,))
+    
+    def visitVol_expr(self, ctx:DMFParser.Vol_exprContext) -> Executable:
+        amount = self.visit(ctx.amount)
+        unit_ctx: DMFParser.Vol_unitContext = ctx.vol_unit()
+        unit = cast(Unit[Volume], unit_ctx.unit)
+        if e:=self.type_check(Type.INT, amount, ctx.amount, return_type = Type.VOLUME):
+            return e
+        def run(env: Environment) -> Delayed[Volume]:
+            return amount.evaluate(env, Type.INT).transformed(lambda n: cast(int,n)*unit)
+        return Executable(Type.VOLUME, run, (amount,))
     
     def visitPause_expr(self, ctx:DMFParser.Pause_exprContext) -> Executable:
         duration = self.visit(ctx.duration)
