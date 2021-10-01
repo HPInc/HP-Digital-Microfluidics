@@ -2,7 +2,7 @@ from __future__ import annotations
 from enum import Enum, auto
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any,\
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence,\
-    Generator, Protocol, Type
+    Generator, Protocol, Type, NamedTuple
 from threading import Event, Lock, RLock, Thread
 from quantities.dimensions import Molarity, MassConcentration,\
     VolumeConcentration, Temperature, Volume, Time
@@ -16,6 +16,8 @@ from fractions import Fraction
 import math
 from abc import ABC, abstractmethod
 from erk.numutils import farey
+import threading
+from erk.stringutils import map_str
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -623,25 +625,101 @@ EHDict = dict[EHTypes, EHAction]
 EHSpec = Union[EHAction, EHDict]
 EHMatch = tuple[Type[Ex], EHAction[Ex]]
 
+class EHBinding:
+    handler: Final[ErrorHandler]
+    old_handler: Final[ErrorHandler]
+    
+    def __init__(self, handler: ErrorHandler) -> None:
+        self.handler = handler
+        self.old_handler = current = ErrorHandler.get_prevailing()
+        # thread_locals = threading.local()
+        # current: Optional[ErrorHandler] = getattr(thread_locals, "_DynamicErrorHandler", None)
+        # if current is None:
+            # current = ErrorHandler.default_handler
+        # self.old_handler = current
+        if current is not handler:
+            # thread_locals._DynamicErrorHandler = handler
+            ErrorHandler.set_prevailing(handler)
+    
+    def handle(self, exception: BaseException) -> None:
+        self.handler.handle(exception)
+        
+    def __enter__(self) -> EHBinding:
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None: # @UnusedVariable
+        if self.handler is not self.old_handler:
+            ErrorHandler.set_prevailing(self.old_handler)
+            # thread_locals = threading.local()
+            # thread_locals._DynamicErrorHandler = self.old_handler
+
+
 class ErrorHandler:
     spec: Final[EHSpec]
     pred: Final[Optional[ErrorHandler]]
     default_handler: ClassVar[ErrorHandler]
+    _caught_types: Optional[Tuple[Type, ...]] = None
+    
+    @classmethod
+    def get_prevailing(cls) -> ErrorHandler:
+        current: Optional[ErrorHandler] = getattr(threading.local(), "_DynamicErrorHandler", None)
+        return cls.default_handler if current is None else current
+    
+    @classmethod
+    def set_prevailing(cls, handler: ErrorHandler) -> None:
+        threading.local()._DynamicErrorHandler = handler
+    
+    @property
+    def is_default(self) -> bool:
+        return self is ErrorHandler.default_handler
     
     def __init__(self, spec: EHSpec, *, pred: Optional[ErrorHandler] = None) -> None:
         self.spec = spec
         self.pred = pred
+        
+    @property
+    def caught_types(self) -> Tuple[Type, ...]:
+        ct = self._caught_types
+        if ct is None:
+            if self.pred is None:
+                ctset = set[Type]()
+            else:
+                ctset = set(self.pred.caught_types)
+            spec = self.spec
+            if isinstance(spec, dict):
+                for keys in spec:
+                    if not isinstance(keys, tuple):
+                        keys = (keys,)
+                    ctset |= set(keys)
+            else:
+                ctset.add(BaseException)
+            ctlist = list(ctset)
+            ctlist.sort(key=str)
+            ct = tuple(ctlist)
+            self._caught_types = ct
+        return ct
+            
+        
+    def __repr__(self) -> str:
+        if self.is_default:
+            return f"ErrorHandler(DEFAULT)"
+        else:
+            return f"ErrorHandler({map_str(self.caught_types)})"
+        
         
     def extended(self, spec: Optional[EHSpec]) -> ErrorHandler:
         if spec is None:
             return self
         return ErrorHandler(spec, pred = self)
     
-    @classmethod
-    def extend(cls, pred: Optional[ErrorHandler], spec: Optional[EHSpec]) -> Optional[ErrorHandler]:
-        if spec is None:
-            return pred
-        return ErrorHandler(spec, pred = pred)
+    def push(self, spec: Optional[EHSpec] = None) -> EHBinding:
+        return EHBinding(self.extended(spec))
+    
+    # @classmethod
+    # def extend(cls, pred: ErrorHandler, spec: Optional[EHSpec]) -> ErrorHandler:
+    #     if spec is None:
+    #         return pred
+    #     return ErrorHandler(spec, pred = pred)
             
     
     def match(self, ex: BaseException, types: EHTypes) -> Optional[Type]:
@@ -678,11 +756,10 @@ class ErrorHandler:
         # raise LookupError(f"No handler for '{exception}'") from exception
         raise exception
     
-    @classmethod
-    def handle_using(cls, exception: BaseException, handler: Optional[ErrorHandler]) -> None:
-        action = None if handler is None else handler.find_handler(exception)
+    def handle(self, exception: BaseException) -> None:
+        action = self.find_handler(exception)
         if action is None:
-            cls.default_action(exception)
+            ErrorHandler.default_action(exception)
         elif isinstance(action, Delayed):
             action.post(exception)
         else:
@@ -694,15 +771,22 @@ class Delayed(Generic[T]):
     _val: ValTuple[T] = (False, cast(T, None))
     _maybe_lock: Optional[Lock] = None
     _callbacks: list[tuple[Callable[[T], Any], Optional[EHSpec]]]
-    _on_error: Final[Optional[ErrorHandler]]
+    _on_error: Final[ErrorHandler]
     
     def __init__(self, *, on_error: Optional[Union[ErrorHandler, EHSpec]] = None):
         if on_error is None:
-            eh = None
+            # eh = ErrorHandler.default_handler
+            eh = ErrorHandler.get_prevailing()
         elif isinstance(on_error, ErrorHandler):
             eh = on_error
         else:
             eh = ErrorHandler(on_error)
+        # if eh is ErrorHandler.default_handler:
+        #     print(f"Delayed(default error handler in thread {threading.current_thread()})")
+        # else:
+        #     print(f"Delayed(non-default error handler in thread {threading.current_thread()})")
+        #
+
         self._on_error = eh
     
     @property
@@ -757,7 +841,7 @@ class Delayed(Generic[T]):
         return future.chain(lambda _ : fn(), on_error=on_error)
     
     def extend_error_handler(self, on_error: Optional[EHSpec]) -> Optional[ErrorHandler]:
-        return ErrorHandler.extend(self._on_error, on_error)
+        return self._on_error.extended(on_error)
     
     def then_schedule(self, op: Union[Operation[T,V], StaticOperation[V],
                                       Callable[[], Operation[T,V]],
@@ -814,11 +898,11 @@ class Delayed(Generic[T]):
         return self
     
     def call_fn(self, val: T, fn: Callable[[T], Any], on_error: Optional[EHSpec]) -> None:
-        try:
-            fn(val)
-        except BaseException as ex:
-            handler = ErrorHandler.extend(self._on_error, on_error)
-            ErrorHandler.handle_using(ex, handler)
+        with self._on_error.push(on_error) as handler:
+            try:
+                fn(val)
+            except BaseException as ex:
+                handler.handle(ex)
 
     def when_value(self, fn: Callable[[T], Any], *,
                    on_error: Optional[EHSpec] = None) -> Delayed[T]:

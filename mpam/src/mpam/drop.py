@@ -11,8 +11,10 @@ from threading import Lock
 from quantities.dimensions import Volume
 from enum import Enum, auto
 from abc import ABC, abstractmethod
-from erk.errors import FIX_BY, PRINT
+from erk.errors import FIX_BY, PRINT, ErrorHandler
 from quantities.core import qstr
+import mpam.types
+import threading
 
 # if TYPE_CHECKING:
     # from mpam.processes import MultiDropProcessType
@@ -49,6 +51,11 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         if steps == 0:
             return Delayed.complete(drop)
         future = Delayed[Drop]()
+        if future._on_error is mpam.types.ErrorHandler.default_handler:
+            print(f"Starting with default error handler in thread {threading.current_thread()}")
+        else:
+            print(f"Starting with non-default error handler in thread {threading.current_thread()}")
+            
             
         one_tick: Ticks = 1*tick
         allow_unsafe = self.allow_unsafe

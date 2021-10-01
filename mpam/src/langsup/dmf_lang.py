@@ -19,7 +19,7 @@ from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    ticks, Ticks, DelayType, Turn, EHSpec
+    ticks, Ticks, DelayType, Turn, EHSpec, ErrorHandler
 from quantities.core import Unit
 from quantities.dimensions import Time
 from erk.stringutils import map_str
@@ -1052,6 +1052,8 @@ class DMFCompiler(DMFVisitor):
             return e
         
         def run(env: Environment) -> Delayed[Any]:
+            dc = ErrorHandler.get_prevailing() is ErrorHandler.default_handler
+            print(f"Prevailing is default (injection): {dc}")
             def inject(obj, func) -> Delayed[Any]:
                 assert isinstance(func, CallableValue)
                 future = func.apply((obj,))
