@@ -10,7 +10,7 @@ else:
 
 
 from mpam.types import Dir, OnOff, Turn
-from langsup.type_supp import Type, Attr, Rel
+from langsup.type_supp import Type, Rel
 from quantities import SI
 
 
@@ -3722,7 +3722,7 @@ class DMFParser ( Parser ):
                 self.enterOuterAlt(localctx, 1)
                 self.state = 370
                 self.match(DMFParser.T__83)
-                localctx.which=Attr.GATE
+                localctx.which="GATE"
                 pass
 
             elif la_ == 2:
@@ -3731,35 +3731,35 @@ class DMFParser ( Parser ):
                 self.match(DMFParser.T__84)
                 self.state = 373
                 self.match(DMFParser.T__55)
-                localctx.which=Attr.EXIT_PAD
+                localctx.which="EXIT_PAD"
                 pass
 
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 375
                 self.match(DMFParser.T__32)
-                localctx.which=Attr.STATE
+                localctx.which="STATE"
                 pass
 
             elif la_ == 4:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 377
                 self.match(DMFParser.T__85)
-                localctx.which=Attr.DISTANCE
+                localctx.which="DISTANCE"
                 pass
 
             elif la_ == 5:
                 self.enterOuterAlt(localctx, 5)
                 self.state = 379
                 self.match(DMFParser.T__86)
-                localctx.which=Attr.DURATION
+                localctx.which="DURATION"
                 pass
 
             elif la_ == 6:
                 self.enterOuterAlt(localctx, 6)
                 self.state = 381
                 self.match(DMFParser.T__55)
-                localctx.which=Attr.PAD
+                localctx.which="PAD"
                 pass
 
             elif la_ == 7:
@@ -3785,7 +3785,7 @@ class DMFParser ( Parser ):
                 else:
                     raise NoViableAltException(self)
 
-                localctx.which=Attr.ROW
+                localctx.which="ROW"
                 pass
 
             elif la_ == 8:
@@ -3815,14 +3815,14 @@ class DMFParser ( Parser ):
                 else:
                     raise NoViableAltException(self)
 
-                localctx.which=Attr.COLUMN
+                localctx.which="COLUMN"
                 pass
 
             elif la_ == 9:
                 self.enterOuterAlt(localctx, 9)
                 self.state = 396
                 self.match(DMFParser.T__25)
-                localctx.which=Attr.WELL
+                localctx.which="WELL"
                 pass
 
             elif la_ == 10:
@@ -3836,14 +3836,14 @@ class DMFParser ( Parser ):
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
-                localctx.which=Attr.EXIT_DIR
+                localctx.which="EXIT_DIR"
                 pass
 
             elif la_ == 11:
                 self.enterOuterAlt(localctx, 11)
                 self.state = 401
                 self.match(DMFParser.T__16)
-                localctx.which=Attr.DROP
+                localctx.which="DROP"
                 pass
 
 

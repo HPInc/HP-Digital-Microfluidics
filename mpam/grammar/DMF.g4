@@ -8,7 +8,7 @@ options {
 
 @header {
 from mpam.types import Dir, OnOff, Turn
-from langsup.type_supp import Type, Attr, Rel
+from langsup.type_supp import Type, Rel
 from quantities import SI
 }
 
@@ -165,18 +165,18 @@ vol_unit returns[Unit[Volume] unit]
   : ('uL' | 'ul' | 'microliter' | 'microlitre' | 'microliters' | 'microlitres') {$ctx.unit=SI.uL}
   | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
   ;  
-attr returns[Attr which]
-  : 'gate' {$ctx.which=Attr.GATE}
-  | 'exit' 'pad' {$ctx.which=Attr.EXIT_PAD}
-  | 'state' {$ctx.which=Attr.STATE}
-  | 'distance' {$ctx.which=Attr.DISTANCE}
-  | 'duration' {$ctx.which=Attr.DURATION}
-  | 'pad' {$ctx.which=Attr.PAD}
-  | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which=Attr.ROW}
-  | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which=Attr.COLUMN}
-  | 'well' {$ctx.which=Attr.WELL}
-  | 'exit' ('dir' | 'direction') {$ctx.which=Attr.EXIT_DIR}
-  | 'drop' {$ctx.which=Attr.DROP}
+attr returns[str which]
+  : 'gate' {$ctx.which="GATE"}
+  | 'exit' 'pad' {$ctx.which="EXIT_PAD"}
+  | 'state' {$ctx.which="STATE"}
+  | 'distance' {$ctx.which="DISTANCE"}
+  | 'duration' {$ctx.which="DURATION"}
+  | 'pad' {$ctx.which="PAD"}
+  | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which="ROW"}
+  | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="COLUMN"}
+  | 'well' {$ctx.which="WELL"}
+  | 'exit' ('dir' | 'direction') {$ctx.which="EXIT_DIR"}
+  | 'drop' {$ctx.which="DROP"}
   ;
   
 rel returns[Rel which]

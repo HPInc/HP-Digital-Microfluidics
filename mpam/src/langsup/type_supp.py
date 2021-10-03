@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from _collections import defaultdict
+from _collections_abc import Iterable
 from enum import Enum, auto
-from typing import Final, Optional, Sequence, NamedTuple, ClassVar, Callable, \
-    Any, Mapping
+from typing import Final, Optional, Sequence, ClassVar, Callable, \
+    Any, Mapping, Union
+
+from erk.stringutils import conj_str
+from mpam.types import Delayed
+from _collections import defaultdict
 
 
 class Type:
@@ -49,6 +53,7 @@ class Type:
     TICKS: ClassVar[Type]
     BOOL: ClassVar[Type]
     VOLUME: ClassVar[Type]
+    BUILT_IN: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -86,6 +91,32 @@ class Type:
     def __le__(self, rhs: Type) -> bool:
         return self is rhs or self < rhs
     
+    @classmethod
+    def upper_bounds(cls, *types: Type) -> Sequence[Type]:
+        maybe = any(isinstance(t, MaybeType) for t in types)
+        if maybe:
+            types = tuple(t.if_there_type if isinstance(t, MaybeType) else t for t in types)
+        if len(types) == 0:
+            return ()
+        candidates = {types[0], *types[0].all_supers}
+        candidates.intersection_update(*({t, *t.all_supers} for t in types[1:]))
+        
+        remove = set[Type]()
+        for c1 in candidates:
+            for c2 in candidates:
+                if c1 < c2:
+                    remove.add(c2)
+        candidates -= remove
+        if maybe:
+            return tuple(c.maybe for c in candidates)
+        return tuple(candidates)
+    
+    @classmethod
+    def upper_bound(cls, *types: Type) -> Type:
+        bounds = cls.upper_bounds(*types)
+        return Type.NONE if len(bounds) == 0 else bounds[0]
+        
+    
 Type.ANY = Type("ANY", is_root=True)
 Type.NONE = Type("NONE")
 Type.IGNORE = Type("IGNORE")
@@ -110,6 +141,7 @@ Type.TIME = Type("TIME", [Type.DELAY])
 Type.TICKS = Type("TICKS", [Type.DELAY])
 Type.BOOL = Type("BOOL")
 Type.VOLUME = Type("VOLUME")
+Type.BUILT_IN = Type("BUILT_IN")
 
 class MaybeType(Type):
     if_there_type: Final[Type]
@@ -131,34 +163,57 @@ class MaybeType(Type):
         return super().__lt__(rhs)
     
 
-class Signature(NamedTuple):
-    param_types: tuple[Type,...]
-    return_type: Type
+class Signature:
+    param_types: Final[tuple[Type,...]]
+    return_type: Final[Type]
+    _known: ClassVar[dict[tuple[tuple[Type,...], Type], Signature]] = {}
+    
+    def __init__(self, param_types: tuple[Type, ...], return_type: Type) -> None:
+        self.param_types = param_types
+        self.return_type = return_type
     
     @classmethod
     def of(cls, param_types: Sequence[Type], return_type: Type) -> Signature:
         if not isinstance(param_types, tuple):
             param_types = tuple(param_types)
-        return Signature(param_types, return_type)
+        key = param_types, return_type
+        sig = cls._known.get(key, None)
+        if sig is None:
+            sig = Signature(param_types, return_type)
+            cls._known[key] = sig
+        return sig
     
-    # We are less than the rhs if our types are the same or wider than 
-    # its and our return is the same or narrower, and at least one is different
-    def __lt__(self, rhs) -> bool:
-        if not isinstance(rhs, Signature):
-            return False
-        if self.return_type > rhs.return_type:
-            return False
-        narrower = self.return_type < rhs.return_type
-        for mine,theirs in zip(self.param_types, rhs.param_types):
-            if mine < theirs:
+    def __repr__(self) -> str:
+        return f"Signature({self.param_types}, {self.return_type})"
+    
+    def __str__(self) -> str:
+        return f"{' x '.join(t.name for t in self.param_types)} -> {self.return_type}"
+    
+    def __hash__(self) -> int:
+        return id(self)
+    
+    def __eq__(self, rhs: object) -> bool:
+        return self is rhs
+    
+    def callable_using(self, arg_types: Sequence[Type]) -> bool:
+        return (len(arg_types) == len(self.param_types)
+                and all(theirs <= mine 
+                        for mine,theirs in zip(self.param_types, arg_types)))
+    
+    def narrower_than(self, other: Signature) -> bool:
+        val = False
+        for mine,theirs in zip(self.param_types, other.param_types):
+            if theirs < mine:
                 return False
-            if mine > theirs:
-                narrower = True
-        return narrower
+            if mine < theirs:
+                val = True
+        # I'm going covariant on both sides deliberately, but I'm not sure that's right.
+        return val or self.return_type < other.return_type
 
 
 class CallableType(Type):
     sig: Final[Signature]
+    with_self_sig: Final[Signature]
     
     @property
     def param_types(self) -> Sequence[Type]:
@@ -179,7 +234,7 @@ class CallableType(Type):
                  supers: Optional[Sequence[Type]] = None):
         super().__init__(name, supers)
         self.sig = Signature.of(param_types, return_type)
-        
+        self.with_self_sig = Signature.of((self, *param_types), return_type)
         
 class MotionType(CallableType):
     def __init__(self):
@@ -224,7 +279,7 @@ class MacroType(CallableType):
     # it will probably do the right thing.
     def __lt__(self, rhs:Type)->bool:
         if isinstance(rhs, MacroType):
-            return self.sig < rhs.sig
+            return self.sig.narrower_than(rhs.sig)
         return Type.__lt__(self, rhs)
     
     # def __eq__(self, rhs:object)->bool:
@@ -235,42 +290,174 @@ class MacroType(CallableType):
     def __hash__(self)->int:
         return hash(self.sig)
     
-class Attr(Enum):
-    _ignore_ = ["_known"]    
-    _known: ClassVar[dict[Attr, dict[Type, tuple[Type, Callable[[Any], Any]]]]]
 
-    GATE = auto()
-    EXIT_PAD = auto()
-    STATE = auto()
-    PAD = auto()
-    DISTANCE = auto()
-    DURATION = auto()
-    ROW = auto()
-    COLUMN = auto()
-    WELL = auto()
-    EXIT_DIR = auto()
-    DROP = auto()
+class Func:
+    Definition = Callable[..., Delayed]
+    TypeExprFormatter = Callable[..., Optional[str]]
+    name: Final[str]
+    # verb: Final[str]
+    overloads: Final[dict[tuple[Type,...], tuple[Signature,Definition]]]
+    type_expr_formatters: Final[dict[Optional[int], list[TypeExprFormatter]]]
     
-    @property
-    def mappings(self) -> dict[Type, tuple[Type, Callable[[Any], Any]]]:
-        return self._known[self]
-    
-    @property
-    def known_types(self) -> Sequence[Type]:
-        return tuple(self.mappings.keys())
-
-    def register(self, otype: Type, rtype: Type, extractor: Callable[[Any], Any]) -> None:
-        self.mappings[otype] = (rtype, extractor)
+    def __init__(self, name: str, 
+                 # *,
+                 # verb: Optional[str] = None,
+                 # error_msg_factory: Optional[Callable[[Sequence[Type], str], Optional[str]]] = None,
+                 ) -> None:
+        self.name = name
+        # self.verb = verb or name.lower()
+        self.overloads = {}
+        # self.error_msg_factory = error_msg_factory
+        self.type_expr_formatters = defaultdict(list)
         
-    def __getitem__(self, otype: Type) -> Optional[tuple[Type, Type, Callable[[Any], Any]]]:
-        d = self.mappings
+    def __repr__(self) -> str:
+        return f"Func.{self.name}"
+    
+    @property
+    def known_sigs(self) -> Sequence[Signature]:
+        return tuple(p[0] for p in self.overloads.values())
+
+    def register(self, param_types: Sequence[Type], return_type: Type, definition: Definition) -> None:
+        sig = Signature.of(param_types, return_type)
+        self.overloads[sig.param_types] = (sig,definition)
+        
+    def register_immediate(self, param_types: Sequence[Type], return_type: Type, definition: Callable[..., Any]) -> None:
+        def fn(*args) -> Delayed:
+            return Delayed.complete(definition(*args))
+        self.register(param_types, return_type, fn)
+        
+    def register_all(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
+                     definition: Definition):
+        for sig in sigs:
+            if isinstance(sig, Signature):
+                param_types: Sequence[Type] = sig.param_types
+                return_type = sig.return_type
+            else:
+                param_types, return_type = sig
+            self.register(param_types, return_type, definition)
+        
+    def register_all_immediate(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
+                               definition: Callable[..., Any]):
+        for sig in sigs:
+            if isinstance(sig, Signature):
+                param_types: Sequence[Type] = sig.param_types
+                return_type = sig.return_type
+            else:
+                param_types, return_type = sig
+            self.register_immediate(param_types, return_type, definition)
+        
+    def __getitem__(self, arg_types: Sequence[Type]) -> Optional[tuple[Signature, Func.Definition]]:
+        d = self.overloads
+        best: Optional[tuple[Signature, Func.Definition]] = None
+        for sig, defn in d.values():
+            if sig.callable_using(arg_types) and (best is None or sig.narrower_than(best[0])):
+                best = (sig,defn)
+        return best
+    
+    def format_type_expr_using(self, arity: Optional[int], formatter: Func.TypeExprFormatter, *,
+                               override: bool = False) -> None:
+        if override:
+            self.type_expr_formatters[arity] = [formatter]
+        else:
+            self.type_expr_formatters[arity].append(formatter)
+            
+    def infix_op(self, op: str, *,
+                  override: bool = False) -> None:
+        self.format_type_expr_using(2,
+                                    lambda x,y: f"{x} {op} {y}",
+                                    override=override)
+    def prefix_op(self, op: str, *,
+                  override: bool = False) -> None:
+        self.format_type_expr_using(1,
+                                    lambda x: f"{op} {x}",
+                                    override=override)
+            
+    def postfix_op(self, op: str, *,
+                   override: bool = False) -> None:
+        self.format_type_expr_using(1,
+                                    lambda x: f"{x} {op}",
+                                    override=override)
+    def format_type_expr(self, types: Sequence[Type]) -> str:
+        arity = len(types)
+        names = [t.name for t in types]
+        for formatter in self.type_expr_formatters[arity]:
+            if val := formatter(*names):
+                return val
+        for formatter in self.type_expr_formatters[None]:
+            if val := formatter(names):
+                return val
+        return f"{self.name}({', '.join(names)})"
+    
+    def type_error(self, arg_types: Sequence[Type], text: str) -> str:
+        error = f"Cannot compute {self.format_type_expr(arg_types)}: {text}"
+        sigs = [sig for sig,_ in self.overloads.values()]
+        if len(sigs) == 0:
+            return error
+        expectations = [f"{self.format_type_expr(sig.param_types)} -> {sig.return_type.name}" for sig in sigs]
+        expectations.sort()
+        error += "\n  expected"
+        if len(sigs) > 1:
+            error += " one of"
+        indent = "    "
+        error += ":\n" + indent + ("\n"+indent).join(expectations)
+        return error
+    
+    def error_type(self, arg_types: Sequence[Type], *, 
+                   default_type: Type = Type.NONE) -> Type:
+        penetration: int = 0
         best: Optional[Type] = None
-        for t in d:
-            if otype <= t and (best is None or t < best):
-                best = t
-        return None if best is None else (best, *d[best])
+        mismatch = False
+        def match_len(pts: Sequence[Type]) -> int:
+            for i,pt in enumerate(pts):
+                at = arg_types[i]
+                if not at<=pt:
+                    return i
+            return len(pts)
+        for sig,_ in self.overloads.values():
+            rt = sig.return_type
+            ml = match_len(sig.param_types)
+            if ml > penetration:
+                best = rt
+                penetration = ml
+                mismatch = False
+            elif ml == penetration and not mismatch:
+                if best is None or best <= rt:
+                    best = rt
+                elif not rt < best:
+                    mismatch = True
+        return default_type if mismatch or best is None else best
                 
-Attr._known = defaultdict(lambda : defaultdict(list))
+    
+class Attr:
+    func: Final[Func]
+
+    def __init__(self, value: Union[str, Func]) -> None:
+        if isinstance(value, str):
+            value = Func(value)
+        self.func = value
+        
+    def __repr__(self) -> str:
+        return f"Attr.{self.func.name}"
+    
+    @property
+    def applies_to(self) -> Sequence[Type]:
+        return [sig.param_types[0] for sig in self.func.known_sigs if len(sig.param_types) == 1]
+    
+    @property
+    def returns(self) -> Sequence[Type]:
+        return [sig.return_type for sig in self.func.known_sigs if len(sig.param_types) == 1]
+    
+    def register(self, otype: Type, rtype: Type, extractor: Callable[[Any], Any]) -> None:
+        self.func.register_immediate((otype,), rtype, extractor)
+        
+    def __getitem__(self, otype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
+        return self.func[(otype,)]
+    
+    @classmethod
+    def new_instances(cls, names: Iterable[str]) -> None:
+        for name in names:
+            setattr(cls, name, Attr(name))
+                
 
 class Rel(Enum):
     _ignore_ = ["_known"]    
@@ -298,8 +485,8 @@ Rel._known = {
     Rel.GE: lambda x,y: x >= y,
     }
     
-
-    
+        
+        
     
 if __name__ == '__main__':
     def check(lhs: Type, rhs: Type) -> None:

@@ -9,7 +9,7 @@ else:
 
 
 from mpam.types import Dir, OnOff, Turn
-from langsup.type_supp import Type, Attr, Rel
+from langsup.type_supp import Type, Rel
 from quantities import SI
 
 
