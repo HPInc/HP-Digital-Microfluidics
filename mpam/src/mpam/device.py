@@ -24,6 +24,7 @@ from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
 from matplotlib.gridspec import SubplotSpec
+from quantities.core import Unit
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
@@ -1293,6 +1294,7 @@ class Board(SystemComponent):
     _drop_size: Volume
     _reserved_well_gates: list[Well]
     _lock: Final[Lock]
+    _drop_unit: Unit[Volume]
     
     def __init__(self, *, 
                  pads: PadArray,
@@ -1356,6 +1358,14 @@ class Board(SystemComponent):
             cache = self.wells[0].dispensed_volume
             assert all(w.dispensed_volume==cache for w in self.wells), "Not all wells dispense the same volume"
             self._drop_size = cache
+        return cache
+    
+    @property
+    def drop_unit(self) -> Unit[Volume]:
+        cache: Optional[Unit[Volume]] = getattr(self, '_drop_unit', None)
+        if cache is None:
+            cache = self.drop_size.as_unit("drops", singular="drop")
+            self._drop_unit = cache
         return cache
     
 class UserOperation(Worker):

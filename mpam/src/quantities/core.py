@@ -1107,6 +1107,11 @@ class CountDim(BaseDim[BD]):
             raise ValueError(f"{self} has non-integral magnitude")
         return n
     
+    # ERK: I have no idea why this is necessary, but if I don't include it, count dim objects are 
+    # unhashable. (10/7/21) 
+    def __hash__(self) -> int:
+        return super().__hash__()
+    
     def __add__(self: ND, rhs: Union[float,BD]) -> BD:
         rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
         return cast(BD, self.dimensionality.make_quantity(self.magnitude+rmag))

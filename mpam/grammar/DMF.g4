@@ -7,7 +7,7 @@ options {
 }
 
 @header {
-from mpam.types import Dir, OnOff, Turn
+from mpam.types import Dir, OnOff, Turn, ticks
 from langsup.type_supp import Type, Rel
 from quantities import SI
 }
@@ -68,9 +68,7 @@ expr
   | dist=expr 'in' ('dir' | 'direction') d=expr # in_dir_expr
   | INT rc[$INT.int]           # const_rc_expr
   | dist=expr rc[0]           # n_rc_expr
-  | duration=expr time_unit          # time_expr
-  | duration=expr ('tick' | 'ticks') # ticks_expr
-  | amount=expr vol_unit             # vol_expr
+  | amount=expr dim_unit             # unit_expr
   | amount=expr ('drop' | 'drops')   # drop_vol_expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
@@ -98,6 +96,7 @@ expr
   | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
   | INT                              # int_expr
+  | FLOAT							 # float_expr
   ;
 
 
@@ -156,15 +155,14 @@ param_type returns[Type type]
   | 'bool' {$ctx.type=Type.BOOL}
   ;
   
-time_unit returns[Unit[Time] unit]
+dim_unit returns[Unit unit]
   : ('s' | 'sec' | 'secs' | 'second' | 'seconds') {$ctx.unit=SI.sec}
   | ('ms' | 'millisecond' | 'milliseconds') {$ctx.unit=SI.ms}
-  ;
-  
-vol_unit returns[Unit[Volume] unit]
-  : ('uL' | 'ul' | 'microliter' | 'microlitre' | 'microliters' | 'microlitres') {$ctx.unit=SI.uL}
+  | ('uL' | 'ul' | 'microliter' | 'microlitre' | 'microliters' | 'microlitres') {$ctx.unit=SI.uL}
   | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
-  ;  
+  | ('tick' | 'ticks') {$ctx.unit=ticks}
+  ;
+
 attr returns[str which]
   : 'gate' {$ctx.which="GATE"}
   | 'exit' 'pad' {$ctx.which="EXIT_PAD"}
@@ -177,6 +175,7 @@ attr returns[str which]
   | 'well' {$ctx.which="WELL"}
   | 'exit' ('dir' | 'direction') {$ctx.which="EXIT_DIR"}
   | 'drop' {$ctx.which="DROP"}
+  | 'magnitude' {$ctx.which="MAGNITUDE"}
   ;
   
 rel returns[Rel which]

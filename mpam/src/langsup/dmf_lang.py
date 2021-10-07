@@ -19,8 +19,8 @@ from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    ticks, Ticks, DelayType, Turn
-from quantities.core import Unit
+    Ticks, DelayType, Turn
+from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume
 from erk.stringutils import map_str, conj_str
 import math
@@ -33,9 +33,19 @@ Val_ = TypeVar("Val_")
 
 class EvaluationError(RuntimeError): ...
 
+class CompilationError(RuntimeError): ...
+
 class MaybeNotSatisfiedError(EvaluationError): ...
         
-
+class UnknownUnitDimensionError(CompilationError):
+    unit: Final[Unit]
+    dimensionality: Final[Dimensionality]
+    
+    def __init__(self, unit: Unit) -> None:
+        dim = unit.dimensionality()
+        super().__init__(f"Unit {unit} has unknown dimensionality {dim}")
+        self.unit = unit
+        self.dimensionality = dim
 
 class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
@@ -265,6 +275,7 @@ class WellPadValue(NamedTuple):
 
 K_ = TypeVar("K_")
 V_ = TypeVar("V_")
+T_ = TypeVar("T_")
 class ByNameCache(dict[K_,V_]):
     def __init__(self, factory: Callable[[K_], V_]):
         self.factory = factory
@@ -276,6 +287,18 @@ class ByNameCache(dict[K_,V_]):
 Functions = ByNameCache[str, Func](lambda name: Func(name))
 Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[name]))
 
+def unit_func(unit: Unit) -> Func:
+    func = Func(str(unit))
+    dim = unit.dimensionality()
+    try:
+        qtype, ntype = DimensionToType[dim]
+    except KeyError:
+        raise UnknownUnitDimensionError(unit)
+    func.register_immediate((ntype,), qtype, lambda n: n*unit)
+    func.postfix_op(str(unit))
+    return func
+
+UnitFuncs = ByNameCache[Unit, Func](unit_func)
 
 Attributes["GATE"].register(Type.WELL, Type.WELL_PAD, 
                             lambda well: WellPadValue(well.gate, well))
@@ -290,6 +313,8 @@ Attributes["EXIT_DIR"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
 Attributes["WELL"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
 Attributes["WELL"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
 Attributes["DROP"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
+# Attributes["MAGNITUDE"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
+Attributes["MAGNITUDE"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
 
 Functions["SQUARE"].register_immediate((Type.INT,), Type.INT, lambda x: x*x)
 Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
@@ -303,6 +328,11 @@ BuiltIns = {
     "square": Functions["SQUARE"],
     }
 
+DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
+    Time.dim(): (Type.TIME, Type.FLOAT),
+    Volume.dim(): (Type.VOLUME, Type.FLOAT),
+    Ticks.dim(): (Type.TICKS, Type.INT),
+    }
 
 rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.DROP: Drop,
@@ -476,7 +506,11 @@ class DMFCompiler(DMFVisitor):
     
     default_creators = defaultdict[Type,Callable[[Environment],Any]](lambda: (lambda _: None),
                                                           {Type.INT: lambda _: 0,
-                                                           Type.PAD: lambda env: env.board.pad_at(0,0) 
+                                                           Type.FLOAT: lambda _: 0.0,
+                                                           Type.PAD: lambda env: env.board.pad_at(0,0),
+                                                           Type.TIME: lambda _: Time.ZERO(),
+                                                           Type.VOLUME: lambda _: Volume.ZERO(),
+                                                           Type.TICKS: lambda _: Ticks.ZERO(),
                                                           })
     
     def __init__(self, *,
@@ -620,10 +654,10 @@ class DMFCompiler(DMFVisitor):
                      arg_execs: Sequence[Executable],
                      sig: Signature) -> Executable:
         if isinstance(fn, LazyEval):
-            def run_bi(env: Environment) -> Delayed[Any]:
+            def run(env: Environment) -> Delayed[Any]:
                 return fn(env, arg_execs)
         else:
-            def run_bi(env: Environment) -> Delayed[Any]:
+            def run(env: Environment) -> Delayed[Any]:
                 args: List[Any] = []
                 def make_lambda(ae: Executable, pt: Type) -> Callable[[Any], Delayed]:
                     return lambda _: ae.evaluate(env,pt).transformed(lambda arg: args.append(arg))
@@ -636,11 +670,15 @@ class DMFCompiler(DMFVisitor):
     
                 future = future.chain(lambda _: fn(*args))
                 return future            
-        return Executable(sig.return_type, run_bi, arg_execs)
+        return Executable(sig.return_type, run, arg_execs)
     
-    def use_function(self, func: Func,
+    def use_function(self, func: Union[Func, str],
                      ctx: ParserRuleContext,
                      arg_ctxts: Sequence[ParserRuleContext]) -> Executable:
+        if isinstance(func, str):
+            if func not in Functions:
+                raise KeyError(f"Compiler has no implementation for function '{func}'")
+            func = Functions[func]
         arg_execs = [self.visit(arg) for arg in arg_ctxts]
         arg_types = [ae.return_type for ae in arg_execs]
         desc = func[arg_types]
@@ -648,13 +686,17 @@ class DMFCompiler(DMFVisitor):
             rt = func.error_type(arg_types)
             # Don't bother to report an error if an arg already did and we don't know
             # what type it would have returned.
+            real_func = func
             for ae in arg_execs:
                 if ae.return_type is Type.NONE and ae.contains_error:
                     return self.error_val(rt)
-            return self.error(ctx, rt, lambda txt: func.type_error(arg_types, txt))
+            return self.error(ctx, rt, lambda txt: real_func.type_error(arg_types, txt))
         sig, fn = desc
         return self.use_callable(fn, arg_execs, sig)
-
+    
+    def unit_exec(self, unit: Unit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
+        func = UnitFuncs[unit]
+        return self.use_function(func, ctx, (size_ctx,))
         
     def visit(self, tree) -> Executable:
         return cast(Executable, DMFVisitor.visit(self, tree))
@@ -851,18 +893,18 @@ class DMFCompiler(DMFVisitor):
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
 
-    neg_fn = Functions["NEGATE"]
-    neg_fn.prefix_op("-")
-    neg_fn.register_all_immediate([((Type.INT,), Type.INT),
-                                   ], lambda x: -x)
 
     def visitNeg_expr(self, ctx:DMFParser.Neg_exprContext) -> Executable:
-        return self.use_function(self.neg_fn, ctx, (ctx.rhs,))
+        return self.use_function("NEGATE", ctx, (ctx.rhs,))
 
 
     def visitInt_expr(self, ctx:DMFParser.Int_exprContext):
         val: int = int(ctx.INT().getText())
         return Executable(Type.INT, lambda _: Delayed.complete(val))
+
+    def visitFloat_expr(self, ctx:DMFParser.Float_exprContext):
+        val: float = float(ctx.FLOAT().getText())
+        return Executable(Type.FLOAT, lambda _: Delayed.complete(val))
 
 
     def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
@@ -875,19 +917,9 @@ class DMFCompiler(DMFVisitor):
             return Delayed.complete(env[name])
         return Executable(var_type, run)
     
-    # Functions["INDEX"] = Func("INDEX",
-    #                           error_msg_factory = (lambda args, txt:
-    #                                                (None if len(args) != 2 else
-    #                                                 f"Cannot compute {args[0]}[{args[1]}]: {txt}")))
-    index_fn = Functions["INDEX"]
-    index_fn.format_type_expr_using(2, lambda x,y: f"{x}[{y}]")
-    index_fn.register_all_immediate([((Type.WELL, Type.INT), Type.WELL_PAD),
-                                     ], lambda w,n: WellPadValue(w.group.shared_pads[cast(int, n)], w))
     
     def visitIndex_expr(self, ctx:DMFParser.Index_exprContext) -> Executable:
-        return self.use_function(self.index_fn, ctx, (ctx.who, ctx.which))
-    
-
+        return self.use_function("INDEX", ctx, (ctx.who, ctx.which))
 
     def visitMacro_expr(self, ctx:DMFParser.Macro_exprContext) -> Executable:
         return self.visit(ctx.macro_def())
@@ -916,39 +948,11 @@ class DMFCompiler(DMFVisitor):
         return Executable(Type.BOOL, lambda _: Delayed.complete(val))
     
 
-    add_fn = Functions["ADD"]
-    add_fn.infix_op("+")
-    add_fn.register_all_immediate([((Type.INT,Type.INT), Type.INT),
-                                   ((Type.TIME,Type.TIME), Type.TIME),
-                                   ((Type.TICKS,Type.TICKS), Type.TICKS),
-                                   ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
-                                   ], lambda x,y: x+y)
-    
-    
-    sub_fn = Functions["SUBTRACT"]
-    sub_fn.infix_op("-")
-    sub_fn.register_all_immediate([((Type.INT,Type.INT), Type.INT),
-                                   ((Type.TIME,Type.TIME), Type.TIME),
-                                   ((Type.TICKS,Type.TICKS), Type.TICKS),
-                                   ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
-                                   ], lambda x,y: x-y)
-
-        
-    @staticmethod
-    def add_delta(p: Pad, dn: Dir, n: int) -> Pad:
-        board = p.board
-        loc = board.orientation.neighbor(dn, p.location, steps=n)
-        return board.pads[loc]
-     
-    add_fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD,
-                              lambda p,d: DMFCompiler.add_delta(p, d.direction, d.dist))
-    sub_fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD,
-                              lambda p,d: DMFCompiler.add_delta(p, d.direction, -d.dist))
         
 
     def visitAddsub_expr(self, ctx:DMFParser.Addsub_exprContext) -> Executable:
         addp = ctx.ADD() is not None
-        func = self.add_fn if addp else self.sub_fn
+        func = "ADD" if addp else "SUBTRACT"
         return self.use_function(func, ctx, (ctx.lhs, ctx.rhs))
             
 
@@ -956,7 +960,7 @@ class DMFCompiler(DMFVisitor):
         lhs = self.visit(ctx.lhs)
         rhs = self.visit(ctx.rhs)
         rel: Rel = ctx.rel().which
-        ok_types = (Type.INT, Type.TIME, Type.TICKS)
+        ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME)
         if rel is not Rel.EQ and rel is not Rel.NE:
             if e:=self.type_check(ok_types, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
                 return e
@@ -997,45 +1001,16 @@ class DMFCompiler(DMFVisitor):
             return f.chain(extractor).transformed(lambda v: v is not None)
         return Executable(Type.BOOL, run, (obj,))
     
-    not_fn = Functions["NOT"]
-    not_fn.prefix_op("not")
-    not_fn.register_all_immediate([((Type.BOOL,), Type.BOOL),
-                                   ], lambda x: not x)
     
 
     def visitNot_expr(self, ctx:DMFParser.Not_exprContext) -> Executable:
-        return self.use_function(self.not_fn, ctx, (ctx.expr(),))
-    
-    and_fn = Functions["AND"]
-    and_fn.infix_op("and")
-    
-    @staticmethod
-    def _sc_and(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
-        lhs, rhs = arg_execs
-        return (lhs.evaluate(env, Type.BOOL)
-                .chain(lambda x: (Delayed.complete(x) if not x
-                                  else rhs.evaluate(env, Type.BOOL)))
-                )
-    and_fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(_sc_and.__func__)) # type: ignore
-
+        return self.use_function("NOT", ctx, (ctx.expr(),))
     
     def visitAnd_expr(self, ctx:DMFParser.And_exprContext) -> Executable:
-        return self.use_function(self.and_fn, ctx, (ctx.lhs, ctx.rhs))
+        return self.use_function("AND", ctx, (ctx.lhs, ctx.rhs))
     
-    or_fn = Functions["OR"]
-    or_fn.infix_op("or")
-    
-    @staticmethod
-    def _sc_or(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
-        lhs, rhs = arg_execs
-        return (lhs.evaluate(env, Type.BOOL)
-                .chain(lambda x: (Delayed.complete(x) if x
-                                  else rhs.evaluate(env, Type.BOOL)))
-                )
-    or_fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(_sc_or.__func__)) # type: ignore
-
     def visitOr_expr(self, ctx:DMFParser.Or_exprContext) -> Executable:
-        return self.use_function(self.or_fn, ctx, (ctx.lhs, ctx.rhs))
+        return self.use_function("OR", ctx, (ctx.lhs, ctx.rhs))
     
     def visitCond_expr(self, ctx:DMFParser.Cond_exprContext) -> Executable:
         first = self.visit(ctx.first)
@@ -1207,25 +1182,6 @@ class DMFCompiler(DMFVisitor):
 
 
 
-    # def visitGate_expr(self, ctx:DMFParser.Gate_exprContext) -> Executable:
-    #     well = self.visit(ctx.well)
-    #     if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.WELL_PAD):
-    #         return e
-    #     def run(env: Environment) -> Delayed[WellPad]:
-    #         f: Delayed[Well] = well.evaluate(env, Type.WELL)
-    #         return f.transformed(lambda w: w.gate)
-    #     return Executable(Type.WELL_PAD, run, (well,))
-    #
-    # def visitExit_pad_expr(self, ctx:DMFParser.Exit_pad_exprContext) -> Executable:
-    #     well = self.visit(ctx.well)
-    #     if e:=self.type_check(Type.WELL, well, ctx.well, return_type=Type.PAD):
-    #         return e
-    #     def run(env: Environment) -> Delayed[Pad]:
-    #         f: Delayed[Well] = well.evaluate(env, Type.WELL)
-    #         return f.transformed(lambda w: w.exit_pad)
-    #     return Executable(Type.PAD, run, (well,))
-
-
     def visitWell_expr(self, ctx:DMFParser.Well_exprContext) -> Executable:
         which = self.visit(ctx.which)
         if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
@@ -1310,38 +1266,11 @@ class DMFCompiler(DMFVisitor):
             return Delayed.complete(RemoveDropValue())
         return Executable(Type.MOTION, run, ())
     
-    mul_fn = Functions["MULTIPLY"]
-    mul_fn.infix_op("*")
-    # Functions["DIVIDE"] =  Func("DIVIDE", 
-    #                             error_msg_factory = (lambda args, txt:
-    #                                                  (None if len(args) != 2 else 
-    #                                                   f"Cannot divide {args[0]} by {args[1]}: {txt}")))
     
-    mul_fn.register_all_immediate([((Type.INT,Type.INT), Type.INT),
-                                   ((Type.INT,Type.TIME), Type.TIME),
-                                   ((Type.TIME,Type.INT), Type.TIME),
-                                   ((Type.INT,Type.TICKS), Type.TICKS),
-                                   ((Type.TICKS,Type.INT), Type.TICKS),
-                                   ((Type.INT,Type.VOLUME), Type.VOLUME),
-                                   ((Type.VOLUME,Type.INT), Type.VOLUME),
-                                   ], lambda x,y: x*y)
-
-    div_fn = Functions["DIVIDE"]
-    div_fn.infix_op("/")
-    
-    div_fn.register_all_immediate([((Type.TIME,Type.INT), Type.TIME),
-                                   ((Type.TICKS,Type.INT), Type.TICKS),
-                                   ((Type.VOLUME,Type.INT), Type.VOLUME),
-                                   ], lambda x,y: x/y)
-    div_fn.register_immediate((Type.INT,Type.INT), Type.INT, lambda x,y: int(x/y))
-
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
         mulp = ctx.MUL() is not None
-        func = self.mul_fn if mulp else self.div_fn
+        func = "MULTIPLY" if mulp else "DIVIDE"
         return self.use_function(func, ctx, (ctx.lhs, ctx.rhs))
-        
-                
-
 
     def visitDirection(self, ctx:DMFParser.DirectionContext):
         return DMFVisitor.visitDirection(self, ctx)
@@ -1401,36 +1330,13 @@ class DMFCompiler(DMFVisitor):
         def run(env: Environment) -> Delayed[MacroValue]: # @UnusedVariable
             return Delayed.complete(MacroValue(macro_type, env, param_names, body))
         return Executable(macro_type, run, (body,))
-        
 
-    def visitTime_expr(self, ctx:DMFParser.Time_exprContext) -> Executable:
-        duration = self.visit(ctx.duration)
-        unit_ctx: DMFParser.Time_unitContext = ctx.time_unit()
-        unit = cast(Unit[Time], unit_ctx.unit)
-        if e:=self.type_check(Type.INT, duration, ctx.duration, return_type = Type.TIME):
-            return e
-        def run(env: Environment) -> Delayed[Time]:
-            return duration.evaluate(env, Type.INT).transformed(lambda n: cast(int,n)*unit)
-        return Executable(Type.TIME, run, (duration,))
+    def visitUnit_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
+        return self.unit_exec(ctx.dim_unit().unit, ctx, ctx.amount)
     
-    def visitTicks_expr(self, ctx:DMFParser.Ticks_exprContext) -> Executable:
-        duration = self.visit(ctx.duration)
-        if e:=self.type_check(Type.INT, duration, ctx.duration, return_type = Type.TICKS):
-            return e
-        def run(env: Environment) -> Delayed[Ticks]:
-            return duration.evaluate(env, Type.INT).transformed(lambda n: cast(int,n)*ticks)
-        return Executable(Type.TICKS, run, (duration,))
-    
-    def visitVol_expr(self, ctx:DMFParser.Vol_exprContext) -> Executable:
-        amount = self.visit(ctx.amount)
-        unit_ctx: DMFParser.Vol_unitContext = ctx.vol_unit()
-        unit = cast(Unit[Volume], unit_ctx.unit)
-        if e:=self.type_check(Type.INT, amount, ctx.amount, return_type = Type.VOLUME):
-            return e
-        def run(env: Environment) -> Delayed[Volume]:
-            return amount.evaluate(env, Type.INT).transformed(lambda n: cast(int,n)*unit)
-        return Executable(Type.VOLUME, run, (amount,))
-    
+    def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
+        return self.use_function("DROP_VOL", ctx, (ctx.amount,))
+        
     def visitPause_expr(self, ctx:DMFParser.Pause_exprContext) -> Executable:
         duration = self.visit(ctx.duration)
         if e:=self.type_check(Type.DELAY, duration, ctx.duration,
@@ -1461,4 +1367,109 @@ class DMFCompiler(DMFVisitor):
 
     def visitKwd_names(self, ctx:DMFParser.Kwd_namesContext):
         return DMFVisitor.visitKwd_names(self, ctx)
+    
+    @classmethod
+    def setup_function_table(cls) -> None:
+        fn = Functions["NEGATE"]
+        fn.prefix_op("-")
+        fn.register_all_immediate([((Type.INT,), Type.INT),
+                                   ((Type.FLOAT,), Type.FLOAT)
+                                   ], lambda x: -x)
+        
+        fn = Functions["INDEX"]
+        fn.format_type_expr_using(2, lambda x,y: f"{x}[{y}]")
+        fn.register_all_immediate([((Type.WELL, Type.INT), Type.WELL_PAD),
+                                   ], lambda w,n: WellPadValue(w.group.shared_pads[cast(int, n)], w))
+        
+
+        def add_delta(p: Pad, dn: Dir, n: int) -> Pad:
+            board = p.board
+            loc = board.orientation.neighbor(dn, p.location, steps=n)
+            return board.pads[loc]
+
+        fn = Functions["ADD"]
+        fn.infix_op("+")
+        fn.register_all_immediate([((Type.INT,Type.INT), Type.INT),
+                                   ((Type.FLOAT,Type.FLOAT), Type.FLOAT),
+                                   ((Type.TIME,Type.TIME), Type.TIME),
+                                   ((Type.TICKS,Type.TICKS), Type.TICKS),
+                                   ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
+                                   ], lambda x,y: x+y)
+        fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, d.dist))
+        
+        
+        fn = Functions["SUBTRACT"]
+        fn.infix_op("-")
+        fn.register_all_immediate([((Type.INT,Type.INT), Type.INT),
+                                   ((Type.FLOAT,Type.FLOAT), Type.FLOAT),
+                                   ((Type.TIME,Type.TIME), Type.TIME),
+                                   ((Type.TICKS,Type.TICKS), Type.TICKS),
+                                   ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
+                                   ], lambda x,y: x-y)
+        
+         
+        fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, -d.dist))
+        
+        fn = Functions["NOT"]
+        fn.prefix_op("not")
+        fn.register_all_immediate([((Type.BOOL,), Type.BOOL),
+                                   ], lambda x: not x)
+
+    
+        fn = Functions["AND"]
+        fn.infix_op("and")
+        
+        def sc_and(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
+            lhs, rhs = arg_execs
+            return (lhs.evaluate(env, Type.BOOL)
+                    .chain(lambda x: (Delayed.complete(x) if not x
+                                      else rhs.evaluate(env, Type.BOOL)))
+                    )
+        fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(sc_and))
+
+        fn = Functions["OR"]
+        fn.infix_op("or")
+        
+        def sc_or(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
+            lhs, rhs = arg_execs
+            return (lhs.evaluate(env, Type.BOOL)
+                    .chain(lambda x: (Delayed.complete(x) if x
+                                      else rhs.evaluate(env, Type.BOOL)))
+                    )
+        fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(sc_or))
+
+        fn = Functions["MULTIPLY"]
+        fn.infix_op("*")
+        fn.register_all_immediate([((Type.INT,Type.INT), Type.INT),
+                                   ((Type.FLOAT,Type.FLOAT), Type.FLOAT),
+                                   ((Type.FLOAT,Type.TIME), Type.TIME),
+                                   ((Type.TIME,Type.FLOAT), Type.TIME),
+                                   ((Type.FLOAT,Type.TICKS), Type.TICKS),
+                                   ((Type.TICKS,Type.FLOAT), Type.TICKS),
+                                   ((Type.FLOAT,Type.VOLUME), Type.VOLUME),
+                                   ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
+                                   ], lambda x,y: x*y)
+
+        fn = Functions["DIVIDE"]
+        fn.infix_op("/")
+        
+        fn.register_all_immediate([((Type.FLOAT,Type.FLOAT), Type.FLOAT),
+                                   ((Type.TIME,Type.FLOAT), Type.TIME),
+                                   ((Type.TICKS,Type.FLOAT), Type.TICKS),
+                                   ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
+                                   ], lambda x,y: x/y)
+
+        # fn = Functions["TICKS"]
+        # fn.postfix_op("ticks")
+        # fn.register_immediate((Type.INT,), Type.TICKS, lambda n: n*ticks)
+        
+        fn = Functions["DROP_VOL"]
+        fn.postfix_op("drops")
+        fn.register((Type.FLOAT,), Type.VOLUME,
+                    LazyEval(lambda env,arg_execs:
+                             arg_execs[0].evaluate(env, Type.FLOAT)
+                             .transformed(lambda n: n*env.board.drop_unit))) 
+        
+        
+DMFCompiler.setup_function_table()
 

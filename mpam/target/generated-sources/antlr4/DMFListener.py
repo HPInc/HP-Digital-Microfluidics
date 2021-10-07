@@ -5,7 +5,7 @@ if __name__ is not None and "." in __name__:
 else:
     from DMFParser import DMFParser
 
-from mpam.types import Dir, OnOff, Turn
+from mpam.types import Dir, OnOff, Turn, ticks
 from langsup.type_supp import Type, Rel
 from quantities import SI
 
@@ -169,6 +169,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#unit_expr.
+    def enterUnit_expr(self, ctx:DMFParser.Unit_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#unit_expr.
+    def exitUnit_expr(self, ctx:DMFParser.Unit_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#index_expr.
     def enterIndex_expr(self, ctx:DMFParser.Index_exprContext):
         pass
@@ -187,30 +196,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#time_expr.
-    def enterTime_expr(self, ctx:DMFParser.Time_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#time_expr.
-    def exitTime_expr(self, ctx:DMFParser.Time_exprContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#not_expr.
     def enterNot_expr(self, ctx:DMFParser.Not_exprContext):
         pass
 
     # Exit a parse tree produced by DMFParser#not_expr.
     def exitNot_expr(self, ctx:DMFParser.Not_exprContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#ticks_expr.
-    def enterTicks_expr(self, ctx:DMFParser.Ticks_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#ticks_expr.
-    def exitTicks_expr(self, ctx:DMFParser.Ticks_exprContext):
         pass
 
 
@@ -313,6 +304,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#float_expr.
+    def enterFloat_expr(self, ctx:DMFParser.Float_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#float_expr.
+    def exitFloat_expr(self, ctx:DMFParser.Float_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#n_rc_expr.
     def enterN_rc_expr(self, ctx:DMFParser.N_rc_exprContext):
         pass
@@ -400,15 +400,6 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#coord_expr.
     def exitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#vol_expr.
-    def enterVol_expr(self, ctx:DMFParser.Vol_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#vol_expr.
-    def exitVol_expr(self, ctx:DMFParser.Vol_exprContext):
         pass
 
 
@@ -529,21 +520,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#time_unit.
-    def enterTime_unit(self, ctx:DMFParser.Time_unitContext):
+    # Enter a parse tree produced by DMFParser#dim_unit.
+    def enterDim_unit(self, ctx:DMFParser.Dim_unitContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#time_unit.
-    def exitTime_unit(self, ctx:DMFParser.Time_unitContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#vol_unit.
-    def enterVol_unit(self, ctx:DMFParser.Vol_unitContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#vol_unit.
-    def exitVol_unit(self, ctx:DMFParser.Vol_unitContext):
+    # Exit a parse tree produced by DMFParser#dim_unit.
+    def exitDim_unit(self, ctx:DMFParser.Dim_unitContext):
         pass
 
 

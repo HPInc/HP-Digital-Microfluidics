@@ -5,7 +5,7 @@ if __name__ is not None and "." in __name__:
 else:
     from DMFParser import DMFParser
 
-from mpam.types import Dir, OnOff, Turn
+from mpam.types import Dir, OnOff, Turn, ticks
 from langsup.type_supp import Type, Rel
 from quantities import SI
 
@@ -102,6 +102,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#unit_expr.
+    def visitUnit_expr(self, ctx:DMFParser.Unit_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#index_expr.
     def visitIndex_expr(self, ctx:DMFParser.Index_exprContext):
         return self.visitChildren(ctx)
@@ -112,18 +117,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#time_expr.
-    def visitTime_expr(self, ctx:DMFParser.Time_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#not_expr.
     def visitNot_expr(self, ctx:DMFParser.Not_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#ticks_expr.
-    def visitTicks_expr(self, ctx:DMFParser.Ticks_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -182,6 +177,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#float_expr.
+    def visitFloat_expr(self, ctx:DMFParser.Float_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#n_rc_expr.
     def visitN_rc_expr(self, ctx:DMFParser.N_rc_exprContext):
         return self.visitChildren(ctx)
@@ -229,11 +229,6 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#coord_expr.
     def visitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#vol_expr.
-    def visitVol_expr(self, ctx:DMFParser.Vol_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -302,13 +297,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#time_unit.
-    def visitTime_unit(self, ctx:DMFParser.Time_unitContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#vol_unit.
-    def visitVol_unit(self, ctx:DMFParser.Vol_unitContext):
+    # Visit a parse tree produced by DMFParser#dim_unit.
+    def visitDim_unit(self, ctx:DMFParser.Dim_unitContext):
         return self.visitChildren(ctx)
 
 

@@ -5,7 +5,6 @@ from enum import Enum, auto
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
     Any, Mapping, Union
 
-from erk.stringutils import conj_str
 from mpam.types import Delayed
 from _collections import defaultdict
 
@@ -317,17 +316,18 @@ class Func:
     def known_sigs(self) -> Sequence[Signature]:
         return tuple(p[0] for p in self.overloads.values())
 
-    def register(self, param_types: Sequence[Type], return_type: Type, definition: Definition) -> None:
+    def register(self, param_types: Sequence[Type], return_type: Type, definition: Definition) -> Func:
         sig = Signature.of(param_types, return_type)
         self.overloads[sig.param_types] = (sig,definition)
+        return self
         
-    def register_immediate(self, param_types: Sequence[Type], return_type: Type, definition: Callable[..., Any]) -> None:
+    def register_immediate(self, param_types: Sequence[Type], return_type: Type, definition: Callable[..., Any]) -> Func:
         def fn(*args) -> Delayed:
             return Delayed.complete(definition(*args))
-        self.register(param_types, return_type, fn)
+        return self.register(param_types, return_type, fn)
         
     def register_all(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
-                     definition: Definition):
+                     definition: Definition) -> Func:
         for sig in sigs:
             if isinstance(sig, Signature):
                 param_types: Sequence[Type] = sig.param_types
@@ -335,9 +335,10 @@ class Func:
             else:
                 param_types, return_type = sig
             self.register(param_types, return_type, definition)
+        return self
         
     def register_all_immediate(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
-                               definition: Callable[..., Any]):
+                               definition: Callable[..., Any]) -> Func:
         for sig in sigs:
             if isinstance(sig, Signature):
                 param_types: Sequence[Type] = sig.param_types
@@ -345,6 +346,7 @@ class Func:
             else:
                 param_types, return_type = sig
             self.register_immediate(param_types, return_type, definition)
+        return self
         
     def __getitem__(self, arg_types: Sequence[Type]) -> Optional[tuple[Signature, Func.Definition]]:
         d = self.overloads
@@ -355,28 +357,20 @@ class Func:
         return best
     
     def format_type_expr_using(self, arity: Optional[int], formatter: Func.TypeExprFormatter, *,
-                               override: bool = False) -> None:
+                               override: bool = False) -> Func:
         if override:
             self.type_expr_formatters[arity] = [formatter]
         else:
             self.type_expr_formatters[arity].append(formatter)
+        return self
             
-    def infix_op(self, op: str, *,
-                  override: bool = False) -> None:
-        self.format_type_expr_using(2,
-                                    lambda x,y: f"{x} {op} {y}",
-                                    override=override)
-    def prefix_op(self, op: str, *,
-                  override: bool = False) -> None:
-        self.format_type_expr_using(1,
-                                    lambda x: f"{op} {x}",
-                                    override=override)
-            
-    def postfix_op(self, op: str, *,
-                   override: bool = False) -> None:
-        self.format_type_expr_using(1,
-                                    lambda x: f"{x} {op}",
-                                    override=override)
+    def infix_op(self, op: str, *, override: bool = False) -> Func:
+        return self.format_type_expr_using(2, lambda x,y: f"{x} {op} {y}", override=override)
+    def prefix_op(self, op: str, *, override: bool = False) -> Func:
+        return self.format_type_expr_using(1, lambda x: f"{op} {x}", override=override)
+    def postfix_op(self, op: str, *, override: bool = False) -> Func:
+        return self.format_type_expr_using(1, lambda x: f"{x} {op}", override=override)
+
     def format_type_expr(self, types: Sequence[Type]) -> str:
         arity = len(types)
         names = [t.name for t in types]
@@ -447,8 +441,12 @@ class Attr:
     def returns(self) -> Sequence[Type]:
         return [sig.return_type for sig in self.func.known_sigs if len(sig.param_types) == 1]
     
-    def register(self, otype: Type, rtype: Type, extractor: Callable[[Any], Any]) -> None:
-        self.func.register_immediate((otype,), rtype, extractor)
+    def register(self, otype: Union[Type,Sequence[Type]], rtype: Type, extractor: Callable[[Any], Any]) -> None:
+        if isinstance(otype, Type):
+            self.func.register_immediate((otype,), rtype, extractor)
+        else:
+            for ot in otype:
+                self.func.register_immediate((ot,), rtype, extractor)
         
     def __getitem__(self, otype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
         return self.func[(otype,)]
