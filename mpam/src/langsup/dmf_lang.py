@@ -217,6 +217,10 @@ class ToRowColValue(MotionValue):
 class TwiddlePadValue(CallableValue):
     op: Final[BinaryComponent.ModifyState]
     
+    ON: ClassVar[TwiddlePadValue]
+    OFF: ClassVar[TwiddlePadValue]
+    TOGGLE: ClassVar[TwiddlePadValue]
+    
     def __init__(self, op: BinaryComponent.ModifyState) -> None:
         self.op = op
         
@@ -225,6 +229,10 @@ class TwiddlePadValue(CallableValue):
         bc = args[0]
         assert isinstance(bc, BinaryComponent)
         return self.op.schedule_for(bc)
+    
+TwiddlePadValue.ON = TwiddlePadValue(BinaryComponent.TurnOn)
+TwiddlePadValue.OFF= TwiddlePadValue(BinaryComponent.TurnOff)
+TwiddlePadValue.TOGGLE = TwiddlePadValue(BinaryComponent.Toggle)
     
 class PauseValue(CallableValue):
     duration: Final[DelayType]
@@ -662,6 +670,8 @@ class DMFCompiler(DMFVisitor):
                 def make_lambda(ae: Executable, pt: Type) -> Callable[[Any], Delayed]:
                     return lambda _: ae.evaluate(env,pt).transformed(lambda arg: args.append(arg))
                 lambdas = [make_lambda(ae,pt) for ae,pt in zip(arg_execs, sig.param_types)]
+                if len(lambdas) == 0:
+                    return fn()
                 first = lambdas[0](None)
                 future = (Delayed.complete(None) if len(arg_execs) == 0
                           else reduce(lambda fut,fn: fut.chain(fn),
@@ -924,12 +934,9 @@ class DMFCompiler(DMFVisitor):
     def visitMacro_expr(self, ctx:DMFParser.Macro_exprContext) -> Executable:
         return self.visit(ctx.macro_def())
 
-    def visitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext) -> Executable:
-        op = (BinaryComponent.Toggle if ctx.TOGGLE() is not None
-              else BinaryComponent.TurnOn if ctx.ON() is not None
-              else BinaryComponent.TurnOff)
-        val = TwiddlePadValue(op)
-        return Executable(Type.TWIDDLE_OP, lambda _ : Delayed.complete(val))
+    def visitAction_expr(self, ctx:DMFParser.Action_exprContext) -> Executable:
+        which: str = ctx.no_arg_action().which
+        return self.use_function(which, ctx, ())
 
     def visitName_expr(self, ctx:DMFParser.Name_exprContext) -> Executable:
         name = self.text_of(ctx.name())
@@ -1261,12 +1268,6 @@ class DMFCompiler(DMFVisitor):
                 return which.evaluate(env, Type.PAD).transformed(lambda n: ToRowColValue(n, verticalp))
         return Executable(Type.MOTION, run, (which,))
     
-    def visitRemove_expr(self, ctx:DMFParser.Remove_exprContext) -> Executable: # @UnusedVariable
-        def run(env: Environment) -> Delayed[MotionValue]: # @UnusedVariable
-            return Delayed.complete(RemoveDropValue())
-        return Executable(Type.MOTION, run, ())
-    
-    
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
         mulp = ctx.MUL() is not None
         func = "MULTIPLY" if mulp else "DIVIDE"
@@ -1469,6 +1470,16 @@ class DMFCompiler(DMFVisitor):
                     LazyEval(lambda env,arg_execs:
                              arg_execs[0].evaluate(env, Type.FLOAT)
                              .transformed(lambda n: n*env.board.drop_unit))) 
+
+        fn = Functions["TURN-ON"]
+        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddlePadValue.ON)
+        fn = Functions["TURN-OFF"]
+        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddlePadValue.OFF)
+        fn = Functions["TOGGLE"]
+        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddlePadValue.TOGGLE)
+        
+        fn = Functions["REMOVE-FROM-BOARD"]
+        fn.register_immediate((), Type.MOTION, lambda: RemoveDropValue())
         
         
 DMFCompiler.setup_function_table()

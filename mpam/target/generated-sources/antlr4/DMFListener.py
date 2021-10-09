@@ -160,6 +160,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#action_expr.
+    def enterAction_expr(self, ctx:DMFParser.Action_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#action_expr.
+    def exitAction_expr(self, ctx:DMFParser.Action_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#type_name_expr.
     def enterType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
         pass
@@ -349,15 +358,6 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#remove_expr.
-    def enterRemove_expr(self, ctx:DMFParser.Remove_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#remove_expr.
-    def exitRemove_expr(self, ctx:DMFParser.Remove_exprContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#name_expr.
     def enterName_expr(self, ctx:DMFParser.Name_exprContext):
         pass
@@ -400,15 +400,6 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#coord_expr.
     def exitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#twiddle_expr.
-    def enterTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#twiddle_expr.
-    def exitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
         pass
 
 
@@ -508,6 +499,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#param.
     def exitParam(self, ctx:DMFParser.ParamContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#no_arg_action.
+    def enterNo_arg_action(self, ctx:DMFParser.No_arg_actionContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#no_arg_action.
+    def exitNo_arg_action(self, ctx:DMFParser.No_arg_actionContext):
         pass
 
 

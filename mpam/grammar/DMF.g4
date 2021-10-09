@@ -87,9 +87,10 @@ expr
   | who=expr INJECT what=expr        # injection_expr
   | first=expr 'if' cond=expr 'else' second=expr  # cond_expr
   | macro_def                        # macro_expr
-  | 'turn'? (ON | OFF)               # twiddle_expr
-  | 'toggle' 'state'?                # twiddle_expr
-  | 'remove' ('from' 'the'? 'board')? # remove_expr
+  | no_arg_action                    # action_expr
+//  | 'turn'? (ON | OFF)               # twiddle_expr
+//  | 'toggle' 'state'?                # twiddle_expr
+//  | 'remove' ('from' 'the'? 'board')? # remove_expr
   | 'the'? param_type                # type_name_expr
   | param_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
@@ -137,6 +138,13 @@ macro_header
 param returns[Type type, str pname, int n]
   : param_type {$ctx.type=$param_type.type} ( INT {$ctx.n=$INT.int} )?
   | name ':' param_type {$ctx.type=$param_type.type} {$ctx.pname=$name.text}
+  ;
+  
+no_arg_action returns[str which]
+  : 'turn'? ON {$ctx.which="TURN-ON"}
+  | 'turn'? OFF {$ctx.which="TURN-OFF"}
+  | 'toggle' 'state'? {$ctx.which="TOGGLE"}
+  | 'remove' ('from' 'the'? 'board')? {$ctx.which="REMOVE-FROM-BOARD"}
   ;
   
 param_type returns[Type type]

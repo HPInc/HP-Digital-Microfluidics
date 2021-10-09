@@ -97,6 +97,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#action_expr.
+    def visitAction_expr(self, ctx:DMFParser.Action_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#type_name_expr.
     def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
         return self.visitChildren(ctx)
@@ -202,11 +207,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#remove_expr.
-    def visitRemove_expr(self, ctx:DMFParser.Remove_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#name_expr.
     def visitName_expr(self, ctx:DMFParser.Name_exprContext):
         return self.visitChildren(ctx)
@@ -229,11 +229,6 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#coord_expr.
     def visitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#twiddle_expr.
-    def visitTwiddle_expr(self, ctx:DMFParser.Twiddle_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -289,6 +284,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#param.
     def visitParam(self, ctx:DMFParser.ParamContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#no_arg_action.
+    def visitNo_arg_action(self, ctx:DMFParser.No_arg_actionContext):
         return self.visitChildren(ctx)
 
 
