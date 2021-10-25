@@ -1154,6 +1154,8 @@ class Mixture(Reagent):
                         name: Optional[str] = None) -> Reagent:
         if r1 is r2:
             return r1
+        if r1 is waste_reagent or r2 is waste_reagent:
+            return waste_reagent
         known = cls._known_mixtures
         with cls._class_lock:
             r = known.get((ratio, r1, r2), None)

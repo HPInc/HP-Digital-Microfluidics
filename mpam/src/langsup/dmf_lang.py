@@ -14,18 +14,19 @@ from DMFLexer import DMFLexer
 from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
-    Rel, MaybeType, Func
+    Rel, MaybeType, Func, CompositionType
 from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    Ticks, DelayType, Turn
+    Ticks, DelayType, Turn, Reagent, Mixture
 from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
-
+from erk.basic import LazyPattern
+from re import Match
 
 
 Name_ = TypeVar("Name_", bound=Hashable)
@@ -36,6 +37,8 @@ class EvaluationError(RuntimeError): ...
 class CompilationError(RuntimeError): ...
 
 class MaybeNotSatisfiedError(EvaluationError): ...
+
+class AlreadyDropError(EvaluationError): ...
         
 class UnknownUnitDimensionError(CompilationError):
     unit: Final[Unit]
@@ -149,13 +152,48 @@ class Environment(Scope[str, Any]):
 TypeMap = Scope[str, Type]
 
 class CallableValue(ABC):
+    sig: Final[Signature]
+    
+    def __init__(self, sig: Signature) -> None:
+        self.sig = sig
     
     @abstractmethod
     def apply(self, args: Sequence[Any]) -> Delayed[Any]: ... # @UnusedVariable
     
+    
+class ComposedCallable(CallableValue):
+    first: Final[CallableValue]
+    second: Final[CallableValue]
+    pass_first_arg: Final[bool]
+    
+    def __init__(self, 
+                 ct: CompositionType,
+                 first: CallableValue, 
+                 second: CallableValue, 
+                 pass_first_arg: bool) -> None:
+        super().__init__(ct.sig)
+        self.first=first
+        self.second=second
+        self.pass_first_arg = pass_first_arg
+        
+    
+    def apply(self, args:Sequence[Any])->Delayed[Any]:
+        return (self.first.apply(args)
+                    .chain(lambda v: self.second.apply((args[0] if self.pass_first_arg else v,))))
+    
+    
+        
+    def __str__(self) -> str:
+        return f"({self.first} : {self.second})"
+    
 class MotionValue(CallableValue):
     @abstractmethod
     def move(self, drop: Drop) -> Delayed[Drop]: ... # @UnusedVariable
+    
+    _sig: ClassVar[Signature] = Signature.of((Type.DROP,), Type.DROP)
+    
+    def __init__(self) -> None:
+        super().__init__(self._sig)
     
     def apply(self, args:Sequence[Any])->Delayed[Drop]:
         assert len(args) == 1
@@ -178,6 +216,22 @@ class DeltaValue(MotionValue):
     def move(self, drop:Drop)->Delayed[Drop]:
         path = Path.walk(self.direction, steps = self.dist)
         return path.schedule_for(drop)
+    
+class UnsafeWalkValue(MotionValue):
+    delta: Final[DeltaValue]
+    
+    def __init__(self, delta: DeltaValue) -> None:
+        self.delta = delta
+    
+    def __str__(self) -> str:
+        return f"UnsafeWalk({self.delta.dist}, {self.delta.direction})"
+    
+    def move(self, drop:Drop)->Delayed[Drop]:
+        delta = self.delta
+        path = Path.walk(delta.direction, steps = delta.dist, allow_unsafe = True)
+        return path.schedule_for(drop)
+    
+    
     
 class RemoveDropValue(MotionValue):
     def move(self, drop:Drop)->Delayed[Drop]:
@@ -221,7 +275,10 @@ class TwiddlePadValue(CallableValue):
     OFF: ClassVar[TwiddlePadValue]
     TOGGLE: ClassVar[TwiddlePadValue]
     
+    _sig: ClassVar[Signature] = Signature.of((Type.BINARY_CPT,), Type.BINARY_STATE)
+    
     def __init__(self, op: BinaryComponent.ModifyState) -> None:
+        super().__init__(self._sig)
         self.op = op
         
     def apply(self, args:Sequence[Any])->Delayed[OnOff]: 
@@ -230,6 +287,7 @@ class TwiddlePadValue(CallableValue):
         assert isinstance(bc, BinaryComponent)
         return self.op.schedule_for(bc)
     
+
 TwiddlePadValue.ON = TwiddlePadValue(BinaryComponent.TurnOn)
 TwiddlePadValue.OFF= TwiddlePadValue(BinaryComponent.TurnOff)
 TwiddlePadValue.TOGGLE = TwiddlePadValue(BinaryComponent.Toggle)
@@ -238,7 +296,10 @@ class PauseValue(CallableValue):
     duration: Final[DelayType]
     board: Final[Board]
     
+    _sig: ClassVar[Signature] = Signature.of((Type.DELAY,), Type.NONE)
+    
     def __init__(self, duration: DelayType, board: Board) -> None:
+        super().__init__(self._sig)
         self.duration = duration
         self.board = board
         
@@ -248,15 +309,16 @@ class PauseValue(CallableValue):
     def apply(self, args: Sequence[Any])->Delayed[None]:
         assert len(args) == 1
         return self.board.delayed(lambda : None, after=self.duration)
+    
+    
 
 class MacroValue(CallableValue):
     param_names: Final[Sequence[str]]
     body: Final[Executable]
-    sig: Final[Signature]
     static_env: Final[Environment]
     
     def __init__(self, mt: MacroType, env: Environment, param_names: Sequence[str], body: Executable) -> None:
-        self.sig = mt.sig
+        super().__init__(mt.sig)
         self.static_env = env
         self.param_names = param_names
         self.body = body
@@ -280,6 +342,17 @@ class WellPadValue(NamedTuple):
             return str(pad)
         else:
             return f"({pad}, {self.well})"
+        
+class ScaledReagent(NamedTuple):
+    mult: float
+    reagent: Reagent
+    
+    def __str__(self) -> str:
+        return f"Scaled[{self.mult}, {self.reagent}]"
+    
+    def mix_with(self, rhs: ScaledReagent) -> Reagent:
+        ratio = self.mult/rhs.mult
+        return Mixture.find_or_compute(self.reagent, rhs.reagent, ratio=ratio)
 
 K_ = TypeVar("K_")
 V_ = TypeVar("V_")
@@ -293,7 +366,7 @@ class ByNameCache(dict[K_,V_]):
         return ret
 
 Functions = ByNameCache[str, Func](lambda name: Func(name))
-Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[name]))
+Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"{name} attribute"]))
 
 def unit_func(unit: Unit) -> Func:
     func = Func(str(unit))
@@ -308,13 +381,45 @@ def unit_func(unit: Unit) -> Func:
 
 UnitFuncs = ByNameCache[Unit, Func](unit_func)
 
+def unit_mag_func(unit: Unit) -> Func:
+    name = f"'s magnitude in {unit}"
+    func = Func(name)
+    dim = unit.dimensionality()
+    try:
+        qtype, ntype = DimensionToType[dim] # @UnusedVariable
+    except KeyError:
+        raise UnknownUnitDimensionError(unit)
+    func.register_immediate((qtype,), Type.FLOAT, lambda d: d.as_number(unit))
+    func.postfix_op(name)
+    return func
+
+UnitMagFuncs = ByNameCache[Unit, Func](unit_mag_func)
+
+def unit_string_func(unit: Unit) -> Func:
+    name = f"as string in {unit}"
+    func = Func(name)
+    dim = unit.dimensionality()
+    try:
+        qtype, ntype = DimensionToType[dim] # @UnusedVariable
+    except KeyError:
+        raise UnknownUnitDimensionError(unit)
+    func.register_immediate((qtype,), Type.STRING, lambda d: f"{d.in_units(unit):g}")
+    func.postfix_op(name)
+    return func
+
+UnitStringFuncs = ByNameCache[Unit, Func](unit_string_func)
+
 Attributes["GATE"].register(Type.WELL, Type.WELL_PAD, 
                             lambda well: WellPadValue(well.gate, well))
 Attributes["EXIT_PAD"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
 Attributes["STATE"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
 Attributes["DISTANCE"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
+Attributes["DIRECTION"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
 Attributes["DURATION"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
-Attributes["PAD"].register(Type.DROP, Type.PAD, lambda drop: drop.pad)
+def _set_pad(d: Drop, p: Pad):
+    d.pad = p
+    d.status = DropStatus.ON_BOARD
+Attributes["PAD"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=_set_pad)
 Attributes["ROW"].register(Type.PAD, Type.INT, lambda pad: pad.row)
 Attributes["COLUMN"].register(Type.PAD, Type.INT, lambda pad: pad.column)
 Attributes["EXIT_DIR"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
@@ -323,17 +428,50 @@ Attributes["WELL"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
 Attributes["DROP"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
 # Attributes["MAGNITUDE"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
 Attributes["MAGNITUDE"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
+Attributes["LENGTH"].register(Type.STRING, Type.INT, lambda s: len(s))
+Attributes["NUMBER"].register(Type.WELL, Type.INT, lambda w : w.number)
 
-Functions["SQUARE"].register_immediate((Type.INT,), Type.INT, lambda x: x*x)
+Attributes["VOLUME"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
+def _set_drop_volume(d: Drop, v: Volume):
+    d.volume = v
+Attributes["VOLUME"].register_setter(Type.DROP, Type.VOLUME, _set_drop_volume)
+def _set_well_volume(w: Well, v: Volume):
+    w.contains(Liquid(w.reagent, v))
+Attributes["VOLUME"].register_setter(Type.WELL, Type.VOLUME, _set_well_volume)
+
+Attributes["REAGENT"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.REAGENT, lambda d: d.reagent)
+def _set_drop_reagent(d: Drop, r: Reagent):
+    d.reagent= r
+Attributes["REAGENT"].register_setter(Type.DROP, Type.REAGENT, _set_drop_reagent)
+def _set_well_reagent(w: Well, r: Reagent):
+    w.contains(Liquid(r, w.volume))
+Attributes["REAGENT"].register_setter(Type.WELL, Type.REAGENT, _set_well_reagent)
+
+def _set_drop_liquid(d: Drop, liq: Liquid):
+    d.volume = liq.volume
+    d.reagent= liq.reagent
+Attributes["CONTENTS"].register(Type.DROP, Type.LIQUID, lambda d: Liquid(d.reagent, d.volume),
+                                setter=_set_drop_liquid)
+
+def _set_well_contents(w: Well, liq: Liquid):
+    w.contains(liq)
+Attributes["CONTENTS"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w.reagent, w.volume),
+                                setter=_set_well_contents)
+
+Attributes["CAPACITY"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
+Attributes["REMAINING_CAPACITY"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
+
+
 Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
 Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
 Functions["CEILING"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.ceil(x))
+Functions["UNSAFE"].register_immediate((Type.DELTA,), Type.MOTION, lambda d: UnsafeWalkValue(d))
 
 BuiltIns = {
     "ceil": Functions["CEILING"],
     "floor": Functions["FLOOR"],
     "round": Functions["ROUND"],
-    "square": Functions["SQUARE"],
+    "unsafe_walk": Functions["UNSAFE"]
     }
 
 DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
@@ -361,6 +499,11 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.DIR: Dir,
         Type.BOOL: bool,
         Type.BUILT_IN: Func,
+        Type.VOLUME: Volume,
+        Type.LIQUID: Liquid,
+        Type.STRING: str,
+        Type.REAGENT: Reagent,
+        Type.SCALED_REAGENT: ScaledReagent,
     }
 
 class Conversions:
@@ -414,6 +557,7 @@ Conversions.register(Type.DROP, Type.BINARY_CPT,
 Conversions.register(Type.WELL_PAD, Type.BINARY_CPT,
                      lambda wp: wp.pad)
 Conversions.register(Type.INT, Type.FLOAT, float)
+Conversions.register(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
 
 
 
@@ -570,6 +714,8 @@ class DMFCompiler(DMFVisitor):
         if not isinstance(msg, str):
             msg = msg(arg_types, [self.text_of(a) for a in arg_ctxts], self.text_of(whole))
         return self.error(whole, return_type, msg, value=value)
+    
+
 
         
     def text_of(self, ctx_or_token: Union[ParserRuleContext, TerminalNode]) -> str:
@@ -577,9 +723,26 @@ class DMFCompiler(DMFVisitor):
             t: str = ctx_or_token.getText()
             return t
         return " ".join(self.text_of(child) for child in ctx_or_token.getChildren())
+    
+    def string_text(self, token: TerminalNode) -> str:
+        with_quotes: str = token.getText()
+        val = with_quotes[1:-1]
+        # print(f"With Quotes: <{with_quotes}>, without: <{val}>")
+        def repl_escape(m: Match) -> str:
+            seq = m.group(1)
+            if seq.startswith("u"):
+                hexdigits = m.group(2)
+                return chr(int(hexdigits, 16))
+                # Handle unicode
+                ...
+            repl = self.escape_replacement.get(seq, None)
+            return  repl or seq
+        val = self.escape_re.value.sub(repl_escape, val)
+        return val
 
-    def type_name_var(self, ctx: DMFParser.Param_typeContext, n: Optional[int] = None):
-        t: Type = cast(Type, ctx.type)
+    def type_name_var(self, t_or_ctx: Union[DMFParser.Param_typeContext, Type], n: Optional[int] = None):
+        t = t_or_ctx if isinstance(t_or_ctx, Type) else cast(Type, t_or_ctx.type)
+        # t: Type = cast(Type, ctx.type)
         index = "" if n is None else f"_{n}"
         return f"**{t.name}{index}**"
         
@@ -658,6 +821,12 @@ class DMFCompiler(DMFVisitor):
             return f"{otn}'s {a} not defined, requires one of {tns}: {text}"
         return self.error(obj_ctx, ret_type, emessage)
     
+    def not_an_attr_error(self, attr_ctx: DMFParser.AttrContext) -> Executable:
+        attr_name = attr_ctx.which
+        return self.error(attr_ctx, Type.NONE,
+                          lambda txt: f"The compiler thinks {txt} is attribute {attr_name} but it isn't")
+        
+    
     def use_callable(self, fn: Callable[..., Delayed[Any]],
                      arg_execs: Sequence[Executable],
                      sig: Signature) -> Executable:
@@ -707,6 +876,15 @@ class DMFCompiler(DMFVisitor):
     def unit_exec(self, unit: Unit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
         func = UnitFuncs[unit]
         return self.use_function(func, ctx, (size_ctx,))
+    
+    def unit_mag_exec(self, unit: Unit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
+        func = UnitMagFuncs[unit]
+        return self.use_function(func, ctx, (quant_ctx,))
+    
+    def unit_string_exec(self, unit: Unit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
+        func = UnitStringFuncs[unit]
+        return self.use_function(func, ctx, (quant_ctx,))
+    
         
     def visit(self, tree) -> Executable:
         return cast(Executable, DMFVisitor.visit(self, tree))
@@ -748,7 +926,7 @@ class DMFCompiler(DMFVisitor):
 
 
 
-    def visitAssignment(self, ctx:DMFParser.AssignmentContext) -> Executable:
+    def visitName_assignment(self, ctx:DMFParser.AssignmentContext) -> Executable:
         name_ctx = cast(DMFParser.NameContext, ctx.which)
         name = self.text_of(name_ctx)
         value = self.visit(ctx.what)
@@ -774,6 +952,49 @@ class DMFCompiler(DMFVisitor):
                 return val
             return value.evaluate(env, required_type).transformed(do_assignment)
         return Executable(returned_type, run, (value,))
+    
+    def visitAttr_assignment(self, ctx:DMFParser.Attr_assignmentContext) -> Executable:
+        obj = self.visit(ctx.obj)
+        value = self.visit(ctx.what)
+        attr_name: str = ctx.attr().which
+        attr = Attributes.get(attr_name, None)
+        if attr is None:
+            return self.not_an_attr_error(ctx.attr())
+        desc = attr.setter(obj.return_type, value.return_type)
+        if desc is None:
+            a = self.text_of(ctx.attr())
+            allowed = attr.accepts_for(obj.return_type)
+            if len(allowed) == 0:
+                if obj.return_type not in attr.applies_to:
+                    return self.inapplicable_attr_error(attr, obj.return_type,
+                                                        attr_ctx = ctx.attr,
+                                                        obj_ctx = ctx.obj,
+                                                        ret_type = value.return_type)
+                else:
+                    otn = obj.return_type.name
+                    def emessage(text: str) -> str:
+                        return f"{otn}'s {a} is not mutable: {text}"
+                    return self.error(ctx, value.return_type, emessage)
+            else:
+                def emessage(text: str) -> str:
+                    if len(allowed) == 1:
+                        req = allowed[0].name
+                    else:
+                        tns = map_str(tuple(t.name for t in allowed))
+                        req = f"one of {tns}"
+                    return f"{otn}'s {a} can only be set to {req}: {text}"
+                return self.error(ctx, value.return_type, emessage)
+        sig, setter = desc 
+        ot, vt = sig.param_types
+        def run(env: Environment) -> Delayed[Any]:
+            def do_assignment(o,v) -> Any:
+                setter(o,v)
+                return v
+            
+            return (obj.evaluate(env, ot) 
+                        .chain(lambda o: value.evaluate(env, vt)
+                                .transformed(lambda v: do_assignment(o,v))))
+        return Executable(value.return_type, run, (obj, value))
 
 
     def visitAssign_stat(self, ctx:DMFParser.Assign_statContext) -> Executable:
@@ -954,7 +1175,16 @@ class DMFCompiler(DMFVisitor):
         val = ctx.bool_val().val
         return Executable(Type.BOOL, lambda _: Delayed.complete(val))
     
-
+    escape_re = LazyPattern("\\\\([rnt]|u([a-fA-F0-9]{4})|.)")
+    escape_replacement = { 
+        "r": "\r",
+        "n": "\n",
+        "t": "\t",
+        }
+    
+    def visitString_lit_expr(self, ctx:DMFParser.String_lit_exprContext) -> Executable:
+        val = self.string_text(ctx.string())
+        return Executable(Type.STRING, lambda _: Delayed.complete(val))
         
 
     def visitAddsub_expr(self, ctx:DMFParser.Addsub_exprContext) -> Executable:
@@ -990,7 +1220,7 @@ class DMFCompiler(DMFVisitor):
         if attr is None:
             return self.error(ctx.attr(), Type.NONE,
                               lambda txt: f"The compiler thinks {txt} is attribute {attr_name} but it isn't")
-        desc = attr[obj.return_type]
+        desc = attr.getter(obj.return_type)
         if desc is None:
             return self.inapplicable_attr_error(attr, obj.return_type,
                                                 attr_ctx = ctx.attr(),
@@ -1131,11 +1361,33 @@ class DMFCompiler(DMFVisitor):
         inj_type = what.return_type
         if inj_type <= Type.MOTION:
             inj_type = Type.MOTION
+        injected_type = who.return_type
+        if injected_type <= Type.MOTION:
+            injected_type = Type.MOTION
         if not isinstance(inj_type, CallableType) or len(inj_type.param_types) != 1:
             return self.error(ctx.what, Type.NONE, 
                               f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
         first_arg_type = inj_type.param_types[0]
         return_first_arg = inj_type.return_type is Type.NONE
+        if isinstance(injected_type, CallableType):
+            pass_first_arg = len(injected_type.param_types) == 1 and injected_type.return_type is Type.NONE
+            pass_arg_type = injected_type.param_types[0] if pass_first_arg else injected_type.return_type
+            if e:=self.type_check(first_arg_type, pass_arg_type, ctx.who,
+                                  lambda want,have,text:
+                                    f"Injecting form '{text}' returns {have}, not compatible with "
+                                    +f"{want}: {self.text_of(ctx.what)}"):
+                return e
+            chain_return_type = pass_arg_type if return_first_arg else inj_type.return_type
+            chain_type = CompositionType.find(injected_type.param_types, chain_return_type)
+            
+            def chain(env: Environment) -> Delayed[Any]:
+                def combine(first: CallableValue, second: CallableValue) -> Delayed[Any]:
+                    comp = ComposedCallable(chain_type, first, second, pass_first_arg)
+                    return Delayed.complete(comp)
+                return (who.evaluate(env, injected_type)
+                        .chain(lambda first: (what.evaluate(env)
+                                              .chain(lambda second: combine(first, second)))))
+            return Executable(chain_type, chain, (who, what))
         return_type = who.return_type if return_first_arg else inj_type.return_type
         if e:=self.type_check(first_arg_type, who, ctx.who,
                               lambda want,have,text:
@@ -1161,15 +1413,14 @@ class DMFCompiler(DMFVisitor):
         attr_name: str = ctx.attr().which
         attr = Attributes.get(attr_name, None)
         if attr is None:
-            return self.error(ctx.attr(), Type.NONE,
-                              lambda txt: f"The compiler thinks {txt} is attribute {attr_name} but it isn't")
-        desc = attr[obj.return_type]
-        if desc is None:
+            return self.not_an_attr_error(ctx.attr())
+        getter = attr.getter(obj.return_type)
+        if getter is None:
             return self.inapplicable_attr_error(attr, obj.return_type,
                                                 attr_ctx = ctx.attr(),
                                                 obj_ctx = ctx.obj)
         
-        sig, extractor = desc
+        sig, extractor = getter
         rt = sig.return_type
         ot = sig.param_types[0]
         check: Optional[Callable[[Any], Any]] = None
@@ -1201,18 +1452,23 @@ class DMFCompiler(DMFVisitor):
 
 
     def visitDrop_expr(self, ctx:DMFParser.Drop_exprContext) -> Executable:
-        loc_exec = self.visit(ctx.loc)
-        if e:=self.type_check(Type.PAD, loc_exec, ctx.loc, return_type=Type.DROP):
-            return e
-        def run(env: Environment) -> Delayed[Drop]:
-            def get_drop(pad: Pad) -> Drop:
-                drop = pad.drop
-                if drop is None:
-                    liquid = Liquid(unknown_reagent, env.board.drop_size)
-                    drop = Drop(pad, liquid)
-                return drop
-            return loc_exec.evaluate(env, Type.PAD).transformed(get_drop)
-        return Executable(Type.DROP, run, (loc_exec,))
+        # loc_exec = self.visit(ctx.loc)
+        vol: Optional[DMFParser.ExprContext] = ctx.vol
+        
+        if vol is None:
+            return self.use_function("FIND_DROP", ctx, (ctx.loc,))
+        else:
+            return self.use_function("NEW_DROP", ctx, (ctx.vol, ctx.loc))
+        
+    def visitReagent__lit_expr(self, ctx:DMFParser.Reagent__lit_exprContext) -> Executable:
+        reagent = ctx.reagent().r
+        return Executable(Type.REAGENT, lambda _: Delayed.complete(reagent))
+        
+    def visitReagent_expr(self, ctx:DMFParser.Reagent_exprContext) -> Executable:
+        return self.use_function("FIND_REAGENT", ctx, (ctx.which,))
+    
+    def visitLiquid_expr(self, ctx:DMFParser.Liquid_exprContext) -> Executable:
+        return self.use_function("LIQUID", ctx, (ctx.vol, ctx.which))
 
 
     def visitFunction_expr(self, ctx:DMFParser.Function_exprContext) -> Executable:
@@ -1335,6 +1591,14 @@ class DMFCompiler(DMFVisitor):
     def visitUnit_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
         return self.unit_exec(ctx.dim_unit().unit, ctx, ctx.amount)
     
+    def visitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext) -> Executable:
+        if ctx.dim_unit() is None:
+            return self.error(ctx, Type.FLOAT, lambda text: f"'magnitude' requires 'in <unit>': {text}")
+        return self.unit_mag_exec(ctx.dim_unit().unit, ctx, ctx.quant)
+
+    def visitUnit_string_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
+        return self.unit_string_exec(ctx.dim_unit().unit, ctx, ctx.quant)
+    
     def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
         return self.use_function("DROP_VOL", ctx, (ctx.amount,))
         
@@ -1395,8 +1659,17 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TIME,Type.TIME), Type.TIME),
                                    ((Type.TICKS,Type.TICKS), Type.TICKS),
                                    ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
+                                   ((Type.STRING,Type.STRING), Type.STRING)
                                    ], lambda x,y: x+y)
         fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, d.dist))
+        fn.register_all_immediate([((Type.STRING, Type.NUMBER), Type.STRING),
+                                   ], lambda x,y: x+str(y))
+        fn.register_immediate((Type.SCALED_REAGENT, Type.SCALED_REAGENT), Type.REAGENT,
+                              lambda x,y: x.mix_with(y)
+                              )
+        fn.register_immediate((Type.LIQUID, Type.LIQUID), Type.LIQUID,
+                              lambda x,y: x.mix_with(y)
+                              )
         
         
         fn = Functions["SUBTRACT"]
@@ -1450,6 +1723,8 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.FLOAT,Type.VOLUME), Type.VOLUME),
                                    ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
                                    ], lambda x,y: x*y)
+        fn.register_immediate((Type.NUMBER, Type.REAGENT), Type.SCALED_REAGENT,
+                              lambda n,r: ScaledReagent(n,r))
 
         fn = Functions["DIVIDE"]
         fn.infix_op("/")
@@ -1459,6 +1734,9 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TICKS,Type.FLOAT), Type.TICKS),
                                    ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
                                    ], lambda x,y: x/y)
+        fn.register_immediate((Type.LIQUID, Type.FLOAT), Type.LIQUID,
+                              lambda liquid, split: Liquid(liquid.reagent, liquid.volume/split)
+                              )
 
         # fn = Functions["TICKS"]
         # fn.postfix_op("ticks")
@@ -1481,6 +1759,36 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["REMOVE-FROM-BOARD"]
         fn.register_immediate((), Type.MOTION, lambda: RemoveDropValue())
         
+        fn = Functions["FIND_DROP"]
+        fn.prefix_op("drop @")
+        def new_drop(pad: Pad, liquid: Optional[Union[Liquid, Volume]] = None) -> Drop:
+            if liquid is None:
+                liquid = Liquid(unknown_reagent, pad.board.drop_size)
+            elif isinstance(liquid, Volume):
+                liquid = Liquid(unknown_reagent, liquid)
+            else:
+                # We copy the liquid, since the drop will adopt it.
+                liquid = Liquid(liquid.reagent, liquid.volume)
+            if pad.drop is not None:
+                raise AlreadyDropError(f"There is already a drop at {pad}")
+            return Drop(pad, liquid)
+        fn.register_immediate((Type.PAD,), Type.DROP,
+                              lambda p: p.drop or new_drop(p))
+        
+        fn = Functions["NEW_DROP"]
+        fn.infix_op("@")
+        fn.register_all_immediate([((Type.VOLUME, Type.PAD), Type.DROP),
+                                   ((Type.LIQUID, Type.PAD), Type.DROP),
+                                  ],
+                                  lambda v,p: new_drop(p, v))
+        
+        fn = Functions["FIND_REAGENT"]
+        fn.prefix_op("reagent named")
+        fn.register_immediate((Type.STRING,), Type.REAGENT, lambda name: Reagent.find(name))
+            
+        fn = Functions["LIQUID"]
+        fn.infix_op("of")
+        fn.register_immediate((Type.VOLUME, Type.REAGENT), Type.LIQUID, lambda v,r: Liquid(r, v))
         
 DMFCompiler.setup_function_table()
 

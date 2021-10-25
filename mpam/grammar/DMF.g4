@@ -7,7 +7,7 @@ options {
 }
 
 @header {
-from mpam.types import Dir, OnOff, Turn, ticks
+from mpam.types import Dir, OnOff, Turn, ticks, unknown_reagent, waste_reagent
 from langsup.type_supp import Type, Rel
 from quantities import SI
 }
@@ -32,7 +32,8 @@ interactive
 //  ;
   
 assignment
-  : which=name ASSIGN what=expr
+  : which=name ASSIGN what=expr           # name_assignment
+  | obj=expr ATTR attr ASSIGN what=expr   # attr_assignment
   ;
   
 //pad_op
@@ -63,6 +64,8 @@ expr
   | '(' x=expr ',' y=expr ')' 		 # coord_expr
   | '-' rhs=expr                     # neg_expr
   | dist=expr direction              # delta_expr
+  | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
+  | quant=expr 'as' 'string' 'in' dim_unit # unit_string_expr
   | obj=expr ATTR attr             # attr_expr
   | start_dir=expr 'turned' turn          # turn_expr
   | dist=expr 'in' ('dir' | 'direction') d=expr # in_dir_expr
@@ -70,6 +73,7 @@ expr
   | dist=expr rc[0]           # n_rc_expr
   | amount=expr dim_unit             # unit_expr
   | amount=expr ('drop' | 'drops')   # drop_vol_expr
+  | vol=expr 'of' which=expr       # liquid_expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | lhs=expr rel rhs=expr            # rel_expr
@@ -84,6 +88,7 @@ expr
   | 'well' '#' which=expr            # well_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
+  | vol=expr ('@' | 'at') loc=expr   # drop_expr
   | who=expr INJECT what=expr        # injection_expr
   | first=expr 'if' cond=expr 'else' second=expr  # cond_expr
   | macro_def                        # macro_expr
@@ -94,12 +99,20 @@ expr
   | 'the'? param_type                # type_name_expr
   | param_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
+  | 'the'? (reagent 'reagent'?)		 # reagent__lit_expr
+  | ('the' | 'a')? 'reagent' 'named'? which=expr # reagent_expr
+//  | 'reagent' STRING                 # reagent_expr
   | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
+  | string # string_lit_expr
   | INT                              # int_expr
   | FLOAT							 # float_expr
   ;
 
+reagent returns [Reagent r]
+  : 'unknown' {$ctx.r = unknown_reagent}
+  | 'waste' {$ctx.r = waste_reagent}
+  ;
 
 direction returns [Dir d, bool verticalp]
   : ('up' | 'north' ) {$ctx.d = Dir.UP}{$ctx.verticalp=True}
@@ -153,14 +166,19 @@ param_type returns[Type type]
   | 'well' {$ctx.type=Type.WELL}
   | 'well' 'pad' {$ctx.type=Type.WELL_PAD}
   | 'int'  {$ctx.type=Type.INT}
+  | 'float' {$ctx.type=Type.FLOAT}
   | 'state' {$ctx.type=Type.BINARY_STATE}
-  | 'component' {$ctx.type=Type.BINARY_CPT}
+  | 'electrode' {$ctx.type=Type.BINARY_CPT}
   | 'delta' {$ctx.type=Type.DELTA}
   | 'motion' {$ctx.type=Type.MOTION}
   | 'delay' {$ctx.type=Type.DELAY}
   | 'time' {$ctx.type=Type.TIME}
   | 'ticks' {$ctx.type=Type.TICKS}
   | 'bool' {$ctx.type=Type.BOOL}
+  | ('direction' | 'dir') {$ctx.type=Type.DIR}
+  | 'volume' {$ctx.type=Type.VOLUME}
+  | 'reagent' {$ctx.type=Type.REAGENT}
+  | 'liquid' {$ctx.type=Type.LIQUID}
   ;
   
 dim_unit returns[Unit unit]
@@ -176,6 +194,7 @@ attr returns[str which]
   | 'exit' 'pad' {$ctx.which="EXIT_PAD"}
   | 'state' {$ctx.which="STATE"}
   | 'distance' {$ctx.which="DISTANCE"}
+  | ('dir' | 'direction') {$ctx.which="DIRECTION"}
   | 'duration' {$ctx.which="DURATION"}
   | 'pad' {$ctx.which="PAD"}
   | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which="ROW"}
@@ -183,7 +202,14 @@ attr returns[str which]
   | 'well' {$ctx.which="WELL"}
   | 'exit' ('dir' | 'direction') {$ctx.which="EXIT_DIR"}
   | 'drop' {$ctx.which="DROP"}
-  | 'magnitude' {$ctx.which="MAGNITUDE"}
+//  | 'magnitude' {$ctx.which="MAGNITUDE"}
+  | 'number' {$ctx.which="NUMBER"}
+  | 'volume' {$ctx.which="VOLUME"}
+  | 'length' {$ctx.which="LENGTH"}
+  | 'reagent' {$ctx.which="REAGENT"}
+  | 'contents' {$ctx.which="CONTENTS"}
+  | 'capacity' {$ctx.which="CAPACITY"}
+  | 'remaining' 'capacity' {$ctx.which="REMAINING_CAPACITY"}
   ;
   
 rel returns[Rel which]
@@ -203,6 +229,8 @@ bool_val returns[bool val]
 name : (ID | kwd_names) ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y';
+
+string : STRING ;
   
 ADD: '+';
 ASSIGN: '=';

@@ -5,7 +5,7 @@ if __name__ is not None and "." in __name__:
 else:
     from DMFParser import DMFParser
 
-from mpam.types import Dir, OnOff, Turn, ticks
+from mpam.types import Dir, OnOff, Turn, ticks, unknown_reagent, waste_reagent
 from langsup.type_supp import Type, Rel
 from quantities import SI
 
@@ -42,8 +42,13 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#assignment.
-    def visitAssignment(self, ctx:DMFParser.AssignmentContext):
+    # Visit a parse tree produced by DMFParser#name_assignment.
+    def visitName_assignment(self, ctx:DMFParser.Name_assignmentContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#attr_assignment.
+    def visitAttr_assignment(self, ctx:DMFParser.Attr_assignmentContext):
         return self.visitChildren(ctx)
 
 
@@ -97,6 +102,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#unit_string_expr.
+    def visitUnit_string_expr(self, ctx:DMFParser.Unit_string_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#action_expr.
     def visitAction_expr(self, ctx:DMFParser.Action_exprContext):
         return self.visitChildren(ctx)
@@ -117,8 +127,18 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#reagent__lit_expr.
+    def visitReagent__lit_expr(self, ctx:DMFParser.Reagent__lit_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#rel_expr.
     def visitRel_expr(self, ctx:DMFParser.Rel_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#string_lit_expr.
+    def visitString_lit_expr(self, ctx:DMFParser.String_lit_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -129,6 +149,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#and_expr.
     def visitAnd_expr(self, ctx:DMFParser.And_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#magnitude_expr.
+    def visitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -222,8 +247,18 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#liquid_expr.
+    def visitLiquid_expr(self, ctx:DMFParser.Liquid_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#dir_expr.
     def visitDir_expr(self, ctx:DMFParser.Dir_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#reagent_expr.
+    def visitReagent_expr(self, ctx:DMFParser.Reagent_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -249,6 +284,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#drop_vol_expr.
     def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#reagent.
+    def visitReagent(self, ctx:DMFParser.ReagentContext):
         return self.visitChildren(ctx)
 
 
@@ -324,6 +364,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#kwd_names.
     def visitKwd_names(self, ctx:DMFParser.Kwd_namesContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#string.
+    def visitString(self, ctx:DMFParser.StringContext):
         return self.visitChildren(ctx)
 
 

@@ -111,6 +111,10 @@ class Drop(OpScheduler['Drop']):
     def volume(self) -> Volume:
         return self.liquid.volume
     
+    @volume.setter
+    def volume(self, val: Volume) -> None:
+        self.liquid.volume= val
+
     @property
     def reagent(self) -> Reagent:
         return self.liquid.reagent
@@ -118,6 +122,7 @@ class Drop(OpScheduler['Drop']):
     @reagent.setter
     def reagent(self, val: Reagent) -> None:
         self.liquid.reagent = val
+    
     
     def __init__(self, pad: Pad, liquid: Liquid, *,
                  status: DropStatus = DropStatus.ON_BOARD) -> None:

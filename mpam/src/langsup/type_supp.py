@@ -51,7 +51,11 @@ class Type:
     TIME: ClassVar[Type]
     TICKS: ClassVar[Type]
     BOOL: ClassVar[Type]
+    STRING: ClassVar[Type]
     VOLUME: ClassVar[Type]
+    SCALED_REAGENT: ClassVar[Type]
+    REAGENT: ClassVar[Type]
+    LIQUID: ClassVar[Type]
     BUILT_IN: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
@@ -139,8 +143,13 @@ Type.DELAY = Type("DELAY")
 Type.TIME = Type("TIME", [Type.DELAY])
 Type.TICKS = Type("TICKS", [Type.DELAY])
 Type.BOOL = Type("BOOL")
+Type.STRING = Type("STRING")
 Type.VOLUME = Type("VOLUME")
+Type.SCALED_REAGENT = Type("SCALED_REAGENT")
+Type.REAGENT = Type("REAGENT", [Type.SCALED_REAGENT])
+Type.LIQUID = Type("LIQUID")
 Type.BUILT_IN = Type("BUILT_IN")
+
 
 class MaybeType(Type):
     if_there_type: Final[Type]
@@ -235,6 +244,7 @@ class CallableType(Type):
         self.sig = Signature.of(param_types, return_type)
         self.with_self_sig = Signature.of((self, *param_types), return_type)
         
+
 class MotionType(CallableType):
     def __init__(self):
         super().__init__("MOTION", (Type.DROP,), Type.DROP)
@@ -255,6 +265,24 @@ class PauseType(CallableType):
         super().__init__("PAUSE", (Type.ANY,), Type.NONE)
         
 Type.PAUSE = PauseType()
+
+class CompositionType(CallableType):
+    instances = dict[Signature, 'CompositionType']()
+    
+    def __init__(self, 
+                 param_types: Sequence[Type],
+                 return_type: Type):
+        super().__init__(f"Composition[({','.join(t.name for t in param_types)}),{return_type.name}]", 
+                         param_types, return_type)
+        
+    @classmethod
+    def find(cls, param_types: Sequence[Type], return_type: Type) -> CompositionType:
+        sig = Signature.of(param_types, return_type)
+        mt = cls.instances.get(sig, None)
+        if mt is None:
+            mt = CompositionType(param_types, return_type)
+            cls.instances[sig] = mt
+        return mt
 
 class MacroType(CallableType):
     instances = dict[Signature, 'MacroType']()
@@ -441,16 +469,39 @@ class Attr:
     def returns(self) -> Sequence[Type]:
         return [sig.return_type for sig in self.func.known_sigs if len(sig.param_types) == 1]
     
-    def register(self, otype: Union[Type,Sequence[Type]], rtype: Type, extractor: Callable[[Any], Any]) -> None:
+    def register_setter(self, otype: Union[Type, Sequence[Type]], vtype, 
+                        setter: Callable[[Any,Any], Any]) -> None:
+        if isinstance(otype, Type):
+            self.func.register_immediate((otype, vtype), Type.NONE, setter)
+        else:
+            for ot in otype:
+                self.func.register_immediate((ot, vtype), Type.NONE, setter)
+                 
+    
+    def register(self, otype: Union[Type,Sequence[Type]], rtype: Type, extractor: Callable[[Any], Any],
+                 *,
+                 setter: Optional[Callable[[Any,Any], Any]] = None) -> None:
         if isinstance(otype, Type):
             self.func.register_immediate((otype,), rtype, extractor)
         else:
             for ot in otype:
                 self.func.register_immediate((ot,), rtype, extractor)
-        
-    def __getitem__(self, otype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
+        if setter is not None:
+            self.register_setter(otype, rtype, setter)
+                    
+    def getter(self, otype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
         return self.func[(otype,)]
+        
+    def setter(self, otype: Type, vtype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
+        return self.func[(otype, vtype)]
     
+    # def __getitem__(self, otype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
+        # return self.getter(otype)
+    
+    def accepts_for(self, otype: Type) -> Sequence[Type]:
+        return [sig.param_types[1] for sig in self.func.known_sigs 
+                    if len(sig.param_types) == 2 and sig.param_types[0] is otype]
+        
     @classmethod
     def new_instances(cls, names: Iterable[str]) -> None:
         for name in names:

@@ -23,7 +23,7 @@ INT : DIGIT+ ('_' DIGIT+)* ;
 
 fragment EXPT : [eE] '-'? INT;
 
-FLOAT : INT '.' INT EXPT? | INT EXPT;
+FLOAT : INT '.' INT? EXPT? | INT EXPT;
 
 fragment STRING_CHAR
   : ~["\\\r\n]

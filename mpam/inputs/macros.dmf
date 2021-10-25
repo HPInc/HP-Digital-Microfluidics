@@ -89,6 +89,32 @@ maybe_move = macro(drop, dist: int) {
   }
 };
 
+mix = macro(dir1: direction) {
+  macro(drop1: drop) {
+    pad1 = drop1's pad;
+    pad2 = pad1 + 2 in direction dir1;
+    drop2 = drop @ pad2;
+    [[
+       drop1: unsafe_walk(1 in direction dir1);
+       pad2: off; 
+    ]]
+    drop2: remove from board;
+    drop1's contents = drop1's contents + drop2's contents;
+    [[
+      drop1: 1 in direction (dir1 turned around);
+      pad2: on; 
+    ]]
+    drop2's pad = pad2;
+    drop1's contents = drop1's contents/2;
+    drop2's contents = drop1's contents;
+	drop1;
+  };
+};
+
+r1 = reagent "r1";
+r2 = reagent "r2";
 d1 = drop@(2,3);
+d1's reagent = r1;
+d2 = 1 drop of r2 @ (4,3);
 t1 = 2 sec;
-w1 = well #2;
+w2 = well #2;
