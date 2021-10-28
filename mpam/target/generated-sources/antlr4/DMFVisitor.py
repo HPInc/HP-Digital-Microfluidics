@@ -127,11 +127,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#reagent__lit_expr.
-    def visitReagent__lit_expr(self, ctx:DMFParser.Reagent__lit_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#rel_expr.
     def visitRel_expr(self, ctx:DMFParser.Rel_exprContext):
         return self.visitChildren(ctx)
@@ -144,6 +139,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#not_expr.
     def visitNot_expr(self, ctx:DMFParser.Not_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#reagent_lit_expr.
+    def visitReagent_lit_expr(self, ctx:DMFParser.Reagent_lit_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -232,6 +232,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#mw_name_expr.
+    def visitMw_name_expr(self, ctx:DMFParser.Mw_name_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#name_expr.
     def visitName_expr(self, ctx:DMFParser.Name_exprContext):
         return self.visitChildren(ctx)
@@ -274,6 +279,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#well_expr.
     def visitWell_expr(self, ctx:DMFParser.Well_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#is_expr.
+    def visitIs_expr(self, ctx:DMFParser.Is_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -359,6 +369,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#name.
     def visitName(self, ctx:DMFParser.NameContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#multi_word_name.
+    def visitMulti_word_name(self, ctx:DMFParser.Multi_word_nameContext):
         return self.visitChildren(ctx)
 
 

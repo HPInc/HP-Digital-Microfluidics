@@ -78,6 +78,7 @@ expr
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | lhs=expr rel rhs=expr            # rel_expr
   | obj=expr 'has' ('a' | 'an') attr # has_expr
+  | obj=expr 'is' NOT? pred=expr     # is_expr
   | 'not' expr                       # not_expr
   | lhs=expr 'and' rhs=expr          # and_expr
   | lhs=expr 'or' rhs=expr           # or_expr
@@ -99,11 +100,12 @@ expr
   | 'the'? param_type                # type_name_expr
   | param_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
-  | 'the'? (reagent 'reagent'?)		 # reagent__lit_expr
+  | 'the'? (reagent 'reagent'?)		 # reagent_lit_expr
   | ('the' | 'a')? 'reagent' 'named'? which=expr # reagent_expr
 //  | 'reagent' STRING                 # reagent_expr
   | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
+  | multi_word_name                  # mw_name_expr
   | string # string_lit_expr
   | INT                              # int_expr
   | FLOAT							 # float_expr
@@ -226,7 +228,14 @@ bool_val returns[bool val]
   | ('False' | 'false' | 'FALSE' | 'No' | 'no' | 'NO') {$ctx.val=False}
   ;
 
-name : (ID | kwd_names) ;
+name 
+  : ID 
+  | kwd_names
+  ;
+  
+multi_word_name returns[str val]
+  : 'on' 'the'? 'board' {$ctx.val="on board"}
+  ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y';
 
@@ -238,6 +247,7 @@ ATTR: '\'s';
 DIV: '/';
 INJECT: ':';
 MUL: '*';
+NOT: 'not';
 OFF: 'off';
 ON: 'on';
 SUB: '-';

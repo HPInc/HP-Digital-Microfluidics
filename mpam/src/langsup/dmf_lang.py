@@ -25,7 +25,7 @@ from quantities.dimensions import Time, Volume
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
-from erk.basic import LazyPattern
+from erk.basic import LazyPattern, not_None
 from re import Match
 
 
@@ -216,6 +216,9 @@ class DeltaValue(MotionValue):
     def move(self, drop:Drop)->Delayed[Drop]:
         path = Path.walk(self.direction, steps = self.dist)
         return path.schedule_for(drop)
+    
+    def turned(self, turn: Turn) -> DeltaValue:
+        return DeltaValue(self.dist, self.direction.turned(turn))
     
 class UnsafeWalkValue(MotionValue):
     delta: Final[DeltaValue]
@@ -466,12 +469,16 @@ Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x
 Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
 Functions["CEILING"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.ceil(x))
 Functions["UNSAFE"].register_immediate((Type.DELTA,), Type.MOTION, lambda d: UnsafeWalkValue(d))
+Functions["UNSAFE"].register_immediate((Type.DIR,), Type.MOTION, lambda d: UnsafeWalkValue(DeltaValue(1,d)))
+# Functions["ON_BOARD"].register_immediate((Type.PAD,), Type.BOOL,
+#                                          )
 
 BuiltIns = {
     "ceil": Functions["CEILING"],
     "floor": Functions["FLOOR"],
     "round": Functions["ROUND"],
-    "unsafe_walk": Functions["UNSAFE"]
+    "unsafe_walk": Functions["UNSAFE"],
+    "on board": Functions["ON_BOARD"],
     }
 
 DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
@@ -546,6 +553,21 @@ class Conversions:
         if rep is not None and isinstance(val, rep):
             return val
         assert False, f"Don't know how to convert from {have} to {want}: {val}"
+        
+    @classmethod
+    def can_convert(cls, have: Type, want: Type) -> bool:
+        if have is want or want is Type.ANY or want is Type.NONE:
+            return True
+        key = (have, want)
+        if key in cls.known or key in cls.known_ok:
+            return True
+        if isinstance(want, MaybeType):
+            if isinstance(have, MaybeType):
+                return cls.can_convert(have.if_there_type, want.if_there_type)
+            else:
+                return cls.can_convert(have, want.if_there_type)
+        return False
+
     
 Conversions.ok((Type.TIME, Type.TICKS), Type.DELAY)
 Conversions.ok((Type.INT, Type.FLOAT), Type.NUMBER)
@@ -558,6 +580,8 @@ Conversions.register(Type.WELL_PAD, Type.BINARY_CPT,
                      lambda wp: wp.pad)
 Conversions.register(Type.INT, Type.FLOAT, float)
 Conversions.register(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
+Conversions.register(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
+Conversions.register(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
 
 
 
@@ -573,6 +597,11 @@ class Executable:
         self.return_type = return_type
         self.func: Final[Callable[[Environment], Delayed[Any]]] = func
         self.contains_error = is_error or any(e.contains_error for e in based_on)
+        
+    @classmethod
+    def constant(cls, return_type: Type, val: Any, based_on: Sequence[Executable] = (), *,
+                 is_error: bool = False) -> Executable:
+        return Executable(return_type, lambda _: Delayed.complete(val), based_on, is_error=is_error)
         
     def __str__(self) -> str:
         e = "ERROR, " if self.contains_error else ""
@@ -603,7 +632,12 @@ class LazyEval:
     def __call__(self, env: Environment, arg_execs: Sequence[Executable]) -> Delayed[Any]:
         fn = self.func
         return fn(env, arg_execs)
-    
+
+class WithEnv:
+    def __init__(self, func: Callable):
+        self.func = func
+    def __call__(self, env: Environment, *args) -> Delayed[Any]:
+        return Delayed.complete(self.func(env, *args))    
     
 class DMFInterpreter:
     globals: Final[Environment]
@@ -672,12 +706,15 @@ class DMFCompiler(DMFVisitor):
         
     def defaultResult(self) -> Executable:
         print("Unhandled tree")
-        return Executable(Type.ERROR, lambda _: Delayed.complete(None), is_error=True)
+        return Executable.constant(Type.ERROR, None, is_error=True)
         # assert False, "Undefined visitor method"
         
     def visitChildren(self, node):
         print(f"Unhandled tree: {type(node).__name__}")
-        return Executable(Type.ERROR, lambda _: Delayed.complete(None), is_error=True)
+        return Executable.constant(Type.ERROR, None, is_error=True)
+    
+    def compatible(self, have: Type, want: Type) -> bool:
+        return have <= want or Conversions.can_convert(have, want)
     
     def error_val(self, return_type: Type, 
                   value: Optional[Callable[[Environment], Any]] = None) -> Executable:
@@ -759,12 +796,12 @@ class DMFCompiler(DMFVisitor):
         if isinstance(have, Executable):
             have = have.return_type
         if isinstance(want, Type):
-            if have <= want:
+            if self.compatible(have, want):
                 return None
             else:
                 wname = want.name
         else:
-            if any(have <= w for w in want):
+            if any(self.compatible(have, w) for w in want):
                 return None
             else:
                 wname = map_str(tuple(w.name for w in want))
@@ -790,7 +827,8 @@ class DMFCompiler(DMFVisitor):
                      ret_type: Type,
                      func: Callable[[Environment], Delayed[Any]]
                      ) -> Optional[Executable]:
-        if not all(arg.return_type <= pt for arg, pt in zip(args, param_types)):
+        if not all(self.compatible(arg.return_type, pt) 
+                   for arg, pt in zip(args, param_types)):
             return None
         return Executable(ret_type, func, args)
     
@@ -829,10 +867,12 @@ class DMFCompiler(DMFVisitor):
     
     def use_callable(self, fn: Callable[..., Delayed[Any]],
                      arg_execs: Sequence[Executable],
-                     sig: Signature) -> Executable:
+                     sig: Signature, 
+                     *,
+                     extra_args: Sequence[Any] = ()) -> Executable:
         if isinstance(fn, LazyEval):
             def run(env: Environment) -> Delayed[Any]:
-                return fn(env, arg_execs)
+                return fn(env, arg_execs, *extra_args)
         else:
             def run(env: Environment) -> Delayed[Any]:
                 args: List[Any] = []
@@ -846,14 +886,18 @@ class DMFCompiler(DMFVisitor):
                           else reduce(lambda fut,fn: fut.chain(fn),
                                       lambdas[1:],
                                       first))
-    
-                future = future.chain(lambda _: fn(*args))
+                if isinstance(fn, WithEnv):
+                    future = future.chain(lambda _: fn(env, *args, *extra_args))
+                else:
+                    future = future.chain(lambda _: fn(*args, *extra_args))
                 return future            
         return Executable(sig.return_type, run, arg_execs)
     
     def use_function(self, func: Union[Func, str],
                      ctx: ParserRuleContext,
-                     arg_ctxts: Sequence[ParserRuleContext]) -> Executable:
+                     arg_ctxts: Sequence[ParserRuleContext],
+                     *,
+                     extra_args: Sequence[Any] = ()) -> Executable:
         if isinstance(func, str):
             if func not in Functions:
                 raise KeyError(f"Compiler has no implementation for function '{func}'")
@@ -871,7 +915,7 @@ class DMFCompiler(DMFVisitor):
                     return self.error_val(rt)
             return self.error(ctx, rt, lambda txt: real_func.type_error(arg_types, txt))
         sig, fn = desc
-        return self.use_callable(fn, arg_execs, sig)
+        return self.use_callable(fn, arg_execs, sig, extra_args=extra_args)
     
     def unit_exec(self, unit: Unit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
         func = UnitFuncs[unit]
@@ -915,7 +959,7 @@ class DMFCompiler(DMFVisitor):
         return self.visit(ctx.expr())
     
     def visitEmpty_interactive(self, ctx:DMFParser.Empty_interactiveContext) -> Executable: # @UnusedVariable
-        return Executable(Type.IGNORE, lambda env: Delayed.complete(None)) # @UnusedVariable
+        return Executable.constant(Type.IGNORE, None)
 
     
     # def visitAssignment_tls(self, ctx:DMFParser.Assignment_tlsContext) -> Executable:
@@ -1087,7 +1131,7 @@ class DMFCompiler(DMFVisitor):
         result_type: Optional[Type] = None
         def check_result_type(t: Type) -> bool:
             nonlocal result_type
-            if result_type is None or result_type <= t:
+            if result_type is None or self.compatible(result_type, t):
                 result_type = t
                 return False
             result_type = Type.NONE
@@ -1131,11 +1175,11 @@ class DMFCompiler(DMFVisitor):
 
     def visitInt_expr(self, ctx:DMFParser.Int_exprContext):
         val: int = int(ctx.INT().getText())
-        return Executable(Type.INT, lambda _: Delayed.complete(val))
+        return Executable.constant(Type.INT, val)
 
     def visitFloat_expr(self, ctx:DMFParser.Float_exprContext):
         val: float = float(ctx.FLOAT().getText())
-        return Executable(Type.FLOAT, lambda _: Delayed.complete(val))
+        return Executable.constant(Type.FLOAT, val)
 
 
     def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
@@ -1163,7 +1207,7 @@ class DMFCompiler(DMFVisitor):
         name = self.text_of(ctx.name())
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
-            return Executable(Type.BUILT_IN, lambda _: Delayed.complete(builtin))
+            return Executable.constant(Type.BUILT_IN, builtin)
         var_type = self.current_types.lookup(name)
         if var_type is None:
             return self.error(ctx.name(), Type.NONE, f"Undefined variable: {name}")
@@ -1173,7 +1217,7 @@ class DMFCompiler(DMFVisitor):
 
     def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
         val = ctx.bool_val().val
-        return Executable(Type.BOOL, lambda _: Delayed.complete(val))
+        return Executable.constant(Type.BOOL, val)
     
     escape_re = LazyPattern("\\\\([rnt]|u([a-fA-F0-9]{4})|.)")
     escape_replacement = { 
@@ -1184,7 +1228,7 @@ class DMFCompiler(DMFVisitor):
     
     def visitString_lit_expr(self, ctx:DMFParser.String_lit_exprContext) -> Executable:
         val = self.string_text(ctx.string())
-        return Executable(Type.STRING, lambda _: Delayed.complete(val))
+        return Executable.constant(Type.STRING, val)
         
 
     def visitAddsub_expr(self, ctx:DMFParser.Addsub_exprContext) -> Executable:
@@ -1255,7 +1299,7 @@ class DMFCompiler(DMFVisitor):
         second = self.visit(ctx.second)
         if e := self.type_check(Type.BOOL, cond, ctx.cond):
             return e
-        if first.return_type <= second.return_type:
+        if self.compatible(first.return_type, second.return_type):
             result_type = second.return_type
         elif second.return_type < first.return_type:
             result_type = first.return_type
@@ -1303,18 +1347,10 @@ class DMFCompiler(DMFVisitor):
     
     def visitDir_expr(self, ctx:DMFParser.Dir_exprContext) -> Executable:
         direction: Dir = ctx.direction().d
-        return Executable(Type.DIR, lambda _: Delayed.complete(direction))
+        return Executable.constant(Type.DIR, direction)
     
     def visitTurn_expr(self, ctx:DMFParser.Turn_exprContext) -> Executable:
-        start = self.visit(ctx.start_dir) 
-        if e:=self.type_check(Type.DIR, start, ctx.start_dir, return_type=Type.DIR):
-            return e
-        t: Turn = ctx.turn().t
-        def run(env: Environment) -> Delayed[Dir]:
-            return (start.evaluate(env, Type.DIR)
-                    .transformed(lambda d: cast(Dir, d).turned(t))
-                    )
-        return Executable(Type.DIR, run, (start,))
+        return self.use_function("TURNED", ctx, (ctx.start_dir,), extra_args=(ctx.turn().t,))
     
     def visitN_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
         dist = self.visit(ctx.dist)
@@ -1330,36 +1366,17 @@ class DMFCompiler(DMFVisitor):
     def visitConst_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
         direction: Dir = ctx.rc().d
         n = int(cast(Token, ctx.INT()).getText())
-        def run(env: Environment) -> Delayed[DeltaValue]: # @UnusedVariable
-            return (Delayed.complete(DeltaValue(n, direction)))
-        return Executable(Type.DELTA, run)
+        return Executable.constant(Type.DELTA, DeltaValue(n, direction))
 
     
     def visitCoord_expr(self, ctx:DMFParser.Coord_exprContext) -> Executable:
-        x = self.visit(ctx.x)
-        y = self.visit(ctx.y)
-        if e:=self.type_check(Type.INT, x, ctx.x,
-                              lambda want,have,text: f"x coordinate ({have}) must be {want}: {text}",
-                              return_type=Type.PAD):
-            return e
-        if e:=self.type_check(Type.INT, y, ctx.y,
-                              lambda want,have,text: f"y coordinate ({have}) must be {want}: {text}",
-                              return_type=Type.PAD):
-            return e
-        def run(env: Environment) -> Delayed[Pad]:
-            return (x.evaluate(env, Type.INT)
-                    .chain(lambda xc: (y.evaluate(env, Type.INT)
-                                       .transformed(lambda yc: env.board.pad_at(xc, yc))))
-                    )
-        return Executable(Type.PAD, run, (x,y))
-
-
+        return self.use_function("COORD", ctx, (ctx.x, ctx.y))
 
     def visitInjection_expr(self, ctx:DMFParser.Injection_exprContext) -> Executable:
         who = self.visit(ctx.who)
         what = self.visit(ctx.what)
         inj_type = what.return_type
-        if inj_type <= Type.MOTION:
+        if inj_type is Type.DIR or inj_type <= Type.MOTION:
             inj_type = Type.MOTION
         injected_type = who.return_type
         if injected_type <= Type.MOTION:
@@ -1369,7 +1386,22 @@ class DMFCompiler(DMFVisitor):
                               f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
         first_arg_type = inj_type.param_types[0]
         return_first_arg = inj_type.return_type is Type.NONE
-        if isinstance(injected_type, CallableType):
+        return_type = who.return_type if return_first_arg else inj_type.return_type
+        if self.compatible(who.return_type, first_arg_type):
+            def run(env: Environment) -> Delayed[Any]:
+                def inject(obj, func) -> Delayed[Any]:
+                    assert isinstance(func, CallableValue)
+                    future = func.apply((obj,))
+                    return future if not return_first_arg else future.transformed(lambda _: obj)
+                return (who.evaluate(env, first_arg_type)
+                        .chain(lambda obj: (what.evaluate(env, inj_type)
+                                            .chain(lambda func: inject(obj, func)))))
+            # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
+            return Executable(return_type, run, (who, what))
+        elif injected_type is Type.DIR or isinstance(injected_type, CallableType):
+            if injected_type is Type.DIR:
+                injected_type = Type.MOTION
+            assert isinstance(injected_type, CallableType)
             pass_first_arg = len(injected_type.param_types) == 1 and injected_type.return_type is Type.NONE
             pass_arg_type = injected_type.param_types[0] if pass_first_arg else injected_type.return_type
             if e:=self.type_check(first_arg_type, pass_arg_type, ctx.who,
@@ -1385,27 +1417,16 @@ class DMFCompiler(DMFVisitor):
                     comp = ComposedCallable(chain_type, first, second, pass_first_arg)
                     return Delayed.complete(comp)
                 return (who.evaluate(env, injected_type)
-                        .chain(lambda first: (what.evaluate(env)
+                        .chain(lambda first: (what.evaluate(env, inj_type)
                                               .chain(lambda second: combine(first, second)))))
             return Executable(chain_type, chain, (who, what))
-        return_type = who.return_type if return_first_arg else inj_type.return_type
-        if e:=self.type_check(first_arg_type, who, ctx.who,
-                              lambda want,have,text:
+        e = self.type_check(first_arg_type, who, ctx.who,
+                            (lambda want,have,text:
                                 f"Injected value ({have}) '{text}' not compatible with "
-                                +f"{want}: {self.text_of(ctx.what)}",
-                              return_type=return_type):
-            return e
+                                +f"{want}: {self.text_of(ctx.what)}"),
+                            return_type=return_type)
+        return not_None(e)
         
-        def run(env: Environment) -> Delayed[Any]:
-            def inject(obj, func) -> Delayed[Any]:
-                assert isinstance(func, CallableValue)
-                future = func.apply((obj,))
-                return future if not return_first_arg else future.transformed(lambda _: obj)
-            return (who.evaluate(env, first_arg_type)
-                    .chain(lambda obj: (what.evaluate(env)
-                                        .chain(lambda func: inject(obj, func)))))
-        # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
-        return Executable(return_type, run, (who, what))
             
     
     def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext) -> Executable:
@@ -1460,9 +1481,9 @@ class DMFCompiler(DMFVisitor):
         else:
             return self.use_function("NEW_DROP", ctx, (ctx.vol, ctx.loc))
         
-    def visitReagent__lit_expr(self, ctx:DMFParser.Reagent__lit_exprContext) -> Executable:
+    def visitReagent_lit_expr(self, ctx:DMFParser.Reagent_lit_exprContext) -> Executable:
         reagent = ctx.reagent().r
-        return Executable(Type.REAGENT, lambda _: Delayed.complete(reagent))
+        return Executable.constant(Type.REAGENT, reagent)
         
     def visitReagent_expr(self, ctx:DMFParser.Reagent_exprContext) -> Executable:
         return self.use_function("FIND_REAGENT", ctx, (ctx.which,))
@@ -1485,7 +1506,7 @@ class DMFCompiler(DMFVisitor):
         ret_type = f_type.return_type
         param_types = f_type.param_types
         for i in range(len(param_types)):
-            if not arg_execs[i].return_type <= param_types[i]:
+            if not self.compatible(arg_execs[i].return_type, param_types[i]):
                 ac = ctx.args[i]
                 ae = arg_execs[i]
                 pt = param_types[i]
@@ -1509,14 +1530,14 @@ class DMFCompiler(DMFVisitor):
         which = self.visit(ctx.which)
         if axis is None:
             # This is a to-pad motion
-            if not which.return_type <= Type.PAD:
-                if which.return_type <= Type.INT:
+            if not self.compatible(which.return_type, Type.PAD):
+                if self.compatible(which.return_type, Type.INT):
                     return self.error(ctx, Type.MOTION, f"Did you forget 'row' or 'column'?: {self.text_of(ctx)}")
                 return self.error(ctx, Type.MOTION, f"'to' expr without 'row' or 'column' takes a PAD: {self.text_of(ctx)}")
             def run(env: Environment) -> Delayed[MotionValue]:
                 return which.evaluate(env, Type.PAD).transformed(lambda pad: ToPadValue(pad))
         else:
-            if not which.return_type <= Type.INT:
+            if not self.compatible(which.return_type, Type.INT):
                 return self.error(ctx.which, Type.MOTION, 
                                   f"Row or column name not an int ({which.return_type.name}): {self.text_of(ctx.which)}")
             verticalp = cast(bool, axis.verticalp)
@@ -1745,9 +1766,7 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["DROP_VOL"]
         fn.postfix_op("drops")
         fn.register((Type.FLOAT,), Type.VOLUME,
-                    LazyEval(lambda env,arg_execs:
-                             arg_execs[0].evaluate(env, Type.FLOAT)
-                             .transformed(lambda n: n*env.board.drop_unit))) 
+                    WithEnv(lambda env,n: n*env.board.drop_unit))
 
         fn = Functions["TURN-ON"]
         fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddlePadValue.ON)
@@ -1789,6 +1808,18 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["LIQUID"]
         fn.infix_op("of")
         fn.register_immediate((Type.VOLUME, Type.REAGENT), Type.LIQUID, lambda v,r: Liquid(r, v))
+        
+        fn = Functions["TURNED"]
+        fn.postfix_op("turned")
+        fn.register_immediate((Type.DIR,), Type.DIR, lambda d,t: d.turned(t))
+        fn.register_immediate((Type.DELTA,), Type.DELTA, lambda d,t: d.turned(t))
+        
+        fn = Functions["COORD"]
+        fn.format_type_expr_using(2, lambda x,y: f"({x}, {y})")
+        def find_pad(env: Environment, x: int, y: int):
+            board = env.board
+            return board.pad_at(x, y)
+        fn.register((Type.INT, Type.INT), Type.PAD, WithEnv(find_pad))
         
 DMFCompiler.setup_function_table()
 

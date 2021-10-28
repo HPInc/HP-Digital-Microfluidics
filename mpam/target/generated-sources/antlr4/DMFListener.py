@@ -214,15 +214,6 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#reagent__lit_expr.
-    def enterReagent__lit_expr(self, ctx:DMFParser.Reagent__lit_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#reagent__lit_expr.
-    def exitReagent__lit_expr(self, ctx:DMFParser.Reagent__lit_exprContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#rel_expr.
     def enterRel_expr(self, ctx:DMFParser.Rel_exprContext):
         pass
@@ -247,6 +238,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#not_expr.
     def exitNot_expr(self, ctx:DMFParser.Not_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#reagent_lit_expr.
+    def enterReagent_lit_expr(self, ctx:DMFParser.Reagent_lit_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#reagent_lit_expr.
+    def exitReagent_lit_expr(self, ctx:DMFParser.Reagent_lit_exprContext):
         pass
 
 
@@ -403,6 +403,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#mw_name_expr.
+    def enterMw_name_expr(self, ctx:DMFParser.Mw_name_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#mw_name_expr.
+    def exitMw_name_expr(self, ctx:DMFParser.Mw_name_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#name_expr.
     def enterName_expr(self, ctx:DMFParser.Name_exprContext):
         pass
@@ -481,6 +490,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#well_expr.
     def exitWell_expr(self, ctx:DMFParser.Well_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#is_expr.
+    def enterIs_expr(self, ctx:DMFParser.Is_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#is_expr.
+    def exitIs_expr(self, ctx:DMFParser.Is_exprContext):
         pass
 
 
@@ -634,6 +652,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#name.
     def exitName(self, ctx:DMFParser.NameContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#multi_word_name.
+    def enterMulti_word_name(self, ctx:DMFParser.Multi_word_nameContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#multi_word_name.
+    def exitMulti_word_name(self, ctx:DMFParser.Multi_word_nameContext):
         pass
 
 
