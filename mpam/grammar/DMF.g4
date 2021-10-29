@@ -8,7 +8,7 @@ options {
 
 @header {
 from mpam.types import Dir, OnOff, Turn, ticks, unknown_reagent, waste_reagent
-from langsup.type_supp import Type, Rel
+from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit
 from quantities import SI
 }
 
@@ -19,8 +19,9 @@ macro_file
   
 interactive
   : compound EOF  # compound_interactive
-  | assignment EOF # assignment_interactive
-  | expr EOF # expr_interactive
+  | assignment TERMINATOR? EOF # assignment_interactive
+  | printing TERMINATOR? EOF # print_interactive
+  | expr TERMINATOR? EOF # expr_interactive
   | EOF # empty_interactive
 //  | pad_op EOF # pad_op_interactive 
   ;
@@ -36,6 +37,8 @@ assignment
   | obj=expr ATTR attr ASSIGN what=expr   # attr_assignment
   ;
   
+printing : 'print' vals+=expr (',' vals+=expr)* ;
+  
 //pad_op
 //  : 'turn'? which=expr (ON | OFF)
 //  | 'turn' (ON|OFF) which=expr
@@ -47,6 +50,7 @@ stat
 //  | which=name ASSIGN macro_header body=compound # macro_def_stat
 //  | pad_op TERMINATOR    # pad_op_stat
   | 'pause' duration=expr TERMINATOR           # pause_stat
+  | printing TERMINATOR                           # print_stat
   | 'if' tests+=expr bodies+=compound 
      ('else' 'if' tests+=expr bodies+=compound)*
      ('else' else_body=compound)?              # if_stat
@@ -65,14 +69,15 @@ expr
   | '-' rhs=expr                     # neg_expr
   | dist=expr direction              # delta_expr
   | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
-  | quant=expr 'as' 'string' 'in' dim_unit # unit_string_expr
+  | quant=expr 'as' 'a'? 'string' 'in' dim_unit # unit_string_expr
   | obj=expr ATTR attr             # attr_expr
   | start_dir=expr 'turned' turn          # turn_expr
   | dist=expr 'in' ('dir' | 'direction') d=expr # in_dir_expr
   | INT rc[$INT.int]           # const_rc_expr
   | dist=expr rc[0]           # n_rc_expr
   | amount=expr dim_unit             # unit_expr
-  | amount=expr ('drop' | 'drops')   # drop_vol_expr
+  | 'the'? (reagent 'reagent'?)		 # reagent_lit_expr
+  | ('the' | 'a')? 'reagent' 'named'? which=expr # reagent_expr
   | vol=expr 'of' which=expr       # liquid_expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
@@ -100,8 +105,6 @@ expr
   | 'the'? param_type                # type_name_expr
   | param_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
-  | 'the'? (reagent 'reagent'?)		 # reagent_lit_expr
-  | ('the' | 'a')? 'reagent' 'named'? which=expr # reagent_expr
 //  | 'reagent' STRING                 # reagent_expr
   | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
@@ -169,6 +172,7 @@ param_type returns[Type type]
   | 'well' 'pad' {$ctx.type=Type.WELL_PAD}
   | 'int'  {$ctx.type=Type.INT}
   | 'float' {$ctx.type=Type.FLOAT}
+  | 'string' {$ctx.type=Type.STRING}
   | 'state' {$ctx.type=Type.BINARY_STATE}
   | 'electrode' {$ctx.type=Type.BINARY_CPT}
   | 'delta' {$ctx.type=Type.DELTA}
@@ -183,12 +187,13 @@ param_type returns[Type type]
   | 'liquid' {$ctx.type=Type.LIQUID}
   ;
   
-dim_unit returns[Unit unit]
+dim_unit returns[PhysUnit unit]
   : ('s' | 'sec' | 'secs' | 'second' | 'seconds') {$ctx.unit=SI.sec}
   | ('ms' | 'millisecond' | 'milliseconds') {$ctx.unit=SI.ms}
   | ('uL' | 'ul' | 'microliter' | 'microlitre' | 'microliters' | 'microlitres') {$ctx.unit=SI.uL}
   | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
   | ('tick' | 'ticks') {$ctx.unit=ticks}
+  | ('drop' | 'drops') {$ctx.unit=EnvRelativeUnit.DROP}
   ;
 
 attr returns[str which]

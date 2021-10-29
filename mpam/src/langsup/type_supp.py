@@ -7,6 +7,7 @@ from typing import Final, Optional, Sequence, ClassVar, Callable, \
 
 from mpam.types import Delayed
 from _collections import defaultdict
+from quantities.core import Unit
 
 
 class Type:
@@ -534,7 +535,10 @@ Rel._known = {
     Rel.GE: lambda x,y: x >= y,
     }
     
-        
+class EnvRelativeUnit(Enum):
+    DROP = auto()
+    
+PhysUnit = Union[Unit,EnvRelativeUnit]
         
     
 if __name__ == '__main__':

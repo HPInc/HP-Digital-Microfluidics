@@ -6,7 +6,7 @@ else:
     from DMFParser import DMFParser
 
 from mpam.types import Dir, OnOff, Turn, ticks, unknown_reagent, waste_reagent
-from langsup.type_supp import Type, Rel
+from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit
 from quantities import SI
 
 
@@ -40,6 +40,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#assignment_interactive.
     def exitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#print_interactive.
+    def enterPrint_interactive(self, ctx:DMFParser.Print_interactiveContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#print_interactive.
+    def exitPrint_interactive(self, ctx:DMFParser.Print_interactiveContext):
         pass
 
 
@@ -79,6 +88,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#printing.
+    def enterPrinting(self, ctx:DMFParser.PrintingContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#printing.
+    def exitPrinting(self, ctx:DMFParser.PrintingContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#assign_stat.
     def enterAssign_stat(self, ctx:DMFParser.Assign_statContext):
         pass
@@ -94,6 +112,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#pause_stat.
     def exitPause_stat(self, ctx:DMFParser.Pause_statContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#print_stat.
+    def enterPrint_stat(self, ctx:DMFParser.Print_statContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#print_stat.
+    def exitPrint_stat(self, ctx:DMFParser.Print_statContext):
         pass
 
 
@@ -448,21 +475,21 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#dir_expr.
-    def enterDir_expr(self, ctx:DMFParser.Dir_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#dir_expr.
-    def exitDir_expr(self, ctx:DMFParser.Dir_exprContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#reagent_expr.
     def enterReagent_expr(self, ctx:DMFParser.Reagent_exprContext):
         pass
 
     # Exit a parse tree produced by DMFParser#reagent_expr.
     def exitReagent_expr(self, ctx:DMFParser.Reagent_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#dir_expr.
+    def enterDir_expr(self, ctx:DMFParser.Dir_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#dir_expr.
+    def exitDir_expr(self, ctx:DMFParser.Dir_exprContext):
         pass
 
 
@@ -508,15 +535,6 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#attr_expr.
     def exitAttr_expr(self, ctx:DMFParser.Attr_exprContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#drop_vol_expr.
-    def enterDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#drop_vol_expr.
-    def exitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext):
         pass
 
 

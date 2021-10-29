@@ -1149,6 +1149,13 @@ class Mixture(Reagent):
         return m
     
     @classmethod
+    def find_or_compute_aux(cls, specs: tuple[tuple[float, Reagent]], *,
+                            name: Optional[str] = None) -> Reagent:
+        # TODO:
+        # Note, need to normalize before lookup?
+        ...
+    
+    @classmethod
     def find_or_compute(cls, r1: Reagent, r2: Reagent, *, 
                         ratio: float = 1,
                         name: Optional[str] = None) -> Reagent:

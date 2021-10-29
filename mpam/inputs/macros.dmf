@@ -93,15 +93,15 @@ mix = macro(dir1: direction) {
   macro(drop1: drop) {
     pad1 = drop1's pad;
     pad2 = pad1 + 2 in direction dir1;
-    drop2 = drop @ pad2;
+    drop2 = pad2's drop;
     [[
-       drop1: unsafe_walk(1 in direction dir1);
+       drop1: unsafe_walk(dir1);
        pad2: off; 
     ]]
     drop2: remove from board;
     drop1's contents = drop1's contents + drop2's contents;
     [[
-      drop1: 1 in direction (dir1 turned around);
+      drop1: dir1 turned around;
       pad2: on; 
     ]]
     drop2's pad = pad2;

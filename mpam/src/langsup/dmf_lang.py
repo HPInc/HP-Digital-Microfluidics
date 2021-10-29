@@ -14,7 +14,7 @@ from DMFLexer import DMFLexer
 from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
-    Rel, MaybeType, Func, CompositionType
+    Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit
 from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
@@ -220,6 +220,17 @@ class DeltaValue(MotionValue):
     def turned(self, turn: Turn) -> DeltaValue:
         return DeltaValue(self.dist, self.direction.turned(turn))
     
+    def __eq__(self, rhs: object) -> bool:
+        if rhs is self:
+            return True
+        if not isinstance(rhs, DeltaValue):
+            return False
+        return self.dist == rhs.dist and self.direction is rhs.direction
+    
+    def __hash__(self) -> int:
+        return hash((self.dist, self.direction))
+        
+    
 class UnsafeWalkValue(MotionValue):
     delta: Final[DeltaValue]
     
@@ -371,46 +382,51 @@ class ByNameCache(dict[K_,V_]):
 Functions = ByNameCache[str, Func](lambda name: Func(name))
 Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"{name} attribute"]))
 
-def unit_func(unit: Unit) -> Func:
+ERUnitLookup: dict[EnvRelativeUnit, tuple[Type, Type, Callable[[Environment], Unit]]] = {
+        EnvRelativeUnit.DROP: (Type.VOLUME, Type.FLOAT, lambda env: env.board.drop_unit),
+    } 
+
+def unit_adaptor(unit: PhysUnit,
+                 op_name: str, 
+                 types_fn: Callable[[Type, Type], tuple[Sequence[Type], Type]],
+                 fn: Callable[[Unit], Callable[[Any], Any]]) -> Func:
     func = Func(str(unit))
-    dim = unit.dimensionality()
-    try:
-        qtype, ntype = DimensionToType[dim]
-    except KeyError:
-        raise UnknownUnitDimensionError(unit)
-    func.register_immediate((ntype,), qtype, lambda n: n*unit)
-    func.postfix_op(str(unit))
+    func.postfix_op(op_name)
+    
+    if isinstance(unit, EnvRelativeUnit):
+        qtype, ntype, unit_finder = ERUnitLookup[unit]
+        arg_types, ret_type = types_fn(qtype, ntype)
+        func.register(arg_types, ret_type, WithEnv(lambda env, n: fn(unit_finder(env))(n)))
+    else:
+        dim = unit.dimensionality()
+        try:
+            qtype, ntype = DimensionToType[dim]
+        except KeyError:
+            raise UnknownUnitDimensionError(unit)
+        arg_types, ret_type = types_fn(qtype, ntype)
+        func.register_immediate(arg_types, ret_type, fn(unit))
     return func
 
-UnitFuncs = ByNameCache[Unit, Func](unit_func)
+def unit_func(unit: PhysUnit) -> Func:
+    return unit_adaptor(unit, str(unit), 
+                        lambda qt,nt: ((nt,), qt),
+                        lambda unit: lambda n: n*unit)
 
-def unit_mag_func(unit: Unit) -> Func:
-    name = f"'s magnitude in {unit}"
-    func = Func(name)
-    dim = unit.dimensionality()
-    try:
-        qtype, ntype = DimensionToType[dim] # @UnusedVariable
-    except KeyError:
-        raise UnknownUnitDimensionError(unit)
-    func.register_immediate((qtype,), Type.FLOAT, lambda d: d.as_number(unit))
-    func.postfix_op(name)
-    return func
+UnitFuncs = ByNameCache[PhysUnit, Func](unit_func)
 
-UnitMagFuncs = ByNameCache[Unit, Func](unit_mag_func)
+def unit_mag_func(unit: PhysUnit) -> Func:
+    return unit_adaptor(unit, f"'s magnitude in {unit}",
+                        lambda qt,nt: ((qt,), Type.FLOAT), # @UnusedVariable
+                        lambda unit: lambda d: d.as_number(unit))
 
-def unit_string_func(unit: Unit) -> Func:
-    name = f"as string in {unit}"
-    func = Func(name)
-    dim = unit.dimensionality()
-    try:
-        qtype, ntype = DimensionToType[dim] # @UnusedVariable
-    except KeyError:
-        raise UnknownUnitDimensionError(unit)
-    func.register_immediate((qtype,), Type.STRING, lambda d: f"{d.in_units(unit):g}")
-    func.postfix_op(name)
-    return func
+UnitMagFuncs = ByNameCache[PhysUnit, Func](unit_mag_func)
 
-UnitStringFuncs = ByNameCache[Unit, Func](unit_string_func)
+def unit_string_func(unit: PhysUnit) -> Func:
+    return unit_adaptor(unit, f"as string in {unit}",
+                        lambda qt,nt: ((qt,), Type.STRING), # @UnusedVariable
+                        lambda unit: lambda d: f"{d.in_units(unit):g}") 
+
+UnitStringFuncs = ByNameCache[PhysUnit, Func](unit_string_func)
 
 Attributes["GATE"].register(Type.WELL, Type.WELL_PAD, 
                             lambda well: WellPadValue(well.gate, well))
@@ -470,6 +486,9 @@ Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.fl
 Functions["CEILING"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.ceil(x))
 Functions["UNSAFE"].register_immediate((Type.DELTA,), Type.MOTION, lambda d: UnsafeWalkValue(d))
 Functions["UNSAFE"].register_immediate((Type.DIR,), Type.MOTION, lambda d: UnsafeWalkValue(DeltaValue(1,d)))
+Functions["PRINT"].register_all_immediate([((Type.ANY,) * 10, Type.NONE) for n in range(1, 8)],
+                                          print)
+Functions["STRING"].register_immediate((Type.ANY,), Type.STRING, str)
 # Functions["ON_BOARD"].register_immediate((Type.PAD,), Type.BOOL,
 #                                          )
 
@@ -479,6 +498,9 @@ BuiltIns = {
     "round": Functions["ROUND"],
     "unsafe_walk": Functions["UNSAFE"],
     "on board": Functions["ON_BOARD"],
+    # "print": Functions["PRINT"],
+    "str": Functions["STRING"],
+    "mixture": Functions["MIX"]
     }
 
 DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
@@ -917,15 +939,15 @@ class DMFCompiler(DMFVisitor):
         sig, fn = desc
         return self.use_callable(fn, arg_execs, sig, extra_args=extra_args)
     
-    def unit_exec(self, unit: Unit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
+    def unit_exec(self, unit: PhysUnit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
         func = UnitFuncs[unit]
         return self.use_function(func, ctx, (size_ctx,))
     
-    def unit_mag_exec(self, unit: Unit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
+    def unit_mag_exec(self, unit: PhysUnit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
         func = UnitMagFuncs[unit]
         return self.use_function(func, ctx, (quant_ctx,))
     
-    def unit_string_exec(self, unit: Unit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
+    def unit_string_exec(self, unit: PhysUnit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
         func = UnitStringFuncs[unit]
         return self.use_function(func, ctx, (quant_ctx,))
     
@@ -1043,6 +1065,20 @@ class DMFCompiler(DMFVisitor):
 
     def visitAssign_stat(self, ctx:DMFParser.Assign_statContext) -> Executable:
         return self.visit(ctx.assignment())
+    
+    def visitPrinting(self, ctx:DMFParser.PrintingContext) -> Executable:
+        def print_vals(*vals):
+            print(*vals)
+            return Delayed.complete(None)
+        vals = tuple(self.visit(c) for c in ctx.vals)
+        sig = Signature.of(tuple(v.return_type for v in vals), Type.NONE)
+        return self.use_callable(print_vals, vals, sig)
+        
+    def visitPrint_stat(self, ctx:DMFParser.Print_statContext):
+        return self.visit(ctx.printing())
+
+    def visitPrint_interactive(self, ctx:DMFParser.Print_statContext):
+        return self.visit(ctx.printing())
 
     def visitPause_stat(self, ctx:DMFParser.Pause_statContext) -> Executable:
         duration = self.visit(ctx.duration)
@@ -1620,8 +1656,8 @@ class DMFCompiler(DMFVisitor):
     def visitUnit_string_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
         return self.unit_string_exec(ctx.dim_unit().unit, ctx, ctx.quant)
     
-    def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
-        return self.use_function("DROP_VOL", ctx, (ctx.amount,))
+    # def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
+    #     return self.use_function("DROP_VOL", ctx, (ctx.amount,))
         
     def visitPause_expr(self, ctx:DMFParser.Pause_exprContext) -> Executable:
         duration = self.visit(ctx.duration)
@@ -1820,6 +1856,18 @@ class DMFCompiler(DMFVisitor):
             board = env.board
             return board.pad_at(x, y)
         fn.register((Type.INT, Type.INT), Type.PAD, WithEnv(find_pad))
+        
+        fn = Functions["MIX"]
+        def mix_reagent(*reagents: ScaledReagent) -> Reagent:
+            parts,res = reagents[0]
+            
+            for m,r in reagents[1:]:
+                ratio = parts/m
+                res = Mixture.find_or_compute(res, r, ratio=ratio)
+                parts += m
+            return res
+        fn.register_all_immediate([((Type.SCALED_REAGENT,)*n, Type.REAGENT) for n in range(1,8)], 
+                                  mix_reagent)
         
 DMFCompiler.setup_function_table()
 
