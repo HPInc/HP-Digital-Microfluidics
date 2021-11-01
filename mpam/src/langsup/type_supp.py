@@ -247,12 +247,17 @@ class CallableType(Type):
         
 
 class MotionType(CallableType):
-    def __init__(self):
-        super().__init__("MOTION", (Type.DROP,), Type.DROP)
+    def __init__(self, name: str = "MOTION", *,
+                 supers: Optional[Sequence[Type]] = None) -> None:
+        super().__init__(name, (Type.DROP,), Type.DROP, supers=supers)
         
 Type.MOTION = MotionType()
-        
-Type.DELTA = Type("DELTA", [Type.MOTION])
+
+class DeltaType(MotionType):
+    def __init__(self) -> None:
+        super().__init__("DELTA", supers=(Type.MOTION,))
+
+Type.DELTA = DeltaType()
 
 
 class TwiddleOpType(CallableType):

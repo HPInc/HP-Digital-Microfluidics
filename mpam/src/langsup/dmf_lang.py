@@ -428,57 +428,57 @@ def unit_string_func(unit: PhysUnit) -> Func:
 
 UnitStringFuncs = ByNameCache[PhysUnit, Func](unit_string_func)
 
-Attributes["GATE"].register(Type.WELL, Type.WELL_PAD, 
+Attributes["gate"].register(Type.WELL, Type.WELL_PAD, 
                             lambda well: WellPadValue(well.gate, well))
-Attributes["EXIT_PAD"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
-Attributes["STATE"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
-Attributes["DISTANCE"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
-Attributes["DIRECTION"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
-Attributes["DURATION"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
+Attributes["#exit_pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
+Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
+Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
+Attributes["direction"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
+Attributes["duration"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
 def _set_pad(d: Drop, p: Pad):
     d.pad = p
     d.status = DropStatus.ON_BOARD
-Attributes["PAD"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=_set_pad)
-Attributes["ROW"].register(Type.PAD, Type.INT, lambda pad: pad.row)
-Attributes["COLUMN"].register(Type.PAD, Type.INT, lambda pad: pad.column)
-Attributes["EXIT_DIR"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
-Attributes["WELL"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
-Attributes["WELL"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
-Attributes["DROP"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
-# Attributes["MAGNITUDE"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
-Attributes["MAGNITUDE"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
-Attributes["LENGTH"].register(Type.STRING, Type.INT, lambda s: len(s))
-Attributes["NUMBER"].register(Type.WELL, Type.INT, lambda w : w.number)
+Attributes["pad"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=_set_pad)
+Attributes["row"].register(Type.PAD, Type.INT, lambda pad: pad.row)
+Attributes["column"].register(Type.PAD, Type.INT, lambda pad: pad.column)
+Attributes["#exit_dir"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
+Attributes["well"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
+Attributes["well"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
+Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
+# Attributes["magnitude"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
+Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
+Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
+Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
 
-Attributes["VOLUME"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
+Attributes["volume"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
 def _set_drop_volume(d: Drop, v: Volume):
     d.volume = v
-Attributes["VOLUME"].register_setter(Type.DROP, Type.VOLUME, _set_drop_volume)
+Attributes["volume"].register_setter(Type.DROP, Type.VOLUME, _set_drop_volume)
 def _set_well_volume(w: Well, v: Volume):
     w.contains(Liquid(w.reagent, v))
-Attributes["VOLUME"].register_setter(Type.WELL, Type.VOLUME, _set_well_volume)
+Attributes["volume"].register_setter(Type.WELL, Type.VOLUME, _set_well_volume)
 
-Attributes["REAGENT"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.REAGENT, lambda d: d.reagent)
+Attributes["reagent"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.REAGENT, lambda d: d.reagent)
 def _set_drop_reagent(d: Drop, r: Reagent):
     d.reagent= r
-Attributes["REAGENT"].register_setter(Type.DROP, Type.REAGENT, _set_drop_reagent)
+Attributes["reagent"].register_setter(Type.DROP, Type.REAGENT, _set_drop_reagent)
 def _set_well_reagent(w: Well, r: Reagent):
     w.contains(Liquid(r, w.volume))
-Attributes["REAGENT"].register_setter(Type.WELL, Type.REAGENT, _set_well_reagent)
+Attributes["reagent"].register_setter(Type.WELL, Type.REAGENT, _set_well_reagent)
 
 def _set_drop_liquid(d: Drop, liq: Liquid):
     d.volume = liq.volume
     d.reagent= liq.reagent
-Attributes["CONTENTS"].register(Type.DROP, Type.LIQUID, lambda d: Liquid(d.reagent, d.volume),
+Attributes["contents"].register(Type.DROP, Type.LIQUID, lambda d: Liquid(d.reagent, d.volume),
                                 setter=_set_drop_liquid)
 
 def _set_well_contents(w: Well, liq: Liquid):
     w.contains(liq)
-Attributes["CONTENTS"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w.reagent, w.volume),
+Attributes["contents"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w.reagent, w.volume),
                                 setter=_set_well_contents)
 
-Attributes["CAPACITY"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
-Attributes["REMAINING_CAPACITY"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
+Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
+Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
 
 
 Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
@@ -881,10 +881,14 @@ class DMFCompiler(DMFVisitor):
             return f"{otn}'s {a} not defined, requires one of {tns}: {text}"
         return self.error(obj_ctx, ret_type, emessage)
     
-    def not_an_attr_error(self, attr_ctx: DMFParser.AttrContext) -> Executable:
+    def not_an_attr_error(self,
+                          ctx: ParserRuleContext, 
+                          attr_ctx: DMFParser.AttrContext) -> Executable:
         attr_name = attr_ctx.which
-        return self.error(attr_ctx, Type.NONE,
-                          lambda txt: f"The compiler thinks {txt} is attribute {attr_name} but it isn't")
+        attr_text = self.text_of(attr_ctx)
+        type_spec = "" if (attr_text == attr_name) else f" ({attr_name})"
+        return self.error(ctx, Type.NONE,
+                          lambda text: f"'{attr_text}'{type_spec} is not an attribute: {text})")
         
     
     def use_callable(self, fn: Callable[..., Delayed[Any]],
@@ -951,7 +955,6 @@ class DMFCompiler(DMFVisitor):
         func = UnitStringFuncs[unit]
         return self.use_function(func, ctx, (quant_ctx,))
     
-        
     def visit(self, tree) -> Executable:
         return cast(Executable, DMFVisitor.visit(self, tree))
 
@@ -1025,7 +1028,7 @@ class DMFCompiler(DMFVisitor):
         attr_name: str = ctx.attr().which
         attr = Attributes.get(attr_name, None)
         if attr is None:
-            return self.not_an_attr_error(ctx.attr())
+            return self.not_an_attr_error(ctx, ctx.attr())
         desc = attr.setter(obj.return_type, value.return_type)
         if desc is None:
             a = self.text_of(ctx.attr())
@@ -1298,8 +1301,7 @@ class DMFCompiler(DMFVisitor):
         attr_name: str = ctx.attr().which
         attr = Attributes.get(attr_name, None)
         if attr is None:
-            return self.error(ctx.attr(), Type.NONE,
-                              lambda txt: f"The compiler thinks {txt} is attribute {attr_name} but it isn't")
+            return self.not_an_attr_error(ctx, ctx.attr())
         desc = attr.getter(obj.return_type)
         if desc is None:
             return self.inapplicable_attr_error(attr, obj.return_type,
@@ -1470,7 +1472,7 @@ class DMFCompiler(DMFVisitor):
         attr_name: str = ctx.attr().which
         attr = Attributes.get(attr_name, None)
         if attr is None:
-            return self.not_an_attr_error(ctx.attr())
+            return self.not_an_attr_error(ctx, ctx.attr())
         getter = attr.getter(obj.return_type)
         if getter is None:
             return self.inapplicable_attr_error(attr, obj.return_type,
@@ -1529,35 +1531,39 @@ class DMFCompiler(DMFVisitor):
 
 
     def visitFunction_expr(self, ctx:DMFParser.Function_exprContext) -> Executable:
-        f_name = self.text_of(ctx.name())
         arg_execs = tuple(self.visit(arg) for arg in ctx.args)
-        builtin = BuiltIns.get(f_name, None)
-        if builtin is not None:
-            return self.use_function(builtin, ctx, ctx.args)
-        f_type = self.current_types.lookup(f_name)
-        if f_type is None:
-            return self.error(ctx.name(), Type.NONE, f"Undefined macro: {f_name}")
+        fc = cast(DMFParser.ExprContext, ctx.func)
+        if isinstance(fc, DMFParser.Name_exprContext):
+            func_name = self.text_of(fc.name())
+            builtin = BuiltIns.get(func_name, None)
+            if builtin is not None:
+                return self.use_function(builtin, ctx, ctx.args)
+        func_exec = self.visit(fc)
+        f_type = func_exec.return_type
+        if f_type is Type.DIR:
+            f_type = Type.DELTA
         if not isinstance(f_type, CallableType):
-            return self.error(ctx.name(), Type.NONE, f"Not a macro ({f_type.name}): {f_name}")
+            return self.error(fc, Type.NONE, lambda text: f"Not callable ({f_type.name}): {text}")
         ret_type = f_type.return_type
         param_types = f_type.param_types
+        if len(param_types) != len(arg_execs):
+            np = len(param_types)
+            na = len(arg_execs)
+            return self.error(ctx, ret_type, 
+                              lambda text: f"Wrong number of arguments to macro.  Expected {np}, got {na}: {text}")
         for i in range(len(param_types)):
             if not self.compatible(arg_execs[i].return_type, param_types[i]):
                 ac = ctx.args[i]
                 ae = arg_execs[i]
                 pt = param_types[i]
                 return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
-        if len(param_types) != len(arg_execs):
-            np = len(param_types)
-            na = len(arg_execs)
-            return self.error(ctx, ret_type, f"Wrong number of arguments to {f_name}.  Expected {np}, got {na}")
         
         def dispatch(fn: CallableValue, *args) -> Delayed[Any]:
             return fn.apply(args)
         
-        fn_exec = Executable(f_type, lambda env: Delayed.complete(env[f_name]), ())
+        # fn_exec = Executable(f_type, lambda env: Delayed.complete(env[f_name]), ())
         
-        return self.use_callable(dispatch, [fn_exec, *arg_execs], f_type.with_self_sig)
+        return self.use_callable(dispatch, [func_exec, *arg_execs], f_type.with_self_sig)
         
 
 

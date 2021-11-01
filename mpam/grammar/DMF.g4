@@ -65,6 +65,7 @@ compound
 
 expr 
   : '(' expr ')'  # paren_expr
+  | func=expr  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | '(' x=expr ',' y=expr ')' 		 # coord_expr
   | '-' rhs=expr                     # neg_expr
   | dist=expr direction              # delta_expr
@@ -106,7 +107,7 @@ expr
   | param_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
 //  | 'reagent' STRING                 # reagent_expr
-  | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
+//  | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
   | multi_word_name                  # mw_name_expr
   | string # string_lit_expr
@@ -197,26 +198,14 @@ dim_unit returns[PhysUnit unit]
   ;
 
 attr returns[str which]
-  : 'gate' {$ctx.which="GATE"}
-  | 'exit' 'pad' {$ctx.which="EXIT_PAD"}
-  | 'state' {$ctx.which="STATE"}
-  | 'distance' {$ctx.which="DISTANCE"}
-  | ('dir' | 'direction') {$ctx.which="DIRECTION"}
-  | 'duration' {$ctx.which="DURATION"}
-  | 'pad' {$ctx.which="PAD"}
-  | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which="ROW"}
-  | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="COLUMN"}
-  | 'well' {$ctx.which="WELL"}
-  | 'exit' ('dir' | 'direction') {$ctx.which="EXIT_DIR"}
-  | 'drop' {$ctx.which="DROP"}
-//  | 'magnitude' {$ctx.which="MAGNITUDE"}
-  | 'number' {$ctx.which="NUMBER"}
-  | 'volume' {$ctx.which="VOLUME"}
-  | 'length' {$ctx.which="LENGTH"}
-  | 'reagent' {$ctx.which="REAGENT"}
-  | 'contents' {$ctx.which="CONTENTS"}
-  | 'capacity' {$ctx.which="CAPACITY"}
-  | 'remaining' 'capacity' {$ctx.which="REMAINING_CAPACITY"}
+  : 'exit' 'pad' {$ctx.which="#exit_pad"}
+  | ('dir' | 'direction') {$ctx.which="direction"}
+  | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which="row"}
+  | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="column"}
+  | 'exit' ('dir' | 'direction') {$ctx.which="#exit_dir"}
+  | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
+  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | ID)
+  	{$ctx.which=$n.text}
   ;
   
 rel returns[Rel which]
