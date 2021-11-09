@@ -8,7 +8,16 @@ from typing import Final, Optional, Sequence, ClassVar, Callable, \
 from mpam.types import Delayed
 from _collections import defaultdict
 from quantities.core import Unit
+import typing
 
+class TypeMismatchError(RuntimeError):
+    have: Final[Type]
+    want: Final[Type]
+    
+    def __init__(self, have: Type, want: Type) -> None:
+        super().__init__(f"Cannot convert from {have} to {want}")
+        self.have = have
+        self.want = want
 
 class Type:
     name: Final[str]
@@ -17,6 +26,9 @@ class Type:
     direct_subs: Final[list[Type]]
     all_subs: Final[list[Type]]
     _maybe: Optional[MaybeType] = None
+    
+    conversions: ClassVar[dict[tuple[Type,Type], Callable[[Any],Any]]] = {}
+    compatible: ClassVar[set[tuple[Type,Type]]] = set()
     
     @property
     def maybe(self) -> MaybeType:
@@ -91,7 +103,9 @@ class Type:
     def __lt__(self, rhs: Type) -> bool:
         if isinstance(rhs, MaybeType):
             return self <= rhs.if_there_type
-        return  self in rhs.all_subs
+        if self in rhs.all_subs:
+            return True
+        return self.can_convert_to(rhs)
     def __le__(self, rhs: Type) -> bool:
         return self is rhs or self < rhs
     
@@ -119,7 +133,58 @@ class Type:
     def upper_bound(cls, *types: Type) -> Type:
         bounds = cls.upper_bounds(*types)
         return Type.NONE if len(bounds) == 0 else bounds[0]
+    
+    @classmethod
+    def register_conversion(cls, have: Type, want: Type, converter: Callable[[Any], Any]) -> None:
+        cls.conversions[(have, want)] = converter
         
+    @classmethod
+    def value_compatible(cls, have: Union[Type, Sequence[Type]], want: Union[Type, Sequence[Type]]) -> None:
+        if isinstance(have, Type):
+            have = (have,)
+        if isinstance(want, Type):
+            want = (want,)
+        cls.compatible |= {(h,w) for h in have for w in want}
+        
+    def convert_to(self, want: Type, val: Any, *,
+                   rep_types: Optional[Mapping[Type, Union[typing.Type, tuple[typing.Type,...]]]] = None
+                   ) -> Any:
+        if self is want:
+            return val
+        if want is Type.ANY:
+            return val
+        if want is Type.NONE:
+            return None
+        if isinstance(want, MaybeType):
+            if val is None:
+                return val
+            elif isinstance(self, MaybeType):
+                return self.if_there_type.convert_to(want.if_there_type, val)
+            else:
+                return self.convert_to(want.if_there_type, val)
+        if (self, want) in self.compatible:
+            return val
+        converter = self.conversions.get((self, want), None)
+        if converter is not None:
+            return converter(val)
+        if rep_types is not None:
+            rep = rep_types.get(want, None)
+            if rep is not None and isinstance(val, rep):
+                return val
+        raise TypeMismatchError(self, want)
+    
+    def can_convert_to(self, want: Type) -> bool:
+        if self is want or want is Type.ANY or want is Type.NONE:
+            return True
+        key = (self, want)
+        if key in self.compatible or key in self.conversions:
+            return True
+        if isinstance(want, MaybeType):
+            if isinstance(self, MaybeType):
+                return self.if_there_type.can_convert_to(want.if_there_type)
+            else:
+                return self.can_convert_to(want.if_there_type)
+        return False
     
 Type.ANY = Type("ANY", is_root=True)
 Type.NONE = Type("NONE")

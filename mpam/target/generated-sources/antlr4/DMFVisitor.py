@@ -27,8 +27,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#assignment_interactive.
-    def visitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext):
+    # Visit a parse tree produced by DMFParser#decl_interactive.
+    def visitDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext):
         return self.visitChildren(ctx)
 
 
@@ -47,13 +47,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#name_assignment.
-    def visitName_assignment(self, ctx:DMFParser.Name_assignmentContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#attr_assignment.
-    def visitAttr_assignment(self, ctx:DMFParser.Attr_assignmentContext):
+    # Visit a parse tree produced by DMFParser#declaration.
+    def visitDeclaration(self, ctx:DMFParser.DeclarationContext):
         return self.visitChildren(ctx)
 
 
@@ -62,8 +57,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#assign_stat.
-    def visitAssign_stat(self, ctx:DMFParser.Assign_statContext):
+    # Visit a parse tree produced by DMFParser#decl_stat.
+    def visitDecl_stat(self, ctx:DMFParser.Decl_statContext):
         return self.visitChildren(ctx)
 
 
@@ -87,6 +82,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#loop_stat.
+    def visitLoop_stat(self, ctx:DMFParser.Loop_statContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#compound_stat.
     def visitCompound_stat(self, ctx:DMFParser.Compound_statContext):
         return self.visitChildren(ctx)
@@ -99,6 +99,21 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#par_block.
     def visitPar_block(self, ctx:DMFParser.Par_blockContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#repeat_loop.
+    def visitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#for_loop.
+    def visitFor_loop(self, ctx:DMFParser.For_loopContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#term_punct.
+    def visitTerm_punct(self, ctx:DMFParser.Term_punctContext):
         return self.visitChildren(ctx)
 
 
@@ -127,6 +142,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#attr_assign_expr.
+    def visitAttr_assign_expr(self, ctx:DMFParser.Attr_assign_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#type_name_expr.
     def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
         return self.visitChildren(ctx)
@@ -144,6 +164,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#rel_expr.
     def visitRel_expr(self, ctx:DMFParser.Rel_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#name_assign_expr.
+    def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext):
         return self.visitChildren(ctx)
 
 

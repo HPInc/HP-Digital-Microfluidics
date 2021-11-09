@@ -19,7 +19,8 @@ macro_file
   
 interactive
   : compound EOF  # compound_interactive
-  | assignment TERMINATOR? EOF # assignment_interactive
+  | declaration TERMINATOR? EOF # decl_interactive
+//  | assignment TERMINATOR? EOF # assignment_interactive
   | printing TERMINATOR? EOF # print_interactive
   | expr TERMINATOR? EOF # expr_interactive
   | EOF # empty_interactive
@@ -32,9 +33,24 @@ interactive
 //  | which=name ASSIGN macro_header body=compound # macro_def_tls
 //  ;
   
-assignment
-  : which=name ASSIGN what=expr           # name_assignment
-  | obj=expr ATTR attr ASSIGN what=expr   # attr_assignment
+//assignment
+//  : which=name (':' param_type)? ASSIGN what=expr           # name_assignment
+////  | obj=expr ATTR attr ASSIGN what=expr   # attr_assignment
+//  ;
+  
+declaration returns [Optional[Type] type, str pname, int n]
+  : LOCAL name ASSIGN init=expr
+  	{$ctx.pname=$name.text}
+  	{$ctx.type=None} 
+  | LOCAL? param_type INT ASSIGN init=expr? 
+  	{$ctx.type=$param_type.type}
+  	{$ctx.n=$INT.int}
+  | LOCAL param_type INT
+  	{$ctx.type=$param_type.type}
+  	{$ctx.n=$INT.int}
+  | LOCAL? param_type name (ASSIGN init=expr)? 
+  	{$ctx.type=$param_type.type}
+  	{$ctx.pname=$name.text}
   ;
   
 printing : 'print' vals+=expr (',' vals+=expr)* ;
@@ -46,7 +62,8 @@ printing : 'print' vals+=expr (',' vals+=expr)* ;
 //  ;
   
 stat
-  : assignment TERMINATOR  # assign_stat
+  : declaration TERMINATOR # decl_stat
+//  | assignment TERMINATOR  # assign_stat
 //  | which=name ASSIGN macro_header body=compound # macro_def_stat
 //  | pad_op TERMINATOR    # pad_op_stat
   | 'pause' duration=expr TERMINATOR           # pause_stat
@@ -55,12 +72,23 @@ stat
      ('else' 'if' tests+=expr bodies+=compound)*
      ('else' else_body=compound)?              # if_stat
   | expr TERMINATOR      # expr_stat
+  | loop                 # loop_stat
   | compound             # compound_stat
   ;
   
 compound
   : '{' stat* '}'         # block
   | '[[' stat* ']]'       # par_block
+  ;
+  
+loop
+  : 'repeat' n=expr 'times' body=stat   # repeat_loop
+  | 'for' var=name 'in' '[' start=expr ',' stop=expr term_punct ('by' step=expr) body=stat # for_loop
+  ;
+  
+term_punct returns [bool is_closed]
+  : ']' {$ctx.is_closed=True}
+  | ')' {$ctx.is_closed=False}
   ;
 
 expr 
@@ -110,6 +138,9 @@ expr
 //  | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
   | multi_word_name                  # mw_name_expr
+  | which=name ASSIGN what=expr    # name_assign_expr
+  | obj=expr ATTR attr ASSIGN what=expr  # attr_assign_expr
+  | ptype=param_type n=INT ASSIGN what=expr # name_assign_expr
   | string # string_lit_expr
   | INT                              # int_expr
   | FLOAT							 # float_expr
@@ -154,9 +185,11 @@ macro_header
   : 'macro' '(' (param (',' param)*)? ')'
   ;
   
-param returns[Type type, str pname, int n]
-  : param_type {$ctx.type=$param_type.type} ( INT {$ctx.n=$INT.int} )?
-  | name ':' param_type {$ctx.type=$param_type.type} {$ctx.pname=$name.text}
+param returns[Type type, str pname, int n, bool deprecated]
+  : ('a' | 'an')? param_type {$ctx.type=$param_type.type} 
+  | param_type {$ctx.type=$param_type.type} INT {$ctx.n=$INT.int} 
+  | param_type name {$ctx.type=$param_type.type} {$ctx.pname=$name.text}
+  | name ':' param_type {$ctx.type=$param_type.type} {$ctx.pname=$name.text} {$ctx.deprecated=True}
   ;
   
 no_arg_action returns[str which]
@@ -240,6 +273,7 @@ ASSIGN: '=';
 ATTR: '\'s';
 DIV: '/';
 INJECT: ':';
+LOCAL: 'local';
 MUL: '*';
 NOT: 'not';
 OFF: 'off';
@@ -247,3 +281,5 @@ ON: 'on';
 SUB: '-';
 TERMINATOR: ';';
 TOGGLE: 'toggle';
+CLOSE_BRACKET: ']';
+CLOSE_PAREN: ')';

@@ -1,4 +1,4 @@
-rectangle=macro(d: drop, w: int, h: int) {
+rectangle=macro(drop d, int w, int h) {
   d : right w : up h : left w : down h;
 };
 
@@ -6,7 +6,7 @@ walk_rectangle = macro(drop) {
   rectangle(drop, 5, 3);
 };
 
-ready = macro(w: well) {
+ready = macro(well w) {
   [[
     w[0]: off;
     w[1]: off;
@@ -21,7 +21,7 @@ ready = macro(w: well) {
   ]]
 };
 
-disp1 = macro(w: well) {
+disp1 = macro(well w) {
   [[ w[3]: on; w[4]: on; w[5]: on; ]]
   [[ w[0]: on; w[1]: on; w[2]: on; ]]
   w's gate: on; 
@@ -38,7 +38,7 @@ disp1 = macro(w: well) {
   drop@w's exit pad;
 };
 
-disp2 = macro(w: well) {
+disp2 = macro(well w) {
   [[ w[3]: on; w[4]: on; w[5]: on; w[7]: off; ]]
   [[ w[0]: on; w[1]: on; w[2]: on; w[6]: off; ]]
   [[ w's gate: on; 
@@ -61,11 +61,11 @@ disp2 = macro(w: well) {
 };
 
 
-test = macro(d: drop, time) {
+test = macro(drop d, time) {
   d: right 1: pause time: right 2;
 };
 
-max = macro(x: int, y: int) {
+max = macro(int x, int y) {
   if x > y {
     x;
   } else {
@@ -73,7 +73,7 @@ max = macro(x: int, y: int) {
   }
 };
 
-compare = macro(x: int, y: int) {
+compare = macro(int x, int y) {
   if x > y {
     1;
   } else if x < y {
@@ -83,32 +83,52 @@ compare = macro(x: int, y: int) {
   }
 };
 
-maybe_move = macro(drop, dist: int) {
+maybe_move = macro(drop, int dist) {
   if dist > 0 {
     drop: dist right;
   }
 };
 
-mix = macro(dir1: direction) {
-  macro(drop1: drop) {
-    pad1 = drop1's pad;
-    pad2 = pad1 + 2 in direction dir1;
-    drop2 = pad2's drop;
+mix = macro(dir) {
+  macro(drop 1) {
+    pad 1 = drop 1's pad;
+    pad 2 = pad 1 + 2 in direction dir;
+    drop 2 = pad 2's drop;
     [[
-       drop1: unsafe_walk(dir1);
-       pad2: off; 
+       drop 1: unsafe_walk(dir);
+       pad 2: off; 
     ]]
-    drop2: remove from board;
-    drop1's contents = drop1's contents + drop2's contents;
+    drop 2: remove from board;
+    drop 1's contents = drop 1's contents + drop 2's contents;
     [[
-      drop1: dir1 turned around;
-      pad2: on; 
+      drop 1: dir turned around;
+      pad 2: on; 
     ]]
-    drop2's pad = pad2;
-    drop1's contents = drop1's contents/2;
-    drop2's contents = drop1's contents;
-	drop1;
+    drop 2's pad = pad 2;
+    drop 1's contents = drop 1's contents/2;
+    drop 2's contents = drop 1's contents;
+	drop 1;
   };
+};
+
+scope_test = macro(int n) {
+  print "param: ", n;
+  int n = n+1;
+  print "local: ", n;
+  {
+    float n = 10;
+    print "inner: ", n;
+    {
+      n = 2 * n;
+      y = 5;
+      print "assigned inner: ", n;
+      local n = 5*n;
+      print "nested: ", n;
+    }
+    print "back to inner: ", n;
+  }
+  print "local: ", n;
+  n;
 };
 
 r1 = reagent "r1";

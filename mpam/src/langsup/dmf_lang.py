@@ -54,6 +54,10 @@ class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
     mapping: dict[Name_, Val_]
     
+    @property
+    def is_top_level(self) -> bool:
+        return self.parent is None
+    
     def __init__(self, parent: Optional[Scope[Name_, Val_]], 
                  *, 
                  initial: Optional[dict[Name_,Val_]] = None) -> None:
@@ -75,6 +79,9 @@ class Scope(Generic[Name_, Val_]):
     
     def define(self, name: Name_, val: Val_) -> None:
         self.mapping[name] = val
+        
+    def defined_locally(self, name: Name_) -> bool:
+        return name in self.mapping
     
     def __getitem__(self, name: Name_) -> Val_:
         val = self.lookup(name)
@@ -96,6 +103,10 @@ class Scope(Generic[Name_, Val_]):
 class ScopeStack(Generic[Name_, Val_]):
     current: Scope[Name_, Val_]
     
+    @property
+    def is_top_level(self) -> bool:
+        return self.current.is_top_level
+    
     def __init__(self,
                  initial: Optional[Scope[Name_,Val_]] = None):
         self.current = Scope(None) if initial is None else initial
@@ -105,6 +116,9 @@ class ScopeStack(Generic[Name_, Val_]):
     
     def define(self, name: Name_, val: Val_) -> None:
         return self.current.define(name, val)
+    
+    def defined_locally(self, name: Name_) -> bool:
+        return self.current.defined_locally(name)
     
     def __getitem__(self, name: Name_) -> Val_:
         return self.current[name]
@@ -535,75 +549,72 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.SCALED_REAGENT: ScaledReagent,
     }
 
-class Conversions:
-    known: ClassVar[dict[tuple[Type,Type], Callable[[Any], Any]]] = {}
-    known_ok: ClassVar[set[tuple[Type,Type]]] = set()
-    
-    @classmethod
-    def register(cls, have: Type, want: Type, converter: Callable[[Any], Any]) -> None:
-        cls.known[(have, want)] = converter
-        
-    @classmethod
-    def ok(cls, have: Union[Type, Sequence[Type]], want: Union[Type,Sequence[Type]]) -> None:
-        if isinstance(have, Type):
-            have = (have,)
-        if isinstance(want, Type):
-            want = (want,)
-        cls.known_ok |= {(h,w) for h in have for w in want}
-        
-    @classmethod
-    def convert(cls, have: Type, want: Type, val: Any) -> Any:
-        if have is want:
-            return val
-        if want is Type.ANY:
-            return val
-        if want is Type.NONE:
-            return None
-        if isinstance(want, MaybeType):
-            if val is None:
-                return val
-            elif isinstance(have, MaybeType):
-                return cls.convert(have.if_there_type, want.if_there_type, val)
-            else:
-                return cls.convert(have, want.if_there_type, val)
-        if (have,want) in cls.known_ok:
-            return val
-        converter = cls.known.get((have, want), None)
-        if converter is not None:
-            return converter(val)
-        rep = rep_types.get(want, None)
-        if rep is not None and isinstance(val, rep):
-            return val
-        assert False, f"Don't know how to convert from {have} to {want}: {val}"
-        
-    @classmethod
-    def can_convert(cls, have: Type, want: Type) -> bool:
-        if have is want or want is Type.ANY or want is Type.NONE:
-            return True
-        key = (have, want)
-        if key in cls.known or key in cls.known_ok:
-            return True
-        if isinstance(want, MaybeType):
-            if isinstance(have, MaybeType):
-                return cls.can_convert(have.if_there_type, want.if_there_type)
-            else:
-                return cls.can_convert(have, want.if_there_type)
-        return False
+# class Conversions:
+#     known: ClassVar[dict[tuple[Type,Type], Callable[[Any], Any]]] = {}
+#     known_ok: ClassVar[set[tuple[Type,Type]]] = set()
+#
+#     @classmethod
+#     def register(cls, have: Type, want: Type, converter: Callable[[Any], Any]) -> None:
+#         cls.known[(have, want)] = converter
+#
+#     @classmethod
+#     def ok(cls, have: Union[Type, Sequence[Type]], want: Union[Type,Sequence[Type]]) -> None:
+#         if isinstance(have, Type):
+#             have = (have,)
+#         if isinstance(want, Type):
+#             want = (want,)
+#         cls.known_ok |= {(h,w) for h in have for w in want}
+#
+#     @classmethod
+#     def convert(cls, have: Type, want: Type, val: Any) -> Any:
+#         if have is want:
+#             return val
+#         if want is Type.ANY:
+#             return val
+#         if want is Type.NONE:
+#             return None
+#         if isinstance(want, MaybeType):
+#             if val is None:
+#                 return val
+#             elif isinstance(have, MaybeType):
+#                 return cls.convert(have.if_there_type, want.if_there_type, val)
+#             else:
+#                 return cls.convert(have, want.if_there_type, val)
+#         if (have,want) in cls.known_ok:
+#             return val
+#         converter = cls.known.get((have, want), None)
+#         if converter is not None:
+#             return converter(val)
+#         rep = rep_types.get(want, None)
+#         if rep is not None and isinstance(val, rep):
+#             return val
+#         assert False, f"Don't know how to convert from {have} to {want}: {val}"
+#
+#     @classmethod
+#     def can_convert(cls, have: Type, want: Type) -> bool:
+#         if have is want or want is Type.ANY or want is Type.NONE:
+#             return True
+#         key = (have, want)
+#         if key in cls.known or key in cls.known_ok:
+#             return True
+#         if isinstance(want, MaybeType):
+#             if isinstance(have, MaybeType):
+#                 return cls.can_convert(have.if_there_type, want.if_there_type)
+#             else:
+#                 return cls.can_convert(have, want.if_there_type)
+#         return False
 
     
-Conversions.ok((Type.TIME, Type.TICKS), Type.DELAY)
-Conversions.ok((Type.INT, Type.FLOAT), Type.NUMBER)
+Type.value_compatible((Type.TIME, Type.TICKS), Type.DELAY)
+Type.value_compatible((Type.INT, Type.FLOAT), Type.NUMBER)
 
-Conversions.register(Type.DROP, Type.PAD,
-                     lambda drop: drop.pad)
-Conversions.register(Type.DROP, Type.BINARY_CPT,
-                     lambda drop: drop.pad)
-Conversions.register(Type.WELL_PAD, Type.BINARY_CPT,
-                     lambda wp: wp.pad)
-Conversions.register(Type.INT, Type.FLOAT, float)
-Conversions.register(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
-Conversions.register(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
-Conversions.register(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
+Type.register_conversion(Type.DROP, Type.PAD, lambda drop: drop.pad)
+Type.register_conversion(Type.DROP, Type.BINARY_CPT, lambda drop: drop.pad)
+Type.register_conversion(Type.WELL_PAD, Type.BINARY_CPT, lambda wp: wp.pad)
+Type.register_conversion(Type.INT, Type.FLOAT, float)
+Type.register_conversion(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
+Type.register_conversion(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
+Type.register_conversion(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
 
 
 
@@ -637,7 +648,8 @@ class Executable:
         if required is not None and required is not self.return_type:
             req_type = required
             def convert(val) -> Any:
-                return Conversions.convert(have=self.return_type, want=req_type, val=val)
+                return self.return_type.convert_to(req_type, val=val, rep_types=rep_types)
+                # return Conversions.convert(have=self.return_type, want=req_type, val=val)
             future = future.transformed(convert)
         # if required is not None: 
         #     check = rep_types.get(required, None)
@@ -672,7 +684,7 @@ class DMFInterpreter:
             parser = self.get_parser(FileStream(file_name, encoding, errors))
             tree = parser.macro_file()
             assert isinstance(tree, DMFParser.Macro_fileContext)
-            compiler = DMFCompiler(global_types = self.namespace)
+            compiler = DMFCompiler(global_types = self.namespace, interactive = False)
             executable = compiler.visit(tree)
             assert isinstance(executable, Executable)
             if executable.contains_error:
@@ -689,7 +701,7 @@ class DMFInterpreter:
         parser = self.get_parser(InputStream(expr))
         tree = parser.interactive()
         assert isinstance(tree, DMFParser.InteractiveContext)
-        compiler = DMFCompiler(global_types = self.namespace)
+        compiler = DMFCompiler(global_types = self.namespace, interactive=True)
         executable = compiler.visit(tree)
         assert isinstance(executable, Executable)
         if executable.contains_error:
@@ -711,6 +723,7 @@ class DMFInterpreter:
 class DMFCompiler(DMFVisitor):
     global_types: Final[TypeMap]
     current_types: ScopeStack[str, Type]
+    interactive: Final[bool]
     
     default_creators = defaultdict[Type,Callable[[Environment],Any]](lambda: (lambda _: None),
                                                           {Type.INT: lambda _: 0,
@@ -722,7 +735,9 @@ class DMFCompiler(DMFVisitor):
                                                           })
     
     def __init__(self, *,
+                 interactive: bool,
                  global_types: Optional[TypeMap] = None) -> None:
+        self.interactive = interactive
         self.global_types = global_types if global_types is not None else TypeMap(None)
         self.current_types = ScopeStack(self.global_types)
         
@@ -736,7 +751,7 @@ class DMFCompiler(DMFVisitor):
         return Executable.constant(Type.ERROR, None, is_error=True)
     
     def compatible(self, have: Type, want: Type) -> bool:
-        return have <= want or Conversions.can_convert(have, want)
+        return have <= want # or Conversions.can_convert(have, want)
     
     def error_val(self, return_type: Type, 
                   value: Optional[Callable[[Environment], Any]] = None) -> Executable:
@@ -799,7 +814,7 @@ class DMFCompiler(DMFVisitor):
         val = self.escape_re.value.sub(repl_escape, val)
         return val
 
-    def type_name_var(self, t_or_ctx: Union[DMFParser.Param_typeContext, Type], n: Optional[int] = None):
+    def type_name_var(self, t_or_ctx: Union[DMFParser.Param_typeContext, Type], n: Optional[int] = None) -> str:
         t = t_or_ctx if isinstance(t_or_ctx, Type) else cast(Type, t_or_ctx.type)
         # t: Type = cast(Type, ctx.type)
         index = "" if n is None else f"_{n}"
@@ -976,8 +991,11 @@ class DMFCompiler(DMFVisitor):
         return self.visit(ctx.compound())
 
 
-    def visitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext) -> Executable:
-        return self.visit(ctx.assignment())
+    # def visitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext) -> Executable:
+    #     return self.visit(ctx.assignment())
+
+    def visitDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext) -> Executable:
+        return self.visit(ctx.declaration())
 
 
     def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext) -> Executable:
@@ -995,34 +1013,61 @@ class DMFCompiler(DMFVisitor):
 
 
 
-    def visitName_assignment(self, ctx:DMFParser.AssignmentContext) -> Executable:
+    def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext) -> Executable:
         name_ctx = cast(DMFParser.NameContext, ctx.which)
-        name = self.text_of(name_ctx)
+        type_ctx = cast(Optional[DMFParser.Param_typeContext], ctx.param_type())
+        n = None if ctx.n is None else int(cast(Token, ctx.n).text)
+
+        if type_ctx is None:
+            name = self.text_of(name_ctx)
+        else:
+            name = self.type_name_var(type_ctx, n)
         value = self.visit(ctx.what)
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
             return self.error(ctx, value.return_type, 
                               f"Can't assign to built-in '{name}'")
-        required_type = self.current_types.lookup(name)
-        if required_type is not None:
-            if e := self.type_check(required_type, value.return_type, ctx, 
-                                    lambda want,have,text: # @UnusedVariable
-                                        f"variable '{name}' has type {have}.  Expr has type {want}",
-                                    return_type=required_type):
+        # var_type: Optional[Type] = None
+        # if type_ctx is not None:
+        #     var_type = cast(Type, type_ctx.type)
+        #     if self.current_types.defined_locally(name):
+        #         old_type = not_None(self.current_types.lookup(name)).name
+        #         new_type = var_type.name
+        #         return self.error(ctx, var_type, 
+        #                           lambda text: f"{name} redeclared as {new_type}, was {old_type}: {text}")
+        #     new_decl = True
+        # else:
+        var_type = self.current_types.lookup(name)
+        if var_type is None:
+            new_decl = True
+            var_type = value.return_type
+            if not self.current_types.is_top_level:
+                self.error(ctx, var_type,
+                           lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}"
+                           )
+        else:
+            new_decl = False
+        if e := self.type_check(var_type, value.return_type, ctx, 
+                                lambda want,have,text: 
+                                    f"variable '{name}' has type {have}.  Expression has type {want}: {text}",
+                                return_type=var_type):
                 return e
-        returned_type = required_type if required_type is not None else value.return_type
+        returned_type = var_type
         # print(f"Compiling assignment: {name} : {returned_type}")
-        if required_type is None and not value.contains_error:
-            self.current_types[name] = returned_type
+        if new_decl and not value.contains_error:
+            self.current_types.define(name, returned_type)
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val) -> Any:
-                env[name] = val
+                if new_decl:
+                    env.define(name, val)
+                else:
+                    env[name] = val
                 # print(f"Assigned {name} := {val}")
                 return val
-            return value.evaluate(env, required_type).transformed(do_assignment)
+            return value.evaluate(env, var_type).transformed(do_assignment)
         return Executable(returned_type, run, (value,))
     
-    def visitAttr_assignment(self, ctx:DMFParser.Attr_assignmentContext) -> Executable:
+    def visitAttr_assign_expr(self, ctx:DMFParser.Attr_assign_exprContext) -> Executable:
         obj = self.visit(ctx.obj)
         value = self.visit(ctx.what)
         attr_name: str = ctx.attr().which
@@ -1066,8 +1111,76 @@ class DMFCompiler(DMFVisitor):
         return Executable(value.return_type, run, (obj, value))
 
 
-    def visitAssign_stat(self, ctx:DMFParser.Assign_statContext) -> Executable:
-        return self.visit(ctx.assignment())
+    # def visitAssign_stat(self, ctx:DMFParser.Assign_statContext) -> Executable:
+    #     return self.visit(ctx.assignment())
+    
+    def visitDeclaration(self, ctx:DMFParser.DeclarationContext) -> Executable:
+        name_ctx : Optional[DMFParser.NameContext] = ctx.name()
+        var_type: Optional[Type] = ctx.type
+        n: Optional[int] = ctx.n
+        init_ctx: Optional[DMFParser.ExprContext] = ctx.init
+        has_local_kwd = ctx.LOCAL() is not None
+        
+        if name_ctx is None:
+            assert var_type is not None
+            assert n is not None
+            name = self.type_name_var(var_type, n)
+        else:
+            name = self.text_of(name_ctx)
+
+
+        assert init_ctx is not None or var_type is not None
+        value = self.visit(init_ctx) if init_ctx is not None else None
+            
+        # if we have a "type n = init" form and "type n" already defined, we just assign rather than
+        # shadowing
+        just_assign = not has_local_kwd and value is not None and self.current_types.lookup(name) is not None
+
+        if var_type is None:
+            assert value is not None
+            var_type = value.return_type        
+        builtin = BuiltIns.get(name, None)
+        if builtin is not None:
+            return self.error(ctx, var_type, 
+                              lambda text: f"Can't declare variable shadowing built-in '{name}': {text}")
+        if not just_assign and self.current_types.defined_locally(name):
+            old_type = not_None(self.current_types.lookup(name)).name
+            new_type = var_type.name
+            if old_type is not new_type:
+                return self.error(ctx, var_type, 
+                                  lambda text: f"{name} redeclared as {new_type}, was {old_type}: {text}")
+            self.error(ctx, var_type,
+                       lambda text: f"{name} already declared in scope: {text}")
+            just_assign = True
+        if (value is None or not value.contains_error) and not just_assign:
+            self.current_types.define(name, var_type)            
+
+        if value is None:
+            # Declaration only
+            def do_decl(env: Environment) -> Delayed[None]:
+                env.define(name, None)
+                return Delayed.complete(None)
+            return Executable(Type.NONE, do_decl)
+            
+        if e := self.type_check(var_type, value.return_type, ctx, 
+                                lambda want,have,text: 
+                                    f"variable '{name}' has type {have}.  Expression has type {want}: {text}",
+                                return_type=var_type):
+            return e
+        
+        real_val = value
+        def run(env: Environment) -> Delayed[Any]:
+            def do_assignment(val) -> Any:
+                if just_assign:
+                    env[name] = val
+                else:
+                    env.define(name, val)
+                return val
+            return real_val.evaluate(env, var_type).transformed(do_assignment)
+        return Executable(var_type, run, (value,))
+
+    def visitDecl_stat(self, ctx:DMFParser.Decl_statContext) -> Executable:
+        return self.visit(ctx.declaration())
     
     def visitPrinting(self, ctx:DMFParser.PrintingContext) -> Executable:
         def print_vals(*vals):
@@ -1203,6 +1316,17 @@ class DMFCompiler(DMFVisitor):
         
         return Executable(result_type, run, children)
     
+    def visitLoop_stat(self, ctx:DMFParser.Loop_statContext) -> Executable:
+        return self.visit(ctx.loop())
+    
+    def visitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext) -> Executable:
+        n_exec = self.visit(ctx.n)
+        assert False
+        # if e := self.type_check(Type.INT, n_exec, ctx,
+        #                         lambda text: 
+        #                         )
+        ...
+    
 
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
@@ -1219,7 +1343,6 @@ class DMFCompiler(DMFVisitor):
     def visitFloat_expr(self, ctx:DMFParser.Float_exprContext):
         val: float = float(ctx.FLOAT().getText())
         return Executable.constant(Type.FLOAT, val)
-
 
     def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
@@ -1631,6 +1754,11 @@ class DMFCompiler(DMFVisitor):
     def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
         header: DMFParser.Macro_defContext = ctx.macro_header()
         param_contexts: Sequence[DMFParser.ParamContext] = header.param()
+        
+        for pc in param_contexts:
+            if cast(bool, pc.deprecated):
+                self.error(pc, cast(Type,pc.type), 
+                           lambda text: f"'NAME: TYPE' declarations are deprecated.  Use 'TYPE NAME': {text}")
         
         param_defs = tuple(self.param_def(pc) for pc in param_contexts)
         param_names = tuple(pdef[0] for pdef in param_defs)

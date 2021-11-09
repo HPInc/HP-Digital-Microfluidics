@@ -34,12 +34,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#assignment_interactive.
-    def enterAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext):
+    # Enter a parse tree produced by DMFParser#decl_interactive.
+    def enterDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#assignment_interactive.
-    def exitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext):
+    # Exit a parse tree produced by DMFParser#decl_interactive.
+    def exitDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext):
         pass
 
 
@@ -70,21 +70,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#name_assignment.
-    def enterName_assignment(self, ctx:DMFParser.Name_assignmentContext):
+    # Enter a parse tree produced by DMFParser#declaration.
+    def enterDeclaration(self, ctx:DMFParser.DeclarationContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#name_assignment.
-    def exitName_assignment(self, ctx:DMFParser.Name_assignmentContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#attr_assignment.
-    def enterAttr_assignment(self, ctx:DMFParser.Attr_assignmentContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#attr_assignment.
-    def exitAttr_assignment(self, ctx:DMFParser.Attr_assignmentContext):
+    # Exit a parse tree produced by DMFParser#declaration.
+    def exitDeclaration(self, ctx:DMFParser.DeclarationContext):
         pass
 
 
@@ -97,12 +88,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#assign_stat.
-    def enterAssign_stat(self, ctx:DMFParser.Assign_statContext):
+    # Enter a parse tree produced by DMFParser#decl_stat.
+    def enterDecl_stat(self, ctx:DMFParser.Decl_statContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#assign_stat.
-    def exitAssign_stat(self, ctx:DMFParser.Assign_statContext):
+    # Exit a parse tree produced by DMFParser#decl_stat.
+    def exitDecl_stat(self, ctx:DMFParser.Decl_statContext):
         pass
 
 
@@ -142,6 +133,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#loop_stat.
+    def enterLoop_stat(self, ctx:DMFParser.Loop_statContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#loop_stat.
+    def exitLoop_stat(self, ctx:DMFParser.Loop_statContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#compound_stat.
     def enterCompound_stat(self, ctx:DMFParser.Compound_statContext):
         pass
@@ -166,6 +166,33 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#par_block.
     def exitPar_block(self, ctx:DMFParser.Par_blockContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#repeat_loop.
+    def enterRepeat_loop(self, ctx:DMFParser.Repeat_loopContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#repeat_loop.
+    def exitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#for_loop.
+    def enterFor_loop(self, ctx:DMFParser.For_loopContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#for_loop.
+    def exitFor_loop(self, ctx:DMFParser.For_loopContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#term_punct.
+    def enterTerm_punct(self, ctx:DMFParser.Term_punctContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#term_punct.
+    def exitTerm_punct(self, ctx:DMFParser.Term_punctContext):
         pass
 
 
@@ -214,6 +241,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#attr_assign_expr.
+    def enterAttr_assign_expr(self, ctx:DMFParser.Attr_assign_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#attr_assign_expr.
+    def exitAttr_assign_expr(self, ctx:DMFParser.Attr_assign_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#type_name_expr.
     def enterType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
         pass
@@ -247,6 +283,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#rel_expr.
     def exitRel_expr(self, ctx:DMFParser.Rel_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#name_assign_expr.
+    def enterName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#name_assign_expr.
+    def exitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext):
         pass
 
 
