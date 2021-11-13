@@ -91,9 +91,9 @@ maybe_move = macro(drop, int dist) {
 
 mix = macro(dir) {
   macro(drop 1) {
-    pad 1 = drop 1's pad;
-    pad 2 = pad 1 + 2 in direction dir;
-    drop 2 = pad 2's drop;
+    local pad 1 = drop 1's pad;
+    local pad 2 = pad 1 + 2 in direction dir;
+    local drop 2 = pad 2's drop;
     [[
        drop 1: unsafe_walk(dir);
        pad 2: off; 
