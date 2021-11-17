@@ -1,4 +1,8 @@
 from __future__ import annotations
-from langsup.type_supp import Type
 
-print(Type.upper_bound(Type.INT, Type.NUMBER, Type.VOLUME))
+import socket
+
+host_name = socket.gethostname()
+ip = socket.gethostbyname(host_name)
+
+print(f"Hostname: {host_name}.  IP: {ip}")
