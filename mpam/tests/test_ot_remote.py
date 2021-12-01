@@ -13,7 +13,7 @@ from quantities.dimensions import Time, Volume
 import random
 
 
-ROBOT_IP_ADDRESS = "192.168.86.30"
+ROBOT_IP_ADDRESS = "192.168.86.32"
 ROBOT_PORT = "31950"
 
 delay = 0.5*seconds
@@ -87,7 +87,7 @@ class Config:
             "tipracks": { "large": self.large_tipracks, "small": self.small_tipracks },
             "input-wellplates": self.input_wellplates,
             "output-wellplates": self.output_wellplates,
-            "joey": self.joey,
+            "board": self.joey,
             "reagents": self.reagents
         }
 
@@ -103,7 +103,8 @@ class Config:
         r = {"name": reagent.name,
              "wells": [{"plate": p, 
                         "well": w,
-                        "quantity": q.as_number(uL)} for p,w,q in wells]
+                        "quantity": q.as_number(uL),
+                        "use": "bidi"} for p,w,q in wells],
              }
         self.reagents.append(r)
         
@@ -111,12 +112,9 @@ class Config:
                     size: Size,
                     name: str,
                     side: Side,
-                    vol_range: tuple[Volume, Volume]) -> None:
-        min_vol, max_vol = vol_range
+                    ) -> None:
         p = {"name": name, 
-             "side": "left" if side is Side.LEFT else "right",
-             "max": max_vol.as_number(uL),
-             "min": min_vol.as_number(uL) 
+             "side": "left" if side is Side.LEFT else "right" 
              }
         if size is Size.LARGE:
             self.large_pipette = p
@@ -139,13 +137,15 @@ class Config:
     def set_joey(self, name: str, slot: int, *,
                  drop_size: Volume,
                  wells: Sequence[str],
-                 extraction_ports: Sequence[str] = []
+                 extraction_ports: Sequence[str] = [],
+                 oil_reservoir: str
                  ) -> None:
         joey = { 
                     "labware": self.labware(name, slot),
                     "drop-size": drop_size.as_number(uL),
                     "wells": wells,
-                    "extraction-ports": extraction_ports
+                    "extraction-ports": extraction_ports,
+                    "oil-reservoir": oil_reservoir
                 }
         self.joey = joey
         
@@ -167,20 +167,22 @@ def config_reagent(config: dict, name: str,
 
 def run() -> None:
     config = Config()
-    config.set_pipette(Size.LARGE, "p300_single_gen2", Side.RIGHT, (20*uL, 300*uL))
-    config.set_pipette(Size.SMALL, "p20_single_gen2", Side.LEFT, (1*uL, 20*uL))
+    config.set_pipette(Size.LARGE, "p300_single_gen2", Side.RIGHT)
+    config.set_pipette(Size.SMALL, "p20_single_gen2", Side.LEFT)
     config.add_tiprack(Size.LARGE, "opentrons_96_filtertiprack_200ul", 3)
     config.add_tiprack(Size.SMALL, "opentrons_96_filtertiprack_20ul", 6)
     config.add_input_wellplate("nest_96_wellplate_2ml_deep", 1)
     config.add_output_wellplate("nest_96_wellplate_2ml_deep", 10)
-    config.set_joey("biorad_96_wellplate_200ul_pcr", 8, drop_size=0.5*uL,
-                    wells=["A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"],
-                    extraction_ports=["A3", "B3", "C3"])
+    config.set_joey("biorad_96_wellplate_200ul_pcr", 8, drop_size=1*uL,
+                    wells=["E1", "F1", "G1", "H1", "E5", "F5", "G5", "H5"],
+                    extraction_ports=["E3", "F3", "G3"],
+                    oil_reservoir="A3")
     
     config.add_reagent(Reagent.find("r1"), [(0, "A1", 2*ml)])
     config.add_reagent(Reagent.find("r2"), [(0, "B1", 2*ml)])
     config.add_reagent(Reagent.find("r3"), [(0, "C1", 2*ml)])
     config.add_reagent(Reagent.find("r4"), [(0, "D1", 2*ml)])
+    config.add_reagent(Reagent.find("oil"), [(0, "E1", 2*ml)])
     
     print(config.json())
 
@@ -188,6 +190,7 @@ def run() -> None:
     response = post_request("protocols",
                             files=[("protocolFile", (pname,open(ot_file("remote_protocol.py"), "rb"))),
                                    ("supportFiles", ("opentrons_support.py", open(ot_file("opentrons_support.py"), "rb"))),
+                                   ("supportFiles", ("schedule_xfers.py", open(ot_file("schedule_xfers.py"), "rb"))),
                                    ("supportFiles", ("config.json", config.json())),
                                    ]
                             )
