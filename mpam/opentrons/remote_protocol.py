@@ -44,7 +44,7 @@ def run(protocol: protocol_api.ProtocolContext) -> None:
     robot.remove_product(ep[2], board.drop_size)
     # robot.remove_product(ep[2], board.drop_size)
     #
-    robot.empty_waste([(well[1], 50), (well[2], 50)])
+    # robot.empty_waste([(well[1], 50), (well[2], 50)])
 
     
     if turn_off_lights_at_end:

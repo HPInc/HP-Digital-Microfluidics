@@ -3,7 +3,7 @@ from __future__ import annotations
 from _collections import defaultdict
 from enum import Enum, auto
 import json
-from typing import Sequence, Optional, NamedTuple
+from typing import Sequence, Optional, NamedTuple, Any
 
 from opentrons import protocol_api
 from opentrons.protocol_api.instrument_context import InstrumentContext
@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 
 import schedule_xfers
 import importlib
+import requests
 # If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
 schedule_xfers = importlib.reload(schedule_xfers)
 
@@ -33,15 +34,25 @@ class Board:
     extraction_ports: Sequence[Well]
     oil_reservoir: Well
     drop_size: float
+    well_map: dict[str, Well]
     
     def __init__(self,
                  spec, 
                  protocol: protocol_api.ProtocolContext) -> None:
         self.plate = labware_from_config(spec["labware"], protocol)
         self.drop_size = spec["drop-size"]
+        self.well_map = {}
         self.wells = [self.plate[w] for w in spec["wells"]]
+        self.name_wells("W", self.wells)
         self.extraction_ports = [self.plate[w] for w in spec["extraction-ports"]]
+        self.name_wells("E", self.extraction_ports)
         self.oil_reservoir = self.plate[spec["oil-reservoir"]]
+        self.name_wells("O", (self.oil_reservoir,))
+        
+    def name_wells(self, prefix: str, wells: Sequence[Well]) -> None:
+        for i,w in enumerate(wells):
+            name = f"{prefix}{i+1}"
+            self.well_map[name] = w
         
 class Direction(Enum):
     FILL = auto()
@@ -100,6 +111,7 @@ class ReagentSource:
 class Pipettor(TransferScheduler[Well]) :
     pipette: InstrumentContext
     protocol: protocol_api.ProtocolContext
+    robot: Robot
     _tips: list[Well]
     tip: dict[str, Well]
     _current_tip: Optional[Well]
@@ -108,8 +120,11 @@ class Pipettor(TransferScheduler[Well]) :
     def __init__(self, 
                  spec, 
                  protocol: protocol_api.ProtocolContext,
-                 tipracks: Sequence[Labware]) -> None:
+                 tipracks: Sequence[Labware],
+                 *,
+                 robot: Robot) -> None:
         self.protocol = protocol
+        self.robot = robot
         p = protocol.load_instrument(spec["name"], spec["side"], tip_racks = tipracks)
         self.pipette = p
         min_v = p.min_volume
@@ -122,7 +137,7 @@ class Pipettor(TransferScheduler[Well]) :
         self._current_tip = None
         
     def message(self, msg: str) -> None:
-        self.protocol.comment(msg)
+        self.robot.message(msg)
         
     def wait_for_clearance(self, well: Well) -> None:
         self.pipette.move_to(well.top(1))
@@ -216,12 +231,25 @@ class Robot:
     reagent_source: dict[str, ReagentSource]
     trash_well: Well
     _next_product: int
+    endpoint: Optional[str] = None
     
     def message(self, msg: str) -> None:
-        self.protocol.comment(msg)
+        try_remote = self.http_post("message", json = { "message": msg})
+        if try_remote is None:
+            self.protocol.comment(msg)
+        # if self.endpoint is not None:
+        #     requests.post(f"{self.endpoint}/message",
+        #                   json = { "message": msg })
+        #     return
+        # self.protocol.comment(msg)
     
     def __init__(self, config, protocol: protocol_api.ProtocolContext):
         self.protocol = protocol
+        ep_config = config.get("endpoint", None)   
+        if ep_config:
+            ip = ep_config["ip"]
+            port = ep_config["port"]
+            self.endpoint = f"http://{ip}:{port}"
         self.message("Creating the robot")
         self.large_tipracks = [labware_from_config(s,protocol) for s in config["tipracks"]["large"]]
         self.large_tips = []
@@ -236,9 +264,10 @@ class Robot:
         self.output_wells = []
         for p in self.output_plates:
             self.output_wells += p.wells()
+         
         
-        self.large_pipettor = Pipettor(config["pipettes"]["large"], protocol, self.large_tipracks) 
-        self.small_pipettor = Pipettor(config["pipettes"]["small"], protocol, self.small_tipracks)
+        self.large_pipettor = Pipettor(config["pipettes"]["large"], protocol, self.large_tipracks, robot=self) 
+        self.small_pipettor = Pipettor(config["pipettes"]["small"], protocol, self.small_tipracks, robot=self)
         self.threshold: float = self.small_pipettor.max_volume
         # self.reagent_small_tip = defaultdict(lambda: self.small_tips.pop(0))
         # self.reagent_large_tip = defaultdict(lambda: self.large_tips.pop(0))
@@ -267,6 +296,16 @@ class Robot:
         trash_source.add_well(trash["A1"], 0, ReagentWellUse.OUTPUT)
         
         self._next_product = 0
+        
+    def http_post(self, path: str, *, json: Any = {}) -> Optional[requests.Response]:
+        if self.endpoint is None:
+            return None
+        return requests.post(f"{self.endpoint}/{path}", json=json)
+        
+    def exit(self) -> None:
+        self.http_post("exit")
+        # if self.endpoint is not None:
+            # requests.post(f"{self.endpoint}/exit")
 
     def do_transfers(self, transfers: Sequence[Transfer], reagent: str, *, 
                      on_board: set[Well]) -> None:
@@ -356,4 +395,7 @@ class Robot:
         self.message(f"Emptying waste from {[w for w in sources]}")
         transfers = self.plan(Direction.EMPTY, reagent, sources)
         self.do_transfers(transfers, reagent, on_board={t[0] for t in sources})
+        
+    def loop(self) -> None:
+        ...
         
