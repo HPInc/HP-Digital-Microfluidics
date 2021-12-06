@@ -1,8 +1,13 @@
 from __future__ import annotations
-from devices import joey
+
+from enum import Enum, auto
 from typing import Mapping, Final, Optional
-from mpam.types import OnOff, XYCoord
+
 from serial import Serial
+
+from devices import joey
+from mpam.types import OnOff, XYCoord
+
 
 _pins: Mapping[str, int] = {
     "B01": 244, "H06": 243, "B02": 242, "B03": 241, "C04": 240,
@@ -116,6 +121,10 @@ _well_gate_cells: Mapping[int, str] = {
     4: 'T06', 5: 'N06', 6: 'H06', 7: 'B06'
     }
 
+class OpenDropVersion(Enum):
+    V40 = auto()
+    V41 = auto()
+
 class Electrode:
     index: Final[int]
     array: Final[bytearray]
@@ -157,6 +166,8 @@ class Board(joey.Board):
     _device: Final[Optional[str]]
     _states: Final[bytearray]
     _port: Optional[Serial] 
+    _od_version: Final[OpenDropVersion]
+    _od_pad: Final[int]
     
     def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
         if cell is None:
@@ -168,7 +179,7 @@ class Board(joey.Board):
         index = (x-1)*8+(y-1)
         assert index < 128
         # print(f"  pin: {pin}, (x,y): ({x},{y}), index: {index}")
-        return Electrode(index, self._states)
+        return Electrode(index+self._od_pad, self._states)
     
     def _make_well_pad(self, group_name: str, num: int) -> WellPad:
         cell = _shared_pad_cells.get((group_name, num))  
@@ -188,11 +199,13 @@ class Board(joey.Board):
     
     
     
-    def __init__(self, device: Optional[str]) -> None:
-        self._states = bytearray(128)
+    def __init__(self, device: Optional[str], od_version: OpenDropVersion) -> None:
+        self._od_pad = 2 if od_version is OpenDropVersion.V41 else 0
+        self._states = bytearray(128+self._od_pad)
         super().__init__()
         self._device = device
         self._port = None
+        self._od_version = od_version
         
     def update_state(self) -> None:
         if self._port is None and self._device is not None:
