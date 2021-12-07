@@ -126,15 +126,26 @@ class OpenDropVersion(Enum):
     V41 = auto()
 
 class Electrode:
-    index: Final[int]
+    byte_index: Final[int]
+    bit_index: Final[int]
+
     array: Final[bytearray]
     
     def set_state(self, val: OnOff) -> None:
         # assert self.index < len(self.array), f"{self.index} not in {len(self.array)}-byte array"
-        self.array[self.index] = 1 if val else 0
+        
+        bit = 1 << self.bit_index
+
+        if val is OnOff.ON:
+            self.array[self.byte_index] |= bit
+        else:
+            self.array[self.byte_index] &= ~bit
+        
+        # self.array[self.index] = 1 if val else 0
     
-    def __init__(self, index: int, a: bytearray) -> None:
-        self.index = index
+    def __init__(self, byte_index: int, bit_index: int, a: bytearray) -> None:
+        self.byte_index = byte_index
+        self.bit_index = bit_index
         self.array = a
         
     
@@ -167,7 +178,6 @@ class Board(joey.Board):
     _states: Final[bytearray]
     _port: Optional[Serial] 
     _od_version: Final[OpenDropVersion]
-    _od_pad: Final[int]
     
     def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
         if cell is None:
@@ -176,10 +186,15 @@ class Board(joey.Board):
         if pin is None:
             return None
         x,y = _opendrop[pin]
-        index = (x-1)*8+(y-1)
-        assert index < 128
+        if self._od_version is OpenDropVersion.V40:
+            byte_index = (x-1)*8+(y-1)
+            bit_index = 0
+            assert byte_index < 128
+        else:
+            byte_index = x
+            bit_index = y
         # print(f"  pin: {pin}, (x,y): ({x},{y}), index: {index}")
-        return Electrode(index+self._od_pad, self._states)
+        return Electrode(byte_index, bit_index, self._states)
     
     def _make_well_pad(self, group_name: str, num: int) -> WellPad:
         cell = _shared_pad_cells.get((group_name, num))  
@@ -200,8 +215,13 @@ class Board(joey.Board):
     
     
     def __init__(self, device: Optional[str], od_version: OpenDropVersion) -> None:
-        self._od_pad = 2 if od_version is OpenDropVersion.V41 else 0
-        self._states = bytearray(128+self._od_pad)
+        if od_version is OpenDropVersion.V40:
+            n_state_bytes = 128
+        elif od_version is OpenDropVersion.V41:
+            n_state_bytes = 24
+        else:
+            assert False, f"Unknown OpenDrop version: {od_version}"
+        self._states = bytearray(n_state_bytes)
         super().__init__()
         self._device = device
         self._port = None
