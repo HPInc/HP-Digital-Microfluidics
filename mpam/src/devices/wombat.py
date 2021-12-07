@@ -218,7 +218,7 @@ class Board(joey.Board):
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
-            n_state_bytes = 24
+            n_state_bytes = 32
         else:
             assert False, f"Unknown OpenDrop version: {od_version}"
         self._states = bytearray(n_state_bytes)
