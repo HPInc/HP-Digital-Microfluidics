@@ -191,8 +191,8 @@ class Board(joey.Board):
             bit_index = 0
             assert byte_index < 128
         else:
-            byte_index = x
-            bit_index = y
+            byte_index = x-1
+            bit_index = y-1
         # print(f"  pin: {pin}, (x,y): ({x},{y}), index: {index}")
         return Electrode(byte_index, bit_index, self._states)
     
