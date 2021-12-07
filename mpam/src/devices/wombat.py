@@ -222,10 +222,10 @@ class Board(joey.Board):
         else:
             assert False, f"Unknown OpenDrop version: {od_version}"
         self._states = bytearray(n_state_bytes)
+        self._od_version = od_version
         super().__init__()
         self._device = device
         self._port = None
-        self._od_version = od_version
         
     def update_state(self) -> None:
         if self._port is None and self._device is not None:
