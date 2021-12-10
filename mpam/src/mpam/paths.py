@@ -5,7 +5,8 @@ import re
 from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence, \
     overload
 
-from mpam.device import Well, ExtractionPoint, Pad, System, Board
+from mpam.device import Well, ExtractionPoint, Pad, System, Board,\
+    ProductLocation
 from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
@@ -161,8 +162,9 @@ class Path:
         
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
+                         product_loc: Optional[Delayed[ProductLocation]] = None,
                          after: Optional[Ticks] = None) -> Path.Full:
-            return self+Path.TeleportOutStep(volume=volume, after=after)
+            return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
 
         def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Start:
             return self+Path.BarrierStep(barrier, wait=wait)
@@ -286,8 +288,9 @@ class Path:
         
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
+                         product_loc: Optional[Delayed[ProductLocation]] = None,
                          after: Optional[Ticks] = None) -> Path.End:
-            return self+Path.TeleportOutStep(volume=volume, after=after)
+            return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
         
         def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Middle:
             return self+Path.BarrierStep(barrier, wait=wait)
@@ -513,9 +516,10 @@ class Path:
     class TeleportOutStep(EndStep):
         def __init__(self, *,
                      volume: Optional[Volume] = None,
-                     after: Optional[Ticks]
+                     after: Optional[Ticks],
+                     product_loc: Optional[Delayed[ProductLocation]] = None,
                      ) -> None:
-            super().__init__(Drop.TeleportOut(volume=volume), after)
+            super().__init__(Drop.TeleportOut(volume=volume, product_loc=product_loc), after)
     class EnterWellStep(EndStep):
         def __init__(self, *, 
                      after: Optional[Ticks]) -> None:

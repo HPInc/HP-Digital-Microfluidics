@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-from _collections import defaultdict
 from enum import Enum, auto
 import random
-from threading import Lock
-from time import sleep
 from typing import Optional, Sequence, ClassVar, Final
 
-from mpam import pipettor
+from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellGroup, WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System
 import mpam.device as device
 from mpam.paths import Path
-from mpam.pipettor import Target
+from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, Reagent, \
-    Liquid
-from quantities.SI import uL, ms, deg_C, sec, seconds, second
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir
+
+from quantities.SI import uL, ms, deg_C, sec
 from quantities.core import DerivedDim
 from quantities.dimensions import Temperature, Time, Volume
 from quantities.temperature import TemperaturePoint, abs_F
@@ -42,7 +39,7 @@ class WellPad(device.WellPad):
         self.set_device_state = lambda _: None
         
 class Well(device.Well):
-    arm: Final[PipettingArm]
+    _pipettor: Final[Pipettor]
     
     def __init__(self, 
                  *, board:Board, 
@@ -66,11 +63,12 @@ class Well(device.Well):
                          exit_dir=exit_dir,
                          is_voidable=is_voidable,
                          shape=shape)
-        self.arm=pipettor.arm
+        self._pipettor = pipettor
         
-    def pipetting_arm(self)->Optional[PipettingArm]:
-        return self.arm
-
+    @property
+    def pipettor(self)->Optional[Pipettor]:
+        return self._pipettor
+    
 class Heater(device.Heater):
     _last_read_time: Timestamp
     _heating_rate: HeatingRate
@@ -130,16 +128,6 @@ class Heater(device.Heater):
         return future
 
     
-class WellBlock(pipettor.WellBlock):
-
-    reservoirs: Final[dict[Reagent, WellBlock.Reservoir]]
-
-    def __init__(self, pipettor: Pipettor) -> None:
-        super().__init__(pipettor)
-        self.reservoirs = defaultdict(lambda: WellBlock.Reservoir(self))
-
-    def reservoir_for(self, reagent: Reagent) -> WellBlock.Reservoir:
-        return self.reservoirs[reagent]
 
 class ArmPos(Enum):
     BOARD = auto()
@@ -147,82 +135,17 @@ class ArmPos(Enum):
     BLOCK = auto()
 
 
-class PipettingArm(pipettor.PipettingArm):
-    position: ArmPos
-    lock: Final[Lock]
-    
-    dip_time = 0.25*seconds
-    short_transit_time = 0.5*seconds
-    long_transit_time = 1*second
-
-
-    def __init__(self, pipettor: Pipettor) -> None:
-        super().__init__(pipettor)
-        self.position = ArmPos.TIPS
-        self.lock = Lock()
-        
-    def _sleep_for(self, time: Time) -> None:
-        sleep(time.as_number(seconds))
-        
-    def _dip(self) -> None:
-        # print(">> Dipping")
-        self._sleep_for(self.dip_time)
-        # print("<< Dipped")
-
-    def _move(self, to: ArmPos) -> None:
-        with self.lock:
-            pos = self.position
-            if pos is to:
-                return
-            delay = (self.long_transit_time if (pos is ArmPos.BOARD or to is ArmPos.BOARD)
-                     else self.short_transit_time)
-            # print(f">> Moving to {to.name} from {pos.name}")
-            self._sleep_for(delay)
-            # print(f"<< Moved to {to.name} from {pos.name}")
-            self.position = to
-
-    def acquire_liquid(self, liquid: Liquid) -> Liquid:
-        self._dip()
-        return liquid
-
-    def deposit_liquid(self) -> None:
-        self._dip()
-
-    def move_to(self, target: Target) -> None:
-        if isinstance(target, WellBlock.Reservoir):
-            self._move(ArmPos.BLOCK)
-        else:
-            self._move(ArmPos.BOARD)
-
-    def to_ready_state(self) -> None:
-        self._move(ArmPos.TIPS)
-        self._dip()
-
-
-
-class Pipettor(pipettor.Pipettor):
-    arm: Final[PipettingArm]
-    well_block: Final[WellBlock]
-
-    def __init__(self) -> None:
-        self.arm = PipettingArm(self)
-        self.well_block = WellBlock(self)
-        super().__init__(well_blocks = (self.well_block,),
-                         arms = (self.arm,))
-
-    def update_state(self):
-        pass
-
     
 class ExtractionPoint(device.ExtractionPoint):
-    arm: Final[PipettingArm]
+    _pipettor: Final[Pipettor]
 
     def __init__(self, pad: device.Pad, pipettor: Pipettor) -> None:
         super().__init__(pad)
-        self.arm = pipettor.arm
-
-    def pipetting_arm(self) -> Optional[PipettingArm]:
-        return self.arm
+        self._pipettor = pipettor
+    
+    @property
+    def pipettor(self) -> Optional[Pipettor]:
+        return self._pipettor
 
 
 class Board(device.Board):
@@ -287,7 +210,8 @@ class Board(device.Board):
     def _make_well_pad(self, group_name: str, num: int) -> WellPad:  # @UnusedVariable
         return WellPad(board=self)
     
-    def __init__(self) -> None:
+    def __init__(self, *,
+                 pipettor: Optional[Pipettor] = None) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
@@ -325,7 +249,9 @@ class Board(device.Board):
                                 tuple(self._make_well_pad('right', n) for n in range(9)),
                                 sequences)
         
-        pipettor = self.pipettor = Pipettor()
+        if pipettor is None:
+            pipettor = DummyPipettor()
+        self.pipettor = pipettor
         
         wells.extend((
             self._well(0, left_group, Dir.RIGHT, self.pad_at(0,18), pipettor),

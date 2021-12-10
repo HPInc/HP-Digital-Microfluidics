@@ -12,7 +12,8 @@ from typing import Sequence, Union, Optional, Final, NamedTuple
 from devices import joey
 from erk.basic import not_None
 from erk.stringutils import map_str
-from mpam.device import Board, System, Pad, Well, ExtractionPoint
+from mpam.device import Board, System, Pad, Well, ExtractionPoint,\
+    ProductLocation
 from mpam.dilution import dilution_sequences
 from mpam.drop import Drop
 from mpam.exerciser import Exerciser, Task
@@ -23,10 +24,11 @@ from mpam.processes import PlacedMixSequence, Transform
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
 from mpam.types import Reagent, Liquid, Dir, Color, waste_reagent, Barrier, \
-    schedule
+    schedule, Delayed
 from quantities.SI import ms, second, seconds, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import abs_C
+from devices.dummy_pipettor import DummyPipettor
 
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
@@ -93,12 +95,12 @@ class PCRTask(Task):
         
         ps: Optional[float] = args.pipettor_speed
         if ps is not None:
-            print(f"Speeding up pipettor arm by a factor of {ps}")
-            arm = board.pipettor.arm
-            arm.dip_time /= ps
-            arm.short_transit_time /= ps
-            arm.long_transit_time /= ps
-            
+            pipettor = board.pipettor
+            if isinstance(pipettor, DummyPipettor):
+                print(f"Speeding up pipettor arm by a factor of {ps}.")
+                pipettor.speed_up(ps)
+            else:
+                print(f"Cannot speed up {pipettor}.")
         
     def reagent(self, name: str, *,
                 color: Optional[Union[Color, str, tuple[float,float,float]]] = None) -> Reagent:
@@ -721,11 +723,13 @@ class CombSynth(PCRTask):
         c1,c2,c3,c4,c5,c6 = mixing
         # We'll get c6 out out of the way first so it doesn't block the others.
         if c6 is not None:
+            product_loc = Delayed[ProductLocation]()
+            product_loc.then_call(lambda pl: print(f"Product {pl.reagent} wound up in {pl.location}"))
             paths.append((c6.lead_drop,
                           Path.empty()
                             .reach(self.phase_barrier, wait=False)
                             .then_process(lambda drop: print(f"Extracting {drop.liquid}"))
-                            .teleport_out())
+                            .teleport_out(product_loc = product_loc))
                          )
             
         if c1 is not None:

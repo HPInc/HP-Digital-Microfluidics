@@ -7,7 +7,10 @@ import random
 from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator,\
+    NamedTuple
+
+from matplotlib.gridspec import SubplotSpec
 
 from erk.basic import not_None
 from erk.errors import ErrorHandler, PRINT
@@ -18,18 +21,18 @@ from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
-    Callback
+    Callback, MixResult
 from quantities.SI import sec, ms
+from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
-from matplotlib.gridspec import SubplotSpec
-from quantities.core import Unit
+
 
 if TYPE_CHECKING:
     from mpam.drop import Drop
     from mpam.monitor import BoardMonitor
-    from mpam.pipettor import PipettingArm
+    from mpam.pipettor import Pipettor
 
 PadArray = Mapping[XYCoord, 'Pad']
 
@@ -127,7 +130,32 @@ BinaryComponent[BC].TurnOn = BinaryComponent.SetState(OnOff.ON)
 BinaryComponent[BC].TurnOff = BinaryComponent.SetState(OnOff.OFF)
 BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
     
+class PipettingTarget:
     
+    @property
+    @abstractmethod
+    def contents(self) -> Optional[Liquid]: ...
+    
+    @property
+    def pipettor(self) -> Optional[Pipettor]:
+        return None
+
+    @abstractmethod
+    def prepare_for_add(self) -> None: # @UnusedVariable
+        ...
+
+    @abstractmethod
+    def prepare_for_remove(self) -> None: 
+        ...
+    
+    @abstractmethod
+    def pipettor_added(self, reagent: Reagent, volume: Volume, *,
+                       mix_result: Optional[MixResult]) -> None:
+        ...
+    
+    @abstractmethod
+    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None:
+        ...
     
 class Pad(BinaryComponent['Pad']):
     location: Final[XYCoord]
@@ -600,7 +628,7 @@ class WellShape:
         
 WellVolumeSpec = Union[Volume, Callable[[], Volume]]
     
-class Well(OpScheduler['Well'], BoardComponent):
+class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     number: Final[int]
     group: Final[WellGroup]
     capacity: Final[Volume]
@@ -754,6 +782,21 @@ class Well(OpScheduler['Well'], BoardComponent):
         exit_pad._well = self
         gate.set_location(self)
         
+    def prepare_for_add(self) -> None: 
+        pass
+
+    def prepare_for_remove(self) -> None: 
+        pass
+    
+    def pipettor_added(self, reagent: Reagent, volume: Volume, *,
+                       mix_result: Optional[MixResult]) -> None:
+        got = Liquid(reagent, volume)
+        self.transfer_in(got, mix_result=mix_result)
+    
+    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
+        self.transfer_out(volume)
+    
+        
     def volume_from_spec(self, spec: Optional[WellVolumeSpec], default_fn: Callable[[], Volume]) -> Volume:
         if spec is None:
             return default_fn()
@@ -785,7 +828,8 @@ class Well(OpScheduler['Well'], BoardComponent):
     def transfer_in(self, liquid: Liquid, *,
                     volume: Optional[Volume] = None, 
                     on_overflow: ErrorHandler = PRINT,
-                    on_reagent_mismatch: ErrorHandler = PRINT) -> None:
+                    on_reagent_mismatch: ErrorHandler = PRINT,
+                    mix_result: Optional[MixResult] = None) -> None:
         if volume is None:
             volume = liquid.volume
         on_overflow.expect_true(self.remaining_capacity >= volume,
@@ -798,7 +842,7 @@ class Well(OpScheduler['Well'], BoardComponent):
             r = self._contents.reagent
             on_reagent_mismatch.expect_true(self._can_accept(liquid.reagent),
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
-            self._contents.mix_in(liquid)
+            self._contents.mix_in(liquid, result=mix_result)
         self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
             
@@ -835,32 +879,28 @@ class Well(OpScheduler['Well'], BoardComponent):
         self.gate_reserved = True
         return True
     
-    def pipetting_arm(self) -> Optional[PipettingArm]:
-        return None
-
     def add(self, liquid: Liquid, *,
             mix_result: Optional[Union[Reagent, str]] = None,
             on_insufficient: ErrorHandler = PRINT,
             on_no_source: ErrorHandler = PRINT
             ) -> Delayed[Well]:
-        arm = self.pipetting_arm()
-        assert arm is not None, f"{self} has no pipetting arm and add() was not overridden"
+        pipettor = self.pipettor
+        assert pipettor is not None, f"{self} has no pipettor and add() was not overridden"
         
-        arm_future = arm.schedule(arm.Supply(liquid, self,
-                                             mix_result=mix_result,
-                                             on_insufficient=on_insufficient,
-                                             on_no_source=on_no_source))
-        return arm_future.triggering(value=self)
+        p_future = pipettor.schedule(pipettor.Supply(liquid, self,
+                                                     on_insufficient=on_insufficient,
+                                                     on_no_source=on_no_source))
+        return p_future.triggering(value=self)
     
     def remove(self, volume: Volume, *,
                on_no_sink: ErrorHandler = PRINT
                ) -> Delayed[Well]:
-        arm = self.pipetting_arm()
-        assert arm is not None, f"{self} has no pipetting arm and remove() was not overridden"
+        pipettor = self.pipettor
+        assert pipettor is not None, f"{self} has no pipettor and remove() was not overridden"
         
-        arm_future = arm.schedule(arm.Extract(volume, self,
-                                              on_no_sink=on_no_sink))
-        return arm_future.triggering(value=self)
+        p_future = pipettor.schedule(pipettor.Extract(volume, self,
+                                                      on_no_sink=on_no_sink))
+        return p_future.triggering(value=self)
     
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         volume = self.fill_to - self.volume
@@ -888,7 +928,8 @@ class Well(OpScheduler['Well'], BoardComponent):
                                             lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
         current_volume = self.volume
         resulting_volume = current_volume - volume
-        if resulting_volume >= self.min_fill or resulting_volume.is_close_to(self.min_fill):
+        if resulting_volume >= self.min_fill or resulting_volume.is_close_to(self.min_fill, 
+                                                                             abs_tol=0.05*self.dispensed_volume):
             return Delayed.complete(self)
         return self.refill(reagent=reagent)
     
@@ -902,7 +943,8 @@ class Well(OpScheduler['Well'], BoardComponent):
                                             lambda : f"{self} contains {self.reagent}.  Expected {reagent}")
         current_volume = self.volume
         resulting_volume = current_volume + volume
-        if resulting_volume <= self.max_fill or resulting_volume.is_close_to(self.max_fill):
+        if resulting_volume <= self.max_fill or resulting_volume.is_close_to(self.max_fill, 
+                                                                             abs_tol=0.05*self.dispensed_volume):
             # print(f"{resulting_volume:g} <= {self.max_fill:g}")
             return Delayed.complete(self)
         # print(f"Need to empty well ({resulting_volume:g} > {self.max_fill:g}")
@@ -1071,45 +1113,91 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         
         def __init__(self, target: Optional[TemperaturePoint]) -> None:
             self.target = target
+            
+class ProductLocation(NamedTuple):
+    reagent: Reagent
+    location: Any
     
-class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
+class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingTarget):
     pad: Final[Pad]
+    
+    @property
+    def contents(self) -> Optional[Liquid]:
+        drop = self.pad.drop
+        if drop is None:
+            return None
+        return drop.liquid
     
     def __init__(self, pad: Pad) -> None:
         BoardComponent.__init__(self, pad.board)
         self.pad = pad
         pad._extraction_point = self
-
-    def pipetting_arm(self) -> Optional[PipettingArm]:
-        return None
+        
+    def __repr__(self) -> str:
+        return f"ExtractionPoint[{self.pad.location}]"
+        
+    def prepare_for_add(self) -> None:
+        expect_drop = self.pad.drop is not None 
+        self.reserve_pad(expect_drop=expect_drop).wait()
+        
+    def prepare_for_remove(self) -> None:
+        self.ensure_drop().wait()
+        
+    def pipettor_added(self, reagent: Reagent, volume: Volume, *,
+                       mix_result: Optional[MixResult]) -> None:
+        got = Liquid(reagent, volume)
+        drop = self.pad.drop
+        if drop is None:
+            from mpam.drop import Drop # @Reimport
+            drop = Drop(self.pad, got)
+            drop.pad.schedule(Pad.TurnOn)
+        else:
+            drop.liquid.mix_in(got, result=mix_result)
+        self.pad.reserved = False
+    
+    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
+        drop = not_None(self.pad.drop)
+        if drop.volume == volume:
+            from mpam.drop import DropStatus 
+            drop.pad.schedule(Pad.TurnOff)
+            drop.status = DropStatus.OFF_BOARD
+            drop.pad.drop = None
+        else:
+            drop.liquid.volume = drop.volume-volume
+        
+        
 
     def transfer_out(self, *,
                      liquid: Optional[Liquid] = None,
-                     on_no_sink: ErrorHandler = PRINT
+                     on_no_sink: ErrorHandler = PRINT,
+                     is_product: bool = True,
+                     product_loc: Optional[Delayed[ProductLocation]] = None
                      ) -> Delayed[Liquid]:
-        arm = self.pipetting_arm()
-        assert arm is not None, f"{self} has no pipetting arm and transfer_out() not overridden"
+        pipettor = self.pipettor
+        assert pipettor is not None, f"{self} has no pipettor and transfer_out() not overridden"
         if liquid is None:
             drop = not_None(self.pad.drop)
             liquid = drop.liquid
-        arm_future = arm.schedule(arm.Extract(liquid.volume, self,
-                                             on_no_sink = on_no_sink))
-        return arm_future
+        p_future = pipettor.schedule(pipettor.Extract(liquid.volume, self,
+                                                      is_product = is_product,
+                                                      product_loc = product_loc, 
+                                                      on_no_sink = on_no_sink))
+        return p_future
 
     def transfer_in(self, liquid: Liquid, *,                            # @UnusedVariable
                      mix_result: Optional[Union[Reagent, str]]=None,    # @UnusedVariable
                      on_insufficient: ErrorHandler=PRINT,               # @UnusedVariable
                      on_no_source: ErrorHandler=PRINT                   # @UnusedVariable
                      ) -> Delayed[Drop]:
-        arm = self.pipetting_arm()
-        assert arm is not None, f"{self} has no pipetting arm and transfer_in() not overridden"
-        arm_future = arm.schedule(arm.Supply(liquid, self,
-                                             mix_result = mix_result,
-                                             on_insufficient = on_insufficient,
-                                             on_no_source = on_no_source))
+        pipettor = self.pipettor
+        assert pipettor is not None, f"{self} has no pipettor and transfer_in() not overridden"
+        p_future = pipettor.schedule(pipettor.Supply(liquid, self,
+                                                     mix_result = mix_result,
+                                                     on_insufficient = on_insufficient,
+                                                     on_no_source = on_no_source))
         from mpam.drop import Drop # @Reimport
         future = Delayed[Drop]()
-        arm_future.post_transformed_to(future, lambda _: not_None(self.pad.drop))
+        p_future.post_transformed_to(future, lambda _: not_None(self.pad.drop))
         return future
        
     def reserve_pad(self, *, expect_drop: bool = False) -> Delayed[None]:
@@ -1162,12 +1250,15 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
     class TransferOut(Operation['ExtractionPoint', 'Liquid']):
         volume: Final[Optional[Volume]]
         on_no_sink: Final[ErrorHandler]
+        product_loc: Final[Optional[Delayed[ProductLocation]]]
 
         def __init__(self, volume: Optional[Volume] = None, *,
-                     on_no_sink: ErrorHandler = PRINT
+                     on_no_sink: ErrorHandler = PRINT,
+                     product_loc: Optional[Delayed[ProductLocation]] = None
                      ) -> None:
             self.volume = volume
             self.on_no_sink = on_no_sink
+            self.product_loc = product_loc
 
         def _schedule_for(self, extraction_point: ExtractionPoint, *,
                           mode: RunMode = RunMode.GATED,
@@ -1180,7 +1271,8 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, ABC):
                 liquid = Liquid(drop.reagent,
                                 drop.volume if self.volume is None else self.volume)
                 extraction_point.transfer_out(liquid = liquid,
-                                              on_no_sink = self.on_no_sink
+                                              on_no_sink = self.on_no_sink,
+                                              product_loc = self.product_loc
                                              ).post_to(future)
 
             extraction_point.delayed(do_it, after=after)
@@ -1245,6 +1337,7 @@ class SystemComponent(ABC):
 
     def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()):
         self.in_system().after_tick(fn, delta=delta)
+        
 
     def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO()):
         req = self.make_request(cb)

@@ -2,7 +2,8 @@ from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
     StaticOperation, Reagent, Callback, T
-from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint
+from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint,\
+    ProductLocation
 from mpam.exceptions import NoSuchPad, NotAtWell
 from typing import Optional, Final, Union, Sequence, Callable, \
     Iterator
@@ -233,18 +234,21 @@ class Drop(OpScheduler['Drop']):
     
     class TeleportOut(Operation['Drop', None]):
         volume: Final[Optional[Volume]]
+        product_loc: Final[Optional[Delayed[ProductLocation]]]
         
         def __init__(self, *,
-                     volume: Optional[Volume]
+                     volume: Optional[Volume],
+                     product_loc: Optional[Delayed[ProductLocation]] = None
                      ) -> None:
             self.volume = volume
+            self.product_loc = product_loc
             
         def _schedule_for(self, drop: Drop, *,
                       mode: RunMode = RunMode.GATED, 
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[None]:
-            op = ExtractionPoint.TransferOut(volume=self.volume)
+            op = ExtractionPoint.TransferOut(volume=self.volume, product_loc=self.product_loc)
             future = Delayed[None]()
             
             def do_it() -> None:

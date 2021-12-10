@@ -2,357 +2,342 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from threading import Lock
-from typing import Final, Union, Callable, Optional, Sequence, TypeVar
+from typing import Final, Callable, Optional, Any
 
-from erk.basic import not_None
 from erk.errors import ErrorHandler, PRINT
-from mpam.device import SystemComponent, Well, ExtractionPoint, UserOperation, \
-    Pad
-from mpam.drop import Drop, DropStatus
+from mpam.device import SystemComponent, UserOperation, PipettingTarget, System,\
+    ProductLocation
 from mpam.types import Reagent, OpScheduler, Callback, RunMode, DelayType, \
-    Liquid, Operation, Delayed, AsyncFunctionSerializer, T
+    Liquid, Operation, Delayed, AsyncFunctionSerializer, T, XferDir, \
+    unknown_reagent, MixResult
+from quantities.SI import uL
 from quantities.dimensions import Volume
 
 
-class PipettorComponent:
+class XferTarget(ABC):
+    target: Final[PipettingTarget]
+    volume: Volume
+    allow_merge: Final[bool]
+    on_unknown: Final[ErrorHandler]
+    on_insufficient: Final[ErrorHandler]
+    got: Volume
+    
+    future: Final[Delayed[Liquid]]
+    
+    def __init__(self, target: PipettingTarget, volume: Volume,
+                 *,
+                 future: Delayed[Liquid],
+                 allow_merge: bool,
+                 on_unknown: ErrorHandler,
+                 on_insufficient: ErrorHandler,
+                 ) -> None:
+        self.target = target
+        self.volume = volume
+        self.got = Volume.ZERO()
+        self.allow_merge = allow_merge
+        self.future = future
+        self.on_insufficient = on_insufficient
+        self.on_unknown = on_unknown
+        
+    @property
+    @abstractmethod
+    def insufficient_msg(self) -> str: ...
+        
+    @abstractmethod
+    def in_position(self, reagent: Reagent, volume: Volume) -> None:
+        ...
+    
+    def finished(self, reagent: Reagent, volume: Volume) -> None:
+        self.got += volume
+        self.signal_done(reagent, volume)
+        if self.got >= self.volume:
+            liquid = Liquid(reagent, self.got)
+            self.future.post(liquid)
+
+    @abstractmethod
+    def signal_done(self, reagent: Reagent, volume: Volume) -> None:
+        ...    
+    def finished_overall_transfer(self, reagent: Reagent) -> None:
+        future = self.future
+        if not future.has_value:
+            self.on_insufficient(self.insufficient_msg)
+            future.post(Liquid(reagent, self.got))
+        
+class FillTarget(XferTarget):
+    mix_result: Final[Optional[MixResult]]
+    
+    @property
+    def insufficient_msg(self) -> str: 
+        expected = self.volume.in_units(uL)
+        got = self.got.in_units(uL)
+        return f"Expected {expected} transfered to {self.target}, only got {got}."
+    
+    def __init__(self, target: PipettingTarget, volume: Volume,
+                 *,
+                 future: Delayed[Liquid],
+                 allow_merge: bool,
+                 mix_result: Optional[MixResult],
+                 on_unknown: ErrorHandler,
+                 on_insufficient: ErrorHandler) -> None:
+        super().__init__(target, volume, future=future, allow_merge=allow_merge,
+                         on_unknown=on_unknown, on_insufficient=on_insufficient)
+        self.mix_result = mix_result
+        
+    def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
+        self.target.prepare_for_add()
+        
+    def signal_done(self, reagent: Reagent, volume: Volume) -> None:
+        mix_result = self.mix_result if self.got >= self.volume else None
+        self.target.pipettor_added(reagent, volume, mix_result=mix_result)
+    
+        
+        
+class EmptyTarget(XferTarget):
+    product_loc: Final[Optional[Delayed[ProductLocation]]]
+
+    def __init__(self, target: PipettingTarget, volume: Volume,
+                 *,
+                 future: Delayed[Liquid],
+                 allow_merge: bool,
+                 product_loc: Optional[Delayed[ProductLocation]],
+                 on_unknown: ErrorHandler,
+                 on_insufficient: ErrorHandler) -> None:
+        super().__init__(target, volume, future=future, allow_merge=allow_merge,
+                         on_unknown=on_unknown, on_insufficient=on_insufficient)
+        self.product_loc = product_loc
+    
+    @property
+    def insufficient_msg(self) -> str: 
+        expected = self.volume.in_units(uL)
+        got = self.got.in_units(uL)
+        return f"Expected {expected} transfered from {self.target}, only took {got}."
+    
+    def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
+        self.target.prepare_for_remove()
+        
+    def signal_done(self, reagent: Reagent, volume: Volume) -> None:
+        self.target.pipettor_removed(reagent, volume) 
+        
+        
+class Transfer:
+    reagent: Final[Reagent]
+    xfer_dir: Final[XferDir]
+    targets: list[XferTarget]
+    is_product: Final[bool]
+    pending: bool
+    
+    def __init__(self, reagent: Reagent, xfer_dir: XferDir, *, is_product: bool = False) -> None:
+        self.reagent = reagent
+        self.xfer_dir = xfer_dir
+        self.is_product = is_product
+        self.targets = []
+        self.pending = True
+        
+class TransferSchedule:
+    pipettor: Final[Pipettor]
+    fills: Final[dict[Reagent, Transfer]]
+    empties: Final[dict[Reagent, Transfer]]
+    _lock: Final[Lock]
+    serializer: Final[AsyncFunctionSerializer]
+    
+    
+    def __init__(self, pipettor: Pipettor) -> None:
+        self.pipettor = pipettor
+        self.fills = {}
+        self.empties = {}
+        self._lock = Lock()
+        self.serializer = AsyncFunctionSerializer(thread_name=f"{pipettor.name} Thread")
+        
+    def _schedule(self,
+                  reagent_map: Optional[dict[Reagent, Transfer]], 
+                  target: XferTarget,
+                  reagent: Reagent) -> None:
+        with self._lock:
+            xfer = None if reagent_map is None else reagent_map.get(reagent, None)
+            if xfer is None or not xfer.pending:
+                xd = XferDir.FILL if reagent_map is self.fills else XferDir.EMPTY
+                is_product = reagent_map is None
+                xfer = Transfer(reagent, xd, is_product=is_product)
+                if reagent_map is not None:
+                    reagent_map[reagent] = xfer
+                def run_it():
+                    with self._lock:
+                        xfer.pending = False
+                    self.pipettor.perform(xfer)
+                self.serializer.enqueue(run_it)
+            xfer.targets.append(target)
+            
+    def add(self,
+            target: PipettingTarget,
+            reagent: Reagent,
+            volume: Volume,
+            *,
+            future: Delayed[Liquid],
+            allow_merge: bool = False,
+            mix_result: Optional[MixResult] = None,
+            on_insufficient: ErrorHandler = PRINT,
+            on_unknown: ErrorHandler = PRINT) -> None:
+        xt = FillTarget(target, volume, 
+                        future=future, allow_merge=allow_merge,
+                        mix_result=mix_result,
+                        on_insufficient=on_insufficient,  on_unknown=on_unknown)
+        self._schedule(self.fills, xt, reagent)
+        
+    def remove(self,
+               target: PipettingTarget,
+               reagent: Reagent,
+               volume: Volume,
+               *,
+               future: Delayed[Liquid],
+               allow_merge: bool = False,
+               on_insufficient: ErrorHandler = PRINT,
+               on_unknown: ErrorHandler = PRINT,
+               is_product: bool,
+               product_loc: Optional[Delayed[ProductLocation]]) -> None:
+        transfer_dict = None if is_product else self.empties
+        xt = EmptyTarget(target, volume, 
+                        future=future, allow_merge=allow_merge,
+                        product_loc=product_loc,
+                        on_insufficient=on_insufficient,  on_unknown=on_unknown)
+        self._schedule(transfer_dict, xt, reagent)
+        
+        
+        
+
+class PipettorSysCpt(SystemComponent):
     pipettor: Final[Pipettor]
     
     def __init__(self, pipettor: Pipettor) -> None:
         self.pipettor = pipettor
+    
+    def update_state(self)->None:
+        pass
+
+    def user_operation(self) -> UserOperation:
+        return UserOperation(self.in_system().engine.idle_barrier)
+
+class Pipettor(OpScheduler['Pipettor']):
+    sys_cpt: Final[PipettorSysCpt]
+    OpFunc = Callable[[], None]
+    name: Final[str]
+    
+    xfer_sched: Final[TransferSchedule]
+                                  
+    def __init__(self, *, name: str="Pipettor") -> None:
+        self.sys_cpt = PipettorSysCpt(self)
+        self.name = name
+        self.xfer_sched = TransferSchedule(self)
+
+    @abstractmethod    
+    def perform(self, transfer: Transfer) -> None: ... # @UnusedVariable
+    
+    def join_system(self, system: System) -> None:
+        self.sys_cpt.join_system(system)
+    
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
                                after: Optional[DelayType] = None) -> None:  
-        return self.pipettor.schedule(cb, mode=mode, after=after)
+        return self.sys_cpt.schedule(cb, mode=mode, after=after)
     
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
-        return self.pipettor.delayed(function, after=after)
+        return self.sys_cpt.delayed(function, after=after)
  
-    def user_operation(self) -> UserOperation:
-        return UserOperation(self.pipettor.in_system().engine.idle_barrier)
 
-
-class WellBlock(PipettorComponent, ABC):
-    class Reservoir:
-        well_block: Final[WellBlock]
-        
-        def __init__(self, well_block: WellBlock) -> None:
-            self.well_block = well_block
-            
-    @abstractmethod
-    def reservoir_for(self, reagent: Reagent) -> Optional[WellBlock.Reservoir]:  # @UnusedVariable
-        ...
-
-
-Target = Union[Well, ExtractionPoint, WellBlock.Reservoir]
-
-_Target = TypeVar("_Target", bound=Union[Well, ExtractionPoint])
-
-DeliveryCallback = Callable[[_Target, Liquid], Delayed[None]]
-TransferSpec = tuple[_Target, Volume, Delayed[Liquid]]
-
-class FillRequest:
-    well: Final[Well]
-    liquid: Final[Liquid]
-    when_done: Final[Delayed[Liquid]]
-    mix_result: Final[Optional[Union[Reagent, str]]]
-    on_insufficient: Final[ErrorHandler]
-    on_no_source: Final[ErrorHandler]
-    
-    @property
-    def volume(self) -> Volume:
-        return self.liquid.volume
-    def reagent(self) -> Reagent:
-        return self.liquid.reagent
-    
-    def __init__(self, liquid: Liquid, well: Well, *,
-                 when_done: Delayed[Liquid],
-                 mix_result: Optional[Union[Reagent, str]]=None,
-                 on_insufficient: ErrorHandler=PRINT,
-                 on_no_source: ErrorHandler=PRINT
-
-                 ) -> None:
-        self.well = well
-        self.liquid = liquid
-        self.when_done = when_done
-        self.mix_result = mix_result
-        self.on_insufficient = on_insufficient
-        self.on_no_source = on_no_source
-    
-    
-
-class PipettingArm(PipettorComponent, OpScheduler['PipettingArm']):
-    OpFunc = Callable[[], None]
-    
-    serializer: Final[AsyncFunctionSerializer]
-    lock: Final[Lock]
-    waste_requests: Optional[list[TransferSpec[Well]]] = None
-    product_requests: Optional[list[ExtractionPoint]] = None
-    delivery_requests: Final[dict[Reagent, list[ExtractionPoint]]]
-    fill_requests: Final[dict[Reagent, list[FillRequest]]]
-    
-                                  
-    def __init__(self, pipettor: Pipettor, *, name: str="Pipetting Arm") -> None:
-        super().__init__(pipettor)
-        self.serializer = AsyncFunctionSerializer(thread_name=f"{name} Thread")
-        # ,
-        # after_task=lambda: self.to_ready_state())
-        self.lock = Lock()
-        self.delivery_requests = {}
-        self.fill_requests = {}
-        
-    @abstractmethod
-    def add_to_wells(self, reagent: Reagent, targets: Sequence[TransferSpec[Well]], *,  # @UnusedVariable
-                     when_in_pos: DeliveryCallback[Well],                               # @UnusedVariable
-                     when_done: DeliveryCallback[Well]                                  # @UnusedVariable
-                     ) -> None: ...
-        
-    @abstractmethod
-    def remove_waste(self, wells: Sequence[TransferSpec[Well]], *,  # @UnusedVariable
-                     when_in_pos: DeliveryCallback[Well],           # @UnusedVariable
-                     when_done: DeliveryCallback[Well]              # @UnusedVariable
-                     ) -> None: ...
-
-    @abstractmethod
-    def deliver_drops(self, wells: Sequence[ExtractionPoint], *,        # @UnusedVariable
-                     when_in_pos: DeliveryCallback[ExtractionPoint],    # @UnusedVariable
-                     when_done: DeliveryCallback[ExtractionPoint],      # @UnusedVariable
-                     drop_size: Optional[Volume] = None                 # @UnusedVariable
-                     ) -> None: ...
-
-    @abstractmethod
-    def remove_product_drops(self, wells: Sequence[ExtractionPoint], *,         # @UnusedVariable
-                             when_in_pos: DeliveryCallback[ExtractionPoint],    # @UnusedVariable
-                             when_done: DeliveryCallback[ExtractionPoint],      # @UnusedVariable
-                             drop_size: Optional[Volume] = None                 # @UnusedVariable
-                     ) -> None: ...
-
-    # @abstractmethod
-    # def acquire_liquid(self, liquid: Liquid) -> Liquid: ...  # @UnusedVariable
-    # @abstractmethod
-    # def deposit_liquid(self) -> None: ...
-    # @abstractmethod
-    # def move_to(self, target: Target) -> None: ...  # @UnusedVariable
-    # @abstractmethod 
-    # def to_ready_state(self) -> None: ...
-    
-    def run_serialized(self, op_fn: OpFunc) -> None:
-        self.serializer.enqueue(op_fn)
-        
-    class AddToWell(Operation['PipettingArm', Liquid]):
+    class Supply(Operation['Pipettor', Liquid]):
         liquid: Final[Liquid]
-        target: Final[Well]
-        mix_result: Final[Optional[Union[Reagent, str]]]
+        target: Final[PipettingTarget]
+        allow_merge: Final[bool]
+        mix_result: Final[Optional[MixResult]]
         on_insufficient: Final[ErrorHandler]
         on_no_source: Final[ErrorHandler]
 
-        def __init__(self, liquid: Liquid, target: Well, *,
-                     mix_result: Optional[Union[Reagent, str]]=None,
+        def __init__(self, liquid: Liquid, target: PipettingTarget, *,
+                     allow_merge: bool = False,
+                     mix_result: Optional[MixResult] = None,
                      on_insufficient: ErrorHandler=PRINT,
                      on_no_source: ErrorHandler=PRINT
 
                      ) -> None:
             self.liquid = liquid
             self.target = target
+            self.allow_merge = allow_merge
             self.mix_result = mix_result
             self.on_insufficient = on_insufficient
             self.on_no_source = on_no_source
 
-        def _schedule_for(self, arm: PipettingArm, *,
-                          mode: RunMode=RunMode.GATED,
+        def _schedule_for(self, pipettor: Pipettor, *,
+                          mode: RunMode=RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType]=None,
-                          post_result: bool=True,
+                          post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
 
             future = Delayed[Liquid]()
-            target = self.target
-            liquid = self.liquid
-            reagent = liquid.reagent
-            volume = liquid.volume
-            request = FillRequest(liquid, target, 
-                                  when_done=future,
-                                  mix_result=self.mix_result,
-                                  on_insufficient=self.on_insufficient,
-                                  on_no_source=self.on_no_source)
-            with arm.lock:
-                requests = arm.fill_requests.get(reagent, None)
-                if requests is not None:
-                    requests.append(request)
-                    return future
-                requests = [request]
-                def do_it() -> None:
-                    ...
-                ...
-            # maybe_reservoir = arm.pipettor.reservoir_for(liquid.reagent)
-            # if maybe_reservoir is None:
-            #     self.on_no_source(f"No reservoir for {liquid.reagent}")
-            #     return Delayed.complete(Liquid(liquid.reagent, Volume.ZERO()))
-            # reservoir = maybe_reservoir
-            def do_it() -> None:
-                arm.move_to(reservoir)
-                got = arm.acquire_liquid(liquid)
-                self.on_insufficient.expect_true(got.volume >= liquid.volume,
-                                                 lambda: f"""Asked for {liquid.volume} of {liquid.reagent},
-                                                             only got {got.volume}""")
-                arm.move_to(target)
-                if isinstance(target, ExtractionPoint):
-                    target.reserve_pad(expect_drop=self.expect_drop).wait()
-                arm.deposit_liquid()
-                if isinstance(target, ExtractionPoint):
-                    drop = target.pad.drop
-                    if drop is None:
-                        drop = Drop(target.pad, got)
-                        drop.pad.schedule(Pad.TurnOn)
-                    else:
-                        drop.liquid.mix_in(got, result=self.mix_result)
-                    target.pad.reserved = False
-                else:
-                    target.transfer_in(liquid)
-                if post_result:
-                    future.post(got)
+            def schedule_it() -> None:
+                pipettor.xfer_sched.add(self.target, self.liquid.reagent, self.liquid.volume,
+                                        future=future, allow_merge=self.allow_merge,
+                                        mix_result=self.mix_result,
+                                        on_unknown=self.on_no_source, on_insufficient=self.on_insufficient)
 
-            arm.pipettor.delayed(lambda: arm.run_serialized(do_it), after=after)
+            pipettor.delayed(schedule_it, after=after)
             return future
 
-    
-    class Supply(Operation['PipettingArm', Liquid]):
-        liquid: Final[Liquid]
-        target: Final[Union[Well, ExtractionPoint]]
-        mix_result: Final[Optional[Union[Reagent, str]]]
-        expect_drop: Final[bool]
-        on_insufficient: Final[ErrorHandler]
-        on_no_source: Final[ErrorHandler]
-
-        def __init__(self, liquid: Liquid, target: Union[Well, ExtractionPoint], *,
-                     mix_result: Optional[Union[Reagent, str]]=None,
-                     expect_drop: bool = False,
-                     on_insufficient: ErrorHandler=PRINT,
-                     on_no_source: ErrorHandler=PRINT
-
-                     ) -> None:
-            self.liquid = liquid
-            self.target = target
-            self.mix_result = mix_result
-            self.expect_drop = expect_drop
-            self.on_insufficient = on_insufficient
-            self.on_no_source = on_no_source
-
-        def _schedule_for(self, arm: PipettingArm, *,
-                          mode: RunMode=RunMode.GATED,
-                          after: Optional[DelayType]=None,
-                          post_result: bool=True,
-                          ) -> Delayed[Liquid]:
-
-            future = Delayed[Liquid]()
-            target = self.target
-            liquid = self.liquid
-            maybe_reservoir = arm.pipettor.reservoir_for(liquid.reagent)
-            if maybe_reservoir is None:
-                self.on_no_source(f"No reservoir for {liquid.reagent}")
-                return Delayed.complete(Liquid(liquid.reagent, Volume.ZERO()))
-            reservoir = maybe_reservoir
-            def do_it() -> None:
-                arm.move_to(reservoir)
-                got = arm.acquire_liquid(liquid)
-                self.on_insufficient.expect_true(got.volume >= liquid.volume,
-                                                 lambda: f"""Asked for {liquid.volume} of {liquid.reagent},
-                                                             only got {got.volume}""")
-                arm.move_to(target)
-                if isinstance(target, ExtractionPoint):
-                    target.reserve_pad(expect_drop=self.expect_drop).wait()
-                arm.deposit_liquid()
-                if isinstance(target, ExtractionPoint):
-                    drop = target.pad.drop
-                    if drop is None:
-                        drop = Drop(target.pad, got)
-                        drop.pad.schedule(Pad.TurnOn)
-                    else:
-                        drop.liquid.mix_in(got, result=self.mix_result)
-                    target.pad.reserved = False
-                else:
-                    target.transfer_in(liquid)
-                if post_result:
-                    future.post(got)
-
-            arm.pipettor.delayed(lambda: arm.run_serialized(do_it), after=after)
-            return future
-
-    class Extract(Operation['PipettingArm', Liquid]):
+    class Extract(Operation['Pipettor', Liquid]):
         volume: Final[Optional[Volume]]
-        target: Final[Union[Well, ExtractionPoint]]
+        reagent: Final[Optional[Reagent]]
+        target: Final[PipettingTarget]
+        allow_merge: Final[bool]
         on_no_sink: Final[ErrorHandler]
+        on_insufficient_space: Final[ErrorHandler]
+        on_no_liquid: Final[ErrorHandler]
+        is_product: Final[bool]
+        product_loc: Final[Optional[Delayed[ProductLocation]]]
 
-        def __init__(self, volume: Optional[Volume], target: Union[Well, ExtractionPoint], *,
-                     on_no_sink: ErrorHandler=PRINT
+        def __init__(self, volume: Optional[Volume], target: PipettingTarget, *,
+                     on_no_sink: ErrorHandler=PRINT,
+                     on_insufficient_space: ErrorHandler=PRINT,
+                     on_no_liquid: ErrorHandler=PRINT,
+                     allow_merge: bool = False,
+                     is_product: bool = False,
+                     product_loc: Optional[Delayed[ProductLocation]] = None,
+                     reagent: Optional[Reagent] = None
                      ) -> None:
             self.volume = volume
             self.target = target
+            self.allow_merge = allow_merge
             self.on_no_sink = on_no_sink
+            self.on_insufficient_space = on_insufficient_space
+            self.is_product = is_product
+            self.on_no_liquid = on_no_liquid
+            self.reagent = reagent
+            self.product_loc = product_loc
 
-        def _schedule_for(self, arm: PipettingArm, *,
-                          mode: RunMode=RunMode.GATED,
+        def _schedule_for(self, pipettor: Pipettor, *,
+                          mode: RunMode=RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType]=None,
-                          post_result: bool=True,
+                          post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
 
             future = Delayed[Liquid]()
-            target = self.target
-
-            def do_it() -> None:
-                arm.move_to(target)
-                if isinstance(target, ExtractionPoint):
-                    target.ensure_drop().wait()
-                if isinstance(target, ExtractionPoint):
-                    drop = not_None(target.pad.drop)
-                    # if self.volume is None:
-                    #     volume = drop.volume
-                    # else:
-                    #     volume = min(drop.volume, self.volume)
-                    volume = drop.volume if self.volume is None else min(drop.volume, self.volume)
-                    liquid = Liquid(drop.reagent, volume)
-                else:
-                    contents = target.contents
-                    assert contents is not None, f"Trying to extract from empty {target}"
-                    volume = target.volume if self.volume is None else min(target.volume, self.volume)
-                    liquid = Liquid(contents.reagent, volume)
-                reservoir = arm.pipettor.reservoir_for(liquid.reagent)
-                if reservoir is None:
-                    self.on_no_sink(f"No reservoir for {liquid.reagent}")
-                else:
-                    got = arm.acquire_liquid(liquid)
-                    if isinstance(target, ExtractionPoint):
-                        # I'm pretty sure that drop should still be defined here.
-                        if drop.volume == got.volume:
-                            drop.pad.schedule(Pad.TurnOff)
-                            drop.status = DropStatus.OFF_BOARD
-                            drop.pad.drop = None
-                        else:
-                            drop.liquid.volume = drop.volume-got.volume
+            def schedule_it() -> None:
+                target = self.target
+                contents = target.contents
+                volume = self.volume
+                if volume is None:
+                    if contents is None:
+                        self.on_no_liquid(f"No volume specified on extraction from {target}, which is empty")
+                        future.post(Liquid(unknown_reagent, Volume.ZERO()))
+                        return
                     else:
-                        target.transfer_out(got.volume)
-                    if post_result:
-                        future.post(got)
-                    arm.move_to(reservoir)
-                    arm.deposit_liquid()
-
-            arm.pipettor.delayed(lambda: arm.run_serialized(do_it), after=after)
+                        volume = contents.volume
+                reagent = self.reagent
+                if reagent is None:
+                    reagent = unknown_reagent if contents is None else contents.reagent 
+                pipettor.xfer_sched.remove(target, reagent, volume,
+                                           future=future, allow_merge=self.allow_merge,
+                                           on_unknown=self.on_no_sink, on_insufficient=self.on_insufficient_space,
+                                           is_product = self.is_product, product_loc=self.product_loc)
+            pipettor.delayed(schedule_it, after=after)
             return future
-
-
-class Pipettor(SystemComponent):
-
-    well_blocks: Final[Sequence[WellBlock]]
-    arms: Final[Sequence[PipettingArm]]
-    
-    def __init__(self, 
-                 well_blocks: Sequence[WellBlock], 
-                 arms: Sequence[PipettingArm]) -> None:
-        self.well_blocks = well_blocks
-        self.arms = arms
-
-    def reservoir_for(self, reagent: Reagent) -> Optional[WellBlock.Reservoir]:
-        for wb in self.well_blocks:
-            r = wb.reservoir_for(reagent)
-            if r is not None:
-                return r
-        return None
+            
+            
 

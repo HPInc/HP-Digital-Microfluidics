@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
-    _SubParsersAction, _ArgumentGroup, FileType
+    _SubParsersAction, _ArgumentGroup
 from re import Pattern
 import re
 from typing import Final, Mapping, Union, Optional, Sequence, Any

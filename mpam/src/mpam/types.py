@@ -1078,6 +1078,8 @@ class Reagent:
 waste_reagent: Final[Reagent] = Reagent.find("waste")
 unknown_reagent: Final[Reagent] = Reagent.find("unknown")
 
+MixResult = Union[Reagent, str]
+
 class Mixture(Reagent):
     _mixture: Final[MixtureSpec]
     _class_lock: Final[ClassVar[Lock]] = Lock()
@@ -1265,7 +1267,7 @@ class Liquid:
             key = cb
         self.reagent_change_callbacks.add(cb, key=key)
         
-    def mix_with(self, other: Liquid, *, result: Optional[Union[Reagent, str]] = None) -> Liquid:
+    def mix_with(self, other: Liquid, *, result: Optional[MixResult] = None) -> Liquid:
         my_v = self.volume
         my_r = self.reagent
         their_v = other.volume
@@ -1283,7 +1285,7 @@ class Liquid:
             r = Mixture.find_or_compute(my_r, their_r, ratio=ratio, name=result)
         return Liquid(reagent=r, volume=v, inexact=self.inexact or other.inexact)
     
-    def mix_in(self, other: Liquid, *, result: Optional[Union[Reagent, str]] = None) -> None:
+    def mix_in(self, other: Liquid, *, result: Optional[MixResult] = None) -> None:
         my_v = self.volume
         my_r = self.reagent
         their_v = other.volume
@@ -1320,7 +1322,7 @@ class Liquid:
     
     @classmethod
     def mix_together(cls, liquids: Sequence[Union[Liquid, tuple[Liquid, float]]], *,
-                     result: Optional[Union[Reagent, str]] = None) -> Liquid:
+                     result: Optional[MixResult] = None) -> Liquid:
         if len(liquids) == 0:
             return Liquid(unknown_reagent, Volume.ZERO())
         ls = [(liquid, 1) if isinstance(liquid, Liquid) else liquid for liquid in liquids]
@@ -1484,7 +1486,8 @@ class _AFS_Thread(Thread):
         queue = self.queue
         before_task = self.before_task
         after_task = self.after_task
-        func: Callback = queue.popleft()
+        with self.serializer.lock:
+            func: Callback = queue.popleft()
         while True:
             if before_task is not None:
                 before_task()
@@ -1539,3 +1542,7 @@ class AsyncFunctionSerializer:
                 thread.start()
             else:
                 thread.enqueue(fn)
+
+class XferDir(Enum):
+    FILL = auto()
+    EMPTY = auto()
