@@ -22,17 +22,22 @@ metadata = {
             
 
 def run(protocol: protocol_api.ProtocolContext) -> None:
-    from opentrons_support import Robot, load_config, Board
+    from opentrons_support import Robot, load_config
     config = load_config("config.json")
 
-    turn_off_lights_at_end = not protocol.rail_lights_on
+    # turn_off_lights_at_end = not protocol.rail_lights_on
+    turn_off_lights_at_end = False
     if turn_off_lights_at_end:
         protocol.set_rail_lights(True)
-    
-    
+        
+
+        
     if not protocol.is_simulating():
-        board = Board(config["board"], protocol)
+        # board = Board(config["board"], protocol)
         robot = Robot(config, protocol)
+        board = robot.board
+        
+        robot.message("Created robot and board")
         
         for n,w in board.well_map.items():
             robot.message(f"{n}: {w}")
@@ -42,20 +47,9 @@ def run(protocol: protocol_api.ProtocolContext) -> None:
         if robot.endpoint:
             robot.message(robot.endpoint)
         
-        well = board.wells
-        ep = board.extraction_ports
         
-    
-        # # robot.fill("oil", board.oil_reservoir, 200)
-        # # robot.fill("oil", board.oil_reservoir, 200)
-        # robot.fill("r1", well[4], 30)
-        # robot.deliver("r2", [ep[0], ep[0], ep[1]], drop_size=board.drop_size)
-        # robot.remove_product(ep[2], board.drop_size)
-        # # robot.remove_product(ep[2], board.drop_size)
-        # #
-        # robot.empty_waste([(well[1], 50), (well[2], 50)])
-    
-        
+        robot.loop()
+                
         if turn_off_lights_at_end:
             protocol.set_rail_lights(False)
         robot.message("Done")

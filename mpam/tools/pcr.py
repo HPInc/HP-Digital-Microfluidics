@@ -29,6 +29,8 @@ from quantities.SI import ms, second, seconds, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import abs_C
 from devices.dummy_pipettor import DummyPipettor
+from devices.opentrons import OT2
+from mpam.pipettor import Pipettor
 
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
@@ -930,6 +932,15 @@ class CombSynth(PCRTask):
         assert isinstance(board, joey.Board)
         self.setup(board, args = args)
         
+        # we wait for a tick, just in case we started paused.
+        
+        system.clock.await_tick()
+        
+        self.pm_well.refill()
+        self.db_well.refill()
+        self.mm_well.refill()
+        self.rsm_well.refill()
+        
 
         combinations = deque(self.Combination(i+1, self) for i in range(self.n_combinations))
 
@@ -976,8 +987,8 @@ class Test(Task):
     #     ...
     
     def run(self, board:Board, 
-            system:System, 
-            args:Namespace) -> None:
+            system:System, # @UnusedVariable
+            args:Namespace) -> None: # @UnusedVariable
         assert isinstance(board, joey.Board)
         
         ep1 = board.extraction_points[1]
@@ -998,7 +1009,13 @@ class PCRDriver(Exerciser):
         self.add_task(Test())
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
-        return joey.Board()
+        pipettor: Optional[Pipettor] = None
+        if args.ot_ip is not None:
+            assert args.ot_config is not None, f"Opentrons IP address given, but no config file"
+            pipettor = OT2(robot_ip_addr = args.ot_ip,
+                           config = args.ot_config,
+                           reagents = args.ot_reagents)
+        return joey.Board(pipettor = pipettor)
     
     def available_wells(self)->Sequence[int]:
         return range(8)
@@ -1019,11 +1036,17 @@ class PCRDriver(Exerciser):
                                  The number of extra shuttles to perform during mixing and diluting.  
                                  Default is {default_shuttles}.
                                  ''')
-    
+        
         group.add_argument('-ps', '--pipettor-speed', type=float, metavar='MULT',
                            help=f'''
-                                 A speed-up factor for pipettor operations.
+                                 A speed-up factor for dummy pipettor operations.
                                  ''')
+        group.add_argument("-ip", "--ot-ip", metavar="IP",
+                           help=f"The IP address of the Opentrons robot")
+        group.add_argument("-otc", "--ot-config", metavar="FILE",
+                           help=f"The config file for the the Opentrons robot")
+        group.add_argument("-otr", "--ot-reagents", metavar="FILE",
+                           help=f"The reagents JSON file for the the Opentrons robot")
     
 
 if __name__ == '__main__':

@@ -197,7 +197,8 @@ class Board(device.Board):
                     exit_pad=exit_pad,
                     gate=self._make_well_gate(num),
                     capacity=54.25*uL,
-                    dispensed_volume=0.5*uL,
+                    # dispensed_volume=0.5*uL,
+                    dispensed_volume=1*uL,
                     exit_dir=exit_dir,
                     shape = shape,
                     pipettor = pipettor

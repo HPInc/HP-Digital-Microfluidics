@@ -3,7 +3,7 @@ from __future__ import annotations
 from _collections import defaultdict
 from enum import Enum, auto
 import json
-from typing import Sequence, Optional, NamedTuple, Any
+from typing import Sequence, Optional, NamedTuple, Any, Dict
 
 from opentrons import protocol_api
 from opentrons.protocol_api.instrument_context import InstrumentContext
@@ -35,6 +35,7 @@ class Board:
     oil_reservoir: Well
     drop_size: float
     well_map: dict[str, Well]
+    well_names: dict[Well, str]
     
     def __init__(self,
                  spec, 
@@ -42,6 +43,7 @@ class Board:
         self.plate = labware_from_config(spec["labware"], protocol)
         self.drop_size = spec["drop-size"]
         self.well_map = {}
+        self.well_names = {}
         self.wells = [self.plate[w] for w in spec["wells"]]
         self.name_wells("W", self.wells)
         self.extraction_ports = [self.plate[w] for w in spec["extraction-ports"]]
@@ -53,6 +55,7 @@ class Board:
         for i,w in enumerate(wells):
             name = f"{prefix}{i+1}"
             self.well_map[name] = w
+            self.well_names[w] = name
         
 class Direction(Enum):
     FILL = auto()
@@ -77,7 +80,7 @@ class BoardEP(Target):
         return board.extraction_ports[self.n]
 
 class OilReservoir(Target):
-    def well(self, robot:Robot, board:Board)->Well:
+    def well(self, robot: Robot, board: Board)->Well: # @UnusedVariable
         return board.oil_reservoir
 
 class ReagentWellUse(Enum):
@@ -112,6 +115,7 @@ class Pipettor(TransferScheduler[Well]) :
     pipette: InstrumentContext
     protocol: protocol_api.ProtocolContext
     robot: Robot
+    board: Board
     _tips: list[Well]
     tip: dict[str, Well]
     _current_tip: Optional[Well]
@@ -125,6 +129,7 @@ class Pipettor(TransferScheduler[Well]) :
                  robot: Robot) -> None:
         self.protocol = protocol
         self.robot = robot
+        self.board = robot.board
         p = protocol.load_instrument(spec["name"], spec["side"], tip_racks = tipracks)
         self.pipette = p
         min_v = p.min_volume
@@ -139,28 +144,36 @@ class Pipettor(TransferScheduler[Well]) :
     def message(self, msg: str) -> None:
         self.robot.message(msg)
         
-    def wait_for_clearance(self, well: Well) -> None:
-        self.pipette.move_to(well.top(1))
-        self.message(f"Waiting above {well}")
-        self.protocol.delay(seconds=0.5)
+    def well_name(self, well: Well) -> str:
+        return self.board.well_names[well]
         
-    def signal_clear(self, well: Well) -> None:
+    def wait_for_clearance(self, well: Well, volume: float) -> None:
         self.pipette.move_to(well.top(1))
-        self.message(f"Resuming")
+        well_name = self.well_name(well)
+        self.message(f"Waiting above {well_name}")
+        self.robot.call_waiting(well, volume)
+        # self.protocol.delay(seconds=0.5)
+        
+    def signal_clear(self, well: Well, volume: float) -> None:
+        self.pipette.move_to(well.top(1))
+        well_name = self.well_name(well)
+        self.message(f"Resuming from {well_name}")
+        self.robot.call_finished(well, volume)
     
         
     def process(self, op: XferOp[Well], *, on_board: set[Well]) -> None: 
         w = op.target
+        v = op.volume
         p = self.pipette
         pause_around = w in on_board
         if pause_around:
-            self.wait_for_clearance(w)
+            self.wait_for_clearance(w, v)
         if isinstance(op, AspirateOp):
-            p.aspirate(op.volume, w)
+            p.aspirate(v, w)
         else:
-            p.dispense(op.volume, w)
+            p.dispense(v, w)
         if pause_around:
-            self.signal_clear(w)
+            self.signal_clear(w, v)
 
             
         
@@ -207,15 +220,18 @@ class Pipettor(TransferScheduler[Well]) :
         else:
             return self.make_empty(on_board, reagent_source.output_wells, trash=trash)
                 
-        
+JSONObj = Dict[str, Any]
 
 class Transfer(NamedTuple):
     pipettor: Pipettor
     ops: Sequence[XferOp[Well]]
     
+    def is_last(self) -> None:
+        self.ops[-1].is_last = True
         
 class Robot:
     protocol: protocol_api.ProtocolContext
+    board: Board
     large_tipracks: Sequence[Labware]
     small_tipracks: Sequence[Labware]
     # large_tips: list[Well]
@@ -232,6 +248,7 @@ class Robot:
     trash_well: Well
     _next_product: int
     endpoint: Optional[str] = None
+    last_product_well: Optional[Well] = None
     
     def message(self, msg: str) -> None:
         try_remote = self.http_post("message", json = { "message": msg})
@@ -245,6 +262,7 @@ class Robot:
     
     def __init__(self, config, protocol: protocol_api.ProtocolContext):
         self.protocol = protocol
+        self.board = Board(config["board"], protocol)
         ep_config = config.get("endpoint", None)   
         if ep_config:
             ip = ep_config["ip"]
@@ -264,9 +282,8 @@ class Robot:
         self.output_wells = []
         for p in self.output_plates:
             self.output_wells += p.wells()
-         
         
-        self.large_pipettor = Pipettor(config["pipettes"]["large"], protocol, self.large_tipracks, robot=self) 
+        self.large_pipettor = Pipettor(config["pipettes"]["large"], protocol, self.large_tipracks, robot=self)
         self.small_pipettor = Pipettor(config["pipettes"]["small"], protocol, self.small_tipracks, robot=self)
         self.threshold: float = self.small_pipettor.max_volume
         # self.reagent_small_tip = defaultdict(lambda: self.small_tips.pop(0))
@@ -297,7 +314,7 @@ class Robot:
         
         self._next_product = 0
         
-    def http_post(self, path: str, *, json: Any = {}) -> Optional[requests.Response]:
+    def http_post(self, path: str, *, json: JSONObj = {}) -> Optional[requests.Response]:
         if self.endpoint is None:
             return None
         return requests.post(f"{self.endpoint}/{path}", json=json)
@@ -340,7 +357,9 @@ class Robot:
             r = ReagentSource(reagent)
             w = self.output_wells.pop(0)
             r.add_well(w, 0, ReagentWellUse.OUTPUT)
+            self.last_product_well = w
         else:
+            self.last_product_well = None
             r = self.reagent_source[reagent]
         xfers: list[Transfer] = []
         trash = self.trash_well
@@ -358,6 +377,7 @@ class Robot:
             if error > 0:
                 # TODO: Do something with error
                 ...
+        xfers[-1].is_last()
         return xfers
         
 
@@ -396,6 +416,60 @@ class Robot:
         transfers = self.plan(Direction.EMPTY, reagent, sources)
         self.do_transfers(transfers, reagent, on_board={t[0] for t in sources})
         
-    def loop(self) -> None:
+    def prepare_call(self, *, json: Optional[JSONObj] = None) -> JSONObj:
+        if json is None:
+            json = {}
+        # TODO: Add return info from prior transfers
         ...
+        return json
+    
+    def call_finished(self, well: Well, volume: float) -> None:
+        call_params = self.prepare_call()
+        call_params["well"] = self.board.well_names[well]
+        call_params["volume"] = volume
+        resp = self.http_post("finished", json = call_params)
+        assert resp is not None, f"No endpoint to call"
+        assert resp.status_code == 200, f"/finished status code was {resp.status_code}"
+        
+    def call_waiting(self, well: Well, volume: float) -> None:
+        call_params = self.prepare_call()
+        call_params["well"] = self.board.well_names[well]
+        call_params["volume"] = volume
+        resp = self.http_post("waiting", json = call_params)
+        assert resp is not None, f"No endpoint to call"
+        assert resp.status_code == 200, f"/waiting status code was {resp.status_code}"
+        
+    def loop(self) -> None:
+        self.message("Entering main loop")
+        dirs = {"fill": Direction.FILL, "empty": Direction.EMPTY}
+        well_map = self.board.well_map
+        while True:
+            # self.message("Making ready call")
+            call_params = self.prepare_call()
+            if self.last_product_well is not None:
+                call_params["product_well"] = str(self.last_product_well)
+
+            resp = self.http_post("ready", json = call_params)
+            assert resp is not None, f"No endpoint to call"
+            body = resp.json()
+            # self.message(f"Body is {body}")
+            cmd = body["command"]
+            # self.message(f"Command is {cmd}")
+            if cmd == "exit":
+                self.message("Exit requested")
+                break
+            d = dirs[cmd]
+            r = body["reagent"]
+            well_specs = body["targets"]
+            action = "supplying" if d is Direction.FILL else "removing" 
+            tdescs = ", ".join([f"{ws['volume']} µL @ {ws['well']}" for ws in well_specs])
+            self.message("-------------------")
+            self.message(f"{action} {r}: {tdescs}")
+            
+            wells = [(well_map[ws["well"]], ws["volume"]) for ws in well_specs]
+            transfers = self.plan(d, r, wells)
+            on_board = {ws[0] for ws in wells}
+            self.do_transfers(transfers, r, on_board=on_board)
+            
+        self.message("Exiting main loop")
         

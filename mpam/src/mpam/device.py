@@ -149,12 +149,12 @@ class PipettingTarget:
         ...
     
     @abstractmethod
-    def pipettor_added(self, reagent: Reagent, volume: Volume, *,
-                       mix_result: Optional[MixResult]) -> None:
+    def pipettor_added(self, reagent: Reagent, volume: Volume, *, # @UnusedVariable
+                       mix_result: Optional[MixResult]) -> None: # @UnusedVariable
         ...
     
     @abstractmethod
-    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None:
+    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         ...
     
 class Pad(BinaryComponent['Pad']):
@@ -880,7 +880,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         return True
     
     def add(self, liquid: Liquid, *,
-            mix_result: Optional[Union[Reagent, str]] = None,
+            mix_result: Optional[MixResult] = None,
             on_insufficient: ErrorHandler = PRINT,
             on_no_source: ErrorHandler = PRINT
             ) -> Delayed[Well]:
@@ -888,6 +888,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         assert pipettor is not None, f"{self} has no pipettor and add() was not overridden"
         
         p_future = pipettor.schedule(pipettor.Supply(liquid, self,
+                                                     mix_result=mix_result,
                                                      on_insufficient=on_insufficient,
                                                      on_no_source=on_no_source))
         return p_future.triggering(value=self)
@@ -1261,7 +1262,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.product_loc = product_loc
 
         def _schedule_for(self, extraction_point: ExtractionPoint, *,
-                          mode: RunMode = RunMode.GATED,
+                          mode: RunMode = RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
@@ -1290,6 +1291,10 @@ class SystemComponent(ABC):
         
     def join_system(self, system: System) -> None:
         self.system = system
+        system.component_joined(self)
+        
+    def system_shutdown(self) -> None:
+        pass
         
     def in_system(self) -> System:
         return not_None(self.system)
@@ -1552,7 +1557,7 @@ class Clock:
         if delta >= 0:
             e = Event()
             def cb():
-                e.signal()
+                e.set()
             self.clock_thread.after_tick([(delta, cb)])
             while not e.is_set():
                 e.wait(_wait_timeout)
@@ -1655,6 +1660,9 @@ class System:
     _batch_lock: Final[Lock]
     _batch: Optional[Batch]
     monitor: Optional[BoardMonitor] = None
+    _cpts_lock: Final[Lock]
+    components: Final[list[SystemComponent]]
+    running: bool = True
     
     def __init__(self, *, board: Board):
         self.board = board
@@ -1662,6 +1670,8 @@ class System:
         self.clock = Clock(self)
         self._batch = None
         self._batch_lock = Lock()
+        self._cpts_lock = Lock()
+        self.components = []
         board.join_system(self)
 
     def __enter__(self) -> System:
@@ -1673,6 +1683,16 @@ class System:
                  exc_val: Optional[BaseException], 
                  exc_tb: Optional[TracebackType]) -> bool:
         return self.engine.__exit__(exc_type, exc_val, exc_tb)
+    
+    def component_joined(self, component: SystemComponent) -> None:
+        with self._cpts_lock:
+            assert self.running, f"Tried to add {component} to system after shutdown"
+            self.components.append(component)
+            
+    def shutdown(self) -> None:
+        with self._cpts_lock:
+            for cpt in self.components:
+                cpt.system_shutdown()
     
     def stop(self) -> None:
         self.engine.stop()
@@ -1747,6 +1767,7 @@ class System:
             with self:
                 val = fn(self)  # @UnusedVariable
             done.set()
+            self.shutdown()
 
         thread = Thread(target=run_it)
         monitor = BoardMonitor(self.board,

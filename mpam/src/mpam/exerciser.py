@@ -198,6 +198,7 @@ class Exerciser(ABC):
         if not args.use_display:
             with system:
                 do_run()
+            system.shutdown()
         else:
             system.run_monitored(lambda _: do_run(),
                                  min_time=args.min_time,

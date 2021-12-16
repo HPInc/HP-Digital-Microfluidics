@@ -65,9 +65,9 @@ class Path:
             self.middle_steps = middle
             
         @overload
-        def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Start: ...
+        def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Start: ... # @UnusedVariable
         @overload
-        def __add__(self, other: Union[Path.EndStep, Path.End]) -> Path.Full: ...
+        def __add__(self, other: Union[Path.EndStep, Path.End]) -> Path.Full: ... # @UnusedVariable
         def __add__(self, other: Union[Path.MiddleStep,
                                        Path.EndStep, 
                                        Path.Middle,
@@ -186,9 +186,9 @@ class Path:
             self.middle_steps =  middle
             
         @overload
-        def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Middle: ...
+        def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Middle: ... # @UnusedVariable
         @overload
-        def __add__(self, other: Union[Path.EndStep, Path.End]) -> Path.End: ...
+        def __add__(self, other: Union[Path.EndStep, Path.End]) -> Path.End: ... # @UnusedVariable
         def __add__(self, other: Union[Path.MiddleStep,
                                        Path.EndStep, 
                                        Path.Middle,

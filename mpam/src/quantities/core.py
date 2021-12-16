@@ -1054,7 +1054,7 @@ class DerivedDimMeta(type):
             d.name = n
             d.quant_class = cast(type[DerivedDim], cls)
         cls._dim = d
-        cls._zero = cls(0)
+        cls._zero = cls(0.0)
         cls._restriction_classes: dict[Any, type[BaseDim]] = {}
 
         

@@ -1150,12 +1150,12 @@ class Mixture(Reagent):
             cls._instances[t] = m
         return m
     
-    @classmethod
-    def find_or_compute_aux(cls, specs: tuple[tuple[float, Reagent]], *,
-                            name: Optional[str] = None) -> Reagent:
-        # TODO:
-        # Note, need to normalize before lookup?
-        ...
+    # @classmethod
+    # def find_or_compute_aux(cls, specs: tuple[tuple[float, Reagent]], *,
+    #                         name: Optional[str] = None) -> Reagent:
+    #     # TODO:
+    #     # Note, need to normalize before lookup?
+    #     ...
     
     @classmethod
     def find_or_compute(cls, r1: Reagent, r2: Reagent, *, 
@@ -1465,6 +1465,7 @@ class _AFS_Thread(Thread):
     serializer: Final[AsyncFunctionSerializer]
     before_task: Final[Optional[Callback]]
     after_task: Final[Optional[Callback]]
+    on_empty_queue: Final[Optional[Callback]]
     queue: Final[deque[Callback]]
 
     def __init__(self,
@@ -1474,12 +1475,14 @@ class _AFS_Thread(Thread):
                  name: Optional[str]=None,
                  daemon: bool=False,
                  before_task: Optional[Callback]=None,
-                 after_task: Optional[Callback]=None
+                 after_task: Optional[Callback]=None,
+                 on_empty_queue: Optional[Callback]=None
                  ) -> None:
         super().__init__(name=name, daemon=daemon)
         self.serializer = serializer
         self.before_task = before_task
         self.after_task = after_task
+        self.on_empty_queue = on_empty_queue
         self.queue = deque[Callback]((first_callback,))
 
     def run(self) -> None:
@@ -1499,6 +1502,9 @@ class _AFS_Thread(Thread):
                     # There's nothing left to do, and since we hold the lock, nothing will be added, 
                     # so we can just get rid of ourself.
                     self.serializer.thread = None
+                    on_empty = self.on_empty_queue
+                    if on_empty is not None:
+                        on_empty()
                     return
                 else:
                     func = queue.popleft()
@@ -1516,18 +1522,24 @@ class AsyncFunctionSerializer:
     daemon_thread: Final[bool]
     before_task: Final[Optional[Callback]]
     after_task: Final[Optional[Callback]]
+    on_empty_queue: Final[Optional[Callback]]
+    on_nonempty_queue: Final[Optional[Callback]]
 
     def __init__(self, *,
                  thread_name: Optional[str]=None,
                  daemon_thread: bool=False,
                  before_task: Optional[Callback]=None,
-                 after_task: Optional[Callback]=None
+                 after_task: Optional[Callback]=None,
+                 on_empty_queue: Optional[Callback]=None,
+                 on_nonempty_queue: Optional[Callback]=None
                  ) -> None:
         self.lock = Lock()
         self.thread_name = thread_name
         self.daemon_thread = daemon_thread
         self.before_task = before_task
         self.after_task = after_task
+        self.on_empty_queue = on_empty_queue
+        self.on_nonempty_queue = on_nonempty_queue
 
     def enqueue(self, fn: Callback) -> None:
         with self.lock:
@@ -1537,8 +1549,11 @@ class AsyncFunctionSerializer:
                                      name=self.thread_name,
                                      daemon=self.daemon_thread,
                                      before_task=self.before_task,
-                                     after_task=self.after_task)
+                                     after_task=self.after_task,
+                                     on_empty_queue = self.on_empty_queue)
                 self.thread = thread
+                if self.on_nonempty_queue is not None:
+                    self.on_nonempty_queue()
                 thread.start()
             else:
                 thread.enqueue(fn)

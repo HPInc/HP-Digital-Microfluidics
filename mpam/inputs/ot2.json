@@ -1,0 +1,48 @@
+{
+	"pipettes": {
+		"large": {
+			"name": "p300_single_gen2",
+			"side": "right"
+		},
+		"small": {
+			"name": "p20_single_gen2",
+			"side": "left"
+		}
+	},
+	"tipracks": {
+		"large": [
+			{
+				"name": "opentrons_96_filtertiprack_200uL",
+				"slot": 3 
+			} 
+		],
+		"small": [
+			{	
+			 	"name": "opentrons_96_filtertiprack_20uL",
+				"slot": 6 
+			} 
+		]
+	},
+	"input-wellplates": [
+		{	
+			"name": "nest_96_wellplate_2ml_deep",
+			"slot": 1 
+		}
+	],
+	"output-wellplates": [
+		{	
+			"name": "nest_96_wellplate_2ml_deep",
+			"slot": 10 
+		}
+	],
+	"board": {
+		"labware": {
+			"name": "biorad_96_wellplate_200ul_pcr",
+			"slot": 8
+		},
+		"drop-size": 1.0,
+		"wells": ["E1", "F1", "G1", "H1", "E5", "F5", "G5", "H5"],
+      	"extraction-ports": ["E3", "F3", "G3"],
+     	"oil-reservoir": "A3"
+	}
+}

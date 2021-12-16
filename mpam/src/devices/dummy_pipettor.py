@@ -128,11 +128,11 @@ class DummyPipettor(Pipettor):
                 print(f"Dispensing {total_volume} of {reagent} to {self.arm_pos}.")
                 self.up()
                 if transfer.is_product:
+                    loc = ProductLocation(reagent, f"Product well {self.next_product}")
+                    self.next_product += 1
                     for x in transfer.targets:
                         assert isinstance(x, EmptyTarget)
-                        if x.product_loc is not None:
-                            x.product_loc.post(ProductLocation(reagent, f"Product well {self.next_product}"))
-                    self.next_product += 1
+                        x.note_product_loc(loc)
         if transfer.is_product:
             self.move_to(ArmPos.WASTE)
             self.drop_tip()

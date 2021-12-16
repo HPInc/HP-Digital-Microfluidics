@@ -1,0 +1,154 @@
+{
+	"reagents": [
+		{
+			"name": "Fragment-1",
+			"wells": [ 
+				{ "plate": 0, "well": "A1",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-2",
+			"wells": [ 
+				{ "plate": 0, "well": "A2",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-3",
+			"wells": [ 
+				{ "plate": 0, "well": "A3",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-4",
+			"wells": [ 
+				{ "plate": 0, "well": "A4",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-5",
+			"wells": [ 
+				{ "plate": 0, "well": "A5",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-6",
+			"wells": [ 
+				{ "plate": 0, "well": "A6",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-7",
+			"wells": [ 
+				{ "plate": 0, "well": "A7",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-8",
+			"wells": [ 
+				{ "plate": 0, "well": "A8",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-9",
+			"wells": [ 
+				{ "plate": 0, "well": "A9",	"quantity": 200, "use": "input" }
+			]
+		},
+		{
+			"name": "Fragment-10",
+			"wells": [ 
+				{ "plate": 0, "well": "A10", "quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-11",
+			"wells": [ 
+				{ "plate": 0, "well": "A11", "quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-12",
+			"wells": [ 
+				{ "plate": 0, "well": "A12", "quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-13",
+			"wells": [ 
+				{ "plate": 0, "well": "B1",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-14",
+			"wells": [ 
+				{ "plate": 0, "well": "B2",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-15",
+			"wells": [ 
+				{ "plate": 0, "well": "B3",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-16",
+			"wells": [ 
+				{ "plate": 0, "well": "B4",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-17",
+			"wells": [ 
+				{ "plate": 0, "well": "B5",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-18",
+			"wells": [ 
+				{ "plate": 0, "well": "B6",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-19",
+			"wells": [ 
+				{ "plate": 0, "well": "B7",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Fragment-20",
+			"wells": [ 
+				{ "plate": 0, "well": "B8",	"quantity": 200, "use": "input" }
+			]
+	 	},
+		{
+			"name": "PM Primers",
+			"wells": [ 
+				{ "plate": 0, "well": "C1",	"quantity": 1000, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Dilution Buffer",
+			"wells": [ 
+				{ "plate": 0, "well": "D1",	"quantity": 1000, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Master Mix",
+			"wells": [ 
+				{ "plate": 0, "well": "E1",	"quantity": 1000, "use": "input" }
+			]
+	 	},
+		{
+			"name": "Prep Mixture",
+			"wells": [ 
+				{ "plate": 0, "well": "F1",	"quantity": 1000, "use": "input" }
+			]
+	 	},
+		{
+			"name": "PF Primers",
+			"wells": [ 
+				{ "plate": 0, "well": "G1",	"quantity": 1000, "use": "input" }
+			]
+	 	}
+	]
+}

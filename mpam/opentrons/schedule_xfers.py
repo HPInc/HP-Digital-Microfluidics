@@ -8,6 +8,8 @@ T = TypeVar('T')
 class XferOp(Generic[T]):
     target: T
     volume: float
+    is_last: bool = False
+    
     def __init__(self, target: T, volume: float) -> None:
         self.target = target
         self.volume = volume

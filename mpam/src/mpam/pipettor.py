@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from threading import Lock
-from typing import Final, Callable, Optional, Any
+from typing import Final, Callable, Optional
 
 from erk.errors import ErrorHandler, PRINT
-from mpam.device import SystemComponent, UserOperation, PipettingTarget, System,\
+from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
     ProductLocation
 from mpam.types import Reagent, OpScheduler, Callback, RunMode, DelayType, \
     Liquid, Operation, Delayed, AsyncFunctionSerializer, T, XferDir, \
     unknown_reagent, MixResult
 from quantities.SI import uL
 from quantities.dimensions import Volume
+from mpam.engine import Worker
 
 
 class XferTarget(ABC):
@@ -44,7 +45,7 @@ class XferTarget(ABC):
     def insufficient_msg(self) -> str: ...
         
     @abstractmethod
-    def in_position(self, reagent: Reagent, volume: Volume) -> None:
+    def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         ...
     
     def finished(self, reagent: Reagent, volume: Volume) -> None:
@@ -55,7 +56,7 @@ class XferTarget(ABC):
             self.future.post(liquid)
 
     @abstractmethod
-    def signal_done(self, reagent: Reagent, volume: Volume) -> None:
+    def signal_done(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         ...    
     def finished_overall_transfer(self, reagent: Reagent) -> None:
         future = self.future
@@ -116,7 +117,11 @@ class EmptyTarget(XferTarget):
         self.target.prepare_for_remove()
         
     def signal_done(self, reagent: Reagent, volume: Volume) -> None:
-        self.target.pipettor_removed(reagent, volume) 
+        self.target.pipettor_removed(reagent, volume)
+        
+    def note_product_loc(self, loc: ProductLocation):
+        if self.product_loc is not None:
+            self.product_loc.post(loc)
         
         
 class Transfer:
@@ -146,7 +151,9 @@ class TransferSchedule:
         self.fills = {}
         self.empties = {}
         self._lock = Lock()
-        self.serializer = AsyncFunctionSerializer(thread_name=f"{pipettor.name} Thread")
+        self.serializer = AsyncFunctionSerializer(thread_name=f"{pipettor.name} Thread",
+                                                  on_empty_queue = lambda: self.pipettor.idle(),
+                                                  on_nonempty_queue = lambda: self.pipettor.not_idle())
         
     def _schedule(self,
                   reagent_map: Optional[dict[Reagent, Transfer]], 
@@ -215,11 +222,16 @@ class PipettorSysCpt(SystemComponent):
 
     def user_operation(self) -> UserOperation:
         return UserOperation(self.in_system().engine.idle_barrier)
+    
+    def system_shutdown(self) -> None:
+        self.pipettor.system_shutdown()
+    
 
-class Pipettor(OpScheduler['Pipettor']):
+class Pipettor(OpScheduler['Pipettor'], ABC):
     sys_cpt: Final[PipettorSysCpt]
     OpFunc = Callable[[], None]
     name: Final[str]
+    worker: Worker
     
     xfer_sched: Final[TransferSchedule]
                                   
@@ -227,12 +239,24 @@ class Pipettor(OpScheduler['Pipettor']):
         self.sys_cpt = PipettorSysCpt(self)
         self.name = name
         self.xfer_sched = TransferSchedule(self)
+        
+    def idle(self) -> None:
+        print("Pipettor is idle")
+        self.worker.idle()
+        
+    def not_idle(self) -> None:
+        print("Pipettor is not idle")
+        self.worker.not_idle()
 
     @abstractmethod    
     def perform(self, transfer: Transfer) -> None: ... # @UnusedVariable
     
     def join_system(self, system: System) -> None:
         self.sys_cpt.join_system(system)
+        self.worker = Worker(system.engine.idle_barrier)
+        
+    def system_shutdown(self) -> None:
+        pass
     
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
                                after: Optional[DelayType] = None) -> None:  
