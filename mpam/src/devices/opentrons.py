@@ -479,6 +479,7 @@ class OT2(Pipettor):
                  listener_port: Union[str, int] = 8087,
                  config: Union[str, JSONObj],
                  reagents: Optional[Union[str, dict[Reagent, Sequence[ReagentSource]]]] = None,
+                 board_def: Optional[str] = None,
                  name: str = "OT-2") -> None:
         super().__init__(name=name)
         if isinstance(listener_port, str):
@@ -504,6 +505,9 @@ class OT2(Pipettor):
         else:
             config["reagents"] = [ { "name": r.name, "wells": [ w.as_json() for w in ws]} for r,ws in reagents.items()]
         # print(f"Reagents: {config['reagents']}")
+        if board_def is not None:
+            board_json = self.load_config(board_def)
+            config["board"]["labware"]["definition"] = board_json
         self.manager = ProtocolManager(config, name = f"{name} protocol manager",
                                        ip = robot_ip_addr, port = robot_port,
                                        run_check = lambda: self.listener.running)

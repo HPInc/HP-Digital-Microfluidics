@@ -1,23 +1,25 @@
 from __future__ import annotations
 
 from _collections import defaultdict
+from abc import ABC, abstractmethod
 from enum import Enum, auto
+import importlib
 import json
 from typing import Sequence, Optional, NamedTuple, Any, Dict
 
 from opentrons import protocol_api
 from opentrons.protocol_api.instrument_context import InstrumentContext
 from opentrons.protocol_api.labware import Well, Labware
-from abc import ABC, abstractmethod
-
-import schedule_xfers
-import importlib
 import requests
+
+from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp
+import schedule_xfers
+
+
 # If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
 schedule_xfers = importlib.reload(schedule_xfers)
 
 
-from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp
 
 
 def load_config(name: str):
@@ -25,7 +27,13 @@ def load_config(name: str):
         return json.load(f)
         
 def labware_from_config(spec, protocol: protocol_api.ProtocolContext) -> Labware:
-    labware: Labware = protocol.load_labware(spec["name"], spec["slot"])
+    defn_json = spec.get("definition", None)
+    if defn_json is not None:
+        labware: Labware = protocol.load_labware_from_definition(defn_json, spec["slot"])
+    else:
+        labware = protocol.load_labware(spec["name"], spec["slot"],
+                                        namespace=spec.get('namespace', None),
+                                        version=spec.get('version', None))
     return labware
 
 class Board:
@@ -39,17 +47,30 @@ class Board:
     
     def __init__(self,
                  spec, 
-                 protocol: protocol_api.ProtocolContext) -> None:
-        self.plate = labware_from_config(spec["labware"], protocol)
-        self.drop_size = spec["drop-size"]
-        self.well_map = {}
-        self.well_names = {}
-        self.wells = [self.plate[w] for w in spec["wells"]]
-        self.name_wells("W", self.wells)
-        self.extraction_ports = [self.plate[w] for w in spec["extraction-ports"]]
-        self.name_wells("E", self.extraction_ports)
-        self.oil_reservoir = self.plate[spec["oil-reservoir"]]
-        self.name_wells("O", (self.oil_reservoir,))
+                 protocol: protocol_api.ProtocolContext,
+                 *,
+                 robot: Robot) -> None:
+        robot.message(f"Board labware spec is {spec['labware']}")
+        try:
+            self.plate = labware_from_config(spec["labware"], protocol)
+            robot.message(f"Board plate is {self.plate}")
+            
+            self.drop_size = spec["drop-size"]
+            robot.message(f"Board drop size is {self.drop_size}")
+            self.well_map = {}
+            self.well_names = {}
+            self.wells = [self.plate[w] for w in spec["wells"]]
+            robot.message(f"Board wells is {self.wells}")
+            self.name_wells("W", self.wells)
+            self.extraction_ports = [self.plate[w] for w in spec["extraction-ports"]]
+            robot.message(f"Board extraction_ports is {self.extraction_ports}")
+            self.name_wells("E", self.extraction_ports)
+            self.oil_reservoir = self.plate[spec["oil-reservoir"]]
+            robot.message(f"Board oil_reservoir is {self.oil_reservoir}")
+            self.name_wells("O", (self.oil_reservoir,))
+            robot.message("Done creating board")
+        except BaseException as ex:
+            robot.message(f"Exception while creating board: {ex}")
         
     def name_wells(self, prefix: str, wells: Sequence[Well]) -> None:
         for i,w in enumerate(wells):
@@ -262,13 +283,13 @@ class Robot:
     
     def __init__(self, config, protocol: protocol_api.ProtocolContext):
         self.protocol = protocol
-        self.board = Board(config["board"], protocol)
         ep_config = config.get("endpoint", None)   
         if ep_config:
             ip = ep_config["ip"]
             port = ep_config["port"]
             self.endpoint = f"http://{ip}:{port}"
-        self.message("Creating the robot")
+        self.message(f"Creating the robot. Callback endpoint is {self.endpoint}")
+        self.board = Board(config["board"], protocol, robot=self)
         self.large_tipracks = [labware_from_config(s,protocol) for s in config["tipracks"]["large"]]
         self.large_tips = []
         for tr in self.large_tipracks:
