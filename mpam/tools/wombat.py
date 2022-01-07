@@ -13,6 +13,7 @@ from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
 from quantities.SI import sec, ms, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import TemperaturePoint, abs_C
+from devices.wombat import OpenDropVersion
 
 
 class DispenseAndWalk(Task): 
@@ -299,9 +300,17 @@ class WombatExerciser(JoeyExerciser):
                            The communication port (e.g., COM5) to use to talk to the board.
                            By default, only the display is run
                            ''')
+        vg = group.add_mutually_exclusive_group()
+        vg.add_argument('-4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
+                        help="The OpenDrop board uses firmware version 4.0") 
+        vg.add_argument('-4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
+                        help="The OpenDrop board uses firmware version 4.1") 
+        parser.set_defaults(od_version=OpenDropVersion.V40)
+        
         
     def make_board(self, args:Namespace)->Board:
-        return wombat.Board(device=args.port)
+        print(f"Version is {args.od_version}")
+        return wombat.Board(device=args.port, od_version=args.od_version)
     
     def available_wells(self)->Sequence[int]:
         return [2,3,6,7]
