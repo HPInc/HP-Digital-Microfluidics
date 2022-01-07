@@ -120,7 +120,7 @@ scope_test = macro(int n) {
     print "inner: ", n;
     {
       n = 2 * n;
-      y = 5;
+      // y = 5;
       print "assigned inner: ", n;
       local n = 5*n;
       print "nested: ", n;

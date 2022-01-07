@@ -300,6 +300,10 @@ class WombatExerciser(JoeyExerciser):
                            The communication port (e.g., COM5) to use to talk to the board.
                            By default, only the display is run
                            ''')
+        group.add_argument('--mirrored', action='store_true',
+                           help='''
+                           This is actually a Yaminon board, where the upper pads mirror the lower pads.
+                           ''')
         vg = group.add_mutually_exclusive_group()
         vg.add_argument('-4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
                         help="The OpenDrop board uses firmware version 4.0") 
@@ -310,7 +314,7 @@ class WombatExerciser(JoeyExerciser):
         
     def make_board(self, args:Namespace)->Board:
         print(f"Version is {args.od_version}")
-        return wombat.Board(device=args.port, od_version=args.od_version)
+        return wombat.Board(device=args.port, od_version=args.od_version, mirrored=args.mirrored)
     
     def available_wells(self)->Sequence[int]:
         return [2,3,6,7]

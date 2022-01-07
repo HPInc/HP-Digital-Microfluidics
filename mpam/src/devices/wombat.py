@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Mapping, Final, Optional
+from typing import Mapping, Final, Optional, Union, cast
 
 from serial import Serial
 
@@ -151,10 +151,14 @@ class Electrode:
     
 class Pad(joey.Pad):
     electrode: Final[Optional[Electrode]]
+    is_mirror: Final[bool]
 
-    def __init__(self, electrode: Optional[Electrode], loc: XYCoord, board: Board, *, exists: bool) -> None:
-        super().__init__(loc, board, exists = exists and electrode is not None)
+    def __init__(self, electrode: Optional[Electrode], loc: XYCoord, board: Board, *, 
+                 exists: bool,
+                 is_mirror: bool) -> None:
+        super().__init__(loc, board, exists = exists and (electrode is not None or is_mirror))
         self.electrode = electrode
+        self.is_mirror = is_mirror
         if electrode is None:
             self.set_device_state = lambda _: None
         else:
@@ -178,10 +182,14 @@ class Board(joey.Board):
     _states: Final[bytearray]
     _port: Optional[Serial] 
     _od_version: Final[OpenDropVersion]
+    _mirrored: Final[bool]
     
-    def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
+    def _electrode(self, cell: Optional[Union[str, tuple[int,int]]]) -> Optional[Electrode]:
         if cell is None:
             return None
+        if not isinstance(cell, str):
+            x,y = cell
+            cell = f"{ord('B')+y:c}{25-x:02d}"
         pin = _pins.get(cell, None)
         if pin is None:
             return None
@@ -206,15 +214,17 @@ class Board(joey.Board):
         # print(f"-- gate: {well} -- {cell}")
         return WellPad(self._electrode(cell), board=self)
     
+
     def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
-        cell = f"{ord('B')+y:c}{25-x:02d}"
-        # print(f"({x}, {y}): {cell}")
-        return Pad(self._electrode(cell), XYCoord(x, y), self, exists=exists)
+        electrode = self._electrode((x,y))
+        is_mirror = self._mirrored and electrode is None and self._electrode((x,18-y)) is not None
+        return Pad(electrode, XYCoord(x, y), self, exists=exists, is_mirror=is_mirror)
     
     
     
     
-    def __init__(self, device: Optional[str], od_version: OpenDropVersion) -> None:
+    def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
+                 mirrored: bool = False) -> None:
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -223,6 +233,7 @@ class Board(joey.Board):
             assert False, f"Unknown OpenDrop version: {od_version}"
         self._states = bytearray(n_state_bytes)
         self._od_version = od_version
+        self._mirrored = mirrored
         super().__init__()
         self._device = device
         self._port = None

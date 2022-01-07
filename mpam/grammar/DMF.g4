@@ -237,7 +237,7 @@ attr returns[str which]
   | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="column"}
   | 'exit' ('dir' | 'direction') {$ctx.which="#exit_dir"}
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
-  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | ID)
+  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'state' | ID)
   	{$ctx.which=$n.text}
   ;
   
