@@ -6,7 +6,11 @@ from typing import Mapping, Final, Optional, Union, cast
 from serial import Serial
 
 from devices import joey
-from mpam.types import OnOff, XYCoord
+from mpam.types import OnOff, XYCoord, Dir
+from mpam.pipettor import Pipettor
+from mpam import device
+from devices.joey import Well
+from mpam.device import WellGroup
 
 
 _pins: Mapping[str, int] = {
@@ -151,14 +155,10 @@ class Electrode:
     
 class Pad(joey.Pad):
     electrode: Final[Optional[Electrode]]
-    is_mirror: Final[bool]
 
-    def __init__(self, electrode: Optional[Electrode], loc: XYCoord, board: Board, *, 
-                 exists: bool,
-                 is_mirror: bool) -> None:
-        super().__init__(loc, board, exists = exists and (electrode is not None or is_mirror))
+    def __init__(self, electrode: Optional[Electrode], loc: XYCoord, board: Board, *, exists: bool) -> None:
+        super().__init__(loc, board, exists = exists and electrode is not None)
         self.electrode = electrode
-        self.is_mirror = is_mirror
         if electrode is None:
             self.set_device_state = lambda _: None
         else:
@@ -183,6 +183,7 @@ class Board(joey.Board):
     _port: Optional[Serial] 
     _od_version: Final[OpenDropVersion]
     _mirrored: Final[bool]
+    _pad_mirror: Final[Optional[dict[tuple[int,int], Pad]]]
     
     def _electrode(self, cell: Optional[Union[str, tuple[int,int]]]) -> Optional[Electrode]:
         if cell is None:
@@ -213,15 +214,40 @@ class Board(joey.Board):
         cell = _well_gate_cells.get(well, None)
         # print(f"-- gate: {well} -- {cell}")
         return WellPad(self._electrode(cell), board=self)
-    
 
     def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
+        pad_mirror = self._pad_mirror
+        if pad_mirror is not None:
+            # if we've already computed our mirror, return it
+            p = pad_mirror.get((x,y), None)
+            if p:
+                del pad_mirror[(x,y)]
+                return p 
         electrode = self._electrode((x,y))
-        is_mirror = self._mirrored and electrode is None and self._electrode((x,18-y)) is not None
-        return Pad(electrode, XYCoord(x, y), self, exists=exists, is_mirror=is_mirror)
-    
-    
-    
+        pad = Pad(electrode, XYCoord(x, y), self, exists=exists)
+        if pad_mirror is None or not exists:
+            return pad
+        reflection = (x, 18-y)
+        if electrode is not None:
+            # if we got a real one, note it for our mirror to pick up
+            pad_mirror[reflection] = pad
+            return pad
+        # we're not real and our mirror hasn't been created.  We make it and stash it for the 
+        # real one to find.
+        electrode = self._electrode(reflection)
+        pad = Pad(electrode, XYCoord(*reflection), self, exists=exists)
+        pad_mirror[reflection] = pad
+        return pad
+
+    def _well(self, num:int, group:WellGroup, exit_dir:Dir, 
+              exit_pad:Union[device.Pad, tuple[int, int]], pipettor:Pipettor)->Well:
+        if self._mirrored and isinstance(exit_pad, tuple):
+            x,y = exit_pad
+            p = self.pad_at(x, y)
+            if p.row != y:
+                # we're mirrored, so we'll just use a dummy pad for the exit, which will never be used.
+                exit_pad = Pad(None, XYCoord(x,y), self, exists=True)
+        return joey.Board._well(self, num, group, exit_dir, exit_pad, pipettor)
     
     def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
                  mirrored: bool = False) -> None:
@@ -234,6 +260,7 @@ class Board(joey.Board):
         self._states = bytearray(n_state_bytes)
         self._od_version = od_version
         self._mirrored = mirrored
+        self._pad_mirror = {} if mirrored else None
         super().__init__()
         self._device = device
         self._port = None

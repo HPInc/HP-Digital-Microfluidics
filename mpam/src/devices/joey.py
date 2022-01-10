@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 import random
-from typing import Optional, Sequence, ClassVar, Final
+from typing import Optional, Sequence, ClassVar, Final, Union
 
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellGroup, WellOpSeqDict, WellState, PadBounds, \
@@ -169,7 +169,10 @@ class Board(device.Board):
     def _make_well_gate(self, well: int) -> WellPad:  # @UnusedVariable
         return WellPad(board=self)
     
-    def _well(self, num: int, group: WellGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor):
+    def _well(self, num: int, group: WellGroup, exit_dir: Dir, 
+              exit_pad: Union[device.Pad, tuple[int, int]], pipettor: Pipettor) -> Well:
+        if not isinstance(exit_pad, device.Pad):
+            exit_pad = self.pad_at(*exit_pad)
         epx = exit_pad.location.x
         epy = exit_pad.location.y
         outdir = -1 if epx == 0 else 1
@@ -255,14 +258,14 @@ class Board(device.Board):
         self.pipettor = pipettor
         
         wells.extend((
-            self._well(0, left_group, Dir.RIGHT, self.pad_at(0,18), pipettor),
-            self._well(1, left_group, Dir.RIGHT, self.pad_at(0,12), pipettor),
-            self._well(2, left_group, Dir.RIGHT, self.pad_at(0,6), pipettor),
-            self._well(3, left_group, Dir.RIGHT, self.pad_at(0,0), pipettor),
-            self._well(4, right_group, Dir.LEFT, self.pad_at(18,18), pipettor),
-            self._well(5, right_group, Dir.LEFT, self.pad_at(18,12), pipettor),
-            self._well(6, right_group, Dir.LEFT, self.pad_at(18,6), pipettor),
-            self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor),
+            self._well(0, left_group, Dir.RIGHT, (0,18), pipettor),
+            self._well(1, left_group, Dir.RIGHT, (0,12), pipettor),
+            self._well(2, left_group, Dir.RIGHT, (0,6), pipettor),
+            self._well(3, left_group, Dir.RIGHT, (0,0), pipettor),
+            self._well(4, right_group, Dir.LEFT, (18,18), pipettor),
+            self._well(5, right_group, Dir.LEFT, (18,12), pipettor),
+            self._well(6, right_group, Dir.LEFT, (18,6), pipettor),
+            self._well(7, right_group, Dir.LEFT, (18,0), pipettor),
             ))
         
         magnets.append(Magnet(self, pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
