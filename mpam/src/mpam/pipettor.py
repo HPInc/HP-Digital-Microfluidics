@@ -50,17 +50,19 @@ class XferTarget(ABC):
     
     def finished(self, reagent: Reagent, volume: Volume) -> None:
         self.got += volume
-        self.signal_done(reagent, volume)
-        if self.got >= self.volume:
+        last = self.got >= self.volume
+        self.signal_done(reagent, volume, last=last)
+        if last:
             liquid = Liquid(reagent, self.got)
             self.future.post(liquid)
 
     @abstractmethod
-    def signal_done(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
+    def signal_done(self, reagent: Reagent, volume: Volume, *, last: bool) -> None: # @UnusedVariable
         ...    
     def finished_overall_transfer(self, reagent: Reagent) -> None:
         future = self.future
         if not future.has_value:
+            self.signal_done(reagent, Volume.ZERO(), last=True)
             self.on_insufficient(self.insufficient_msg)
             future.post(Liquid(reagent, self.got))
         
@@ -87,9 +89,9 @@ class FillTarget(XferTarget):
     def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         self.target.prepare_for_add()
         
-    def signal_done(self, reagent: Reagent, volume: Volume) -> None:
+    def signal_done(self, reagent: Reagent, volume: Volume, *, last: bool) -> None:
         mix_result = self.mix_result if self.got >= self.volume else None
-        self.target.pipettor_added(reagent, volume, mix_result=mix_result)
+        self.target.pipettor_added(reagent, volume, mix_result=mix_result, last=last)
     
         
         
@@ -116,8 +118,8 @@ class EmptyTarget(XferTarget):
     def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         self.target.prepare_for_remove()
         
-    def signal_done(self, reagent: Reagent, volume: Volume) -> None:
-        self.target.pipettor_removed(reagent, volume)
+    def signal_done(self, reagent: Reagent, volume: Volume, *, last: bool) -> None:
+        self.target.pipettor_removed(reagent, volume, last=last)
         
     def note_product_loc(self, loc: ProductLocation):
         if self.product_loc is not None:

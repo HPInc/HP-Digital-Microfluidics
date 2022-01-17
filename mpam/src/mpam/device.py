@@ -27,10 +27,11 @@ from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
+from _collections import defaultdict
 
 
 if TYPE_CHECKING:
-    from mpam.drop import Drop
+    from mpam.drop import Drop, Blob
     from mpam.monitor import BoardMonitor
     from mpam.pipettor import Pipettor
 
@@ -150,11 +151,13 @@ class PipettingTarget:
     
     @abstractmethod
     def pipettor_added(self, reagent: Reagent, volume: Volume, *, # @UnusedVariable
-                       mix_result: Optional[MixResult]) -> None: # @UnusedVariable
+                       mix_result: Optional[MixResult],
+                       last: bool) -> None: # @UnusedVariable
         ...
     
     @abstractmethod
-    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
+    def pipettor_removed(self, reagent: Reagent, volume: Volume, *,
+                         last: bool) -> None: # @UnusedVariable
         ...
     
 class Pad(BinaryComponent['Pad']):
@@ -166,6 +169,7 @@ class Pad(BinaryComponent['Pad']):
     
     _pads: Final[PadArray]
     _drop: Optional[Drop]
+    blob: Optional[Blob]
     _dried_liquid: Optional[Drop]
     _neighbors: Optional[Sequence[Pad]] = None
     _all_neighbors: Optional[Sequence[Pad]] = None
@@ -227,7 +231,7 @@ class Pad(BinaryComponent['Pad']):
         ns = self._all_neighbors
         if ns is None:
             ns = [n for d in Dir if (n := self.neighbor(d)) is not None]
-            self._neighbors = ns
+            self._all_neighbors = ns
         return ns
     
     @property
@@ -247,8 +251,14 @@ class Pad(BinaryComponent['Pad']):
         # self.broken = False
         self._pads = board.pad_array
         self._drop = None
+        self.blob = None
         self._dried_liquid = None
         self._drop_change_callbacks = ChangeCallbackList()
+        def journal_change(old: OnOff, new: OnOff) -> None:
+            if old is not new:
+                board.change_journal.change_to(self, new)
+        self.on_state_change(journal_change, key="Journal Change")
+
         
     def __repr__(self) -> str:
         return f"Pad({self.column},{self.row})"
@@ -290,6 +300,14 @@ class Pad(BinaryComponent['Pad']):
     
     def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
         self._drop_change_callbacks.add(cb, key=key)
+        
+    def liquid_added(self, liquid: Liquid, *, mix_result: Optional[MixResult] = None) -> None:
+        self.board.change_journal.note_delivery(self, liquid, mix_result=mix_result)
+
+    def liquid_removed(self, volume: Volume) -> None:
+        self.board.change_journal.note_removal(self, volume)
+        
+    
     
 WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
@@ -789,11 +807,13 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         pass
     
     def pipettor_added(self, reagent: Reagent, volume: Volume, *,
-                       mix_result: Optional[MixResult]) -> None:
+                       mix_result: Optional[MixResult],
+                       last: bool) -> None:
         got = Liquid(reagent, volume)
         self.transfer_in(got, mix_result=mix_result)
     
-    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
+    def pipettor_removed(self, reagent: Reagent, volume: Volume, *,
+                         last: bool) -> None: # @UnusedVariable
         self.transfer_out(volume)
     
         
@@ -1121,6 +1141,7 @@ class ProductLocation(NamedTuple):
     
 class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingTarget):
     pad: Final[Pad]
+    removed: Optional[Volume] = None
     
     @property
     def contents(self) -> Optional[Liquid]:
@@ -1140,31 +1161,24 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     def prepare_for_add(self) -> None:
         expect_drop = self.pad.drop is not None 
         self.reserve_pad(expect_drop=expect_drop).wait()
+        self.pad.schedule(Pad.TurnOn).wait()
         
+    def pipettor_added(self, reagent: Reagent, volume: Volume, *,
+                       last: bool,
+                       mix_result: Optional[MixResult]) -> None:
+        if volume > Volume.ZERO():
+            got = Liquid(reagent, volume)
+            self.pad.liquid_added(got, mix_result=mix_result)
+        if last:
+            self.pad.reserved = False
+    
     def prepare_for_remove(self) -> None:
         self.ensure_drop().wait()
         
-    def pipettor_added(self, reagent: Reagent, volume: Volume, *,
-                       mix_result: Optional[MixResult]) -> None:
-        got = Liquid(reagent, volume)
-        drop = self.pad.drop
-        if drop is None:
-            from mpam.drop import Drop # @Reimport
-            drop = Drop(self.pad, got)
-            drop.pad.schedule(Pad.TurnOn)
-        else:
-            drop.liquid.mix_in(got, result=mix_result)
-        self.pad.reserved = False
-    
-    def pipettor_removed(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
-        drop = not_None(self.pad.drop)
-        if drop.volume == volume:
-            from mpam.drop import DropStatus 
-            drop.pad.schedule(Pad.TurnOff)
-            drop.status = DropStatus.OFF_BOARD
-            drop.pad.drop = None
-        else:
-            drop.liquid.volume = drop.volume-volume
+    def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
+                         *, last: bool) -> None: # @UnusedVariable
+        if volume > Volume.ZERO():
+            self.pad.liquid_removed(volume)
         
         
 
@@ -1184,6 +1198,9 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                                                       product_loc = product_loc, 
                                                       on_no_sink = on_no_sink))
         return p_future
+    
+    def transfer_in_result(self) -> Drop:
+        return not_None(self.pad.drop)
 
     def transfer_in(self, liquid: Liquid, *,                            # @UnusedVariable
                      mix_result: Optional[Union[Reagent, str]]=None,    # @UnusedVariable
@@ -1196,9 +1213,8 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                                                      mix_result = mix_result,
                                                      on_insufficient = on_insufficient,
                                                      on_no_source = on_no_source))
-        from mpam.drop import Drop # @Reimport
         future = Delayed[Drop]()
-        p_future.post_transformed_to(future, lambda _: not_None(self.pad.drop))
+        p_future.post_transformed_to(future, lambda _: not_None(self.transfer_in_result()))
         return future
        
     def reserve_pad(self, *, expect_drop: bool = False) -> Delayed[None]:
@@ -1379,6 +1395,41 @@ class SystemComponent(ABC):
         return future
        
     # def schedule_before(self, cb: C):
+    
+    
+class ChangeJournal:
+    turned_on: Final[set[Pad]]
+    turned_off: Final[set[Pad]]
+    delivered: Final[dict[Pad, list[Liquid]]]
+    removed: Final[dict[Pad, Volume]]
+    mix_result: Final[dict[Pad, MixResult]]
+    
+    @property
+    def has_transfer(self) -> bool:
+        return bool(self.delivered) or bool(self.removed)
+    
+    def __init__(self) -> None:
+        self.turned_on = set()
+        self.turned_off = set()
+        self.delivered = defaultdict(list)
+        self.removed = defaultdict(Volume.ZERO)
+        self.mix_result = {}
+        
+    def change_to(self, pad: Pad, new_state: OnOff) -> None:
+        wrong,right = (self.turned_off,self.turned_on) if new_state else (self.turned_on, self.turned_off)
+        if pad in wrong:
+            wrong.remove(pad)
+        else:
+            right.add(pad)
+            
+    def note_removal(self, pad: Pad, volume: Volume) -> None:
+        self.removed[pad] += volume
+        
+    def note_delivery(self, pad: Pad, liquid: Liquid, *, mix_result: Optional[MixResult] = None) -> None:
+        self.delivered[pad].append(liquid)
+        if mix_result:
+            self.mix_result[pad] = mix_result
+            
 
 class Board(SystemComponent):
     pads: Final[PadArray]
@@ -1393,6 +1444,15 @@ class Board(SystemComponent):
     _reserved_well_gates: list[Well]
     _lock: Final[Lock]
     _drop_unit: Unit[Volume]
+    # _drops: Final[list[Drop]]
+    # _to_appear: Final[list[tuple[Pad, Liquid]]]
+    _change_journal: ChangeJournal
+    
+    
+    @property
+    def change_journal(self) -> ChangeJournal:
+        with self._lock:
+            return self._change_journal
     
     def __init__(self, *, 
                  pads: PadArray,
@@ -1403,6 +1463,7 @@ class Board(SystemComponent):
                  orientation: Orientation,
                  drop_motion_time: Time) -> None:
         super().__init__()
+        self._change_journal = ChangeJournal()
         self.pads = pads
         self.wells = wells
         self.magnets = [] if magnets is None else magnets
@@ -1412,6 +1473,14 @@ class Board(SystemComponent):
         self.drop_motion_time = drop_motion_time
         self._lock = Lock()
         self._reserved_well_gates = []
+        # self._drops = []
+        # self._to_appear = []
+        
+    def replace_change_journal(self) -> ChangeJournal:
+        with self._lock:
+            old = self._change_journal
+            self._change_journal = ChangeJournal()
+            return old
 
     def stop(self) -> None:
         pass    
@@ -1465,6 +1534,29 @@ class Board(SystemComponent):
             cache = self.drop_size.as_unit("drops", singular="drop")
             self._drop_unit = cache
         return cache
+    
+    def finish_update(self) -> None:
+        self.infer_drop_motion()
+        super().finish_update()
+    
+
+    def print_blobs(self):
+        from mpam.drop import Blob # @Reimport
+        print("--------------")
+        print("Blobs on board")
+        print("--------------")
+        blobs = set[Blob]()
+        for pad in self.pads.values():
+            if pad.blob is not None:
+                blobs.add(pad.blob)
+        
+        for blob in blobs:
+            print(blob)
+
+    def infer_drop_motion(self) -> None:
+        from mpam.drop import Blob # @Reimport
+        Blob.process_changes(self.replace_change_journal(), board=self)
+        self.print_blobs()
     
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier) -> None:

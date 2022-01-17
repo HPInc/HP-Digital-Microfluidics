@@ -66,3 +66,10 @@ def not_None(x: Optional[_T]) -> _T:
 def always(val: _T) -> Callable[[], _T]:
     return lambda: val
         
+class ComputedDefaultDict(dict[_H,_T]):
+    def __init__(self, factory: Callable[[_H], _T]):
+        self.factory = factory
+    def __missing__(self, key: _H) -> _T:
+        ret = self.factory(key)
+        self[key] = ret
+        return ret

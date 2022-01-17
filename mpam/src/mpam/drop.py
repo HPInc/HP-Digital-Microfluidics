@@ -3,20 +3,360 @@ from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
     StaticOperation, Reagent, Callback, T
 from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint,\
-    ProductLocation
+    ProductLocation, ChangeJournal
 from mpam.exceptions import NoSuchPad, NotAtWell
-from typing import Optional, Final, Union, Sequence, Callable, \
-    Iterator
-from quantities.SI import uL
-from threading import Lock
+from typing import Optional, Final, Union, Callable, Iterator, Iterable,\
+    Sequence, Mapping, NamedTuple
 from quantities.dimensions import Volume
 from enum import Enum, auto
 from abc import ABC, abstractmethod
 from erk.errors import FIX_BY, PRINT
 from quantities.core import qstr
+from erk.basic import not_None, ComputedDefaultDict, Count
+from _collections import defaultdict
+import math
+from erk.stringutils import map_str
 
 # if TYPE_CHECKING:
     # from mpam.processes import MultiDropProcessType
+    
+class Pull(NamedTuple):
+    puller: Pad
+    pullee: Pad
+    
+    @property
+    def pinned(self) -> Pad:
+        return self.puller
+    @property
+    def unpinned(self) -> Pad:
+        return self.pullee
+    
+class MotionInference:
+    changes: Final[ChangeJournal]
+    pin_state: Final[Mapping[Pad, bool]]
+    # pulls: Final[list[Pull]]
+    
+    def __init__(self, changes: ChangeJournal) -> None:
+        self.changes = changes
+        def compute_pin_state(pad: Pad) -> bool:
+            blob = pad.blob
+            return False if blob is None else blob.pinned
+        pin_state = ComputedDefaultDict(compute_pin_state)
+        for p in changes.turned_off:
+            pin_state[p] = False
+        for p in changes.turned_on:
+            pin_state[p] = True
+        self.pin_state = pin_state
+        # self.pulls = []
+        
+    def process_changes(self) -> None:
+        # When we come in, no blobs abut and every unpinned blob has content
+        if self.changes.has_transfer:
+            self.process_transfers()
+        # The invariant still holds
+        pulls: list[Pull] = []
+        # First, we divide the changes into those that flip bits inside a blob and those that extend 
+        # a blob or create a new (empty) one:
+        n_flips = Count[Blob]()
+        extensions: list[Pad] = []
+        for pad in self.changes.turned_off:
+            # If we're turning off a pad, it must've been in a blob
+            blob = not_None(pad.blob)
+            if n_flips[blob] < blob.size-1:
+                n_flips[blob] += 1
+            else:
+                # The whole of the blob has been flipped, we can just change the pinned status in place.
+                if blob.size > 1:
+                    del n_flips[blob]
+                if blob.total_volume > Volume.ZERO():
+                    blob.pinned = False
+                else:
+                    # There's nothing there and all the pads have been turned off.
+                    blob.disappear()
+        for pad in self.changes.turned_on:
+            if (maybe_blob := pad.blob) is None:
+                # If it's not in an unpinned blob, we'll process it later as an extension.
+                extensions.append(pad)
+            else:
+                blob = maybe_blob
+                if n_flips[blob] < blob.size-1:
+                    n_flips[blob] += 1
+                else:
+                    # The whole of the blob has been flipped, we can just change the pinned status in place.
+                    if blob.size > 1:
+                        del n_flips[blob]
+                    blob.pinned = True
+        # Now the keys of n_flips are just the blobs that have to be partitioned
+        pin_state = self.pin_state
+        for blob in n_flips.keys():
+            blob.partition(pin_state, pulls)
+        # The invariant still holds, but there may be elements in pulls.  Now we process any pads that were
+        # turned on and hadn't been in a blob.  This will merge abutting pinned blobs and pull on abutting
+        # unpinned blobs
+        for pad in extensions:
+            my_blob: Optional[Blob] = None
+            for neighbor in pad.neighbors:
+                if (maybe_blob := neighbor.blob) is not None:
+                    # It may be that it will become not None on a later extension, but we'll get it there
+                    blob = maybe_blob
+                    if blob.unpinned:
+                        pulls.append(Pull(pad, neighbor))
+                    elif my_blob is None:
+                        my_blob = blob.extend(pad)
+                    else:
+                        my_blob = blob.merge_in(my_blob)
+            if my_blob is None:
+                Blob((pad,), pinned = True)
+        # Finally, we process the pulls.  This will restore the invariant
+        if pulls:
+            self.process_pulls(pulls)
+        # Now we need to make sure that the extensions all have drops in them (if they're supposed to).
+        # process_pull() will have stashed the pulled drops in the destinations, but we need to unstash
+        # for the extensions or create if necessary
+        for pad in extensions:
+            blob = not_None(pad.blob)
+            blob.ensure_drop(pad)
+        # TODO: Any pad that was touched needs to have its drop volume/reagent updated.  I'm going 
+        # to have to keep track of that somehow.
+        
+    def process_transfers(self) -> None:
+        pulls: list[Pull] = []
+        for pad,liquids in self.changes.delivered.items():
+            maybe_blob = pad.blob
+            if maybe_blob is None:
+                # The pad delivered to isn't in a blob yet.
+                for neighbor in pad.neighbors:   # TODO: Should this be all_neighbors?
+                    neighbor_blob = neighbor.blob
+                    if neighbor_blob is not None:
+                        if neighbor_blob.pinned:
+                            pulls.append(Pull(neighbor, pad))
+                        else:
+                            maybe_blob = neighbor_blob.merge_in(maybe_blob)
+                if maybe_blob is None:
+                    maybe_blob = Blob((pad,), pinned=False)
+            blob: Blob = maybe_blob
+            # update_drops.add(blob)
+            for liquid in liquids:
+                blob.contents.mix_in(liquid)
+        blobs_to_delete: list[Blob] = []
+        for pad,volume in self.changes.removed.items():
+            blob = not_None(pad.blob)
+            # update_drops.add(blob)
+            assert blob.total_volume >= volume, f"Removed {volume} at {pad} from a blob containing {blob.contents}" 
+            blob.contents.volume -= volume
+            if blob.unpinned and blob.total_volume == Volume.ZERO():
+                blobs_to_delete.append(blob)
+        if pulls:
+            self.process_pulls(pulls)
+        for blob in blobs_to_delete:
+            blob.disappear()
+    
+    def process_pulls(self, pulls: Sequence[Pull]) -> None:
+        pull_pads: dict[tuple[Blob,Blob], list[Pad]] = defaultdict(list)
+        pullers: dict[Blob,set[Blob]] = defaultdict(set)
+        for pp,up in pulls:
+            pb = not_None(pp.blob)
+            assert pb.pinned
+            ub = not_None(up.blob)
+            assert ub.unpinned
+            pull_pads[(pb,ub)].append(up)
+            pullers[ub].add(pb)
+        for ub,pb_set in pullers.items():
+            pull_strength: dict[Blob, float] = {}
+            if len(pb_set) == 1:
+                pb, = tuple(pb_set)
+                pb.contents.mix_in(ub.contents)
+                # TODO: pb gets all of ub's drops
+            else:
+                for pb in pb_set: 
+                    ups = pull_pads[(pb,ub)]
+                    def dist2(x: int, y: int, p: Pad) -> int:
+                        return (x-p.column)**2 + (y-p.row)**2
+                    if len(ups) == 1:
+                        up = ups[0]
+                        ux = up.column
+                        uy = up.row
+                        strength = sum((1.0/dist2(ux,uy,p) for p in pb.pads), 0.0)
+                    else:
+                        strength = 0.0
+                        for p in pb.pads:
+                            px = p.column
+                            py = p.row
+                            s = min((1.0/dist2(px,py,up) for up in ups))
+                            strength += s
+                    pull_strength[pb] = strength
+                total_pull_strength = math.fsum(pull_strength.values())
+                r = ub.reagent
+                v = ub.total_volume
+                for pb,s in pull_strength.items():
+                    fraction = s/total_pull_strength
+                    liquid = Liquid(r, v*fraction)
+                    pb.contents.mix_in(liquid)
+            # TODO: pb gets drops from ub when it's closest
+            ub.disappear()
+    
+    
+class Blob:
+    pads: Final[list[Pad]]
+    pinned: bool
+    contents: Liquid
+    
+    @property
+    def size(self) -> int:
+        return len(self.pads)
+    
+    @property
+    def unpinned(self) -> bool:
+        return not self.pinned
+    
+    @property
+    def reagent(self) -> Reagent:
+        return self.contents.reagent
+    
+    @property
+    def total_volume(self) -> Volume:
+        return self.contents.volume
+    
+    @property
+    def per_pad_volume(self) -> Volume:
+        n = self.size
+        if n == 0:
+            return Volume.ZERO()
+        else:
+            return self.total_volume/n 
+        
+    @property
+    def is_singleton(self) -> bool:
+        return self.size == 1
+    
+    @property
+    def only_pad(self) -> Pad:
+        assert self.size == 1
+        for pad in self.pads:
+            return pad
+        assert False, "Somehow failed to enumerate singleton blob"
+    
+    @property
+    def is_empty(self) -> bool:
+        return self.size == 0 
+
+    def __init__(self, pads: Iterable[Pad] = (), *,
+                 pinned: bool,
+                 set_pads: bool = True) -> None:
+        self.pads = list(pads)
+        self.pinned = pinned
+        self.contents = Liquid(unknown_reagent, Volume.ZERO())
+        if set_pads:
+            for pad in pads:
+                pad.blob = self
+        
+    def __str__(self) -> str:
+        status = "pinned" if self.pinned else "unpinned"
+        if self.total_volume == Volume.ZERO():
+            cdesc = "empty"
+        else:
+            cdesc = str(self.contents)
+            if self.size > 1:
+                cdesc += f" ({self.per_pad_volume} each)"
+        pads = map_str(self.pads)
+        return f"Blob({status}, {cdesc}: {pads})"
+        
+    def merge_in(self, blob: Optional[Blob]) -> Blob:
+        if blob is not None and blob is not self:
+            for pad in blob.pads:
+                pad.blob = self
+            self.pads.extend(blob.pads)
+            self.contents.mix_in(blob.contents)
+        return self 
+    
+    def extend(self, pad: Pad) -> Blob:
+        self.pads.append(pad)
+        pad.blob = self
+        return self
+    
+    def disappear(self) -> None:
+        for pad in self.pads:
+            pad.blob = None
+        # TODO: update drops
+        self.pads.clear()
+
+    def ensure_drop(self, pad: Pad) -> None:
+        # TODO: unstash a drop or create one
+        ...
+    
+    @classmethod
+    def process_changes(cls, changes: ChangeJournal, *, board: Board) -> None:
+        mi = MotionInference(changes)
+        mi.process_changes()
+        return
+        
+    def partition(self, pin_state: Mapping[Pad, bool], pulls: list[Pull]) -> None:
+        # We should only get here if fewer than all drops have changed.
+        assert(not self.is_singleton)
+        
+        def expand(pad: Pad, blob: Blob, ps: bool):
+            for n in pad.neighbors:
+                if n.blob is self:
+                    # When we partition, we still have a buffer between this blob and others,
+                    # so if it's not self, we've already processed it
+                    if ps == pin_state[n]:
+                        blob.extend(n)
+                        expand(n, blob, ps)
+                    elif ps:
+                        pulls.append(Pull(pad, n))
+                    else:
+                        # We have to account for both directions, since this pad's blob is no
+                        # longer self
+                        pulls.append(Pull(n, pad))
+                        
+        new_blobs: list[Blob] = []
+        for pad in self.pads:
+            # Every one whose blob is self when we look will be the seed of a new blob
+            if pad.blob is self:
+                ps = pin_state[pad]
+                blob = Blob((pad,), pinned = ps)
+                new_blobs.append(blob)
+                expand(pad, blob, ps)
+        # When we get here, every pad in this blob will have been migrated to some new blob.
+        # We now need to partition the contents among them.
+        my_size = float(self.size)
+        reagent = self.reagent
+        volume = self.total_volume
+        for blob in new_blobs:
+            fraction = blob.size/my_size
+            blob.contents.reagent = reagent
+            blob.contents.volume = volume*fraction
+        
+    
+    # def partition_pinned(self, turned_off: set[Pad], pulling: set[Pad]) -> None:
+    #     pads = self.pads
+    #     n = len(pads)
+    #     if n == 1:
+    #         self.pinned = False
+    #         return
+    #     flipped = turned_off & pads
+    #     if len(flipped) == n:
+    #         # Everything's flipped.  This is now an unpinned set
+    #         self.pinned = False
+    #         return 
+    #     pin_status = { p: p in flipped for p in pads}
+    #
+    #     def expand(pad: Pad, blob: Blob, ps: bool):
+    #         for n in pad.neighbors:
+    #             if n.blob is self:
+    #                 # If it's not self, we've already processed it or it's not in the original blob
+    #                 if ps == pin_status[n]:
+    #                     blob.pads.add(n)
+    #                     n.blob = blob
+    #                     expand(n, blob, ps)
+    #                 elif ps:
+    #                     pulling.add(pad)
+    #     for pad in pads:
+    #         if pad.blob is self:
+    #             ps = pin_status[pad]
+    #             blob = Blob((pad,), pinned = ps)
+    #             pad.blob = blob
+    #             expand(pad, blob, ps)
 
 class DropStatus(Enum):
     ON_BOARD = auto()
@@ -149,28 +489,28 @@ class Drop(OpScheduler['Drop']):
         
     
     
-    @classmethod
-    def appear_at(cls, board: Board, locations: Sequence[Union[XYCoord, tuple[int, int]]],
-                 liquid: Liquid = Liquid(unknown_reagent, 0.5*uL) 
-                 ) -> Delayed[Sequence[Drop]]:
-        locs = ((loc.x, loc.y) if isinstance(loc, XYCoord) else loc for loc in locations)
-        drops = tuple(Drop(board.pad_at(x,y), liquid) for (x, y) in locs)
-        future = Delayed[Sequence[Drop]]()
-        system = board.system
-        assert system is not None
-        outstanding: int = len(drops)
-        lock = Lock()
-        def join(_) -> None:
-            # print("joining")
-            with lock:
-                nonlocal outstanding
-                outstanding -= 1
-                if outstanding == 0:
-                    future.post(drops)
-        with system.batched():
-            for drop in drops:
-                drop.pad.schedule(Pad.TurnOn).when_value(join)
-        return future
+    # @classmethod
+    # def appear_at(cls, board: Board, locations: Sequence[Union[XYCoord, tuple[int, int]]],
+    #              liquid: Liquid = Liquid(unknown_reagent, 0.5*uL) 
+    #              ) -> Delayed[Sequence[Drop]]:
+    #     locs = ((loc.x, loc.y) if isinstance(loc, XYCoord) else loc for loc in locations)
+    #     drops = tuple(Drop(board.pad_at(x,y), liquid) for (x, y) in locs)
+    #     future = Delayed[Sequence[Drop]]()
+    #     system = board.system
+    #     assert system is not None
+    #     outstanding: int = len(drops)
+    #     lock = Lock()
+    #     def join(_) -> None:
+    #         # print("joining")
+    #         with lock:
+    #             nonlocal outstanding
+    #             outstanding -= 1
+    #             if outstanding == 0:
+    #                 future.post(drops)
+    #     with system.batched():
+    #         for drop in drops:
+    #             drop.pad.schedule(Pad.TurnOn).when_value(join)
+    #     return future
         
     class AppearAt(StaticOperation['Drop']):
         pad: Final[Pad]
@@ -199,6 +539,7 @@ class Drop(OpScheduler['Drop']):
             pad = self.pad
             def make_drop(_) -> None:
                 drop = Drop(pad=pad, liquid=self.liquid)
+                pad.board.change_journal.note_delivery(pad, self.liquid)
                 if post_result:
                     future.post(drop)
             pad.schedule(Pad.TurnOn, mode=mode, after=after) \

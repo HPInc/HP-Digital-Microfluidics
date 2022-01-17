@@ -24,8 +24,8 @@ from matplotlib.widgets import Button, TextBox
 
 from erk.basic import Count, not_None
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
-    HeatingMode, BinaryComponent
-from mpam.drop import Drop, DropStatus
+    HeatingMode, BinaryComponent, ChangeJournal
+from mpam.drop import Drop, DropStatus, MotionInference
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent, Barrier
 from quantities.SI import ms, sec
@@ -201,6 +201,7 @@ class PadMonitor(ClickableMonitor):
     def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
         if drop is None:
             Drop(self.pad, liquid)
+            self.pad.board.change_journal.note_delivery(self.pad, liquid)
         else:
             drop.liquid.volume = liquid.volume
             drop.liquid.reagent = liquid.reagent
@@ -693,6 +694,15 @@ class ClickHandler:
             
     def run(self) -> None:
         with self.lock:
+            with self.monitor.board.in_system().batched():
+                for p in self.changes:
+                    new_state = ~p.current_state
+                    p.component.schedule(BinaryComponent.SetState(new_state))
+            self.changes.clear()
+            self.scheduled = False
+        
+    def old_run(self) -> None:
+        with self.lock:
             
             pads: dict[Drop, list[ClickableMonitor]] = defaultdict(list)
             drops: dict[ClickableMonitor, Sequence[Drop]] = {}
@@ -774,6 +784,8 @@ class ClickHandler:
                     if drop.status is DropStatus.ON_BOARD:
                         drop.pad.drop = None
                         drop.status = DropStatus.OFF_BOARD
+                        drop.pad.board.change_journal.note_removal(drop.pad, drop.volume)
+                        
                         
             
             barrier = Barrier[OnOff](len(self.changes), name="Click Barrier")
@@ -786,10 +798,29 @@ class ClickHandler:
             self.changes.clear()
             self.scheduled = False
         
-    def process_click(self, target: ClickableMonitor, *, with_control: bool) -> None:
+    def process_click(self, target: ClickableMonitor, *, with_control: bool, with_shift: bool) -> None:
         with self.lock:
+            
+            if with_shift:
+                if isinstance(target, PadMonitor):
+                    pad = target.pad
+                    change_journal = ChangeJournal()
+                    if with_control:
+                        if (blob := pad.blob) is not None:
+                            v = min(pad.board.drop_size, blob.total_volume)
+                            if v > Volume.ZERO():
+                                change_journal.note_removal(pad, v)
+                    else:
+                        change_journal.note_delivery(pad, Liquid(unknown_reagent, pad.board.drop_size))
+                    MotionInference(change_journal).process_changes()
+                    pad.board.print_blobs()
+                return
+            
             selecting = self.prepare(target)
             
+            # For some reason, when debugging, it often misses the control.
+            # with_control = True
+                        
             if not with_control and target.current_state is OnOff.OFF:
                 changes = self.changes
                 for p in target.neighbors:
@@ -906,6 +937,16 @@ class BoardMonitor:
     max_y: float
     no_bounds: bool
     
+    modifiers: ClassVar[Mapping[Optional[str], tuple[bool,bool]]] = {
+            None: (False, False),
+            "control": (True, False),
+            "shift": (False, True),
+            "shift+control": (True, True),
+            "shift+ctrl": (True, True),
+            "ctrl+shift": (True, True)
+        } 
+    
+    
     def _on_board(self, x: float, y: float) -> None:
         if self.no_bounds:
             self.min_x = self.max_x = x
@@ -971,9 +1012,13 @@ class BoardMonitor:
             target = self.click_id[artist]
             if target.live:
                 key = event.mouseevent.key
-                # with_control = key == "control"
+                with_control, with_shift = self.modifiers[key]
+                # with_control = key == "control" or key == "ctrl+shift"
+                # with_shift = key == "shift" or key == "ctrl+shift"
                 print(f"Clicked on {target} (modifiers: {key})")
-                self.click_handler.process_click(target,with_control=(key=="control"))
+                self.click_handler.process_click(target, 
+                                                 with_control=with_control,
+                                                 with_shift=with_shift)
             #
             #
             #     if key == "control":
