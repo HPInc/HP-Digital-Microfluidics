@@ -255,13 +255,16 @@ bool_val returns[bool val]
   | ('False' | 'false' | 'FALSE' | 'No' | 'no' | 'NO') {$ctx.val=False}
   ;
 
-name 
-  : ID 
-  | kwd_names
+name returns[str val]
+  : multi_word_name {$ctx.val=$multi_word_name.val}
+  | ID {$ctx.val=$ID.text}
+  | kwd_names {$ctx.val=$kwd_names.text}
   ;
   
 multi_word_name returns[str val]
   : 'on' 'the'? 'board' {$ctx.val="on board"}
+  | 'interactive' 'reagent' {$ctx.val="interactive reagent"}
+  | 'interactive' 'volume' {$ctx.val="interactive volume"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y';
@@ -272,6 +275,7 @@ ADD: '+';
 ASSIGN: '=';
 ATTR: '\'s';
 DIV: '/';
+INTERACTIVE: 'interactive';
 INJECT: ':';
 LOCAL: 'local';
 MUL: '*';

@@ -609,8 +609,7 @@ class EnvRelativeUnit(Enum):
     DROP = auto()
     
 PhysUnit = Union[Unit,EnvRelativeUnit]
-        
-    
+
 if __name__ == '__main__':
     def check(lhs: Type, rhs: Type) -> None:
         print(f"Comparing {lhs} and {rhs}:")

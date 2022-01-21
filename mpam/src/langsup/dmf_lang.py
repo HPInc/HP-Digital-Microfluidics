@@ -3,7 +3,8 @@ from __future__ import annotations
 from _collections import defaultdict
 from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
-    Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple
+    Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple,\
+    TYPE_CHECKING
 import typing
 
 from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext, \
@@ -15,7 +16,8 @@ from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit
-from mpam.device import Pad, Board, BinaryComponent, WellPad, Well
+from mpam.device import Pad, Board, BinaryComponent, WellPad, Well,\
+    ChangeJournal
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -27,6 +29,9 @@ import math
 from functools import reduce
 from erk.basic import LazyPattern, not_None
 from re import Match
+
+if TYPE_CHECKING:
+    from mpam.monitor import BoardMonitor
 
 
 Name_ = TypeVar("Name_", bound=Hashable)
@@ -153,6 +158,14 @@ class Value(NamedTuple):
         
 class Environment(Scope[str, Any]):
     board: Final[Board]
+    
+    @property
+    def monitor(self) -> Optional[BoardMonitor]:
+        system = self.board.system
+        if system is None:
+            return None
+        return system.monitor
+    
     def __init__(self, parent: Optional[Scope[str, Any]], 
                  *,
                  board: Board, 
@@ -458,7 +471,7 @@ Attributes["column"].register(Type.PAD, Type.INT, lambda pad: pad.column)
 Attributes["#exit_dir"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
 Attributes["well"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
 Attributes["well"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
-Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
+Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop) 
 # Attributes["magnitude"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
 Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
 Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
@@ -466,7 +479,7 @@ Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
 
 Attributes["volume"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
 def _set_drop_volume(d: Drop, v: Volume):
-    d.volume = v
+    d.blob_volume = v
 Attributes["volume"].register_setter(Type.DROP, Type.VOLUME, _set_drop_volume)
 def _set_well_volume(w: Well, v: Volume):
     w.contains(Liquid(w.reagent, v))
@@ -481,7 +494,7 @@ def _set_well_reagent(w: Well, r: Reagent):
 Attributes["reagent"].register_setter(Type.WELL, Type.REAGENT, _set_well_reagent)
 
 def _set_drop_liquid(d: Drop, liq: Liquid):
-    d.volume = liq.volume
+    d.blob_volume = liq.volume
     d.reagent= liq.reagent
 Attributes["contents"].register(Type.DROP, Type.LIQUID, lambda d: Liquid(d.reagent, d.volume),
                                 setter=_set_drop_liquid)
@@ -517,6 +530,50 @@ BuiltIns = {
     "mixture": Functions["MIX"]
     }
 
+class SpecialVariable:
+    var_type: Final[Type]
+    
+    @property
+    def is_settable(self) -> bool:
+        return self._setter is not None
+    
+    def __init__(self, var_type: Type, *,
+                 getter: Callable[[Environment], Any],
+                 setter: Optional[Callable[[Environment, Any], None]] = None) -> None:
+        self.var_type = var_type
+        self._getter = getter
+        self._setter = setter
+    
+    def get(self, env: Environment) -> Any:
+        return (self._getter)(env)
+    
+    def set(self, env: Environment, val: Any) -> None:
+        assert self._setter is not None
+        (self._setter)(env, val)
+        
+class MonitorVariable(SpecialVariable):
+    def __init__(self, name: str, var_type: Type, *,
+                 getter: Callable[[BoardMonitor], Any],
+                 setter: Optional[Callable[[BoardMonitor, Any], None]] = None) -> None:
+        def adapted_getter(env: Environment) -> Any:
+            monitor = env.monitor
+            if monitor is None:
+                raise EvaluationError(f"Evaluating {name} only works in a monitored run")
+            return getter(monitor)
+        
+        def adapted_setter(env: Environment, val: Any) -> None:
+            monitor = env.monitor
+            if monitor is None:
+                raise EvaluationError(f"Setting {name} only works in a monitored run")
+            assert setter is not None
+            setter(monitor, val)
+            
+        super().__init__(var_type, getter=adapted_getter, setter = setter and adapted_setter)
+        
+    ...
+    
+SpecialVars: dict[str, SpecialVariable] = {}
+    
 DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
     Time.dim(): (Type.TIME, Type.FLOAT),
     Volume.dim(): (Type.VOLUME, Type.FLOAT),
@@ -1019,34 +1076,44 @@ class DMFCompiler(DMFVisitor):
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
 
         if type_ctx is None:
-            name = self.text_of(name_ctx)
+            name: str = cast(str, name_ctx.val)
+            # name = self.text_of(name_ctx)
         else:
             name = self.type_name_var(type_ctx, n)
         value = self.visit(ctx.what)
         builtin = BuiltIns.get(name, None)
+        setter: Callable[[Environment, Any], None]
+        var_type: Type
         if builtin is not None:
             return self.error(ctx, value.return_type, 
                               f"Can't assign to built-in '{name}'")
-        # var_type: Optional[Type] = None
-        # if type_ctx is not None:
-        #     var_type = cast(Type, type_ctx.type)
-        #     if self.current_types.defined_locally(name):
-        #         old_type = not_None(self.current_types.lookup(name)).name
-        #         new_type = var_type.name
-        #         return self.error(ctx, var_type, 
-        #                           lambda text: f"{name} redeclared as {new_type}, was {old_type}: {text}")
-        #     new_decl = True
-        # else:
-        var_type = self.current_types.lookup(name)
-        if var_type is None:
-            new_decl = True
-            var_type = value.return_type
-            if not self.current_types.is_top_level:
-                self.error(ctx, var_type,
-                           lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}"
-                           )
-        else:
+            
+        if (special := SpecialVars.get(name)) is not None:
+            if not special.is_settable:
+                return self.error(ctx, value.return_type,
+                                  f"Can't assign to special variable '{name}'")
+            var_type = special.var_type
+            spec = special
+            setter = lambda env,val: spec.set(env, val)
             new_decl = False
+        else:
+            vt = self.current_types.lookup(name)
+            if vt is None:
+                new_decl = True
+                var_type = value.return_type
+                if not self.current_types.is_top_level:
+                    self.error(ctx, var_type,
+                               lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}"
+                               )
+            else:
+                var_type = vt
+                new_decl = False
+            def do_assignment(env: Environment, val) -> None:
+                if new_decl:
+                    env.define(name, val)
+                else:
+                    env[name] = val
+            setter = do_assignment
         if e := self.type_check(var_type, value.return_type, ctx, 
                                 lambda want,have,text: 
                                     f"variable '{name}' has type {have}.  Expression has type {want}: {text}",
@@ -1058,11 +1125,7 @@ class DMFCompiler(DMFVisitor):
             self.current_types.define(name, returned_type)
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val) -> Any:
-                if new_decl:
-                    env.define(name, val)
-                else:
-                    env[name] = val
-                # print(f"Assigned {name} := {val}")
+                setter(env, val)
                 return val
             return value.evaluate(env, var_type).transformed(do_assignment)
         return Executable(returned_type, run, (value,))
@@ -1126,8 +1189,8 @@ class DMFCompiler(DMFVisitor):
             assert n is not None
             name = self.type_name_var(var_type, n)
         else:
-            name = self.text_of(name_ctx)
-
+            name = cast(str, name_ctx.val)
+            # name = self.text_of(name_ctx)
 
         assert init_ctx is not None or var_type is not None
         value = self.visit(init_ctx) if init_ctx is not None else None
@@ -1143,6 +1206,9 @@ class DMFCompiler(DMFVisitor):
         if builtin is not None:
             return self.error(ctx, var_type, 
                               lambda text: f"Can't declare variable shadowing built-in '{name}': {text}")
+        if name in SpecialVars:
+            return self.error(ctx, var_type, 
+                              lambda text: f"Can't declare variable shadowing special variable '{name}': {text}")
         if not just_assign and self.current_types.defined_locally(name):
             old_type = not_None(self.current_types.lookup(name)).name
             new_type = var_type.name
@@ -1366,10 +1432,13 @@ class DMFCompiler(DMFVisitor):
         return self.use_function(which, ctx, ())
 
     def visitName_expr(self, ctx:DMFParser.Name_exprContext) -> Executable:
-        name = self.text_of(ctx.name())
+        name: str = ctx.name().val
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
             return Executable.constant(Type.BUILT_IN, builtin)
+        if (special := SpecialVars.get(name)) is not None:
+            real_special = special
+            return Executable(special.var_type, lambda env: Delayed.complete(real_special.get(env)))
         var_type = self.current_types.lookup(name)
         if var_type is None:
             return self.error(ctx.name(), Type.NONE, f"Undefined variable: {name}")
@@ -1960,7 +2029,10 @@ class DMFCompiler(DMFVisitor):
                 liquid = Liquid(liquid.reagent, liquid.volume)
             if pad.drop is not None:
                 raise AlreadyDropError(f"There is already a drop at {pad}")
-            return Drop(pad, liquid)
+            journal = ChangeJournal()
+            pad.deliver(liquid, journal=journal)
+            journal.process_changes()
+            return not_None(pad.drop)
         fn.register_immediate((Type.PAD,), Type.DROP,
                               lambda p: p.drop or new_drop(p))
         
@@ -2003,5 +2075,23 @@ class DMFCompiler(DMFVisitor):
         fn.register_all_immediate([((Type.SCALED_REAGENT,)*n, Type.REAGENT) for n in range(1,8)], 
                                   mix_reagent)
         
+    @classmethod
+    def setup_special_vars(cls) -> None:
+        name = "interactive reagent"
+        def get_reagent(monitor: BoardMonitor) -> Reagent:
+            return monitor.interactive_reagent
+        def set_reagent(monitor: BoardMonitor, reagent: Reagent):
+            monitor.interactive_reagent = reagent
+        SpecialVars[name] = MonitorVariable(name, Type.REAGENT, getter=get_reagent, setter=set_reagent)
+        
+        name = "interactive volume"
+        def get_volume(monitor: BoardMonitor) -> Volume:
+            return monitor.interactive_volume
+        def set_volume(monitor: BoardMonitor, volume: Volume):
+            monitor.interactive_volume = volume
+        SpecialVars[name] = MonitorVariable(name, Type.VOLUME, getter=get_volume, setter=set_volume)
+
+        
 DMFCompiler.setup_function_table()
+DMFCompiler.setup_special_vars()
 

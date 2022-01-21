@@ -1294,10 +1294,12 @@ class Liquid:
         v = my_v + their_v
         if isinstance(result, Reagent):
             r = result
-        elif my_r is their_r:
+        elif my_r is their_r or their_v == Volume.ZERO():
             r = my_r
         elif my_r is waste_reagent or their_r is waste_reagent:
             r = waste_reagent if result is None else Reagent.find(result)
+        elif my_v == Volume.ZERO():
+            r = their_r
         else:
             ratio = my_v.ratio(their_v)
             r = Mixture.find_or_compute(my_r, their_r, ratio=ratio, name=result)

@@ -235,6 +235,16 @@ class Pad(BinaryComponent['Pad']):
         return ns
     
     @property
+    def corner_neighbors(self) -> Sequence[Pad]:
+        ns = self._neighbors
+        if ns is None:
+            ns = [n for d in (Dir.NE,Dir.SE,Dir.SW,Dir.NW) if (n := self.neighbor(d)) is not None]
+            self._neighbors = ns
+        return ns
+
+    
+    
+    @property
     def between_pads(self) -> Mapping[Pad, Pad]:
         bps: Optional[Mapping[Pad,Pad]] = getattr(self, '_between_pads', None)
         if bps is None:
@@ -256,7 +266,7 @@ class Pad(BinaryComponent['Pad']):
         self._drop_change_callbacks = ChangeCallbackList()
         def journal_change(old: OnOff, new: OnOff) -> None:
             if old is not new:
-                board.change_journal.change_to(self, new)
+                board.journal_state_change(self, new)
         self.on_state_change(journal_change, key="Journal Change")
 
         
@@ -307,7 +317,18 @@ class Pad(BinaryComponent['Pad']):
     def liquid_removed(self, volume: Volume) -> None:
         self.board.change_journal.note_removal(self, volume)
         
+    def deliver(self, liquid: Liquid, *, 
+                journal: Optional[ChangeJournal] = None,
+                mix_result: Optional[MixResult] = None) -> None:
+        if journal is None:
+            journal = self.board.change_journal
+        journal.note_delivery(self, liquid, mix_result = mix_result)
     
+    def remove(self, volume: Volume, *, journal: Optional[ChangeJournal] = None) -> None:
+        if journal is None:
+            journal = self.board.change_journal
+        journal.note_removal(self, volume)
+        
     
 WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
@@ -399,7 +420,13 @@ class WellMotion:
         self.pad_states.update(other.pad_states)
         if self.on_last_step:
             for pad,state in other.pad_states.items():
-                pad.schedule(Pad.SetState(state), post_result=False)
+                # If the pad is supposed to be off, we turn off all of the pads in the pad's blob (if any)
+                pads: Sequence[Pad] = (pad,)
+                if state is OnOff.OFF and (blob := pad.blob) is not None:
+                    pads = blob.pads
+                for p in pads:
+                    p.schedule(Pad.SetState(state), post_result=False)
+                        
         self.future.when_value(lambda g: other.future.post(g))
         return True
         
@@ -1143,12 +1170,12 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     pad: Final[Pad]
     removed: Optional[Volume] = None
     
-    @property
-    def contents(self) -> Optional[Liquid]:
-        drop = self.pad.drop
-        if drop is None:
-            return None
-        return drop.liquid
+    # @property
+    # def contents(self) -> Optional[Liquid]:
+    #     drop = self.pad.drop
+    #     if drop is None:
+    #         return None
+    #     return drop.liquid
     
     def __init__(self, pad: Pad) -> None:
         BoardComponent.__init__(self, pad.board)
@@ -1192,7 +1219,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         assert pipettor is not None, f"{self} has no pipettor and transfer_out() not overridden"
         if liquid is None:
             drop = not_None(self.pad.drop)
-            liquid = drop.liquid
+            liquid = drop.blob.contents
         p_future = pipettor.schedule(pipettor.Extract(liquid.volume, self,
                                                       is_product = is_product,
                                                       product_loc = product_loc, 
@@ -1286,7 +1313,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             def do_it() -> None:
                 drop = not_None(extraction_point.pad.drop)
                 liquid = Liquid(drop.reagent,
-                                drop.volume if self.volume is None else self.volume)
+                                drop.blob_volume if self.volume is None else self.volume)
                 extraction_point.transfer_out(liquid = liquid,
                                               on_no_sink = self.on_no_sink,
                                               product_loc = self.product_loc
@@ -1430,6 +1457,10 @@ class ChangeJournal:
         if mix_result:
             self.mix_result[pad] = mix_result
             
+    def process_changes(self) -> None:
+        from mpam.drop import Blob # @Reimport
+        Blob.process_changes(self)
+            
 
 class Board(SystemComponent):
     pads: Final[PadArray]
@@ -1548,15 +1579,26 @@ class Board(SystemComponent):
         blobs = set[Blob]()
         for pad in self.pads.values():
             if pad.blob is not None:
+                if not pad in pad.blob.pads:
+                    print(f"{pad} not in {pad.blob}")
                 blobs.add(pad.blob)
         
         for blob in blobs:
             print(blob)
 
     def infer_drop_motion(self) -> None:
-        from mpam.drop import Blob # @Reimport
-        Blob.process_changes(self.replace_change_journal(), board=self)
+        self.replace_change_journal().process_changes()
         self.print_blobs()
+        
+    def journal_state_change(self, pad: Pad, new_state: OnOff) -> None:
+        self.change_journal.change_to(pad, new_state)
+        
+    def journal_removal(self, pad: Pad, volume: Volume) -> None:
+        self.change_journal.note_removal(pad, volume)
+        
+    def journal_delivery(self, pad: Pad, liquid: Liquid, *,
+                         mix_result: Optional[MixResult] = None):
+        self.change_journal.note_delivery(pad, liquid, mix_result=mix_result)
     
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier) -> None:

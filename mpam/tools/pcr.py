@@ -730,7 +730,7 @@ class CombSynth(PCRTask):
             paths.append((c6.lead_drop,
                           Path.empty()
                             .reach(self.phase_barrier, wait=False)
-                            .then_process(lambda drop: print(f"Extracting {drop.liquid}"))
+                            .then_process(lambda drop: print(f"Extracting {drop.blob.contents}"))
                             .teleport_out(product_loc = product_loc))
                          )
             

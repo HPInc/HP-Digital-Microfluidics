@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import math
 from numbers import Number
 import random
@@ -7,8 +8,9 @@ from re import Pattern, Match
 import re
 from threading import RLock, Event, Lock
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
-    ClassVar, MutableMapping, Any, Iterable
+    ClassVar, MutableMapping, Any
 
+import clipboard
 from matplotlib import pyplot
 from matplotlib.artist import Artist
 from matplotlib.axes._axes import Axes
@@ -22,22 +24,20 @@ from matplotlib.path import Path
 from matplotlib.text import Annotation
 from matplotlib.widgets import Button, TextBox
 
-from erk.basic import Count, not_None
+from erk.basic import Count
+from langsup.dmf_lang import DMFInterpreter
+from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
     HeatingMode, BinaryComponent, ChangeJournal
 from mpam.drop import Drop, DropStatus, MotionInference
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent, Barrier
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C
 from quantities.timestamp import time_now
-from mpam import paths
-from _collections import defaultdict
-from abc import ABC, abstractmethod
-from langsup.dmf_lang import DMFInterpreter
-import clipboard
+from weakref import WeakKeyDictionary
 
 
 class ClickableMonitor(ABC):
@@ -73,8 +73,8 @@ class ClickableMonitor(ABC):
     @abstractmethod
     def current_drop(self) -> Optional[Drop]: ...
     
-    @abstractmethod
-    def fix_drop(self, drop: Optional[Drop], liquid: Liquid) -> None: ... # @UnusedVariable
+    # @abstractmethod
+    # def fix_drop(self, drop: Optional[Drop], liquid: Liquid) -> None: ... # @UnusedVariable
     
     @abstractmethod
     def holds_drop(self) -> bool: ...
@@ -198,15 +198,15 @@ class PadMonitor(ClickableMonitor):
     def holds_drop(self)->bool:
         return True
     
-    def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
-        if drop is None:
-            Drop(self.pad, liquid)
-            self.pad.board.change_journal.note_delivery(self.pad, liquid)
-        else:
-            drop.liquid.volume = liquid.volume
-            drop.liquid.reagent = liquid.reagent
-            drop.status = DropStatus.ON_BOARD
-            drop.pad = self.pad
+    # def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
+    #     if drop is None:
+    #         Drop(self.pad, liquid)
+    #         self.pad.board.change_journal.note_delivery(self.pad, liquid)
+    #     else:
+    #         drop.liquid.volume = liquid.volume
+    #         drop.liquid.reagent = liquid.reagent
+    #         drop.status = DropStatus.ON_BOARD
+    #         drop.pad = self.pad
     
         
     def note_state(self, state: OnOff) -> None:
@@ -271,7 +271,7 @@ class PadMonitor(ClickableMonitor):
             
     def drop_radius(self, drop: Drop) -> float:
         square_width: int = self.square.get_width()
-        return 0.45*square_width*math.sqrt(drop.volume.ratio(self.capacity))
+        return 0.45*square_width*math.sqrt(drop.display_volume.ratio(self.capacity))
             
     def note_drop_change(self, old: Optional[Drop], new: Optional[Drop]) -> None:
         # print(f"{self.pad}'s drop changed from {old} to {new}")
@@ -485,7 +485,7 @@ class DropMonitor:
                                     center=pm.center,
                                     radius=pm.drop_radius(drop),
                                     board_monitor=board_monitor)
-        liquid = drop.liquid
+        liquid = drop._display_liquid
         liquid.on_volume_change(lambda _, new: board_monitor.in_display_thread(lambda: self.note_volume(new)))
         liquid.on_reagent_change(lambda _, new: board_monitor.in_display_thread(lambda: self.note_reagent(new)))
         
@@ -561,14 +561,14 @@ class WellPadMonitor(ClickableMonitor):
     def holds_drop(self)->bool:
         return isinstance(self.pad.loc, Well)
     
-    def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
-        assert isinstance(self, WellPadMonitor)
-        well = self.pad.loc
-        assert isinstance(well, Well)
-        if drop is not None:
-            drop.status = DropStatus.IN_WELL
-            drop.pad.drop = None
-            well.transfer_in(liquid)
+    # def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
+    #     assert isinstance(self, WellPadMonitor)
+    #     well = self.pad.loc
+    #     assert isinstance(well, Well)
+    #     if drop is not None:
+    #         drop.status = DropStatus.IN_WELL
+    #         drop.pad.drop = None
+    #         well.transfer_in(liquid)
         
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
@@ -700,104 +700,7 @@ class ClickHandler:
                     p.component.schedule(BinaryComponent.SetState(new_state))
             self.changes.clear()
             self.scheduled = False
-        
-    def old_run(self) -> None:
-        with self.lock:
-            
-            pads: dict[Drop, list[ClickableMonitor]] = defaultdict(list)
-            drops: dict[ClickableMonitor, Sequence[Drop]] = {}
-            
-            _current_drop: dict[ClickableMonitor, Drop] = {}
-            
-            changes = self.changes
-            
-            def current_drop(cm: ClickableMonitor) -> Optional[Drop]:
-                if cm.current_state is OnOff.OFF:
-                    return None
-                drop = _current_drop.get(cm, None)
-                if drop is None:
-                    drop = cm.current_drop()
-                    assert drop is not None
-                    if cm not in changes:
-                        pads[drop].append(cm)
-                        drops[cm] = [drop]
-                    _current_drop[cm] = drop
-                return drop
-            
-            def neighbor_drops(cm: ClickableMonitor) -> Iterable[Drop]:
-                for p in cm.neighbors:
-                    drop = current_drop(p)
-                    if drop is not None:
-                        yield drop
-                        
-                        
-            
-            for p in changes:
-                # if we're turning the pad on
-                if p.current_state is OnOff.OFF and p.holds_drop():
-                    ds = drops[p] = list(neighbor_drops(p))
-                    for drop in ds:
-                        pads[drop].append(p) 
-            
-            to_remove: set[Drop] = set()
-
-            for p in changes:
-                if isinstance(p, PadMonitor) and p.current_state is OnOff.ON:
-                    drop = not_None(current_drop(p))
-                    if drop not in pads:
-                        to_remove.add(drop)
-            
-            v = self.monitor.board.drop_size
-
-                    
-            def fix_drops() -> None:
-                adopts: dict[ClickableMonitor, Drop] = {}
-                
-                def new_dest(drop: Drop, cms: Sequence[ClickableMonitor]) -> None:
-                    for cm in cms:
-                        if cm not in adopts:
-                            adopts[cm] = drop
-                            return
-                    to_remove.add(drop)
-                    
-                for d,cms in pads.items():
-                    new_dest(d, cms)
-                    
-                for cm in changes:
-                    if isinstance(cm, PadMonitor) and cm.current_state is OnOff.OFF:
-                        drop = cm.pad.drop
-                        print(pads)
-                        if drop is not None and drop not in pads:
-                            to_remove.add(drop)
-                
-                # adopts = {ps[0]: d for (d,ps) in pads.items()}
-                liq = {cm: Liquid.mix_together([(d.liquid,1/len(pads[d])) for d in ds]) for cm,ds in drops.items()}
-                
-                for cm in (cm for cm,ds in drops.items() if len(ds) == 0):
-                    # All the ones turning on that don't get a drop from anywhere
-                    liq[cm] = Liquid(unknown_reagent, v)
-
-                for cm,liquid in liq.items():
-                    drop = adopts.get(cm, None)
-                    cm.fix_drop(drop, liquid)
-                for drop in to_remove:
-                    if drop.status is DropStatus.ON_BOARD:
-                        drop.pad.drop = None
-                        drop.status = DropStatus.OFF_BOARD
-                        drop.pad.board.change_journal.note_removal(drop.pad, drop.volume)
-                        
-                        
-            
-            barrier = Barrier[OnOff](len(self.changes), name="Click Barrier")
-            barrier.on_trigger(fix_drops)
-            with self.monitor.board.in_system().batched():
-                for p in self.changes:
-                    new_state = ~p.current_state
-                    p.component.schedule(BinaryComponent.SetState(new_state)).then_call(lambda s: barrier.pass_through(s))
-                                         
-            self.changes.clear()
-            self.scheduled = False
-        
+         
     def process_click(self, target: ClickableMonitor, *, with_control: bool, with_shift: bool) -> None:
         with self.lock:
             
@@ -809,10 +712,12 @@ class ClickHandler:
                         if (blob := pad.blob) is not None:
                             v = min(pad.board.drop_size, blob.total_volume)
                             if v > Volume.ZERO():
-                                change_journal.note_removal(pad, v)
+                                pad.remove(v, journal=change_journal)
                     else:
-                        change_journal.note_delivery(pad, Liquid(unknown_reagent, pad.board.drop_size))
-                    MotionInference(change_journal).process_changes()
+                        reagent = self.monitor.interactive_reagent
+                        volume = self.monitor.interactive_volume
+                        pad.deliver(Liquid(reagent, volume), journal=change_journal)
+                    change_journal.process_changes()
                     pad.board.print_blobs()
                 return
             
@@ -915,7 +820,7 @@ class BoardMonitor:
     figure: Final[Figure]
     plot: Final[Axes]
     # controls: Final[Axes]
-    drop_map: Final[dict[Drop, DropMonitor]]
+    drop_map: Final[WeakKeyDictionary[Drop, DropMonitor]]
     lock: Final[RLock]
     update_callbacks: Optional[list[Callback]]
     color_allocator: Final[ColorAllocator[Reagent]]
@@ -925,6 +830,8 @@ class BoardMonitor:
     legend: Final[ReagentLegend]
     click_handler: Final[ClickHandler]
     macro_file_name: Final[Optional[str]]
+    interactive_reagent: Reagent = unknown_reagent
+    interactive_volume: Volume
     
     _control_widgets: Final[Any]
     
@@ -963,7 +870,8 @@ class BoardMonitor:
                  control_fraction: Optional[float] = None,
                  macro_file_name: Optional[str] = None) -> None:
         self.board = board
-        self.drop_map = dict[Drop, DropMonitor]()
+        self.interactive_volume = board.drop_size
+        self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()
         self.update_callbacks = None
         self.click_id = {}
