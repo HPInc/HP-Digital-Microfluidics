@@ -29,7 +29,7 @@ from langsup.dmf_lang import DMFInterpreter
 from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
     HeatingMode, BinaryComponent, ChangeJournal
-from mpam.drop import Drop, DropStatus, MotionInference
+from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent
 from quantities.SI import ms, sec
@@ -543,23 +543,22 @@ class WellPadMonitor(ClickableMonitor):
         return shape
     
     def list_neighbors(self)->Sequence[ClickableMonitor]:
-        loc = self.pad.loc
-        if isinstance(loc, Well):
-            return [self.board_monitor.pads[loc.exit_pad]]
+        if self.pad.is_gate:
+            return [self.board_monitor.pads[self.pad.well.exit_pad]]
         else:
             return []
         
     def current_drop(self)->Optional[Drop]:
-        well = self.pad.loc
-        if not isinstance(well, Well):
+        if not self.pad.is_gate:
             return None
         if self.current_state is OnOff.OFF:
             return None
+        well = self.pad.well
         drop = Drop(well.exit_pad, Liquid(well.reagent, well.dispensed_volume), status=DropStatus.IN_WELL)
         return drop
     
     def holds_drop(self)->bool:
-        return isinstance(self.pad.loc, Well)
+        return self.pad.is_gate
     
     # def fix_drop(self, drop:Optional[Drop], liquid:Liquid)->None:
     #     assert isinstance(self, WellPadMonitor)
@@ -605,8 +604,10 @@ class WellMonitor:
         assert shape is not None
         self.gate_monitor = WellPadMonitor(well.gate, board_monitor, shape.gate_pad_bounds, well = well, is_gate = True)
         
+        shared_pads = well.shared_pads
+        
         self.shared_pad_monitors = [WellPadMonitor(wp, board_monitor, bounds, well=well, is_gate = False)
-                                    for bounds, wp in zip(shape.shared_pad_bounds, well.group.shared_pads)]
+                                    for bounds, wp in zip(shape.shared_pad_bounds, shared_pads)]
         rc_center = board_monitor.map_coord(shape.reagent_id_circle_center)
         rc_radius = shape.reagent_id_circle_radius
         board_monitor._on_board(rc_center[0]-rc_radius, rc_center[1]-rc_radius)

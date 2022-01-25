@@ -7,6 +7,7 @@ from serial import Serial
 
 from devices import joey
 from mpam.types import OnOff, State, DummyState
+from erk.basic import ComputedDefaultDict
 
 
 _pins: Mapping[str, int] = {
@@ -150,18 +151,15 @@ class Electrode(State[OnOff]):
         self.array = a
         
 
+
 class Board(joey.Board):
     _device: Final[Optional[str]]
     _states: Final[bytearray]
     _port: Optional[Serial] 
     _od_version: Final[OpenDropVersion]
+    _electrodes: Final[dict[int, Electrode]]
     
-    def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
-        if cell is None:
-            return None
-        pin = _pins.get(cell, None)
-        if pin is None:
-            return None
+    def make_electrode(self, pin: int) -> Electrode:
         x,y = _opendrop[pin]
         if self._od_version is OpenDropVersion.V40:
             byte_index = (x-1)*8+(y-1)
@@ -173,6 +171,14 @@ class Board(joey.Board):
         # print(f"  pin: {pin}, (x,y): ({x},{y}), index: {index}")
         return Electrode(byte_index, bit_index, self._states)
     
+    def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
+        if cell is None:
+            return None
+        pin = _pins.get(cell, None)
+        if pin is None:
+            return None
+        return self._electrodes[pin]
+    
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
         cell = _shared_pad_cells.get((group_name, num))  
         # print(f"-- shared: {group_name} {num} -- {cell}")
@@ -183,10 +189,10 @@ class Board(joey.Board):
         # print(f"-- gate: {well} -- {cell}")
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
-    def _pad_state(self, x: int, y: int) -> State[OnOff]:
+    def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]:
         cell = f"{ord('B')+y:c}{25-x:02d}"
         # print(f"({x}, {y}): {cell}")
-        return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
+        return self._electrode(cell)
     
     def __init__(self, device: Optional[str], od_version: OpenDropVersion) -> None:
         if od_version is OpenDropVersion.V40:
@@ -197,6 +203,7 @@ class Board(joey.Board):
             assert False, f"Unknown OpenDrop version: {od_version}"
         self._states = bytearray(n_state_bytes)
         self._od_version = od_version
+        self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
         super().__init__()
         self._device = device
         self._port = None

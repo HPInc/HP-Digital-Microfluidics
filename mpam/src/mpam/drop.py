@@ -2,7 +2,7 @@ from __future__ import annotations
 from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
     StaticOperation, Reagent, Callback, T
-from mpam.device import Pad, Board, Well, WellGroup, WellState, ExtractionPoint,\
+from mpam.device import Pad, Board, Well, WellState, ExtractionPoint,\
     ProductLocation, ChangeJournal
 from mpam.exceptions import NoSuchPad, NotAtWell
 from typing import Optional, Final, Union, Callable, Iterator, Iterable,\
@@ -280,7 +280,6 @@ class Blob:
     def remove_drops(self) -> None:
         print(f"Removing drops in {self}")
         for pad in self.pads:
-            pad.blob = None
             if (drop := pad.drop) is not None:
                 print(f"  Removing drop at {pad}")
                 drop.status = DropStatus.OFF_BOARD
@@ -322,6 +321,8 @@ class Blob:
     def disappear(self) -> None:
         print(f"Disappearing {self}")
         self.remove_drops()
+        for pad in self.pads:
+            pad.blob = None
         self.die()
 
     @classmethod
@@ -745,11 +746,10 @@ class Drop(OpScheduler['Drop']):
             def run_group(_) -> None:
                 # Note, we post the drop as soon as we get to the DISPENSED state, even theough
                 # we continue on to READY
-                group = self.well.group
-                group.schedule(WellGroup.TransitionTo(WellState.DISPENSED, well = self.well, guard=guard()), 
+                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()), 
                                mode=mode, after=after) \
                     .then_call(make_drop) \
-                    .then_schedule(WellGroup.TransitionTo(WellState.READY))
+                    .then_schedule(Well.TransitionTo(WellState.READY)) 
             # well.ensure_content().then_call(run_group)
             run_group(None)
             return future
@@ -818,10 +818,9 @@ class Drop(OpScheduler['Drop']):
                 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
-            group = well.group
-            group.schedule(WellGroup.TransitionTo(WellState.ABSORBED, well=well, guard=guard()), mode=mode, after=after) \
+            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard()), mode=mode, after=after) \
                 .then_call(consume_drop) \
-                .then_schedule(WellGroup.TransitionTo(WellState.READY, well=well))
+                .then_schedule(Well.TransitionTo(WellState.READY))
             return future
             
         

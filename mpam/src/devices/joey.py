@@ -5,8 +5,9 @@ import random
 from typing import Optional, Sequence, ClassVar, Final
 
 from devices.dummy_pipettor import DummyPipettor
-from mpam.device import WellGroup, WellOpSeqDict, WellState, PadBounds, \
-    HeatingMode, WellShape, System, WellPad, Pad, Magnet
+from mpam.device import WellOpSeqDict, WellState, PadBounds, \
+    HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup,\
+    transitions_from
 import mpam.device as device
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
@@ -31,8 +32,9 @@ class Well(device.Well):
     def __init__(self, 
                  *, board:Board, 
                  number:int, 
-                 group:WellGroup, 
+                 group:DispenseGroup,
                  exit_pad:device.Pad, 
+                 shared_pads: Sequence[WellPad],
                  gate:WellPad,
                  capacity:Volume, 
                  dispensed_volume:Volume, 
@@ -45,6 +47,7 @@ class Well(device.Well):
                          group=group,
                          exit_pad=exit_pad,
                          gate=gate,
+                         shared_pads=shared_pads,
                          capacity=capacity,
                          dispensed_volume=dispensed_volume,
                          exit_dir=exit_dir,
@@ -139,13 +142,13 @@ class Board(device.Board):
     thermocycler: Final[Thermocycler]
     pipettor: Final[Pipettor]
     
-    def _pad_state(self, x: int, y: int) -> State[OnOff]: # @UnusedVariable
-        return DummyState(initial_state=OnOff.OFF)
+    def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]: # @UnusedVariable
+        return None
     
     def _well_gate_state(self, well: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
     
-    def _well_pad_state(self, group_name: str, well: int) -> State[OnOff]: # @UnusedVariable
+    def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
     
     def _magnet_state(self) -> State[OnOff]:
@@ -163,7 +166,8 @@ class Board(device.Board):
         y4 = y+4
         return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4)) 
     
-    def _well(self, num: int, group: WellGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor):
+    def _well(self, num: int, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor,
+              shared_states: Sequence[State[OnOff]]):
         epx = exit_pad.location.x
         epy = exit_pad.location.y
         outdir = -1 if epx == 0 else 1
@@ -190,6 +194,7 @@ class Board(device.Board):
                     group=group,
                     exit_pad=exit_pad,
                     gate=WellPad(self, state=self._well_gate_state(num)),
+                    shared_pads=tuple(WellPad(self, state=s) for s in shared_states),
                     capacity=54.25*uL,
                     # dispensed_volume=0.5*uL,
                     dispensed_volume=1*uL,
@@ -222,8 +227,11 @@ class Board(device.Board):
         for x in range(0,19):
             for y in range(0,19):
                 loc = XYCoord(x, y)
-                exists = loc not in dead_region
-                pad_dict[loc] = Pad(loc, self, exists=exists, state=self._pad_state(x, y))
+                state = self._pad_state(x, y)
+                exists = state is not None and loc not in dead_region
+                if state is None:
+                    state = DummyState(initial_state=OnOff.OFF)
+                pad_dict[loc] = Pad(loc, self, exists=exists, state=state)
                 
         sequences: WellOpSeqDict = {
             (WellState.EXTRACTABLE, WellState.READY): ((7,6), (7,3,4,5), (7,4,0,1,2)),
@@ -234,26 +242,27 @@ class Board(device.Board):
             (WellState.ABSORBED, WellState.READY): ((7,4,0,1,2),)
             }
         
-        left_group = WellGroup("left", self, 
-                               tuple(WellPad(self, state=self._well_pad_state('left', n)) for n in range(9)),
-                               sequences)
-        right_group = WellGroup("right", self,
-                                tuple(WellPad(self, state=self._well_pad_state('right', n)) for n in range(9)),
-                                sequences)
+        transition = transitions_from(sequences)
+        
+        left_group = DispenseGroup("left", transition)
+        right_group = DispenseGroup("right", transition)
+        
+        left_states = tuple(self._well_pad_state('left', n) for n in range(9)) 
+        right_states = tuple(self._well_pad_state('right', n) for n in range(9)) 
         
         if pipettor is None:
             pipettor = DummyPipettor()
         self.pipettor = pipettor
         
         wells.extend((
-            self._well(0, left_group, Dir.RIGHT, self.pad_at(0,18), pipettor),
-            self._well(1, left_group, Dir.RIGHT, self.pad_at(0,12), pipettor),
-            self._well(2, left_group, Dir.RIGHT, self.pad_at(0,6), pipettor),
-            self._well(3, left_group, Dir.RIGHT, self.pad_at(0,0), pipettor),
-            self._well(4, right_group, Dir.LEFT, self.pad_at(18,18), pipettor),
-            self._well(5, right_group, Dir.LEFT, self.pad_at(18,12), pipettor),
-            self._well(6, right_group, Dir.LEFT, self.pad_at(18,6), pipettor),
-            self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor),
+            self._well(0, left_group, Dir.RIGHT, self.pad_at(0,18), pipettor, left_states),
+            self._well(1, left_group, Dir.RIGHT, self.pad_at(0,12), pipettor, left_states),
+            self._well(2, left_group, Dir.RIGHT, self.pad_at(0,6), pipettor, left_states),
+            self._well(3, left_group, Dir.RIGHT, self.pad_at(0,0), pipettor, left_states),
+            self._well(4, right_group, Dir.LEFT, self.pad_at(18,18), pipettor, right_states),
+            self._well(5, right_group, Dir.LEFT, self.pad_at(18,12), pipettor, right_states),
+            self._well(6, right_group, Dir.LEFT, self.pad_at(18,6), pipettor, right_states),
+            self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor, right_states),
             ))
         
         magnets.append(Magnet(self, state=self._magnet_state(), 
@@ -267,7 +276,7 @@ class Board(device.Board):
                                                 GridRegion(XYCoord(16,0),3,7)]))
         
 
-        extraction_points.append(ExtractionPoint(self.pad_at(13, 15), pipettor))
+        extraction_points.append(ExtractionPoint(self.pad_at(13, 15), pipettor)) 
         extraction_points.append(ExtractionPoint(self.pad_at(13, 9), pipettor))
         extraction_points.append(ExtractionPoint(self.pad_at(13, 3), pipettor))
         

@@ -128,9 +128,9 @@ BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
     
 class PipettingTarget:
     
-    @property
-    @abstractmethod
-    def contents(self) -> Optional[Liquid]: ...
+    # @property
+    # @abstractmethod
+    # def contents(self) -> Optional[Liquid]: ...
     
     @property
     def pipettor(self) -> Optional[Pipettor]:
@@ -326,10 +326,15 @@ class Pad(BinaryComponent['Pad']):
         journal.note_removal(self, volume)
         
     
-WellPadLoc = Union[tuple['WellGroup', int], 'Well']
+# WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
 class WellPad(BinaryComponent['WellPad']):
-    loc: WellPadLoc
+    well: Well
+    index: int
+    
+    @property
+    def is_gate(self) -> bool:
+        return self.index == -1
     
     @property
     def has_fluid(self) -> bool:
@@ -342,16 +347,17 @@ class WellPad(BinaryComponent['WellPad']):
         # print(f"{self}.live = {self.live}")
         
     def __repr__(self) -> str:
-        loc = getattr(self, 'loc', None)
-        if loc is None:
+        well: Optional[Well] = getattr(self, 'well', None)
+        if well is None:
             return f"WellPad(unassigned, {id(self)})"
-        elif isinstance(loc, Well):
-            return f"WellPad({loc}[gate])"
+        elif self.is_gate:
+            return f"WellPad({well}[gate])"
         else:
-            return f"WellPad({loc[0]}[{loc[1]}]"
+            return f"WellPad({well}[{self.index}]"
             
-    def set_location(self, loc: WellPadLoc) -> None:
-        self.loc = loc
+    def set_location(self, well: Well, index: int) -> None:
+        self.well = well
+        self.index = index
 
 class WellState(Enum):
     EXTRACTABLE = auto()
@@ -370,27 +376,33 @@ class GateStatus(Enum):
     UNSAFE = auto()
 
 class WellMotion:
-    group: Final[WellGroup]
+    group: Final[DispenseGroup]
+    board: Final[Board]
     target: Final[WellState]
-    future: Final[Delayed[WellGroup]]
-    post_result: Final[bool]
+    initial_future: Final[Delayed[Well]]
+    futures: Final[list[tuple[Well, Delayed[Well]]]]
+    # post_result: Final[bool]
     well_gates: Final[set[WellPad]]
+    shared_pads: Final[Sequence[WellPad]]
     pad_states: Final[dict[Pad, OnOff]]
     guard: Final[Optional[Iterator[bool]]]
     # next_step: int
     on_last_step: bool = False
     one_tick: Final[ClassVar[Ticks]] = 1*tick
-    sequence: WellOpStepSeq
+    # sequence: WellOpStepSeq
     gate_status: GateStatus
     
-    def __init__(self, group: WellGroup, target: WellState, *,
+    def __init__(self, well: Well, target: WellState, *,
                  guard: Optional[Iterator[bool]] = None,
                  post_result: bool = True) -> None:
-        self.group = group
+        self.group = well.group
+        self.board = well.board
+        self.initial_future = Delayed[Well]()
+        self.futures = [(well, self.initial_future)] if post_result else []
         self.target = target
-        self.future = Delayed[WellGroup]()
-        self.post_result = post_result
-        self.well_gates = set[WellPad]()
+        # self.post_result = post_result
+        self.well_gates = { well.gate }
+        self.shared_pads = well.shared_pads
         self.pad_states = {}
         self.guard = guard
         # self.next_step = 0
@@ -422,18 +434,22 @@ class WellMotion:
                     pads = blob.pads
                 for p in pads:
                     p.schedule(Pad.SetState(state), post_result=False)
-                        
-        self.future.when_value(lambda g: other.future.post(g))
+
+        self.futures.extend(other.futures)             
         return True
+    
+    def post_futures(self) -> None:
+        for w,f in self.futures:
+            f.post(w)
         
     # Returns True if it should keep going
     def iterator(self) -> Iterator[bool]:
-        group = self.group
         target = self.target
         # On the first step, we need to see if this is really necessary or if we 
         # can piggyback onto another motion (or just return) 
         
         # print(f"New motion to {self.target}, gates = {self.well_gates}: {self}")
+        group = self.group
         
         def with_lock() -> Optional[bool]:
             with group.lock:
@@ -455,16 +471,16 @@ class WellMotion:
                     # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
                     # without using our gates, so we need to go through READY again
                     if target is WellState.READY or target is WellState.EXTRACTABLE:
-                        self.future.post(group)
+                        self.post_futures()
                         # print(f"Already at {target}")
                         return False
-                if group.state is WellState.READY or target is WellState.READY:
-                    self.sequence = group.sequences[(group.state, target)]
-                else:
-                    self.sequence = list(group.sequences[(group.state, WellState.READY)])
-                    self.sequence += group.sequences[(WellState.READY, target)]
-                # print(f"Switching from {group.state} to {target}: {self.sequence}")
-                assert len(self.sequence) > 0
+                # if group.state is WellState.READY or target is WellState.READY:
+                #     self.sequence = group.sequences[(group.state, target)]
+                # else:
+                #     self.sequence = list(group.sequences[(group.state, WellState.READY)])
+                #     self.sequence += group.sequences[(WellState.READY, target)]
+                # # print(f"Switching from {group.state} to {target}: {self.sequence}")
+                # assert len(self.sequence) > 0
                 group.motion = self            
                 return None
 
@@ -476,27 +492,6 @@ class WellMotion:
         if guard is not None:
             while (next(guard)):
                 yield True
-        
-        # def well() -> Well:
-        #     assert len(self.well_gates) == 1
-        #     (wg,) = self.well_gates
-        #     loc = wg.loc
-        #     assert isinstance(loc, Well)
-        #     return loc
-        #
-        # if target is WellState.DISPENSED:
-        #     # First, we reserve the pad
-        #     w = well()
-        #     pad = w.exit_pad
-        #     while not pad.reserve():
-        #         yield True
-        #     # At this point, we know that no further fluid will be taken out.  We then, make sure that there's
-        #     # enough there for us and refill if not.
-        #     well_ready = w.ensure_content()
-        #
-        #     ...
-        # elif target is WellState.ABSORBED:
-        #     ...
                 
         # This needs to be done as a separate call, because we need to release 
         # the lock each time.
@@ -510,14 +505,11 @@ class WellMotion:
         # print(f"After loop ({val})")
         # assert last_yield != False
             
-        shared_pads = group.shared_pads
+        shared_pads = self.shared_pads
         states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
         gate_state = OnOff.OFF
         
-        last_step = self.sequence[-1]
-        
-        for step in self.sequence:
-            on_last_step = step is last_step
+        for on_last_step, step in group.transition_func(group.state, target):
             # We squirrel it away so that it can be used in try_adopt()
             self.on_last_step = on_last_step
             for pad_index in step:
@@ -528,7 +520,8 @@ class WellMotion:
                     # If any are, we just return and try again next time.
                     if self.target is WellState.DISPENSED:
                         for g in self.well_gates:
-                            w = g.loc
+                            assert(g.index == -1)
+                            w = g.well
                             assert isinstance(w, Well)
                             while not w.exit_pad.empty:
                                 yield True
@@ -569,17 +562,16 @@ class WellMotion:
             with group.lock:
                 group.motion = None
                 group.state = self.target
-                if self.post_result:
-                    self.future.post(group)
-        group.board.after_tick(cb)
+                self.post_futures()
+        self.board.after_tick(cb)
         yield False
 
             
                     
     
-class WellGroup(BoardComponent, OpScheduler['WellGroup']):
+class WellGroupDead(BoardComponent, OpScheduler['WellGroupDead']):
     name: Final[str]
-    shared_pads: Final[Sequence[WellPad]]
+    shared_states: Final[Sequence[State[OnOff]]]
     wells: list[Well]
     sequences: Final[WellOpSeqDict]
     
@@ -591,13 +583,11 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
     
     def __init__(self, name: str, 
                  board: Board,
-                 pads: Sequence[WellPad],
+                 states: Sequence[State[OnOff]],
                  sequences: WellOpSeqDict) -> None:
         BoardComponent.__init__(self, board)
         self.name = name
-        self.shared_pads = pads
-        for (index, pad) in enumerate(pads):
-            pad.set_location((self, index))
+        self.shared_states = states
         self.sequences = sequences
         self.wells = []
         
@@ -611,43 +601,6 @@ class WellGroup(BoardComponent, OpScheduler['WellGroup']):
     def add_well(self, well: Well) -> None:
         self.wells.append(well)
         
-    class TransitionTo(Operation['WellGroup','WellGroup']):
-        target: Final[WellState]
-        well: Final[Optional[Well]]
-        guard: Final[Optional[Iterator[bool]]]
-        
-        def __init__(self, target: WellState, *,
-                     well: Optional[Well] = None,
-                     guard: Optional[Iterator[bool]] = None
-                     ) -> None:
-            self.target = target
-            self.well = well
-            self.guard = guard
-            
-        def _schedule_for(self, group: WellGroup, *,
-                          mode: RunMode = RunMode.GATED, 
-                          after: Optional[DelayType] = None,
-                          post_result: bool = True,
-                          )-> Delayed[WellGroup]:
-            board = group.board
-            motion = WellMotion(group, self.target, post_result=post_result, guard=self.guard)
-            well = self.well
-            if well is not None:
-                motion.well_gates.add(well.gate)
-                target = self.target
-                # assert target is WellState.DISPENSED or target is WellState.ABSORBED, \
-                    # f"Well provided on transition to {target}"
-                motion.pad_states[well.exit_pad] = OnOff.ON if target is WellState.DISPENSED else OnOff.OFF
-            
-            def before_tick() -> Iterator[Optional[Ticks]]:
-                iterator = motion.iterator()
-                one_tick = 1*tick
-                while next(iterator):
-                    yield one_tick
-                yield None
-            iterator = before_tick()
-            board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
-            return motion.future
     
 PadBounds = Sequence[tuple[float,float]]
 
@@ -668,14 +621,49 @@ class WellShape:
         self.reagent_id_circle_radius = reagent_id_circle_radius
         
 WellVolumeSpec = Union[Volume, Callable[[], Volume]]
+
+TransitionStep = tuple[bool,WellOpStep]
+TransitionFunc = Callable[[WellState,WellState], Iterator[TransitionStep]]
+
+def transitions_from(sd: WellOpSeqDict) -> TransitionFunc:
+    def fn(start: WellState, end: WellState) -> Iterator[TransitionStep]:
+        ready = WellState.READY
+        if start is ready or end is ready:
+            seq = sd[(start, end)]
+        else:
+            seq = [*sd[(start, ready)], *sd[(ready, end)]]
+        last_step = len(seq) - 1
+        return ((i==last_step, s) for i,s in enumerate(seq))
+    return fn
+        
+
+class DispenseGroup:
+    key: Final[Any]
+    lock: Final[Lock]
+    motion: Optional[WellMotion]
+    state: WellState
+    
+    def __init__(self, key: Any, transition_func: TransitionFunc) -> None:
+        self.key = key
+        self.transition_func: Final[TransitionFunc] = transition_func
+        self.lock = Lock()
+        self.motion = None
+        self.state = WellState.EXTRACTABLE
+        
+    def __repr__(self) -> str:
+        if isinstance(self.key, Well):
+            return str(self.key)
+        return f"DispenseGroup({self.key})"
+    
     
 class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     number: Final[int]
-    group: Final[WellGroup]
+    group: Final[DispenseGroup]
     capacity: Final[Volume]
     dispensed_volume: Final[Volume]
     is_voidable: Final[bool]
     exit_pad: Final[Pad]
+    shared_pads: Final[Sequence[WellPad]]
     gate: Final[WellPad]
     exit_dir: Final[Dir]
     gate_reserved: bool = False
@@ -795,9 +783,10 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def __init__(self, *,
                  board: Board,
                  number: int,
-                 group: WellGroup,
+                 group: Union[DispenseGroup, TransitionFunc],
                  exit_pad: Pad,
                  gate: WellPad,
+                 shared_pads: Sequence[WellPad],
                  capacity: Volume,
                  dispensed_volume: Volume,
                  exit_dir: Dir,
@@ -806,9 +795,12 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                  ) -> None:
         BoardComponent.__init__(self, board)
         self.number = number
+        if not isinstance(group, DispenseGroup):
+            group = DispenseGroup(self, group)
         self.group = group
         self.exit_pad = exit_pad
         self.gate = gate
+        self.shared_pads = shared_pads
         self.capacity = capacity
         self.dispensed_volume = dispensed_volume
         self.exit_dir = exit_dir
@@ -818,10 +810,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         self._liquid_change_callbacks = ChangeCallbackList()
         
 
-        group.add_well(self)
         assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
         exit_pad._well = self
-        gate.set_location(self)
+        gate.set_location(self, -1)
+        for i,wp in enumerate(shared_pads):
+            wp.set_location(self, i)
         
     def prepare_for_add(self) -> None: 
         pass
@@ -1000,6 +993,38 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         self._liquid_change_callbacks.add(cb, key=key)
         
         
+    class TransitionTo(Operation['Well','Well']):
+        target: Final[WellState]
+        guard: Final[Optional[Iterator[bool]]]
+        
+        def __init__(self, target: WellState, *,
+                     guard: Optional[Iterator[bool]] = None
+                     ) -> None:
+            self.target = target
+            self.guard = guard
+            
+        def _schedule_for(self, well: Well, *,
+                          mode: RunMode = RunMode.GATED, 
+                          after: Optional[DelayType] = None,
+                          post_result: bool = True,
+                          )-> Delayed[Well]:
+            board = well.board
+            motion = WellMotion(well, self.target, post_result=post_result, guard=self.guard)
+            target = self.target
+            # assert target is WellState.DISPENSED or target is WellState.ABSORBED, \
+                # f"Well provided on transition to {target}"
+            motion.pad_states[well.exit_pad] = OnOff.ON if target is WellState.DISPENSED else OnOff.OFF
+            
+            def before_tick() -> Iterator[Optional[Ticks]]:
+                iterator = motion.iterator()
+                one_tick = 1*tick
+                while next(iterator):
+                    yield one_tick
+                yield None
+            iterator = before_tick()
+            board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
+            return motion.initial_future
+
 class Magnet(BinaryComponent['Magnet']): 
     pads: Final[Sequence[Pad]]
     
@@ -1464,7 +1489,7 @@ class Board(SystemComponent):
     magnets: Final[Sequence[Magnet]]
     heaters: Final[Sequence[Heater]]
     extraction_points: Final[Sequence[ExtractionPoint]]
-    _well_groups: Mapping[str, WellGroup]
+    # _well_groups: Mapping[str, WellGroup]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
     _drop_size: Volume
@@ -1537,13 +1562,13 @@ class Board(SystemComponent):
     def min_column(self) -> int:
         return min(coord.x for coord in self.pads)
     
-    @property
-    def well_groups(self) -> Mapping[str, WellGroup]:
-        cache: Optional[Mapping[str, WellGroup]] = getattr(self, '_well_groups', None)
-        if cache is None:
-            cache = {well.group.name: well.group for well in self.wells}
-            self._well_groups = cache
-        return cache
+    # @property
+    # def well_groups(self) -> Mapping[str, WellGroup]:
+    #     cache: Optional[Mapping[str, WellGroup]] = getattr(self, '_well_groups', None)
+    #     if cache is None:
+    #         cache = {well.group.name: well.group for well in self.wells}
+    #         self._well_groups = cache
+    #     return cache
     
     @property
     def drop_size(self) -> Volume:
