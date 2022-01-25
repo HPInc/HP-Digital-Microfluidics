@@ -6,7 +6,7 @@ from typing import Mapping, Final, Optional
 from serial import Serial
 
 from devices import joey
-from mpam.types import OnOff, XYCoord
+from mpam.types import OnOff, State, DummyState
 
 
 _pins: Mapping[str, int] = {
@@ -125,13 +125,13 @@ class OpenDropVersion(Enum):
     V40 = auto()
     V41 = auto()
 
-class Electrode:
+class Electrode(State[OnOff]):
     byte_index: Final[int]
     bit_index: Final[int]
 
     array: Final[bytearray]
     
-    def set_state(self, val: OnOff) -> None:
+    def realize_state(self, val: OnOff) -> None:
         # assert self.index < len(self.array), f"{self.index} not in {len(self.array)}-byte array"
         
         bit = 1 << self.bit_index
@@ -144,34 +144,11 @@ class Electrode:
         # self.array[self.index] = 1 if val else 0
     
     def __init__(self, byte_index: int, bit_index: int, a: bytearray) -> None:
+        super().__init__(initial_state=OnOff.OFF)
         self.byte_index = byte_index
         self.bit_index = bit_index
         self.array = a
         
-    
-class Pad(joey.Pad):
-    electrode: Final[Optional[Electrode]]
-
-    def __init__(self, electrode: Optional[Electrode], loc: XYCoord, board: Board, *, exists: bool) -> None:
-        super().__init__(loc, board, exists = exists and electrode is not None)
-        self.electrode = electrode
-        if electrode is None:
-            self.set_device_state = lambda _: None
-        else:
-            real_e = electrode
-            self.set_device_state = lambda v: real_e.set_state(v)
-            
-class WellPad(joey.WellPad):
-    electrode: Final[Optional[Electrode]]
-
-    def __init__(self, electrode: Optional[Electrode], board: Board) -> None:
-        super().__init__(board, live=electrode is not None)
-        self.electrode = electrode
-        if electrode is None:
-            self.set_device_state = lambda _: None
-        else:
-            real_e = electrode
-            self.set_device_state = lambda v: real_e.set_state(v)
 
 class Board(joey.Board):
     _device: Final[Optional[str]]
@@ -196,23 +173,20 @@ class Board(joey.Board):
         # print(f"  pin: {pin}, (x,y): ({x},{y}), index: {index}")
         return Electrode(byte_index, bit_index, self._states)
     
-    def _make_well_pad(self, group_name: str, num: int) -> WellPad:
+    def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
         cell = _shared_pad_cells.get((group_name, num))  
         # print(f"-- shared: {group_name} {num} -- {cell}")
-        return WellPad(self._electrode(cell), board=self)
+        return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
 
-    def _make_well_gate(self, well: int) -> WellPad:
+    def _well_gate_state(self, well: int) -> State[OnOff]:
         cell = _well_gate_cells.get(well, None)
         # print(f"-- gate: {well} -- {cell}")
-        return WellPad(self._electrode(cell), board=self)
+        return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
-    def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
+    def _pad_state(self, x: int, y: int) -> State[OnOff]:
         cell = f"{ord('B')+y:c}{25-x:02d}"
         # print(f"({x}, {y}): {cell}")
-        return Pad(self._electrode(cell), XYCoord(x, y), self, exists=exists)
-    
-    
-    
+        return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
     def __init__(self, device: Optional[str], od_version: OpenDropVersion) -> None:
         if od_version is OpenDropVersion.V40:

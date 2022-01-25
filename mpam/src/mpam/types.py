@@ -1563,3 +1563,36 @@ class AsyncFunctionSerializer:
 class XferDir(Enum):
     FILL = auto()
     EMPTY = auto()
+    
+class State(Generic[T], ABC):
+    _state: T
+    
+    @property
+    def current_state(self) -> T:
+        return self._state
+    
+    @current_state.setter
+    def current_state(self, val: T) -> None:
+        old = self._state
+        self._state = val
+        self.state_change_callbacks.process(old, val)
+    
+    
+    def __init__(self, *, initial_state: T) -> None:
+        self._state = initial_state
+        self.state_change_callbacks: Final[ChangeCallbackList[T]] = ChangeCallbackList[T]()
+        
+    @abstractmethod
+    def realize_state(self, new_state: T) -> None: ... # @UnusedVariable
+    
+    def on_state_change(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
+        self.state_change_callbacks.add(cb, key=key)
+        
+    
+class DummyState(State[T]):
+    def realize_state(self, new_state:T)->None:
+        pass
+    
+    
+    
+    ...

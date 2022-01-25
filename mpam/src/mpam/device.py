@@ -21,7 +21,7 @@ from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
-    Callback, MixResult
+    Callback, MixResult, State
 from quantities.SI import sec, ms
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
@@ -59,33 +59,28 @@ class BoardComponent:
 BC = TypeVar('BC', bound='BinaryComponent')
         
 class BinaryComponent(BoardComponent, OpScheduler[BC]):
-    _state: OnOff
+    _state: Final[State[OnOff]]
     broken: bool
     live: bool
-    state_change_callbacks: Final[ChangeCallbackList[OnOff]]
     
     def __init__(self, board: Board, *,
-                 initial_state: OnOff = OnOff.OFF,
+                 state: State[OnOff],
                  live: bool = True) -> None:
         super().__init__(board)
-        self._state = initial_state
+        self._state = state
         self.broken = False
         self.live = live
-        self.set_device_state: Callable[[OnOff], None]
-        self.state_change_callbacks = ChangeCallbackList[OnOff]()
         
     @property
     def current_state(self) -> OnOff:
-        return self._state
+        return self._state.current_state
 
     @current_state.setter
     def current_state(self, val: OnOff) -> None:
-        old = self._state
-        self._state = val
-        self.state_change_callbacks.process(old, val)
+        self._state.current_state = val
         
     def on_state_change(self, cb: ChangeCallback[OnOff], *, key: Optional[Hashable] = None):
-        self.state_change_callbacks.add(cb, key=key)
+        self._state.on_state_change(cb, key=key)
         
     class ModifyState(Operation[BC, OnOff]):
         def _schedule_for(self, obj: BC, *,
@@ -98,14 +93,14 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                 raise PadBrokenError
             mod = self.mod
             future = Delayed[OnOff]()
-            setter = obj.set_device_state
+            # state_obj = obj._state
             
             def cb() -> Optional[Callback]:
                 old = obj.current_state
                 new = mod(old)
                 # print(f"Setting {obj} to {new}")
-                setter(new)
-                obj.current_state= new
+                obj._state.realize_state(new)
+                obj.current_state = new
                 # print(f"Back from setting {obj} val = {obj._state}")
                 finish: Optional[Callback] = None if not post_result else (lambda : future.post(old))
                 return finish
@@ -254,8 +249,9 @@ class Pad(BinaryComponent['Pad']):
             self._between_pads = bps
         return bps
     
-    def __init__(self, loc: XYCoord, board: Board, *, exists: bool = True) -> None:
-        BinaryComponent.__init__(self, board, initial_state=OnOff.OFF, live=exists)
+    def __init__(self, loc: XYCoord, board: Board, 
+                 state: State[OnOff], *, exists: bool = True) -> None:
+        BinaryComponent.__init__(self, board, state=state, live=exists)
         self.location = loc
         self.exists = exists
         # self.broken = False
@@ -340,9 +336,9 @@ class WellPad(BinaryComponent['WellPad']):
         return self.current_state is OnOff.ON
         
     def __init__(self, board: Board, 
-                 initial_state: OnOff = OnOff.OFF, *, 
+                 state: State[OnOff], *, 
                  live: bool = True) -> None:
-        BinaryComponent.__init__(self, board, initial_state=initial_state, live=live)
+        BinaryComponent.__init__(self, board, state=state, live=live)
         # print(f"{self}.live = {self.live}")
         
     def __repr__(self) -> str:
@@ -1007,8 +1003,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 class Magnet(BinaryComponent['Magnet']): 
     pads: Final[Sequence[Pad]]
     
-    def __init__(self, board: Board, *, pads: Sequence[Pad]) -> None:
-        BinaryComponent.__init__(self, board)
+    def __init__(self, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
+        BinaryComponent.__init__(self, board, state=state)
         self.pads = pads
         for pad in pads:
             pad._magnet = self

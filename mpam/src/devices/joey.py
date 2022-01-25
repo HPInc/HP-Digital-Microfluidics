@@ -6,12 +6,13 @@ from typing import Optional, Sequence, ClassVar, Final
 
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellGroup, WellOpSeqDict, WellState, PadBounds, \
-    HeatingMode, WellShape, System
+    HeatingMode, WellShape, System, WellPad, Pad, Magnet
 import mpam.device as device
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State,\
+    OnOff, DummyState
 
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.core import DerivedDim
@@ -20,24 +21,10 @@ from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import Timestamp, time_now
 
 
-class Pad(device.Pad):
-    def __init__(self, loc: XYCoord, board: Board, *, exists: bool):
-        super().__init__(loc, board, exists=exists)
-        self.set_device_state = lambda _: None
-            
-class Magnet(device.Magnet):
-    def __init__(self, board: Board, *, pads: Sequence[device.Pad]):
-        super().__init__(board, pads=pads)
-        self.set_device_state = lambda _: None
             
 class HeatingRate(DerivedDim['HeatingRate']):
     derived = Temperature.dim()/Time.dim()
     
-class WellPad(device.WellPad):
-    def __init__(self, board: Board, *, live: bool = True):
-        super().__init__(board, live=live)
-        self.set_device_state = lambda _: None
-        
 class Well(device.Well):
     _pipettor: Final[Pipettor]
     
@@ -46,7 +33,7 @@ class Well(device.Well):
                  number:int, 
                  group:WellGroup, 
                  exit_pad:device.Pad, 
-                 gate:WellPad, 
+                 gate:WellPad,
                  capacity:Volume, 
                  dispensed_volume:Volume, 
                  exit_dir:Dir,
@@ -152,8 +139,18 @@ class Board(device.Board):
     thermocycler: Final[Thermocycler]
     pipettor: Final[Pipettor]
     
-    def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
-        return Pad(XYCoord(x, y), self, exists=exists)
+    def _pad_state(self, x: int, y: int) -> State[OnOff]: # @UnusedVariable
+        return DummyState(initial_state=OnOff.OFF)
+    
+    def _well_gate_state(self, well: int) -> State[OnOff]: # @UnusedVariable
+        return DummyState(initial_state=OnOff.OFF)
+    
+    def _well_pad_state(self, group_name: str, well: int) -> State[OnOff]: # @UnusedVariable
+        return DummyState(initial_state=OnOff.OFF)
+    
+    def _magnet_state(self) -> State[OnOff]:
+        return DummyState(initial_state=OnOff.OFF)
+    
     
     def _rectangle(self, x: float, y: float, outdir: int, width: float, height: float) -> PadBounds:
         return ((x,y), (x+width*outdir,y), (x+width*outdir, y+height), (x, y+height))
@@ -165,9 +162,6 @@ class Board(device.Board):
         y3 = y+2.25
         y4 = y+4
         return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4)) 
-    
-    def _make_well_gate(self, well: int) -> WellPad:  # @UnusedVariable
-        return WellPad(board=self)
     
     def _well(self, num: int, group: WellGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor):
         epx = exit_pad.location.x
@@ -195,7 +189,7 @@ class Board(device.Board):
                     board=self,
                     group=group,
                     exit_pad=exit_pad,
-                    gate=self._make_well_gate(num),
+                    gate=WellPad(self, state=self._well_gate_state(num)),
                     capacity=54.25*uL,
                     # dispensed_volume=0.5*uL,
                     dispensed_volume=1*uL,
@@ -208,9 +202,6 @@ class Board(device.Board):
                     #                      self._big_pad_bounds(exit_pad.location))
                     )
         
-    def _make_well_pad(self, group_name: str, num: int) -> WellPad:  # @UnusedVariable
-        return WellPad(board=self)
-    
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None) -> None:
         pad_dict = dict[XYCoord, Pad]()
@@ -232,7 +223,7 @@ class Board(device.Board):
             for y in range(0,19):
                 loc = XYCoord(x, y)
                 exists = loc not in dead_region
-                pad_dict[loc] = self._make_pad(x, y, exists=exists)
+                pad_dict[loc] = Pad(loc, self, exists=exists, state=self._pad_state(x, y))
                 
         sequences: WellOpSeqDict = {
             (WellState.EXTRACTABLE, WellState.READY): ((7,6), (7,3,4,5), (7,4,0,1,2)),
@@ -244,10 +235,10 @@ class Board(device.Board):
             }
         
         left_group = WellGroup("left", self, 
-                               tuple(self._make_well_pad('left', n) for n in range(9)),
+                               tuple(WellPad(self, state=self._well_pad_state('left', n)) for n in range(9)),
                                sequences)
         right_group = WellGroup("right", self,
-                                tuple(self._make_well_pad('right', n) for n in range(9)),
+                                tuple(WellPad(self, state=self._well_pad_state('right', n)) for n in range(9)),
                                 sequences)
         
         if pipettor is None:
@@ -265,7 +256,8 @@ class Board(device.Board):
             self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor),
             ))
         
-        magnets.append(Magnet(self, pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
+        magnets.append(Magnet(self, state=self._magnet_state(), 
+                              pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
         
         heaters.append(Heater(0, self, regions=[GridRegion(XYCoord(0,12),3,7),
                                                 GridRegion(XYCoord(0,0),3,7)]))
