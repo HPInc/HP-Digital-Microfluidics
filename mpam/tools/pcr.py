@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from argparse import Namespace, _ArgumentGroup, ArgumentParser, \
@@ -7,7 +8,7 @@ from random import sample
 import random
 from re import Pattern
 import re
-from typing import Sequence, Union, Optional, Final, NamedTuple
+from typing import Sequence, Union, Optional, Final, NamedTuple, Callable
 
 from devices import joey
 from erk.basic import not_None
@@ -35,37 +36,37 @@ from mpam.pipettor import Pipettor
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
     if isinstance(loc, Drop):
-        loc = loc.pad
+        loc = loc.on_board_pad
     x,y = loc.location.coords
     return x,y
 
 def right_then_down(loc: Union[Drop,Pad]) -> tuple[int, int]:
     if isinstance(loc, Drop):
-        loc = loc.pad
+        loc = loc.on_board_pad
     x,y = loc.location.coords
     return x,-y
 
 def left_then_down(loc: Union[Drop,Pad]) -> tuple[int, int]:
     if isinstance(loc, Drop):
-        loc = loc.pad
+        loc = loc.on_board_pad
     x,y = loc.location.coords
     return -x,-y
 
 def up_then_right(loc: Union[Drop,Pad]) -> tuple[int, int]:
     if isinstance(loc, Drop):
-        loc = loc.pad
+        loc = loc.on_board_pad
     x,y = loc.location.coords
     return y,x
 
 def down_then_right(loc: Union[Drop,Pad]) -> tuple[int, int]:
     if isinstance(loc, Drop):
-        loc = loc.pad
+        loc = loc.on_board_pad
     x,y = loc.location.coords
     return -y,x
 
 def down_then_left(loc: Union[Drop,Pad]) -> tuple[int, int]:
     if isinstance(loc, Drop):
-        loc = loc.pad
+        loc = loc.on_board_pad
     x,y = loc.location.coords
     return -y,-x
 
@@ -722,6 +723,11 @@ class CombSynth(PCRTask):
         
         assert len(mixing) == 6
         
+        def update_drop(comb: CombSynth.Combination) -> Callable[[Drop], None]:
+            def do_update(drop: Drop) -> None:
+                comb.lead_drop = drop
+            return do_update
+        
         c1,c2,c3,c4,c5,c6 = mixing
         # We'll get c6 out out of the way first so it doesn't block the others.
         if c6 is not None:
@@ -745,16 +751,16 @@ class CombSynth(PCRTask):
             passed_by = Barrier[Drop](n)
             for pad, frag in zip(pads, c1.fragments):
                 if pad is mix.lead_drop_pad:
-                    def remember_lead_drop(drop: Drop) -> None:
-                        assert c1 is not None
-                        c1.lead_drop = drop
+                    # def remember_lead_drop(drop: Drop) -> None:
+                    #     assert c1 is not None
+                    #     c1.lead_drop = drop
                     paths.append(Path.teleport_into(ep, reagent=frag)
                                     .to_pad(pad)
                                     .start(mix.as_process(n_shuttles=n_shuttles, result=result))
-                                    .then_process(remember_lead_drop)
                                     .to_pad(ep.pad)
                                     .reach(passed_by)
                                     .to_row(16)
+                                    .then_process(update_drop(c1))
                                     .extended(self.mix_to_tcycle(0)))
                 else:
                     paths.append(self.waste_drop((ep, frag), pad.row,
@@ -778,6 +784,7 @@ class CombSynth(PCRTask):
                                 .to_pad((18,12))
                                 .start(self.phase_2_mix.as_process(n_shuttles=n_shuttles,
                                                                    result=result))
+                                .then_process(update_drop(c2))
                                 .extended(self.mix_to_tcycle(2))
                                 ))                          
 
@@ -812,6 +819,7 @@ class CombSynth(PCRTask):
             paths.append((c4.lead_drop,
                           Path.start(self.phase_4_mix.as_process(n_shuttles=n_shuttles, result=rmixed))
                                 .start(self.phase_4_dilution.as_process(n_shuttles=n_shuttles, result=result))
+                                .then_process(update_drop(c4))
                                 .extended(self.mix_to_tcycle(14))
                                 ))   
             
@@ -829,7 +837,8 @@ class CombSynth(PCRTask):
                                          Path.join()
                                             .reach(mix_done, wait = False)
                                             .to_row(8)
-                                            .to_col(15).to_row(4)))
+                                            .to_col(15).to_row(5)
+                                            .to_col(14)))
 
         if c3 is not None:
             result = c3.my_reagent("R3")
@@ -837,6 +846,7 @@ class CombSynth(PCRTask):
             paths.append((c3.lead_drop,
                           Path.start(self.phase_3_dilution.as_process(n_shuttles=n_shuttles,
                                                                         result=result))
+                                .then_process(update_drop(c3))
                                 .extended(self.mix_to_tcycle(4))
                                 ))   
             
@@ -857,6 +867,7 @@ class CombSynth(PCRTask):
             paths.append((c5.lead_drop,
                           Path.start(self.phase_5_mix.as_process(n_shuttles=n_shuttles,
                                                                  result=result))
+                                .then_process(update_drop(c5))
                                 .extended(self.mix_to_tcycle(16))
                                 ))   
             paths.append(self.waste_drop((self.phase_5_ep, self.pf), 9,
@@ -897,9 +908,12 @@ class CombSynth(PCRTask):
 
         in_pos = Barrier[Drop](len(tuple(x for x in tcycling if x is not None)))
         c1,c2,c3,c4,c5 = tcycling
+        # print(f"Tcycle channels: {channels_used}")
         if c1 is not None:
+            # print(f"Starting tcycle with {c1.lead_drop}")
             paths.append((c1.lead_drop, to_mix(17,10).reach(in_pos).to_col(16)))
         if c2 is not None:
+            # print(f"Joining tcycle with {c2.lead_drop}")
             paths.append((c2.lead_drop, to_mix(17,0).reach(in_pos).to_col(16)))
         if c3 is not None:
             paths.append((c3.lead_drop, to_mix(18,4).reach(in_pos)))
@@ -1024,6 +1038,7 @@ class PCRDriver(Exerciser):
                                         group: _ArgumentGroup, 
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
+        super().add_device_specific_common_args(group, parser)
         default_cycles = 4
         group.add_argument('--cycles', type=int, metavar='INT', default=default_cycles,
                            help=f'''

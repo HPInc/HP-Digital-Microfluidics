@@ -830,6 +830,8 @@ class Barrier(Trigger, Generic[T]):
                 if future is not None:
                     self.wait(val, future)
                 self.waiting_for -= 1
+                # if self.name is not None:
+                    # print(f"-- Now {self}")
                 return self.at_barrier-1
             
     def pause(self, val: T, future: Delayed[T]) -> int:
@@ -1250,7 +1252,7 @@ class Liquid:
         return f"{'~' if self.inexact else ''}{self.volume.in_units(uL):g} of {self.reagent}"
         
     def __iadd__(self, rhs: Volume) -> Liquid:
-        self.volume = max(self.volume+rhs, 0*ml)
+        self.volume = min(self.volume+rhs, 0*ml)
         return self
     
     def __isub__(self, rhs: Volume) -> Liquid:

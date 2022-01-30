@@ -6,17 +6,18 @@ from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
     NamedTuple, Iterable
 
 from mpam.device import Pad, Board
-from mpam.drop import Drop, DropStatus
+from mpam.drop import Drop
 from mpam.types import Delayed, Callback, Ticks, tick, Operation, RunMode, \
     DelayType, Reagent, waste_reagent, OnOff
 from enum import Enum
 from _collections import defaultdict
 import sys
+from erk.basic import not_None
 
 
     
 
-FinishFunction = Callable[[MutableMapping[Drop, Delayed[Drop]]], bool]
+FinishFunction = Callable[[MutableMapping[Pad, Delayed[Drop]]], bool]
 
 class MultiDropProcessType(ABC):
     n_drops: Final[int]
@@ -28,7 +29,7 @@ class MultiDropProcessType(ABC):
     # be called after the last tick.  This function returns True if the passed-in futures should 
     # be posted.
     @abstractmethod
-    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
+    def iterator(self, pads: tuple[Pad, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
         ...
         
     # # returns True if the futures should be posted.
@@ -47,7 +48,7 @@ class MultiDropProcessType(ABC):
     
 class MultiDropProcess:
     process_type: Final[MultiDropProcessType]
-    futures: Final[dict[Drop, Delayed[Drop]]]
+    futures: Final[dict[Pad, Delayed[Drop]]]
     drops: Final[list[Optional[Drop]]]
     
     global_lock: Final[Lock] = Lock()
@@ -57,7 +58,7 @@ class MultiDropProcess:
                  lead_future: Delayed[Drop]
                  ) -> None:
         self.process_type = process_type
-        self.futures = {lead_drop: lead_future}
+        self.futures = {lead_drop.on_board_pad: lead_future}
         self.drops = [None] * process_type.n_drops
         self.drops[0] = lead_drop
         
@@ -65,7 +66,7 @@ class MultiDropProcess:
         drops = self.drops
         lead_drop = drops[0]
         assert lead_drop is not None
-        secondary_pads = self.process_type.secondary_pads(lead_drop.pad)
+        secondary_pads = self.process_type.secondary_pads(lead_drop.on_board_pad)
         futures = self.futures
         pending_drops = 0
         lock = self.global_lock
@@ -76,7 +77,7 @@ class MultiDropProcess:
             def on_join(drop: Drop, future: Delayed[Drop]) -> Optional[Callback]:
                 nonlocal pending_drops
                 drops[i+1] = drop
-                futures[drop] = future
+                futures[drop.on_board_pad] = future
                 if pending_drops == 1:
                     return lambda: self.run()
                 else:
@@ -94,7 +95,7 @@ class MultiDropProcess:
                     setattr(p, "_waiting_to_join", None)
                     d = p.drop
                     assert d is not None
-                    futures[d] = future
+                    futures[p] = future
                     drops[i+1] = d
             ready = (pending_drops == 0)
         if ready:
@@ -119,11 +120,9 @@ class MultiDropProcess:
     def iterator(self, board: Board, drops: Sequence[Drop]) -> Iterator[Optional[Ticks]]:
         process_type = self.process_type
         futures = self.futures
-        def checked(d: Optional[Drop]) -> Drop:
-            assert d is not None
-            return d
-        drops = tuple(checked(d) for d in drops)
-        i = process_type.iterator(drops = drops)
+        pads = tuple(drop.on_board_pad for drop in drops)
+        # drops = tuple(not_None(d) for d in drops)
+        i = process_type.iterator(pads=pads)
         one_tick = 1*tick
         while True:
             finish = next(i)
@@ -133,7 +132,9 @@ class MultiDropProcess:
         real_finish = finish
         def do_post() -> None:
             if real_finish(futures):
-                for drop, future in futures.items():
+                for pad, future in futures.items():
+                    drop = not_None(pad.drop, desc=lambda: f"{pad}.drop")
+                    # print(f"Finished with {drop} at {pad}.")
                     future.post(drop)
         board.after_tick(do_post)
         yield None
@@ -147,7 +148,7 @@ class MultiDropProcess:
         drops = tuple(checked(d) for d in self.drops)
         lead_drop = drops[0]
         assert lead_drop is not None
-        board = lead_drop.pad.board
+        board = lead_drop.on_board_pad.board
         iterator = self.iterator(board, drops)
         
         # We're inside a before_tick, so we run the first step here.  Then we install
@@ -171,7 +172,7 @@ class StartProcess(Operation[Drop,Drop]):
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[Drop]:
-        board = drop.pad.board
+        board = drop.on_board_pad.board
         future = Delayed[Drop]()
             
         assert mode.is_gated
@@ -179,6 +180,7 @@ class StartProcess(Operation[Drop,Drop]):
             # If all the other drops are waiting, this will install a callback on the next tick and then
             # call it immediately to do the first step.  Otherwise, that will happen when the last 
             # drop shows up.
+            # print(f"Starting process with {drop}: {self.process_type}")
             self.process_type.start(drop, future)
         board.before_tick(before_tick, delta=mode.gated_delay(after))
         return future
@@ -193,11 +195,12 @@ class JoinProcess(Operation[Drop,Drop]):
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[Drop]:
-        board = drop.pad.board
+        board = drop.on_board_pad.board
         future = Delayed[Drop]()
             
         assert mode.is_gated
         def before_tick() -> None:
+            # print(f"Joining process with {drop}")
             MultiDropProcess.join(drop, future)
         board.before_tick(before_tick, delta=mode.gated_delay(after))
         return future
@@ -206,44 +209,46 @@ class PairwiseMix(NamedTuple):
     drop1_index: int
     drop2_index: int
     
-    def merge(self, drops: tuple[Drop,...]) -> Delayed[OnOff]:
+    def merge(self, pads: tuple[Pad,...]) -> Delayed[OnOff]:
         # print(f"Merging {[d for d in drops]}")
-        drop1 = drops[self.drop1_index]
-        drop2 = drops[self.drop2_index]
-        pad1 = drop1.pad
-        pad2 = drop2.pad
-        middle = pad1.between_pads[pad2]
-        l1 = drop1.liquid
-        l2 = drop2.liquid
-        def update(_) -> None:
-            drop2.status = DropStatus.IN_MIX
-            l1.mix_in(l2)
-            pad2.drop = None
-            drop1.pad = middle
-            # print(f"Merged {[d for d in drops]}")
-            
-        pad1.schedule(Pad.TurnOff, post_result = False)
-        pad2.schedule(Pad.TurnOff, post_result = False)
-        return middle.schedule(Pad.TurnOn).then_call(update)
-        
-    def split(self, drops: tuple[Drop,...], pads: tuple[Pad,...]) -> Delayed[OnOff]:
-        # print(f"Splitting {pads} ({[d for d in drops]})")
-        drop1 = drops[self.drop1_index]
-        drop2 = drops[self.drop2_index]
+        # drop1 = drops[self.drop1_index]
+        # drop2 = drops[self.drop2_index]
+        # pad1 = drop1.on_board_pad
+        # pad2 = drop2.on_board_pad
         pad1 = pads[self.drop1_index]
         pad2 = pads[self.drop2_index]
         middle = pad1.between_pads[pad2]
-        l1 = drop1.liquid
-        l2 = drop2.liquid
-        def update(_) -> None:
-            l1.split_to(l2)
-            drop2.status = DropStatus.ON_BOARD
-            drop1.pad = pad1
-            pad2.drop = drop2
-            # print(f"Split {pads} ({[d for d in drops]})")
+        # l1 = drop1.liquid
+        # l2 = drop2.liquid
+        # def update(_) -> None:
+        #     drop2.status = DropStatus.IN_MIX
+        #     l1.mix_in(l2)
+        #     pad2.drop = None
+        #     drop1.pad = middle
+        #     # print(f"Merged {[d for d in drops]}")
+            
+        pad1.schedule(Pad.TurnOff, post_result = False)
+        pad2.schedule(Pad.TurnOff, post_result = False)
+        return middle.schedule(Pad.TurnOn)   #.then_call(update)
+        
+    def split(self, pads: tuple[Pad,...]) -> Delayed[OnOff]:
+        # print(f"Splitting {pads} ({[d for d in drops]})")
+        # drop1 = drops[self.drop1_index]
+        # drop2 = drops[self.drop2_index]
+        pad1 = pads[self.drop1_index]
+        pad2 = pads[self.drop2_index]
+        middle = pad1.between_pads[pad2]
+        # l1 = drop1.liquid
+        # l2 = drop2.liquid
+        # def update(_) -> None:
+        #     l1.split_to(l2)
+        #     drop2.status = DropStatus.ON_BOARD
+        #     drop1.pad = pad1
+        #     pad2.drop = drop2
+        #     # print(f"Split {pads} ({[d for d in drops]})")
         pad1.schedule(Pad.TurnOn, post_result = False)
         pad2.schedule(Pad.TurnOn, post_result = False)
-        return middle.schedule(Pad.TurnOff).then_call(update)
+        return middle.schedule(Pad.TurnOff) #.then_call(update)
     
     
 PM = PairwiseMix
@@ -266,11 +271,11 @@ class MixSequence(NamedTuple):
     
     @classmethod
     def run_script(cls, mixes: Sequence[Sequence[PairwiseMix]],
-                   drops: tuple[Drop,...], 
+                   pads: tuple[Pad,...], 
                    *, 
                    n_shuttles: int = 0) -> Iterator[bool]:
         last_step = len(mixes)-1
-        pads = tuple(d.pad for d in drops)
+        # pads = tuple(d.on_board_pad for d in drops)
         # We reserve the pads to make sure that nobody walks closer while
         # we're in a merge. We don't have to worry about contention, because we're
         # already sitting on the pad.
@@ -279,10 +284,10 @@ class MixSequence(NamedTuple):
         for i, step in enumerate(mixes):
             for shuttle in range(n_shuttles+1):
                 for mix in step:
-                    mix.merge(drops)
+                    mix.merge(pads)
                 yield True
                 for mix in step:
-                    mix.split(drops, pads)
+                    mix.split(pads)
                 if i == last_step and shuttle == n_shuttles:
                     for pad in pads:
                         pad.reserved = False
@@ -292,8 +297,8 @@ class MixSequence(NamedTuple):
             
     
     
-    def iterator(self, drops: tuple[Drop, ...], n_shuttles: int) -> Iterator[bool]:
-        return self.run_script(self.steps, drops, n_shuttles=n_shuttles)
+    def iterator(self, pads: tuple[Pad, ...], n_shuttles: int) -> Iterator[bool]:
+        return self.run_script(self.steps, pads, n_shuttles=n_shuttles)
         # last_step = len(self.steps)-1
         # pads = tuple(d.pad for d in drops)
         # for i, step in enumerate(self.steps):
@@ -395,23 +400,23 @@ class DropCombinationProcessType(MultiDropProcessType):
                      if x!=0 or y!=0)
     
     # returns the finish function when done
-    def iterator(self, drops: tuple[Drop, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
-        i = self.mix_seq.iterator(drops, self.n_shuttles)
+    def iterator(self, pads: tuple[Pad, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
+        i = self.mix_seq.iterator(pads, self.n_shuttles)
         while next(i):
             yield None
         result = self.result
-        fully_mixed = { drops[i] for i in self.mix_seq.fully_mixed }
-        def finish(futures: MutableMapping[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
+        fully_mixed = { pads[i] for i in self.mix_seq.fully_mixed }
+        def finish(futures: MutableMapping[Pad, Delayed[Drop]]) -> bool:  # @UnusedVariable
             printed = False
-            for drop in drops:
-                if drop in fully_mixed:
+            for pad in pads:
+                if pad in fully_mixed:
                     if not printed:
                         # print(f"Result is {drop.reagent}")
                         printed = True
                     if result is not None:
-                        drop.reagent = result
+                        pad.checked_drop.reagent = result
                 else:
-                    drop.reagent = waste_reagent
+                    pad.checked_drop.reagent = waste_reagent
             return True
         yield finish
     

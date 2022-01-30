@@ -38,7 +38,7 @@ class ChannelEndpoint(NamedTuple):
             d = self.in_dir
         else:
             d = self.adjacent_step_dir
-        return not_None(drop.pad.neighbor(d))
+        return not_None(drop.on_board_pad.neighbor(d))
     
 
 Channel = tuple[ChannelEndpoint, ChannelEndpoint]
@@ -110,24 +110,34 @@ class HeaterState:
                 future.then_call(update)
         return val_future
      
-class BoundChannel(NamedTuple):
+class BoundChannel:
     drop: Drop
-    channel: Channel
+    channel: Final[Channel]
+    
+    def __init__(self, drop: Drop, channel: Channel) -> None:
+        self.drop = drop
+        self.channel = channel
+        
+    def done_fn(self, rendezvous: Rendezvous) -> Callable[[Drop], None]:
+        def fn(drop: Drop) -> None:
+            self.drop = drop
+            rendezvous.reached()
+        return fn
     
     def step_in(self, end: ChannelEnd, rendezvous: Rendezvous) -> None:
         ep = self.channel[end]
         ep.in_path \
-            .then_process(lambda _: rendezvous.reached()) \
+            .then_process(self.done_fn(rendezvous)) \
             .schedule_for(self.drop)
     def step_out(self, end: ChannelEnd, rendezvous: Rendezvous) -> None:
         ep = self.channel[end]
         ep.out_path \
-            .then_process(lambda _: rendezvous.reached()) \
+            .then_process(self.done_fn(rendezvous)) \
             .schedule_for(self.drop)
     def switch_ends(self, end: ChannelEnd, rendezvous: Rendezvous) -> None:
         ep = self.channel[end]
         ep.switch_path \
-            .then_process(lambda _: rendezvous.reached()) \
+            .then_process(self.done_fn(rendezvous)) \
             .schedule_for(self.drop)
             
     def step_target(self, end: ChannelEnd, i: int, shuttle_dir: ShuttleDir) -> Pad:
@@ -188,6 +198,7 @@ class ThermocycleProcessType(MultiDropProcessType):
         self.phases = phases
         self.n_iterations = n_iterations
         self.shuttle_dir = shuttle_dir
+        # print(f"Thermocycling over {channels}")
         
     def find_lead(self, lead_drop_pad: Pad) -> FindLeadResult:
         for index,c in enumerate(self.thermocycler.channels[i] for i in self.channels):
@@ -211,7 +222,7 @@ class ThermocycleProcessType(MultiDropProcessType):
     # be called after the last tick.  This function returns True if the passed-in futures should 
     # be posted.
    
-    def iterator(self, drops: tuple[Drop, ...])->Iterator[Optional[FinishFunction]]:
+    def iterator(self, pads: tuple[Pad, ...])->Iterator[Optional[FinishFunction]]:
         tc = self.thermocycler
         shuttle_dir = self.shuttle_dir
         channels_used = set(self.channels)
@@ -219,10 +230,10 @@ class ThermocycleProcessType(MultiDropProcessType):
         channels = tuple(tc.channels[i] for i in channels_used)
         # maybe_drops = tuple(drops[i] if i in channels_used else None for )
 
-        lead_drop = drops[0]
-        board = lead_drop.pad.board
+        lead_pad = pads[0]
+        board = lead_pad.board
         system = board.in_system()
-        flr = self.find_lead(lead_drop.pad)
+        flr = self.find_lead(lead_pad)
         this_end: ChannelEnd = flr.end
         other_end: ChannelEnd = 1 if this_end == 0 else 0
         
@@ -232,8 +243,8 @@ class ThermocycleProcessType(MultiDropProcessType):
                                           for i in set(c[other_end].heater_no for c in channels)))
 
         mapping = { c[this_end].threshold: i for i,c in enumerate(channels) }
-        bound = tuple(BoundChannel(d,c) for c,d in zip(channels,
-                                                       sorted(drops, key=lambda d: mapping[d.pad])))
+        bound = tuple(BoundChannel(p.checked_drop, c) 
+                      for c,p in zip(channels, sorted(pads, key=lambda p: mapping[p])))
         
         phases = tuple(self.phases) * self.n_iterations
         
@@ -246,7 +257,7 @@ class ThermocycleProcessType(MultiDropProcessType):
                 for bc in bound:
                     fn(bc)
 
-        rendezvous = Rendezvous(len(drops))
+        rendezvous = Rendezvous(len(pads))
         
         reached_rendezvous = lambda _: rendezvous.reached()
         
@@ -308,11 +319,10 @@ class ThermocycleProcessType(MultiDropProcessType):
                             # local_drops = drops
                             # We reach the rendezvous once for each drop
                             def mix_and_split(d1: Drop, d2: Drop):
-                                my_drops = (d1, d2)
-                                my_pads = (d1.pad, d2.pad)
+                                my_pads = (d1.on_board_pad, d2.on_board_pad)
                                 # print(f"m&s: {my_pads}, {my_drops}")
-                                pmix.merge(my_drops) \
-                                    .then_call(lambda _: pmix.split(my_drops, my_pads) \
+                                pmix.merge(my_pads) \
+                                    .then_call(lambda _: pmix.split(my_pads) \
                                                             .then_call(reached_rendezvous) \
                                                             .then_call(reached_rendezvous))
                             mix_and_split(drops[0], drops[1])
@@ -342,11 +352,14 @@ class ThermocycleProcessType(MultiDropProcessType):
                 # assert False
         rendezvous.reset()
         all_channels(lambda bc: bc.step_out(this_end, rendezvous))
+        # print("Done with thermocycle")
         while not rendezvous.ready:
             yield None
+        # print("Rendezvous ready")
         these_heaters.change_to(None)
         while not these_heaters.ready or not those_heaters.ready:
             yield None
+        # print("Heaters ready")
         yield lambda _: True
                     
 

@@ -7,7 +7,7 @@ from typing import Optional, Sequence, ClassVar, Final
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup,\
-    transitions_from
+    transitions_from, WellGate
 import mpam.device as device
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
@@ -35,7 +35,7 @@ class Well(device.Well):
                  group:DispenseGroup,
                  exit_pad:device.Pad, 
                  shared_pads: Sequence[WellPad],
-                 gate:WellPad,
+                 gate:WellGate,
                  capacity:Volume, 
                  dispensed_volume:Volume, 
                  exit_dir:Dir,
@@ -143,7 +143,8 @@ class Board(device.Board):
     pipettor: Final[Pipettor]
     
     def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]: # @UnusedVariable
-        return None
+        return DummyState(initial_state=OnOff.OFF)
+        # return None
     
     def _well_gate_state(self, well: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
@@ -175,6 +176,11 @@ class Board(device.Board):
             epx += 1
         # gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
         
+        pre_gate = 1
+        pad_neighbors = [[1,4],[-1,0,2,4], [1,4],
+                         [4,6], [0,1,2,3,5,6],[4,6],
+                         [3,4,5,7],[6,8],[7]]
+        
         shape = WellShape(
                     gate_pad_bounds= self._rectangle(epx, epy, outdir, 1, 1), 
                     shared_pad_bounds = [self._rectangle(epx+1*outdir,epy+1,outdir,1,0.5),
@@ -193,8 +199,13 @@ class Board(device.Board):
                     board=self,
                     group=group,
                     exit_pad=exit_pad,
-                    gate=WellPad(self, state=self._well_gate_state(num)),
-                    shared_pads=tuple(WellPad(self, state=s) for s in shared_states),
+                    gate=WellGate(self,
+                                  exit_pad=exit_pad,
+                                  exit_dir=exit_dir, 
+                                  state=self._well_gate_state(num),
+                                  neighbor=pre_gate),
+                    shared_pads=tuple(WellPad(self, state=s, neighbors=ns) for s,ns in zip(shared_states, 
+                                                                                           pad_neighbors)),
                     capacity=54.25*uL,
                     # dispensed_volume=0.5*uL,
                     dispensed_volume=1*uL,
@@ -234,12 +245,18 @@ class Board(device.Board):
                 pad_dict[loc] = Pad(loc, self, exists=exists, state=state)
                 
         sequences: WellOpSeqDict = {
-            (WellState.EXTRACTABLE, WellState.READY): ((7,6), (7,3,4,5), (7,4,0,1,2)),
-            (WellState.READY, WellState.EXTRACTABLE): ((7,3,4,5), (7,6), (8,), ()),
-            (WellState.READY, WellState.DISPENSED): ((4,1,-1), (4,1)),
-            (WellState.DISPENSED, WellState.READY): ((6,4), (7,4,0,1,2),),
-            (WellState.READY, WellState.ABSORBED): ((-1,6,4,0,1,2),),
-            (WellState.ABSORBED, WellState.READY): ((7,4,0,1,2),)
+            (WellState.EXTRACTABLE, WellState.READY): ((7,), (7,6,3,4,5), (6,3,4,5)),
+            (WellState.READY, WellState.EXTRACTABLE): ((7,6,3,4,5,), (7,)),
+            (WellState.READY, WellState.DISPENSED): ((3,4,5,0,1,2,-1), 
+                                                     (4,0,1,2,-1),
+                                                     (1,-1),
+                                                     (4,-1),
+                                                     (3,4,5,6,-1),
+                                                     (3,4,5,6)
+                                                     ),
+            (WellState.DISPENSED, WellState.READY): (),
+            (WellState.READY, WellState.ABSORBED): ((3,4,5,6,0,1,2,-1),),
+            (WellState.ABSORBED, WellState.READY): ((3,4,5,6),)
             }
         
         transition = transitions_from(sequences)

@@ -6,7 +6,7 @@ from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence, \
     overload
 
 from mpam.device import Well, ExtractionPoint, Pad, System, Board,\
-    ProductLocation
+    ProductLocation, BoardComponent
 from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
@@ -214,6 +214,7 @@ class Path:
             if after is None:
                 future.post(obj)
             else:
+                assert isinstance(obj.pad, BoardComponent)
                 obj.pad.board.before_tick(lambda: future.post(obj), delta=mode.gated_delay(after))
             
             middle = self.middle_steps
@@ -322,6 +323,7 @@ class Path:
             if after is None:
                 future.post(obj)
             else:
+                assert isinstance(obj.pad, BoardComponent)
                 obj.pad.board.before_tick(lambda: future.post(obj), delta=mode.gated_delay(after))
             
             middle = self.middle_steps

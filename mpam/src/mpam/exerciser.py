@@ -205,7 +205,8 @@ class Exerciser(ABC):
                                  max_time=args.max_time,
                                  update_interval=args.update_interval,
                                  control_setup = make_controls,
-                                 macro_file_name = args.macro_file
+                                 macro_file_name = args.macro_file,
+                                 thread_name = f"Monitored {task.name}"
                                  )
             
     def parse_args(self, 
@@ -219,6 +220,8 @@ class Exerciser(ABC):
                            args: Optional[Sequence[str]]=None, 
                            namespace: Optional[Namespace]=None) -> None:
         task, ns = self.parse_args(args=args, namespace=namespace)
+        if ns.trace_blobs:
+            Board.trace_blobs = True
         board = self.make_board(ns)
         self.run_task(task, ns, board=board)
         
@@ -231,7 +234,8 @@ class Exerciser(ABC):
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
         # by default, no args to add.
-        ...
+        group.add_argument("--trace-blobs", action="store_true",
+                           help=f"Trace blobs.")
     
     def add_common_args_to(self, parser: ArgumentParser) -> None:
         group = parser.add_argument_group(title="common options")

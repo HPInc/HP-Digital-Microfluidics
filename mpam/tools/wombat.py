@@ -295,6 +295,7 @@ class WombatExerciser(JoeyExerciser):
                                         group: _ArgumentGroup, 
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
+        super().add_device_specific_common_args(group, parser)
         group.add_argument('-p', '--port',
                            help='''
                            The communication port (e.g., COM5) to use to talk to the board.

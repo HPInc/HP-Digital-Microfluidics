@@ -8,7 +8,7 @@ from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator,\
-    NamedTuple
+    NamedTuple, Iterable
 
 from matplotlib.gridspec import SubplotSpec
 
@@ -21,7 +21,7 @@ from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
-    Callback, MixResult, State
+    Callback, MixResult, State, CommunicationScheduler
 from quantities.SI import sec, ms
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
@@ -128,9 +128,9 @@ BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
     
 class PipettingTarget:
     
-    # @property
-    # @abstractmethod
-    # def contents(self) -> Optional[Liquid]: ...
+    @property
+    @abstractmethod
+    def contents(self) -> Optional[Liquid]: ...
     
     @property
     def pipettor(self) -> Optional[Pipettor]:
@@ -154,17 +154,72 @@ class PipettingTarget:
     def pipettor_removed(self, reagent: Reagent, volume: Volume, *,
                          last: bool) -> None: # @UnusedVariable
         ...
+        
+class DropLoc(ABC, CommunicationScheduler):
+    blob: Optional[Blob] = None
+    _drop: Optional[Drop] = None
+    _neighbors_for_blob: Optional[Sequence[DropLoc]] = None
+    _drop_change_callbacks: Final[ChangeCallbackList[Optional[Drop]]]
     
-class Pad(BinaryComponent['Pad']):
+    @property
+    def drop(self) -> Optional[Drop]:
+        return self._drop
+    
+    @drop.setter
+    def drop(self, drop: Optional[Drop]):
+        old = self._drop
+        self._drop = drop
+        self._drop_change_callbacks.process(old, drop)
+        
+    @property
+    def checked_drop(self) -> Drop:
+        if self._drop is not None:
+            return self._drop
+        print(f"Drop at {self}: {self._drop}")
+        raise TypeError(f"{self} has no drop")
+    
+    
+    @property
+    def neighbors_for_blob(self) -> Sequence[DropLoc]:
+        ns = self._neighbors_for_blob
+        if ns is None:
+            ns = self._neighbors_for_blob = self.compute_neighbors_for_blob()
+        return ns
+    
+    def __init__(self) -> None:
+        self._drop_change_callbacks = ChangeCallbackList()
+        
+    def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
+        self._drop_change_callbacks.add(cb, key=key)
+        
+    
+    @abstractmethod
+    def compute_neighbors_for_blob(self) -> Sequence[DropLoc]: ...
+    
+    
+    
+class LocatedPad:
     location: Final[XYCoord]
+    
+    @property
+    def row(self) -> int:
+        return self.location.y 
+    @property
+    def column(self) -> int:
+        return self.location.x
+    
+    
+    def __init__(self, loc: XYCoord) -> None:
+        self.location = loc
+    
+    
+class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     exists: Final[bool]
     
     reserved: bool = False
     # broken: bool
     
     _pads: Final[PadArray]
-    _drop: Optional[Drop]
-    blob: Optional[Blob]
     _dried_liquid: Optional[Drop]
     _neighbors: Optional[Sequence[Pad]] = None
     _all_neighbors: Optional[Sequence[Pad]] = None
@@ -174,14 +229,7 @@ class Pad(BinaryComponent['Pad']):
     _heater: Optional[Heater] = None
     _extraction_point: Optional[ExtractionPoint] = None
     
-    _drop_change_callbacks: Final[ChangeCallbackList[Optional[Drop]]]
         
-    @property
-    def row(self) -> int:
-        return self.location.y 
-    @property
-    def column(self) -> int:
-        return self.location.x
     
     @property
     def well(self) -> Optional[Well]:
@@ -199,15 +247,6 @@ class Pad(BinaryComponent['Pad']):
     def extraction_point(self) -> Optional[ExtractionPoint]:
         return self._extraction_point
     
-    @property
-    def drop(self) -> Optional[Drop]:
-        return self._drop
-    
-    @drop.setter
-    def drop(self, drop: Optional[Drop]):
-        old = self._drop
-        self._drop = drop
-        self._drop_change_callbacks.process(old, drop)
     
     @property
     def dried_liquid(self) -> Optional[Drop]:
@@ -252,18 +291,16 @@ class Pad(BinaryComponent['Pad']):
     def __init__(self, loc: XYCoord, board: Board, 
                  state: State[OnOff], *, exists: bool = True) -> None:
         BinaryComponent.__init__(self, board, state=state, live=exists)
-        self.location = loc
+        LocatedPad.__init__(self, loc)
+        DropLoc.__init__(self)
         self.exists = exists
         # self.broken = False
         self._pads = board.pad_array
-        self._drop = None
-        self.blob = None
         self._dried_liquid = None
-        self._drop_change_callbacks = ChangeCallbackList()
         def journal_change(old: OnOff, new: OnOff) -> None:
             if old is not new:
                 board.journal_state_change(self, new)
-        self.on_state_change(journal_change, key="Journal Change")
+        self.on_state_change(journal_change, key=f"Journal Change {self}")
 
         
     def __repr__(self) -> str:
@@ -304,14 +341,20 @@ class Pad(BinaryComponent['Pad']):
         self.reserved = True
         return True
     
-    def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
-        self._drop_change_callbacks.add(cb, key=key)
         
     def liquid_added(self, liquid: Liquid, *, mix_result: Optional[MixResult] = None) -> None:
-        self.board.change_journal.note_delivery(self, liquid, mix_result=mix_result)
+        # I'm treating adding and removing liquid as synchronous
+        journal = ChangeJournal()
+        journal.note_delivery(self, liquid, mix_result=mix_result)
+        journal.process_changes()
+        # self.board.change_journal.note_delivery(self, liquid, mix_result=mix_result)
 
     def liquid_removed(self, volume: Volume) -> None:
-        self.board.change_journal.note_removal(self, volume)
+        # I'm treating adding and removing liquid as synchronous
+        journal = ChangeJournal()
+        journal.note_removal(self, volume)
+        journal.process_changes()
+        # self.board.change_journal.note_removal(self, volume)
         
     def deliver(self, liquid: Liquid, *, 
                 journal: Optional[ChangeJournal] = None,
@@ -325,26 +368,43 @@ class Pad(BinaryComponent['Pad']):
             journal = self.board.change_journal
         journal.note_removal(self, volume)
         
+    def compute_neighbors_for_blob(self)->Sequence[DropLoc]:
+        if (well := self.well) is None:
+            return self.neighbors
+        else:
+            return [*self.neighbors, well.gate]
+        
     
 # WellPadLoc = Union[tuple['WellGroup', int], 'Well']
 
-class WellPad(BinaryComponent['WellPad']):
+class WellPad(BinaryComponent['WellPad'], DropLoc):
     well: Well
     index: int
+    _neighbor_indices: Final[Sequence[int]]
+    _neighbors: Optional[Sequence[DropLoc]] = None
     
     @property
     def is_gate(self) -> bool:
-        return self.index == -1
+        return False
     
     @property
     def has_fluid(self) -> bool:
         return self.current_state is OnOff.ON
+    
         
     def __init__(self, board: Board, 
                  state: State[OnOff], *, 
-                 live: bool = True) -> None:
+                 live: bool = True,
+                 neighbors: Sequence[int]) -> None:
         BinaryComponent.__init__(self, board, state=state, live=live)
+        DropLoc.__init__(self)
+        self._neighbor_indices = neighbors
         # print(f"{self}.live = {self.live}")
+        def journal_change(old: OnOff, new: OnOff) -> None:
+            if old is not new:
+                board.journal_state_change(self, new)
+        self.on_state_change(journal_change, key=f"Journal Change {self}")
+        
         
     def __repr__(self) -> str:
         well: Optional[Well] = getattr(self, 'well', None)
@@ -358,6 +418,58 @@ class WellPad(BinaryComponent['WellPad']):
     def set_location(self, well: Well, index: int) -> None:
         self.well = well
         self.index = index
+
+    def compute_neighbors_for_blob(self)->Sequence[DropLoc]:
+        ns = self._neighbors
+        if ns is None:
+            well = self.well
+            ns = tuple(well.gate if n==-1 else well.shared_pads[n] for n in self._neighbor_indices)
+            self._neighbors = ns
+        return ns
+        
+class WellGate(WellPad, LocatedPad):
+    @property
+    def is_gate(self) -> bool:
+        return True
+    
+    def __init__(self, board: Board,
+                 exit_pad: Pad,
+                 exit_dir: Dir,
+                 state: State[OnOff], *,
+                 neighbor: int,
+                 live: bool = True) -> None:
+        WellPad.__init__(self, board, state, live=live, neighbors=(neighbor,))
+        loc = board.orientation.neighbor(exit_dir.opposite, exit_pad.location)
+        LocatedPad.__init__(self, loc)
+        
+    def __repr__(self) -> str:
+        well: Optional[Well] = getattr(self, 'well', None)
+        if well is None:
+            return f"WellGate(unassigned, {id(self)})"
+        else:
+            return f"WellGate({well})"
+        
+
+    def compute_neighbors_for_blob(self)->Sequence[DropLoc]:
+        ns = self._neighbors
+        if ns is None:
+            ns = (self.well.exit_pad, *super().compute_neighbors_for_blob())
+            self._neighbors = ns
+        return ns
+    
+    def deliver(self, liquid: Liquid, *, 
+                journal: Optional[ChangeJournal] = None,
+                mix_result: Optional[MixResult] = None) -> None:
+        if journal is None:
+            journal = self.board.change_journal
+        journal.note_delivery(self, liquid, mix_result = mix_result)
+    
+    def remove(self, volume: Volume, *, journal: Optional[ChangeJournal] = None) -> None:
+        if journal is None:
+            journal = self.board.change_journal
+        journal.note_removal(self, volume)
+    
+    
 
 class WellState(Enum):
     EXTRACTABLE = auto()
@@ -382,12 +494,13 @@ class WellMotion:
     initial_future: Final[Delayed[Well]]
     futures: Final[list[tuple[Well, Delayed[Well]]]]
     # post_result: Final[bool]
-    well_gates: Final[set[WellPad]]
+    well_gates: Final[set[WellGate]]
     shared_pads: Final[Sequence[WellPad]]
-    pad_states: Final[dict[Pad, OnOff]]
     guard: Final[Optional[Iterator[bool]]]
     # next_step: int
-    on_last_step: bool = False
+    turned_gates_on: bool = False
+    turned_gates_off: bool = False
+    # on_last_step: bool = False
     one_tick: Final[ClassVar[Ticks]] = 1*tick
     # sequence: WellOpStepSeq
     gate_status: GateStatus
@@ -403,7 +516,6 @@ class WellMotion:
         # self.post_result = post_result
         self.well_gates = { well.gate }
         self.shared_pads = well.shared_pads
-        self.pad_states = {}
         self.guard = guard
         # self.next_step = 0
         self.gate_status = GateStatus.NOT_YET
@@ -422,18 +534,10 @@ class WellMotion:
         
         # print(f"Piggybacking")
         self.well_gates.update(other.well_gates)
+        # we don't have to add the shared pads.  Changing the ones we have will suffice.
         if self.gate_status is GateStatus.JUST_ON:
             for gate in other.well_gates:
                 gate.schedule(WellPad.TurnOn, post_result = False)
-        self.pad_states.update(other.pad_states)
-        if self.on_last_step:
-            for pad,state in other.pad_states.items():
-                # If the pad is supposed to be off, we turn off all of the pads in the pad's blob (if any)
-                pads: Sequence[Pad] = (pad,)
-                if state is OnOff.OFF and (blob := pad.blob) is not None:
-                    pads = blob.pads
-                for p in pads:
-                    p.schedule(Pad.SetState(state), post_result=False)
 
         self.futures.extend(other.futures)             
         return True
@@ -506,19 +610,20 @@ class WellMotion:
         # assert last_yield != False
             
         shared_pads = self.shared_pads
-        states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
-        gate_state = OnOff.OFF
-        
+        # turned_gates_on = self.turned_gates_on
+        # turned_gates_off = self.turned_gates_off
         for on_last_step, step in group.transition_func(group.state, target):
             # We squirrel it away so that it can be used in try_adopt()
-            self.on_last_step = on_last_step
+            # self.on_last_step = on_last_step
+            states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
+            gate_state = OnOff.OFF
             for pad_index in step:
                 if pad_index == -1:
                     gate_state = OnOff.ON
                     # If we're turning the gates on to dispense, we need to make sure that the 
                     # corresponding exit pads aren't occupied (or we'll slurp the drop back).  
                     # If any are, we just return and try again next time.
-                    if self.target is WellState.DISPENSED:
+                    if target is WellState.DISPENSED:
                         for g in self.well_gates:
                             assert(g.index == -1)
                             w = g.well
@@ -528,37 +633,57 @@ class WellMotion:
                 else:
                     states[pad_index] = OnOff.ON
 
-            # if we're on the last step and we would turn on any exit pads, we need to 
-            # make sure that they're safe
-            # TODO: Do I need to reserve them? (Probably)
-            if on_last_step:
-                for (pad, state) in self.pad_states.items():
-                    pw = pad.well
-                    assert pw is not None
-                    while state is OnOff.ON and not pad.safe_except(pw):
-                        yield True
+            gs = self.gate_status
+            
+            if gs is GateStatus.JUST_ON and gate_state is OnOff.OFF:
+                self.gate_status = GateStatus.UNSAFE
+                # If we're dispensing, and we've turned the gate on and we're about
+                # to turn it off for the first time, we need to make sure that the
+                # exit pads are safe and reserved.
+                if target is WellState.DISPENSED:
+                    for g in self.well_gates:
+                        well = g.well
+                        pad = well.exit_pad
+                        # The pad should already be reserved.
+                        assert pad.reserved
+                        # while not pad.safe_except(well):
+                        #     yield True
+                        # while not pad.reserve():
+                        #     yield True
+                        pad.schedule(Pad.TurnOn, post_result=False)
+            elif gs is GateStatus.NOT_YET and gate_state is OnOff.ON:
+                self.gate_status = GateStatus.JUST_ON
+                # If we're abosrbing, and we're about to turn on the gate for the
+                # first time, we need to turn off any pads in the blob at the exit pad
+                if target is WellState.ABSORBED:
+                    for g in self.well_gates:
+                        well = g.well
+                        pad = well.exit_pad
+                        pads: Sequence[DropLoc] = (pad,)
+                        if (blob := pad.blob) is not None:
+                            pads = blob.pads
+                        for p in pads:
+                            assert isinstance(p, Pad)
+                            p.schedule(Pad.TurnOff, post_result=False)
             for (i, shared) in enumerate(shared_pads):
                 shared.schedule(WellPad.SetState(states[i]), post_result=False)
             for gate in self.well_gates:
                 gate.schedule(WellPad.SetState(gate_state), post_result=False)
-                gs = self.gate_status
-                if gate_state is OnOff.ON:
-                    self.gate_status = GateStatus.JUST_ON if gs is GateStatus.NOT_YET else GateStatus.UNSAFE
-                elif gs is GateStatus.JUST_ON:
-                    self.gate_status = GateStatus.UNSAFE
-                
+            # gs = self.gate_status
+            # if gate_state is OnOff.ON and gs is GateStatus.NOT_YET:
+            #     self.gate_status = GateStatus.JUST_ON
+            # elif gs is GateStatus.JUST_ON and gate_state is OnOff.OFF:
+            #     self.gate_status = GateStatus.UNSAFE
+            #
+
             if not on_last_step:
                 # We do the next step the next time around
                 yield True
-        # we're done.  If there are any (exit) pads to twiddle, we do it now.
-        for (pad, state) in self.pad_states.items():
-            # print(f"Exit pad {pad} going to {state}")
-            pad.schedule(Pad.SetState(state), post_result=False)
         # And on the other side, we clean up
         def cb() -> None:
-            # Any gates we turned on, we turn off at the next tick
-            for gate in self.well_gates:
-                gate.schedule(WellPad.TurnOff, post_result=False)
+            # # Any gates we turned on, we turn off at the next tick
+            # for gate in self.well_gates:
+            #     gate.schedule(WellPad.TurnOff, post_result=False)
             with group.lock:
                 group.motion = None
                 group.state = self.target
@@ -632,8 +757,8 @@ def transitions_from(sd: WellOpSeqDict) -> TransitionFunc:
             seq = sd[(start, end)]
         else:
             seq = [*sd[(start, ready)], *sd[(ready, end)]]
-        last_step = len(seq) - 1
-        return ((i==last_step, s) for i,s in enumerate(seq))
+        last = len(seq)-1
+        return ((i==last, s) for i,s in enumerate(seq))
     return fn
         
 
@@ -664,7 +789,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     is_voidable: Final[bool]
     exit_pad: Final[Pad]
     shared_pads: Final[Sequence[WellPad]]
-    gate: Final[WellPad]
+    gate: Final[WellGate]
     exit_dir: Final[Dir]
     gate_reserved: bool = False
     _contents: Optional[Liquid]
@@ -785,7 +910,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                  number: int,
                  group: Union[DispenseGroup, TransitionFunc],
                  exit_pad: Pad,
-                 gate: WellPad,
+                 gate: WellGate,
                  shared_pads: Sequence[WellPad],
                  capacity: Volume,
                  dispensed_volume: Volume,
@@ -873,12 +998,13 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         # available implies _contents is not None, but MyPy can't do the inference for the else
         # clause if I don't check it here.
         if self._contents is None or self.available:
-            self.contents = Liquid(liquid.reagent, volume)
+            self.contents = Liquid(liquid.reagent, Volume.ZERO())
         else:
             r = self._contents.reagent
             on_reagent_mismatch.expect_true(self._can_accept(liquid.reagent),
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
-            self._contents.mix_in(liquid, result=mix_result)
+        assert self._contents is not None
+        self._contents.mix_in(liquid, result=mix_result)
         self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
             
@@ -886,16 +1012,17 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                      on_empty: ErrorHandler = PRINT) -> Liquid:
         on_empty.expect_true(self.volume>= 0.99*volume,
                     lambda : f"Tried to draw {volume} from {self}, which only has {self.volume}")
+        v = min(self.volume, volume)
         reagent: Reagent
         if self._contents is None:
             reagent = unknown_reagent
         else:
             reagent = self._contents.reagent
-            # print(f"Removing {volume} from {self._contents}")
-            self._contents -= volume
+            # print(f"Removing {v} from {self._contents}")
+            self._contents -= v
         self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
-        return Liquid(reagent, volume)
+        return Liquid(reagent, v)
 
     def contains(self, content: Union[Liquid, Reagent],
                  *, on_overflow: ErrorHandler = PRINT) -> None:
@@ -1010,10 +1137,12 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                           )-> Delayed[Well]:
             board = well.board
             motion = WellMotion(well, self.target, post_result=post_result, guard=self.guard)
-            target = self.target
+            # target = self.target
             # assert target is WellState.DISPENSED or target is WellState.ABSORBED, \
                 # f"Well provided on transition to {target}"
-            motion.pad_states[well.exit_pad] = OnOff.ON if target is WellState.DISPENSED else OnOff.OFF
+            # if target is WellState.DISPENSED:
+            #     motion.pad_states[well.exit_pad] = OnOff.ON
+            # motion.pad_states[well.exit_pad] = OnOff.ON if target is WellState.DISPENSED else OnOff.OFF
             
             def before_tick() -> Iterator[Optional[Ticks]]:
                 iterator = motion.iterator()
@@ -1191,12 +1320,12 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     pad: Final[Pad]
     removed: Optional[Volume] = None
     
-    # @property
-    # def contents(self) -> Optional[Liquid]:
-    #     drop = self.pad.drop
-    #     if drop is None:
-    #         return None
-    #     return drop.liquid
+    @property
+    def contents(self) -> Optional[Liquid]:
+        drop = self.pad.drop
+        if drop is None:
+            return None
+        return drop.blob.contents
     
     def __init__(self, pad: Pad) -> None:
         BoardComponent.__init__(self, pad.board)
@@ -1225,8 +1354,19 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         
     def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
                          *, last: bool) -> None: # @UnusedVariable
+        pad = self.pad
         if volume > Volume.ZERO():
-            self.pad.liquid_removed(volume)
+            pad.liquid_removed(volume)
+        blob = not_None(pad.blob, desc=lambda: f"{self} has no blob after extraction")
+        # If the blob is now empty, we turn off all of its pads.
+
+        # TODO: Should this be a property of the operation that called this?
+        if blob.total_volume.is_zero:
+            for p in blob.pads:
+                assert isinstance(p, Pad)
+                # TODO: Do I need to wait on this somewhere?
+                p.schedule(Pad.TurnOff, post_result=False)
+            
         
         
 
@@ -1250,11 +1390,12 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     def transfer_in_result(self) -> Drop:
         return not_None(self.pad.drop)
 
-    def transfer_in(self, liquid: Liquid, *,                            # @UnusedVariable
-                     mix_result: Optional[Union[Reagent, str]]=None,    # @UnusedVariable
-                     on_insufficient: ErrorHandler=PRINT,               # @UnusedVariable
-                     on_no_source: ErrorHandler=PRINT                   # @UnusedVariable
+    def transfer_in(self, liquid: Liquid, *,                           
+                     mix_result: Optional[Union[Reagent, str]]=None,   
+                     on_insufficient: ErrorHandler=PRINT,              
+                     on_no_source: ErrorHandler=PRINT                  
                      ) -> Delayed[Drop]:
+        from mpam.drop import Drop # @Reimport
         pipettor = self.pipettor
         assert pipettor is not None, f"{self} has no pipettor and transfer_in() not overridden"
         p_future = pipettor.schedule(pipettor.Supply(liquid, self,
@@ -1331,6 +1472,8 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
             future = Delayed[Liquid]()
+            def finish(liquid: Liquid) -> None:
+                future.post(liquid)
             def do_it() -> None:
                 drop = not_None(extraction_point.pad.drop)
                 liquid = Liquid(drop.reagent,
@@ -1446,11 +1589,11 @@ class SystemComponent(ABC):
     
     
 class ChangeJournal:
-    turned_on: Final[set[Pad]]
-    turned_off: Final[set[Pad]]
-    delivered: Final[dict[Pad, list[Liquid]]]
-    removed: Final[dict[Pad, Volume]]
-    mix_result: Final[dict[Pad, MixResult]]
+    turned_on: Final[set[DropLoc]]
+    turned_off: Final[set[DropLoc]]
+    delivered: Final[dict[DropLoc, list[Liquid]]]
+    removed: Final[dict[DropLoc, Volume]]
+    mix_result: Final[dict[DropLoc, MixResult]]
     
     @property
     def has_transfer(self) -> bool:
@@ -1463,17 +1606,17 @@ class ChangeJournal:
         self.removed = defaultdict(Volume.ZERO)
         self.mix_result = {}
         
-    def change_to(self, pad: Pad, new_state: OnOff) -> None:
+    def change_to(self, pad: DropLoc, new_state: OnOff) -> None:
         wrong,right = (self.turned_off,self.turned_on) if new_state else (self.turned_on, self.turned_off)
         if pad in wrong:
             wrong.remove(pad)
         else:
             right.add(pad)
             
-    def note_removal(self, pad: Pad, volume: Volume) -> None:
+    def note_removal(self, pad: DropLoc, volume: Volume) -> None:
         self.removed[pad] += volume
         
-    def note_delivery(self, pad: Pad, liquid: Liquid, *, mix_result: Optional[MixResult] = None) -> None:
+    def note_delivery(self, pad: DropLoc, liquid: Liquid, *, mix_result: Optional[MixResult] = None) -> None:
         self.delivered[pad].append(liquid)
         if mix_result:
             self.mix_result[pad] = mix_result
@@ -1499,6 +1642,7 @@ class Board(SystemComponent):
     # _drops: Final[list[Drop]]
     # _to_appear: Final[list[tuple[Pad, Liquid]]]
     _change_journal: ChangeJournal
+    trace_blobs: ClassVar[bool] = False
     
     
     @property
@@ -1598,26 +1742,35 @@ class Board(SystemComponent):
         print("Blobs on board")
         print("--------------")
         blobs = set[Blob]()
-        for pad in self.pads.values():
-            if pad.blob is not None:
-                if not pad in pad.blob.pads:
-                    print(f"{pad} not in {pad.blob}")
-                blobs.add(pad.blob)
+        
+        def check_pads(pads: Iterable[DropLoc]) -> None:
+            nonlocal blobs
+            for pad in pads:
+                if pad is not None and pad.blob is not None:
+                    if not pad in pad.blob.pads:
+                        print(f"{pad} not in {pad.blob}")
+                    blobs.add(pad.blob)
+                    
+        check_pads(self.pads.values())
+        for well in self.wells:
+            check_pads(well.shared_pads)
+            check_pads((well.gate,))
         
         for blob in blobs:
             print(blob)
 
     def infer_drop_motion(self) -> None:
         self.replace_change_journal().process_changes()
-        self.print_blobs()
+        if self.trace_blobs:
+            self.print_blobs()
         
-    def journal_state_change(self, pad: Pad, new_state: OnOff) -> None:
+    def journal_state_change(self, pad: DropLoc, new_state: OnOff) -> None:
         self.change_journal.change_to(pad, new_state)
         
-    def journal_removal(self, pad: Pad, volume: Volume) -> None:
+    def journal_removal(self, pad: DropLoc, volume: Volume) -> None:
         self.change_journal.note_removal(pad, volume)
         
-    def journal_delivery(self, pad: Pad, liquid: Liquid, *,
+    def journal_delivery(self, pad: DropLoc, liquid: Liquid, *,
                          mix_result: Optional[MixResult] = None):
         self.change_journal.note_delivery(pad, liquid, mix_result=mix_result)
     
@@ -1911,7 +2064,8 @@ class System:
                       update_interval: Time = 20*ms,
                       control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                       control_fraction: Optional[float] = None,
-                      macro_file_name: Optional[str] = None
+                      macro_file_name: Optional[str] = None,
+                      thread_name: Optional[str] = None,
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -1924,7 +2078,9 @@ class System:
             done.set()
             self.shutdown()
 
-        thread = Thread(target=run_it)
+        if thread_name is None:
+            thread_name = f"Monitored task @ {time_now()}"
+        thread = Thread(target=run_it, name=thread_name)
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
                                control_fraction=control_fraction,

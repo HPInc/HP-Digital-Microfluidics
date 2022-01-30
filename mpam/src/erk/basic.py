@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, Callable, Hashable
+from typing import TypeVar, Generic, Optional, Callable, Hashable, Union
 from threading import Lock
 from re import Pattern
 import re
@@ -58,8 +58,16 @@ class Count(dict[_H,int]):
             self[elt] = new
         return new
     
-def not_None(x: Optional[_T]) -> _T:
-    assert x is not None
+def not_None(x: Optional[_T], *, 
+             desc: Optional[Union[str, Callable[[], str]]] = None) -> _T:
+    def error_msg() -> str:
+        nonlocal desc
+        if desc is None:
+            desc = "argument to not_None"
+        elif not isinstance(desc, str):
+            desc = desc()
+        return f"{desc} is None"
+    assert x is not None, error_msg()
     return x
 
 

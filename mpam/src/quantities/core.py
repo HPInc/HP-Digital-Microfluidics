@@ -269,6 +269,18 @@ class DimMismatchError(Exception):
 class Quantity(Generic[D]):
     dimensionality: Dimensionality[D]
     magnitude: float
+    
+    @property
+    def is_positive(self) -> bool:
+        return self.magnitude > 0
+    
+    @property
+    def is_negative(self) -> bool:
+        return self.magnitude < 0
+    
+    @property
+    def is_zero(self) -> bool:
+        return self.magnitude == 0
 
     # def __init__(self, mag: float, dim: Dimensionality[D]) -> None:
     def __init__(self, mag: float, dim: Dimensionality[D]) -> None:

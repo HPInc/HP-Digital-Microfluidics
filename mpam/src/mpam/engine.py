@@ -6,7 +6,7 @@ import heapq
 from threading import Thread, Condition, Event, Lock, Timer
 from types import TracebackType
 from typing import Optional, Literal, Protocol, Any, Sequence, \
-    Iterable, Final, Union, Callable
+    Iterable, Final, Union, Callable, NamedTuple
 
 from mpam.types import TickNumber, ticks, Ticks
 from quantities.SI import sec, ms
@@ -212,15 +212,21 @@ class WorkerThread(Thread, Worker, ABC):
     #     # self.daemon = True
     #
 
-    
+class DCReqQueue(NamedTuple):
+    requests: list[DevCommRequest] = []
+    events: list[Event] = []
+
 class DevCommThread(WorkerThread):
     condition: Condition
-    queue: list[DevCommRequest]
+    requests: Final[list[DevCommRequest]]
+    signals: Final[list[Event]]
     
     def __init__(self, engine: Engine):
         super().__init__(engine, "Device Communication Thread")
         self.condition = Condition(lock=self.lock)
-        self.queue = []
+        self.requests = []
+        self.signals = []
+        
         
     # called with lock locked
     def wake_up(self) -> None:
@@ -231,30 +237,32 @@ class DevCommThread(WorkerThread):
         try:
             self.state = State.RUNNING
             need_update: set[Updatable] = set()
-            queue = self.queue
             condition = self.condition
             while self.state is State.RUNNING:
-                queue_copy: list[DevCommRequest]
                 with self.lock:
-                    while self.state is State.RUNNING and not queue:
+                    while self.state is State.RUNNING and not self.requests:
                         condition.wait(_wait_timeout)
                     if self.abort_requested():
                         return
                     # we don't want to be holding the lock when we process the requests,
                     # because they may want to add to the queue.  (Probably shouldn't, 
                     # but they might).  So we'll copy the queue and clear it.
-                    queue_copy = queue.copy()
-                    queue.clear()
+                    requests = self.requests.copy()
+                    signals = self.signals.copy()
+                    self.requests.clear()
+                    self.signals.clear()
                 # print(f"--processing communication queue: length {len(queue_copy)}")
-                for req in queue_copy:
+                for req in requests:
                     cpts = req()
                     need_update.update(cpts)
                 for c in need_update:
                     c.update_state()
                 need_update.clear()
-                if not queue:
+                for e in signals:
+                    e.set()
+                if not self.requests:
                     with self.lock:
-                        if not queue:
+                        if not self.requests:
                             self.idle()
         finally:
             print(self.name, "exited")
@@ -267,11 +275,17 @@ class DevCommThread(WorkerThread):
     #         self.not_idle()
     #         self.wake_up()
             
-    def add_requests(self, reqs: Sequence[DevCommRequest]) -> None:
+    def add_requests(self, reqs: Sequence[DevCommRequest], *,
+                     when_done: Optional[Union[Event, Sequence[Event]]] = None) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
-        if len(reqs) > 0:
+        if len(reqs) > 0 or when_done:
             with self.condition:
-                self.queue.extend(reqs)
+                self.requests.extend(reqs)
+                if when_done is not None:
+                    if isinstance(when_done, Event):
+                        self.signals.append(when_done)
+                    else:
+                        self.signals.extend(when_done)
                 self.not_idle()
                 self.wake_up()
             
@@ -532,11 +546,11 @@ class ClockThread(WorkerThread):
                     if rqueue:
                         if _trace_ticks:
                             print(f"-- processing on-tick queue: length {len(rqueue)}")
-                        def note_finished():
-                            update_finished.set()
-                            return ()
-                        rqueue.append(note_finished)
-                        comm_thread.add_requests(rqueue)
+                        # def note_finished():
+                        #     update_finished.set()
+                        #     return ()
+                        # rqueue.append(note_finished)
+                        comm_thread.add_requests(rqueue, when_done=update_finished)
                     self.next_tick += 1*ticks
                 if rqueue:
                     while not update_finished.wait(_wait_timeout):

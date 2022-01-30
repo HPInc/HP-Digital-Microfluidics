@@ -28,7 +28,7 @@ from erk.basic import Count
 from langsup.dmf_lang import DMFInterpreter
 from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
-    HeatingMode, BinaryComponent, ChangeJournal
+    HeatingMode, BinaryComponent, ChangeJournal, DropLoc, WellGate
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent
@@ -93,12 +93,13 @@ class ClickableMonitor(ABC):
         self.draw(5, "green" if state else "black")
     
             
+PadOrGate = Union[Pad, WellGate]
         
 
 # import matplotlib
 # matplotlib.use('Agg')
 class PadMonitor(ClickableMonitor):
-    pad: Final[Pad]
+    pad: Final[PadOrGate]
     board_monitor: Final[BoardMonitor]
     square: Final[Rectangle]
     magnet: Final[Optional[Annotation]]
@@ -110,7 +111,7 @@ class PadMonitor(ClickableMonitor):
     capacity: Final[Volume]
     
     
-    def __init__(self, pad: Pad, board_monitor: BoardMonitor):
+    def __init__(self, pad: PadOrGate, board_monitor: BoardMonitor):
         super().__init__(pad)
         self.pad = pad
         self.board_monitor = board_monitor
@@ -125,10 +126,12 @@ class PadMonitor(ClickableMonitor):
         
         self.center = (ox+0.5*w, oy+0.5*w)
         
+        pad_exists = isinstance(pad, WellGate) or pad.exists
+        
         square = Rectangle(xy=(ox,oy), width=1, height=1,
-                           facecolor='white' if pad.exists else 'black',
+                           facecolor='white' if pad_exists else 'black',
                            edgecolor='black',
-                           picker=pad.exists)
+                           picker=pad_exists)
         self.patches.append(square)
         board_monitor.click_id[square] = self
         self.square = square
@@ -136,7 +139,7 @@ class PadMonitor(ClickableMonitor):
         board_monitor.plot.add_patch(square)
         self.capacity = board_monitor.board.drop_size
         
-        if pad.exists:
+        if isinstance(pad, Pad) and pad.exists:
             if pad.magnet is None:
                 m = None
             else:
@@ -175,17 +178,19 @@ class PadMonitor(ClickableMonitor):
                 board_monitor.plot.add_patch(ep)
                 
             
-            pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
-            pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
+        pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
+        pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
             
         
     def list_neighbors(self)->Sequence[ClickableMonitor]:
         m = self.board_monitor
         pad = self.pad
-        neighbors: list[ClickableMonitor] = [m.pads[p] for p in pad.all_neighbors]
-        well = pad.well
-        if well is not None:
-            neighbors.append(m.wells[well].gate_monitor)
+        def find_monitor(dl: DropLoc) -> ClickableMonitor:
+            if isinstance(dl, Pad) or isinstance(dl, WellGate):
+                return m.pads[dl]
+            assert isinstance(dl, WellPad)
+            return m.wells[dl.well].shared_pad_monitors[dl.index]
+        neighbors: list[ClickableMonitor] = [find_monitor(p) for p in pad.neighbors_for_blob]
         return neighbors
     
     def current_drop(self) -> Optional[Drop]: 
@@ -250,6 +255,7 @@ class PadMonitor(ClickableMonitor):
             }
             
     def note_new_temperature(self) -> None:
+        assert isinstance(self.pad, Pad)
         heater = self.pad.heater
         assert heater is not None
         annotation = self.heater
@@ -586,7 +592,7 @@ class WellPadMonitor(ClickableMonitor):
 class WellMonitor:
     well: Final[Well]
     board_monitor: Final[BoardMonitor]
-    gate_monitor: Final[WellPadMonitor]
+    gate_monitor: Final[PadMonitor]
     shared_pad_monitors: Final[Sequence[WellPadMonitor]]
     reagent_circle: Final[ReagentCircle]
     # reagent_volume_circle: Final[Circle]
@@ -602,7 +608,7 @@ class WellMonitor:
         
         shape = well._shape
         assert shape is not None
-        self.gate_monitor = WellPadMonitor(well.gate, board_monitor, shape.gate_pad_bounds, well = well, is_gate = True)
+        self.gate_monitor = PadMonitor(well.gate, board_monitor)
         
         shared_pads = well.shared_pads
         
@@ -701,25 +707,39 @@ class ClickHandler:
                     p.component.schedule(BinaryComponent.SetState(new_state))
             self.changes.clear()
             self.scheduled = False
+            
+    def process_shift_clicl(self, target: ClickableMonitor, *, with_control: bool) -> None:
+        assert isinstance(target, PadMonitor) or isinstance(target, WellPadMonitor)
+        pad = target.pad
+        change_journal = ChangeJournal()
+        monitor = self.monitor
+        volume: Volume
+        reagent: Reagent
+        if with_control:
+            max_volume: Volume
+            if (blob := pad.blob) is not None:
+                max_volume = blob.total_volume
+                if (well := blob.well) is not None:
+                    max_volume += well.volume
+            elif isinstance(pad, WellPad) and not pad.is_gate:
+                max_volume = pad.well.volume
+            else:
+                max_volume = Volume.ZERO()
+            volume = min(pad.board.drop_size, max_volume)
+            if volume > Volume.ZERO():
+                change_journal.note_removal(pad, volume)
+        else:
+            reagent = monitor.interactive_reagent
+            volume = monitor.interactive_volume
+            change_journal.note_delivery(pad, Liquid(reagent, volume))
+        change_journal.process_changes()
+        pad.board.print_blobs()
+
          
     def process_click(self, target: ClickableMonitor, *, with_control: bool, with_shift: bool) -> None:
         with self.lock:
-            
             if with_shift:
-                if isinstance(target, PadMonitor):
-                    pad = target.pad
-                    change_journal = ChangeJournal()
-                    if with_control:
-                        if (blob := pad.blob) is not None:
-                            v = min(pad.board.drop_size, blob.total_volume)
-                            if v > Volume.ZERO():
-                                pad.remove(v, journal=change_journal)
-                    else:
-                        reagent = self.monitor.interactive_reagent
-                        volume = self.monitor.interactive_volume
-                        pad.deliver(Liquid(reagent, volume), journal=change_journal)
-                    change_journal.process_changes()
-                    pad.board.print_blobs()
+                self.process_shift_clicl(target, with_control=with_control)
                 return
             
             selecting = self.prepare(target)
@@ -816,7 +836,7 @@ class InputBox(TextBox):
 
 class BoardMonitor:
     board: Final[Board]
-    pads: Final[Mapping[Pad, PadMonitor]]
+    pads: Final[Mapping[DropLoc, PadMonitor]]
     wells: Final[Mapping[Well, WellMonitor]]
     figure: Final[Figure]
     plot: Final[Axes]
@@ -903,6 +923,8 @@ class BoardMonitor:
         # self.controls.axis('off')
         self.pads = { pad: PadMonitor(pad, self) for pad in board.pad_array.values()}
         self.wells = { well: WellMonitor(well, self) for well in board.wells if well._shape is not None}
+        for w in board.wells:
+            self.pads[w.gate] = self.wells[w].gate_monitor
         padding = 0.2
         self.plot.set_xlim(self.min_x-padding, self.max_x+padding)
         self.plot.set_ylim(self.min_y-padding, self.max_y+padding)
