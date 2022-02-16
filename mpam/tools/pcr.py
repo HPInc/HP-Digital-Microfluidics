@@ -628,10 +628,10 @@ class CombSynth(PCRTask):
         def well(n: int, r: str, drops_per_target: int) -> Well:
             w = board.wells[n]
             w.contains(Reagent.find(r))
-            self.drops_needed[w] = drops_per_target*self.n_combinations
-            # The +1 is a kludge needed because the drop being dispensed will already have been subtracted
-            # out when the path was scheduled.
-            w.compute_fill_to(lambda: min(w.capacity, (self.drops_needed[w]+1)*w.dispensed_volume))
+            drops_needed = drops_per_target * self.n_combinations
+            w.required = drops_needed*w.dispensed_volume
+            # self.drops_needed[w] = drops_per_target*self.n_combinations
+            # w.compute_fill_to(lambda: min(w.capacity, self.drops_needed[w]*w.dispensed_volume))
             return w 
             
         
@@ -663,8 +663,13 @@ class CombSynth(PCRTask):
                    path: Path.Middle 
                    ) -> Path.Full:
         if isinstance(source, Well):
+            # well = source
+            # def drop_used() -> None:
+            #     self.drops_needed[well] -= 1
+            #     if well is self.rsm_well:
+            #         print(f"-- Now need {qstr(self.drops_needed[well], 'drop')} of {well.reagent}.  Well has {well.volume}")
+            # start = Path.dispense_from(source, before_release=drop_used)
             start = Path.dispense_from(source)
-            self.drops_needed[source] -= 1
         else:
             start = Path.teleport_into(source[0], reagent=source[1])
         return (start+path+self.to_waste_from_row(waste_row)).enter_well()
@@ -921,9 +926,7 @@ class CombSynth(PCRTask):
             paths.append((c4.lead_drop, to_mix(13,7).reach(in_pos)))
         if c5 is not None:
             paths.append((c5.lead_drop, to_mix(13,3).reach(in_pos)))
-        
-        # TODO: The rest
-        
+
         return paths
 
             
@@ -931,6 +934,7 @@ class CombSynth(PCRTask):
                        mixing: Sequence[Optional[CombSynth.Combination]],
                        tcycling: Sequence[Optional[CombSynth.Combination]]
                        ) -> Sequence[Schedulable]:
+        # empty_waste = (mixing[-1] and tcycling[-1] and not mixing[-2] and not tcycling[-2])
         mixing_paths = self.pipleline_mixes(mixing)
         tcycle_paths = self.pipleline_tcycle(tcycling)
         
@@ -950,10 +954,11 @@ class CombSynth(PCRTask):
         
         system.clock.await_tick()
         
-        self.pm_well.refill()
-        self.db_well.refill()
-        self.mm_well.refill()
-        self.rsm_well.refill()
+        refills = (self.pm_well.refill(),
+                   self.db_well.refill(),
+                   self.mm_well.refill(),
+                   self.rsm_well.refill())
+        Delayed.join(refills)
         
 
         combinations = deque(self.Combination(i+1, self) for i in range(self.n_combinations))
@@ -989,7 +994,8 @@ class CombSynth(PCRTask):
 
             self.phase_barrier.reset(len(paths))
             Path.run_paths(paths, system=system)
-        
+        if self.waste_well.volume.is_positive:
+            self.waste_well.empty_well()
 
 class Test(Task):
     def __init__(self) -> None:

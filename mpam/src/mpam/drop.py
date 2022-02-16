@@ -958,6 +958,12 @@ class Drop(OpScheduler['Drop']):
                 board = pad.board
                 # drop = Drop(pad=pad, liquid=liquid)
                 # board.journal_delivery(pad, liquid)
+                
+                # If the caller gave us a before_release action, we invoke it
+                # here, before any other dispense on this well can happen.
+                if self.before_release is not None:
+                    (self.before_release)()
+                
                 well.gate_reserved = False
                 pad.reserved = False
                 if post_result:
@@ -970,6 +976,9 @@ class Drop(OpScheduler['Drop']):
                 # the gate reserved, and we will spin until it's done.
                 while not well.reserve_gate():
                     yield True
+                # Next, if the caller gave us an after_reservation action, we call it.
+                if self.after_reservation is not None:
+                    (self.after_reservation)()
                 # Next, we make sure that there's enough of the right reagent for us.
                 def empty_first() -> None:
                     well.remove(well.volume)
@@ -1000,10 +1009,14 @@ class Drop(OpScheduler['Drop']):
         
         def __init__(self, well: Well, *,
                      reagent: Optional[Reagent] = None,
-                     empty_wrong_reagent: bool = False) -> None:
+                     empty_wrong_reagent: bool = False,
+                     after_reservation: Optional[Callback] = None,
+                     before_release: Optional[Callback] = None) -> None:
             self.well = well
             self.reagent = reagent
             self.empty_wrong_reagent = empty_wrong_reagent
+            self.after_reservation = after_reservation
+            self.before_release = before_release 
             
     class EnterWell(Operation['Drop',None]):
         well: Final[Optional[Well]]

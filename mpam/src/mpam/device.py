@@ -795,6 +795,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     _contents: Optional[Liquid]
     _shape: Final[Optional[WellShape]]
     
+    required: Optional[Volume] = None
+    
     _liquid_change_callbacks: Final[ChangeCallbackList[Optional[Liquid]]]
    
     @property
@@ -878,10 +880,15 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     
     # when refilling, fill to this level
     _fill_to: Optional[WellVolumeSpec] = None
+    
 
     @property
     def fill_to(self) -> Volume:
-        return self.volume_from_spec(self._fill_to, lambda: self.capacity)
+        def default_fill_line() -> Volume:
+            if self.required is None:
+                return self.capacity
+            return min(self.capacity, self.required)
+        return self.volume_from_spec(self._fill_to, default_fill_line)
     
     @fill_to.setter
     def fill_to(self, volume: Optional[WellVolumeSpec]) -> None:
@@ -1020,6 +1027,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             reagent = self._contents.reagent
             # print(f"Removing {v} from {self._contents}")
             self._contents -= v
+        if self.required is not None:
+            if self.required <= v:
+                self.required = None
+            else:
+                self.required -= v
         self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
         return Liquid(reagent, v)
@@ -1068,6 +1080,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         volume = self.fill_to - self.volume
+        print(f"Fill line is {self.fill_to}.  Adding {volume}.")
         assert volume > Volume.ZERO(), f"refill(volume={volume}) called on {self}"
         if reagent is None:
             reagent = self.reagent
@@ -1095,6 +1108,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         if resulting_volume >= self.min_fill or resulting_volume.is_close_to(self.min_fill, 
                                                                              abs_tol=0.05*self.dispensed_volume):
             return Delayed.complete(self)
+        # print(f"Require {volume} of {reagent}.  Only have {current_volume}.  Refilling")
         return self.refill(reagent=reagent)
     
     def ensure_space(self, 

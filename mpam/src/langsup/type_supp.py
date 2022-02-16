@@ -49,6 +49,7 @@ class Type:
     BINARY_CPT: ClassVar[Type]
     PAD: ClassVar[Type]
     WELL_PAD: ClassVar[Type]
+    WELL_GATE: ClassVar[Type]
     DROP: ClassVar[Type]
     ORIENTED_DROP: ClassVar[Type]
     DIR: ClassVar[Type]
@@ -198,6 +199,7 @@ Type.BINARY_STATE = Type("BINARY_STATE")
 Type.BINARY_CPT = Type("BINARY_CPT")
 Type.PAD = Type("PAD", [Type.BINARY_CPT])
 Type.WELL_PAD = Type("WELL_PAD", [Type.BINARY_CPT])
+Type.WELL_GATE = Type("WELL_GATE", [Type.WELL_PAD])
 Type.DROP = Type("DROP", [Type.PAD])
 Type.ORIENTED_DROP = Type("ORIENTED_DROP", [Type.DROP])
 Type.DIR = Type("DIR")

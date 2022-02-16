@@ -11,7 +11,7 @@ from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
     DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T, \
-    WaitableType
+    WaitableType, Callback
 from quantities.dimensions import Volume
 
 
@@ -361,8 +361,11 @@ class Path:
         return Path.Middle(())
         
     @classmethod
-    def dispense_from(cls, well: Well) -> Path.Start:
-        return Path.Start(Path.DispenseStep(well), ())
+    def dispense_from(cls, well: Well, *,
+                      after_reservation: Optional[Callback] = None,
+                      before_release: Optional[Callback] = None) -> Path.Start:
+        return Path.Start(Path.DispenseStep(well, after_reservation=after_reservation,
+                                            before_release=before_release), ())
     
     @classmethod
     def teleport_into(cls, extraction_point: ExtractionPoint, *,
@@ -500,8 +503,11 @@ class Path:
         
         
     class DispenseStep(StartStep):
-        def __init__(self, well: Well) -> None:
-            super().__init__(Drop.DispenseFrom(well))
+        def __init__(self, well: Well, *,
+                     after_reservation: Optional[Callback] = None,
+                     before_release: Optional[Callback] = None) -> None:
+            super().__init__(Drop.DispenseFrom(well, 
+                                               after_reservation=after_reservation, before_release=before_release))
     class TeleportInStep(StartStep):
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,

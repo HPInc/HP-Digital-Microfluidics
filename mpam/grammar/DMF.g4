@@ -204,6 +204,7 @@ param_type returns[Type type]
   | 'pad'  {$ctx.type=Type.PAD}
   | 'well' {$ctx.type=Type.WELL}
   | 'well' 'pad' {$ctx.type=Type.WELL_PAD}
+  | 'well'? 'gate' {$ctx.type=Type.WELL_GATE} 
   | 'int'  {$ctx.type=Type.INT}
   | 'float' {$ctx.type=Type.FLOAT}
   | 'string' {$ctx.type=Type.STRING}
@@ -232,6 +233,7 @@ dim_unit returns[PhysUnit unit]
 
 attr returns[str which]
   : 'exit' 'pad' {$ctx.which="#exit_pad"}
+  | 'gate' {$ctx.which="gate"}
   | ('dir' | 'direction') {$ctx.which="direction"}
   | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which="row"}
   | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="column"}

@@ -16,8 +16,8 @@ from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit
-from mpam.device import Pad, Board, BinaryComponent, WellPad, Well,\
-    ChangeJournal
+from mpam.device import Pad, Board, BinaryComponent, Well,\
+    ChangeJournal, WellGate, WellPad
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -373,16 +373,16 @@ class MacroValue(CallableValue):
         params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
         return f"macro({params})->{self.sig.return_type}"
     
-class WellPadValue(NamedTuple):
-    pad: WellPad
+class WellGateValue(NamedTuple):
+    pad: WellGate
     well: Well
     
     def __str__(self) -> str:
-        pad = self.pad
-        if isinstance(pad.loc, Well):
-            return str(pad)
-        else:
-            return f"({pad}, {self.well})"
+        return str(self.pad)
+        # if isinstance(pad.loc, Well):
+        #     return str(pad)
+        # else:
+        #     return f"({pad}, {self.well})"
         
 class ScaledReagent(NamedTuple):
     mult: float
@@ -455,8 +455,7 @@ def unit_string_func(unit: PhysUnit) -> Func:
 
 UnitStringFuncs = ByNameCache[PhysUnit, Func](unit_string_func)
 
-Attributes["gate"].register(Type.WELL, Type.WELL_PAD, 
-                            lambda well: WellPadValue(well.gate, well))
+Attributes["gate"].register(Type.WELL, Type.WELL_GATE, lambda well: well.gate)
 Attributes["#exit_pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
 Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
 Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
@@ -588,7 +587,8 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.BINARY_STATE: OnOff,
         Type.BINARY_CPT: BinaryComponent,
         Type.PAD: Pad,
-        Type.WELL_PAD: WellPadValue,
+        Type.WELL_PAD: WellPad,
+        Type.WELL_GATE: WellGate,
         Type.WELL: Well,
         Type.DELTA: DeltaValue,
         Type.MOTION: MotionValue,
@@ -1904,7 +1904,7 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["INDEX"]
         fn.format_type_expr_using(2, lambda x,y: f"{x}[{y}]")
         fn.register_all_immediate([((Type.WELL, Type.INT), Type.WELL_PAD),
-                                   ], lambda w,n: WellPadValue(w.group.shared_pads[cast(int, n)], w))
+                                   ], lambda w,n: w.shared_pads[cast(int, n)])
         
 
         def add_delta(p: Pad, dn: Dir, n: int) -> Pad:
