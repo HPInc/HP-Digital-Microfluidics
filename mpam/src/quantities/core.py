@@ -690,7 +690,11 @@ class _BoundQuantity(Generic[D]):
         if not as_float and self.is_count:
             formatted_number = int(self.magnitude).__format__(nspec)
         else:
+            if (trim := nspec.endswith("tf")):
+                nspec = nspec[:-2]+"f"
             formatted_number = self.magnitude.__format__(nspec)
+            if trim:
+                formatted_number = formatted_number.rstrip("0").rstrip(".")
         res = (formatted_number+sep+formatted_unit).__format__(sspec)
         return res
 

@@ -666,7 +666,7 @@ class WellMonitor:
             units=self.board_monitor.drop_unit
             self.reagent_description.set_text(f"{liquid.reagent}")
             self.reagent_description.set_visible(True)
-            self.volume_description.set_text(f"{liquid.volume.in_units(units):g}")
+            self.volume_description.set_text(f"{liquid.volume.in_units(units):tf}")
             self.volume_description.set_visible(True)
         
 class ClickHandler:
