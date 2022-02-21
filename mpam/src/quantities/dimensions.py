@@ -58,13 +58,13 @@ class Distance(BaseDim['Distance']): ...
     #     return super().__mul__(rhs)
 
 class Time(BaseDim['Time']): 
-    def HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
+    def in_HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         from quantities.SI import hours, minutes, seconds
         return self.decomposed([hours, minutes, seconds], required="all").joined(sep, 2)
-    def HM(self, sep: str = ":") -> _DecomposedQuantity.Joined:
+    def in_HM(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         from quantities.SI import hours, minutes
         return self.decomposed([hours, minutes], required="all").joined(sep, 2)
-    def MS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
+    def in_MS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         from quantities.SI import minutes, seconds
         return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
     def __rtruediv__(self, lhs: float) -> Frequency:
@@ -76,8 +76,6 @@ class Temperature(BaseDim['Temperature']): ...
 class LumInt(BaseDim['LumInt']): ...
 
 class Current(BaseDim['Current']): ...
-
-class Storage(BaseDim['Storage']): ...
 
 class Amount(BaseDim['Amount']): ...
 

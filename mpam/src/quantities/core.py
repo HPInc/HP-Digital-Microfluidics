@@ -251,7 +251,7 @@ class BaseDimension(Dimensionality[BD]):
     def description(self, *, exponent_fmt: ExptFormatter = None) -> str:  # @UnusedVariable
         return self._sort_name
 
-    def base_unit(self, abbr: str, singular: Optional[str]=None) -> Unit[BD]:
+    def base_unit(self, abbr: str, *, singular: Optional[str]=None) -> Unit[BD]:
         unit = Unit[BD](abbr, self.make_quantity(1), singular=singular)
         if self._default_units is None: 
             self.default_units = (unit,)
@@ -532,7 +532,7 @@ class _DecomposedQuantity(Generic[D]):
             (?P<width>[0-9]+)?
             (?P<grouping>[,_]?)
             (?P<prec>\\.[0-9]+)?
-            (?P<type>.)?
+            (?P<type>t?.)?
         """, re.VERBOSE)
     
     def _fmt_specs(self, format_spec: str) -> tuple[str, str, str]:
@@ -990,6 +990,16 @@ class Prefix:
             raise TypeError(f"Prefix {self} applied to non-Unit {unit}")
         return Unit(self.prefix+unit.abbreviation, self.multiplier*unit.quantity)
     
+    def __mul__(self, rhs: float) -> float:
+        return self.multiplier*rhs
+    def __rmul__(self, lhs: float) -> float:
+        return lhs*self.multiplier
+    def __truediv__(self, rhs: float) -> float:
+        return self.multiplier/rhs
+    
+    def scale(self, prefix: str, mult: float) -> Prefix:
+        return Prefix(prefix, self.multiplier*mult)
+    
 
 class NamedDim(Quantity[ND]): 
     _dim: ClassVar[Dimensionality[ND]]
@@ -1107,8 +1117,8 @@ class BaseDim(NamedDim[BD], metaclass=BaseDimMeta):
     _dim: ClassVar[BaseDimension[BD]]
     
     @classmethod
-    def base_unit(cls: type[BaseDim[BD]], abbr: str) -> Unit[BD]:
-        return cls._dim.base_unit(abbr)
+    def base_unit(cls: type[BaseDim[BD]], abbr: str, *, singular: Optional[str]=None) -> Unit[BD]:
+        return cls._dim.base_unit(abbr, singular=singular)
     
 class CountDim(BaseDim[BD]):
     @property
