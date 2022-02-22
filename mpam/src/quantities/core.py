@@ -7,6 +7,7 @@ from erk.stringutils import split_camel_case, infer_plural
 import math
 from erk.basic import LazyPattern, Lazy
 import re
+from abc import abstractmethod
 
 ExptFormatter = Callable[[int],str]
 
@@ -218,7 +219,7 @@ class Dimensionality(Generic[D]):
             return d
         if issubclass(self.quant_class, NamedDim):
             c: type[BaseDim] = self.quant_class.restricted(restriction)
-            d = c._dim
+            d = c.dim()
             self._restrictions[restriction] = d
             return d
         name = dim or self.name
@@ -226,9 +227,12 @@ class Dimensionality(Generic[D]):
         restr_pname = _restriction_name(restriction)
         pname = f"{name}[{restr_pname}]"
         rname = f"{name}_{restr_pname}"
-        # immediate_base = CountDim if issubclass(self.quant_class, CountDim) else BaseDim
-        new_dim_class = BaseDimMeta(rname,(BaseDim,), {"_dim_name": pname})
-        new_dim: BaseDimension = new_dim_class._dim
+
+        # I'm not sure I understand why, but new_dim_class is inferred to be of
+        # type BaseDimMeta, and I can't get MyPy to understand that it's a
+        # BaseDim (so that I can invoke the class method dim()) without the cast.
+        new_dim_class = cast(Type[BaseDim], BaseDimMeta(rname,(BaseDim,), {"_dim_name": pname}))
+        new_dim: BaseDimension = new_dim_class.dim()
         new_dim._unrestricted = self
         new_dim._restriction = restriction
         self._restrictions[restriction] = new_dim
@@ -1003,26 +1007,32 @@ class Prefix:
         return Prefix(prefix, self.multiplier*mult)
     
 
-class NamedDim(Quantity[ND]): 
-    _dim: ClassVar[Dimensionality[ND]]
-    _this_class: ClassVar[type[ND]]
+class NamedDim(Quantity[ND]):
+    # In earlier code, I had _dim defined as ClassVar[Dimensionality[ND]] (and
+    # as ClassVar[Dimensionality[BD]] in BaseDim).  MyPy 0.931 complains about
+    # this, saying that ClassVar attributes can't have type variables.  Which
+    # makes sense, except that here I'm actually setting it (via the metaclass)
+    # in the subclass, where it does make sense.  So I'm currently doing an explicit
+    # lookup and set using get/setattr
+    _dim_key: Final = "_dim" 
     
-    def __init__(self, mag: float, dim: Dimensionality[ND] = None) -> None:
+    def __init__(self: ND, mag: float, dim: Optional[Dimensionality[ND]] = None) -> None:
         if dim is None:
-            dim = self._dim
+            dim = type(self).dim()
         super().__init__(mag, dim)
         
     def __repr__(self) -> str:
-        return f"{self._this_class.__name__}[{self.magnitude}]"
+        return f"{type(self).__name__}[{self.magnitude}]"
     
     
     @classmethod
+    @abstractmethod
     def dim(cls: type[ND]) -> Dimensionality[ND]:
-        return cls._dim
+        ...
     
     @classmethod
     def unit(cls: type[ND], abbr: str, quant: Union[ND, UnitExpr[ND]]) -> Unit[ND]:
-        return Unit[ND](abbr, quant, check=cls._dim)
+        return Unit[ND](abbr, quant, check=cls.dim())
     
     @classmethod
     def ZERO(cls) -> ND:
@@ -1048,14 +1058,14 @@ class NamedDim(Quantity[ND]):
         if c is not None:
             return c
         restr_pname = _restriction_name(restriction)
-        pname = f"{cls._dim.name}[{restr_pname}]"
+        pname = f"{cls.dim().name}[{restr_pname}]"
         rname = f"{cls.__name__}_{restr_pname}"
         # immediate_base = CountDim if issubclass(self.quant_class, CountDim) else BaseDim
         immediate_base = cls if issubclass(cls, BaseDim) else BaseDim
         new_dim_class = cast(type[BaseDim], BaseDimMeta(rname,(immediate_base,), {"_dim_name": pname}))
-        new_dim: BaseDimension = new_dim_class._dim
+        new_dim: BaseDimension = new_dim_class.dim()
         cls._restriction_classes[restriction] = new_dim_class
-        new_dim._unrestricted = cls._dim
+        new_dim._unrestricted = cls.dim()
         new_dim._restriction = restriction
         return new_dim_class
     
@@ -1071,7 +1081,7 @@ class DerivedDimMeta(type):
     def __init__(cls, name: str, base, dct) -> None:  # @UnusedVariable @NoSelf
         if name == "DerivedDim":
             return
-        cls._this_class = cls
+        # cls._this_class = cls
         d: Optional[Dimensionality] = getattr(cls, "derived", None)
         if d is None:
             raise NameError(f"DerivedDim {name} does not define 'derived'")
@@ -1081,23 +1091,29 @@ class DerivedDimMeta(type):
             n:str = "_".join(split_camel_case(name)).lower()
             d.name = n
             d.quant_class = cast(type[DerivedDim], cls)
-        cls._dim = d
+        real_d = d
+        def my_dim() -> Dimensionality:
+            return real_d
+        cls.dim = my_dim
         cls._zero = cls(0.0)
         cls._restriction_classes: dict[Any, type[BaseDim]] = {}
 
         
 
 class DerivedDim(NamedDim[ND], metaclass=DerivedDimMeta): 
-    derived: ClassVar[Dimensionality[ND]]
+    @classmethod
+    def dim(cls:type[ND])->Dimensionality[ND]:
+        assert False, f"{cls}.dim() not defined by BaseDimMeta"
+
 
 class BaseDimMeta(type):
     def __new__(cls, name, base, dct):
         return super().__new__(cls, name, base, dct)
     
-    def __init__(cls, name: str, base, dct):  # @UnusedVariable
+    def __init__(cls, name: str, base, dct) -> None:  # @UnusedVariable
         if name == "BaseDim":
             return
-        cls._this_class = cls
+        # cls._this_class = cls
         # d = getattr(cls, "_dim", None)
         # if d is not None:
             # raise NameError(f"BaseDim {name} already defines '_dim'")
@@ -1111,16 +1127,22 @@ class BaseDimMeta(type):
             n = "_".join(split_camel_case(name)).lower()
         d = BaseDimension[ND](n)
         d.quant_class = cast(type[DerivedDim], cls)
-        cls._dim = d
+        def my_dim() -> BaseDimension:
+            return d
+        cls.dim = my_dim
         cls._zero = cls(0)
         cls._restriction_classes: dict[Any, type[BaseDim]] = {}
 
 class BaseDim(NamedDim[BD], metaclass=BaseDimMeta): 
-    _dim: ClassVar[BaseDimension[BD]]
+    # _dim: ClassVar[BaseDimension[BD]]
+    
+    @classmethod
+    def dim(cls:type[BD])->BaseDimension[BD]:
+        assert False, f"{cls}.dim() not defined by BaseDimMeta"
     
     @classmethod
     def base_unit(cls: type[BaseDim[BD]], abbr: str, *, singular: Optional[str]=None) -> Unit[BD]:
-        return cls._dim.base_unit(abbr, singular=singular)
+        return cls.dim().base_unit(abbr, singular=singular)
     
 class CountDim(BaseDim[BD]):
     @property
@@ -1207,7 +1229,7 @@ class CountDim(BaseDim[BD]):
             singular = abbr
         if plural is None:
             plural = infer_plural(singular)
-        return cls._dim.base_unit(plural, singular=singular)
+        return cls.dim().base_unit(plural, singular=singular)
     
     noun_units: ClassVar[dict[str, Unit]] = {}
     

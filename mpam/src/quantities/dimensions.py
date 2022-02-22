@@ -8,6 +8,11 @@ class Scalar(NamedDim['Scalar']):
     _dim = Dimensionality['Scalar']((), 'scalar')
     def __float__(self) -> float:
         return float(self.magnitude)
+    
+    @classmethod
+    def dim(cls)->Dimensionality[Scalar]:
+        return cls._dim
+    
     # @overload
     # def __mul__(self, rhs: float) -> Scalar: ...  # @UnusedVariable
     # # @overload
@@ -19,7 +24,7 @@ class Scalar(NamedDim['Scalar']):
     # def __mul__(self, rhs):
     #     return super().__mul__(rhs)    
     
-Scalar._dim.quant_class = Scalar
+Scalar.dim().quant_class = Scalar
 
 
 class Mass(BaseDim['Mass']): ...
