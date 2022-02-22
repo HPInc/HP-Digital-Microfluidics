@@ -288,7 +288,10 @@ class ThermocycleProcessType(MultiDropProcessType):
                 rendezvous.reset()
                 all_channels(lambda bc: bc.switch_ends(this_end, rendezvous))
                 while not rendezvous.ready:
-                    yield None
+                    # BUG: MyPy 0.931 (9457).  MyPy incorrectly thinks that
+                    # rendezvous.ready says Literal[True], even after the
+                    # reset() call. https://github.com/python/mypy/issues/9457
+                    yield None  # type: ignore[unreachable]
                 (this_end, other_end) = (other_end, this_end)
                 (these_heaters, those_heaters) = (those_heaters, these_heaters)
 

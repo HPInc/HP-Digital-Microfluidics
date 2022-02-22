@@ -1,8 +1,14 @@
 from __future__ import annotations
-from devices import joey
+
+from enum import Enum, auto
 from typing import Mapping, Final, Optional
-from mpam.types import OnOff, XYCoord
+
 from serial import Serial
+
+from devices import joey
+from mpam.types import OnOff, State, DummyState
+from erk.basic import ComputedDefaultDict
+
 
 _pins: Mapping[str, int] = {
     "B01": 244, "H06": 243, "B02": 242, "B03": 241, "C04": 240,
@@ -116,47 +122,54 @@ _well_gate_cells: Mapping[int, str] = {
     4: 'T06', 5: 'N06', 6: 'H06', 7: 'B06'
     }
 
-class Electrode:
-    index: Final[int]
+class OpenDropVersion(Enum):
+    V40 = auto()
+    V41 = auto()
+
+class Electrode(State[OnOff]):
+    byte_index: Final[int]
+    bit_index: Final[int]
+
     array: Final[bytearray]
     
-    def set_state(self, val: OnOff) -> None:
+    def realize_state(self, val: OnOff) -> None:
         # assert self.index < len(self.array), f"{self.index} not in {len(self.array)}-byte array"
-        self.array[self.index] = 1 if val else 0
+        
+        bit = 1 << self.bit_index
+
+        if val is OnOff.ON:
+            self.array[self.byte_index] |= bit
+        else:
+            self.array[self.byte_index] &= ~bit
+        
+        # self.array[self.index] = 1 if val else 0
     
-    def __init__(self, index: int, a: bytearray) -> None:
-        self.index = index
+    def __init__(self, byte_index: int, bit_index: int, a: bytearray) -> None:
+        super().__init__(initial_state=OnOff.OFF)
+        self.byte_index = byte_index
+        self.bit_index = bit_index
         self.array = a
         
-    
-class Pad(joey.Pad):
-    electrode: Final[Optional[Electrode]]
 
-    def __init__(self, electrode: Optional[Electrode], loc: XYCoord, board: Board, *, exists: bool) -> None:
-        super().__init__(loc, board, exists = exists and electrode is not None)
-        self.electrode = electrode
-        if electrode is None:
-            self.set_device_state = lambda _: None
-        else:
-            real_e = electrode
-            self.set_device_state = lambda v: real_e.set_state(v)
-            
-class WellPad(joey.WellPad):
-    electrode: Final[Optional[Electrode]]
-
-    def __init__(self, electrode: Optional[Electrode], board: Board) -> None:
-        super().__init__(board, live=electrode is not None)
-        self.electrode = electrode
-        if electrode is None:
-            self.set_device_state = lambda _: None
-        else:
-            real_e = electrode
-            self.set_device_state = lambda v: real_e.set_state(v)
 
 class Board(joey.Board):
     _device: Final[Optional[str]]
     _states: Final[bytearray]
     _port: Optional[Serial] 
+    _od_version: Final[OpenDropVersion]
+    _electrodes: Final[dict[int, Electrode]]
+    
+    def make_electrode(self, pin: int) -> Electrode:
+        x,y = _opendrop[pin]
+        if self._od_version is OpenDropVersion.V40:
+            byte_index = (x-1)*8+(y-1)
+            bit_index = 0
+            assert byte_index < 128
+        else:
+            byte_index = x-1
+            bit_index = y-1
+        # print(f"  pin: {pin}, (x,y): ({x},{y}), index: {index}")
+        return Electrode(byte_index, bit_index, self._states)
     
     def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
         if cell is None:
@@ -164,32 +177,33 @@ class Board(joey.Board):
         pin = _pins.get(cell, None)
         if pin is None:
             return None
-        x,y = _opendrop[pin]
-        index = (x-1)*8+(y-1)
-        assert index < 128
-        # print(f"  pin: {pin}, (x,y): ({x},{y}), index: {index}")
-        return Electrode(index, self._states)
+        return self._electrodes[pin]
     
-    def _make_well_pad(self, group_name: str, num: int) -> WellPad:
+    def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
         cell = _shared_pad_cells.get((group_name, num))  
         # print(f"-- shared: {group_name} {num} -- {cell}")
-        return WellPad(self._electrode(cell), board=self)
+        return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
 
-    def _make_well_gate(self, well: int) -> WellPad:
+    def _well_gate_state(self, well: int) -> State[OnOff]:
         cell = _well_gate_cells.get(well, None)
         # print(f"-- gate: {well} -- {cell}")
-        return WellPad(self._electrode(cell), board=self)
+        return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
-    def _make_pad(self, x: int, y: int, *, exists: bool) -> Pad:
+    def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]:
         cell = f"{ord('B')+y:c}{25-x:02d}"
         # print(f"({x}, {y}): {cell}")
-        return Pad(self._electrode(cell), XYCoord(x, y), self, exists=exists)
+        return self._electrode(cell)
     
-    
-    
-    
-    def __init__(self, device: Optional[str]) -> None:
-        self._states = bytearray(128)
+    def __init__(self, device: Optional[str], od_version: OpenDropVersion) -> None:
+        if od_version is OpenDropVersion.V40:
+            n_state_bytes = 128
+        elif od_version is OpenDropVersion.V41:
+            n_state_bytes = 32
+        else:
+            assert False, f"Unknown OpenDrop version: {od_version}"
+        self._states = bytearray(n_state_bytes)
+        self._od_version = od_version
+        self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
         super().__init__()
         self._device = device
         self._port = None

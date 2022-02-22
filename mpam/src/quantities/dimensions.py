@@ -1,6 +1,8 @@
 from __future__ import annotations
-from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity,\
+
+from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, \
     NamedDim, Dimensionality
+
 
 class Scalar(NamedDim['Scalar']):
     _dim = Dimensionality['Scalar']((), 'scalar')
@@ -69,6 +71,16 @@ class Time(BaseDim['Time']):
         return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
     def __rtruediv__(self, lhs: float) -> Frequency:
         return super().__rtruediv__(lhs).a(Frequency)
+    
+    # class _UnitExpr(UnitExpr[Time]): ...
+    # class _Unit(Unit[Time]): ...
+    #
+    # def as_unit(self, abbr:str, *, singular:Optional[str]=None)->Time._Unit:
+    #     return Time._Unit(abbr, self, singular=singular)
+    #
+    # @classmethod
+    # def base_unit(cls, abbr: str, *, singular: Optional[str]=None) -> _Unit:
+    #     return cast(Time._Unit, super().base_unit(abbr, singular=singular))
     
 
 class Temperature(BaseDim['Temperature']): ...

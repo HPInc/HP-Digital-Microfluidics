@@ -247,7 +247,7 @@ class PadMonitor(ClickableMonitor):
             magnet.set_weight('normal')
             magnet.set_bbox(None)
             
-    heating_mode_colors: Final[ClassVar[Mapping[HeatingMode, str]]] = {
+    heating_mode_colors: Final[Mapping[HeatingMode, str]] = {
             HeatingMode.OFF: 'darkred',
             HeatingMode.MAINTAINING: 'red',
             HeatingMode.HEATING: 'darkorange',

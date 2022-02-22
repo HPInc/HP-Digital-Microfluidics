@@ -47,7 +47,10 @@ class Turn(Enum):
 
 
 class Dir(Enum):
-    _ignore_ = ["_opposites", "_clockwise", "_counterclockwise", "_turns"]
+    # BUG: MyPy 0.931 (12128).  MyPy is confused because _ignore_ is going to be
+    # deleted by Enum's metaclass.  This has been fixed but not released.
+    # https://github.com/python/mypy/pull/12128
+    _ignore_ = ["_opposites", "_clockwise", "_counterclockwise", "_turns"] # type: ignore[misc]
     _opposites: ClassVar[Mapping[Dir, Dir]]
     _clockwise: ClassVar[Mapping[Dir, Dir]]
     _counterclockwise: ClassVar[Mapping[Dir, Dir]]
@@ -959,8 +962,8 @@ ChemicalComposition = Mapping[Chemical, Concentration]
     
 class ProcessStep:
     description: Final[str]
-    _known: Final[ClassVar[dict[str, ProcessStep]]] = {}
-    _class_lock: Final[ClassVar[Lock]] = Lock()
+    _known: Final[dict[str, ProcessStep]] = {}
+    _class_lock: Final[Lock] = Lock()
     
     def __init__(self, description: str) -> None:
         self.description = description
@@ -1084,9 +1087,9 @@ MixResult = Union[Reagent, str]
 
 class Mixture(Reagent):
     _mixture: Final[MixtureSpec]
-    _class_lock: Final[ClassVar[Lock]] = Lock()
-    _known_mixtures: Final[ClassVar[dict[tuple[float,Reagent,Reagent], Reagent]]] = {}
-    _instances: Final[ClassVar[dict[MixtureSpec, Mixture]]] = {}
+    _class_lock: Final[Lock] = Lock()
+    _known_mixtures: Final[dict[tuple[float,Reagent,Reagent], Reagent]] = {}
+    _instances: Final[dict[MixtureSpec, Mixture]] = {}
     
     def __init__(self, name: str, mixture: MixtureSpec, *, 
                  composition: Optional[ChemicalComposition] = None,
@@ -1360,8 +1363,8 @@ class Color:
     description: Final[str]
     rgba: Final[tuple[float,float,float,float]]
     
-    _class_lock: Final[ClassVar[Lock]] = Lock()
-    _known: Final[ClassVar[dict[str, Color]]] = {}
+    _class_lock: Final[Lock] = Lock()
+    _known: Final[dict[str, Color]] = {}
     
     def __init__(self, description: str, rgba: tuple[float,float,float,float]) -> None:
         self.description = description
@@ -1392,7 +1395,7 @@ class ColorAllocator(Generic[H]):
     next_reagent_color: int
     first_pass_done: bool
     _lock: Final[RLock]
-    _class_lock: Final[ClassVar[Lock]] = Lock()
+    _class_lock: Final[Lock] = Lock()
     
     def __init__(self, initial_reservations: Optional[Mapping[H, Color]] = None):
         self.color_assignments = WeakKeyDictionary()

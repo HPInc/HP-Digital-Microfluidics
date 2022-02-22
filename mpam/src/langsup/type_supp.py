@@ -582,7 +582,10 @@ class Attr:
                 
 
 class Rel(Enum):
-    _ignore_ = ["_known"]    
+    # BUG: MyPy 0.931 (12128).  MyPy is confused because _ignore_ is going to be
+    # deleted by Enum's metaclass.  This has been fixed but not released.
+    # https://github.com/python/mypy/pull/12128
+    _ignore_ = ["_known"] # type: ignore[misc]    
     _known: ClassVar[Mapping[Rel, Callable[[Any,Any], Any]]]
     
     EQ = auto()

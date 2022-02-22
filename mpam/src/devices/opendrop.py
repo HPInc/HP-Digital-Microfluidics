@@ -1,52 +1,29 @@
 from __future__ import annotations
-import mpam.device as device
-from typing import Optional, Final, Sequence
-from mpam.types import OnOff, XYCoord, Orientation, Dir
-from serial import Serial
-from mpam.device import WellGroup, Well, WellOpSeqDict, WellState, PadBounds,\
-    WellShape
-from quantities.SI import uL, ms
 
-class Electrode:
+from typing import Optional, Final, Sequence
+
+from serial import Serial
+
+from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
+    WellShape, Pad, WellGate, WellPad, transitions_from,\
+    TransitionFunc
+from mpam.types import OnOff, XYCoord, Orientation, Dir, State
+from quantities.SI import uL, ms
+from mpam import device
+
+
+class Electrode(State[OnOff]):
     index: Final[int]
     array: Final[bytearray]
     
-    def set_state(self, val: OnOff) -> None:
+    def realize_state(self, val: OnOff) -> None:
         self.array[self.index] = 1 if val else 0
     
     def __init__(self, x: int, y: int, a: bytearray) -> None:
+        super().__init__(initial_state=OnOff.OFF)
         self.index = x*8+y
         self.array = a
         
-class Pad(device.Pad):
-    electrode: Electrode
-    def __init__(self, e: Electrode, loc: XYCoord, board: Board):
-        super().__init__(loc, board)
-        self.electrode = e
-        
-        self.set_device_state = lambda v: e.set_state(v)
-    
-class WellGatePad(device.WellPad):
-    electrode: Electrode
-    def __init__(self, e: Electrode, board: Board):
-        super().__init__(board)
-        self.electrode = e
-        
-        self.set_device_state = lambda v: e.set_state(v)
-
-class SharedWellPad(device.WellPad):
-    upper_electrode: Electrode
-    lower_electrode: Electrode
-    def __init__(self, upper: Electrode, lower: Electrode, board: Board):
-        super().__init__(board)
-        self.upper_electrode = upper
-        self.lower_electrode = lower
-        
-        def set_state(val: OnOff):
-            upper.set_state(val)
-            lower.set_state(val)
-            
-        self.set_device_state = set_state
 
 class Board(device.Board):
     _dev: Optional[str]
@@ -116,7 +93,8 @@ class Board(device.Board):
             epx += 1
         return (epx+5*outdir, epy-0.5)
     
-    def _well(self, num: int, group: WellGroup, exit_dir: Dir, gate_loc: XYCoord, exit_pad: device.Pad):
+    def _well(self, num: int, transition: TransitionFunc, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
+              inner_locs: Sequence[tuple[int,int]]):
         shape = WellShape(
                     gate_pad_bounds= self._gate_bounds(exit_pad.location),
                     shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
@@ -125,12 +103,18 @@ class Board(device.Board):
                     reagent_id_circle_radius = 1,
                     reagent_id_circle_center = self._reagent_circle_center(exit_pad.location) 
             )
+        gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
+        gate = WellGate(self, exit_pad, exit_dir, gate_electrode, neighbors=(0,1))
+        pad_neighbors = [[-1,1,2], [0,2], [0, 1]]
+        inner_electrodes = tuple(Electrode(x, y, self._states) for x,y in inner_locs)
+        shared = tuple(WellPad(self, state=s, neighbors=ns) for s,ns in zip(inner_electrodes, pad_neighbors))
         return Well(number=num,
                     board=self,
-                    group=group,
+                    group=transition,
                     exit_dir=exit_dir,
                     exit_pad=exit_pad,
-                    gate=WellGatePad(Electrode(gate_loc.x, gate_loc.y, self._states), self),
+                    gate=gate,
+                    shared_pads = shared,
                     capacity=12*uL,
                     dispensed_volume=2*uL,
                     shape=shape
@@ -150,7 +134,7 @@ class Board(device.Board):
             for y in range(0,8):
                 loc = XYCoord(x, y)
                 e = Electrode(x, y, self._states)
-                p = Pad(e, loc, self)
+                p = Pad(loc, self, e)
                 pad_dict[loc] = p
                 
         sequences: WellOpSeqDict = {
@@ -162,42 +146,30 @@ class Board(device.Board):
             (WellState.ABSORBED, WellState.READY): ((1,2),)
             }
         
-        left_group = WellGroup("left", self, 
-                               (SharedWellPad(Electrode(0, 1, self._states),
-                                              Electrode(0, 6, self._states), self),
-                                SharedWellPad(Electrode(0, 2, self._states),
-                                              Electrode(0, 5, self._states), self),
-                                SharedWellPad(Electrode(0, 3, self._states),
-                                              Electrode(0, 4, self._states), self)),
-                               sequences)
-        right_group = WellGroup("right", self,
-                                (SharedWellPad(Electrode(15, 1, self._states),
-                                               Electrode(15, 6, self._states), self),
-                                 SharedWellPad(Electrode(15, 2, self._states),
-                                               Electrode(15, 5, self._states), self),
-                                 SharedWellPad(Electrode(15, 3, self._states),
-                                               Electrode(15, 4, self._states), self)),
-                                sequences)
+        transition = transitions_from(sequences)
         
-        upper_left = self._well(0, left_group, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1))
-        upper_right = self._well(1, right_group, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1))
-        lower_left = self._well(2, left_group, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6))
-        lower_right = self._well(3, right_group, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6))
+        def inner_locs(col: int, rows: Sequence[int]) -> Sequence[tuple[int,int]]:
+            return [(col, r) for r in rows]
+        
+        upper_left = self._well(0, transition, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)))
+        upper_right = self._well(1, transition, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)))
+        lower_left = self._well(2, transition, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)))
+        lower_right = self._well(3, transition, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)))
         wells.extend((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:
         if self._port is None:
-            if self._dev is None:
-                return
-            self._port = Serial(self._dev)
-            # self._stream = open(self._dev, "wb")
-        self._port.write(self._states)
-        # I'm not sure why, but it seems that nothing happens until the 
-        # first byte of the next round gets sent. (Sending 129 bytes works, 
-        # but then the next round will use that extra byte.  Sending everything
-        # twice seems to do the job.  I'll look into this further.
-        self._port.write(self._states)
-        self.finish_update()
+            if self._dev is not None:
+                self._port = Serial(self._dev)
+                # self._stream = open(self._dev, "wb")
+        if self._port is not None:
+            self._port.write(self._states)
+            # I'm not sure why, but it seems that nothing happens until the 
+            # first byte of the next round gets sent. (Sending 129 bytes works, 
+            # but then the next round will use that extra byte.  Sending everything
+            # twice seems to do the job.  I'll look into this further.
+            self._port.write(self._states)
+        super().update_state()
         
     def stop(self)->None:
         if self._port is not None:

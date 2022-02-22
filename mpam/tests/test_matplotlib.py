@@ -3,7 +3,6 @@ from matplotlib.patches import Rectangle, Circle
 from matplotlib.font_manager import FontProperties
 from quantities.SI import uL
 import math
-from quantities.core import Scalar
 
 # class MonitorThread(Thread):
 #     def run(self) -> None:

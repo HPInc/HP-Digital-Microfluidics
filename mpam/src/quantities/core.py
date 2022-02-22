@@ -252,7 +252,9 @@ class BaseDimension(Dimensionality[BD]):
         return self._sort_name
 
     def base_unit(self, abbr: str, *, singular: Optional[str]=None) -> Unit[BD]:
-        unit = Unit[BD](abbr, self.make_quantity(1), singular=singular)
+        q = self.make_quantity(1)
+        unit: Unit[BD] = q.as_unit(abbr, singular=singular)
+        # unit = Unit[BD](abbr, self.make_quantity(1), singular=singular)
         if self._default_units is None: 
             self.default_units = (unit,)
         return unit
@@ -1197,7 +1199,12 @@ class CountDim(BaseDim[BD]):
         return self.magnitude >= rhs.magnitude
 
     @classmethod
-    def base_unit(cls: type[CountDim[BD]], singular: str, *, plural: Optional[str] = None) -> Unit[BD]:
+    def base_unit(cls: type[CountDim[BD]], abbr: str, *, 
+                  plural: Optional[str] = None, 
+                  singular: Optional[str] = None) -> Unit[BD]:
+        assert plural is None or singular is None, f"Both singular ({singular}) and plural ({plural}) specified for {abbr}"
+        if singular is None:
+            singular = abbr
         if plural is None:
             plural = infer_plural(singular)
         return cls._dim.base_unit(plural, singular=singular)

@@ -90,7 +90,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                           ) -> Delayed[OnOff]:
             
             if obj.broken:
-                raise PadBrokenError
+                raise PadBrokenError(obj)
             mod = self.mod
             future = Delayed[OnOff]()
             # state_obj = obj._state
@@ -436,9 +436,9 @@ class WellGate(WellPad, LocatedPad):
                  exit_pad: Pad,
                  exit_dir: Dir,
                  state: State[OnOff], *,
-                 neighbor: int,
+                 neighbors: tuple[int, ...],
                  live: bool = True) -> None:
-        WellPad.__init__(self, board, state, live=live, neighbors=(neighbor,))
+        WellPad.__init__(self, board, state, live=live, neighbors=neighbors)
         loc = board.orientation.neighbor(exit_dir.opposite, exit_pad.location)
         LocatedPad.__init__(self, loc)
         
@@ -501,7 +501,7 @@ class WellMotion:
     turned_gates_on: bool = False
     turned_gates_off: bool = False
     # on_last_step: bool = False
-    one_tick: Final[ClassVar[Ticks]] = 1*tick
+    one_tick: Final[Ticks] = 1*tick
     # sequence: WellOpStepSeq
     gate_status: GateStatus
     

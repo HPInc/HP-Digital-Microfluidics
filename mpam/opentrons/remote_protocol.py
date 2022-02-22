@@ -29,8 +29,8 @@ def run(protocol: protocol_api.ProtocolContext) -> None:
     if turn_off_lights_at_end:
         protocol.set_rail_lights(True)
     
-    board = Board(config["board"], protocol)
     robot = Robot(config, protocol)
+    board = Board(config["board"], protocol, robot=robot)
     
     protocol.comment("Starting run")
     

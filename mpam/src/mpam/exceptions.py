@@ -3,13 +3,13 @@ from typing import Final, TYPE_CHECKING
 from mpam.types import XYCoord
 
 if TYPE_CHECKING:
-    from mpam.device import Pad, Well
+    from mpam.device import Pad, Well, BinaryComponent
 
 class MPAMError(RuntimeError): ...
 
 class PadBrokenError(MPAMError):
-    pad: Final[Pad]
-    def __init__(self, pad: Pad):
+    pad: Final[BinaryComponent]
+    def __init__(self, pad: BinaryComponent):
         super().__init__(f"{pad} is broken")
         self.pad = pad
         

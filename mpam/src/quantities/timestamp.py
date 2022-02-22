@@ -1,10 +1,13 @@
 from __future__ import annotations
-import time
-from .SI import sec, ns, ms
-from . import dimensions
-from . import core
-from typing import overload, Union, Final, ClassVar, MutableMapping
+
 import math
+import time
+from typing import overload, Union, Final, MutableMapping
+
+from . import core
+from . import dimensions
+from .SI import sec, ns, ms
+
 
 class Timestamp:
     time: dimensions.Time
@@ -64,7 +67,7 @@ class Timestamp:
     def __le__(self, rhs: Timestamp) -> bool:
         return self.time <= rhs.time
     
-    _precision_size: Final[ClassVar[MutableMapping[core.Unit[dimensions.Time], int]]] = {
+    _precision_size: Final[MutableMapping[core.Unit[dimensions.Time], int]] = {
         sec: 0
         }
     

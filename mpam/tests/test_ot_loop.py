@@ -195,7 +195,7 @@ def run() -> None:
     print(config.json())
 
     pname = f"protocol-{random.randint(0,1000000)}"
-    listener = opentrons.Listener()
+    listener = opentrons.Listener(port=8087, name="OT-2 Listener")
     listener.start()
     
     response = post_request("protocols",

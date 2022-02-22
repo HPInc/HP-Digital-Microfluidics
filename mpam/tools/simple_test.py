@@ -114,7 +114,8 @@ class TypeAnnotator(simpleListener):
         return simpleListener.exitIndex_expr(self, ctx)
     
     def exitInjection_expr(self, ctx:simpleParser.Injection_exprContext):
-        what_t = self.type_of(ctx.what, Type.CALLABLE)
+        # what_t = self.type_of(ctx.what, Type.CALLABLE)
+        ...
         
     def exitMacro_expr(self, ctx:simpleParser.Macro_exprContext):
         return simpleListener.exitMacro_expr(self, ctx)

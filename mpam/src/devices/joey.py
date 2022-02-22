@@ -203,7 +203,7 @@ class Board(device.Board):
                                   exit_pad=exit_pad,
                                   exit_dir=exit_dir, 
                                   state=self._well_gate_state(num),
-                                  neighbor=pre_gate),
+                                  neighbors=(pre_gate,)),
                     shared_pads=tuple(WellPad(self, state=s, neighbors=ns) for s,ns in zip(shared_states, 
                                                                                            pad_neighbors)),
                     capacity=54.25*uL,

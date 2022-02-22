@@ -1,25 +1,27 @@
 from __future__ import annotations
-from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType,\
-    Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick,\
-    StaticOperation, Reagent, Callback, T, MixResult
-from mpam.device import Pad, Board, Well, WellState, ExtractionPoint,\
+
+from _collections import defaultdict
+from abc import ABC, abstractmethod
+from enum import Enum, auto
+import math
+from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
+    Sequence, Mapping, NamedTuple, cast
+
+from erk.basic import not_None, ComputedDefaultDict, Count
+from erk.errors import FIX_BY, PRINT
+from erk.stringutils import map_str
+from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
     ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad
 from mpam.exceptions import NoSuchPad, NotAtWell
-from typing import Optional, Final, Union, Callable, Iterator, Iterable,\
-    Sequence, Mapping, NamedTuple, cast, ClassVar
-from quantities.dimensions import Volume
-from enum import Enum, auto
-from abc import ABC, abstractmethod
-from erk.errors import FIX_BY, PRINT
+from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType, \
+    Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
+    StaticOperation, Reagent, Callback, T, MixResult
 from quantities.core import qstr
-from erk.basic import not_None, ComputedDefaultDict, Count
-from _collections import defaultdict
-import math
-from erk.stringutils import map_str
+from quantities.dimensions import Volume
+
 
 # if TYPE_CHECKING:
     # from mpam.processes import MultiDropProcessType
-    
 class Pull(NamedTuple):
     puller: DropLoc
     pullee: DropLoc
@@ -289,8 +291,8 @@ class Blob:
     has_board_pad: bool = False
     has_gate: bool = False
     _in_pull: bool = False
-    pull_key: Final[ClassVar[str]] = "Pull to blob"
-    attachment_attr: Final[ClassVar[str]] = "_attached_blob"
+    pull_key: Final[str] = "Pull to blob"
+    attachment_attr: Final[str] = "_attached_blob"
     attached_to_well: bool = False
 
     @property
