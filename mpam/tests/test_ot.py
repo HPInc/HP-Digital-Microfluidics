@@ -22,7 +22,7 @@ fragments = [Reagent.find(f"Fragment-{i+1}") for i in range(20)]
 wells = board.wells
 drops = board.drop_unit
 
-Volume.default_units(uL) 
+Volume.default_units = uL 
 
 with system:
     wells[0].add(Liquid(pm_primers, 20*uL)).wait()

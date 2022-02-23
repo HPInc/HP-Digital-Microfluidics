@@ -28,7 +28,7 @@ from quantities.timestamp import time_now
 JSONObj = dict[str, Any]
 
 class VolAccum:
-    total: Volume = Volume.ZERO()
+    total: Volume = Volume.ZERO
     
     def __iadd__(self, rhs: Volume) -> VolAccum:
         self.total += rhs
@@ -110,7 +110,7 @@ class Listener(Thread):
             xfers,v = wv
             v = body["volume"]
             r = self.current_reagent 
-            while v >= Volume.ZERO():
+            while v >= Volume.ZERO:
                 assert xfers, f"Finished transfer with {v} unaccounted for."
                 first = xfers[0]
                 if v < first.volume:
@@ -190,7 +190,7 @@ class Listener(Thread):
         assert wv is not None, "/finished called with no well/volume spec"
         xfers,v = wv
         r = self.current_reagent 
-        while v > Volume.ZERO():
+        while v > Volume.ZERO:
             assert xfers, f"Finished transfer at {body['well']} with {v} unaccounted for."
             first = xfers[0]
             if v < first.volume:

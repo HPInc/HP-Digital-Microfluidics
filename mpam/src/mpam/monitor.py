@@ -724,9 +724,9 @@ class ClickHandler:
             elif isinstance(pad, WellPad) and not pad.is_gate:
                 max_volume = pad.well.volume
             else:
-                max_volume = Volume.ZERO()
+                max_volume = Volume.ZERO
             volume = min(pad.board.drop_size, max_volume)
-            if volume > Volume.ZERO():
+            if volume > Volume.ZERO:
                 change_journal.note_removal(pad, volume)
         else:
             reagent = monitor.interactive_reagent

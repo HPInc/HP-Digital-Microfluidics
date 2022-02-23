@@ -25,7 +25,7 @@ v = 1*ml
 v2 = (1*ml).of(Reagent)
 
 print(v, v2)
-Volume.default_units(ml)
+Volume.default_units = ml
 print(v, v2)
 
 
@@ -42,7 +42,7 @@ print((2*ul.of(Substance)/(10*ml)).in_units(ml.of(Substance)/ml))
 
 print(2*ul[Substance]/ml)
 
-class Tick(CountDim['Tick']): ...
+class Tick(CountDim): ...
 tick = ticks = Tick.base_unit("tick")
 t = 1*tick
 print(t)

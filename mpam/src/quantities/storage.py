@@ -5,9 +5,9 @@ from quantities import prefixes, dimensions, SI
 from typing import TypeVar, Final
 
 
-class Storage(BaseDim['Storage']): ...
-class DataRate (DerivedDim['DataRate ']):
-    derived = Storage.dim()/dimensions.Time.dim()
+class Storage(BaseDim): ...
+class DataRate (DerivedDim):
+    derived = Storage/dimensions.Time
 
 bkilo = Prefix("K", 1024**1)
 bmega = Prefix("M", 1024**2)

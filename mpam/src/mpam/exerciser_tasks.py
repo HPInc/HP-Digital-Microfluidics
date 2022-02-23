@@ -155,7 +155,7 @@ class WalkPath(Task):
             start_time = time_now() # @UnusedVariable
             return Delayed.complete(drop)
         
-        class Steps(CountDim['Steps']): ...
+        class Steps(CountDim): ...
         steps = Steps.base_unit("step")
 
         def end_timer(drop: Drop) -> Drop:
@@ -246,10 +246,10 @@ class Mix(Task):
                             help="Fully mix all drops")
         group.add_argument('--shuttles', type=int, metavar='INT', default=0,
                             help="The number of extra shuttles to perform.  Default is zero.")
-        default_pause_before = Time.ZERO()
+        default_pause_before = Time.ZERO
         group.add_argument('-pb', '--pause-before', type=time_arg, metavar='TIME', default=default_pause_before,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_before:g}.")
-        default_pause_after= Time.ZERO()
+        default_pause_after= Time.ZERO
         group.add_argument('-pa', '--pause-after', type=time_arg, metavar='TIME', default=default_pause_after,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_after:g}.")
         
@@ -350,10 +350,10 @@ class Dilute(Task):
                             help="Fully mix all drops")
         group.add_argument('--shuttles', type=int, metavar='INT', default=0,
                             help="The number of extra shuttles to perform.  Default is zero.")
-        default_pause_before = Time.ZERO()
+        default_pause_before = Time.ZERO
         group.add_argument('-pb', '--pause-before', type=time_arg, metavar='TIME', default=default_pause_before,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_before:g}.")
-        default_pause_after= Time.ZERO()
+        default_pause_after= Time.ZERO
         group.add_argument('-pa', '--pause-after', type=time_arg, metavar='TIME', default=default_pause_after,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_after:g}.")
         

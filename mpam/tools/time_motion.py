@@ -94,7 +94,7 @@ def run_test(args: Namespace) -> None:
         
 
 if __name__ == '__main__':
-    Time.default_units(ms)
+    Time.default_units = ms
     parser = arg_parser()
     
     args = parser.parse_args()

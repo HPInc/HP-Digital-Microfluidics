@@ -18,8 +18,8 @@ class ArmPos(Enum):
     TIPS = auto()
     WASTE = auto()
 
-class FlowRate(DerivedDim['FlowRate']):
-    derived = Volume.dim()/Time.dim()
+class FlowRate(DerivedDim):
+    derived = Volume/Time
 
 
 class DummyPipettor(Pipettor):
@@ -89,8 +89,8 @@ class DummyPipettor(Pipettor):
 
     def perform(self, transfer: Transfer) -> None:
         reagent = transfer.reagent
-        
-        total_volume = sum((x.volume for x in transfer.targets), start = Volume.ZERO())
+
+        total_volume = sum((x.volume for x in transfer.targets), start = Volume.ZERO)
 
         self.move_to(ArmPos.TIPS)
         self.down()

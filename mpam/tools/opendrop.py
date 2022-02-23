@@ -40,8 +40,8 @@ class OpenDropExerciser(Exerciser):
         return [0,1,2,3,4,5,6,7]
 
 if __name__ == '__main__':
-    Time.default_units(ms)
-    Volume.default_units(uL)
+    Time.default_units = ms
+    Volume.default_units = uL
     exerciser = OpenDropExerciser()
     exerciser.parse_args_and_run()
 

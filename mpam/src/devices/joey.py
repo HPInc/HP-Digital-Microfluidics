@@ -23,8 +23,8 @@ from quantities.timestamp import Timestamp, time_now
 
 
             
-class HeatingRate(DerivedDim['HeatingRate']):
-    derived = Temperature.dim()/Time.dim()
+class HeatingRate(DerivedDim):
+    derived = Temperature/Time
     
 class Well(device.Well):
     _pipettor: Final[Pipettor]

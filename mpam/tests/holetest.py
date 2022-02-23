@@ -84,8 +84,8 @@ class Driver(Exerciser):
     
 
 if __name__ == '__main__':
-    Time.default_units(ms)
-    Volume.default_units(uL)
+    Time.default_units = ms
+    Volume.default_units = uL
     exerciser = Driver()
     exerciser.parse_args_and_run()
 

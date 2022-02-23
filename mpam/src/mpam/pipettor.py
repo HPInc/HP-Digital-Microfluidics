@@ -34,7 +34,7 @@ class XferTarget(ABC):
                  ) -> None:
         self.target = target
         self.volume = volume
-        self.got = Volume.ZERO()
+        self.got = Volume.ZERO
         self.allow_merge = allow_merge
         self.future = future
         self.on_insufficient = on_insufficient
@@ -62,7 +62,7 @@ class XferTarget(ABC):
     def finished_overall_transfer(self, reagent: Reagent) -> None:
         future = self.future
         if not future.has_value:
-            self.signal_done(reagent, Volume.ZERO(), last=True)
+            self.signal_done(reagent, Volume.ZERO, last=True)
             self.on_insufficient(self.insufficient_msg)
             future.post(Liquid(reagent, self.got))
         
@@ -351,7 +351,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                 if volume is None:
                     if contents is None:
                         self.on_no_liquid(f"No volume specified on extraction from {target}, which is empty")
-                        future.post(Liquid(unknown_reagent, Volume.ZERO()))
+                        future.post(Liquid(unknown_reagent, Volume.ZERO))
                         return
                     else:
                         volume = contents.volume

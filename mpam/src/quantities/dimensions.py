@@ -1,36 +1,12 @@
 from __future__ import annotations
 
-from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, \
-    NamedDim, Dimensionality
+from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, Scalar
 
 
-class Scalar(NamedDim['Scalar']):
-    _dim = Dimensionality['Scalar']((), 'scalar')
-    def __float__(self) -> float:
-        return float(self.magnitude)
-    
-    @classmethod
-    def dim(cls)->Dimensionality[Scalar]:
-        return cls._dim
-    
-    # @overload
-    # def __mul__(self, rhs: float) -> Scalar: ...  # @UnusedVariable
-    # # @overload
-    # # def __mul__(self, rhs: Time) -> Time: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: Quantity) -> Quant: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: UnitExpr) -> Quant: ...  # @UnusedVariable
-    # def __mul__(self, rhs):
-    #     return super().__mul__(rhs)    
-    
-Scalar.dim().quant_class = Scalar
-
-
-class Mass(BaseDim['Mass']): ...
+class Mass(BaseDim): ...
     
 
-class Distance(BaseDim['Distance']): ...
+class Distance(BaseDim): ...
     # @overload
     # def __pow__(self, rhs: Literal[2]) -> 'Area': ...  # @UnusedVariable
     # @overload
@@ -64,7 +40,7 @@ class Distance(BaseDim['Distance']): ...
     # def __mul__(self, rhs):
     #     return super().__mul__(rhs)
 
-class Time(BaseDim['Time']): 
+class Time(BaseDim): 
     def in_HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         from quantities.SI import hours, minutes, seconds
         return self.decomposed([hours, minutes, seconds], required="all").joined(sep, 2)
@@ -88,27 +64,27 @@ class Time(BaseDim['Time']):
     #     return cast(Time._Unit, super().base_unit(abbr, singular=singular))
     
 
-class Temperature(BaseDim['Temperature']): ...
+class Temperature(BaseDim): ...
 
-class LumInt(BaseDim['LumInt']): ...
+class LumInt(BaseDim): ...
 
-class Current(BaseDim['Current']): ...
+class Current(BaseDim): ...
 
-class Amount(BaseDim['Amount']): ...
+class Amount(BaseDim): ...
 
 Angle = Scalar
 SolidAngle = Scalar
 
-class Area(DerivedDim['Area']): 
-    derived = Distance.dim()**2
+class Area(DerivedDim): 
+    derived = Distance**2
     # class AreaUnitExpr(UnitExpr['Area']): ...
 
-class Volume(DerivedDim['Volume']): 
-    derived = Distance.dim()**3
+class Volume(DerivedDim): 
+    derived = Distance**3
     # class VolumeUnitExpr(UnitExpr['Volume']): ...
     
-class Density(DerivedDim['Density']):
-    derived = Mass.dim()/Volume.dim()
+class Density(DerivedDim):
+    derived = Mass/Volume
     
 class Substance: ...
 class Solution: ...
@@ -116,81 +92,81 @@ class Solvent: ...
     
 MassConcentration = Density
     
-class MolarConcentration(DerivedDim['MolarConcentration']):
-    derived = Amount.dim()/Volume.dim()
+class MolarConcentration(DerivedDim):
+    derived = Amount/Volume
     
 Molarity = MolarConcentration
     
-class SpecificVolume(DerivedDim['SpecificVolume']):
-    derived = Volume.dim()/Mass.dim()
+class SpecificVolume(DerivedDim):
+    derived = Volume/Mass
     
-class VolumeConcentration(DerivedDim['VolumeConcentration']):
-    derived = Volume.dim().of(Substance)/Volume.dim()    
+class VolumeConcentration(DerivedDim):
+    derived = Volume[Substance]/Volume
     
-class Frequency(DerivedDim['Frequency']): 
-    derived = Scalar.dim()/Time.dim()
+class Frequency(DerivedDim): 
+    derived = Scalar/Time
     def __rtruediv__(self, lhs: float) -> Time:
         return super().__rtruediv__(lhs).a(Time)
     
 
-class Radioactivity(DerivedDim['Radioactivity']): 
-    derived = Scalar.dim()/Time.dim()
+class Radioactivity(DerivedDim): 
+    derived = Scalar/Time
 
-class Velocity(DerivedDim['Velocity']): 
-    derived = Distance.dim()/Time.dim()
+class Velocity(DerivedDim): 
+    derived = Distance/Time
 
-class Acceleration(DerivedDim['Acceleration']): 
-    derived = Velocity.dim()/Time.dim()
+class Acceleration(DerivedDim): 
+    derived = Velocity/Time
 
-class Force(DerivedDim['Force']): 
-    derived = Mass.dim()*Acceleration.dim()
+class Force(DerivedDim): 
+    derived = Mass*Acceleration
 
-class Work(DerivedDim['Work']): 
-    derived = Force.dim()*Distance.dim()
+class Work(DerivedDim): 
+    derived = Force*Distance
 
-class Pressure(DerivedDim['Pressure']): 
-    derived = Force.dim()/Area.dim()
+class Pressure(DerivedDim): 
+    derived = Force/Area
 
-class Power(DerivedDim['Power']): 
-    derived = Work.dim()/Time.dim()
+class Power(DerivedDim): 
+    derived = Work/Time
 
 LumFlux = LumInt
 
-class Illuminance(DerivedDim['Illuminance']): 
-    derived = LumFlux.dim()/Area.dim()
+class Illuminance(DerivedDim): 
+    derived = LumFlux/Area
 
-class Charge(DerivedDim['Charge']): 
-    derived = Current.dim()*Time.dim()
+class Charge(DerivedDim): 
+    derived = Current*Time
 
-class Voltage(DerivedDim['Voltage']): 
-    derived = Work.dim()/Charge.dim()
+class Voltage(DerivedDim): 
+    derived = Work/Charge
 
 Emf = ElecPotential = Voltage
 
-class Flux(DerivedDim['Flux']): 
-    derived = Voltage.dim()*Time.dim()
+class Flux(DerivedDim): 
+    derived = Voltage*Time
 
 MagneticFlux = Flux
 
-class FluxDensity(DerivedDim['FluxDensity']): 
-    derived = Flux.dim()/Area.dim()
+class FluxDensity(DerivedDim): 
+    derived = Flux/Area
 
 MagneticInduction = FluxDensity
 
-class Capacitance(DerivedDim['Capacitance']): 
-    derived = Charge.dim()/Voltage.dim()
+class Capacitance(DerivedDim): 
+    derived = Charge/Voltage
 
-class Resistance(DerivedDim['Resistance']): 
-    derived = Voltage.dim()/Current.dim()
+class Resistance(DerivedDim): 
+    derived = Voltage/Current
 
-class Conductance(DerivedDim['Conductance']): 
-    derived = Current.dim()/Voltage.dim()
+class Conductance(DerivedDim): 
+    derived = Current/Voltage
 
-class Inductance(DerivedDim['Inductance']): 
-    derived = Resistance.dim()*Time.dim()
+class Inductance(DerivedDim): 
+    derived = Resistance*Time
 
-class IonizingRadDose(DerivedDim['IonizingRadDose']): 
-    derived = Work.dim()/Mass.dim()
+class IonizingRadDose(DerivedDim): 
+    derived = Work/Mass
 
 
     

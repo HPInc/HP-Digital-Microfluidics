@@ -323,7 +323,7 @@ class Blob:
     def per_pad_volume(self) -> Volume:
         n = self.n_display_pads
         if n == 0:
-            return Volume.ZERO()
+            return Volume.ZERO
         else:
             return self.total_volume/n 
         
@@ -355,7 +355,7 @@ class Blob:
         for pad in pads:
             self.note_pad(pad)
         self.pinned = pinned
-        self.contents = Liquid(unknown_reagent, Volume.ZERO())
+        self.contents = Liquid(unknown_reagent, Volume.ZERO)
         if well is not None and self.has_gate:
             self.pull_from_well()
             self.attach_to_well()

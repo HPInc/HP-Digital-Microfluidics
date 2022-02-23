@@ -249,7 +249,7 @@ class GridRegion:
     
     
     
-class Ticks(CountDim['Ticks']): ...
+class Ticks(CountDim): ...
 ticks = tick = Ticks.base_unit("tick")
 
 DelayType = Union[Ticks, Time]
@@ -309,7 +309,7 @@ class TickNumber:
     def __le__(self, rhs: TickNumber):
         return self.tick <= rhs.tick
 
-TickNumber._zero = TickNumber(Ticks.ZERO())
+TickNumber._zero = TickNumber(Ticks.ZERO)
 
 class RunMode:
     is_gated: Final[bool]
@@ -334,7 +334,7 @@ class RunMode:
  
     def asynchronous_delay(self, after: Optional[DelayType], step: int=0) -> Time:
         if after is None:
-            return Time.ZERO() if step == 0 else step*self.motion_time
+            return Time.ZERO if step == 0 else step*self.motion_time
         assert isinstance(after, Time), f"Asynchronous run mode incomapatible with delay of {after}"
         return after if step == 0 else after+step*self.motion_time
  
@@ -349,7 +349,7 @@ class RunMode:
     def asynchronous(cls, motion_time: Time) -> RunMode:
         return RunMode(False, motion_time)
     
-RunMode.GATED = RunMode(True, Time.ZERO())
+RunMode.GATED = RunMode(True, Time.ZERO)
 
 
 # ValTuple = tuple[Literal[False],None]
@@ -1299,11 +1299,11 @@ class Liquid:
         v = my_v + their_v
         if isinstance(result, Reagent):
             r = result
-        elif my_r is their_r or their_v == Volume.ZERO():
+        elif my_r is their_r or their_v == Volume.ZERO:
             r = my_r
         elif my_r is waste_reagent or their_r is waste_reagent:
             r = waste_reagent if result is None else Reagent.find(result)
-        elif my_v == Volume.ZERO():
+        elif my_v == Volume.ZERO:
             r = their_r
         else:
             ratio = my_v.ratio(their_v)
@@ -1313,7 +1313,7 @@ class Liquid:
         self.volume = v
         other.reagent = r
         other.inexact = False
-        other.volume = Volume.ZERO()
+        other.volume = Volume.ZERO
         
     def split_to(self, other: Liquid) -> None:
         other.reagent = self.reagent
@@ -1331,7 +1331,7 @@ class Liquid:
     def mix_together(cls, liquids: Sequence[Union[Liquid, tuple[Liquid, float]]], *,
                      result: Optional[MixResult] = None) -> Liquid:
         if len(liquids) == 0:
-            return Liquid(unknown_reagent, Volume.ZERO())
+            return Liquid(unknown_reagent, Volume.ZERO)
         ls = [(liquid, 1) if isinstance(liquid, Liquid) else liquid for liquid in liquids]
         first, first_frac = ls[0]
         v = first.volume*first_frac
@@ -1340,7 +1340,7 @@ class Liquid:
         inexact = first.inexact
         for i, (liquid, frac) in enumerate(ls[1:]):
             v2 = liquid.volume * frac
-            if v2 == Volume.ZERO():
+            if v2 == Volume.ZERO:
                 continue
             r2 = liquid.reagent
             if liquid.inexact:

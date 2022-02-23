@@ -813,7 +813,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def volume(self) -> Volume:
         c = self._contents
         if c is None:
-            return Volume.ZERO()
+            return Volume.ZERO
         else:
             return c.volume
         
@@ -840,7 +840,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     @property
     def available(self) -> bool:
         c = self._contents
-        return c is None or c.volume==Volume.ZERO() and not c.inexact
+        return c is None or c.volume==Volume.ZERO and not c.inexact
     
     @property
     def gate_on(self) -> bool:
@@ -851,7 +851,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     
     @property
     def min_fill(self) -> Volume:
-        return self.volume_from_spec(self._min_fill, lambda: Volume.ZERO())
+        return self.volume_from_spec(self._min_fill, lambda: Volume.ZERO)
     
     @min_fill.setter
     def min_fill(self, volume: Optional[WellVolumeSpec]) -> None:
@@ -903,7 +903,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     
     @property
     def empty_to(self) -> Volume:
-        return self.volume_from_spec(self._empty_to, lambda: Volume.ZERO())
+        return self.volume_from_spec(self._empty_to, lambda: Volume.ZERO)
     
     @empty_to.setter
     def empty_to(self, volume: Optional[WellVolumeSpec]) -> None:
@@ -1005,7 +1005,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         # available implies _contents is not None, but MyPy can't do the inference for the else
         # clause if I don't check it here.
         if self._contents is None or self.available:
-            self.contents = Liquid(liquid.reagent, Volume.ZERO())
+            self.contents = Liquid(liquid.reagent, Volume.ZERO)
         else:
             r = self._contents.reagent
             on_reagent_mismatch.expect_true(self._can_accept(liquid.reagent),
@@ -1039,7 +1039,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def contains(self, content: Union[Liquid, Reagent],
                  *, on_overflow: ErrorHandler = PRINT) -> None:
         if isinstance(content, Reagent):
-            liquid = Liquid(content, Volume.ZERO())
+            liquid = Liquid(content, Volume.ZERO)
         else:
             liquid = content
         on_overflow.expect_true(liquid.volume <= self.capacity,
@@ -1081,14 +1081,14 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         volume = self.fill_to - self.volume
         print(f"Fill line is {self.fill_to}.  Adding {volume}.")
-        assert volume > Volume.ZERO(), f"refill(volume={volume}) called on {self}"
+        assert volume > Volume.ZERO, f"refill(volume={volume}) called on {self}"
         if reagent is None:
             reagent = self.reagent
         return self.add(Liquid(reagent, volume))
     
     def empty_well(self) -> Delayed[Well]:
         volume = self.volume - self.empty_to
-        assert volume > Volume.ZERO(), f"empty_well(volume={volume}) called on {self}"
+        assert volume > Volume.ZERO, f"empty_well(volume={volume}) called on {self}"
         return self.remove(volume)
     
 
@@ -1357,7 +1357,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     def pipettor_added(self, reagent: Reagent, volume: Volume, *,
                        last: bool,
                        mix_result: Optional[MixResult]) -> None:
-        if volume > Volume.ZERO():
+        if volume > Volume.ZERO:
             got = Liquid(reagent, volume)
             self.pad.liquid_added(got, mix_result=mix_result)
         if last:
@@ -1369,7 +1369,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
                          *, last: bool) -> None: # @UnusedVariable
         pad = self.pad
-        if volume > Volume.ZERO():
+        if volume > Volume.ZERO:
             pad.liquid_removed(volume)
         blob = not_None(pad.blob, desc=lambda: f"{self} has no blob after extraction")
         # If the blob is now empty, we turn off all of its pads.
@@ -1544,10 +1544,10 @@ class SystemComponent(ABC):
             return (self,)
         return req
     
-    def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO()):
+    def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO):
         req = self.make_request(cb)
         sys = self.in_system()
-        if delta > Time.ZERO():
+        if delta > Time.ZERO:
             self.call_after(delta, lambda : sys.communicate(req))
         else:
             sys.communicate(req)
@@ -1558,14 +1558,14 @@ class SystemComponent(ABC):
     def call_after(self, delta: Time, fn: Callback, *, daemon: bool = False):
         self.in_system().call_after(delta, fn, daemon=daemon)
         
-    def before_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()) -> None:
+    def before_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO) -> None:
         self.in_system().before_tick(fn, delta=delta)
 
-    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()):
+    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO):
         self.in_system().after_tick(fn, delta=delta)
         
 
-    def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO()):
+    def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO):
         req = self.make_request(cb)
         self.in_system().on_tick(req, delta=delta)
         
@@ -1617,7 +1617,7 @@ class ChangeJournal:
         self.turned_on = set()
         self.turned_off = set()
         self.delivered = defaultdict(list)
-        self.removed = defaultdict(Volume.ZERO)
+        self.removed = defaultdict(lambda: Volume.ZERO)
         self.mix_result = {}
         
     def change_to(self, pad: DropLoc, new_state: OnOff) -> None:
@@ -1855,17 +1855,17 @@ class Clock:
     def before_tick(self, fn: ClockCallback, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.before_tick() called with both tick and delta specified"
-            delta = max(Ticks.ZERO(), tick-self.next_tick)
+            delta = max(Ticks.ZERO, tick-self.next_tick)
         elif delta is None:
-            delta = Ticks.ZERO()
+            delta = Ticks.ZERO
         self.system.before_tick(fn, delta=delta)
 
     def after_tick(self, fn: ClockCallback, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.after_tick() called with both tick and delta specified"
-            delta = max(Ticks.ZERO(), tick-self.next_tick)
+            delta = max(Ticks.ZERO, tick-self.next_tick)
         elif delta is None:
-            delta = Ticks.ZERO()
+            delta = Ticks.ZERO
         self.system.after_tick(fn, delta=delta)
     
     # Calling await_tick() when the clock isn't running only works if there is another thread that
@@ -1875,7 +1875,7 @@ class Clock:
             assert delta is None, "Clock.await_tick() called with both tick and delta specified"
             delta = tick-self.next_tick
         elif delta is None:
-            delta = Ticks.ZERO()
+            delta = Ticks.ZERO
         if delta >= 0:
             e = Event()
             def cb():
@@ -2036,14 +2036,14 @@ class System:
     def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
         self._channel().call_after([(delta, fn, daemon)])
         
-    def before_tick(self, fn: ClockCallback, *, delta: Ticks=Ticks.ZERO()) -> None:
+    def before_tick(self, fn: ClockCallback, *, delta: Ticks=Ticks.ZERO) -> None:
         self._channel().before_tick([(delta, fn)])
 
-    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO()):
+    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO):
         self._channel().after_tick([(delta, fn)])
         
 
-    def on_tick(self, req: DevCommRequest, *, delta: Ticks = Ticks.ZERO()):
+    def on_tick(self, req: DevCommRequest, *, delta: Ticks = Ticks.ZERO):
         self._channel().on_tick([(delta, req)])
         
     def delayed(self, function: Callable[[], T], *,
@@ -2054,12 +2054,12 @@ class System:
         def run_then_post() -> None:
             future.post(function())
         if isinstance(after, Time):
-            if after > Time.ZERO():
+            if after > Time.ZERO:
                 self.call_after(after, run_then_post)
             else:
                 return Delayed.complete(function())
         else:
-            if after > Ticks.ZERO():
+            if after > Ticks.ZERO:
                 self.before_tick(run_then_post, delta = after)
             else:
                 return Delayed.complete(function())

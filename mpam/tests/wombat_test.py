@@ -11,8 +11,8 @@ from quantities.temperature import abs_C, TemperaturePoint
 from typing import Sequence
 from devices.wombat import OpenDropVersion
 
-Volume.default_units(uL)
-Time.default_units(ms)
+Volume.default_units = uL
+Time.default_units = ms
 
 board = wombat.Board(device=None, od_version=OpenDropVersion.V40)
 

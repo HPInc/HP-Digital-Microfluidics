@@ -786,9 +786,9 @@ class DMFCompiler(DMFVisitor):
                                                           {Type.INT: lambda _: 0,
                                                            Type.FLOAT: lambda _: 0.0,
                                                            Type.PAD: lambda env: env.board.pad_at(0,0),
-                                                           Type.TIME: lambda _: Time.ZERO(),
-                                                           Type.VOLUME: lambda _: Volume.ZERO(),
-                                                           Type.TICKS: lambda _: Ticks.ZERO(),
+                                                           Type.TIME: lambda _: Time.ZERO,
+                                                           Type.VOLUME: lambda _: Volume.ZERO,
+                                                           Type.TICKS: lambda _: Ticks.ZERO,
                                                           })
     
     def __init__(self, *,
