@@ -1,44 +1,69 @@
 from __future__ import annotations
 
-from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, Scalar
+from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, Scalar,\
+    Quantity, UnitExpr, QorU
+from typing import overload, Literal, Union
 
 
-class Mass(BaseDim): ...
+class Mass(BaseDim): 
+    @overload # type: ignore[override]
+    def __mul__(self, rhs: float) -> Mass: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: QorU[Acceleration]) -> Force: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: Quantity) -> Quantity: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: UnitExpr) -> Quantity: ...  # @UnusedVariable
+    def __mul__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Quantity:
+        return super().__mul__(rhs)
+
+    @overload # type: ignore[override]
+    def __truediv__(self, rhs: float) -> Mass: ...  # @UnusedVariable
+    @overload
+    def __truediv__(self, rhs: QorU[Volume]) -> Density: ...  # @UnusedVariable
+    @overload
+    def __truediv__(self, rhs: Quantity) -> Quantity: ...  # @UnusedVariable
+    @overload
+    def __truediv__(self, rhs: UnitExpr) -> Quantity: ...  # @UnusedVariable
+    def __truediv__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Quantity:
+        return super().__mul__(rhs)
+
+class Distance(BaseDim): 
+    @overload
+    def __pow__(self, rhs: Literal[2]) -> Area: ...  # @UnusedVariable
+    @overload
+    def __pow__(self, rhs: Literal[3]) -> Volume: ...  # @UnusedVariable
+    @overload
+    def __pow__(self, rhs: int) -> Quantity: ...  # @UnusedVariable
+    def __pow__(self, rhs: int):
+        return super().__pow__(rhs)
     
-
-class Distance(BaseDim): ...
-    # @overload
-    # def __pow__(self, rhs: Literal[2]) -> 'Area': ...  # @UnusedVariable
-    # @overload
-    # def __pow__(self, rhs: Literal[3]) -> 'Volume': ...  # @UnusedVariable
-    # @overload
-    # def __pow__(self, rhs: int) -> Quantity: ...  # @UnusedVariable
-    # def __pow__(self, rhs: int):
-    #     return super().__pow__(rhs)
-    #
-    # class DistanceUnitExpr(UnitExpr['Distance']):
-    #     @overload
-    #     def __pow__(self, rhs: Literal[2]) -> 'Area.AreaUnitExpr': ...  # @UnusedVariable
-    #     @overload
-    #     def __pow__(self, rhs: Literal[3]) -> 'Volume.VolumeUnitExpr': ...  # @UnusedVariable
-    #     @overload
-    #     def __pow__(self, rhs: int) -> UnitExpr: ...  # @UnusedVariable
-    #     def __pow__(self, rhs: int):
-    #         return super().__pow__(rhs)
-    #
-    # class DistanceUnit(Unit['Distance'], DistanceUnitExpr):
-    #     ...
-
-    # @overload
-    # def __mul__(self, rhs: float) -> Distance: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: Distance) -> Area: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: Quant) -> Quant: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: UnitExpr) -> Quant: ...  # @UnusedVariable
-    # def __mul__(self, rhs):
-    #     return super().__mul__(rhs)
+    @overload # type: ignore[override]
+    def __mul__(self, rhs: float) -> Distance: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: QorU[Distance]) -> Area: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: QorU[Area]) -> Volume: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: QorU[Force]) -> Work: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: Quantity) -> Quantity: ...  # @UnusedVariable
+    @overload
+    def __mul__(self, rhs: UnitExpr) -> Quantity: ...  # @UnusedVariable
+    def __mul__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Quantity:
+        return super().__mul__(rhs)
+    
+    @overload # type: ignore[override]
+    def __truediv__(self, rhs: float) -> Distance: ...  # @UnusedVariable
+    @overload
+    def __truediv__(self, rhs: QorU[Time]) -> Velocity: ...  # @UnusedVariable
+    @overload
+    def __truediv__(self, rhs: Quantity) -> Quantity: ...  # @UnusedVariable
+    @overload
+    def __truediv__(self, rhs: UnitExpr) -> Quantity: ...  # @UnusedVariable
+    def __truediv__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Quantity:
+        return super().__mul__(rhs)
+    
 
 class Time(BaseDim): 
     def in_HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:

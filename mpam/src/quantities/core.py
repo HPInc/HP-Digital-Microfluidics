@@ -44,6 +44,10 @@ CD = TypeVar('CD', bound='CountDim')
 D_co = TypeVar('D_co', bound='Quantity', covariant=True)
 D_ca = TypeVar('D_ca', bound='Quantity', contravariant=True)
 
+QorU = Union[D, 'UnitExpr'[D]]    
+
+
+
 # Quant = Union['UnknownDimQuant', 'NamedDim']
 # QuantOrUnit = Union[D, 'UnitExpr[D]']
 
