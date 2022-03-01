@@ -1080,7 +1080,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         volume = self.fill_to - self.volume
-        print(f"Fill line is {self.fill_to}.  Adding {volume}.")
+        # print(f"Fill line is {self.fill_to}.  Adding {volume}.")
         assert volume > Volume.ZERO, f"refill(volume={volume}) called on {self}"
         if reagent is None:
             reagent = self.reagent
