@@ -1,14 +1,8 @@
 from __future__ import annotations
+from argparse import ArgumentParser
 
-from quantities.SI import mL
-from quantities.dimensions import Volume
-from quantities.US import gal
-
-v = 3*gal
-print(Volume.default_units)
-print(f"{v:,g}")
-
-Volume.default_units = mL
-print(Volume.default_units)
-print(f"{v:,g}")
-
+parser = ArgumentParser()
+parser.add_argument("--test", help="first test")
+parser.add_argument("--test", help="second test")
+ns = parser.parse_args()
+print(ns)

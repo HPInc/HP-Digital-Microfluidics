@@ -16,6 +16,7 @@ from fractions import Fraction
 import math
 from abc import ABC, abstractmethod
 from erk.numutils import farey
+from argparse import ArgumentParser, Namespace
 
 T = TypeVar('T')
 V = TypeVar('V')
@@ -1598,6 +1599,32 @@ class DummyState(State[T]):
     def realize_state(self, new_state:T)->None:
         pass
     
+class ExerciserParam(Generic[T]):
+    attr_name: Final[str]
+    name: Final[str]
     
+    def __init__(self, name: str, *, attr_name: Optional[str] = None) -> None:
+        name = name.lstrip("-")
+        if attr_name is None:
+            attr_name = name
+        self.name = "--"+name
+        self.attr_name = attr_name
+        
+        
+    def value(self, args: Namespace) -> T:
+        if self.attr_name not in args:
+            raise LookupError(f"Attribute {self.name} not specified")
+        val: T = getattr(args, self.attr_name)
+        return val
+        
+        
+    def __getitem__(self, args: Namespace) -> T:
+        return self.value(args)
+        
     
-    ...
+class ExerciserParamSet(Generic[T], ABC):
+    @abstractmethod
+    def add_args_to(self, parser: ArgumentParser): ... # @UnusedVariable
+    @abstractmethod
+    def build(self, args: Namespace) -> T: ... # @UnusedVariable
+

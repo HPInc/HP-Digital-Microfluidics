@@ -6,8 +6,9 @@ from typing import Mapping, Final, Optional
 from serial import Serial
 
 from devices import joey
-from mpam.types import OnOff, State, DummyState
+from mpam.types import OnOff, State, DummyState, ExerciserParamSet
 from erk.basic import ComputedDefaultDict
+from argparse import Namespace, ArgumentParser
 
 
 _pins: Mapping[str, int] = {
@@ -151,6 +152,15 @@ class Electrode(State[OnOff]):
         self.array = a
         
 
+class JoeyEPs(ExerciserParamSet['Board']):
+    prefix: Final = "wombat"
+    
+
+    def add_args_to(self, parser:ArgumentParser):
+        ExerciserParamSet.add_args_to(self, parser)
+
+    def build(self, args:Namespace)->Board:
+        ...
 
 class Board(joey.Board):
     _device: Final[Optional[str]]

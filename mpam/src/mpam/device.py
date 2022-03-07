@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from _collections import defaultdict
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 import itertools
@@ -7,7 +8,7 @@ import random
 from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator,\
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator, \
     NamedTuple, Iterable
 
 from matplotlib.gridspec import SubplotSpec
@@ -21,13 +22,13 @@ from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
-    Callback, MixResult, State, CommunicationScheduler
+    Callback, MixResult, State, CommunicationScheduler, \
+    ExerciserParamSet
 from quantities.SI import sec, ms
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
-from _collections import defaultdict
 
 
 if TYPE_CHECKING:
@@ -1519,11 +1520,15 @@ class SystemComponent(ABC):
         
     def in_system(self) -> System:
         return not_None(self.system)
+    
+    @classmethod
+    @abstractmethod
+    def exerciser_params(cls: T) -> ExerciserParamSet[T]: ...
 
     @abstractmethod    
     def update_state(self) -> None:
         self.finish_update()
-    
+        
     def add_monitor(self, cb: Callback) -> None:
         self._monitor_callbacks.append(cb)
     
