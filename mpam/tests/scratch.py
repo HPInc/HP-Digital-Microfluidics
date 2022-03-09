@@ -6,6 +6,8 @@ from devices.glider_client import GliderClient
 from erk.basic import not_None
 from mpam.types import OnOff
 
+help(pyglider.Board)
+
 # wallaby = pyglider.Board.Find(pyglider.BoardId.Wallaby,
 #                               dll_dir = Path("d:\\dmf-git\\DynamicHAL\\x64\\Debug"),
 #                               config_dir = Path("d:\\dmf-git\\DynamicHAL\\WallabyHAL"))

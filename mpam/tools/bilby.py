@@ -13,8 +13,6 @@ from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
 from quantities.SI import sec, ms, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import TemperaturePoint, abs_C
-from devices.wombat import OpenDropVersion
-
 
 class DispenseAndWalk(Task): 
     def __init__(self) -> None:
@@ -122,7 +120,7 @@ class WombatTest(Task):
 
 class BilbyExerciser(JoeyExerciser):
     def __init__(self) -> None:
-        super().__init__(name="Wombat")
+        super().__init__(name="Bilby")
         self.add_task(DispenseAndWalk())
         self.add_task(WombatTest())
         
@@ -140,11 +138,8 @@ class BilbyExerciser(JoeyExerciser):
                            The directory that WallabyElectrodes.csv and WallabyHeaters.csv
                            are found in.  Defaults to the current directory.
                            ''')
-        parser.set_defaults(od_version=OpenDropVersion.V40)
-        
         
     def make_board(self, args:Namespace)->Board:
-        print(f"Version is {args.od_version}")
         return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir)
     
 if __name__ == '__main__':

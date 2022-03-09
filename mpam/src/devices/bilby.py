@@ -50,6 +50,11 @@ class Board(joey.Board):
                  pipettor: Optional[Pipettor] = None) -> None:
         self._device = GliderClient(pyglider.BoardId.Wallaby, dll_dir=dll_dir, config_dir=config_dir)
         super().__init__(pipettor=pipettor)
+        on_electrodes = self._device.on_electrodes()
+        if on_electrodes:
+            for e in on_electrodes:
+                e.current_state = OnOff.ON
+            self.infer_drop_motion()
         
     def update_state(self) -> None:
         self._device.update_state()
