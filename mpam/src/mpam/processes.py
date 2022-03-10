@@ -7,7 +7,7 @@ from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
 
 from mpam.device import Pad, Board
 from mpam.drop import Drop
-from mpam.types import Delayed, Callback, Ticks, tick, Operation, RunMode, \
+from mpam.types import Delayed, Callback, Ticks, tick, Operation, \
     DelayType, Reagent, waste_reagent, OnOff
 from enum import Enum
 from _collections import defaultdict
@@ -168,21 +168,19 @@ class StartProcess(Operation[Drop,Drop]):
         self.process_type = process_type
 
     def _schedule_for(self, drop: Drop, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[Drop]:
         board = drop.on_board_pad.board
         future = Delayed[Drop]()
 
-        assert mode.is_gated
         def before_tick() -> None:
             # If all the other drops are waiting, this will install a callback on the next tick and then
             # call it immediately to do the first step.  Otherwise, that will happen when the last
             # drop shows up.
             # print(f"Starting process with {drop}: {self.process_type}")
             self.process_type.start(drop, future)
-        board.before_tick(before_tick, delta=mode.gated_delay(after))
+        board.before_tick(before_tick, delta=after)
         return future
 
 class JoinProcess(Operation[Drop,Drop]):
@@ -191,18 +189,16 @@ class JoinProcess(Operation[Drop,Drop]):
         return f"<Drop.Join>"
 
     def _schedule_for(self, drop: Drop, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[Drop]:
         board = drop.on_board_pad.board
         future = Delayed[Drop]()
 
-        assert mode.is_gated
         def before_tick() -> None:
             # print(f"Joining process with {drop}")
             MultiDropProcess.join(drop, future)
-        board.before_tick(before_tick, delta=mode.gated_delay(after))
+        board.before_tick(before_tick, delta=after)
         return future
 
 class PairwiseMix(NamedTuple):

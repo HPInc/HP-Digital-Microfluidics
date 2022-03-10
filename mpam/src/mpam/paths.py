@@ -9,7 +9,7 @@ from mpam.device import Well, ExtractionPoint, Pad, System, Board,\
     ProductLocation, BoardComponent
 from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
-from mpam.types import StaticOperation, Operation, Ticks, Delayed, RunMode, \
+from mpam.types import StaticOperation, Operation, Ticks, Delayed, \
     DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T, \
     WaitableType, Callback
 from quantities.dimensions import Volume
@@ -37,7 +37,7 @@ class Path:
 
         def _schedule_after(self, future: Delayed[Drop], *,
                             is_last: bool, post_result: bool) -> Delayed[Drop]:
-            return future.then_schedule(self.op, mode=RunMode.GATED, after=self.after,
+            return future.then_schedule(self.op, after=self.after,
                                         post_result=post_result if is_last else True)
 
     class EndStep:
@@ -50,7 +50,7 @@ class Path:
 
         def _schedule_after(self, future: Delayed[Drop], *,
                             post_result: bool) -> Delayed[None]:
-            return future.then_schedule(self.op, mode=RunMode.GATED, after=self.after,
+            return future.then_schedule(self.op, after=self.after,
                                         post_result=post_result)
 
 
@@ -84,13 +84,12 @@ class Path:
         #     return Path.Start(start=self.first_step, middle = self.middle_steps+(step,))
 
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             middle = self.middle_steps
             last = len(middle) - 1
-            future = schedule(self.first_step.op, mode=mode, after=after,
+            future = schedule(self.first_step.op, after=after,
                               post_result = post_result if last == -1 else True)
             for i,step in enumerate(middle):
                 future = step._schedule_after(future, post_result=post_result, is_last = i==last)
@@ -205,17 +204,15 @@ class Path:
             # return Path.Middle(self.middle_steps+(step,))
 
         def _schedule_for(self, obj: Drop, *,
-                          mode: RunMode = RunMode.GATED,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[Drop]:
-            assert mode is RunMode.GATED
             future = Delayed[Drop]()
             if after is None:
                 future.post(obj)
             else:
                 assert isinstance(obj.pad, BoardComponent)
-                obj.pad.board.before_tick(lambda: future.post(obj), delta=mode.gated_delay(after))
+                obj.pad.board.before_tick(lambda: future.post(obj), delta=after)
 
             middle = self.middle_steps
             last = len(middle) - 1
@@ -314,17 +311,15 @@ class Path:
             self.last_step = end
 
         def _schedule_for(self, obj: Drop, *,
-                          mode: RunMode = RunMode.GATED,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[None]:
-            assert mode is RunMode.GATED
             future = Delayed[Drop]()
             if after is None:
                 future.post(obj)
             else:
                 assert isinstance(obj.pad, BoardComponent)
-                obj.pad.board.before_tick(lambda: future.post(obj), delta=mode.gated_delay(after))
+                obj.pad.board.before_tick(lambda: future.post(obj), delta=after)
 
             middle = self.middle_steps
             for step in middle:
@@ -345,12 +340,11 @@ class Path:
             self.last_step = end
 
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[None]:
             middle = self.middle_steps
-            future = schedule(self.first_step.op, mode=mode, after=after,
+            future = schedule(self.first_step.op, after=after,
                               post_result = True)
             for step in middle:
                 future = step._schedule_after(future, post_result=True, is_last = False)
@@ -442,14 +436,13 @@ class Path:
     def schedule_paths(cls, paths: Iterable[Schedulable], *,
                        system: System,
                        on_future: Optional[Delayed[Any]] = None,
-                       mode: RunMode = RunMode.GATED,
                        after: Optional[DelayType] = None,
                        ) -> Sequence[Union[Delayed[Drop], Delayed[None]]]:
         def scheduled(path: Schedulable) -> Union[Delayed[Drop], Delayed[None]]:
             if isinstance(path, Path.Start) or isinstance(path, Path.Full):
-                return path.schedule(on_future=on_future, mode=mode, after=after)
+                return path.schedule(on_future=on_future, after=after)
             else:
-                return path[1].schedule_for(path[0], mode=mode, after=after)
+                return path[1].schedule_for(path[0], after=after)
         with system.batched():
             return [scheduled(p) for p in paths]
 
@@ -457,11 +450,10 @@ class Path:
     def run_paths(cls, paths: Iterable[Schedulable], *,
                   system: System,
                   on_future: Optional[Delayed[Any]] = None,
-                  mode: RunMode = RunMode.GATED,
                   after: Optional[DelayType] = None,
                   ) -> Sequence[Drop]:
         values = (f.value for f in cls.schedule_paths(paths, system=system,
-                                                      on_future=on_future, mode=mode, after=after))
+                                                      on_future=on_future, after=after))
         return [d for d in values if d is not None]
 
     @classmethod

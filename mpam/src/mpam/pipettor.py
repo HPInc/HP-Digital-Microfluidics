@@ -7,7 +7,7 @@ from typing import Final, Callable, Optional
 from erk.errors import ErrorHandler, PRINT
 from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
     ProductLocation
-from mpam.types import Reagent, OpScheduler, Callback, RunMode, DelayType, \
+from mpam.types import Reagent, OpScheduler, Callback, DelayType, \
     Liquid, Operation, Delayed, AsyncFunctionSerializer, T, XferDir, \
     unknown_reagent, MixResult
 from quantities.SI import uL
@@ -260,9 +260,9 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
     def system_shutdown(self) -> None:
         pass
 
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
                                after: Optional[DelayType] = None) -> None:
-        return self.sys_cpt.schedule(cb, mode=mode, after=after)
+        return self.sys_cpt.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
@@ -292,7 +292,6 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             self.on_no_source = on_no_source
 
         def _schedule_for(self, pipettor: Pipettor, *,
-                          mode: RunMode=RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType]=None,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
@@ -338,7 +337,6 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             self.product_loc = product_loc
 
         def _schedule_for(self, pipettor: Pipettor, *,
-                          mode: RunMode=RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType]=None,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:

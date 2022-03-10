@@ -18,7 +18,7 @@ from mpam.engine import DevCommRequest, TimerFunc, ClockCallback, \
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest, \
     ClockCommRequest, TimerDeltaRequest, IdleBarrier
 from mpam.exceptions import PadBrokenError
-from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, RunMode, DelayType, \
+from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
     Callback, MixResult, State, CommunicationScheduler
@@ -45,9 +45,9 @@ class BoardComponent:
 
     def __init__(self, board: Board) -> None:
         self.board = board
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
                                after: Optional[DelayType] = None) -> None:
-        return self.board.schedule(cb, mode=mode, after=after)
+        return self.board.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
@@ -84,7 +84,6 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 
     class ModifyState(Operation[BC, OnOff]):
         def _schedule_for(self, obj: BC, *,
-                          mode: RunMode = RunMode.GATED,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[OnOff]:
@@ -105,7 +104,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                 finish: Optional[Callback] = None if not post_result else (lambda : future.post(old))
                 return finish
 
-            obj.board.schedule(cb, mode, after=after)
+            obj.board.schedule(cb, after=after)
             return future
 
         def __init__(self, mod: Modifier[OnOff]) -> None:
@@ -1145,7 +1144,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             self.guard = guard
 
         def _schedule_for(self, well: Well, *,
-                          mode: RunMode = RunMode.GATED,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           )-> Delayed[Well]:
@@ -1165,7 +1163,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                     yield one_tick
                 yield None
             iterator = before_tick()
-            board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
+            board.before_tick(lambda: next(iterator), delta=after)
             return motion.initial_future
 
 class Magnet(BinaryComponent['Magnet']):
@@ -1256,7 +1254,6 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         target: Final[Optional[TemperaturePoint]]
 
         def _schedule_for(self, heater: Heater, *,
-                          mode: RunMode = RunMode.GATED,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[Heater]:
@@ -1319,7 +1316,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                             if post_result:
                                 future.post(heater)
                     heater.on_temperature_change(check, key=key)
-            heater.board.schedule(do_it, mode, after=after)
+            heater.board.schedule(do_it, after=after)
             return future
 
 
@@ -1449,7 +1446,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.on_no_source = on_no_source
 
         def _schedule_for(self, extraction_point: ExtractionPoint, *,
-                          mode: RunMode = RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Drop]:
@@ -1481,7 +1477,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.product_loc = product_loc
 
         def _schedule_for(self, extraction_point: ExtractionPoint, *,
-                          mode: RunMode = RunMode.GATED, # @UnusedVariable
                           after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
@@ -1505,6 +1500,7 @@ class SystemComponent(ABC):
     system: Optional[System] = None
     _after_update: Final[list[Callback]]
     _monitor_callbacks: Final[list[Callback]]
+    no_delay: DelayType = Time.ZERO
 
     def __init__(self) -> None:
         self._after_update = []
@@ -1558,12 +1554,11 @@ class SystemComponent(ABC):
     def call_after(self, delta: Time, fn: Callback, *, daemon: bool = False):
         self.in_system().call_after(delta, fn, daemon=daemon)
 
-    def before_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO) -> None:
+    def before_tick(self, fn: ClockCallback, *, delta: DeltaType=Ticks.ZERO) -> None:
         self.in_system().before_tick(fn, delta=delta)
 
-    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO):
+    def after_tick(self, fn: ClockCallback, *, delta: DeltaType=Ticks.ZERO) -> None:
         self.in_system().after_tick(fn, delta=delta)
-
 
     def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO):
         req = self.make_request(cb)
@@ -1573,12 +1568,14 @@ class SystemComponent(ABC):
                 after: Optional[DelayType]) -> Delayed[T]:
         return self.in_system().delayed(function, after=after)
 
-    def schedule(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,
+    def schedule(self, cb: Callable[[], Optional[Callback]], *,
                  after: Optional[DelayType] = None) -> None:
-        if mode.is_gated:
-            self.on_tick(cb, delta=mode.gated_delay(after))
+        if after is None:
+            after = self.no_delay
+        if isinstance(after, Ticks):
+            self.on_tick(cb, delta=after)
         else:
-            self.communicate(cb, delta=mode.asynchronous_delay(after))
+            self.communicate(cb, delta=after)
 
     def user_operation(self) -> UserOperation:
         return UserOperation(not_None(self.system).engine.idle_barrier)
@@ -1657,7 +1654,7 @@ class Board(SystemComponent):
     # _to_appear: Final[list[tuple[Pad, Liquid]]]
     _change_journal: ChangeJournal
     trace_blobs: ClassVar[bool] = False
-
+    no_delay: DelayType = Ticks.ZERO
 
     @property
     def change_journal(self) -> ChangeJournal:
@@ -2036,14 +2033,19 @@ class System:
     def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
         self._channel().call_after([(delta, fn, daemon)])
 
-    def before_tick(self, fn: ClockCallback, *, delta: Ticks=Ticks.ZERO) -> None:
-        self._channel().before_tick([(delta, fn)])
+    def before_tick(self, fn: ClockCallback, *, delta: DelayType=Ticks.ZERO) -> None:
+        if isinstance(delta, Ticks):
+            self._channel().before_tick([(delta, fn)])
+        else:
+            self.call_after(delta, lambda: self.before_tick(fn))
 
-    def after_tick(self, fn: ClockCallback, *, delta: Ticks = Ticks.ZERO):
-        self._channel().after_tick([(delta, fn)])
+    def after_tick(self, fn: ClockCallback, *, delta: DelayType=Ticks.ZERO) -> None:
+        if isinstance(delta, Ticks):
+            self._channel().after_tick([(delta, fn)])
+        else:
+            self.call_after(delta, lambda: self.after_tick(fn))
 
-
-    def on_tick(self, req: DevCommRequest, *, delta: Ticks = Ticks.ZERO):
+    def on_tick(self, req: DevCommRequest, *, delta: Delay=Ticks.ZERO):
         self._channel().on_tick([(delta, req)])
 
     def delayed(self, function: Callable[[], T], *,

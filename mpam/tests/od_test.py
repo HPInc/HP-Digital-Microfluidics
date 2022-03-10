@@ -19,7 +19,6 @@ system = System(board=board)
 # monitor_board(board)
 
 # tick_interval: Time = 0.1*sec
-# async_mode = RunMode.asynchronous(tick_interval)
 # system.clock.start(tick_interval)
 
 

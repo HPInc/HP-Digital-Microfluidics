@@ -13,7 +13,7 @@ from erk.stringutils import map_str
 from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
     ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad
 from mpam.exceptions import NoSuchPad, NotAtWell
-from mpam.types import Liquid, Dir, Delayed, RunMode, DelayType, \
+from mpam.types import Liquid, Dir, Delayed, DelayType, \
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
     StaticOperation, Reagent, Callback, T, MixResult
 from quantities.core import qstr
@@ -642,7 +642,6 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
     @abstractmethod
     def dirAndSteps(self, drop: Drop) -> tuple[Dir, int]: ...  # @UnusedVariable
     def _schedule_for(self, drop: Drop, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
@@ -663,7 +662,6 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
 
         one_tick: Ticks = 1*tick
         allow_unsafe = self.allow_unsafe
-        assert mode.is_gated
         def before_tick() -> Iterator[Optional[Ticks]]:
             last_pad = cast(Pad, drop.pad)
             for i in range(steps):
@@ -683,8 +681,8 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     # print(f"Tick number {system.clock.next_tick}")
                     # print(f"Moving drop from {last_pad} to {next_pad}")
                     assert last_pad == drop.pad, f"{i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}"
-                    next_pad.schedule(Pad.TurnOn, mode=mode, post_result=False)
-                    last_pad.schedule(Pad.TurnOff, mode=mode, post_result=False)
+                    next_pad.schedule(Pad.TurnOn, post_result=False)
+                    last_pad.schedule(Pad.TurnOff, post_result=False)
                     real_next_pad = next_pad
                     def unreserve() -> None:
                         real_next_pad.reserved = False
@@ -698,7 +696,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     yield one_tick
             yield None
         iterator = before_tick()
-        board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
+        board.before_tick(lambda: next(iterator), delta=after)
         return future
 
 
@@ -782,9 +780,9 @@ class Drop(OpScheduler['Drop']):
 
         return f"Drop[{place}{self.pad}{liquid}]"
 
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
                                after: Optional[DelayType] = None) -> None:
-        self.pad.schedule_communication(cb, mode=mode, after=after)
+        self.pad.schedule_communication(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
@@ -809,12 +807,10 @@ class Drop(OpScheduler['Drop']):
             self.liquid = liquid
 
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             future = Delayed[Drop]()
-            assert mode.is_gated
             pad = self.pad
             def make_drop(_) -> None:
                 # We want it to happen immediately, so we use our own journal.
@@ -825,7 +821,7 @@ class Drop(OpScheduler['Drop']):
                     # We're assuming that nobody is going to have turned off the pad, allowing
                     # the liquid to slip somewhere else.
                     future.post(pad.checked_drop)
-            pad.schedule(Pad.TurnOn, mode=mode, after=after) \
+            pad.schedule(Pad.TurnOn, after=after) \
                 .then_call(make_drop)
             return future
 
@@ -848,13 +844,12 @@ class Drop(OpScheduler['Drop']):
             self.mix_result = mix_result
 
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             liquid = self.liquid
             op = ExtractionPoint.TransferIn(liquid.reagent, liquid.volume, mix_result=self.mix_result)
-            return self.extraction_point.schedule(op, mode=mode, after=after, post_result=post_result)
+            return self.extraction_point.schedule(op, after=after, post_result=post_result)
 
     class TeleportOut(Operation['Drop', None]):
         volume: Final[Optional[Volume]]
@@ -868,7 +863,6 @@ class Drop(OpScheduler['Drop']):
             self.product_loc = product_loc
 
         def _schedule_for(self, drop: Drop, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[None]:
@@ -946,7 +940,6 @@ class Drop(OpScheduler['Drop']):
         empty_wrong_reagent: Final[bool]
 
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
@@ -1001,7 +994,7 @@ class Drop(OpScheduler['Drop']):
                 # Note, we post the drop as soon as we get to the DISPENSED state, even theough
                 # we continue on to READY
                 well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()),
-                               mode=mode, after=after) \
+                               after=after) \
                     .then_call(make_drop) \
                     .then_schedule(Well.TransitionTo(WellState.READY))
             # well.ensure_content().then_call(run_group)
@@ -1028,7 +1021,6 @@ class Drop(OpScheduler['Drop']):
             return f"<Drop.EnterWell: {self.well}>"
 
         def _schedule_for(self, drop: Drop, *,
-                          mode: RunMode = RunMode.GATED,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[None]:
@@ -1079,7 +1071,7 @@ class Drop(OpScheduler['Drop']):
 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
-            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard()), mode=mode, after=after) \
+            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard()), after=after) \
                 .then_call(consume_drop) \
                 .then_schedule(Well.TransitionTo(WellState.READY))
             return future

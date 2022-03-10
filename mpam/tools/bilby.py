@@ -9,7 +9,7 @@ from mpam.device import System, Well, Heater, Magnet, Board
 from mpam.exerciser import Task, volume_arg, Exerciser
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
-    Operation, StaticOperation, RunMode, Reagent
+    Operation, StaticOperation, Reagent
 from quantities.SI import sec, ms, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import TemperaturePoint, abs_C
@@ -102,8 +102,6 @@ class WombatTest(Task):
         board.wells[2].contains(Liquid(r1, 40*drops))
         board.wells[3].contains(Liquid(r2, 40*drops))
 
-        async_mode = RunMode.asynchronous(args.clock_speed)
-
         s1 = self.walk_across(board.wells[2], Dir.RIGHT, Dir.DOWN, Dir.UP)
         s2 = self.walk_across(board.wells[3], Dir.RIGHT, Dir.UP, Dir.DOWN)
 
@@ -113,7 +111,7 @@ class WombatTest(Task):
                 s1.schedule(after=delay)
                 s2.schedule(after=delay)
             self.ramp_heater([80*abs_C, 60*abs_C, 90*abs_C, 40*abs_C, 120*abs_C]) \
-                .schedule_for(board.heaters[3], mode = async_mode)
+                .schedule_for(board.heaters[3])
             Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
 
 
