@@ -25,19 +25,19 @@ from quantities.dimensions import Volume
 class Pull(NamedTuple):
     puller: DropLoc
     pullee: DropLoc
-    
+
     @property
     def pinned(self) -> DropLoc:
         return self.puller
     @property
     def unpinned(self) -> DropLoc:
         return self.pullee
-    
+
 class MotionInference:
     changes: Final[ChangeJournal]
     pin_state: Final[Mapping[DropLoc, bool]]
     need_drop_update: Final[set[Blob]]
-    
+
     def __init__(self, changes: ChangeJournal) -> None:
         self.changes = changes
         def compute_pin_state(pad: DropLoc) -> bool:
@@ -50,14 +50,14 @@ class MotionInference:
             pin_state[p] = True
         self.pin_state = pin_state
         self.need_drop_update = set()
-        
+
     def process_changes(self) -> None:
         # When we come in, no blobs abut and every unpinned blob has content
         if self.changes.has_transfer:
             self.process_transfers()
         # The invariant still holds
         pulls: list[Pull] = []
-        # First, we divide the changes into those that flip bits inside a blob and those that extend 
+        # First, we divide the changes into those that flip bits inside a blob and those that extend
         # a blob or create a new (empty) one:
         n_flips = Count[Blob]()
         extensions: list[DropLoc] = []
@@ -121,7 +121,7 @@ class MotionInference:
             if not blob.is_empty:
                 # update_drops() will unstash or create drops for pads that don't have them.
                 blob.update_drops()
-        
+
     def process_transfers(self) -> None:
         pulls: list[Pull] = []
         blobs_to_delete: list[Blob] = []
@@ -158,7 +158,7 @@ class MotionInference:
             else:
                 blob = pad.blob
                 # update_drops.add(blob)
-                assert blob.total_volume >= volume, f"Removed {volume} at {pad} from a blob containing {blob.contents}" 
+                assert blob.total_volume >= volume, f"Removed {volume} at {pad} from a blob containing {blob.contents}"
                 blob.contents.volume -= volume
                 if blob.unpinned and blob.total_volume.is_zero:
                     blobs_to_delete.append(blob)
@@ -168,7 +168,7 @@ class MotionInference:
             self.process_pulls(pulls)
         for blob in blobs_to_delete:
             blob.disappear()
-    
+
     def process_pulls(self, pulls: Sequence[Pull]) -> None:
         pull_pads: dict[tuple[Blob,Blob], list[DropLoc]] = defaultdict(list)
         pullers: dict[Blob,set[Blob]] = defaultdict(set)
@@ -190,17 +190,17 @@ class MotionInference:
                     self.need_drop_update.add(pb)
             else:
                 self.need_drop_update.add(pb)
-                
+
         for ub,pb_set in pullers.items():
             # If the blob is attached to the well, we detach it.  This will keep
-            # it from refilling when we move its contents in.  We keep track of 
+            # it from refilling when we move its contents in.  We keep track of
             # what it was to condition on whether to draw from it.
             well = ub.well
             if well is not None and ub.has_gate:
                 ub.detach_from_well()
-                
+
             preserve_unpinned = False
-                
+
             if len(pb_set) == 1:
                 # If everything goes one place, we don't have to split.  If this
                 # is pulling to a blob tied to a well, it will add to the well
@@ -220,7 +220,7 @@ class MotionInference:
                     pb.mix_in(ub.contents)
             elif well is not None and not ub.has_gate:
                 # If we're splitting an internal-only blob, we simply let any
-                # non-internal with-gate blob take what it needs.  
+                # non-internal with-gate blob take what it needs.
                 for pb in pb_set:
                     if pb.well is None and pb.has_gate:
                         pb.pull_from_well(well)
@@ -228,11 +228,11 @@ class MotionInference:
                         break
             else:
                 pull_strength: dict[Blob, float] = {}
-                
+
                 def dist2(x: int, y: int, p: Pad) -> int:
                     return (x-p.column)**2 + (y-p.row)**2
-                
-                
+
+
                 for pb in pb_set:
                     if pb.has_inner_well_pad and ub.has_gate:
                         # An internal blob pulls on a gate blob with strength
@@ -241,17 +241,17 @@ class MotionInference:
                         assert ub.has_gate
                         pull_strength[pb] = 1.0
                         continue
-                    
+
                     # At this point, both pb and ub have either a gate or a
                     # board pad.  We'll just ignore inner pads when computing
                     # strength (this may not be right.
-                    
+
                     def compute_strength(u: LocatedPad, p: DropLoc) -> float:
                         if not isinstance(p, LocatedPad):
                             return 0.0
                         dist2 = (u.column-p.column)**2 + (u.row-p.row)**2
                         return 1.0/dist2
-                     
+
                     ups = pull_pads[(pb,ub)]
                     # By construction, everything in ups is either a pad or a gate.
 
@@ -280,8 +280,8 @@ class MotionInference:
             # print(f"{preserve_unpinned}: {ub}")
             if not preserve_unpinned:
                 ub.disappear()
-    
-    
+
+
 class Blob:
     pads: Final[list[DropLoc]]
     pinned: bool
@@ -298,49 +298,49 @@ class Blob:
     @property
     def has_inner_well_pad(self) -> bool:
         return self.n_inner_well_pads > 0
-    
+
     @property
     def n_display_pads(self) -> int:
         return len(self.pads) - self.n_inner_well_pads
-    
+
     @property
     def size(self) -> int:
         return len(self.pads)
-    
+
     @property
     def unpinned(self) -> bool:
         return not self.pinned
-    
+
     @property
     def reagent(self) -> Reagent:
         return self.contents.reagent
-    
+
     @property
     def total_volume(self) -> Volume:
         return self.contents.volume
-    
+
     @property
     def per_pad_volume(self) -> Volume:
         n = self.n_display_pads
         if n == 0:
             return Volume.ZERO
         else:
-            return self.total_volume/n 
-        
+            return self.total_volume/n
+
     @property
     def is_singleton(self) -> bool:
         return self.size == 1
-    
+
     @property
     def only_pad(self) -> DropLoc:
         assert self.size == 1
         for pad in self.pads:
             return pad
         assert False, "Somehow failed to enumerate singleton blob"
-    
+
     @property
     def is_empty(self) -> bool:
-        return self.size == 0 
+        return self.size == 0
 
     def __init__(self, pads: Iterable[DropLoc] = (), *,
                  pinned: bool,
@@ -349,7 +349,7 @@ class Blob:
                  set_pads: bool = True) -> None:
         self.pads = list(pads)
         if well_from is not None:
-            well = well_from.well if (isinstance(well_from, WellPad) 
+            well = well_from.well if (isinstance(well_from, WellPad)
                                       and well_from is not well_from.well.gate) else None
         self.well = well
         for pad in pads:
@@ -362,7 +362,7 @@ class Blob:
         if set_pads:
             for pad in pads:
                 pad.blob = self
-        
+
     def __repr__(self) -> str:
         status = "pinned" if self.pinned else "unpinned"
         if self.total_volume.is_zero:
@@ -374,7 +374,7 @@ class Blob:
         pads = map_str(self.pads)
         wdesc = f", {self.well}" if self.well is not None else ""
         return f"Blob({status}, {cdesc}: {pads}{wdesc})"
-    
+
     def note_pad(self, pad: DropLoc) -> None:
         if isinstance(pad, WellPad):
             well = self.well
@@ -385,7 +385,7 @@ class Blob:
                 self.n_inner_well_pads += 1
         else:
             self.has_board_pad = True
-            
+
     def attach_to_well(self, well: Optional[Well] = None) -> None:
         if well is None:
             well = self.well
@@ -399,7 +399,7 @@ class Blob:
         self.attached_to_well = True
         setattr(well, attr, self)
         well.on_liquid_change(lambda old,new: self.pull_from_well(), key=Blob.pull_key) # @UnusedVariable
-        
+
 
     def detach_from_well(self) -> None:
         well = self.well
@@ -408,7 +408,7 @@ class Blob:
         self.attached_to_well = False
         well._liquid_change_callbacks.remove(Blob.pull_key)
         self.well = None
-        
+
 
     def pull_from_well(self, well: Optional[Well] = None) -> None:
         # We need to be careful here.  If we wind up taking something out of the
@@ -422,7 +422,7 @@ class Blob:
         # We don't bother an empty well
         if well.volume.is_positive:
             desired = self.n_display_pads*well.dispensed_volume-self.total_volume
-            # The only way we go down is when we partition, and that's a new blob. 
+            # The only way we go down is when we partition, and that's a new blob.
             assert not desired.is_negative
             if desired.is_positive:
                 # At this point, either we're doing an initial pull or we've already
@@ -435,11 +435,11 @@ class Blob:
                     self._in_pull = False
                 self.contents.mix_in(got)
                 self.update_drops()
-        
+
 
     def drop_in(self, pad: DropLoc) -> Drop:
         return Drop(pad, Liquid(self.reagent, self.per_pad_volume))
-    
+
     def remove_drops(self) -> None:
         # print(f"Removing drops in {self}")
         for pad in self.pads:
@@ -450,8 +450,8 @@ class Blob:
             else:
                 # print(f"  {pad} has no drop")
                 pass
-     
-    
+
+
     def update_drops(self) -> None:
         reagent = self.reagent
         volume = self.per_pad_volume
@@ -464,13 +464,13 @@ class Blob:
                 liquid.reagent = reagent
                 liquid.volume = volume
 
-       
+
 
     def die(self) -> None:
         self.pads.clear()
         # if self.has_gate and self.well is not None:
         #     self.detach_from_well()
-        
+
     def mix_in(self, liquid: Liquid, mix_result: Optional[MixResult] = None) -> None:
         if liquid.volume.is_positive:
             well = self.well
@@ -489,7 +489,7 @@ class Blob:
                 pad.blob = self
             self.pads.extend(blob.pads)
             self.mix_in(blob.contents)
-                
+
             if blob.has_board_pad:
                 self.has_board_pad = True
             if blob.has_gate:
@@ -500,7 +500,7 @@ class Blob:
             if blob.well is not self.well:
                 well = blob.well or self.well
                 assert well is not None
-                
+
                 if not self.attached_to_well:
                     # Either (1) one of the two of us is an untied blob with a
                     # gate and the other is an internal-only blob or (2) we're a
@@ -508,21 +508,21 @@ class Blob:
                     # either case, we attach ourselves, which will detach them
                     # if they were attached.
                     self.attach_to_well(well)
-                    
+
                 # Otherwise, we were the attached blob and they just have board
                 # pads.
-                
+
                 # If we have content, we mix it into the well.  If we're
                 # attached at this point, this will have the effect of pulling
                 # out the right amount.
                 if self.total_volume.is_positive:
                     well.transfer_in(self.contents)
-                # Otherwise, we're empty to start, but we might still want to pull some out. 
+                # Otherwise, we're empty to start, but we might still want to pull some out.
                 elif self.has_gate and well.volume.is_positive:
                     self.pull_from_well()
             blob.die()
         return self
-    
+
     def extend(self, pad: DropLoc) -> Blob:
         self.pads.append(pad)
         pad.blob = self
@@ -540,7 +540,7 @@ class Blob:
                 assert self.has_gate
                 self.pull_from_well()
         return self
-    
+
     def disappear(self) -> None:
         # print(f"Disappearing {self}")
         self.remove_drops()
@@ -553,14 +553,14 @@ class Blob:
         mi = MotionInference(changes)
         mi.process_changes()
         return
-        
+
     def partition(self, pin_state: Mapping[DropLoc, bool], pulls: list[Pull]) -> None:
         # We should only get here if fewer than all drops have changed.
         assert(not self.is_singleton)
-        
+
         has_volume = self.total_volume.is_positive
         well = self.well
-        
+
         def expand(pad: DropLoc, blob: Blob, ps: bool):
             for n in pad.neighbors_for_blob:
                 if n.blob is self:
@@ -581,7 +581,7 @@ class Blob:
                             # We have to account for both directions, since this pad's blob is no
                             # longer self
                             pulls.append(Pull(n, pad))
-                        
+
         new_blobs: list[Blob] = []
         for pad in self.pads:
             # Every one whose blob is self when we look will be the seed of a new blob
@@ -591,10 +591,10 @@ class Blob:
                 new_blobs.append(blob)
                 expand(pad, blob, ps)
         # When we get here, every pad in this blob will have been migrated to some new blob.
-        
+
         # We now need to partition the contents among them.  If we're attached
         # to a well, the fluid will be pulled out to the display pads (pads and
-        # gate), if any, so we split blobs by fraction of display pads.  
+        # gate), if any, so we split blobs by fraction of display pads.
         my_size = float(self.n_display_pads)
         # If we have volume, we must have display pads
         assert my_size > 0 or not has_volume
@@ -632,35 +632,35 @@ class DropStatus(Enum):
     IN_WELL = auto()
     IN_MIX = auto()
     OFF_BOARD = auto()
-    
+
 class MotionOp(Operation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]
-    
+
     def __init__(self, *, allow_unsafe: bool):
         self.allow_unsafe = allow_unsafe
-    
+
     @abstractmethod
     def dirAndSteps(self, drop: Drop) -> tuple[Dir, int]: ...  # @UnusedVariable
     def _schedule_for(self, drop: Drop, *,
-                      mode: RunMode = RunMode.GATED, 
+                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
         assert isinstance(drop.pad, Pad), f"{drop} not on board.  Can't create MotionOp {self}"
         board = drop.pad.board
         system = board.in_system()
-        
+
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
-        
+
         if drop.status is not DropStatus.ON_BOARD:
             print(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
             return Delayed.complete(drop)
-        
+
         if steps == 0:
             return Delayed.complete(drop)
         future = Delayed[Drop]()
-            
+
         one_tick: Ticks = 1*tick
         allow_unsafe = self.allow_unsafe
         assert mode.is_gated
@@ -700,20 +700,20 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         iterator = before_tick()
         board.before_tick(lambda: next(iterator), delta=mode.gated_delay(after))
         return future
-    
-    
-    
-    
+
+
+
+
 
 class Drop(OpScheduler['Drop']):
     _display_liquid: Liquid
     _pad: DropLoc
     status: DropStatus
-    
+
     @property
     def pad(self) -> DropLoc:
         return self._pad
-    
+
     @pad.setter
     def pad(self, pad: DropLoc) -> None:
         old = self._pad
@@ -722,42 +722,42 @@ class Drop(OpScheduler['Drop']):
             old.drop = None
         self._pad = pad
         pad.drop = self
-        
+
     @property
     def on_board_pad(self) -> Pad:
         assert isinstance(self.pad, Pad)
         return self.pad
-        
+
     @property
     def blob(self) -> Blob:
         return not_None(self._pad.blob)
-    
+
     @property
     def blob_volume(self) -> Volume:
         return self.blob.total_volume
-    
+
     @blob_volume.setter
     def blob_volume(self, volume: Volume) -> None:
         blob = self.blob
         blob.contents.volume = volume
         blob.update_drops()
-    
+
     @property
     def display_volume(self) -> Volume:
         return self._display_liquid.volume
-    
+
     @property
     def reagent(self) -> Reagent:
         return self._display_liquid.reagent
-    
+
     @reagent.setter
     def reagent(self, reagent: Reagent) -> None:
         blob = self.blob
         blob.contents.reagent = reagent
         blob.update_drops()
-    
-    def __init__(self, pad: DropLoc, 
-                 display_liquid: Liquid, 
+
+    def __init__(self, pad: DropLoc,
+                 display_liquid: Liquid,
                  *,
                  status: DropStatus = DropStatus.ON_BOARD) -> None:
         assert pad.drop is None, f"Trying to create a second drop at {pad}"
@@ -766,7 +766,7 @@ class Drop(OpScheduler['Drop']):
         self.status = status
         if status is DropStatus.ON_BOARD:
             pad.drop = self
-        
+
     def __repr__(self) -> str:
         st = self.status
         place = ""
@@ -779,23 +779,23 @@ class Drop(OpScheduler['Drop']):
             liquid = f", {mine}{blob.total_volume} of {self.reagent}"
         else:
             place = f"{st.name}: "
-        
+
         return f"Drop[{place}{self.pad}{liquid}]"
-    
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
-                               after: Optional[DelayType] = None) -> None:  
+
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,
+                               after: Optional[DelayType] = None) -> None:
         self.pad.schedule_communication(cb, mode=mode, after=after)
-        
+
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
         return self.pad.delayed(function, after=after)
-        
-       
+
+
     class AppearAt(StaticOperation['Drop']):
         pad: Final[Pad]
         liquid: Final[Liquid]
-        
-        def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *, 
+
+        def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *,
                      board: Board,
                      liquid: Optional[Liquid] = None,
                      ) -> None:
@@ -807,11 +807,11 @@ class Drop(OpScheduler['Drop']):
             if liquid is None:
                 liquid = Liquid(unknown_reagent, board.drop_size)
             self.liquid = liquid
-            
+
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED, 
+                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
-                      post_result: bool = True,  
+                      post_result: bool = True,
                       ) -> Delayed[Drop]:
             future = Delayed[Drop]()
             assert mode.is_gated
@@ -828,53 +828,53 @@ class Drop(OpScheduler['Drop']):
             pad.schedule(Pad.TurnOn, mode=mode, after=after) \
                 .then_call(make_drop)
             return future
-            
+
     class TeleportInTo(StaticOperation['Drop']):
         extraction_point: Final[ExtractionPoint]
         liquid: Final[Liquid]
         mix_result: Final[Optional[Union[Reagent,str]]]
         def __init__(self, extraction_point: ExtractionPoint, *,
-                     liquid: Optional[Liquid] = None, 
+                     liquid: Optional[Liquid] = None,
                      reagent: Optional[Reagent] = None,
                      mix_result: Optional[Union[Reagent,str]] = None,
                      ) -> None:
             self.extraction_point = extraction_point
-            board = extraction_point.pad.board 
+            board = extraction_point.pad.board
             if liquid is None:
                 if reagent is None:
                     reagent = unknown_reagent
                 liquid = Liquid(reagent, board.drop_size)
             self.liquid = liquid
             self.mix_result = mix_result
-            
+
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED, 
+                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
-                      post_result: bool = True,  
+                      post_result: bool = True,
                       ) -> Delayed[Drop]:
             liquid = self.liquid
             op = ExtractionPoint.TransferIn(liquid.reagent, liquid.volume, mix_result=self.mix_result)
             return self.extraction_point.schedule(op, mode=mode, after=after, post_result=post_result)
-    
+
     class TeleportOut(Operation['Drop', None]):
         volume: Final[Optional[Volume]]
         product_loc: Final[Optional[Delayed[ProductLocation]]]
-        
+
         def __init__(self, *,
                      volume: Optional[Volume],
                      product_loc: Optional[Delayed[ProductLocation]] = None
                      ) -> None:
             self.volume = volume
             self.product_loc = product_loc
-            
+
         def _schedule_for(self, drop: Drop, *,
-                      mode: RunMode = RunMode.GATED, 
+                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[None]:
             op = ExtractionPoint.TransferOut(volume=self.volume, product_loc=self.product_loc)
             future = Delayed[None]()
-            
+
             def do_it() -> None:
                 ep = cast(Pad, drop.pad).extraction_point
                 assert ep is not None, f"{drop} is not at an extraction point"
@@ -885,32 +885,32 @@ class Drop(OpScheduler['Drop']):
     class Move(MotionOp):
         direction: Final[Dir]
         steps: Final[int]
-        
+
         def __repr__(self) -> str:
             return f"<Drop.Move: {self.steps} {self.direction}>"
-        
-        def __init__(self, direction: Dir, *, steps: int = 1, 
+
+        def __init__(self, direction: Dir, *, steps: int = 1,
                      allow_unsafe: bool = False) -> None:
             super().__init__(allow_unsafe=allow_unsafe)
             self.direction = direction
             self.steps = steps
-            
+
         def dirAndSteps(self, drop: Drop)->tuple[Dir, int]:  # @UnusedVariable
             if self.steps >= 0:
                 return self.direction, self.steps
             else:
                 return self.direction.opposite, -self.steps
-            
+
     class ToCol(MotionOp):
         col: Final[int]
-        
+
         def __repr__(self) -> str:
             return f"<Drop.ToCol: {self.col}>"
 
         def __init__(self, col: int, *, allow_unsafe: bool = False) -> None:
             super().__init__(allow_unsafe=allow_unsafe)
             self.col = col
-            
+
         def dirAndSteps(self, drop: Drop)->tuple[Dir, int]:
             assert isinstance(drop.pad, Pad)
             pad = drop.pad
@@ -918,17 +918,17 @@ class Drop(OpScheduler['Drop']):
             current = pad.column
             steps = self.col-current
             return (direction, steps) if steps >=0 else (direction.opposite, -steps)
-            
+
     class ToRow(MotionOp):
         row: Final[int]
-        
+
         def __repr__(self) -> str:
             return f"<Drop.ToRow: {self.row}>"
 
         def __init__(self, row: int, *, allow_unsafe: bool = False) -> None:
             super().__init__(allow_unsafe=allow_unsafe)
             self.row = row
-            
+
         def dirAndSteps(self, drop: Drop)->tuple[Dir, int]:
             assert isinstance(drop.pad, Pad)
             pad = drop.pad
@@ -936,41 +936,41 @@ class Drop(OpScheduler['Drop']):
             current = pad.row
             steps = self.row-current
             return (direction, steps) if steps >=0 else (direction.opposite, -steps)
-            
-            
-         
-            
+
+
+
+
     class DispenseFrom(StaticOperation['Drop']):
         well: Final[Well]
         reagent: Final[Optional[Reagent]]
         empty_wrong_reagent: Final[bool]
-        
+
         def _schedule(self, *,
-                      mode: RunMode = RunMode.GATED, 
+                      mode: RunMode = RunMode.GATED,
                       after: Optional[DelayType] = None,
-                      post_result: bool = True,  
+                      post_result: bool = True,
                       ) -> Delayed[Drop]:
             future = Delayed[Drop]()
             well = self.well
             pad = well.exit_pad
             volume = well.dispensed_volume
             def make_drop(_) -> None:
-                # Now that motion is infered, all we have to do is unreserve the pads and post the result 
+                # Now that motion is infered, all we have to do is unreserve the pads and post the result
                 # liquid = well.transfer_out(volume)
                 board = pad.board
                 # drop = Drop(pad=pad, liquid=liquid)
                 # board.journal_delivery(pad, liquid)
-                
+
                 # If the caller gave us a before_release action, we invoke it
                 # here, before any other dispense on this well can happen.
                 if self.before_release is not None:
                     (self.before_release)()
-                
+
                 well.gate_reserved = False
                 pad.reserved = False
                 if post_result:
                     board.after_tick(lambda: future.post(pad.checked_drop))
-                    
+
             # The guard will be iterated when the motion is started, after any delay, but before the created
             # WellMotion tries to either get adopted by an in-progress motion or make changes on the well pads.
             def guard() -> Iterator[bool]:
@@ -995,20 +995,20 @@ class Drop(OpScheduler['Drop']):
                 while not pad.reserve():
                     yield True
                 yield False
-                
-                
+
+
             def run_group(_) -> None:
                 # Note, we post the drop as soon as we get to the DISPENSED state, even theough
                 # we continue on to READY
-                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()), 
+                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()),
                                mode=mode, after=after) \
                     .then_call(make_drop) \
-                    .then_schedule(Well.TransitionTo(WellState.READY)) 
+                    .then_schedule(Well.TransitionTo(WellState.READY))
             # well.ensure_content().then_call(run_group)
             run_group(None)
             return future
-            
-        
+
+
         def __init__(self, well: Well, *,
                      reagent: Optional[Reagent] = None,
                      empty_wrong_reagent: bool = False,
@@ -1018,19 +1018,19 @@ class Drop(OpScheduler['Drop']):
             self.reagent = reagent
             self.empty_wrong_reagent = empty_wrong_reagent
             self.after_reservation = after_reservation
-            self.before_release = before_release 
-            
+            self.before_release = before_release
+
     class EnterWell(Operation['Drop',None]):
         well: Final[Optional[Well]]
         empty_wrong_reagent: Final[bool]
-        
+
         def __repr__(self) -> str:
             return f"<Drop.EnterWell: {self.well}>"
-        
+
         def _schedule_for(self, drop: Drop, *,
-                          mode: RunMode = RunMode.GATED, 
+                          mode: RunMode = RunMode.GATED,
                           after: Optional[DelayType] = None,
-                          post_result: bool = True,  
+                          post_result: bool = True,
                           ) -> Delayed[None]:
             future = Delayed[None]()
             if self.well is None:
@@ -1039,10 +1039,10 @@ class Drop(OpScheduler['Drop']):
                 well = drop.pad.well
             else:
                 well = self.well
-                
+
             # With inferred motion, we shouldn't have to do anything anymore
             # except possibly post to the future.
-            
+
             def consume_drop(_) -> None:
                 # blob = drop.blob
                 # well.transfer_in(blob.contents)
@@ -1053,7 +1053,7 @@ class Drop(OpScheduler['Drop']):
                 # # drop.pad.drop = None
                 if post_result:
                     future.post(None)
-                    
+
             # The guard will be iterated when the motion is started, after any delay, but before the created
             # WellMotion tries to either get adopted by an in-progress motion or make changes on the well pads.
             def guard() -> Iterator[bool]:
@@ -1065,7 +1065,7 @@ class Drop(OpScheduler['Drop']):
                 def empty_first() -> None:
                     well.remove(well.volume)
                 mismatch_behavior = FIX_BY(empty_first) if self.empty_wrong_reagent else PRINT
-                
+
                 while True:
                     would_give = drop.blob_volume
                     f = well.ensure_space(volume=drop.blob_volume, reagent=drop.reagent,
@@ -1076,21 +1076,16 @@ class Drop(OpScheduler['Drop']):
                     # room.
                     if drop.blob_volume <= would_give:
                         yield False
-                
+
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
             well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard()), mode=mode, after=after) \
                 .then_call(consume_drop) \
                 .then_schedule(Well.TransitionTo(WellState.READY))
             return future
-            
-        
+
+
         def __init__(self, well: Optional[Well] = None, *,
                      empty_wrong_reagent: bool = False) -> None:
             self.well = well
             self.empty_wrong_reagent = empty_wrong_reagent
-        
-            
-        
-    
-

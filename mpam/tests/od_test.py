@@ -48,18 +48,18 @@ print(v.in_units(acre_ft))
     # well = board.wells[3]
     # Drop.Dispense(well).schedule() \
     #     .then_schedule(Drop.Move(Dir.LEFT, steps=5))
-    
+
     # board.well_groups['left'].shared_pads[2].schedule(WellPad.TurnOn)
     # board.wells[3].gate.schedule(WellPad.TurnOn)
-    
+
     # from_well = board.wells[1]
     # to_well = board.wells[0]
     # from_well.contains(Liquid(unknown_reagent, 8*drops))
-    
+
     # Drop.DispenseFrom(from_well).schedule() \
     #     .then_schedule(Drop.Move(Dir.WEST, steps = 13)) \
     #     .then_schedule(Drop.Enter(to_well))
-    
+
     # def dispense_drops(n_drops: int):
     #     w = board.wells[1]
     #     sequence = Drop.DispenseFrom(w) \
@@ -79,13 +79,13 @@ print(v.in_units(acre_ft))
     #             sequence.schedule(after=15*ticks)
     #             n_drops -= 1
     #     dispense_and_walk()
-    
+
 def walk_across(well: Well, direction: Dir) -> StaticOperation[None]:
     return Drop.DispenseFrom(well) \
             .then(Drop.Move(direction, steps=13)) \
             .then(Drop.EnterWell)
-    pass    
-    
+    pass
+
 def experiment(system: System) -> None:
     r1 = Reagent('R1')
     r2 = Reagent('R2')
@@ -94,7 +94,7 @@ def experiment(system: System) -> None:
     board.wells[3].contains(Liquid(r2, 8*drops))
 
     system.clock.start(100*ms)
-        
+
     s1 = walk_across(board.wells[1], Dir.LEFT)
     s2 = walk_across(board.wells[3], Dir.LEFT)
     with system.batched():
@@ -102,11 +102,11 @@ def experiment(system: System) -> None:
         s1.schedule(after=10*ticks)
         s1.schedule(after=15*ticks)
         s2.schedule()
-    
-system.run_monitored(experiment)
-    
-    
 
-            
-            
+system.run_monitored(experiment)
+
+
+
+
+
 system.stop()

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace, _ArgumentGroup
-from typing import Union, Optional, Sequence 
+from typing import Union, Optional, Sequence
 
 from devices import bilby
 from joey import JoeyExerciser
@@ -14,10 +14,10 @@ from quantities.SI import sec, ms, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import TemperaturePoint, abs_C
 
-class DispenseAndWalk(Task): 
+class DispenseAndWalk(Task):
     def __init__(self) -> None:
         super().__init__(name="walk",
-                         description="""Dispense a drop from a given well and 
+                         description="""Dispense a drop from a given well and
                                         walk to the well across from it.""")
 
     def add_args_to(self, parser: ArgumentParser, *,
@@ -36,14 +36,14 @@ class DispenseAndWalk(Task):
         #                     The gap between drops.  Default is 8
         #                     """)
 
-        
+
     def run(self, board: Board, system: System, args: Namespace) -> None:
         well_no: int = args.well
         well = board.wells[well_no]
         hdir = Dir.RIGHT if well_no == 2 or well_no == 3 else Dir.LEFT
         vdir1 = Dir.DOWN if well_no == 2 or well_no == 6 else Dir.UP
         vdir2 = Dir.UP if well_no == 2 or well_no == 6 else Dir.DOWN
-        
+
         drops = board.drop_size.as_unit("drops")
         volume: Optional[Union[Volume, float]] = args.volume
         if volume is None:
@@ -51,7 +51,7 @@ class DispenseAndWalk(Task):
         elif isinstance(volume, float):
             volume = volume*drops
         well.contains(Liquid(unknown_reagent, volume))
-        
+
         seq = Path.dispense_from(well) \
                 .walk(hdir) \
                 .walk(vdir1, steps=2) \
@@ -59,7 +59,7 @@ class DispenseAndWalk(Task):
                 .walk(vdir2, steps=2) \
                 .walk(hdir) \
                 .enter_well()
-                
+
         with system.batched():
             for i in range(args.drops):
                 delay = 0*ticks if i==0 else (4+4*i)*ticks
@@ -75,7 +75,7 @@ class WombatTest(Task):
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
         ...
-        
+
     def walk_across(self, well: Well, direction: Dir,
                     turn1: Dir,
                     turn2: Dir,
@@ -87,26 +87,26 @@ class WombatTest(Task):
                 .walk(turn2, steps=2) \
                 .walk(direction) \
                 .enter_well()
-    
+
     def ramp_heater(self, temps: Sequence[TemperaturePoint]) -> Operation[Heater, Heater]:
         op: Operation[Heater,Heater] = Heater.SetTemperature(temps[0])
         for i in range(1, len(temps)):
             op = op.then(Heater.SetTemperature(temps[i]), after=5*sec)
-        return op.then(Heater.SetTemperature(None), after=5*sec)        
-        
+        return op.then(Heater.SetTemperature(None), after=5*sec)
+
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
-        
+
         r1 = Reagent("R1")
         r2 = Reagent("R2")
         drops = board.drop_size.as_unit("drops")
         board.wells[2].contains(Liquid(r1, 40*drops))
         board.wells[3].contains(Liquid(r2, 40*drops))
-        
+
         async_mode = RunMode.asynchronous(args.clock_speed)
-        
+
         s1 = self.walk_across(board.wells[2], Dir.RIGHT, Dir.DOWN, Dir.UP)
         s2 = self.walk_across(board.wells[3], Dir.RIGHT, Dir.UP, Dir.DOWN)
-        
+
         with system.batched():
             for i in range(30):
                 delay = 0*ticks if i==0 else (4+4*i)*ticks
@@ -123,9 +123,9 @@ class BilbyExerciser(JoeyExerciser):
         super().__init__(name="Bilby")
         self.add_task(DispenseAndWalk())
         self.add_task(WombatTest())
-        
-    def add_device_specific_common_args(self, 
-                                        group: _ArgumentGroup, 
+
+    def add_device_specific_common_args(self,
+                                        group: _ArgumentGroup,
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
         super().add_device_specific_common_args(group, parser)
@@ -138,17 +138,12 @@ class BilbyExerciser(JoeyExerciser):
                            The directory that WallabyElectrodes.csv and WallabyHeaters.csv
                            are found in.  Defaults to the current directory.
                            ''')
-        
+
     def make_board(self, args:Namespace)->Board:
         return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir)
-    
+
 if __name__ == '__main__':
     Time.default_units = ms
     Volume.default_units = uL
     exerciser = BilbyExerciser()
     exerciser.parse_args_and_run()
-
-
-
-
-

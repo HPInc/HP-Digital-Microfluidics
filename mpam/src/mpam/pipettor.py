@@ -22,9 +22,9 @@ class XferTarget(ABC):
     on_unknown: Final[ErrorHandler]
     on_insufficient: Final[ErrorHandler]
     got: Volume
-    
+
     future: Final[Delayed[Liquid]]
-    
+
     def __init__(self, target: PipettingTarget, volume: Volume,
                  *,
                  future: Delayed[Liquid],
@@ -39,15 +39,15 @@ class XferTarget(ABC):
         self.future = future
         self.on_insufficient = on_insufficient
         self.on_unknown = on_unknown
-        
+
     @property
     @abstractmethod
     def insufficient_msg(self) -> str: ...
-        
+
     @abstractmethod
     def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         ...
-    
+
     def finished(self, reagent: Reagent, volume: Volume) -> None:
         self.got += volume
         last = self.got >= self.volume
@@ -58,23 +58,23 @@ class XferTarget(ABC):
 
     @abstractmethod
     def signal_done(self, reagent: Reagent, volume: Volume, *, last: bool) -> None: # @UnusedVariable
-        ...    
+        ...
     def finished_overall_transfer(self, reagent: Reagent) -> None:
         future = self.future
         if not future.has_value:
             self.signal_done(reagent, Volume.ZERO, last=True)
             self.on_insufficient(self.insufficient_msg)
             future.post(Liquid(reagent, self.got))
-        
+
 class FillTarget(XferTarget):
     mix_result: Final[Optional[MixResult]]
-    
+
     @property
-    def insufficient_msg(self) -> str: 
+    def insufficient_msg(self) -> str:
         expected = self.volume.in_units(uL)
         got = self.got.in_units(uL)
         return f"Expected {expected} transfered to {self.target}, only got {got}."
-    
+
     def __init__(self, target: PipettingTarget, volume: Volume,
                  *,
                  future: Delayed[Liquid],
@@ -85,16 +85,16 @@ class FillTarget(XferTarget):
         super().__init__(target, volume, future=future, allow_merge=allow_merge,
                          on_unknown=on_unknown, on_insufficient=on_insufficient)
         self.mix_result = mix_result
-        
+
     def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         self.target.prepare_for_add()
-        
+
     def signal_done(self, reagent: Reagent, volume: Volume, *, last: bool) -> None:
         mix_result = self.mix_result if self.got >= self.volume else None
         self.target.pipettor_added(reagent, volume, mix_result=mix_result, last=last)
-    
-        
-        
+
+
+
 class EmptyTarget(XferTarget):
     product_loc: Final[Optional[Delayed[ProductLocation]]]
 
@@ -108,46 +108,46 @@ class EmptyTarget(XferTarget):
         super().__init__(target, volume, future=future, allow_merge=allow_merge,
                          on_unknown=on_unknown, on_insufficient=on_insufficient)
         self.product_loc = product_loc
-    
+
     @property
-    def insufficient_msg(self) -> str: 
+    def insufficient_msg(self) -> str:
         expected = self.volume.in_units(uL)
         got = self.got.in_units(uL)
         return f"Expected {expected} transfered from {self.target}, only took {got}."
-    
+
     def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
         self.target.prepare_for_remove()
-        
+
     def signal_done(self, reagent: Reagent, volume: Volume, *, last: bool) -> None:
         self.target.pipettor_removed(reagent, volume, last=last)
-        
+
     def note_product_loc(self, loc: ProductLocation):
         if self.product_loc is not None:
             self.product_loc.post(loc)
-        
-        
+
+
 class Transfer:
     reagent: Final[Reagent]
     xfer_dir: Final[XferDir]
     targets: list[XferTarget]
     is_product: Final[bool]
     pending: bool
-    
+
     def __init__(self, reagent: Reagent, xfer_dir: XferDir, *, is_product: bool = False) -> None:
         self.reagent = reagent
         self.xfer_dir = xfer_dir
         self.is_product = is_product
         self.targets = []
         self.pending = True
-        
+
 class TransferSchedule:
     pipettor: Final[Pipettor]
     fills: Final[dict[Reagent, Transfer]]
     empties: Final[dict[Reagent, Transfer]]
     _lock: Final[Lock]
     serializer: Final[AsyncFunctionSerializer]
-    
-    
+
+
     def __init__(self, pipettor: Pipettor) -> None:
         self.pipettor = pipettor
         self.fills = {}
@@ -156,9 +156,9 @@ class TransferSchedule:
         self.serializer = AsyncFunctionSerializer(thread_name=f"{pipettor.name} Thread",
                                                   on_empty_queue = lambda: self.pipettor.idle(),
                                                   on_nonempty_queue = lambda: self.pipettor.not_idle())
-        
+
     def _schedule(self,
-                  reagent_map: Optional[dict[Reagent, Transfer]], 
+                  reagent_map: Optional[dict[Reagent, Transfer]],
                   target: XferTarget,
                   reagent: Reagent) -> None:
         with self._lock:
@@ -175,7 +175,7 @@ class TransferSchedule:
                     self.pipettor.perform(xfer)
                 self.serializer.enqueue(run_it)
             xfer.targets.append(target)
-            
+
     def add(self,
             target: PipettingTarget,
             reagent: Reagent,
@@ -186,12 +186,12 @@ class TransferSchedule:
             mix_result: Optional[MixResult] = None,
             on_insufficient: ErrorHandler = PRINT,
             on_unknown: ErrorHandler = PRINT) -> None:
-        xt = FillTarget(target, volume, 
+        xt = FillTarget(target, volume,
                         future=future, allow_merge=allow_merge,
                         mix_result=mix_result,
                         on_insufficient=on_insufficient,  on_unknown=on_unknown)
         self._schedule(self.fills, xt, reagent)
-        
+
     def remove(self,
                target: PipettingTarget,
                reagent: Reagent,
@@ -204,70 +204,70 @@ class TransferSchedule:
                is_product: bool,
                product_loc: Optional[Delayed[ProductLocation]]) -> None:
         transfer_dict = None if is_product else self.empties
-        xt = EmptyTarget(target, volume, 
+        xt = EmptyTarget(target, volume,
                         future=future, allow_merge=allow_merge,
                         product_loc=product_loc,
                         on_insufficient=on_insufficient,  on_unknown=on_unknown)
         self._schedule(transfer_dict, xt, reagent)
-        
-        
-        
+
+
+
 
 class PipettorSysCpt(SystemComponent):
     pipettor: Final[Pipettor]
-    
+
     def __init__(self, pipettor: Pipettor) -> None:
         self.pipettor = pipettor
-    
+
     def update_state(self)->None:
         pass
 
     def user_operation(self) -> UserOperation:
         return UserOperation(self.in_system().engine.idle_barrier)
-    
+
     def system_shutdown(self) -> None:
         self.pipettor.system_shutdown()
-    
+
 
 class Pipettor(OpScheduler['Pipettor'], ABC):
     sys_cpt: Final[PipettorSysCpt]
     OpFunc = Callable[[], None]
     name: Final[str]
     worker: Worker
-    
+
     xfer_sched: Final[TransferSchedule]
-                                  
+
     def __init__(self, *, name: str="Pipettor") -> None:
         self.sys_cpt = PipettorSysCpt(self)
         self.name = name
         self.xfer_sched = TransferSchedule(self)
-        
+
     def idle(self) -> None:
         print("Pipettor is idle")
         self.worker.idle()
-        
+
     def not_idle(self) -> None:
         print("Pipettor is not idle")
         self.worker.not_idle()
 
-    @abstractmethod    
+    @abstractmethod
     def perform(self, transfer: Transfer) -> None: ... # @UnusedVariable
-    
+
     def join_system(self, system: System) -> None:
         self.sys_cpt.join_system(system)
         self.worker = Worker(system.engine.idle_barrier)
-        
+
     def system_shutdown(self) -> None:
         pass
-    
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,  
-                               after: Optional[DelayType] = None) -> None:  
+
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], mode: RunMode, *,
+                               after: Optional[DelayType] = None) -> None:
         return self.sys_cpt.schedule(cb, mode=mode, after=after)
-    
+
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
         return self.sys_cpt.delayed(function, after=after)
- 
+
 
     class Supply(Operation['Pipettor', Liquid]):
         liquid: Final[Liquid]
@@ -357,13 +357,10 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                         volume = contents.volume
                 reagent = self.reagent
                 if reagent is None:
-                    reagent = unknown_reagent if contents is None else contents.reagent 
+                    reagent = unknown_reagent if contents is None else contents.reagent
                 pipettor.xfer_sched.remove(target, reagent, volume,
                                            future=future, allow_merge=self.allow_merge,
                                            on_unknown=self.on_no_sink, on_insufficient=self.on_insufficient_space,
                                            is_product = self.is_product, product_loc=self.product_loc)
             pipettor.delayed(schedule_it, after=after)
             return future
-            
-            
-
