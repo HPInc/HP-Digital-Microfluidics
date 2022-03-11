@@ -1554,10 +1554,14 @@ class SystemComponent(ABC):
     def call_after(self, delta: Time, fn: Callback, *, daemon: bool = False):
         self.in_system().call_after(delta, fn, daemon=daemon)
 
-    def before_tick(self, fn: ClockCallback, *, delta: DeltaType=Ticks.ZERO) -> None:
+    def before_tick(self, fn: ClockCallback, *, delta: Optional[DelayType]=Ticks.ZERO) -> None:
+        if delta is None:
+            delta = Ticks.ZERO
         self.in_system().before_tick(fn, delta=delta)
 
-    def after_tick(self, fn: ClockCallback, *, delta: DeltaType=Ticks.ZERO) -> None:
+    def after_tick(self, fn: ClockCallback, *, delta: Optional[DelayType]=Ticks.ZERO) -> None:
+        if delta is None:
+            delta = Ticks.ZERO
         self.in_system().after_tick(fn, delta=delta)
 
     def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO):
