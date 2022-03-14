@@ -27,7 +27,7 @@ from matplotlib.widgets import Button, TextBox
 from erk.basic import Count
 from langsup.dmf_lang import DMFInterpreter
 from mpam import paths
-from mpam.device import Board, Pad, Well, WellPad, PadBounds, Heater, \
+from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
     HeatingMode, BinaryComponent, ChangeJournal, DropLoc, WellGate
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
@@ -935,8 +935,8 @@ class BoardMonitor:
         self.color_allocator = ColorAllocator[Reagent](reserved_colors)
         self.legend = ReagentLegend(self)
 
-        for heater in board.heaters:       
-            self.setup_heater_poll(heater) 
+        # for heater in board.heaters:       
+        #     self.setup_heater_poll(heater) 
 
         def on_pick(event: PickEvent):
             artist = event.artist
@@ -1191,13 +1191,13 @@ class BoardMonitor:
         cmd = self.dmf_lang_widgets(grid[0,1])
         return (clock, cmd)
         
-    def setup_heater_poll(self, heater: Heater) -> None:
-        interval = heater.polling_interval
-        def do_poll() -> Optional[Time]:
-            heater.poll()
-            # print(f"Polling {heater}")
-            return interval
-        self.board.call_after(interval, do_poll, daemon=True)
+    # def setup_heater_poll(self, heater: Heater) -> None:
+    #     interval = heater.polling_interval
+    #     def do_poll() -> Optional[Time]:
+    #         heater.poll()
+    #         # print(f"Polling {heater}")
+    #         return interval
+    #     self.board.call_after(interval, do_poll, daemon=True)
         
     def map_coord(self, xy: Union[XYCoord, tuple[float,float]]) -> tuple[float, float]:
         board = self.board
