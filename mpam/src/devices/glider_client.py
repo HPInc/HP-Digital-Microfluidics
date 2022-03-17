@@ -5,6 +5,7 @@ import pyglider
 from typing import Union, Optional, Final
 from mpam.types import State, OnOff
 from os import PathLike
+from quantities.temperature import TemperaturePoint, abs_C
 
 def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
     if isinstance(p, str):
@@ -29,11 +30,38 @@ class Electrode(State[OnOff]):
         ec = self.remote.SetTargetState(s)
         if ec != pyglider.ErrorCode.ErrorSuccess:
             print(f"Error {ec} returned trying to set electrode {self.name} to {new_state}.")
+            
+    def heater_names(self) -> list[str]:
+        return self.remote.GetHeaters()
     
+class Heater:
+    name: Final[str]
+    remote: Final[pyglider.Heater]
+    
+    def __init__(self, name: str, remote: pyglider.Heater) -> None:
+        self.name = name
+        self.remote = remote
+        
+    def __repr__(self) -> str:
+        return f"<Heater {self.name}>"
+        
+    def read_temperature(self) -> TemperaturePoint:
+        # s = self.remote.GetStatus()
+        # print(f"{self.name}: Current: {s.GetCurrentTemperature()}, Target: {s.GetTargetTemperature()}, ETA: {s.GetEtaInMilliseconds()}")
+        temp = self.remote.GetCurrentTemperature()
+        tp = temp*abs_C
+        # print(f"  {tp}")
+        return tp
+    
+    def set_target(self, target: Optional[TemperaturePoint]) -> None:
+        temp = 0.0 if target is None else target.as_number(abs_C)
+        # print(f"Setting target for {self.name} to {target}")
+        self.remote.SetTargetTemperature(temp)
 
 class GliderClient:
     remote: Final[pyglider.Board]
     electrodes: Final[dict[str, Electrode]]
+    heaters: Final[dict[str, Heater]]
     # remote_electrodes: Final[dict[str, pyglider.Electrode]]
     
     def __init__(self, board_type: pyglider.BoardId, *,
@@ -46,6 +74,7 @@ class GliderClient:
         # print(f"Remote: {self.remote_electrodes}")
         # self.electrodes = { k: Electrode(k, v) for k,v in self.remote_electrodes.items()}
         self.electrodes = {}
+        self.heaters = {}
         # print(f"Local: {self.electrodes}")
 
     def on_electrodes(self) -> list[Electrode]:
@@ -73,3 +102,17 @@ class GliderClient:
                 e = Electrode(name, re)
                 self.electrodes[name] = e
         return e
+    
+    def heater(self, name: Optional[str]) -> Optional[Heater]:
+        if name is None:
+            return None
+        h = self.heaters.get(name)
+        if h is None:
+            re = self.remote.HeaterNamed(name)
+            if re is None:
+                print(f"No heater named {name}!")
+            else:
+                h = Heater(name, re)
+                self.heaters[name] = h
+        return h
+    

@@ -7,7 +7,7 @@ from typing import Optional, Sequence, ClassVar, Final
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup,\
-    transitions_from, WellGate
+    transitions_from, WellGate, Heater
 import mpam.device as device
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
@@ -59,7 +59,7 @@ class Well(device.Well):
     def pipettor(self)->Optional[Pipettor]:
         return self._pipettor
     
-class Heater(device.Heater):
+class EmulatedHeater(device.Heater):
     _last_read_time: Timestamp
     _heating_rate: HeatingRate
     _cooling_rate: HeatingRate
@@ -67,13 +67,14 @@ class Heater(device.Heater):
     ambient_temperature: ClassVar[TemperaturePoint] = 72*abs_F
 
     def __init__(self, num: int, board: Board, *, 
-                 regions: Sequence[GridRegion]) -> None:
+                 regions: Sequence[GridRegion],
+                 polling_interval: Time = 200*ms) -> None:
         pads = list[device.Pad]()
         for region in regions:
             pads += (board.pad_array[xy] for xy in region)
         
         super().__init__(num, board,
-                         polling_interval = 200*ms,
+                         polling_interval = polling_interval,
                          pads = pads)
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
@@ -217,6 +218,10 @@ class Board(device.Board):
                     #                      self._side_pad_bounds(exit_pad.location),
                     #                      self._big_pad_bounds(exit_pad.location))
                     )
+    def _heater(self, num: int, *, 
+                regions: Sequence[GridRegion],
+                polling_interval: Time=200*ms) -> Heater:
+        return EmulatedHeater(num, board=self, regions=regions, polling_interval=polling_interval)
         
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None) -> None:
@@ -285,11 +290,11 @@ class Board(device.Board):
         magnets.append(Magnet(self, state=self._magnet_state(), 
                               pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
         
-        heaters.append(Heater(0, self, regions=[GridRegion(XYCoord(0,12),3,7),
+        heaters.append(self._heater(0, regions=[GridRegion(XYCoord(0,12),3,7),
                                                 GridRegion(XYCoord(0,0),3,7)]))
-        heaters.append(Heater(1, self, regions=[GridRegion(XYCoord(8,12),3,7),
+        heaters.append(self._heater(1, regions=[GridRegion(XYCoord(8,12),3,7),
                                                 GridRegion(XYCoord(8,0),3,7)]))
-        heaters.append(Heater(2, self, regions=[GridRegion(XYCoord(16,12),3,7),
+        heaters.append(self._heater(2, regions=[GridRegion(XYCoord(16,12),3,7),
                                                 GridRegion(XYCoord(16,0),3,7)]))
         
 

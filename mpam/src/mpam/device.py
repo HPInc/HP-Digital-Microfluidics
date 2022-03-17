@@ -1196,6 +1196,8 @@ class Heater(OpScheduler['Heater'], BoardComponent):
     _target_change_callbacks: Final[ChangeCallbackList[Optional[TemperaturePoint]]]
     _lock: Final[Lock]
     _current_op_key: Any
+    _polling: bool = False
+
 
     @property
     def current_temperature(self) -> Optional[TemperaturePoint]:
@@ -1233,6 +1235,18 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         self._current_op_key = None
         for pad in pads:
             pad._heater = self
+
+    def start_polling(self) -> None:
+        if self._polling:
+            return
+        self._polling = True
+        def do_poll() -> Optional[Time]:
+            self.poll()
+            return self.polling_interval if self._polling else None
+        self.board.call_after(Time.ZERO, do_poll, daemon=True)
+
+    def stop_polling(self) -> None:
+        self._polling = False
 
     def __repr__(self) -> str:
         return f"Heater({self.num})"
@@ -1548,10 +1562,10 @@ class SystemComponent(ABC):
         else:
             sys.communicate(req)
 
-    def call_at(self, t: Timestamp, fn: Callback, *, daemon: bool = False):
+    def call_at(self, t: Timestamp, fn: TimerFunc, *, daemon: bool = False):
         self.in_system().call_at(t, fn, daemon=daemon)
 
-    def call_after(self, delta: Time, fn: Callback, *, daemon: bool = False):
+    def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False):
         self.in_system().call_after(delta, fn, daemon=daemon)
 
     def before_tick(self, fn: ClockCallback, *, delta: Optional[DelayType]=Ticks.ZERO) -> None:
@@ -1749,6 +1763,11 @@ class Board(SystemComponent):
     def finish_update(self) -> None:
         self.infer_drop_motion()
         super().finish_update()
+
+    def join_system(self, system: System)->None:
+        super().join_system(system)
+        for h in self.heaters:
+            h.start_polling()
 
 
     def print_blobs(self):
