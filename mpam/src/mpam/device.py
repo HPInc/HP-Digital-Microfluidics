@@ -2049,7 +2049,7 @@ class System:
         else:
             self.call_after(delta, lambda: self.after_tick(fn))
 
-    def on_tick(self, req: DevCommRequest, *, delta: Delay=Ticks.ZERO):
+    def on_tick(self, req: DevCommRequest, *, delta: DelayType=Ticks.ZERO):
         self._channel().on_tick([(delta, req)])
 
     def delayed(self, function: Callable[[], T], *,
