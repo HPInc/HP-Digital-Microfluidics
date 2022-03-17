@@ -1,0 +1,33 @@
+name: mypy
+
+on: [push, pull_request]
+
+jobs:
+  changedfiles:
+    runs-on: rnd-it-ubuntu
+
+    outputs:
+      all: ${{ steps.changes.outputs.all}}
+      py: ${{ steps.changes.outputs.py }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get changed files
+        id: changes
+        run: |
+          echo "::set-output name=all::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)"
+          echo "::set-output name=py::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep .py$ | xargs)"
+
+  mypy:
+    runs-on: rnd-it-ubuntu
+    # needs: changedfiles
+    # if: ${{needs.changedfiles.outputs.py}}
+
+    steps:
+      - name: Install mypy
+        run: pip install mypy
+
+      - name: Run mypy on changed files
+        run: mypy --ignore-missing-imports ${{needs.changedfiles.outputs.py}}
