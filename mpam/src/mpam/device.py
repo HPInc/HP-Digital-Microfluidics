@@ -1578,7 +1578,7 @@ class SystemComponent(ABC):
             delta = Ticks.ZERO
         self.in_system().after_tick(fn, delta=delta)
 
-    def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO):
+    def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO) -> None:
         req = self.make_request(cb)
         self.in_system().on_tick(req, delta=delta)
 
@@ -2068,8 +2068,11 @@ class System:
         else:
             self.call_after(delta, lambda: self.after_tick(fn))
 
-    def on_tick(self, req: DevCommRequest, *, delta: DelayType=Ticks.ZERO):
-        self._channel().on_tick([(delta, req)])
+    def on_tick(self, req: DevCommRequest, *, delta: DelayType=Ticks.ZERO) -> None:
+        if isinstance(delta, Ticks):
+            self._channel().on_tick([(delta, req)])
+        else:
+            self.call_after(delta, lambda: self.on_tick(req))
 
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
