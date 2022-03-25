@@ -1,0 +1,61 @@
+﻿mpam.device
+===========
+
+.. automodule:: mpam.device
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      transitions_from
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Batch
+      BinaryComponent
+      Board
+      BoardComponent
+      ChangeJournal
+      Clock
+      DispenseGroup
+      DropLoc
+      ExtractionPoint
+      GateStatus
+      Heater
+      HeatingMode
+      LocatedPad
+      Magnet
+      Pad
+      PipettingTarget
+      ProductLocation
+      System
+      SystemComponent
+      UserOperation
+      Well
+      WellGate
+      WellGroupDead
+      WellMotion
+      WellPad
+      WellShape
+      WellState
+   
+   
+
+   
+   
+   
+
+
+

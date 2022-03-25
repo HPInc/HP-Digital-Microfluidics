@@ -1,0 +1,35 @@
+﻿mpam.pipettor
+=============
+
+.. automodule:: mpam.pipettor
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EmptyTarget
+      FillTarget
+      Pipettor
+      PipettorSysCpt
+      Transfer
+      TransferSchedule
+      XferTarget
+   
+   
+
+   
+   
+   
+
+
+

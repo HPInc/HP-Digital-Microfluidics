@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mpam.types &#8212; MPAM  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/haiku.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.paths" href="mpam.paths.html" />
+    <link rel="prev" title="mpam.engine" href="mpam.engine.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="../index.html">
+          <span>MPAM  documentation</span></a></h1>
+        <h2 class="heading"><span>mpam.types</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="mpam.engine.html">mpam.engine</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="mpam.paths.html">mpam.paths</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-mpam.types">
+<span id="mpam-types"></span><h1>mpam.types<a class="headerlink" href="#module-mpam.types" title="Permalink to this headline">¶</a></h1>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code>(op, *[, after, post_result])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">AsyncFunctionSerializer</span></code>(*, thread_name, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Barrier" title="mpam.types.Barrier"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Barrier</span></code></a>(required, *, name)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Chemical</span></code>(name, *, formula, description)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Color</span></code>(description, rgba)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator" title="mpam.types.ColorAllocator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ColorAllocator</span></code></a>(initial_reservations, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.CombinedOperation" title="mpam.types.CombinedOperation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CombinedOperation</span></code></a>(first, mpam.types.V], …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.CombinedStaticOperation" title="mpam.types.CombinedStaticOperation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CombinedStaticOperation</span></code></a>(first, second, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.CommunicationScheduler" title="mpam.types.CommunicationScheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CommunicationScheduler</span></code></a>(*args, **kwargs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ComputeOp" title="mpam.types.ComputeOp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ComputeOp</span></code></a>(function, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Delayed</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dir</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.DummyState" title="mpam.types.DummyState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DummyState</span></code></a>(*, initial_state)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">GridRegion</span></code>(lower_left, width, height, *, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Liquid</span></code>(reagent, volume, *, inexact)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Missing</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Mixture</span></code>(name, mixture, …], *, composition, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.OnOff" title="mpam.types.OnOff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OnOff</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.OpScheduler" title="mpam.types.OpScheduler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OpScheduler</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Operation</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Orientation" title="mpam.types.Orientation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Orientation</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProcessStep</span></code>(description)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProcessedReagent</span></code>(prior, step, *, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reagent</span></code>(name, *, composition, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.State" title="mpam.types.State"><code class="xref py py-obj docutils literal notranslate"><span class="pre">State</span></code></a>(*, initial_state)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.StaticOperation" title="mpam.types.StaticOperation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StaticOperation</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TickNumber</span></code>(tick)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Ticks</span></code>(mag, dim)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Trigger</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Turn" title="mpam.types.Turn"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Turn</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnknownConcentration</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">XYCoord</span></code>(x, y)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.XferDir" title="mpam.types.XferDir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">XferDir</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Barrier">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Barrier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">required</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Barrier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ChangeCallbackList</span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ColorAllocator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">initial_reservations</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.H</span><span class="p"><span class="pre">,</span> </span><span class="pre">mpam.types.Color</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.ColorAllocator" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.CombinedOperation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">CombinedOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.types.Operation" title="mpam.types.Operation"><span class="pre">mpam.types.Operation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.T</span><span class="p"><span class="pre">,</span> </span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.types.Operation" title="mpam.types.Operation"><span class="pre">mpam.types.Operation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">,</span> </span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.StaticOperation" title="mpam.types.StaticOperation"><span class="pre">mpam.types.StaticOperation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.Operation" title="mpam.types.Operation"><span class="pre">mpam.types.Operation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">,</span> </span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.StaticOperation" title="mpam.types.StaticOperation"><span class="pre">mpam.types.StaticOperation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Ticks</span><span class="p"><span class="pre">,</span> </span><span class="pre">quantities.dimensions.Time</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.CombinedOperation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.CombinedStaticOperation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">CombinedStaticOperation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">first</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.types.StaticOperation" title="mpam.types.StaticOperation"><span class="pre">mpam.types.StaticOperation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">second</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.types.Operation" title="mpam.types.Operation"><span class="pre">mpam.types.Operation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">,</span> </span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.StaticOperation" title="mpam.types.StaticOperation"><span class="pre">mpam.types.StaticOperation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.Operation" title="mpam.types.Operation"><span class="pre">mpam.types.Operation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">,</span> </span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.StaticOperation" title="mpam.types.StaticOperation"><span class="pre">mpam.types.StaticOperation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V2</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Ticks</span><span class="p"><span class="pre">,</span> </span><span class="pre">quantities.dimensions.Time</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.CombinedStaticOperation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.CommunicationScheduler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">CommunicationScheduler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.CommunicationScheduler" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.ComputeOp">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ComputeOp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.ComputeOp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Delayed">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Delayed</span></span><a class="headerlink" href="#mpam.types.Delayed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Dir">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.DummyState">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">DummyState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">mpam.types.T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.DummyState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OnOff">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">OnOff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OnOff" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">OpScheduler</span></span><a class="headerlink" href="#mpam.types.OpScheduler" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.Reach">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Reach</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">barrier</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">mpam.types.Barrier</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.Reach" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitAt">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">WaitAt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">barrier</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">mpam.types.Barrier</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.WaitAt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitFor">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">WaitFor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">waitable</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Ticks</span><span class="p"><span class="pre">,</span> </span><span class="pre">quantities.dimensions.Time</span><span class="p"><span class="pre">,</span> </span><span class="pre">mpam.types.Trigger</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.WaitFor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Operation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Operation</span></span><a class="headerlink" href="#mpam.types.Operation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Orientation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Orientation" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.State">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">State</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">mpam.types.T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.State" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.StaticOperation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">StaticOperation</span></span><a class="headerlink" href="#mpam.types.StaticOperation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Turn">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Turn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Turn" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.XferDir">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">XferDir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.XferDir" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="mpam.engine.html">mpam.engine</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="mpam.paths.html">mpam.paths</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Evan Kirshenbaum.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
+    </div>
+  </body>
+</html>

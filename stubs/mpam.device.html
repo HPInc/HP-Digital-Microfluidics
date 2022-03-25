@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mpam.device &#8212; MPAM  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/haiku.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.engine" href="mpam.engine.html" />
+    <link rel="prev" title="Microfluidics Platform Abstract Machine" href="../index.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="../index.html">
+          <span>MPAM  documentation</span></a></h1>
+        <h2 class="heading"><span>mpam.device</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="../index.html">Microfluidics Platform Abstract Machine</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="mpam.engine.html">mpam.engine</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-mpam.device">
+<span id="mpam-device"></span><h1>mpam.device<a class="headerlink" href="#module-mpam.device" title="Permalink to this headline">¶</a></h1>
+<p class="rubric">Functions</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">transitions_from</span></code>(sd)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Batch</span></code>(system, *, nested)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a>(board, *, state, live)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Board</span></code></a>(*, pads, mpam.device.Pad], wells, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">BoardComponent</span></code>(board)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ChangeJournal</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Clock</span></code>(system)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">DispenseGroup</span></code>(key, transition_func, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DropLoc</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.ExtractionPoint" title="mpam.device.ExtractionPoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExtractionPoint</span></code></a>(pad)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.GateStatus" title="mpam.device.GateStatus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GateStatus</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Heater</span></code></a>(num, board, *, pads, polling_interval)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.HeatingMode" title="mpam.device.HeatingMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HeatingMode</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">LocatedPad</span></code>(loc)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Magnet" title="mpam.device.Magnet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Magnet</span></code></a>(board, *, state, pads)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Pad" title="mpam.device.Pad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pad</span></code></a>(loc, board, state, *, exists)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">PipettingTarget</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.ProductLocation" title="mpam.device.ProductLocation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ProductLocation</span></code></a>(reagent, location)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">System</span></code>(*, board)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.SystemComponent" title="mpam.device.SystemComponent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SystemComponent</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">UserOperation</span></code>(idle_barrier)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Well</span></code></a>(*, board, number, group, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellGate" title="mpam.device.WellGate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellGate</span></code></a>(board, exit_pad, exit_dir, state, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellGroupDead" title="mpam.device.WellGroupDead"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellGroupDead</span></code></a>(name, board, states, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellMotion</span></code>(well, target, *, guard, post_result)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellPad</span></code></a>(board, state, *, live, neighbors)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellShape</span></code>(*, gate_pad_bounds, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellState" title="mpam.device.WellState"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellState</span></code></a>(value)</p></td>
+<td><p>An enumeration.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.BinaryComponent">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">BinaryComponent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.State" title="mpam.types.State"><span class="pre">mpam.types.State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.BinaryComponent" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.BinaryComponent.ModifyState">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">ModifyState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mod</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.BinaryComponent.ModifyState" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.Board">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Board</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.XYCoord</span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wells</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.Well" title="mpam.device.Well"><span class="pre">mpam.device.Well</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnets</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.Magnet" title="mpam.device.Magnet"><span class="pre">mpam.device.Magnet</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heaters</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">mpam.device.Heater</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_points</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.ExtractionPoint" title="mpam.device.ExtractionPoint"><span class="pre">mpam.device.ExtractionPoint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">mpam.types.Orientation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_motion_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">quantities.dimensions.Time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Board" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.DropLoc">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">DropLoc</span></span><a class="headerlink" href="#mpam.device.DropLoc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.ExtractionPoint">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">ExtractionPoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.ExtractionPoint" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.ExtractionPoint.TransferIn">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">TransferIn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">reagent:</span> <span class="pre">mpam.types.Reagent</span></em>, <em class="sig-param"><span class="pre">volume:</span> <span class="pre">Optional[quantities.dimensions.Volume]</span> <span class="pre">=</span> <span class="pre">None</span></em>, <em class="sig-param"><span class="pre">*</span></em>, <em class="sig-param"><span class="pre">mix_result:</span> <span class="pre">Optional[Union[mpam.types.Reagent</span></em>, <em class="sig-param"><span class="pre">str]]</span> <span class="pre">=</span> <span class="pre">None</span></em>, <em class="sig-param"><span class="pre">on_insufficient:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;</span></em>, <em class="sig-param"><span class="pre">on_no_source:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.ExtractionPoint.TransferIn" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.ExtractionPoint.TransferOut">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">TransferOut</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">volume:</span> <span class="pre">Optional[quantities.dimensions.Volume]</span> <span class="pre">=</span> <span class="pre">None</span></em>, <em class="sig-param"><span class="pre">*</span></em>, <em class="sig-param"><span class="pre">on_no_sink:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;</span></em>, <em class="sig-param"><span class="pre">product_loc:</span> <span class="pre">Optional[mpam.types.Delayed[mpam.device.ProductLocation]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.ExtractionPoint.TransferOut" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.GateStatus">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">GateStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.GateStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.Heater">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Heater</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polling_interval</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">quantities.dimensions.Time</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Heater" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.Heater.SetTemperature">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">SetTemperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">quantities.temperature.TemperaturePoint</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Heater.SetTemperature" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.HeatingMode">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">HeatingMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.HeatingMode" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.Magnet">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Magnet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.State" title="mpam.types.State"><span class="pre">mpam.types.State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Magnet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.Pad">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Pad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">mpam.types.XYCoord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.State" title="mpam.types.State"><span class="pre">mpam.types.State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exists</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Pad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.ProductLocation">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">ProductLocation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">location</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.ProductLocation" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.ProductLocation.location">
+<span class="sig-name descname"><span class="pre">location</span></span><em class="property"><span class="pre">:</span> <span class="pre">Any</span></em><a class="headerlink" href="#mpam.device.ProductLocation.location" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.ProductLocation.reagent">
+<span class="sig-name descname"><span class="pre">reagent</span></span><em class="property"><span class="pre">:</span> <span class="pre">mpam.types.Reagent</span></em><a class="headerlink" href="#mpam.device.ProductLocation.reagent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.SystemComponent">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">SystemComponent</span></span><a class="headerlink" href="#mpam.device.SystemComponent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.Well">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Well</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">number</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.device.DispenseGroup</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.WellState" title="mpam.device.WellState"><span class="pre">mpam.device.WellState</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="#mpam.device.WellState" title="mpam.device.WellState"><span class="pre">mpam.device.WellState</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_pad</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">gate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.WellGate" title="mpam.device.WellGate"><span class="pre">mpam.device.WellGate</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">shared_pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><span class="pre">mpam.device.WellPad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">capacity</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">quantities.dimensions.Volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dispensed_volume</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">quantities.dimensions.Volume</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_dir</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_voidable</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.device.WellShape</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Well" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.Well.TransitionTo">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">TransitionTo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.WellState" title="mpam.device.WellState"><span class="pre">mpam.device.WellState</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guard</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Well.TransitionTo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.WellGate">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">WellGate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_pad</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">exit_dir</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.State" title="mpam.types.State"><span class="pre">mpam.types.State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbors</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.WellGate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.WellGroupDead">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">WellGroupDead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">states</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.State" title="mpam.types.State"><span class="pre">mpam.types.State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequences</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.WellGroupDead" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.WellPad">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">WellPad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.State" title="mpam.types.State"><span class="pre">mpam.types.State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">mpam.types.OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbors</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.WellPad" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.WellState">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">WellState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.WellState" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration.</p>
+</dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="../index.html">Microfluidics Platform Abstract Machine</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="mpam.engine.html">mpam.engine</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Evan Kirshenbaum.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
+    </div>
+  </body>
+</html>

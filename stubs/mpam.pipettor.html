@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mpam.pipettor &#8212; MPAM  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/haiku.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.processes" href="mpam.processes.html" />
+    <link rel="prev" title="mpam.drop" href="mpam.drop.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="../index.html">
+          <span>MPAM  documentation</span></a></h1>
+        <h2 class="heading"><span>mpam.pipettor</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        «&#160;&#160;<a href="mpam.drop.html">mpam.drop</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="mpam.processes.html">mpam.processes</a>&#160;&#160;»
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <div class="section" id="module-mpam.pipettor">
+<span id="mpam-pipettor"></span><h1>mpam.pipettor<a class="headerlink" href="#module-mpam.pipettor" title="Permalink to this headline">¶</a></h1>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.pipettor.EmptyTarget" title="mpam.pipettor.EmptyTarget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EmptyTarget</span></code></a>(target, volume, *, future, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.pipettor.FillTarget" title="mpam.pipettor.FillTarget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FillTarget</span></code></a>(target, volume, *, future, …)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pipettor</span></code></a>(*, name)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.pipettor.PipettorSysCpt" title="mpam.pipettor.PipettorSysCpt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PipettorSysCpt</span></code></a>(pipettor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Transfer</span></code>(reagent, xfer_dir, *, is_product)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TransferSchedule</span></code>(pipettor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.pipettor.XferTarget" title="mpam.pipettor.XferTarget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">XferTarget</span></code></a>(target, volume, *, future, …)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.pipettor.EmptyTarget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">EmptyTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">mpam.device.PipettingTarget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">quantities.dimensions.Volume</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Liquid</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_merge</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">product_loc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.html#mpam.device.ProductLocation" title="mpam.device.ProductLocation"><span class="pre">mpam.device.ProductLocation</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_unknown</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">erk.errors.ErrorHandler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_insufficient</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">erk.errors.ErrorHandler</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.EmptyTarget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.pipettor.FillTarget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">FillTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">mpam.device.PipettingTarget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">quantities.dimensions.Volume</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Liquid</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_merge</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mix_result</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Reagent</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_unknown</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">erk.errors.ErrorHandler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_insufficient</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">erk.errors.ErrorHandler</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.FillTarget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.pipettor.Pipettor">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">Pipettor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'Pipettor'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.Pipettor" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py class">
+<dt class="sig sig-object py" id="mpam.pipettor.Pipettor.Extract">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Extract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">volume:</span> <span class="pre">Optional[quantities.dimensions.Volume],</span> <span class="pre">target:</span> <span class="pre">mpam.device.PipettingTarget,</span> <span class="pre">*,</span> <span class="pre">on_no_sink:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;,</span> <span class="pre">on_insufficient_space:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;,</span> <span class="pre">on_no_liquid:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;,</span> <span class="pre">allow_merge:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">is_product:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">product_loc:</span> <span class="pre">Optional[mpam.types.Delayed[mpam.device.ProductLocation]]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">reagent:</span> <span class="pre">Optional[mpam.types.Reagent]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.Pipettor.Extract" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.pipettor.Pipettor.Supply">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Supply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">liquid:</span> <span class="pre">mpam.types.Liquid</span></em>, <em class="sig-param"><span class="pre">target:</span> <span class="pre">mpam.device.PipettingTarget</span></em>, <em class="sig-param"><span class="pre">*</span></em>, <em class="sig-param"><span class="pre">allow_merge:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em>, <em class="sig-param"><span class="pre">mix_result:</span> <span class="pre">Optional[Union[mpam.types.Reagent</span></em>, <em class="sig-param"><span class="pre">str]]</span> <span class="pre">=</span> <span class="pre">None</span></em>, <em class="sig-param"><span class="pre">on_insufficient:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;</span></em>, <em class="sig-param"><span class="pre">on_no_source:</span> <span class="pre">erk.errors.ErrorHandler</span> <span class="pre">=</span> <span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;</span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.Pipettor.Supply" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.pipettor.PipettorSysCpt">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">PipettorSysCpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipettor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><span class="pre">mpam.pipettor.Pipettor</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.PipettorSysCpt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.pipettor.XferTarget">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">XferTarget</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">mpam.device.PipettingTarget</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">quantities.dimensions.Volume</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Liquid</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_merge</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_unknown</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">erk.errors.ErrorHandler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_insufficient</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">erk.errors.ErrorHandler</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.XferTarget" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        «&#160;&#160;<a href="mpam.drop.html">mpam.drop</a>
+        &#160;&#160;::&#160;&#160;
+        <a class="uplink" href="../index.html">Contents</a>
+        &#160;&#160;::&#160;&#160;
+        <a href="mpam.processes.html">mpam.processes</a>&#160;&#160;»
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Evan Kirshenbaum.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
+    </div>
+  </body>
+</html>

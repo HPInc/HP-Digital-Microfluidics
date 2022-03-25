@@ -1,0 +1,29 @@
+﻿mpam.paths
+==========
+
+.. automodule:: mpam.paths
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Path
+   
+   
+
+   
+   
+   
+
+
+
