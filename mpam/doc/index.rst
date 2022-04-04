@@ -8,9 +8,11 @@ Microfluidics Platform Abstract Machine
 
 .. toctree::
    :maxdepth: 2
-
+   
 .. autosummary::
      :toctree: stubs
+     :template: custom-module-template.rst
+     :recursive:
 
      mpam.device
      mpam.engine
