@@ -10,7 +10,7 @@ from quantities.SI import ms, uL
 from quantities.dimensions import Time, Volume
 from devices import joey
 from mpam.device import Board, System, Pad, Well
-from mpam.types import ticks, unknown_reagent, Liquid
+from mpam.types import ticks, unknown_reagent, Liquid, Reagent
 from quantities.temperature import TemperaturePoint
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
 from mpam.paths import Path
@@ -113,6 +113,18 @@ class Thermocycle(Task):
             for p in paths:
                 p.schedule()
 
+class Test(Task):
+    def __init__(self) -> None:
+        super().__init__(name="test",
+                         description="Run drops through a test process")
+
+    def run(self, board:Board, system:System, args:Namespace)->None:
+        ep = board.extraction_points[0]
+        pad = board.pad_at(0, 0)
+        frag = Reagent('R1')
+        Path.run_paths([Path.teleport_into(ep, reagent=frag).to_pad(pad)], system=system)
+
+
 class JoeyExerciser(Exerciser):
     def __init__(self, name: str = "Joey") -> None:
         super().__init__(description=f"Put the {name} board through its paces")
@@ -123,6 +135,7 @@ class JoeyExerciser(Exerciser):
         self.add_task(Mix())
         self.add_task(Dilute())
         self.add_task(Thermocycle())
+        self.add_task(Test())
 
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
