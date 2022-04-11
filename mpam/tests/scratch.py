@@ -1,20 +1,7 @@
 from __future__ import annotations
+from mpam.types import Reagent, Mixture
 
-import pyglider
-from pathlib import Path
-from devices.glider_client import GliderClient
-from erk.basic import not_None
-from mpam.types import OnOff
+r1 = Reagent("r1")
+r2 = Reagent("r2")
 
-help(pyglider.Board)
-
-# wallaby = pyglider.Board.Find(pyglider.BoardId.Wallaby,
-#                               dll_dir = Path("d:\\dmf-git\\DynamicHAL\\x64\\Debug"),
-#                               config_dir = Path("d:\\dmf-git\\DynamicHAL\\WallabyHAL"))
-wallaby = GliderClient(pyglider.BoardId.Wallaby,
-                       dll_dir = Path("d:\\dmf-git\\DynamicHAL\\x64\\Debug"),
-                       config_dir = Path("d:\\dmf-git\\DynamicHAL\\WallabyHAL"))
-
-e = not_None(wallaby.electrode("G07"))
-e.realize_state(OnOff.ON)
-wallaby.update_state()
+print(Mixture.find_or_compute(r1, r2, ratio = 0.4))

@@ -1065,7 +1065,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                                                      mix_result=mix_result,
                                                      on_insufficient=on_insufficient,
                                                      on_no_source=on_no_source))
-        return p_future.triggering(value=self)
+        return p_future.transformed(lambda _: self)
 
     def remove(self, volume: Volume, *,
                on_no_sink: ErrorHandler = PRINT
@@ -1075,7 +1075,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 
         p_future = pipettor.schedule(pipettor.Extract(volume, self,
                                                       on_no_sink=on_no_sink))
-        return p_future.triggering(value=self)
+        return p_future.transformed(lambda _: self)
 
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         volume = self.fill_to - self.volume

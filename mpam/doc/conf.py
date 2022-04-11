@@ -21,7 +21,6 @@ project = 'MPAM'
 copyright = '2022, Evan Kirshenbaum'
 author = 'Evan Kirshenbaum'
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -37,6 +36,24 @@ autosummary_generate = True
 
 autodoc_default_options = {
     "members": True,
+    "show-inheritance": True,
+    "recursive": True,
+    # "exclude-members": "__init__",
+    "special-members": "__init__",
+    # "private-members": True,
+    # "special-members": True,
+    # "inherited-members": True,
+    
+}
+
+# autodoc_typehints = "both"
+autodoc_typehints_format = "short"
+
+# On the one hand, adding type aliases makes the documentation more readable. On
+# the other hand, it doesn't emit links to the aliases, so if you don't know
+# what they are, you have to seach for them.
+autodoc_type_aliases = {
+    # "DelayType": "mpam.types.DelayType",
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -53,8 +70,14 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'haiku' # 'alabaster'
+# html_theme = "alabaster"
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_css_files = [
+    "theme_overrides.css"
+]
