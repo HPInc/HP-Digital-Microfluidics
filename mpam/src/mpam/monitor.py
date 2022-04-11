@@ -932,7 +932,7 @@ class BoardMonitor:
                 unknown_reagent: Color.find("xkcd:violet"),
                 waste_reagent: Color.find("xkcd:black"),
             }
-        self.color_allocator = ColorAllocator[Reagent](reserved_colors)
+        self.color_allocator = ColorAllocator[Reagent](initial_reservations=reserved_colors)
         self.legend = ReagentLegend(self)
 
         # for heater in board.heaters:       
