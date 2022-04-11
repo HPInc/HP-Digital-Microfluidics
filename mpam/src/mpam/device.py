@@ -1,3 +1,6 @@
+"""
+Classes that describe hardware, but not specific devices.
+"""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -37,57 +40,181 @@ if TYPE_CHECKING:
 
 PadArray = Mapping[XYCoord, 'Pad']
 
-T = TypeVar('T')
-Modifier = Callable[[T],T]
+T = TypeVar('T')            #: A generic type variable
+Modifier = Callable[[T],T]  #: A :class:`Callable` that returns a value of the same type as its argument
 
 class BoardComponent:
-    board: Final[Board]
+    """
+    A component of a :class:`Board`.  A :class:`BoardComponent` implements the
+    :class:`.CommunicationScheduler` protocol by delegating to its
+    associated :attr:`board`.  It can also be used to create a
+    :class:`UserOperation` by calling :func:`user_operation`.
+    """
+    
+    board: Final[Board] #: The containing :class:`Board` 
 
     def __init__(self, board: Board) -> None:
+        """
+        Initialize the object. 
+        
+        Args:
+            board: the containing :class:`Board`
+        """
         self.board = board
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
                                after: Optional[DelayType] = None) -> None:
+        """
+        Schedule communication of ``cb`` after optional delay ``after`` by
+        delegating to :attr:`board`
+        
+        Args:
+            cb: the callback function to schedule
+        Keyword Args:
+            after: an optional delay before scheduling
+        """
         return self.board.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
+        """
+        Call a function after n optional delay by delegating to :attr:`board`
+        
+        Args:
+            function: the function to call
+        Keyword Args:
+            after: an optional delay before calling
+        Returns:
+            A :class:`Delayed` object to which the value returned by the function will be posted.
+        """
         return self.board.delayed(function, after=after)
 
     def user_operation(self) -> UserOperation:
+        """
+        Create a new :class:`UserOperation` in the :attr:`board`'s
+        :class:`System`
+
+        Returns:
+            the created :class:`UserOperation`
+        """
         return UserOperation(self.board.in_system().engine.idle_barrier)
 
-BC = TypeVar('BC', bound='BinaryComponent')
+BC = TypeVar('BC', bound='BinaryComponent') #: A type variable ranging over :class:`BinaryComponent`\s
 
 class BinaryComponent(BoardComponent, OpScheduler[BC]):
-    _state: Final[State[OnOff]]
-    broken: bool
-    live: bool
+    """
+    A subclass of :class:`BoardComponent` with an :class:`.OnOff` state.
+    
+    This class is parameterized by the actual subclass (:attr:`BC`) so that it
+    can inherit from :class:`.OpScheduler`\[:attr:`BC`].  For example::
+    
+        class Magnet(BinaryComponent['Magnet']): ...
+
+    This means that :class:`Magnet` can :func:`~mpam.types.OpScheduler.schedule`
+    operations of type :class:`.Operation`\[:class:`Magnet`, ``V``].
+    
+    Each :class:`BinaryComponent` objects is associated with a
+    :class:`.State`\[:class:`.OnOff`] object (:attr:`state`), which it delegates
+    to to implement :attr:`current_state` and :func:`on_state_change`.
+    
+    A :class:`BinaryComponent` may be :attr:`broken`, in which case attempting
+    to schedule one of its :attr:`ModifyState` operations will result in
+    :class:`.PadBrokenError` being raised.
+    
+    It can also be flagged as not being :attr:`live`.  The distinction between
+    :attr:`broken` and :attr:`live` is somewhat confused, but the initial
+    intention was that :attr:`live` was used to identify pads on a board that
+    couldn't be used by design and :attr:`broken` was for pads that were
+    discovered to be non-functional.
+    
+    Args:
+        BC: The actual subclass of :class:`BinaryComponent`
+    """
+    state: Final[State[OnOff]]  #: The associated :class:`.State`\[:class:`.OnOff`] 
+    broken: bool                #: Is the :class:`BinaryComponent` broken?  
+    live: bool                  #: Is the :class:`BinaryComponent` live?
 
     def __init__(self, board: Board, *,
                  state: State[OnOff],
                  live: bool = True) -> None:
+        """
+        Initialize the object.
+        
+        All :class:`BinaryComponent`\s start out with :attr:`broken` being
+        ``False``.
+        
+        Args:
+            board: the containing :class:`Board`
+        Keyword Args:
+            state: the associated :class:`.State`\[:class:`.OnOff`]
+            live: is the :class:`BinaryComponent` live?
+        """
         super().__init__(board)
-        self._state = state
+        self.state = state
         self.broken = False
         self.live = live
 
     @property
     def current_state(self) -> OnOff:
-        return self._state.current_state
+        """
+        The current value.  Implemented by delegating to :attr:`state`.
+        
+        Setting this will invoke any :attr:`state_change_callbacks`, regardless
+        of whether the new value is equal to the old value.
+        """
+        return self.state.current_state
 
     @current_state.setter
     def current_state(self, val: OnOff) -> None:
-        self._state.current_state = val
+        self.state.current_state = val
 
     def on_state_change(self, cb: ChangeCallback[OnOff], *, key: Optional[Hashable] = None):
-        self._state.on_state_change(cb, key=key)
+        """
+        Add a new state-change handler, replacing any with the specified key. If
+        ``key`` is ``None``, ``cb`` is used as the key.  This is implemented by
+        delegating to :attr:`state`.
+        
+        Args:
+            cb: the handler
+        Keyword Args:
+            key: the (optional) key
+        """
+        self.state.on_state_change(cb, key=key)
 
     class ModifyState(Operation[BC, OnOff]):
+        """
+        An :class:`~.Operation` that modifies the :attr:`~BinaryComponent.state`
+        of a :class:`BinaryComponent`.
+        
+        The :class:`.ModifyState` object is associated with a :class:`Modifier`
+        function (:attr:`mod`) that's used to compute the new value based on the
+        old.
+        
+        The :class:`BinaryComponent` class (and, therefore, its subclasses) have
+        premade instances for the common cases of
+        :attr:`~BinaryComponent.TurnOn`, :attr:`~BinaryComponent.TurnOff`, and
+        :attr:`~BinaryComponent.Toggle`
+        """
         def _schedule_for(self, obj: BC, *,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[OnOff]:
-
+            """
+            The implementation of :func:`schedule_for`. Calls
+            :func:`~mpam.types.State.realize_state` on ``obj``'s
+            :attr:`~BinaryComponent.state`.
+            
+            :meta public:
+            Args:
+                obj: the :class:`BinaryComponent` object to schedule the operation for
+            Keyword Args:
+                after: an optional delay to wait before scheduling the operation
+                post_result: whether to post the resulting value to the returned future object
+            Returns:
+                a :class:`Delayed`\[:class:`.OnOff`] future object to which the resulting
+                value will be posted unless ``post_result`` is ``False``
+            Raises:
+                PadBrokenError: if ``obj`` is :attr:`~BinaryComponent.broken`
+            """
             if obj.broken:
                 raise PadBrokenError(obj)
             mod = self.mod
@@ -98,7 +225,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                 old = obj.current_state
                 new = mod(old)
                 # print(f"Setting {obj} to {new}")
-                obj._state.realize_state(new)
+                obj.state.realize_state(new)
                 obj.current_state = new
                 # print(f"Back from setting {obj} val = {obj._state}")
                 finish: Optional[Callback] = None if not post_result else (lambda : future.post(old))
@@ -108,16 +235,32 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             return future
 
         def __init__(self, mod: Modifier[OnOff]) -> None:
+            """
+            Initialize the object 
+            
+            Args:
+                mod: a function to compute the new value based on the old
+            """
             self.mod: Final[Modifier[OnOff]] = mod
+            """the function to compute the new value based on the old"""
+            
 
     @staticmethod
     def SetState(val: OnOff) -> ModifyState:
+        """
+        A :attr:`ModifyState` that sets the state to a specific value.
+        
+        Args:
+            val: the desired :class:`.OnOff` value
+        Returns:
+            the :attr:`ModifyState`
+        """
         return BinaryComponent[BC].ModifyState(lambda _ : val)
 
 
-    TurnOn: ClassVar[ModifyState]
-    TurnOff: ClassVar[ModifyState]
-    Toggle: ClassVar[ModifyState]
+    TurnOn: ClassVar[ModifyState]   #: An :class:`.Operation` to turn on a :class:`BinaryComponent`
+    TurnOff: ClassVar[ModifyState]  #: An :class:`.Operation` to turn on a :class:`BinaryComponent`
+    Toggle: ClassVar[ModifyState]   #: An :class:`.Operation` to toggle the state of a :class:`BinaryComponent`
 
     ...
 

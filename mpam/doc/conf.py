@@ -36,6 +36,7 @@ autosummary_generate = True
 
 autodoc_default_options = {
     "members": True,
+    # "imported-members": True,
     "show-inheritance": True,
     "recursive": True,
     # "exclude-members": "__init__",

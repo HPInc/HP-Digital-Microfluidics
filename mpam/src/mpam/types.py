@@ -1,3 +1,6 @@
+"""
+Support classes for MPAM applications other than those that describe hardware.
+"""
 from __future__ import annotations
 
 from _collections import deque
@@ -614,7 +617,8 @@ class Operation(Generic[T, V], ABC):
              after: Optional[DelayType] = None,
              ) -> Operation[T,V2]:
         """
-        Chain this :class:`Operation` and another together to create a single new :class:`Operation`
+        Chain this :class:`Operation` and another together to create a single
+        new :class:`Operation`
         
         The value produced by this :class:`Operation` will be used to schedule
         the second one (unless the second is a :class:`StaticOperation`, in
@@ -623,7 +627,7 @@ class Operation(Generic[T, V], ABC):
         The actual result will be a :class:`CombinedOperation`\[:attr:`T`, :attr:`V`, :attr:`V2`].
         
         Note:
-            If ``op`` is a :class:`Callable`, it will be evaluated when the
+            If ``op`` is a :class:`.Callable`, it will be evaluated when the
             :class:`Operation` that is the result of :func:`then` is
             **scheduled**, not when this :class:`Operation` produces a value.
         
@@ -805,7 +809,7 @@ class ComputeOp(Operation[T,V]):
 
 class CommunicationScheduler(Protocol):
     """
-    A `typing.Protocol` that matches classes that define
+    A :class:`typing.Protocol` that matches classes that define
     :func:`schedule_communication` and :func:`delayed`
     """
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,  # @UnusedVariable
@@ -3599,11 +3603,11 @@ class AsyncFunctionSerializer:
     """
     
     
-    thread: Optional[_AFS_Thread] = None        #: The background thread
+    thread: Optional[_AFS_Thread] = None        #: The background :class`.Thread`
     lock: Final[RLock]                          #: A local lock
 
-    thread_name: Final[Optional[str]]           #: The name of the thread
-    daemon_thread: Final[bool]                  #: Is the thread a daemon?
+    thread_name: Final[Optional[str]]           #: The name of the :class:`.Thread`
+    daemon_thread: Final[bool]                  #: Is the :class:`.Thread` a daemon?
     before_task: Final[Optional[Callback]]      #: An optional callback called before each function
     after_task: Final[Optional[Callback]]       #: An optional callback called after each function
     on_empty_queue: Final[Optional[Callback]]   #: An optional callback called when queue becomes empty

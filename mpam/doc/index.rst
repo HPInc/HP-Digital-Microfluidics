@@ -15,12 +15,16 @@ Microfluidics Platform Abstract Machine
      :recursive:
 
      mpam.device
-     mpam.engine
-     mpam.types
-     mpam.paths
      mpam.drop
+     mpam.engine
+     mpam.exceptions
+     mpam.paths
      mpam.pipettor
      mpam.processes
+     mpam.types
+
+     threading
+	 typing
 
 Indices and tables
 ==================
