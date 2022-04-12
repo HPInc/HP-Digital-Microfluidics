@@ -24,46 +24,46 @@ ClockCallback = Callable[[], Optional[Ticks]]
 
 _trace_ticks: bool = False
 
-class  State(Enum): 
+class State(Enum):
     NEW = auto()
     RUNNING = auto()
     SHUTDOWN_REQUESTED = auto()
     ABORT_REQUESTED = auto()
     DEAD = auto()
-    
+
 class Worker:
     idle_barrier: IdleBarrier
-    
+
     @property
     def is_idle(self) -> bool:
         return self not in self.idle_barrier.running_components
-    
+
     def __init__(self, idle_barrier: IdleBarrier) -> None:
         self.idle_barrier = idle_barrier
-    
+
     def not_idle(self) -> None:
         self.idle_barrier.running(self)
-        
+
     def idle(self) -> None:
         self.idle_barrier.idle(self)
 
 class IdleBarrier:
     event: Event
     lock: Lock
-    running_components: set[Worker] 
-    
+    running_components: set[Worker]
+
     def __init__(self) -> None:
         self.event = Event()
         self.event.set()
         self.lock = Lock()
         self.running_components = set[Worker]()
-    
+
     def running(self, component: Worker) -> None:
         with self.lock:
             self.event.clear()
             self.running_components.add(component)
             # print(f"{component} not idle [{len(self.running_components)}]")
-            
+
     def idle(self, component: Worker) -> None:
         with self.lock:
             self.running_components.discard(component)
@@ -71,18 +71,18 @@ class IdleBarrier:
             if len(self.running_components) == 0:
                 # print("System is idle")
                 self.event.set()
-                
+
     def wait(self, timeout: float = None) -> None:
         self.event.wait(timeout)
-      
+
 class Updatable(Protocol):
-    def update_state(self) -> Any: ...          
+    def update_state(self) -> Any: ...
 
 # class DevCommRequest:
 #     component: Optional[Updatable]
 #     def __init__(self, component: Optional[Updatable], cb: Callback):
 #         self.component = component
-#         self.callback: Callback = cb    
+#         self.callback: Callback = cb
 #     def prepare(self) -> Any:
 #         (self.callback)()
 #
@@ -98,15 +98,14 @@ class Engine:
     dev_comm_thread: DevCommThread
     timer_thread: TimerThread
     clock_thread: ClockThread
-    
-    def __init__(self, *, 
+
+    def __init__(self, *,
                  default_clock_interval: Time) -> None:
         self.idle_barrier = IdleBarrier()
         self.dev_comm_thread = DevCommThread(self)
         self.timer_thread = TimerThread(self)
         self.clock_thread = ClockThread(self, default_clock_interval=default_clock_interval)
-        
-        
+
     def _join_threads(self) -> None:
         if self.dev_comm_thread.is_alive():
             self.dev_comm_thread.join()
@@ -114,39 +113,39 @@ class Engine:
             self.timer_thread.join()
         if self.clock_thread.is_alive():
             self.clock_thread.join()
-    
+
     def start(self) -> None:
         pass
-        
+
     def stop(self) -> None:
         self.dev_comm_thread.request_stop()
         self.timer_thread.request_stop()
         self.clock_thread.request_stop()
         self._join_threads()
-    
+
     def abort(self) -> None:
         self.dev_comm_thread.request_abort()
         self.timer_thread.request_abort()
         self.clock_thread.request_abort()
         self._join_threads()
-        
+
     def __enter__(self) -> Engine:
         return self
-    
-    def __exit__(self, 
+
+    def __exit__(self,
                  exc_type: Optional[type[BaseException]],  # @UnusedVariable
                  exc_val: Optional[BaseException],  # @UnusedVariable
                  exc_tb: Optional[TracebackType]  # @UnusedVariable
                  ) -> Literal[False]:
         self.idle_barrier.wait()
         return False
-    
+
     def communicate(self, reqs: Sequence[DevCommRequest]) -> None:
         self.dev_comm_thread.add_requests(reqs)
-        
+
     def call_at(self, reqs: Sequence[TimerRequest]) -> None:
         self.timer_thread.call_at(reqs)
-        
+
     def call_after(self, reqs: Sequence[TimerDeltaRequest]) -> None:
         self.timer_thread.call_after(reqs)
 
@@ -158,13 +157,13 @@ class Engine:
 
     def on_tick(self, reqs: Sequence[ClockCommRequest]):
         self.clock_thread.on_tick(reqs)
-        
-        
+
+
 class WorkerThread(Thread, Worker, ABC):
     engine: Engine
     state: State
     lock: Lock
-    
+
     def __init__(self, engine: Engine, name: str) -> None:
         # super().__init__(*args, **kwdargs)
         Thread.__init__(self, name=name, daemon=True)
@@ -172,40 +171,40 @@ class WorkerThread(Thread, Worker, ABC):
         self.engine = engine
         self.state = State.NEW
         self.lock = Lock()
-        
+
     @abstractmethod
     def wake_up(self) -> None:
         ...
-    
+
     def request_abort(self) -> None:
         if self.state is State.RUNNING:
             with self.lock:
                 self.state = State.ABORT_REQUESTED
                 # self.daemon = True
                 self.wake_up()
-            
+
     def request_stop(self) -> None:
         if self.state is State.RUNNING:
             with self.lock:
                 self.state = State.SHUTDOWN_REQUESTED
                 self.wake_up()
-                
+
     # If I do this inline, MyPy complains about "non-overlapping identity check"
     def abort_requested(self) -> bool:
         return self.state is State.ABORT_REQUESTED
-            
+
     # called with lock
     def ensure_running(self) -> None:
         if not self.is_alive():
             self.start()
-            
+
     # called with lock
     def not_idle(self) -> None:
         super().not_idle()
         # self.idle_barrier.running(self)
         # self.daemon = False
         self.ensure_running()
-        
+
     # called with lock
     # def idle(self) -> None:
     #     self.idle_barrier.idle(self)
@@ -220,19 +219,19 @@ class DevCommThread(WorkerThread):
     condition: Condition
     requests: Final[list[DevCommRequest]]
     signals: Final[list[Event]]
-    
+
     def __init__(self, engine: Engine):
         super().__init__(engine, "Device Communication Thread")
         self.condition = Condition(lock=self.lock)
         self.requests = []
         self.signals = []
-        
-        
+
+
     # called with lock locked
     def wake_up(self) -> None:
         self.condition.notify()
-        
-        
+
+
     def run(self) -> None:
         try:
             self.state = State.RUNNING
@@ -245,7 +244,7 @@ class DevCommThread(WorkerThread):
                     if self.abort_requested():
                         return
                     # we don't want to be holding the lock when we process the requests,
-                    # because they may want to add to the queue.  (Probably shouldn't, 
+                    # because they may want to add to the queue.  (Probably shouldn't,
                     # but they might).  So we'll copy the queue and clear it.
                     requests = self.requests.copy()
                     signals = self.signals.copy()
@@ -267,14 +266,14 @@ class DevCommThread(WorkerThread):
         finally:
             print(self.name, "exited")
             self.state = State.DEAD
-    
+
     # def add_request(self, req: DevCommRequest) -> None:
     #     assert self.state is State.RUNNING or self.state is State.NEW
     #     with self.lock:
     #         self.queue.append(req)
     #         self.not_idle()
     #         self.wake_up()
-            
+
     def add_requests(self, reqs: Sequence[DevCommRequest], *,
                      when_done: Optional[Union[Event, Sequence[Event]]] = None) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
@@ -288,41 +287,41 @@ class DevCommThread(WorkerThread):
                         self.signals.extend(when_done)
                 self.not_idle()
                 self.wake_up()
-            
-        
+
+
 # FT = tuple[Timestamp, TimerFunc, bool]
 
 class TimerThread(WorkerThread):
     class Entry:
         desired_time: Final[Timestamp]
         is_daemon: Final[bool]
-        
+
         def __init__(self, desired_time: Timestamp, func: TimerFunc, is_daemon: bool):
             self.desired_time = desired_time
             self.func: Final[TimerFunc] = func
             self.is_daemon = is_daemon
-            
+
         def __lt__(self, other: TimerThread.Entry) -> bool:
             my_time = self.desired_time
             their_time = other.desired_time
-            if my_time < their_time: 
+            if my_time < their_time:
                 return True
             elif their_time < my_time:
                 return False
             else:
                 return id(self.func) < id(other.func)
-            
+
         def __repr__(self) -> str:
             return f"Entry({self.desired_time}, {self.func}{', daemon' if self.is_daemon else ''})@{id(self)}"
-    
+
     class MyTimer(Timer):
         timer_thread: TimerThread
         target_time: Timestamp
         started: bool
         daemon_task: Final[bool]
-        
 
-        def __init__(self, timer_thread: TimerThread, target_time: Timestamp, delay: Time, 
+
+        def __init__(self, timer_thread: TimerThread, target_time: Timestamp, delay: Time,
                      func: TimerFunc, daemon: bool) -> None:
             super().__init__(_in_secs(delay), lambda : self.call_func())
             self.name=f"MyTimer ({target_time})"
@@ -330,9 +329,9 @@ class TimerThread(WorkerThread):
             self.target_time = target_time
             self.func: TimerFunc = func
             self.started = False
-            self.daemon_task = daemon 
+            self.daemon_task = daemon
             # print(f"Pausing for {delay} until {target_time} for {func}")
-            
+
         def call_func(self) -> None:
             self.started = True
             next_time: Optional[Union[Timestamp, Time]] = (self.func)()
@@ -353,17 +352,17 @@ class TimerThread(WorkerThread):
     queue: list[Entry]
     timer: Optional[MyTimer]
     n_daemons: int
-                
+
     def __init__(self, engine: Engine) -> None:
         super().__init__(engine, "Timer Thread")
         self.condition = Condition(lock=self.lock)
         self.queue = []
         self.timer = None
         self.n_daemons = 0
-        
+
     def wake_up(self) -> None:
         self.condition.notify()
-        
+
     def run(self) -> None:
         try:
             queue = self.queue
@@ -404,8 +403,8 @@ class TimerThread(WorkerThread):
         finally:
             print(self.name, "exited")
             self.state = State.DEAD
-      
-    def call_at(self, reqs: Sequence[TimerRequest]) -> None:      
+
+    def call_at(self, reqs: Sequence[TimerRequest]) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.condition:
             self.not_idle()
@@ -422,7 +421,7 @@ class TimerThread(WorkerThread):
                         self.timer = None
                 heapq.heappush(self.queue, TimerThread.Entry(t, fn, daemon))
                 if daemon:
-                    self.n_daemons += 1  
+                    self.n_daemons += 1
                 if len(self.queue) == self.n_daemons:
                     self.idle()
             self.wake_up()
@@ -432,19 +431,19 @@ class TimerThread(WorkerThread):
         self.call_at([(now+delta, fn, daemon) for (delta, fn, daemon) in reqs])
 
 CT = tuple[Ticks, ClockCallback]
-                
+
 class ClockThread(WorkerThread):
     class TickRequest:
         cancelled: bool
         clock: ClockThread
-        
+
         def __init__(self, clock: ClockThread) -> None:
             self.cancelled = False
             self.clock = clock
-            
+
         def __repr__(self) -> str:
             return "<Tick Request>"
-            
+
         def __call__(self) -> Optional[Time]:
             # next_tick = time_in(self.clock.update_interval)
             if not self.cancelled:
@@ -452,7 +451,7 @@ class ClockThread(WorkerThread):
                 # return next_tick
                 return self.clock.update_interval
             return None
-                
+
         def cancel(self) -> None:
             self.cancelled = True
             if self.clock.outstanding_tick_request is self:
@@ -468,7 +467,7 @@ class ClockThread(WorkerThread):
     next_tick: TickNumber
     last_tick_time: Timestamp
     outstanding_tick_request: Optional[TickRequest]
-    
+
     def __init__(self, engine, *, default_clock_interval: Time):
         super().__init__(engine, "Clock Thread")
         self.running = False
@@ -481,7 +480,7 @@ class ClockThread(WorkerThread):
         self.last_tick_time = Timestamp.never()
         self.outstanding_tick_request = None
         self.update_interval = default_clock_interval
-        
+
     def _process_queue(self, queue: Sequence[CT], *, tag: Optional[str]=None) -> list[CT]:
         new_queue: list[CT] = []
         if _trace_ticks and len(queue) > 0:
@@ -505,11 +504,10 @@ class ClockThread(WorkerThread):
             processed = len(queue)-deferred
             print(f"<< processed {tag} queue: processed {processed}, deferred {deferred}")
         return new_queue
-    
+
     def wake_up(self) -> None:
         self.tick_event.set()
 
-        
     def run(self) -> None:
         lock = self.lock
         update_finished = Event()
@@ -570,7 +568,7 @@ class ClockThread(WorkerThread):
         finally:
             print(self.name, "exited")
             self.state = State.DEAD
-           
+
     def before_tick(self, reqs: Sequence[ClockRequest]) -> None:
         assert self.state is State.RUNNING or self.state is State.NEW
         with self.lock:
@@ -600,7 +598,7 @@ class ClockThread(WorkerThread):
             else:
                 self.ensure_running()
             self.work += len(reqs)
-            
+
 
     def start_clock(self, interval: Optional[Time] = None) -> None:
         with self.lock:
@@ -613,12 +611,10 @@ class ClockThread(WorkerThread):
             self.engine.call_after([(self.update_interval, tr, True)])
             self.ensure_running()
             self.wake_up()
-            
+
     def pause_clock(self) -> None:
         with self.lock:
             assert self.running
             assert self.outstanding_tick_request
             self.running = False
             self.outstanding_tick_request.cancel()
-            
-        
