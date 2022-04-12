@@ -7,11 +7,14 @@ from threading import Thread, Condition, Event, Lock, Timer
 from types import TracebackType
 from typing import Optional, Literal, Protocol, Any, Sequence, \
     Iterable, Final, Union, Callable, NamedTuple
+import logging
 
 from mpam.types import TickNumber, ticks, Ticks
 from quantities.SI import sec, ms
 from quantities.dimensions import Time
 from quantities.timestamp import time_now, time_in, Timestamp
+
+logger = logging.getLogger(__name__)
 
 
 def _in_secs(t: Time) -> float:
@@ -264,7 +267,7 @@ class DevCommThread(WorkerThread):
                         if not self.requests:
                             self.idle()
         finally:
-            print(self.name, "exited")
+            logging.warning('%s exited', self.name)
             self.state = State.DEAD
 
     # def add_request(self, req: DevCommRequest) -> None:
@@ -401,7 +404,7 @@ class TimerThread(WorkerThread):
                         self.timer = self.MyTimer(self, entry.desired_time, entry.desired_time-now, entry.func, entry.is_daemon)
                         self.timer.start()
         finally:
-            print(self.name, "exited")
+            logging.warning('%s exited', self.name)
             self.state = State.DEAD
 
     def call_at(self, reqs: Sequence[TimerRequest]) -> None:
@@ -509,6 +512,7 @@ class ClockThread(WorkerThread):
         self.tick_event.set()
 
     def run(self) -> None:
+        logging.info('%s started', self.name)
         lock = self.lock
         update_finished = Event()
         tick_event = self.tick_event
@@ -566,7 +570,7 @@ class ClockThread(WorkerThread):
                 if self.work == 0 or not self.running:
                     self.idle()
         finally:
-            print(self.name, "exited")
+            logging.warning('%s exited', self.name)
             self.state = State.DEAD
 
     def before_tick(self, reqs: Sequence[ClockRequest]) -> None:

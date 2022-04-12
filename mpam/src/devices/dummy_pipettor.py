@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from time import sleep
+import logging
 
 from mpam.pipettor import Pipettor, Transfer, EmptyTarget
 from mpam.types import XferDir, waste_reagent
@@ -9,6 +10,8 @@ from quantities.SI import seconds, second, uL
 from quantities.core import DerivedDim
 from quantities.dimensions import Time, Volume
 from mpam.device import ProductLocation
+
+logger = logging.getLogger(__name__)
 
 
 class ArmPos(Enum):
@@ -100,7 +103,7 @@ class DummyPipettor(Pipettor):
             self.move_to(ArmPos.REAGENTS)
             self.down()
             self.xfer(total_volume)
-            print(f"Aspirating {total_volume} of {reagent} from reagent block.")
+            logging.info(f"Aspirating {total_volume} of {reagent} from reagent block.")
             self.up()
         self.move_to(ArmPos.BOARD)
         for x in transfer.targets:
@@ -108,9 +111,9 @@ class DummyPipettor(Pipettor):
             x.in_position(reagent, x.volume)
             self.xfer(x.volume)
             if transfer.xfer_dir is XferDir.EMPTY:
-                print(f"Aspirating {x.volume} of {reagent} from {x.target}.")
+                logging.info(f"Aspirating {x.volume} of {reagent} from {x.target}.")
             else:
-                print(f"Dispensing {x.volume} of {reagent} to {x.target}.")
+                logging.info(f"Dispensing {x.volume} of {reagent} to {x.target}.")
             x.finished(reagent, x.volume)
             self.up()
         # Since we do pretend to do the whole thing each time, this shouldn't do anything.
@@ -120,12 +123,12 @@ class DummyPipettor(Pipettor):
             if reagent is waste_reagent:
                 self.move_to(ArmPos.WASTE)
                 self.xfer(total_volume)
-                print(f"Dumping {total_volume} of {reagent} to trash.")
+                logging.info(f"Dumping {total_volume} of {reagent} to trash.")
             else:
                 self.move_to(ArmPos.PRODUCTS if transfer.is_product else ArmPos.REAGENTS)
                 self.down()
                 self.xfer(total_volume)
-                print(f"Dispensing {total_volume} of {reagent} to {self.arm_pos}.")
+                logging.info(f"Dispensing {total_volume} of {reagent} to {self.arm_pos}.")
                 self.up()
                 if transfer.is_product:
                     loc = ProductLocation(reagent, f"Product well {self.next_product}")
