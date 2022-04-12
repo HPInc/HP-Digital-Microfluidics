@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from time import sleep
+import logging
 
 from mpam.pipettor import Pipettor, Transfer, EmptyTarget
 from mpam.types import XferDir, waste_reagent
@@ -9,6 +10,8 @@ from quantities.SI import seconds, second, uL
 from quantities.core import DerivedDim
 from quantities.dimensions import Time, Volume
 from mpam.device import ProductLocation
+
+logger = logging.getLogger(__name__)
 
 
 class ArmPos(Enum):
@@ -30,9 +33,9 @@ class DummyPipettor(Pipettor):
     get_tip_time: Time
     flow_rate: FlowRate
     next_product: int
-    
+
     arm_pos: ArmPos
-    
+
     def __init__(self, *,
                  name: str="Dummy Pipettor",
                  dip_time: Time = 0.25*seconds,
@@ -51,7 +54,7 @@ class DummyPipettor(Pipettor):
         self.drop_tip_time = drop_tip_time
         self.flow_rate = flow_rate
         self.next_product = 1
-        
+
     def speed_up(self, factor: float) -> None:
         self.dip_time /= factor
         self.short_transit_time /= factor
@@ -59,10 +62,10 @@ class DummyPipettor(Pipettor):
         self.drop_tip_time /= factor
         self.get_tip_time /= factor
         self.flow_rate *= factor
-        
+
     def _sleep_for(self, time: Time) -> None:
         sleep(time.as_number(seconds))
-        
+
     def move_to(self, pos = ArmPos) -> None:
         if pos is self.arm_pos:
             self._sleep_for(self.short_transit_time)
@@ -75,13 +78,13 @@ class DummyPipettor(Pipettor):
 
     def up(self) -> None:
         self._sleep_for(self.dip_time)
-        
+
     def drop_tip(self) -> None:
         self._sleep_for(self.drop_tip_time)
-    
+
     def get_tip(self) -> None:
         self._sleep_for(self.get_tip_time)
-        
+
     def xfer(self, volume: Volume) -> None:
         t = (volume/self.flow_rate).a(Time)
         self._sleep_for(t)
@@ -100,7 +103,7 @@ class DummyPipettor(Pipettor):
             self.move_to(ArmPos.REAGENTS)
             self.down()
             self.xfer(total_volume)
-            print(f"Aspirating {total_volume} of {reagent} from reagent block.")
+            logging.info(f"Aspirating {total_volume} of {reagent} from reagent block.")
             self.up()
         self.move_to(ArmPos.BOARD)
         for x in transfer.targets:
@@ -108,9 +111,9 @@ class DummyPipettor(Pipettor):
             x.in_position(reagent, x.volume)
             self.xfer(x.volume)
             if transfer.xfer_dir is XferDir.EMPTY:
-                print(f"Aspirating {x.volume} of {reagent} from {x.target}.")
+                logging.info(f"Aspirating {x.volume} of {reagent} from {x.target}.")
             else:
-                print(f"Dispensing {x.volume} of {reagent} to {x.target}.")
+                logging.info(f"Dispensing {x.volume} of {reagent} to {x.target}.")
             x.finished(reagent, x.volume)
             self.up()
         # Since we do pretend to do the whole thing each time, this shouldn't do anything.
@@ -120,12 +123,12 @@ class DummyPipettor(Pipettor):
             if reagent is waste_reagent:
                 self.move_to(ArmPos.WASTE)
                 self.xfer(total_volume)
-                print(f"Dumping {total_volume} of {reagent} to trash.")
+                logging.info(f"Dumping {total_volume} of {reagent} to trash.")
             else:
                 self.move_to(ArmPos.PRODUCTS if transfer.is_product else ArmPos.REAGENTS)
                 self.down()
                 self.xfer(total_volume)
-                print(f"Dispensing {total_volume} of {reagent} to {self.arm_pos}.")
+                logging.info(f"Dispensing {total_volume} of {reagent} to {self.arm_pos}.")
                 self.up()
                 if transfer.is_product:
                     loc = ProductLocation(reagent, f"Product well {self.next_product}")
