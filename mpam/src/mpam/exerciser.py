@@ -240,44 +240,38 @@ class Exerciser(ABC):
         self.add_device_specific_common_args(group, parser)
         default_clock_interval=100*ms
         group.add_argument('-cs', '--clock-speed', type=time_arg, default=default_clock_interval, metavar='TIME',
-                            help=f'''
-                            The amount of time between clock ticks.  
-                            Default is {default_clock_interval.in_units(ms)}.
-                            ''')
-        group.add_argument('--paused', action='store_false', dest='start_clock',
                            help=f'''
-                            Don't start the clock automatically.  Note that operations that are not gated 
-                            by the clock may still run.
+                           The amount of time between clock ticks.
+                           Default is {default_clock_interval.in_units(ms)}.
+                           ''')
+        group.add_argument('--paused', action='store_false', dest='start_clock',
+                           help='''
+                           Don't start the clock automatically. Note that operations that are not gated
+                           by the clock may still run.
                            ''')
         group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=self.default_initial_delay,
-                            help=f'''
-                            The amount of time to wait before running the task.
-                            Default is {self.fmt_time(self.default_initial_delay)}.
-                            ''')
-        
-        group.add_argument('--min-time', type=time_arg, default=self.default_min_time, metavar='TIME',
-                            help=f'''
-                            The minimum amount of time to leave the display up, even if the 
-                            operation has finished.  Default is {self.fmt_time(self.default_min_time)}.
-                            ''')
-        group.add_argument('--max-time', type=time_arg, metavar='TIME',
-                            help=f'''
-                            The maximum amount of time to leave the display up, even if the 
-                            operation hasn't finished.  Default is no limit
-                            ''')
-        group.add_argument('-nd', '--no-display', action='store_false', dest='use_display',
-                            help=f'''
-                            Run the task without the on-screen display
-                            ''')
-        group.add_argument('--update-interval', type=time_arg, metavar='TIME', default=self.default_update_interval,
-                            help=f'''
-                            The maximum amount of time between display updates.  
-                            Default is {self.default_update_interval}.
-                            ''')
-        group.add_argument('--macro-file', 
-                           # type=FileType(), 
-                           metavar='FILE', 
                            help=f'''
-                           A file containing DMF macro definitions.
+                           The amount of time to wait before running the task.
+                           Default is {self.fmt_time(self.default_initial_delay)}.
                            ''')
-
+        group.add_argument('--min-time', type=time_arg, default=self.default_min_time, metavar='TIME',
+                           help=f'''
+                           The minimum amount of time to leave the display up, even if the
+                           operation has finished. Default is {self.fmt_time(self.default_min_time)}.
+                           ''')
+        group.add_argument('--max-time', type=time_arg, metavar='TIME',
+                           help='''
+                           The maximum amount of time to leave the display up, even if the
+                           operation hasn't finished. Default is no limit
+                           ''')
+        group.add_argument('-nd', '--no-display', action='store_false', dest='use_display',
+                            help='Run the task without the on-screen display')
+        group.add_argument('--update-interval', type=time_arg, metavar='TIME', default=self.default_update_interval,
+                           help=f'''
+                           The maximum amount of time between display updates.
+                           Default is {self.default_update_interval}.
+                           ''')
+        group.add_argument('--macro-file',
+                           # type=FileType(),
+                           metavar='FILE',
+                           help='A file containing DMF macro definitions.')
