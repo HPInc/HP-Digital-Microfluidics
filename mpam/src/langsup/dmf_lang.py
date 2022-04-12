@@ -2029,9 +2029,7 @@ class DMFCompiler(DMFVisitor):
                 liquid = Liquid(liquid.reagent, liquid.volume)
             if pad.drop is not None:
                 raise AlreadyDropError(f"There is already a drop at {pad}")
-            journal = ChangeJournal()
-            pad.deliver(liquid, journal=journal)
-            journal.process_changes()
+            pad.liquid_added(liquid)
             return not_None(pad.drop)
         fn.register_immediate((Type.PAD,), Type.DROP,
                               lambda p: p.drop or new_drop(p))

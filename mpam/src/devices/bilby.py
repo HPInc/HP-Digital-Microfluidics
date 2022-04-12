@@ -40,7 +40,7 @@ class Heater(device.Heater):
         remote: Optional[glider_client.Heater] = None
         assert len(pads) > 0
         for pad in pads:
-            s = pad._state
+            s = pad.state
             assert isinstance(s, glider_client.Electrode)
             heater_names = s.heater_names()
             # print(f"Heaters for {pad}: {heater_names}")

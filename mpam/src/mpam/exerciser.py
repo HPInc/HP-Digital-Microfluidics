@@ -88,13 +88,13 @@ def volume_arg(arg: str) -> Union[Volume,float]:
     val = n*unit
     return val
 
-temperature_arg_units: Final[Mapping[str, temperature.Unit]] = {
+temperature_arg_scales: Final[Mapping[str, temperature.Scale]] = {
     "C": abs_C,
     "K": abs_K,
     "F": abs_F,
     }
 
-temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(temperature_arg_units)})")
+temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(temperature_arg_scales)})")
 
 def temperature_arg(arg: str) -> TemperaturePoint:
     m = temperature_arg_re.fullmatch(arg)
@@ -104,7 +104,7 @@ def temperature_arg(arg: str) -> TemperaturePoint:
                     Requires a number followed immediately by units, e.g. '40C' or '200F'""")
     n = float(m.group(1))
     ustr = m.group(2)
-    unit = temperature_arg_units.get(ustr, None)
+    unit = temperature_arg_scales.get(ustr, None)
     if unit is None:
         raise ValueError(f"{ustr} is not a known temperature unit")
     val = n*unit

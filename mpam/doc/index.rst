@@ -18,13 +18,24 @@ Microfluidics Platform Abstract Machine
      mpam.drop
      mpam.engine
      mpam.exceptions
+     mpam.monitor
      mpam.paths
      mpam.pipettor
      mpam.processes
      mpam.types
+     
+     erk.errors
+
+	 quantities.core
+	 quantities.dimensions
+	 quantities.timestamp
+	 quantities.temperature
+	 quantities.SI
+	 quantities.US
 
      threading
 	 typing
+	 
 
 Indices and tables
 ==================

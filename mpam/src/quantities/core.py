@@ -8,26 +8,56 @@ from erk.basic import LazyPattern, Lazy
 import re
 from abc import abstractmethod, ABC
 
-ExptFormatter = Callable[[int],str]
+ExptFormatter = Callable[[int],str] 
+"""
+A :class:`.Callable` that maps integers to strings representing that integer as
+an expoinent
+"""
 
 class Exponents:
-    mapping = { "0": "\u2070", "1": "\u00B9", "2": "\u00B2",
-                "3": "\u00B3", "4": "\u2074", "5": "\u2075",
-                "6": "\u2076", "7": "\u2077", "8": "\u2078",
-                "9": "\u2079", }
+    """
+    A collection of :class:`ExptFormatter`\s
+    
+    :attr:`Exponents.default_format` can be set to the default
+    :class:`ExptFormatter` to use.  It defaults to :attr:`stars`
+    """
+    _superscript_chars = { "0": "\u2070", "1": "\u00B9", "2": "\u00B2",
+                          "3": "\u00B3", "4": "\u2074", "5": "\u2075",
+                          "6": "\u2076", "7": "\u2077", "8": "\u2078",
+                          "9": "\u2079", }
 
     # superscript() works fine, but the output shows up as
     # block codes in Emacs and is unreadable in mintty, so I'm not
     # going to use it.
 
 
-    stars: ExptFormatter = lambda n : "" if n == 1 else f"**{n:g}" 
+    stars: ExptFormatter = lambda n : "" if n == 1 else f"**{n:g}"
+    """
+    An :class:`ExptFormatter` that uses ``**``.  For example ``2`` maps onto
+    ``**2``.
+    """ 
     caret: ExptFormatter = lambda n : "" if n == 1 else f"^{n:g}"
+    """
+    An :class:`ExptFormatter` that uses ``^``.  For example ``2`` maps onto
+    ``^2``.
+    """ 
     superscript: ExptFormatter = lambda n : ("" if n == 1
-                              else "".join(Exponents.mapping[c] for c in str(n)))
+                              else "".join(Exponents._superscript_chars[c] for c in str(n)))
+    """
+    An :class:`ExptFormatter` that uses Unicode superscript characters.  For
+    example ``2`` maps onto ``²``.
+    """ 
     html: ExptFormatter = lambda n : "" if n == 1 else f"<sup>{n:g}</sup>"
+    """
+    An :class:`ExptFormatter` that HTML superscript formatting.  For example
+    ``2`` maps onto ``<sup>2</sup>``.
+    """ 
 
     default_format: ExptFormatter = stars
+    """
+    The default :class:`ExptFormatter` to use.  It defaults to :attr:`stars`,
+    but can be modified.
+    """
 
 T = TypeVar('T')
 BaseExp = tuple['BaseDimension', int]
@@ -1013,6 +1043,14 @@ class UnitExpr(Generic[D]):
     
 
 class Unit(UnitExpr[D]):
+    """
+    A dimensional unit.  When a number is multiplied by a :class:`Unit`, a
+    :class:`Quantity` of the appropriate :class:`Dimensionality` is produced.
+    
+    Args:
+        D: The subclass of :class:`Quantity` that this :class:`Unit` produces
+           when a number is multiplied by.
+    """
     abbreviation: Final[str]
     singular: Final[str]
     _restrictions: Final[dict[Any, Unit]]

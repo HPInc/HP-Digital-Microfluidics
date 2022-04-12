@@ -437,12 +437,12 @@ results in a :class:`Ticks` object.
 """
 tick = ticks    ; "An alias for :attr:`ticks`, usually used when the magnitude is `1`"
 
-DelayType = Union[Ticks, Time]  ; "A delay amount, either :class:`Ticks` or `Time`"
+DelayType = Union[Ticks, Time]  ; "A delay amount, either :class:`Ticks` or :class:`.Time`"
 WaitableType = Union[DelayType, 'Trigger', 'Delayed[Any]']
 """
 Something that can be waited on.
 
-Either a :attr:`DelayType` (i.e., a :class:`Ticks` or :class:`Time`), a
+Either a :attr:`DelayType` (i.e., a :class:`Ticks` or :class:`.Time`), a
 :class:`Trigger` object, or a `Delayed` value.
 """
 
@@ -820,7 +820,7 @@ class CommunicationScheduler(Protocol):
         This is typically implemented by delegating and will result in calling
         :func:`SystemComponent.schedule`, which will call
         :func:`System.on_tick` if ``after`` is a :class:`Ticks` value and
-        :func:`System.communicate` if ``after`` is a :class:`Time` value.  If
+        :func:`System.communicate` if ``after`` is a :class:`.Time` value.  If
         ``after`` is ``None``, it is up to the :class:`SystemComponent` to
         determine whether it should be interpreted as zero ticks or zero
         seconds.
@@ -993,7 +993,7 @@ class OpScheduler(Generic[CS]):
         An :class:`Operation` during which the :attr:`CS` object waits for a
         :class:`WaitableType` to be satisfied. 
         
-        * If :attr:`waitable` is a :class:`Time` or :class:`Ticks`, the
+        * If :attr:`waitable` is a :class:`.Time` or :class:`Ticks`, the
           operation completes after that delay.
         
         * If :attr:`waitable` is a :class:`Delayed`, the operation completes
@@ -1015,7 +1015,7 @@ class OpScheduler(Generic[CS]):
             Implement :func:`Operation.schedule_for` by waiting for :attr:`waitable`.
             
             :meta public:
-            * If :attr:`waitable` is a :class:`Time` or :class:`Ticks`, the
+            * If :attr:`waitable` is a :class:`.Time` or :class:`Ticks`, the
               operation completes after that delay.
             
             * If :attr:`waitable` is a :class:`Delayed`, the operation completes
@@ -2044,8 +2044,8 @@ class UnknownConcentration:
     """
     Used in the case when a chemical is there but its concentration cannot be
     compute.  This usually occurs when two reagents specify the chemical, but
-    they use different concentration units (e.g., :class:`Molarity` and
-    :class`VolumeConcentration`).
+    they use different concentration units (e.g., :class:`.Molarity` and
+    :class`.VolumeConcentration`).
     
     It is expected that the only instance of :class:`UnknownConcentration` will
     be the singleton constant :attr:`unknown_concentration`.
@@ -2366,7 +2366,7 @@ class Reagent:
 
     def liquid(self, volume: Volume, *, inexact: bool = False) -> Liquid:
         """
-        A :class:`Liquid` containing a specified :class:`Volume` of this
+        A :class:`Liquid` containing a specified :class:`.Volume` of this
         :class:`Reagent`
         
         Args:
@@ -2769,12 +2769,12 @@ class Liquid:
     ``False``, but if it is ``True``, it is not safe to assume that, e.g.,
     incrementally removing volume will necessarily have removed all of it.
     
-    As a convenience, a :class:`Volume` can be added to or subtracted from a
+    As a convenience, a :class:`.Volume` can be added to or subtracted from a
     :class:`Liquid`, e.g. ::
     
         liq -= 2*uL
         
-    The resulting :class:`Volume` is clipped at zero.
+    The resulting :class:`.Volume` is clipped at zero.
     
     :class:`Liquid`\s can be mixed together in several ways:
     
@@ -2832,7 +2832,7 @@ class Liquid:
     @property
     def volume(self) -> Volume:
         """
-        The :class:`Volume` of the :class:`Liquid`.  In some cases, this should
+        The :class:`.Volume` of the :class:`Liquid`.  In some cases, this should
         be interpreted in conjunction with :attr:`inexact`.
         
         Setting :attr:`volume` will trigger the callbacks in
@@ -2872,7 +2872,7 @@ class Liquid:
         
         Args:
             reagent: the :class:`Reagent` of the :class:`Liquid`
-            volume: the :class:`Volume` of the :class:`Liquid`
+            volume: the :class:`.Volume` of the :class:`Liquid`
         Keyword Args:
             inexact: is ``volume`` inexact?
         """
@@ -2961,7 +2961,7 @@ class Liquid:
                     :class:`Reagent`, or ``None`` (indicating that the name
                     should be computed)
         Returns:
-            a new :class:`Liquid` with the resulting :class:`Reagent` and :class:`Volume`.
+            a new :class:`Liquid` with the resulting :class:`Reagent` and :class:`.Volume`.
         """
         my_v = self.volume
         my_r = self.reagent
@@ -3122,7 +3122,7 @@ class Liquid:
                     :class:`Reagent`, or ``None`` (indicating that the name
                     should be computed)
         Returns:
-            a new :class:`Liquid` with the resulting :class:`Reagent` and :class:`Volume`.
+            a new :class:`Liquid` with the resulting :class:`Reagent` and :class:`.Volume`.
         """
         if len(liquids) == 0:
             return Liquid(unknown_reagent, Volume.ZERO)
@@ -3564,7 +3564,8 @@ class _AFS_Thread(Thread):
         Add an item to the :attr:`queue`
         
         Note:
-            This method assumes that :attr:`serializer`'s lock is locked.
+            This method assumes that :attr:`serializer`'s
+            :attr:`~AsyncFunctionSeraializer.lock` is locked.
         
         Args:
             fn: the callback function
