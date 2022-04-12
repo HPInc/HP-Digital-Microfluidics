@@ -30,9 +30,9 @@ class DummyPipettor(Pipettor):
     get_tip_time: Time
     flow_rate: FlowRate
     next_product: int
-    
+
     arm_pos: ArmPos
-    
+
     def __init__(self, *,
                  name: str="Dummy Pipettor",
                  dip_time: Time = 0.25*seconds,
@@ -51,7 +51,7 @@ class DummyPipettor(Pipettor):
         self.drop_tip_time = drop_tip_time
         self.flow_rate = flow_rate
         self.next_product = 1
-        
+
     def speed_up(self, factor: float) -> None:
         self.dip_time /= factor
         self.short_transit_time /= factor
@@ -59,10 +59,10 @@ class DummyPipettor(Pipettor):
         self.drop_tip_time /= factor
         self.get_tip_time /= factor
         self.flow_rate *= factor
-        
+
     def _sleep_for(self, time: Time) -> None:
         sleep(time.as_number(seconds))
-        
+
     def move_to(self, pos = ArmPos) -> None:
         if pos is self.arm_pos:
             self._sleep_for(self.short_transit_time)
@@ -75,13 +75,13 @@ class DummyPipettor(Pipettor):
 
     def up(self) -> None:
         self._sleep_for(self.dip_time)
-        
+
     def drop_tip(self) -> None:
         self._sleep_for(self.drop_tip_time)
-    
+
     def get_tip(self) -> None:
         self._sleep_for(self.get_tip_time)
-        
+
     def xfer(self, volume: Volume) -> None:
         t = (volume/self.flow_rate).a(Time)
         self._sleep_for(t)
