@@ -6,6 +6,7 @@ from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
 from re import Pattern
 import re
 from typing import Final, Mapping, Union, Optional, Sequence, Any
+import logging
 
 from mpam.device import Board, System
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs
@@ -17,6 +18,7 @@ from threading import Event
 from matplotlib.gridspec import SubplotSpec
 from mpam.monitor import BoardMonitor
 
+logger = logging.getLogger(__name__)
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
     "ns": ns,
@@ -211,6 +213,13 @@ class Exerciser(ABC):
                    args: Optional[Sequence[str]]=None,
                    namespace: Optional[Namespace]=None) -> tuple[Task, Namespace]:
         ns = self.parser.parse_args(args=args, namespace=namespace)
+        log_level = getattr(logging, ns.log_level.upper())
+        if (log_level == logging.DEBUG):
+            logging.basicConfig(level=log_level,
+                                format='%(relativeCreated)6d|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(levelname)s|%(message)s')
+        else:
+            logging.basicConfig(level=log_level,
+                                format='%(module)s|%(levelname)s|%(message)s')
         task: Task = ns.task
         return task, ns
 
@@ -275,3 +284,7 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
+        group.add_argument('--log-level',
+                           default='info',
+                           choices=['debug', 'info', 'warning'],
+                           help='Configure the logging level')
