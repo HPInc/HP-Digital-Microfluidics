@@ -97,7 +97,7 @@ PadOrGate = Union[Pad, WellGate]
         
 
 # import matplotlib
-# matplotlib.use('Agg')
+# matplotlib.use('TkAgg')
 class PadMonitor(ClickableMonitor):
     pad: Final[PadOrGate]
     board_monitor: Final[BoardMonitor]
