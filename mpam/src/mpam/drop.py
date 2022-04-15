@@ -700,9 +700,6 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         return future
 
 
-
-
-
 class Drop(OpScheduler['Drop']):
     _display_liquid: Liquid
     _pad: DropLoc
@@ -930,8 +927,6 @@ class Drop(OpScheduler['Drop']):
             current = pad.row
             steps = self.row-current
             return (direction, steps) if steps >=0 else (direction.opposite, -steps)
-
-
 
 
     class DispenseFrom(StaticOperation['Drop']):
