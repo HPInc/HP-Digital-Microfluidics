@@ -6,6 +6,7 @@ from enum import Enum, auto
 import math
 from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
     Sequence, Mapping, NamedTuple, cast
+import logging
 
 from erk.basic import not_None, ComputedDefaultDict, Count
 from erk.errors import FIX_BY, PRINT
@@ -18,6 +19,8 @@ from mpam.types import Liquid, Dir, Delayed, DelayType, \
     StaticOperation, Reagent, Callback, T, MixResult
 from quantities.core import qstr
 from quantities.dimensions import Volume
+
+logger = logging.getLogger(__name__)
 
 
 # if TYPE_CHECKING:
@@ -652,8 +655,10 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
 
+        logger.debug(f'direction:{direction}|streps:{steps}')
+
         if drop.status is not DropStatus.ON_BOARD:
-            print(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
+            logger.warning(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
             return Delayed.complete(drop)
 
         if steps == 0:

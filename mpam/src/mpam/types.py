@@ -11,6 +11,7 @@ from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any, \
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence, \
     Generator, Protocol, Iterable
 from weakref import WeakKeyDictionary, finalize
+import logging
 
 from matplotlib._color_data import XKCD_COLORS
 
@@ -21,6 +22,8 @@ from quantities.dimensions import Molarity, MassConcentration, \
 from quantities.temperature import TemperaturePoint
 
 from quantities.SI import uL
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar('T')    ; "A generic type variable"
 V = TypeVar('V')    ; "A generic type variable"
@@ -598,6 +601,7 @@ class Operation(Generic[T, V], ABC):
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
+        logger.debug(f'obj:{obj}|after:{after}')
         if isinstance(obj, Delayed):
             future = Delayed[V]()
             def schedule_and_post(x: T) -> None:
@@ -3537,11 +3541,13 @@ class _AFS_Thread(Thread):
         queue = self.queue
         before_task = self.before_task
         after_task = self.after_task
+        logger.debug(f'queue len:{len(queue)}|before_task:{before_task}|after_task:{after_task}')
         with self.serializer.lock:
             func: Callback = queue.popleft()
         while True:
             if before_task is not None:
                 before_task()
+            logger.debug(f'func:{func}')
             func()
             if after_task is not None:
                 after_task()
