@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import opentrons_support
-import importlib
 from opentrons import protocol_api
 
-# If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
-opentrons_suport = importlib.reload(opentrons_support)
-
+if "COMBINED_FILES_KLUDGE" not in globals():
+    import importlib
+    import opentrons_support
+    # If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
+    opentrons_suport = importlib.reload(opentrons_support)
 
 
 
@@ -19,14 +19,20 @@ metadata = {
 
         
             
+config = None            
             
 
 def run(protocol: protocol_api.ProtocolContext) -> None:
-    from opentrons_support import Robot, load_config
-    config = load_config("config.json")
+    if "COMBINED_FILES_KLUDGE" not in globals():
+        from opentrons_support import Robot, load_config
+    
+    global config
+    if config is None:
+        config = load_config("config.json")
 
-    # turn_off_lights_at_end = not protocol.rail_lights_on
-    turn_off_lights_at_end = False
+
+    turn_off_lights_at_end = not protocol.rail_lights_on
+    # turn_off_lights_at_end = False
     if turn_off_lights_at_end:
         protocol.set_rail_lights(True)
         

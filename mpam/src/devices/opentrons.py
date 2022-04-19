@@ -23,6 +23,8 @@ from mpam.types import Reagent, XferDir, AsyncFunctionSerializer
 from quantities.SI import seconds, uL
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
+import fileinput
+from tempfile import NamedTemporaryFile
 
 
 JSONObj = dict[str, Any]
@@ -341,20 +343,50 @@ class ProtocolManager(Thread):
         print(f"{msg}{tag}")
         return result
         # return status_code == 200
+        
+    def concatenate_files(self, config: JSONObj, files: Sequence[str]) ->str:
+        return "\n".join(["COMBINED_FILES_KLUDGE = True",
+                         "".join([*fileinput.input(files=files)]),
+                         f"config = {json.dumps(config)}\n"])
 
     def run(self) -> None:
         pname = f"protocol-{random.randint(0,1000000)}"
-
-        config = json.dumps(self.config)
-        response = self.post_request("protocols",
-                                     files=[("protocolFile", (pname, open(self.ot_file("looping_protocol.py"), "rb"))),
-                                            ("supportFiles", ("opentrons_support.py", open(self.ot_file("opentrons_support.py"), "rb"))),
-                                            ("supportFiles", ("schedule_xfers.py", open(self.ot_file("schedule_xfers.py"), "rb"))),
-                                            ("supportFiles", ("config.json", config)),
-                                            ]
-                                     )
         
-        # print(f"Create Protocol result: {response}")
+        use_multiple_files = False
+        
+        if use_multiple_files:
+            config = json.dumps(self.config)
+            response = self.post_request("protocols",
+                                         files=[("protocolFile", (pname, open(self.ot_file("looping_protocol.py"), "rb"))),
+                                                ("supportFiles", ("opentrons_support.py", open(self.ot_file("opentrons_support.py"), "rb"))),
+                                                ("supportFiles", ("schedule_xfers.py", open(self.ot_file("schedule_xfers.py"), "rb"))),
+                                                ("supportFiles", ("config.json", config)),
+                                                ]
+                                         )
+        else:
+            # combined = self.concatenate_files(self.config, [self.ot_file("schedule_xfers.py"),
+            #                                                 self.ot_file("opentrons_support.py"),
+            #                                                 self.ot_file("looping_protocol.py")]) 
+            tmp = NamedTemporaryFile(prefix="protocol-", suffix=".py", delete=False, mode="w")
+            print(f"Temp protocol file is {tmp.name}")
+            with tmp:
+                tmp.write("from __future__ import annotations\n")
+                tmp.write("COMBINED_FILES_KLUDGE = True\n")
+                for file in (self.ot_file("schedule_xfers.py"),
+                              self.ot_file("opentrons_support.py"),
+                              self.ot_file("looping_protocol.py")):
+                    with open(file) as f:
+                        for line in f.readlines():
+                            if not line.startswith("from __future"):
+                                tmp.write(line)
+                        tmp.write("\n")
+                tmp.write(f"config = {json.dumps(self.config)}\n")
+            payload = open(tmp.name, "rb")
+            response = self.post_request("protocols", files={"files": payload})
+            payload.close()
+            # os.remove(tmp.name)
+        
+        print(f"Create Protocol result: {response}")
         
         self.protocol_id = response['data']['id']
         self.trace_response(f"Created protocol \"{self.protocol_id}\"", response)
@@ -376,9 +408,12 @@ class ProtocolManager(Thread):
              
         
     def extract_messages(self, response) -> None:
-        events = response["data"]["details"]["events"]
+        # events = response["data"]["details"]["events"]
+        events = response["data"]["actions"]
         # printed_something = False
         for e in events:
+            print(e)
+            continue
             if e["source"] != "protocol":
                 continue
             
@@ -398,9 +433,9 @@ class ProtocolManager(Thread):
             self.sleep_for(self.delay)
             if not self.run_check():
                 raise ShutdownDetected()
-            response = self.get_request(f"sessions/{self.session_id}")
-            # print(f"Get status result: {response}")
-            current_state = response["data"]["details"]["currentState"]
+            response = self.get_request(f"runs/{self.session_id}")
+            print(f"Get status result: {response}")
+            current_state = response["data"]["status"]
             self.extract_messages(response)
             if current_state == looking_for:
                 return response
@@ -415,28 +450,24 @@ class ProtocolManager(Thread):
             
     
     def run_protocol(self) -> None:
-        response = self.post_request("sessions",
-                                     json = {
-                                         "data": {
-                                             "sessionType": "protocol",
-                                             "createParams": {
-                                                 "protocolId": self.protocol_id
-                                                 }
-                                             }
-                                         }
+        response = self.post_request("runs",
+                                    json = {
+                                        "data": {"protocolId": self.protocol_id}
+                                        }
                                      )
         self.session_id = response["data"]["id"]
         self.trace_response(f'Created session "{self.session_id}"', response)
         
         try:
-            self.wait_until("loaded")
-            response = self.post_request(f"sessions/{self.session_id}/commands/execute",
-                                         json={
-                                             "data": {
-                                                 "command": "protocol.startRun",
-                                                 "data": {} 
-                                                 }
-                                             })
+            # self.wait_until("loaded")
+            response = self.post_request(f"runs/{self.session_id}/actions",
+                                         data=json.dumps({"data":{"actionType": "play"}})
+                                         # json={"data": {
+                                         #     "data": {
+                                         #         "actionType": "play",
+                                         #         }
+                                         #     }}
+                                         )
             self.trace_response("Started run", response)
             response = self.wait_until("finished")
             print("Run is complete")
@@ -446,7 +477,7 @@ class ProtocolManager(Thread):
         except RuntimeError:
             traceback.print_exc()
         finally:
-            response = self.delete_request(f"sessions/{self.session_id}")
+            response = self.delete_request(f"runs/{self.session_id}")
             self.trace_response("Deleted session", response)
             
 class ReagentUse(Enum):

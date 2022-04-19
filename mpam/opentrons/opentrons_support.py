@@ -5,19 +5,21 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 import importlib
 import json
-from typing import Sequence, Optional, NamedTuple, Any, Dict
+from typing import Sequence, Optional, NamedTuple, Any, Dict, List
 
 from opentrons import protocol_api
 from opentrons.protocol_api.instrument_context import InstrumentContext
 from opentrons.protocol_api.labware import Well, Labware
 import requests
 
-from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp
-import schedule_xfers
+if "COMBINED_FILES_KLUDGE" not in globals():
 
-
-# If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
-schedule_xfers = importlib.reload(schedule_xfers)
+    from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp
+    import schedule_xfers
+    
+    
+    # If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
+    schedule_xfers = importlib.reload(schedule_xfers)
 
 
 
@@ -145,7 +147,7 @@ class Pipettor(TransferScheduler[Well]) :
     def __init__(self, 
                  spec, 
                  protocol: protocol_api.ProtocolContext,
-                 tipracks: Sequence[Labware],
+                 tipracks: List[Labware],
                  *,
                  robot: Robot) -> None:
         self.protocol = protocol
