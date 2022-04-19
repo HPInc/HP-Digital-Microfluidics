@@ -139,12 +139,13 @@ class WombatExerciser(JoeyExerciser):
                         help="The OpenDrop board uses firmware version 4.0")
         vg.add_argument('-4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
                         help="The OpenDrop board uses firmware version 4.1")
+        group.add_argument('--yaminon', action='store_true')
         parser.set_defaults(od_version=OpenDropVersion.V40)
 
 
     def make_board(self, args:Namespace)->Board:
         print(f"Version is {args.od_version}")
-        return wombat.Board(device=args.port, od_version=args.od_version)
+        return wombat.Board(device=args.port, od_version=args.od_version, is_yaminon=args.yaminon)
 
     def available_wells(self)->Sequence[int]:
         return [2,3,6,7]

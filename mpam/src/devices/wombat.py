@@ -158,6 +158,7 @@ class Board(joey.Board):
     _port: Optional[Serial] 
     _od_version: Final[OpenDropVersion]
     _electrodes: Final[dict[int, Electrode]]
+    is_yaminon: Final[bool]
     
     def make_electrode(self, pin: int) -> Electrode:
         x,y = _opendrop[pin]
@@ -185,16 +186,22 @@ class Board(joey.Board):
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
 
     def _well_gate_state(self, well: int) -> State[OnOff]:
+        if self.is_yaminon:
+            mirroring = { 0:2, 1:3, 2:2, 3:3, 4:6, 5:7, 6:6, 7:7}
+            well = mirroring[well]
         cell = _well_gate_cells.get(well, None)
         # print(f"-- gate: {well} -- {cell}")
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
     def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]:
+        if self.is_yaminon and y >= 12:
+            y = y-12
         cell = f"{ord('B')+y:c}{25-x:02d}"
         # print(f"({x}, {y}): {cell}")
         return self._electrode(cell)
     
-    def __init__(self, device: Optional[str], od_version: OpenDropVersion) -> None:
+    def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
+                 is_yaminon: bool = False) -> None:
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -204,6 +211,7 @@ class Board(joey.Board):
         self._states = bytearray(n_state_bytes)
         self._od_version = od_version
         self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
+        self.is_yaminon = is_yaminon
         super().__init__()
         self._device = device
         self._port = None
