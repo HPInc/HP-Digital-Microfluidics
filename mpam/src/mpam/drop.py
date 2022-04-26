@@ -36,6 +36,7 @@ class Pull(NamedTuple):
     def unpinned(self) -> DropLoc:
         return self.pullee
 
+
 class MotionInference:
     changes: Final[ChangeJournal]
     pin_state: Final[Mapping[DropLoc, bool]]
@@ -630,11 +631,13 @@ class Blob:
             self.detach_from_well()
         self.die()
 
+
 class DropStatus(Enum):
     ON_BOARD = auto()
     IN_WELL = auto()
     IN_MIX = auto()
     OFF_BOARD = auto()
+
 
 class MotionOp(Operation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]

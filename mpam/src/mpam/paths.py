@@ -54,7 +54,6 @@ class Path:
                                         post_result=post_result)
 
 
-
     class Start(StaticOperation[Drop]):
         first_step: Final[Path.StartStep]
         middle_steps: Final[tuple[Path.MiddleStep, ...]]
@@ -174,9 +173,6 @@ class Path:
 
         def extended(self, path: Path.Middle) -> Path.Start:
             return self+path
-
-
-
 
     class Middle(Operation[Drop,Drop]):
         middle_steps: Final[tuple[Path.MiddleStep, ...]]
@@ -299,7 +295,6 @@ class Path:
         def extended(self, path: Path.Middle) -> Path.Middle:
             return self+path
 
-
     class End(Operation[Drop, None]):
         middle_steps: Final[tuple[Path.MiddleStep,...]]
         last_step: Final[Path.EndStep]
@@ -349,6 +344,7 @@ class Path:
             for step in middle:
                 future = step._schedule_after(future, post_result=True, is_last = False)
             return self.last_step._schedule_after(future, post_result=post_result)
+
 
     @classmethod
     def empty(cls) -> Path.Middle:

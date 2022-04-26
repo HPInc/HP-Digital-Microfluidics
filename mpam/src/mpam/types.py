@@ -404,9 +404,6 @@ class GridRegion:
                 current = orientation.neighbor(Dir.RIGHT, current)
             left = orientation.neighbor(Dir.UP, left)
 
-
-
-
 class Ticks(CountDim):
     '''
     A :class:`~quantities.core.Quantity` dimension for counting clock ticks
