@@ -598,7 +598,11 @@ class Operation(Generic[T, V], ABC):
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        logger.debug(f'obj:{obj}|after:{after}')
+        # if after is None:
+        #     logger.debug(f'{obj}')
+        # else:
+        #     logger.debug(f'{obj}|after:{after}')
+
         if isinstance(obj, Delayed):
             future = Delayed[V]()
             def schedule_and_post(x: T) -> None:
@@ -1381,6 +1385,9 @@ class Delayed(Generic[T]):
 
     This object can only be referenced while :attr:`_lock` is locked.
     """
+
+    def __str__(self):
+        return f'Delayed({self._val})'
 
     @property
     def _lock(self) -> Lock:
@@ -3544,7 +3551,7 @@ class _AFS_Thread(Thread):
         while True:
             if before_task is not None:
                 before_task()
-            logger.debug(f'func:{func}')
+            logger.debug(f'func:{func.__qualname__}')
             func()
             if after_task is not None:
                 after_task()

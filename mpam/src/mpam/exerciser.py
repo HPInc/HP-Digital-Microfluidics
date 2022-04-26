@@ -216,10 +216,14 @@ class Exerciser(ABC):
         log_level = getattr(logging, ns.log_level.upper())
         if (log_level == logging.DEBUG):
             logging.basicConfig(level=log_level,
-                                format='%(relativeCreated)6d|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(levelname)s|%(message)s')
+                                format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
+            logging.getLogger('matplotlib').setLevel(logging.INFO)
+            logging.getLogger('PIL').setLevel(logging.INFO)
         else:
             logging.basicConfig(level=log_level,
-                                format='%(module)s|%(levelname)s|%(message)s')
+                                format='%(levelname)7s|%(module)s|%(message)s')
+
+
         task: Task = ns.task
         return task, ns
 
