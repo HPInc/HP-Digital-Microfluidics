@@ -8,7 +8,7 @@ from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix,\
     Dilute
 from quantities.SI import ms, uL
 from quantities.dimensions import Time, Volume
-from devices import joey
+from devices import joey, dummy_pipettor
 from mpam.device import Board, System, Pad, Well
 from mpam.types import ticks, unknown_reagent, Liquid, Reagent
 from quantities.temperature import TemperaturePoint
@@ -113,16 +113,19 @@ class Thermocycle(Task):
             for p in paths:
                 p.schedule()
 
-class Test(Task):
+
+class Dev(Task):
     def __init__(self) -> None:
-        super().__init__(name="test",
+        super().__init__(name="dev",
                          description="Run drops through a test process")
 
     def run(self, board:Board, system:System, args:Namespace)->None:
         ep = board.extraction_points[0]
-        pad = board.pad_at(0, 0)
-        frag = Reagent('R1')
-        Path.run_paths([Path.teleport_into(ep, reagent=frag).to_pad(pad)], system=system)
+        Path.run_paths([
+            Path.teleport_into(ep, reagent=Reagent('R1')).to_pad((10, 15)),
+            # Path.teleport_into(ep, reagent=Reagent('R2')).to_pad((11, 15)),
+            # Path.teleport_into(ep, reagent=Reagent('R3')).to_pad((12, 15))
+        ], system=system)
 
 
 class JoeyExerciser(Exerciser):
@@ -135,11 +138,17 @@ class JoeyExerciser(Exerciser):
         self.add_task(Mix())
         self.add_task(Dilute())
         self.add_task(Thermocycle())
-        self.add_task(Test())
+        self.add_task(Dev())
 
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
-        return joey.Board()
+        return joey.Board(
+            pipettor=dummy_pipettor.DummyPipettor(
+                dip_time=0 * ms,
+                short_transit_time=0 * ms,
+                long_transit_time=0 * ms,
+                get_tip_time=0 * ms,
+                drop_tip_time=0 * ms))
 
     def available_wells(self)->Sequence[int]:
         return [0,1,2,3,4,5,6,7]
