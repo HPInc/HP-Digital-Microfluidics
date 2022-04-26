@@ -6,6 +6,7 @@ from enum import Enum, auto
 import math
 from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
     Sequence, Mapping, NamedTuple, cast
+import logging
 
 from erk.basic import not_None, ComputedDefaultDict, Count
 from erk.errors import FIX_BY, PRINT
@@ -18,6 +19,8 @@ from mpam.types import Liquid, Dir, Delayed, DelayType, \
     StaticOperation, Reagent, Callback, T, MixResult
 from quantities.core import qstr
 from quantities.dimensions import Volume
+
+logger = logging.getLogger(__name__)
 
 
 # if TYPE_CHECKING:
@@ -32,6 +35,7 @@ class Pull(NamedTuple):
     @property
     def unpinned(self) -> DropLoc:
         return self.pullee
+
 
 class MotionInference:
     changes: Final[ChangeJournal]
@@ -627,11 +631,13 @@ class Blob:
             self.detach_from_well()
         self.die()
 
+
 class DropStatus(Enum):
     ON_BOARD = auto()
     IN_WELL = auto()
     IN_MIX = auto()
     OFF_BOARD = auto()
+
 
 class MotionOp(Operation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]
@@ -652,8 +658,13 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
 
+        if after is None:
+            logger.debug(f'direction:{direction}|streps:{steps}')
+        else:
+            logger.debug(f'direction:{direction}|streps:{steps}|after:{after}')
+
         if drop.status is not DropStatus.ON_BOARD:
-            print(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
+            logger.warning(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
             return Delayed.complete(drop)
 
         if steps == 0:
@@ -670,24 +681,23 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
                 if not allow_unsafe:
                     while not next_pad.safe_except(last_pad):
-                        # print(f"unsafe: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
+                        logger.debug(f"unsafe:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                         yield one_tick
                 while not next_pad.reserve():
                     if allow_unsafe:
                         break
-                    # print(f"can't reserve: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
+                    logger.debug(f"can't reserve:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                     yield one_tick
                 with system.batched():
-                    # print(f"Tick number {system.clock.next_tick}")
-                    # print(f"Moving drop from {last_pad} to {next_pad}")
-                    assert last_pad == drop.pad, f"{i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}"
+                    logger.debug(f"tick:{system.clock.next_tick}|{i}/{steps}|{drop}|{last_pad}->{next_pad}")
+                    assert last_pad == drop.pad, f"{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}"
                     next_pad.schedule(Pad.TurnOn, post_result=False)
                     last_pad.schedule(Pad.TurnOff, post_result=False)
                     real_next_pad = next_pad
                     def unreserve() -> None:
                         real_next_pad.reserved = False
                     board.after_tick(unreserve)
-                    # print(f"i = {i}, steps = {steps}, drop = {drop}, lp = {last_pad}, np = {next_pad}")
+                    # logger.debug(f"{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                     if post_result and i == steps-1:
                         final_pad = next_pad
                         board.after_tick(lambda : future.post(final_pad.checked_drop))
@@ -698,9 +708,6 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         iterator = before_tick()
         board.before_tick(lambda: next(iterator), delta=after)
         return future
-
-
-
 
 
 class Drop(OpScheduler['Drop']):
@@ -930,8 +937,6 @@ class Drop(OpScheduler['Drop']):
             current = pad.row
             steps = self.row-current
             return (direction, steps) if steps >=0 else (direction.opposite, -steps)
-
-
 
 
     class DispenseFrom(StaticOperation['Drop']):

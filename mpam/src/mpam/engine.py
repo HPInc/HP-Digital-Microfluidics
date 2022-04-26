@@ -236,6 +236,7 @@ class DevCommThread(WorkerThread):
 
 
     def run(self) -> None:
+        logging.debug('%s started', self.name)
         try:
             self.state = State.RUNNING
             need_update: set[Updatable] = set()
@@ -367,6 +368,7 @@ class TimerThread(WorkerThread):
         self.condition.notify()
 
     def run(self) -> None:
+        logging.debug('%s started', self.name)
         try:
             queue = self.queue
             condition = self.condition
@@ -512,7 +514,7 @@ class ClockThread(WorkerThread):
         self.tick_event.set()
 
     def run(self) -> None:
-        logging.info('%s started', self.name)
+        logging.debug('%s started', self.name)
         lock = self.lock
         update_finished = Event()
         tick_event = self.tick_event
