@@ -291,6 +291,9 @@ class DimMismatchError(Exception):
         super().__init__(f"{lhs} {op} {rhs}")
 
 class Quantity:
+    '''
+    A dimensioned quantity
+    '''
     _dimensionality: Final[Dimensionality]
     magnitude: float
     
