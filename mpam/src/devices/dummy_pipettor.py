@@ -55,9 +55,6 @@ class DummyPipettor(Pipettor):
         self.flow_rate = flow_rate
         self.next_product = 1
 
-    def __str__(self):
-        return f'{self.name}'
-
     def speed_up(self, factor: float) -> None:
         self.dip_time /= factor
         self.short_transit_time /= factor
