@@ -236,7 +236,7 @@ class DevCommThread(WorkerThread):
 
 
     def run(self) -> None:
-        logging.debug('%s started', self.name)
+        logger.debug('%s started', self.name)
         try:
             self.state = State.RUNNING
             need_update: set[Updatable] = set()
@@ -254,7 +254,7 @@ class DevCommThread(WorkerThread):
                     signals = self.signals.copy()
                     self.requests.clear()
                     self.signals.clear()
-                # print(f"--processing communication queue: length {len(queue_copy)}")
+                # logger.debug(f"--processing communication queue: length {len(queue_copy)}")
                 for req in requests:
                     cpts = req()
                     need_update.update(cpts)
@@ -268,7 +268,7 @@ class DevCommThread(WorkerThread):
                         if not self.requests:
                             self.idle()
         finally:
-            logging.warning('%s exited', self.name)
+            logger.info('%s exited', self.name)
             self.state = State.DEAD
 
     # def add_request(self, req: DevCommRequest) -> None:
@@ -368,7 +368,7 @@ class TimerThread(WorkerThread):
         self.condition.notify()
 
     def run(self) -> None:
-        logging.debug('%s started', self.name)
+        logger.debug('%s started', self.name)
         try:
             queue = self.queue
             condition = self.condition
@@ -406,7 +406,7 @@ class TimerThread(WorkerThread):
                         self.timer = self.MyTimer(self, entry.desired_time, entry.desired_time-now, entry.func, entry.is_daemon)
                         self.timer.start()
         finally:
-            logging.warning('%s exited', self.name)
+            logger.info('%s exited', self.name)
             self.state = State.DEAD
 
     def call_at(self, reqs: Sequence[TimerRequest]) -> None:
@@ -514,7 +514,7 @@ class ClockThread(WorkerThread):
         self.tick_event.set()
 
     def run(self) -> None:
-        logging.debug('%s started', self.name)
+        logger.debug('%s started', self.name)
         lock = self.lock
         update_finished = Event()
         tick_event = self.tick_event
@@ -572,7 +572,7 @@ class ClockThread(WorkerThread):
                 if self.work == 0 or not self.running:
                     self.idle()
         finally:
-            logging.warning('%s exited', self.name)
+            logger.info('%s exited', self.name)
             self.state = State.DEAD
 
     def before_tick(self, reqs: Sequence[ClockRequest]) -> None:

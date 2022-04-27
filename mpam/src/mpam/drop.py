@@ -658,10 +658,10 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
 
-        if after is None:
-            logger.debug(f'direction:{direction}|streps:{steps}')
-        else:
-            logger.debug(f'direction:{direction}|streps:{steps}|after:{after}')
+        # if after is None:
+        #     logger.debug(f'direction:{direction}|steps:{steps}')
+        # else:
+        #     logger.debug(f'direction:{direction}|steps:{steps}|after:{after}')
 
         if drop.status is not DropStatus.ON_BOARD:
             logger.warning(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
@@ -681,15 +681,15 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
                 if not allow_unsafe:
                     while not next_pad.safe_except(last_pad):
-                        logger.debug(f"unsafe:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
+                        # logger.debug(f"unsafe:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                         yield one_tick
                 while not next_pad.reserve():
                     if allow_unsafe:
                         break
-                    logger.debug(f"can't reserve:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
+                    # logger.debug(f"can't reserve:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                     yield one_tick
                 with system.batched():
-                    logger.debug(f"tick:{system.clock.next_tick}|{i}/{steps}|{drop}|{last_pad}->{next_pad}")
+                    # logger.debug(f"tick:{system.clock.next_tick}|{i}/{steps}|{drop}|{last_pad}->{next_pad}")
                     assert last_pad == drop.pad, f"{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}"
                     next_pad.schedule(Pad.TurnOn, post_result=False)
                     last_pad.schedule(Pad.TurnOff, post_result=False)
