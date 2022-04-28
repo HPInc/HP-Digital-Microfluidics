@@ -667,7 +667,6 @@ Type.value_compatible((Type.INT, Type.FLOAT), Type.NUMBER)
 
 Type.register_conversion(Type.DROP, Type.PAD, lambda drop: drop.pad)
 Type.register_conversion(Type.DROP, Type.BINARY_CPT, lambda drop: drop.pad)
-Type.register_conversion(Type.WELL_PAD, Type.BINARY_CPT, lambda wp: wp.pad)
 Type.register_conversion(Type.INT, Type.FLOAT, float)
 Type.register_conversion(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
 Type.register_conversion(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
