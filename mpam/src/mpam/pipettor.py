@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod, ABC
 from threading import Lock
 from typing import Final, Callable, Optional
+import logging
 
 from erk.errors import ErrorHandler, PRINT
 from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
@@ -13,6 +14,8 @@ from mpam.types import Reagent, OpScheduler, Callback, DelayType, \
 from quantities.SI import uL
 from quantities.dimensions import Volume
 from mpam.engine import Worker
+
+logger = logging.getLogger(__name__)
 
 
 class XferTarget(ABC):
@@ -153,7 +156,7 @@ class TransferSchedule:
         self.fills = {}
         self.empties = {}
         self._lock = Lock()
-        self.serializer = AsyncFunctionSerializer(thread_name=f"{pipettor.name} Thread",
+        self.serializer = AsyncFunctionSerializer(thread_name=f"{pipettor} Thread",
                                                   on_empty_queue = lambda: self.pipettor.idle(),
                                                   on_nonempty_queue = lambda: self.pipettor.not_idle())
 
@@ -242,12 +245,15 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         self.name = name
         self.xfer_sched = TransferSchedule(self)
 
+    def __str__(self) -> str:
+        return f'Pipettor("{self.name}")'
+
     def idle(self) -> None:
-        print("Pipettor is idle")
+        logging.info(f'{self} is idle')
         self.worker.idle()
 
     def not_idle(self) -> None:
-        print("Pipettor is not idle")
+        logging.info(f'{self} is not idle')
         self.worker.not_idle()
 
     @abstractmethod
