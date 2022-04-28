@@ -6,7 +6,8 @@ from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
 from re import Pattern
 import re
 from typing import Final, Mapping, Union, Optional, Sequence, Any
-import logging
+# import logging
+import logging.config
 
 from mpam.device import Board, System
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs
@@ -17,6 +18,8 @@ from quantities import temperature
 from threading import Event
 from matplotlib.gridspec import SubplotSpec
 from mpam.monitor import BoardMonitor
+import pathlib
+from erk.stringutils import conj_str
 
 logger = logging.getLogger(__name__)
 
@@ -90,13 +93,13 @@ def volume_arg(arg: str) -> Union[Volume,float]:
     val = n*unit
     return val
 
-temperature_arg_units: Final[Mapping[str, temperature.Unit]] = {
+temperature_arg_scales: Final[Mapping[str, temperature.Scale]] = {
     "C": abs_C,
     "K": abs_K,
     "F": abs_F,
     }
 
-temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(temperature_arg_units)})")
+temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(temperature_arg_scales)})")
 
 def temperature_arg(arg: str) -> TemperaturePoint:
     m = temperature_arg_re.fullmatch(arg)
@@ -106,7 +109,7 @@ def temperature_arg(arg: str) -> TemperaturePoint:
                     Requires a number followed immediately by units, e.g. '40C' or '200F'""")
     n = float(m.group(1))
     ustr = m.group(2)
-    unit = temperature_arg_units.get(ustr, None)
+    unit = temperature_arg_scales.get(ustr, None)
     if unit is None:
         raise ValueError(f"{ustr} is not a known temperature unit")
     val = n*unit
@@ -208,20 +211,41 @@ class Exerciser(ABC):
                                  macro_file_name = args.macro_file,
                                  thread_name = f"Monitored {task.name}")
 
+    def setup_logging(self, args: Namespace) -> None:
+        level: Optional[str] = args.log_level
+        file: Optional[Union[str, pathlib.Path]] = args.log_config
+
+        default_format = '%(levelname)7s|%(module)s|%(message)s'
+
+        if level is None and file is None:
+            path = pathlib.Path.cwd() / ".logging"
+            if path.exists():
+                file = path
+            else:
+                level = "INFO"
+        if level is not None:
+            log_level = getattr(logging, level.upper())
+            if (log_level <= logging.INFO):
+                logging.basicConfig(level=log_level,
+                                    format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
+                logging.getLogger('matplotlib').setLevel(logging.INFO)
+                logging.getLogger('PIL').setLevel(logging.INFO)
+            else:
+                logging.basicConfig(level=log_level,
+                                    format=default_format)
+        else:
+            assert file is not None
+            logging.config.fileConfig(file,
+                                      defaults = {
+                                          "format": default_format
+                                          })
+
 
     def parse_args(self,
                    args: Optional[Sequence[str]]=None,
                    namespace: Optional[Namespace]=None) -> tuple[Task, Namespace]:
         ns = self.parser.parse_args(args=args, namespace=namespace)
-        log_level = getattr(logging, ns.log_level.upper())
-        if (log_level == logging.DEBUG):
-            logging.basicConfig(level=log_level,
-                                format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
-            logging.getLogger('matplotlib').setLevel(logging.INFO)
-            logging.getLogger('PIL').setLevel(logging.INFO)
-        else:
-            logging.basicConfig(level=log_level,
-                                format='%(levelname)7s|%(module)s|%(message)s')
+        self.setup_logging(ns)
 
 
         task: Task = ns.task
@@ -288,7 +312,12 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
-        group.add_argument('--log-level',
-                           default='info',
-                           choices=['debug', 'info', 'warning'],
-                           help='Configure the logging level')
+        log_group = group.add_mutually_exclusive_group()
+        level_choices = ['debug', 'info', 'warning', 'error', 'critical']
+        log_group.add_argument('--log-level', metavar='LEVEL',
+                               choices=level_choices,
+                               help=f'''
+                               Configure the logging level.  Options are {conj_str([f'"{s}"' for s in level_choices])}
+                               ''')
+        log_group.add_argument('--log-config', metavar='FILE',
+                               help='Configuration file for logging')

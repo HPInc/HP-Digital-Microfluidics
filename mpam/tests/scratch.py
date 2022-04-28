@@ -1,7 +1,6 @@
 from __future__ import annotations
-from mpam.types import Reagent, Mixture
 
-r1 = Reagent("r1")
-r2 = Reagent("r2")
-
-print(Mixture.find_or_compute(r1, r2, ratio = 0.4))
+def foo(a: int = 0, b: int = 0, *, c: int = 0):
+    print(a, b, c)
+    
+foo(b=2, c=3)

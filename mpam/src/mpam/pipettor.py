@@ -276,21 +276,24 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
 
 
     class Supply(Operation['Pipettor', Liquid]):
-        liquid: Final[Liquid]
+        reagent: Final[Reagent]
+        volume: Final[Volume]
         target: Final[PipettingTarget]
         allow_merge: Final[bool]
         mix_result: Final[Optional[MixResult]]
         on_insufficient: Final[ErrorHandler]
         on_no_source: Final[ErrorHandler]
 
-        def __init__(self, liquid: Liquid, target: PipettingTarget, *,
+        def __init__(self, reagent: Reagent, volume: Volume, 
+                     target: PipettingTarget, *,
                      allow_merge: bool = False,
                      mix_result: Optional[MixResult] = None,
                      on_insufficient: ErrorHandler=PRINT,
                      on_no_source: ErrorHandler=PRINT
 
                      ) -> None:
-            self.liquid = liquid
+            self.reagent = reagent
+            self.volume = volume
             self.target = target
             self.allow_merge = allow_merge
             self.mix_result = mix_result
@@ -304,7 +307,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
 
             future = Delayed[Liquid]()
             def schedule_it() -> None:
-                pipettor.xfer_sched.add(self.target, self.liquid.reagent, self.liquid.volume,
+                pipettor.xfer_sched.add(self.target, self.reagent, self.volume,
                                         future=future, allow_merge=self.allow_merge,
                                         mix_result=self.mix_result,
                                         on_unknown=self.on_no_source, on_insufficient=self.on_insufficient)

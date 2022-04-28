@@ -667,7 +667,6 @@ Type.value_compatible((Type.INT, Type.FLOAT), Type.NUMBER)
 
 Type.register_conversion(Type.DROP, Type.PAD, lambda drop: drop.pad)
 Type.register_conversion(Type.DROP, Type.BINARY_CPT, lambda drop: drop.pad)
-Type.register_conversion(Type.WELL_PAD, Type.BINARY_CPT, lambda wp: wp.pad)
 Type.register_conversion(Type.INT, Type.FLOAT, float)
 Type.register_conversion(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
 Type.register_conversion(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
@@ -2029,9 +2028,7 @@ class DMFCompiler(DMFVisitor):
                 liquid = Liquid(liquid.reagent, liquid.volume)
             if pad.drop is not None:
                 raise AlreadyDropError(f"There is already a drop at {pad}")
-            journal = ChangeJournal()
-            pad.deliver(liquid, journal=journal)
-            journal.process_changes()
+            pad.liquid_added(liquid)
             return not_None(pad.drop)
         fn.register_immediate((Type.PAD,), Type.DROP,
                               lambda p: p.drop or new_drop(p))
