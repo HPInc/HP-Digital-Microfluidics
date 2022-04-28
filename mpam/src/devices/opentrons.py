@@ -367,10 +367,11 @@ class ProtocolManager(Thread):
             # combined = self.concatenate_files(self.config, [self.ot_file("schedule_xfers.py"),
             #                                                 self.ot_file("opentrons_support.py"),
             #                                                 self.ot_file("looping_protocol.py")]) 
-            tmp = NamedTemporaryFile(prefix="protocol-", suffix=".py", delete=False, mode="w")
+            tmp = NamedTemporaryFile(prefix="protocol_", suffix=".py", delete=False, mode="w")
             print(f"Temp protocol file is {tmp.name}")
             with tmp:
                 tmp.write("from __future__ import annotations\n")
+                tmp.write("__name__ = '__main__'\n")
                 tmp.write("COMBINED_FILES_KLUDGE = True\n")
                 for file in (self.ot_file("schedule_xfers.py"),
                               self.ot_file("opentrons_support.py"),
