@@ -1775,7 +1775,7 @@ class DMFCompiler(DMFVisitor):
                                   f"Row or column name not an int ({which.return_type.name}): {self.text_of(ctx.which)}")
             verticalp = cast(bool, axis.verticalp)
             def run(env: Environment) -> Delayed[MotionValue]:
-                return which.evaluate(env, Type.PAD).transformed(lambda n: ToRowColValue(n, verticalp))
+                return which.evaluate(env, Type.INT).transformed(lambda n: ToRowColValue(n, verticalp))
         return Executable(Type.MOTION, run, (which,))
     
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
