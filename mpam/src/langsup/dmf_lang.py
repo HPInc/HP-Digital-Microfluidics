@@ -17,7 +17,7 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit
 from mpam.device import Pad, Board, BinaryComponent, Well,\
-    ChangeJournal, WellGate, WellPad
+    WellGate, WellPad
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -476,7 +476,8 @@ Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
 Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
 Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
 
-Attributes["volume"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
+Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
+Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
 def _set_drop_volume(d: Drop, v: Volume):
     d.blob_volume = v
 Attributes["volume"].register_setter(Type.DROP, Type.VOLUME, _set_drop_volume)

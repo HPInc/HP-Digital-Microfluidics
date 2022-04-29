@@ -2334,8 +2334,10 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             volume = liquid.volume
         else:
             volume = min(volume, liquid.volume)
-            liquid = Liquid(liquid.reagent, volume)
-            liquid.volume -= volume
+            if volume < liquid.volume:
+                new_liquid = Liquid(liquid.reagent, volume)
+                liquid.volume -= volume
+                liquid = new_liquid
         on_overflow.expect_true(self.remaining_capacity >= volume,
                     lambda : f"Tried to add {volume} to {self}.  Remaining capacity only {self.remaining_capacity}")
         # available implies _contents is not None, but MyPy can't do the inference for the else

@@ -21,6 +21,17 @@ ready = macro(well w) {
   ]]
 };
 
+dispensed = macro(well w, volume v) {
+  pad p = w's exit pad;
+  if p has a drop {
+     drop d = p's drop;
+     d's volume = v;
+     d;
+  } else {
+     v of w's reagent @ p;
+  }
+};
+
 disp1 = macro(well w) {
   [[ w[3]: on; w[4]: on; w[5]: on; ]]
   [[ w[0]: on; w[1]: on; w[2]: on; ]]
@@ -35,7 +46,8 @@ disp1 = macro(well w) {
   ]]
   [[ w[0]: on; w[1]: on; w[2]: on; ]]
   w: ready; 
-  drop@w's exit pad;
+  w's exit pad's drop;
+//  dispensed(w, 1 drop);
 };
 
 disp2 = macro(well w) {
@@ -131,9 +143,9 @@ scope_test = macro(int n) {
   n;
 };
 
-gen_asp = macro(w: well) {
+gen_asp = macro(well w) {
   w : disp1;
-  d = w's exit pad's drop;
+  drop d = w's exit pad's drop;
   d : to row 3 : right 9 : off;
 }; 
 
