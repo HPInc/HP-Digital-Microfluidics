@@ -131,10 +131,16 @@ scope_test = macro(int n) {
   n;
 };
 
+gen_asp = macro(w: well) {
+  w : disp1;
+  d = w's exit pad's drop;
+  d : to row 3 : right 9 : off;
+}; 
+
 r1 = reagent "r1";
 r2 = reagent "r2";
-d1 = drop@(2,3);
-d1's reagent = r1;
-d2 = 1 drop of r2 @ (4,3);
+//d1 = drop@(2,3);
+//d1's reagent = r1;
+//d2 = 1 drop of r2 @ (4,3);
 t1 = 2 sec;
 w2 = well #2;

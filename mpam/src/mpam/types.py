@@ -621,14 +621,9 @@ class Operation(Generic[T, V], ABC):
              after: Optional[DelayType] = None,
              ) -> Operation[T,V2]:
         """
-<<<<<<< HEAD
         Chain this :class:`Operation` and another together to create a single
         new :class:`Operation`
         
-=======
-        Chain this :class:`Operation` and another together to create a single new :class:`Operation`
-
->>>>>>> master
         The value produced by this :class:`Operation` will be used to schedule
         the second one (unless the second is a :class:`StaticOperation`, in
         which case the second will be scheduled after this one is done).
@@ -1003,15 +998,9 @@ class OpScheduler(Generic[CS]):
     class WaitFor(Operation[CS,CS]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits for a
-<<<<<<< HEAD
         :class:`WaitableType` to be satisfied. 
         
         * If :attr:`waitable` is a :class:`.Time` or :class:`Ticks`, the
-=======
-        :class:`WaitableType` to be satisfied.
-
-        * If :attr:`waitable` is a :class:`Time` or :class:`Ticks`, the
->>>>>>> master
           operation completes after that delay.
 
         * If :attr:`waitable` is a :class:`Delayed`, the operation completes
@@ -2065,15 +2054,9 @@ class UnknownConcentration:
     """
     Used in the case when a chemical is there but its concentration cannot be
     compute.  This usually occurs when two reagents specify the chemical, but
-<<<<<<< HEAD
     they use different concentration units (e.g., :class:`.Molarity` and
     :class`.VolumeConcentration`).
     
-=======
-    they use different concentration units (e.g., :class:`Molarity` and
-    :class`VolumeConcentration`).
-
->>>>>>> master
     It is expected that the only instance of :class:`UnknownConcentration` will
     be the singleton constant :attr:`unknown_concentration`.
 
@@ -2795,25 +2778,14 @@ class Liquid:
     whether the :attr:`volume` is :attr:`inexact`.  Typically, this will be
     ``False``, but if it is ``True``, it is not safe to assume that, e.g.,
     incrementally removing volume will necessarily have removed all of it.
-<<<<<<< HEAD
     
     As a convenience, a :class:`.Volume` can be added to or subtracted from a
-=======
-
-    As a convenience, a :class:`Volume` can be added to or subtracted from a
->>>>>>> master
     :class:`Liquid`, e.g. ::
 
         liq -= 2*uL
-<<<<<<< HEAD
         
     The resulting :class:`.Volume` is clipped at zero.
     
-=======
-
-    The resulting :class:`Volume` is clipped at zero.
-
->>>>>>> master
     :class:`Liquid`\s can be mixed together in several ways:
 
     * :func:`mix_with` returns the result of mixing a given :class:`Liquid` with
@@ -3604,14 +3576,9 @@ class _AFS_Thread(Thread):
         Add an item to the :attr:`queue`
 
         Note:
-<<<<<<< HEAD
             This method assumes that :attr:`serializer`'s
             :attr:`~AsyncFunctionSeraializer.lock` is locked.
         
-=======
-            This method assumes that :attr:`serializer`'s lock is locked.
-
->>>>>>> master
         Args:
             fn: the callback function
         """
