@@ -1,6 +1,9 @@
 from __future__ import annotations
+from erk.stringutils import match_width
 
-def foo(a: int = 0, b: int = 0, *, c: int = 0):
-    print(a, b, c)
+def test(repeated: str, string:str) -> None:
+    print(string)
+    print(match_width(string, repeating=repeated))
+    print()
     
-foo(b=2, c=3)
+test("=", "This is a test")

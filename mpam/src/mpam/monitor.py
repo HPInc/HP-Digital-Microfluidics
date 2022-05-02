@@ -38,6 +38,8 @@ from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C
 from quantities.timestamp import time_now
 from weakref import WeakKeyDictionary
+from erk.stringutils import match_width
+import traceback
 
 
 class ClickableMonitor(ABC):
@@ -1175,9 +1177,16 @@ class BoardMonitor:
             if len(expr) > 0:
                 print(f"Interactive cmd: {expr}")
                 text.add_to_history(expr)
-                (interp.evaluate(expr, cache_as="last")
-                    .then_call(lambda pair: print(f"  Interactive cmd val ({pair[0].name}): {pair[1]}")))
-                text.set_val("")
+                try:
+                    (interp.evaluate(expr, cache_as="last")
+                        .then_call(lambda pair: print(f"  Interactive cmd val ({pair[0].name}): {pair[1]}")))
+                    text.set_val("")
+                except RuntimeError as ex:
+                    header = f"Exception caught evaluating '{expr}':"
+                    print(header)
+                    print(match_width(header, repeating="-"))
+                    traceback.print_exception(type(ex), ex, ex.__traceback__)
+                    
         apply.on_clicked(on_press)
         text.on_submit(on_press)
         
