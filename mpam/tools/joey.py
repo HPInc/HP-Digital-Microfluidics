@@ -6,7 +6,7 @@ from typing import Sequence
 from mpam.exerciser import Exerciser, Task, time_arg, temperature_arg
 from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix,\
     Dilute
-from quantities.SI import ms, uL
+from quantities.SI import s, ms, uL
 from quantities.dimensions import Time, Volume
 from devices import joey, dummy_pipettor
 from mpam.device import Board, System, Pad, Well
@@ -122,9 +122,9 @@ class Dev(Task):
     def run(self, board:Board, system:System, args:Namespace)->None:
         ep = board.extraction_points[0]
         Path.run_paths([
-            Path.teleport_into(ep, reagent=Reagent('R1')).to_pad((10, 15)),
-            # Path.teleport_into(ep, reagent=Reagent('R2')).to_pad((11, 15)),
-            # Path.teleport_into(ep, reagent=Reagent('R3')).to_pad((12, 15))
+            Path.teleport_into(ep, reagent=Reagent('R1')).to_pad((11, 15)),
+            Path.teleport_into(ep, reagent=Reagent('R2')).to_pad((11, 13)),
+            Path.teleport_into(ep, reagent=Reagent('R3')).to_pad((11, 17))
         ], system=system)
 
 
@@ -144,11 +144,12 @@ class JoeyExerciser(Exerciser):
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
         return joey.Board(
             pipettor=dummy_pipettor.DummyPipettor(
-                dip_time=0 * ms,
-                short_transit_time=0 * ms,
-                long_transit_time=0 * ms,
-                get_tip_time=0 * ms,
-                drop_tip_time=0 * ms))
+                name="Dummy",
+                dip_time=100 * ms,
+                short_transit_time=1 * ms,
+                long_transit_time=1 * ms,
+                get_tip_time=1 * ms,
+                drop_tip_time=1 * ms))
 
     def available_wells(self)->Sequence[int]:
         return [0,1,2,3,4,5,6,7]
