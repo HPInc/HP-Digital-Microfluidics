@@ -29,6 +29,7 @@ import math
 from functools import reduce
 from erk.basic import LazyPattern, not_None
 from re import Match
+from threading import RLock
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -39,11 +40,15 @@ Val_ = TypeVar("Val_")
 
 class EvaluationError(RuntimeError): ...
 
+MaybeError = Union[Val_, EvaluationError]
+
 class CompilationError(RuntimeError): ...
 
 class MaybeNotSatisfiedError(EvaluationError): ...
 
 class AlreadyDropError(EvaluationError): ...
+
+class UninitializedVariableError(EvaluationError): ...
         
 class UnknownUnitDimensionError(CompilationError):
     unit: Final[Unit]
@@ -407,7 +412,7 @@ class ByNameCache(dict[K_,V_]):
         return ret
 
 Functions = ByNameCache[str, Func](lambda name: Func(name))
-Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"{name} attribute"]))
+Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"'{name}' attribute"]))
 
 ERUnitLookup: dict[EnvRelativeUnit, tuple[Type, Type, Callable[[Environment], Unit]]] = {
         EnvRelativeUnit.DROP: (Type.VOLUME, Type.FLOAT, lambda env: env.board.drop_unit),
@@ -714,6 +719,12 @@ class Executable:
         #         assert isinstance(val, check), f"Expected {check}, got {val}"
         return future
     
+    def check_and_eval(self, maybe_error: Any, 
+                       env: Environment, required: Optional[Type] = None) -> Delayed[Any]:
+        if isinstance(maybe_error, EvaluationError):
+            return Delayed.complete(maybe_error)
+        return self.evaluate(env, required)
+    
 class LazyEval:
     Definition = Callable[[Environment, Sequence[Executable]], Delayed[Any]]
     def __init__(self, 
@@ -747,7 +758,9 @@ class DMFInterpreter:
             if executable.contains_error:
                 print(f"Macro file '{file_name}' contained error, not loading.")
             else:
-                executable.evaluate(self.globals).wait()
+                val = executable.evaluate(self.globals).value
+                if isinstance(val, EvaluationError):
+                    print(f"Exception caught while loading '{file_name}': {val}")
         
     def set_global(self, name: str, val: Any, vtype: Type):
         self.namespace[name] = vtype
@@ -768,7 +781,10 @@ class DMFInterpreter:
         if cache_as is not None and executable.return_type is not Type.IGNORE:
             cvar = cache_as
             future.then_call(lambda val: self.set_global(cvar, val, executable.return_type))
-        return future.transformed(lambda val: (executable.return_type, val))
+        def munge_result(val) -> Tuple[Type, Any]:
+            t = Type.ERROR if isinstance(val, EvaluationError) else executable.return_type
+            return (t, val)
+        return future.transformed(munge_result)
     
     def get_parser(self, input_stream: InputStream) -> DMFParser:
         lexer = DMFLexer(input_stream)
@@ -975,20 +991,25 @@ class DMFCompiler(DMFVisitor):
             def run(env: Environment) -> Delayed[Any]:
                 args: List[Any] = []
                 def make_lambda(ae: Executable, pt: Type) -> Callable[[Any], Delayed]:
-                    return lambda _: ae.evaluate(env,pt).transformed(lambda arg: args.append(arg))
+                    return lambda maybe_error: (ae.check_and_eval(maybe_error, env,pt)
+                                                .transformed(lambda arg: args.append(arg)))
                 lambdas = [make_lambda(ae,pt) for ae,pt in zip(arg_execs, sig.param_types)]
-                if len(lambdas) == 0:
-                    return fn()
-                first = lambdas[0](None)
                 future = (Delayed.complete(None) if len(arg_execs) == 0
                           else reduce(lambda fut,fn: fut.chain(fn),
                                       lambdas[1:],
-                                      first))
-                if isinstance(fn, WithEnv):
-                    future = future.chain(lambda _: fn(env, *args, *extra_args))
-                else:
-                    future = future.chain(lambda _: fn(*args, *extra_args))
-                return future            
+                                      lambdas[0](None)))
+                def chain_call(maybe_error) -> Delayed[Any]:
+                    if isinstance(maybe_error, EvaluationError):
+                        return Delayed.complete(maybe_error)
+                    else:
+                        try:
+                            if isinstance(fn, WithEnv):
+                                return fn(env, *args, *extra_args)
+                            else:
+                                return fn(*args, *extra_args)
+                        except EvaluationError as ex:
+                            return Delayed.complete(ex)
+                return future.chain(chain_call)
         return Executable(sig.return_type, run, arg_execs)
     
     def use_function(self, func: Union[Func, str],
@@ -1038,7 +1059,7 @@ class DMFCompiler(DMFVisitor):
             future: Delayed[Any] = stats[0].evaluate(env)
             for stat in stats[1:]:
                 def evaluator(s: Executable):
-                    return lambda _: s.evaluate(env)
+                    return lambda maybe_error: s.check_and_eval(maybe_error, env)
                 future = future.chain(evaluator(stat))
             return future
         return Executable(Type.NONE, run, stats)
@@ -1125,7 +1146,8 @@ class DMFCompiler(DMFVisitor):
             self.current_types.define(name, returned_type)
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val) -> Any:
-                setter(env, val)
+                if not isinstance(val, EvaluationError):
+                    setter(env, val)
                 return val
             return value.evaluate(env, var_type).transformed(do_assignment)
         return Executable(returned_type, run, (value,))
@@ -1165,11 +1187,12 @@ class DMFCompiler(DMFVisitor):
         ot, vt = sig.param_types
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(o,v) -> Any:
-                setter(o,v)
+                if not isinstance(v, EvaluationError):
+                    setter(o,v)
                 return v
             
             return (obj.evaluate(env, ot) 
-                        .chain(lambda o: value.evaluate(env, vt)
+                        .chain(lambda o: value.check_and_eval(o, env, vt)
                                 .transformed(lambda v: do_assignment(o,v))))
         return Executable(value.return_type, run, (obj, value))
 
@@ -1237,6 +1260,8 @@ class DMFCompiler(DMFVisitor):
         real_val = value
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val) -> Any:
+                if isinstance(val, EvaluationError):
+                    return val
                 if just_assign:
                     env[name] = val
                 else:
@@ -1269,8 +1294,10 @@ class DMFCompiler(DMFVisitor):
                                 f"Delay ({have} must be time or ticks: {text}",
                               return_type=Type.PAUSE):
             return e
-        def run(env: Environment) -> Delayed[None]:
-            def pause(d: DelayType, env: Environment) -> Delayed[None]:
+        def run(env: Environment) -> Delayed[MaybeError[None]]:
+            def pause(d: MaybeError[DelayType], env: Environment) -> Delayed[MaybeError[None]]:
+                if isinstance(d, EvaluationError):
+                    return Delayed.complete(d)
                 print(f"Delaying for {d}")
                 return env.board.delayed(lambda: None, after=d)
             return (duration.evaluate(env, Type.DELAY)
@@ -1293,26 +1320,28 @@ class DMFCompiler(DMFVisitor):
             
         ret_type = Type.NONE if len(stat_execs) == 0 else stat_execs[-1].return_type
 
-        def run(env: Environment) -> Delayed[None]:
-            local_env = env.new_child()
+        def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
                 return Delayed.complete(None)
-            
-            def execute(i: int) -> Delayed[None]:
+            local_env = env.new_child()
+            if len(stat_execs) == 1:
+                return stat_execs[0].evaluate(local_env)
+            def execute(maybe_error, i: int) -> Delayed[MaybeError[None]]:
                 # print(f"***Executing {self.text_of(stat_contexts[i])}")
-                return stat_execs[i].evaluate(local_env)
+                return stat_execs[i].check_and_eval(maybe_error, local_env)
             
-            future = execute(0)
+            future = execute(None, 0)
             for i in range(1, len(stat_execs)):
                 # We have to do something like this to ensure that each lambda gets a different i
-                def executor(j: int) -> Callable[[Any], Delayed[None]]:
-                    return lambda _: execute(j)
+                def executor(j: int) -> Callable[[Any], Delayed[MaybeError[None]]]:
+                    return lambda maybe_error: execute(maybe_error, j)
                 # print(f"Scheduling {self.text_of(stat_contexts[i])}")
                 future = future.chain(executor(i))
             return future
         return Executable(ret_type, run, stat_execs)
 
 
+    _par_block_error_lock = RLock()
 
     def visitPar_block(self, ctx:DMFParser.Par_blockContext) -> Executable:
         stat_contexts: Sequence[DMFParser.StatContext] = ctx.stat()
@@ -1321,16 +1350,38 @@ class DMFCompiler(DMFVisitor):
             
         ret_type = Type.NONE
         
-        def run(env: Environment) -> Delayed[None]:
-            local_env = env.new_child()
+        def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
                 return Delayed.complete(None)
+            local_env = env.new_child()
+            if len(stat_execs) == 1:
+                return stat_execs[0].evaluate(local_env)
             barrier = Barrier[Any](required = len(stat_execs))
-            future = Delayed[None]()
-            barrier.wait(None, future)
+            error: MaybeError[None] = None
+            trigger_future = Delayed[None]()
+            barrier.wait(None, trigger_future)
+            future = trigger_future.transformed(lambda _: error)
+            def note_error(ex: EvaluationError) -> None: 
+                nonlocal error
+                first = False
+                with self._par_block_error_lock:
+                    if error is None:
+                        first = True
+                        error = ex
+                    if first:
+                        # Firing the barrier will post the trigger_future, which
+                        # will cause future to return the error we just set. It
+                        # will fire again when all the statements reach it, but
+                        # nobody will be waiting.
+                        barrier.fire()
+            
             with env.board.in_system().batched():
+                def reach_barrier(maybe_error: MaybeError[None]) -> None:
+                    if isinstance(maybe_error, EvaluationError):
+                        note_error(maybe_error)
+                    barrier.reach(maybe_error)
                 for se in stat_execs:
-                    se.evaluate(local_env).then_call(lambda v: barrier.reach(v))
+                    se.evaluate(local_env).then_call(reach_barrier)
             return future
         return Executable(ret_type, run, stat_execs)
     
@@ -1374,9 +1425,15 @@ class DMFCompiler(DMFVisitor):
                         return Delayed.complete(None)
                     else:
                         return else_body.evaluate(env, result_type)
-                return (tests[i].evaluate(env, Type.BOOL)
-                        .chain(lambda v: (bodies[i].evaluate(env, result_type)
-                                          if v else check(i+1))))
+                    
+                def checked_test(v: MaybeError[bool]) -> Delayed:
+                    if isinstance(v, EvaluationError):
+                        return Delayed.complete(v)
+                    elif v:
+                        return bodies[i].evaluate(env, result_type)
+                    else:
+                        return check(i+1)
+                return tests[i].evaluate(env, Type.BOOL).chain(checked_test)
             return check(0)
         
         
@@ -1417,7 +1474,10 @@ class DMFCompiler(DMFVisitor):
         if var_type is None:
             return self.error(ctx.param_type(), Type.NONE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
-            return Delayed.complete(env[name])
+            val = env.lookup(name)
+            if val is None:
+                return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
+            return Delayed.complete(val)
         return Executable(var_type, run)
     
     
@@ -1443,7 +1503,10 @@ class DMFCompiler(DMFVisitor):
         if var_type is None:
             return self.error(ctx.name(), Type.NONE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
-            return Delayed.complete(env[name])
+            val = env.lookup(name)
+            if val is None:
+                return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
+            return Delayed.complete(val)
         return Executable(var_type, run)
 
     def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
@@ -1479,12 +1542,17 @@ class DMFCompiler(DMFVisitor):
         if lhs.return_type is not rhs.return_type:
             return self.error(ctx, Type.BOOL,
                               f"Can't compare {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
-        def run(env: Environment) -> Delayed[bool]:
-            def combine(x, y) -> bool:
+        def run(env: Environment) -> Delayed[MaybeError[bool]]:
+            def combine(x, y) -> MaybeError[bool]:
+                if isinstance(y, EvaluationError):
+                    return y
                 return rel.test(x, y) 
             future: Delayed = lhs.evaluate(env)
-            return future.chain(lambda x: (rhs.evaluate(env)
-                                            .transformed(lambda y: combine(x,y))))
+            def second(x: Any) -> Delayed[MaybeError[bool]]:
+                if isinstance(x, EvaluationError):
+                    return Delayed.complete(x)
+                return rhs.evaluate(env).transformed(lambda y: combine(x, y))
+            return future.chain(second)
         return Executable(Type.BOOL, run, (lhs,rhs))
     
     
@@ -1507,9 +1575,12 @@ class DMFCompiler(DMFVisitor):
             self.error(ctx.attr(), Type.BOOL,
                        lambda txt:  f"{txt} is not a 'maybe' attribute. 'has' will always return True.")
             return Executable(Type.BOOL, (lambda _: Delayed.complete(True)), (obj,))
-        def run(env: Environment) -> Delayed[Any]:
-            f: Delayed = obj.evaluate(env, ot)
-            return f.chain(extractor).transformed(lambda v: v is not None)
+        def run(env: Environment) -> Delayed[MaybeError[bool]]:
+            def check(v: Any) -> MaybeError[bool]:
+                if isinstance(v, EvaluationError):
+                    return v
+                return v is not None
+            return obj.evaluate(env, ot).chain(extractor).transformed(check)
         return Executable(Type.BOOL, run, (obj,))
     
     
@@ -1539,12 +1610,14 @@ class DMFCompiler(DMFVisitor):
             return self.error(ctx, Type.ANY, 
                               lambda txt: f"Conditional expression branches incompatible ({t1} and {t2}): {txt}")
         def run(env: Environment) -> Delayed:
-            def branch(c: bool) -> Delayed:
+            def branch(c: MaybeError[bool]) -> Delayed:
+                if isinstance(c, EvaluationError):
+                    return Delayed.complete(c)
                 if c:
                     return first.evaluate(env, result_type)
                 else:
                     return second.evaluate(env, result_type)
-            return cond.evaluate(env, Type.BOOL).chain(lambda v: branch(v))
+            return cond.evaluate(env, Type.BOOL).chain(branch)
         return Executable(result_type, run, (first, cond, second))
 
     def visitDelta_expr(self, ctx:DMFParser.Delta_exprContext) -> Executable:
@@ -1552,10 +1625,12 @@ class DMFCompiler(DMFVisitor):
         direction: Dir = ctx.direction().d
         if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
             return e
-        def run(env: Environment) -> Delayed[DeltaValue]:
-            return (dist.evaluate(env, Type.INT)
-                    .transformed(lambda n: DeltaValue(n, direction))
-                    )
+        def run(env: Environment) -> Delayed[MaybeError[DeltaValue]]:
+            def to_delta(n: MaybeError[int]) -> MaybeError[DeltaValue]:
+                if isinstance(n, EvaluationError):
+                    return n
+                return DeltaValue(n, direction)
+            return dist.evaluate(env, Type.INT).transformed(to_delta)
         return Executable(Type.DELTA, run, (dist,))
 
     def visitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext) -> Executable: 
@@ -1565,12 +1640,18 @@ class DMFCompiler(DMFVisitor):
             return e
         if e:=self.type_check(Type.DIR, direction, ctx.d, return_type=Type.DELTA):
             return e
-        def run(env: Environment) -> Delayed[DeltaValue]:
-                def combine(n: int, d: Dir) -> DeltaValue:
+        def run(env: Environment) -> Delayed[MaybeError[DeltaValue]]:
+                def combine(n: int, d: MaybeError[Dir]) -> MaybeError[DeltaValue]:
+                    if isinstance(d, EvaluationError):
+                        return d
                     return DeltaValue(n, d)
-                future: Delayed[int] = dist.evaluate(env, Type.INT)
-                return future.chain(lambda n: (direction.evaluate(env, Type.DIR)
-                                               .transformed(lambda d: combine(n,d))))
+                def after_n(n: MaybeError[int]) -> Delayed[MaybeError[DeltaValue]]:
+                    if isinstance(n, EvaluationError):
+                        return Delayed.complete(n)
+                    real_n = n
+                    return direction.evaluate(env, Type.DIR).transformed(lambda d: combine(real_n,d))
+                future: Delayed[MaybeError[int]] = dist.evaluate(env, Type.INT)
+                return future.chain(after_n)
         return Executable(Type.DELTA, run, (dist, direction))
 
 
@@ -1587,10 +1668,13 @@ class DMFCompiler(DMFVisitor):
         direction: Dir = ctx.rc().d
         if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
             return e
-        def run(env: Environment) -> Delayed[DeltaValue]:
-            return (dist.evaluate(env, Type.INT)
-                    .transformed(lambda n: DeltaValue(n, direction))
-                    )
+        def run(env: Environment) -> Delayed[MaybeError[DeltaValue]]:
+            def to_delta(n: MaybeError[int]) -> MaybeError[DeltaValue]:
+                if isinstance(n, EvaluationError):
+                    return n
+                return DeltaValue(n, direction)
+            return dist.evaluate(env, Type.INT).transformed(to_delta)
+
         return Executable(Type.DELTA, run, (dist,))
 
     def visitConst_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
@@ -1620,12 +1704,16 @@ class DMFCompiler(DMFVisitor):
         if self.compatible(who.return_type, first_arg_type):
             def run(env: Environment) -> Delayed[Any]:
                 def inject(obj, func) -> Delayed[Any]:
+                    if isinstance(func, EvaluationError):
+                        return Delayed.complete(func)
                     assert isinstance(func, CallableValue)
                     future = func.apply((obj,))
                     return future if not return_first_arg else future.transformed(lambda _: obj)
-                return (who.evaluate(env, first_arg_type)
-                        .chain(lambda obj: (what.evaluate(env, inj_type)
-                                            .chain(lambda func: inject(obj, func)))))
+                def after_who(who) -> Delayed[Any]:
+                    if isinstance(who, EvaluationError):
+                        return Delayed.complete(who)
+                    return what.evaluate(env, inj_type).chain(lambda func: inject(who, func))
+                return who.evaluate(env, first_arg_type).chain(after_who)
             # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
             return Executable(return_type, run, (who, what))
         elif injected_type is Type.DIR or isinstance(injected_type, CallableType):
@@ -1643,12 +1731,17 @@ class DMFCompiler(DMFVisitor):
             chain_type = CompositionType.find(injected_type.param_types, chain_return_type)
             
             def chain(env: Environment) -> Delayed[Any]:
-                def combine(first: CallableValue, second: CallableValue) -> Delayed[Any]:
+                def combine(first: CallableValue, second: MaybeError[CallableValue]) -> Delayed[Any]:
+                    if isinstance(second, EvaluationError):
+                        return Delayed.complete(second)
                     comp = ComposedCallable(chain_type, first, second, pass_first_arg)
                     return Delayed.complete(comp)
-                return (who.evaluate(env, injected_type)
-                        .chain(lambda first: (what.evaluate(env, inj_type)
-                                              .chain(lambda second: combine(first, second)))))
+                def after_first(first: MaybeError[CallableValue]) -> Delayed[Any]:
+                    if isinstance(first, EvaluationError):
+                        return Delayed.complete(first)
+                    real_first=first
+                    return what.evaluate(env, inj_type).chain(lambda second: combine(real_first, second))
+                return who.evaluate(env, injected_type).chain(after_first)
             return Executable(chain_type, chain, (who, what))
         e = self.type_check(first_arg_type, who, ctx.who,
                             (lambda want,have,text:
@@ -1677,16 +1770,20 @@ class DMFCompiler(DMFVisitor):
         check: Optional[Callable[[Any], Any]] = None
         if isinstance(rt, MaybeType):
             real_extractor = extractor
-            def extractor(obj):
+            def extractor(obj) -> Delayed[Any]:
                 def check(val):
                     if val is None:
-                        raise MaybeNotSatisfiedError(f"{obj} does not have {attr}")
+                        ex = MaybeNotSatisfiedError(f"{obj} does not have {attr.func.name}")
+                        return ex
                     return val
                 return real_extractor(obj).transformed(check)
             rt = rt.if_there_type
         def run(env: Environment) -> Delayed[Any]:
-            f: Delayed = obj.evaluate(env, ot)
-            return f.chain(extractor)
+            def after_obj(obj) -> Delayed[Any]:
+                if isinstance(obj, EvaluationError):
+                    return Delayed.complete(obj)
+                return extractor(obj)
+            return obj.evaluate(env, ot).chain(after_obj)
         return Executable(rt, run, (obj,))
 
 
@@ -1695,9 +1792,12 @@ class DMFCompiler(DMFVisitor):
         which = self.visit(ctx.which)
         if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
             return e
-        def run(env: Environment) -> Delayed[Well]:
-            f: Delayed[int] = which.evaluate(env, Type.INT)
-            return f.transformed(lambda n: env.board.wells[n])
+        def run(env: Environment) -> Delayed[MaybeError[Well]]:
+            def after_n(n: MaybeError[int]) -> MaybeError[Well]:
+                if isinstance(n, EvaluationError):
+                    return n
+                return env.board.wells[n]
+            return which.evaluate(env, Type.INT).transformed(after_n)
         return Executable(Type.WELL, run, (which,))
 
 
@@ -1768,15 +1868,23 @@ class DMFCompiler(DMFVisitor):
                 if self.compatible(which.return_type, Type.INT):
                     return self.error(ctx, Type.MOTION, f"Did you forget 'row' or 'column'?: {self.text_of(ctx)}")
                 return self.error(ctx, Type.MOTION, f"'to' expr without 'row' or 'column' takes a PAD: {self.text_of(ctx)}")
-            def run(env: Environment) -> Delayed[MotionValue]:
-                return which.evaluate(env, Type.PAD).transformed(lambda pad: ToPadValue(pad))
+            def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
+                def after_pad(pad: MaybeError[Pad]) -> MaybeError[ToPadValue]:
+                    if isinstance(pad, EvaluationError):
+                        return pad
+                    return ToPadValue(pad)
+                return which.evaluate(env, Type.PAD).transformed(after_pad)
         else:
             if not self.compatible(which.return_type, Type.INT):
                 return self.error(ctx.which, Type.MOTION, 
                                   f"Row or column name not an int ({which.return_type.name}): {self.text_of(ctx.which)}")
             verticalp = cast(bool, axis.verticalp)
-            def run(env: Environment) -> Delayed[MotionValue]:
-                return which.evaluate(env, Type.INT).transformed(lambda n: ToRowColValue(n, verticalp))
+            def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
+                def after_n(n: MaybeError[int]) -> MaybeError[ToRowColValue]:
+                    if isinstance(n, EvaluationError):
+                        return n
+                    return ToRowColValue(n, verticalp)
+                return which.evaluate(env, Type.INT).transformed(after_n)
         return Executable(Type.MOTION, run, (which,))
     
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
@@ -1869,9 +1977,12 @@ class DMFCompiler(DMFVisitor):
                                 f"Delay ({have} must be time or ticks: {text}",
                               return_type=Type.PAUSE):
             return e
-        def run(env: Environment) -> Delayed[PauseValue]:
-            return (duration.evaluate(env, Type.DELAY)
-                    .transformed(lambda d: PauseValue(d, env.board)))
+        def run(env: Environment) -> Delayed[MaybeError[PauseValue]]:
+            def after_duration(d: MaybeError[DelayType]) -> MaybeError[PauseValue]:
+                if isinstance(d, EvaluationError):
+                    return d
+                return PauseValue(d, env.board)
+            return duration.evaluate(env, Type.DELAY).transformed(after_duration)
         return Executable(Type.PAUSE, run, (duration,))
                 
     def visitMacro_header(self, ctx:DMFParser.Macro_headerContext):
@@ -1953,23 +2064,27 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["AND"]
         fn.infix_op("and")
         
-        def sc_and(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
+        def sc_and(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[MaybeError[bool]]:
             lhs, rhs = arg_execs
-            return (lhs.evaluate(env, Type.BOOL)
-                    .chain(lambda x: (Delayed.complete(x) if not x
-                                      else rhs.evaluate(env, Type.BOOL)))
-                    )
+            def after_lhs(x: MaybeError[bool]) -> Delayed[MaybeError[bool]]:
+                if isinstance(x, EvaluationError) or not x:
+                    return Delayed.complete(x)
+                else:
+                    return rhs.evaluate(env, Type.BOOL)
+            return lhs.evaluate(env, Type.BOOL).chain(after_lhs)
         fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(sc_and))
 
         fn = Functions["OR"]
         fn.infix_op("or")
         
-        def sc_or(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
+        def sc_or(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[MaybeError[bool]]:
             lhs, rhs = arg_execs
-            return (lhs.evaluate(env, Type.BOOL)
-                    .chain(lambda x: (Delayed.complete(x) if x
-                                      else rhs.evaluate(env, Type.BOOL)))
-                    )
+            def after_lhs(x: MaybeError[bool]) -> Delayed[MaybeError[bool]]:
+                if isinstance(x, EvaluationError) or x:
+                    return Delayed.complete(x)
+                else:
+                    return rhs.evaluate(env, Type.BOOL)
+            return lhs.evaluate(env, Type.BOOL).chain(after_lhs)
         fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(sc_or))
 
         fn = Functions["MULTIPLY"]
@@ -2019,7 +2134,7 @@ class DMFCompiler(DMFVisitor):
         
         fn = Functions["FIND_DROP"]
         fn.prefix_op("drop @")
-        def new_drop(pad: Pad, liquid: Optional[Union[Liquid, Volume]] = None) -> Drop:
+        def new_drop(pad: Pad, liquid: Optional[Union[Liquid, Volume]] = None) -> MaybeError[Drop]:
             if liquid is None:
                 liquid = Liquid(unknown_reagent, pad.board.drop_size)
             elif isinstance(liquid, Volume):
@@ -2028,7 +2143,7 @@ class DMFCompiler(DMFVisitor):
                 # We copy the liquid, since the drop will adopt it.
                 liquid = Liquid(liquid.reagent, liquid.volume)
             if pad.drop is not None:
-                raise AlreadyDropError(f"There is already a drop at {pad}")
+                return AlreadyDropError(f"There is already a drop at {pad}")
             pad.liquid_added(liquid)
             return not_None(pad.drop)
         fn.register_immediate((Type.PAD,), Type.DROP,
