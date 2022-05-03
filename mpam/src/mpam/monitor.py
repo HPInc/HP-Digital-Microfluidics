@@ -9,6 +9,7 @@ import re
 from threading import RLock, Event, Lock
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
     ClassVar, MutableMapping, Any
+import logging
 
 import clipboard
 from matplotlib import pyplot
@@ -38,6 +39,8 @@ from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C
 from quantities.timestamp import time_now
 from weakref import WeakKeyDictionary
+
+logger = logging.getLogger(__name__)
 
 
 class ClickableMonitor(ABC):
@@ -1117,7 +1120,7 @@ class BoardMonitor:
             self.in_display_thread(lambda: update_speed(new))
         def new_speed(s: str) -> None:
             ns = int(s)*ms
-            print(f"Setting tick to {ns}")
+            logger.info(f"Setting tick to {ns}")
             clock.update_interval=int(s)*ms
         clock.on_interval_change(interval_cb)
         speed.on_submit(new_speed)
