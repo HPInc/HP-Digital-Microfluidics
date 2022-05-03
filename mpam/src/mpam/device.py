@@ -50,13 +50,13 @@ class BoardComponent:
     associated :attr:`board`.  It can also be used to create a
     :class:`UserOperation` by calling :func:`user_operation`.
     """
-    
-    board: Final[Board] #: The containing :class:`Board` 
+
+    board: Final[Board] #: The containing :class:`Board`
 
     def __init__(self, board: Board) -> None:
         """
-        Initialize the object. 
-        
+        Initialize the object.
+
         Args:
             board: the containing :class:`Board`
         """
@@ -66,7 +66,7 @@ class BoardComponent:
         """
         Schedule communication of ``cb`` after optional delay ``after`` by
         delegating to :attr:`board`
-        
+
         Args:
             cb: the callback function to schedule
         Keyword Args:
@@ -78,7 +78,7 @@ class BoardComponent:
                 after: Optional[DelayType]) -> Delayed[T]:
         """
         Call a function after n optional delay by delegating to :attr:`board`
-        
+
         Args:
             function: the function to call
         Keyword Args:
@@ -103,34 +103,34 @@ BC = TypeVar('BC', bound='BinaryComponent') #: A type variable ranging over :cla
 class BinaryComponent(BoardComponent, OpScheduler[BC]):
     """
     A subclass of :class:`BoardComponent` with an :class:`.OnOff` state.
-    
+
     This class is parameterized by the actual subclass (:attr:`BC`) so that it
     can inherit from :class:`.OpScheduler`\[:attr:`BC`].  For example::
-    
+
         class Magnet(BinaryComponent['Magnet']): ...
 
     This means that :class:`Magnet` can :func:`~mpam.types.OpScheduler.schedule`
     operations of type :class:`.Operation`\[:class:`Magnet`, ``V``].
-    
+
     Each :class:`BinaryComponent` objects is associated with a
     :class:`.State`\[:class:`.OnOff`] object (:attr:`state`), which it delegates
     to to implement :attr:`current_state` and :func:`on_state_change`.
-    
+
     A :class:`BinaryComponent` may be :attr:`broken`, in which case attempting
     to schedule one of its :attr:`ModifyState` operations will result in
     :class:`.PadBrokenError` being raised.
-    
+
     It can also be flagged as not being :attr:`live`.  The distinction between
     :attr:`broken` and :attr:`live` is somewhat confused, but the initial
     intention was that :attr:`live` was used to identify pads on a board that
     couldn't be used by design and :attr:`broken` was for pads that were
     discovered to be non-functional.
-    
+
     Args:
         BC: The actual subclass of :class:`BinaryComponent`
     """
-    state: Final[State[OnOff]]  #: The associated :class:`.State`\[:class:`.OnOff`] 
-    broken: bool                #: Is the :class:`BinaryComponent` broken?  
+    state: Final[State[OnOff]]  #: The associated :class:`.State`\[:class:`.OnOff`]
+    broken: bool                #: Is the :class:`BinaryComponent` broken?
     live: bool                  #: Is the :class:`BinaryComponent` live?
 
     def __init__(self, board: Board, *,
@@ -138,10 +138,10 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                  live: bool = True) -> None:
         """
         Initialize the object.
-        
+
         All :class:`BinaryComponent`\s start out with :attr:`broken` being
         ``False``.
-        
+
         Args:
             board: the containing :class:`Board`
         Keyword Args:
@@ -157,7 +157,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
     def current_state(self) -> OnOff:
         """
         The current value.  Implemented by delegating to :attr:`state`.
-        
+
         Setting this will invoke any :attr:`state_change_callbacks`, regardless
         of whether the new value is equal to the old value.
         """
@@ -172,7 +172,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         Add a new state-change handler, replacing any with the specified key. If
         ``key`` is ``None``, ``cb`` is used as the key.  This is implemented by
         delegating to :attr:`state`.
-        
+
         Args:
             cb: the handler
         Keyword Args:
@@ -184,11 +184,11 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         """
         An :class:`~.Operation` that modifies the :attr:`~BinaryComponent.state`
         of a :class:`BinaryComponent`.
-        
+
         The :class:`.ModifyState` object is associated with a :class:`Modifier`
         function (:attr:`mod`) that's used to compute the new value based on the
         old.
-        
+
         The :class:`BinaryComponent` class (and, therefore, its subclasses) have
         premade instances for the common cases of
         :attr:`~BinaryComponent.TurnOn`, :attr:`~BinaryComponent.TurnOff`, and
@@ -202,7 +202,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             The implementation of :func:`schedule_for`. Calls
             :func:`~mpam.types.State.realize_state` on ``obj``'s
             :attr:`~BinaryComponent.state`.
-            
+
             :meta public:
             Args:
                 obj: the :class:`BinaryComponent` object to schedule the operation for
@@ -236,24 +236,24 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 
         def __init__(self, mod: Modifier[OnOff]) -> None:
             """
-            Initialize the object 
-            
+            Initialize the object
+
             Args:
                 mod: a function to compute the new value based on the old
             """
             self.mod: Final[Modifier[OnOff]] = mod
             """the function to compute the new value based on the old"""
-            
+
 
     @staticmethod
     def SetState(val: OnOff) -> ModifyState:
         """
         A :attr:`ModifyState` that sets the state to a specific value.
-        
+
         Args:
             val: the desired :class:`.OnOff` value
         Returns:
-            :attr:`~BinaryComponent.TurnOn` or :attr:`~BinaryComponent.TurnOff`  
+            :attr:`~BinaryComponent.TurnOn` or :attr:`~BinaryComponent.TurnOff`
         """
         return BinaryComponent[BC].TurnOn if val is OnOff.ON else BinaryComponent[BC].TurnOff
 
@@ -271,22 +271,22 @@ BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
 class PipettingTarget:
     """
     A place a :class:`.Pipettor` can add :class:`.Liquid` to or take it from.
-    
+
     A :class:`PipettingTarget` establishes a protocol with respect to to its
     (optional) associated :attr:`pipettor`:
-    
+
         * When the :class:`.Pipettor` is in place and ready to add or remove
           :class:`.Liquid`, it calls :func:`prepare_for_add` or
           :func:`prepare_for_remove`, which does not return until it is safe for the
           :class:`.Pipettor` to perform the action.
-          
+
         * When the action is done, the :class:`.Pipettor` calls
           :func:`pipettor_added_` or :func:`pipettor_remove` to signal completion
           and inform the :class:`PipettingTarget` of the :class:`.Reagent`, and
           :class:`.Volume` involved and whether that was the final such transfer to
           satisfy the request.
-      
-    
+
+
     Note:
         :class:`PipettingTarget` is an abstract class.  Concrete subclasses must
         define :attr:`contents`, :func:`prepare_for_add`,
@@ -298,12 +298,12 @@ class PipettingTarget:
 
     @property
     @abstractmethod
-    def contents(self) -> Optional[Liquid]: 
+    def contents(self) -> Optional[Liquid]:
         """
         The :class:`.Liquid` that could be removed via this
         :class:`PipettingTarget` or ``None`` if there is no such
         :class:`.Liquid`.
-        
+
         Note:
             This is an abstract attribute which must be overridden by concrete
             subclasses.
@@ -315,17 +315,17 @@ class PipettingTarget:
         """
         The :class:`.Pipettor` associated with this :class:`PipettingTarget` or
         ``None`` if there is no such :class:`.Pipettor`.
-        
+
         By default, it will be ``None``.
         """
         return None
 
     @abstractmethod
-    def prepare_for_add(self) -> None: 
+    def prepare_for_add(self) -> None:
         """
         Block until it is safe for a :class:`.Pipettor` to add :class:`.Liquid`.
         This method is called when the :class:`.Pipettor` is in position.
-        
+
         Note:
             This is an abstract attribute which must be overridden by concrete
             subclasses.
@@ -338,13 +338,13 @@ class PipettingTarget:
         Block until it is safe for a :class:`.Pipettor` to remove
         :class:`.Liquid`. This method is called when the :class:`.Pipettor` is
         in position.
-        
+
         Note:
             This is an abstract attribute which must be overridden by concrete
             subclasses.
         """
         ...
-        
+
 
     @abstractmethod
     def pipettor_added(self, reagent: Reagent, volume: Volume, *, # @UnusedVariable
@@ -356,17 +356,17 @@ class PipettingTarget:
         mixing the delivered :class:`.Liquid` to what is already there.  If
         ``last`` is ``False``, there will be at least one more transfer before
         the overall transfer operation is complete.
-        
+
         Note:
             This is an abstract attribute which must be overridden by concrete
             subclasses.
-        
+
         Args:
             reagent: the :class:`.Reagent` added
             volume: the :class:`.Volume` of :class:`.Reagent` added
         Keyword Args:
             mix_result: the (optional) result of mixing the added
-                        :class:`.Liquid` with what's already there. 
+                        :class:`.Liquid` with what's already there.
             last: ``True`` if this is the last transfer in a transfer request.
         """
         ...
@@ -378,11 +378,11 @@ class PipettingTarget:
         Called when the :class:`.Pipettor` has finished removing
         :class:`.Liquid`. If ``last`` is ``False``, there will be at least one
         more transfer before the overall transfer operation is complete.
-        
+
         Note:
             This is an abstract attribute which must be overridden by concrete
             subclasses.
-        
+
         Args:
             reagent: the :class:`.Reagent` removed
             volume: the :class:`.Volume` of :class:`.Reagent` removed
@@ -394,13 +394,13 @@ class PipettingTarget:
 class DropLoc(ABC, CommunicationScheduler):
     """
     A location that can hold a :class:`.Drop` and participate in a :class:`.Blob`.
-    
+
     It maintains a :class:`.ChangeCallbackList` for its :attr:`drop` attribute
     to which callbacks can be added by means of :func:`on_drop_change`.
-    
+
     :attr:`checked_drop` is the same as :attr:`drop`, but it is guaranteed to be
     a :class:`.Drop`, raising a :class:`.TypeError` if :attr:`drop` is ``None``.
-    
+
     Note:
         :class:`DropLoc` is an abstract class.  In addition to the abstract
         methods inherited from :class:`.CommunicationScheduler`, concrete
@@ -442,7 +442,7 @@ class DropLoc(ABC, CommunicationScheduler):
     def neighbors_for_blob(self) -> Sequence[DropLoc]:
         """
         The neighboring :class:`DropLoc`\s that could be part of the same :class:`.Blob`.
-        
+
         The first time this is referenced, :func:`compute_neighbors_for_blob` is
         called, and the value is cached.
         """
@@ -461,10 +461,10 @@ class DropLoc(ABC, CommunicationScheduler):
         """
         Add a new handler, replacing any with the specified key.  If ``key`` is
         ``None``, ``cb`` is used as the key
-        
+
         After :attr:`drop` is changed, ``cb`` will be called with both the old
-        and new value.  
-        
+        and new value.
+
         Args:
             cb: the handler
         Keyword Args:
@@ -474,16 +474,16 @@ class DropLoc(ABC, CommunicationScheduler):
 
 
     @abstractmethod
-    def compute_neighbors_for_blob(self) -> Sequence[DropLoc]: 
+    def compute_neighbors_for_blob(self) -> Sequence[DropLoc]:
         """
         The list of neighboring :class:`DropLoc`\s that could be part of the
         same :class:`.Blob`.  This is called the first time
         :attr:`neighbors_for_blob` is referenced, and the value is cached.
-        
+
         Note:
             This is an abstract method which must be defined by concrete
             subclasses.
-            
+
         Returns:
             the :class:`Sequence` of neighbors
         """
@@ -515,7 +515,7 @@ class LocatedPad:
     def __init__(self, loc: XYCoord) -> None:
         """
         Initialize the object
-        
+
         Args:
             loc: the :class:`.XYCoord`
         """
@@ -526,7 +526,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     """
     A pad, typically in the main array of its associated :class:`Board` (i.e.,
     not in a :class:`Well`).
-    
+
     *   As a :class:`BinaryComponent`, it has a :attr:`~BoardComponent.board` and a
         :attr:`~BinaryComponent.current_state`, it can act as both a
         :class:`.CommunicationScheduler` and a
@@ -535,75 +535,75 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         version of :attr:`~BinaryComponent.live` (:attr:`exists`) that can be
         used to indicate that not only is the :class:`Pad` not currently live,
         but it never will be.
-        
+
         To initialize this asspect of the :class:`Pad`, when it is created, it
         must be associated with a :class:`.State`\[:class:`.OnOff`] object that
         knows how to effect any changes on a physical device (via its
         :func:`~.State.realize_state` method).  If nothing needs to be done, a
         :class:`.DummyState` may be used.
-        
+
     * As a :class:`DropLoc`, it had an optional :attr:`~DropLoc.drop` and
       :attr:`~DropLoc.blob`, and it supports :func:`~DropLoc.on_drop_change`. It
       is :attr:`empty` whenever :attr:`drop` is ``None``.
-    
+
     * As a :class:`LocatedPad`, it has a :attr:`~LocatedPad.location`, a
       :attr:`~LocatedPad.row`, and a :attr:`~LocatedPad.column`.
-    
+
     In addition, a :class:`Pad` may be associated with a :class:`Magnet`
     (:attr:`magnet`), a :class:`Well` (:attr:`well`, i.e., as the
     :class:`Well`'s :attr:`~Well.exit_pad`), a :class:`Heater`
     (:attr:`heater`), an :class:`ExtractionPoint` (:attr:`extraction_point`),
     and a dried :class:`.Liquid` (:attr:`dried_liquid`).
-    
+
     Whenever the :attr:`~BinaryState.current_state` changes,
     :attr:`~BoardComponent.board`'s :func:`~Board.journal_state_change` is
     called with the (necessarily different) old and new values to prep for drop
     motion inference.
-    
+
     **Neighbors:**
-    
+
         A :class:`Pad` can enumerate neighboring :class:`Pad`\s in several ways:
-        
+
             * :func:`neighbor` takes a :class:`.Dir` and returns the neighboring pad
               in that direction, if one exists.
-    
+
             * :attr:`all_neighbors` is the (up to 8) neighboring pads in all directions.
-    
-            * :attr:`neighbors` is the (up to 4) neighboring pads in the cardinal 
+
+            * :attr:`neighbors` is the (up to 4) neighboring pads in the cardinal
               directions.
-    
-            * :attr:`corner_neighbors` is the (up to 4) neighboring pads in the 
+
+            * :attr:`corner_neighbors` is the (up to 4) neighboring pads in the
               non-cardinal directions.
-              
+
             * :func:`compute_neighbors_for_blob` (the implementation of
               :attr:`~DropLoc.neighbors_for_blob`) is :attr:`neighbors` plus the
               :attr:`~Well.gate` of :attr:`well` (if it isn't ``None``).
-              
+
             * :attr:`between_pads` is a mapping from :class:`Pad`\s two steps away
               in any cardinal direction to the :class:`Pad` one step away (i.e., the
               :class:`Pad` between that one and this one).
-          
+
     **Traffic Control and Reservation**:
-    
+
         The :class:`Pad` provides a rudimentary form of *traffic control* for
         :class:`.Drop` motion.  The basic notion is that
-        
+
             * A thread participating in this traffic control will only move a
               :class:`.Drop` onto a :class:`Pad` if it has successfully called
               :func:`reserve` on it.  This will only succeed if :attr:`reserved`
               is ``False``, and it will have the side-effect of setting
               :attr:`reserved` to ``True``.
-              
+
             * Before calling :func:`reserve`, the thread will first determine
               that the :class:`Pad` is :attr:`safe` (or :func:`safe_except()`
               for the :class:`Pad` or :class:`Well` that is the source of the
               motion). A :class:`Pad` is :attr:`safe` if it is :class:`empty`
               and none of its neighboring :class:`Pad`\s are :attr:`reserved` or
               have a :class:`.Drop`.
-              
+
             * After the :class:`.Drop` has moved to the :class:`.Pad`, the
               thread should set :reserved` to ``False``.
-              
+
     Warning:
         This protocol is not thread-safe.  It probably should be made to be.
         The original expectation was that it would only be run from within
@@ -615,37 +615,37 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         :func:`Board.before_tick` method takes a :class:`Callable` that
         returns ``None`` when it is done and a number of :class:`.Tick`\s to
         wait until trying again when it is not. ::
-        
+
             def do_it() -> Iterator[Optional[Ticks]]:
                 one_tick = 1*ticks
-                
+
                 while not target.safe_except(source):
                     yield one_tick
                 while not target.reserve():
                     yield one_tick
-                    
+
                 with system.batched():
                     target.schedule(Pad.TurnOn)
                     source.schedule(Pad.TurnOff)
-                    
+
                     def unreserve() -> None:
                         target.reserved = False
-                        
+
                     board.after_tick(unreserve)
-                
+
                 return None
 
-                    
+
             iterator = do_it()
             board.before_tick(lambda: next(iterator))
 
     **Traffic Control and Reservation**:
-    
+
         After :class:`.Liquid` is added to or removed from a :class:`Pad`,
         typically via its :attr:`extraction_point`, :func:`liquid_added` or
         :func:`liquid_removed` are called.  This triggers any inferred
         :class:`.Drop` motion due to the transfer.
-        
+
     Note:
         This :class:`.Drop` motion inference is asynchronous to any inference
         due to :class:`Pad` state changes.  This is because transfers are
@@ -757,7 +757,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
                  state: State[OnOff], *, exists: bool = True) -> None:
         """
         Initialize the object
-        
+
         Args:
             loc: the :class:`Pad`'s location
             board: the :class:`Pad`'s board
@@ -786,7 +786,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         The neighboring :class:`Pad` on the :class:`Board` in the given :`Dir`.
         Returns ``None`` if there is no such :class:`Pad` or if :attr:`exists`
         is ``False`` for it.
-        
+
         Args:
             d: the :class:`Dir` to look
         Returns:
@@ -801,14 +801,14 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     @property
     def empty(self) -> bool:
         """
-        ``True`` when :attr:`~DropLoc.drop` is ``None`` 
+        ``True`` when :attr:`~DropLoc.drop` is ``None``
         """
         return self.drop is None
 
     @property
     def safe(self) -> bool:
         """
-        Is it safe to :func:`reserve` the :class:`Pad`?  A :class:`Pad` is safe if it is :attr:`empty` and 
+        Is it safe to :func:`reserve` the :class:`Pad`?  A :class:`Pad` is safe if it is :attr:`empty` and
         all of its neighbors are :attr:`empty` and none are :attr:`reserved`.
         """
         w = self.well
@@ -849,12 +849,12 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         """
         Note that :class:`.Liquid` was added to the :class:`Pad`.  Typically
         called by the :class:`Pad`'s :attr:`extraction_point`.
-        
+
         This is treated as an asynchronous operation.  A new
         :class:`ChangeJournal` is created and
         :func:`~ChangeJournal.process_changes()` is called so that :class:`Blob`
         motion happens immediately.
-        
+
         Args:
             liquid: the added :class:`.Liquid`
         Keyword Args:
@@ -872,12 +872,12 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         Note that a :class:`.Volume` of :class:`.Liquid` was removed from the
         :class:`Pad`.  Typically called by the :class:`Pad`'s
         :attr:`extraction_point`.
-        
+
         This is treated as an asynchronous operation.  A new
         :class:`ChangeJournal` is created and
         :func:`~ChangeJournal.process_changes()` is called so that :class:`Blob`
         motion happens immediately.
-        
+
         Args:
             volume: the :class:`.Volume` of :class:`.Liquid` removed
         """
@@ -892,7 +892,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         The list of neighboring :class:`DropLoc`\s that could be part of the
         same :class:`.Blob`.  This is :attr:`neighbors` plus the
         :attr:`~Well.gate` of :attr:`well`, if it is not ``None``.
-            
+
         Returns:
             the :class:`Sequence` of neighbors
         """
@@ -907,27 +907,27 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
 class WellPad(BinaryComponent['WellPad'], DropLoc):
     """
     A pad inside a :class:Well`.
-    
+
     *   As a :class:`BinaryComponent`, it has a :attr:`~BinaryComponent.board` and a
         :attr:`~BinaryComponent.current_state`, it can act as both a
         :class:`.CommunicationScheduler` and a
         :class:`.OpScheduler`\[:class:`Pad`], and it supports
-        :func:`~BinaryComponent.on_state_change`. 
-        
+        :func:`~BinaryComponent.on_state_change`.
+
         To initialize this asspect of the :class:`Pad`, when it is created, it
         must be associated with a :class:`.State`\[:class:`.OnOff`] object that
         knows how to effect any changes on a physical device (via its
         :func:`~.State.realize_state` method).  If nothing needs to be done, a
         :class:`.DummyState` may be used.
-        
+
     * As a :class:`DropLoc`, it had an optional :attr:`~DropLoc.drop` and
       :attr:`~DropLoc.blob`, and it supports :func:`~DropLoc.on_drop_change`. It
       is :attr:`empty` whenever :attr:`drop` is ``None``.
-      
+
     A :class:`WellPad` that is its :attr:`well`'s :attr:`~Well.gate` will be an
     instance of the subclass :class:`WellGate`.  The attribute :attr:`is_gate`
     can be used to distinguish gates from interior :class:`WellPad`\s.
-    
+
     Each :class:`Well` had a list of :attr:`~Well.shared_pads` that enumerates
     the the interior pads inside it.  A :class:`WellPad`'s :attr:`index`
     specifies its position in this list.  If it is a :class:`WellGate`,
@@ -936,15 +936,15 @@ class WellPad(BinaryComponent['WellPad'], DropLoc):
     :class:`WellPad`s are created before the :class:`Well` and passed into its
     :func:`~Well.__init__` method, which calls :func:`set_location` to establish
     :attr:`well` and :attr:`index`.)
-    
+
     Whenever the :attr:`~BinaryState.current_state` changes,
     :attr:`~BoardComponent.board`'s :func:`~Board.journal_state_change` is
     called with the (necessarily different) old and new values to prep for drop
     motion inference.
-    
+
     """
     well: Well  #: The associated :class:`Well`
-    index: int  
+    index: int
     """
     The index of the :class:`WellPad` in :attr:`well`'s
     :attr:`~Well.shared_pads` or ``-1`` if :attr:`is_gate` is ``True``
@@ -965,11 +965,11 @@ class WellPad(BinaryComponent['WellPad'], DropLoc):
                  neighbors: Sequence[int]) -> None:
         """
         Initialize the object.
-        
+
         This does not set :attr:`well` or :attr:`index`, because
         :class:`WellPad`/s are created before :class:`Well`s.  Rather,
         :func:`Well.__init__` calls :func:`set_location`, which sets them.
-        
+
         Args:
             board: the containing :class:`Board`
             state: the associated :class:`.State`\[:class:`.OnOff`]
@@ -1000,7 +1000,7 @@ class WellPad(BinaryComponent['WellPad'], DropLoc):
     def set_location(self, well: Well, index: int) -> None:
         """
         Set the :attr:`well` and :attr:`index` attributes
-        
+
         Args:
             well: the associated :class:`Well`
             index: the value for :attr:`index`
@@ -1019,7 +1019,7 @@ class WellPad(BinaryComponent['WellPad'], DropLoc):
         indices provided to :func:`__init__`.  If :attr:`is_gate` is ``True``
         (i.e., this is a :class:`WellGate`), it will also include :attr:`well`'s
         :attr:`~Well.exit_pad`.
-            
+
         Returns:
             the :class:`Sequence` of neighbors
         """
@@ -1033,7 +1033,7 @@ class WellPad(BinaryComponent['WellPad'], DropLoc):
 class WellGate(WellPad, LocatedPad):
     """
     A :class:`WellPad` that is its :attr:`well`'s :attr:`~Well.gate`.
-    
+
     As a :class:`LocatedPad`, it has a :attr:`~LocatedPad.location`, which is
     computed based on its :attr:`~WellPad.well`'s :attr:`~Well.exit_pad`.
     """
@@ -1055,10 +1055,10 @@ class WellGate(WellPad, LocatedPad):
 
         :attr:`~LocatedPad.location` is computed based on ``exit_pad`` and
         ``exit_dir``.
-        
+
         Args:
             board: the containing :class:`Board`
-            exit_pad: the :class:`Pad` that will be :attr:`~WellPad.well`'s 
+            exit_pad: the :class:`Pad` that will be :attr:`~WellPad.well`'s
                       :attr:~Well.exit_pad`
             exit_dir: the direction from this :class:`WellGate` to ``exit_pad``
             state: the associated :class:`.State`\[:class:`.OnOff`]
@@ -1089,7 +1089,7 @@ class WellGate(WellPad, LocatedPad):
         This will be the :class:`WellPad`\s corresponding to the ``neighbors``
         indices provided to :func:`__init__` plus :attr:`well`'s
         :attr:`~Well.exit_pad`.
-            
+
         Returns:
             the :class:`Sequence` of neighbors
         """
@@ -1106,7 +1106,7 @@ class WellState(Enum):
     target of a :class:`Well.TransitionTo` :class:`.Operation`, most often as
     part of :class:`.Drop.DispenseFrom` or :class:`.Drop.EnterWell` (or the
     corresponding methods in :class:`.Path`)
-    
+
     Note that these are target states.  While a :class:`Well` is transitioning
     (via a :class:`WellMotion`), it will not be in any of them.
     """
@@ -1119,7 +1119,7 @@ class WellState(Enum):
 WellOpStep = Sequence[int]
 """
 The :attr:`~WellPad.index` values of the :class:`WellPad`\s that should be
-:attr:`.OnOff.ON` in a given step.  
+:attr:`.OnOff.ON` in a given step.
 
 ``-1`` indicates the :class:`Well`'s :attr:`~Well.gate`.  Non-negative numbers
 index into the :class:`Well`'s :attr:`~Well.shared_pads`.
@@ -1145,7 +1145,7 @@ class GateStatus(Enum):
     :class:`Well` has been following along.  If it is safe to do so, this can
     result in efficiencies by having multiple :class:`Well`\s dispense or absorb
     at the same time, even if the requests are staggered.
-    
+
     If the status is :attr:`NOT_YET`, the gates have not yet turned on, so it is
     known to be safe.  If it is :attr:`JUST_ON`, it is safe, but the new
     :class:`Well`'s gate needs to be scheduled to turn on.  If it is
@@ -1160,10 +1160,10 @@ class WellMotion:
     """
     A transition of (as subset of) the :class:`Well`\s in a
     :class:`DispenseGroup` to a target :class:`WellState`.
-    
+
     The hard work is done by :func:`iterator`.  This is intended to be used as
     it is in :class:`Well.TransitionTo` ::
-    
+
             motion = WellMotion(well, self.target, post_result=post_result, guard=self.guard)
 
             def before_tick() -> Iterator[Optional[Ticks]]:
@@ -1175,7 +1175,7 @@ class WellMotion:
             iterator = before_tick()
             board.before_tick(lambda: next(iterator), delta=after)
             return motion.initial_future
-    
+
     """
     group: Final[DispenseGroup] #: The :class:`DispenseGroup` being moved
     board: Final[Board]         #: The :class:`Board` of the :class:`Well`\s
@@ -1189,7 +1189,7 @@ class WellMotion:
     # post_result: Final[bool]
     well_gates: Final[set[WellGate]]    #: The :attr:`~Well.gate`\s of the :class:`Well`\s
     shared_pads: Final[Sequence[WellPad]]   #: The internal :class:`WellPad`\s of the initial :class:`Well`
-    guard: Final[Optional[Iterator[bool]]]  
+    guard: Final[Optional[Iterator[bool]]]
     """
     An optional :class:`Iterator` that yields ``False`` when it's safe to proceed
     """
@@ -1199,14 +1199,14 @@ class WellMotion:
     # on_last_step: bool = False
     # one_tick: Final[Ticks] = 1*tick
     # sequence: WellOpStepSeq
-    gate_status: GateStatus #: The :class:`GateStatus` of the :attr:`well_gates` 
+    gate_status: GateStatus #: The :class:`GateStatus` of the :attr:`well_gates`
 
     def __init__(self, well: Well, target: WellState, *,
                  guard: Optional[Iterator[bool]] = None,
                  post_result: bool = True) -> None:
         """
         Initialize the object.
-        
+
         Args:
             well: the first :class:`Well`
             target: the target :class:`WellState`
@@ -1232,25 +1232,25 @@ class WellMotion:
         Try to adopt another :class:`WellMotion`.  If successful, ``other``'s
         :func:`iterator` will yield ``False``, signalling that it is done, but
         its :attr:`initial_future` will not get a value posted until we call
-        :func:`post_futures`.  
-        
+        :func:`post_futures`.
+
         This is called from within :func:`iterator`, with :attr:`group`'s
         :attr:`~DispenseGroup.lock` locked:
-        
+
             * after any :attr:`guard` has yielded ``False``
-            
+
             * after it has been determined that the :attr:`group`'s
               :attr:`~DispenseGroup.motion` is this :class:`WellMotion`.
-              
+
         :func:`try_adopt` will fail if
-        
-            * the two values of :attr:`target` do not match or 
-            
+
+            * the two values of :attr:`target` do not match or
+
             * our :attr:`gate_status` is :attr:`~GateStatus.UNSAFE` or
-            
+
             * the target is :attr:`~WellState.DISPENSED` and we are already
               working on the other's :class:`Well`.
-         
+
         Args:
             other: the other :class:`WellMotion`
         Returns:
@@ -1281,8 +1281,8 @@ class WellMotion:
     def post_futures(self) -> None:
         """
         Walk through :attr:`futures` and post :class:`Well`\s to their
-        respective :class:`.Delayed` objects. 
-        
+        respective :class:`.Delayed` objects.
+
         Note that if ``post_result`` was ``False`` for a :class:`Well`, nothing
         would be added to :attr:`futures` for that :class:`Well`.
         """
@@ -1298,32 +1298,32 @@ class WellMotion:
         finished or it has been adopted by another in-progress
         :class:`WellMotion`.  If it has finished, before yielding, it schedules
         calling :func:`post_futures` after the current tick.
-        
+
         The basic procedure is:
-        
+
             #. Wait (yielding ``True``) for any :attr:`guard` to signal that it
                is safe to proceed.
-               
+
             #. If the :attr:`group` has a :attr:`~DispenseGroup.motion`, see if
                it can adopt us.  If we can, yield ``False``.
-               
+
             #. If it can't, try again next tick.
-            
+
             #. If there is no :attr:`~DispenseGroup.motion` in the
                :attr:`group`, set ourselves to be it.
-               
+
             #. Grab a :class:`WellOpStepSeq` using the :attr:`group`'s
                :attr:`~DispenseGroup.transition_func`.
-               
+
             #. Walk through each :class:`WellOpStep` in the sequence, setting
                pads to their stated values and updating :attr:`gate_status`.
-               
+
                * At any point here, another :class:`WellMotion` may call
                  :func:`try_adopt` on us to get us to adopt them.
-                 
+
             #. When we are done, schedule calling :func:`post_futures` for after
                the next clock tick and yield ``False`` to signal that we're done.
-        
+
         Args:
             self:
         Yields:
@@ -1473,7 +1473,7 @@ class WellMotion:
         self.board.after_tick(cb)
         yield False
 
-PadBounds = Sequence[tuple[float,float]] 
+PadBounds = Sequence[tuple[float,float]]
 """
 A sequence of x-y values in a :class:`Board`'s coordinate space used to describe
 the outline of a :class:`WellPad`.  Note that unlike for :class:`Pad`\s, these
@@ -1487,16 +1487,16 @@ class WellShape:
     """
     A description of the shape of a :class:`Well`, suitable for rendering by a
     :class:`.BoardMonitor`.
-    
+
     For non-gate :class:`WellPad`\s, the shapes may be described by a single
     :class:`PadBounds` object or a sequence of them, to handle the case in which
     there are multiple physical electrodes ganged together.
-    
+
     The :class:`WellShape` also describes the center and radius of a circle for
     the :class:`.BoardMonitor` to use to show the :class:`.Reagent` contained in
     the :class:`Well`
     """
-    gate_pad_bounds: Final[PadBounds] 
+    gate_pad_bounds: Final[PadBounds]
     """
     The shape of the :class:`Well`'s :attr:`~Well.gate`
     """
@@ -1504,7 +1504,7 @@ class WellShape:
     """
     The shape of the :class:`Well`'s :attr:`~Well.shared_pads`
     """
-    reagent_id_circle_center: tuple[float,float] 
+    reagent_id_circle_center: tuple[float,float]
     """
     The center of the :class:`Well`'s :class:`Reagent` circle
     """
@@ -1520,7 +1520,7 @@ class WellShape:
                  reagent_id_circle_radius: float = 1):
         """
         Initialize the object
-        
+
         Keyword Args:
             gate_pad_bounds: the shape of the :class:`Well`'s :attr:`~Well.gate`
             shared_pad_bounds: the shape of the :class:`Well`'s
@@ -1540,7 +1540,7 @@ WellVolumeSpec = Union[Volume, Callable[[], Volume]]
 A :class:`.Volume` or a :class:`.Callable` that returns one
 """
 
-TransitionStep = tuple[bool,WellOpStep] 
+TransitionStep = tuple[bool,WellOpStep]
 """
 A pair in which the second element is a :class:`WellOpStep` and the first is an
 ``True`` if this is the last step in its :class:`WellOpStepSeq`
@@ -1556,16 +1556,16 @@ except the last, which will have ``True``.
 def transitions_from(sd: WellOpSeqDict) -> TransitionFunc:
     """
     Create a :class:`TransitionFunc` from a :class:`WellOpSeqDict`.
-    
+
     The yielded :class:`TransitionStep`\s will be based on the
     :class:`WellOpStepSeq`\s in ``sd``.  If either the source or target states
     are :attr:`~WellState.READY`, ``(source, target)`` is looked up in ``sd``.
     Otherwise, both ``(source,`` :attr:`~WellState.READY` ``)`` and ``(``
     :attr:`~WellState.READY` ``, target)`` are looked up and the results are
     concatenated.
-    
+
     Args:
-        sd: the :class:`WellOpSeqDict` describing transitions. 
+        sd: the :class:`WellOpSeqDict` describing transitions.
     Returns:
         an :class:`.Iterator` that yields :class:`TransitionStep`\s.
     Raises:
@@ -1586,19 +1586,19 @@ def transitions_from(sd: WellOpSeqDict) -> TransitionFunc:
 class DispenseGroup:
     """
     A group of :class:`Well`\s whose :attr:`~Well.shared_pads` are mirrored, so
-    that changing the state of one changes the state of all.  
+    that changing the state of one changes the state of all.
     """
-    key: Final[Any] 
+    key: Final[Any]
     """
     A key object (typically a string, number, or :class:`Well`) used when
     converting to a string
     """
-    lock: Final[Lock]   
+    lock: Final[Lock]
     """
     A :class:`.Lock` used by :class:`WellMotion\s` to wrap changes to
     :attr:`motion` and :attr:`state`
     """
-    motion: Optional[WellMotion] 
+    motion: Optional[WellMotion]
     """
     The in-progress :class:`WellMotion`, if any for the :class:`Well`\s in this
     group.
@@ -1611,12 +1611,12 @@ class DispenseGroup:
     def __init__(self, key: Any, transition_func: TransitionFunc) -> None:
         """
         Initialize the object.
-        
+
         The initial :attr:`state:` is assumed to be the
         :attr:`~WellState.Extractable`.
-        
+
         Args:
-            key: 
+            key:
             transition_func: the :class:`TransitionFunc` to use to change states.
         """
         self.key = key
@@ -1638,14 +1638,14 @@ class DispenseGroup:
 class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     """
     A well.
-    
+
     * As a :class:`BoardComponent`, it has a :attr:`~BoardComponent.board`, and
       it can act as a :class:`.CommunicationScheduler`.
-      
+
     * As a :class:`PipettingTarget`, it participates in the pipetting protocol
       by defining :func:`prepare_for_add`, :func:`prepare_for_remove`,
       :func:`pipettor_added`, and :func:`pipettor_removed`.
-      
+
     Callbacks registered by :func:`on_liquid_change` are fired both when
     :attr:`contents` is set and on calls to :func:`transfer_in` and
     :func:`transfer_out`.  Note that on the transfer functions, the same value
@@ -1653,38 +1653,38 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     reagent or volume changes, add callbacks to the :class:`.Liquid` itself
     using its :func:`~.Liquid.on_reagent_change` or
     :func:`~.Liquid.on_volume_change`.
-    
+
     When a :class:`.Drop.DispenseFrom` :class:`.Operation` is scheduled, before
     making the request, it loops calling :attr:`reserve_gate` until it succeeds.
     When the dispense is finished, it sets :attr:`gate_reserved` to ``False``.
     This serializes multiple requests to dispense from the same :class:`Well`.
-    
+
     Most of the actual interaction with a :class:`Well` involves querying or
     modifying its :attr:`contents`, which is either a :class:`.Liquid` or
     ``None``, which is the initial state before any :class:`.Liquid` is put in
     the well.
-    
+
     * The :attr:`volume` and :attr:`reagent` of the :attr:`contents` can be
       obtained directly (but not modified).  If :attr:`contents` is ``None``,
       these are zero and :attr:`.unknown_reagent`, respectively.
-      
+
     * A :class:`Well` has a :attr:`capacity` and a :attr:`remaining_capacity`
       (defined as :attr:`capacity` ``-`` :attr:`volume`).
-      
+
     * A :class:`Well` has a :attr:`dispensed_volume` (the nominal size of a
       dispensed :class:`.Drop`).  Its :attr:`drop_availability` is the number of
       :class:`.Drop`\s of that size it can be dispensed.  It is considered to be
       :attr:`empty` if there is less than one :class:`.Drop` available.
-      
+
     * If :attr:`is_voidable` (a constant property) is ``True``, when the
       :attr:`volume` becomes exactly zero, it is considered to have been voided,
       and it is safe for the :class:`Well` to be reused for a different
-      :class:`.Reagent`.  
-      
+      :class:`.Reagent`.
+
     * A :class:`Well` is :attr:`available` if either its :attr:`contents`
       is ``None`` or it :attr:`is_voidable` and its :attr:`volume` is zero and
       its :attr:`contents` is not :attr:`.~Luquid.inexact`.
-      
+
     * To test whether a :class:`Well` is compatible with a given
       :class:`.Reagent`, use :func:`can_provide` and :func:`can_accept`.  Both
       of these return ``True`` if the proffered :class:`.Reagent` matches the
@@ -1694,7 +1694,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
       :attr:`reagent` is the :attr:`~mpam.types.waste_reagent`, and
       :func:`can_provide` returns ``True`` if the queried :class:`.Reagent` is
       the :attr:`~mpam.types.waste_reagent`.
-      
+
     * To assert the :attr:`contents` of a :class:`Well`, you can set
       :attr:`contents` directly (which simply adopts the proffered optional
       :class:`.Liquid`) or call :func:`contains`, specifying the
@@ -1705,51 +1705,51 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
       can be used to specify an action to take when the :attr:`~.Liquid.volume`
       of a :class:`.Liquid` argument is greater than :attr:`capacity`.  (The
       default is simply to print a message.)
-      
+
     * To assert that :class:`.Liquid` has been added to or removed from a
       :class:`Well`, call :func:`transfer_in` or :func:`transfer_out`.  Note
       that these functions are not typically called directly.  Rather, they are
       called as part of the implementation of drop motion inference and
       pipetting actions.
-      
+
     * To request that :class:`.Liquid` be added to or removed from a
       :class:`Well`, call :func:`add` or :func:`remove`.  The default
       implementation turns around and asks its associated
       :attr:`~PipettingTarget.pipettor` to do the work.  Note that if
       :attr:`pipettor` is ``None``, these operations will fail.
-      
+
     * Calling :func:`refill` calls :func:`add` to add :class:`.Liquid` until
       :attr:`volume` reaches the :attr:`fill_to` level.  This level is the first
       of
-    
+
         * a :class:`.Volume` set as the value of :attr:`fill_to`,
-        
+
         * the result of calling a function passed to :func:`compute_fill_to`,
-        
+
         * if :attr:`required` is not ``None``, the minimum of it and
           :attr:`capacity`.  :attr:`required` is an optional :class:`.Volume`
           that can be set to an overall amount of :class:`.Liquid` that will be
           needed from the :class:`Well`.  It is updated by :func:`transfer_out`.
-          
+
         * the :class:`Well`'s :attr:`capacity`.
-    
+
     * Similarly, calling :func:`empty_well` calls :func:`remove` to remove
       :class:`.Liquid` until :attr:`volume` reaches the :attr:`empty_to` level.
       This level is the first of
-    
+
         * a :class:`.Volume` set as the value of :attr:`empty_to`,
-        
+
         * the result of calling a function passed to :func:`compute_empty_to`, or
-        
+
         * zero
-        
+
     * Calling :func:`ensure_content` ensures that a :class:`Well` contains a
       sufficient amount of :class:`.Reagent` to perform an action.  If it
       doesn't or if removing the specified :class:`.Volume` would take it below
       a :attr:`min_fill` level, :func:`refill` is called first. :attr:`min_fill`
       defaults to zero, but can be set to be a :class:`.Volume` or a function
       that returns one (via :func:`compute_min_fill).
-      
+
       This is called inside of dispense operations to automatically refill wells
       when they become empty (or close enough to empty that the hardware does
       not believe that they can accurately dispense).
@@ -1761,12 +1761,12 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
       :attr:`max_fill` defaults to :attr:`capacity`, but can be set to be a
       :class:`.Volume` or a function that returns one (via
       :func:`compute_max_fill).
-      
+
       This is called inside of absorbtion operations to automatically emptywells
       when they become full (or close enough to full that the hardware does
       not believe that they can accurately absorb).
     """
-    number: Final[int]  
+    number: Final[int]
     """The :class:`Well`'s index in its :attr:`board`'s :attr:`~Board.wells` list"""
     group: Final[DispenseGroup]
     """The :class:`Well`'s :class:`DispenseGroup` (of which it may be the only member)"""
@@ -1779,11 +1779,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     exit_pad: Final[Pad]
     """
     The :class:`Pad` onto which the :class:`Well` will dispense.
-    
+
     It should be next to the :class:`Well`'s :attr:`gate`, and its
     :attr:`~Well.well` will be this one.
     """
-    
+
     shared_pads: Final[Sequence[WellPad]]
     """
     The :class:`WellPad`\s in this :class:`Well` whose control is shared with
@@ -1801,8 +1801,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     """
     gate_reserved: bool = False
     """
-    Has the :attr:`gate` been reserved for a dispense operation?  
-    
+    Has the :attr:`gate` been reserved for a dispense operation?
+
     Set by :func:`reserve_gate` and eplicitly set to ``False`` under control of
     whoever got ``True` from it.
     """
@@ -1813,10 +1813,10 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     """
     The total :class:`.Volume` of :class:`.Reagent` expected to be removed from
     the :class:`Well`.  May be ``None``.
-    
+
     When :func:`refill` is called and :attr:`required` is not ``None``, the
     computed :attr:`fill_to` level is capped at this value.
-    
+
     When :func:`transfer_out` is called, this value is decreased, so it remains
     an estimate of how much will be needed for the remainder of the run.
     """
@@ -1828,7 +1828,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         """
         The :class:`.Liquid` contained in the :class:`Well`, or ``None`` if the
         :class:`Well` has never contained a :class:`Liquid`.
-        
+
         When :attr:`contents` is set, the callbacks registered with
         :func:`on_liquid_change` are run, passing in the old and new values.
         """
@@ -1858,7 +1858,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         The :attr:`.Liquid.reagent` of :attr:`contents` or
         :attr:`.unknown_reagent` if :attr:`contents` is ``None``
         """
-        
+
         c = self._contents
         if c is None:
             return unknown_reagent
@@ -1892,11 +1892,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         """
         ``True`` if it is safe ot reassign this :class:`Well` to another
         :class:`.Reagent`.
-        
-        :attr:`available` will be ``True`` if :attr:`contents` is ``None`` or 
-            
+
+        :attr:`available` will be ``True`` if :attr:`contents` is ``None`` or
+
             * the :class:`Well` :func:`is_voidable`,
-            * :attr:`volume` is zero, and 
+            * :attr:`volume` is zero, and
             * :attr:`contents` is not :attr:`~.Liquid.inexact`
         """
         c = self._contents
@@ -1920,17 +1920,17 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         is called, and the result of removing the required :class:`.Volume`
         would leave the :attr:`volume` less than this amount, :func:`refill` is
         called first.
-        
+
         This can be set to a :class:`.Volume` or a :class:`.Callable` that
         returns one.  If not set (or set to ``None``) the value will be zero.
-        
+
         Note:
             As of 4/20/22, MyPy has a bug (`issue #3004
             <https://github.com/python/mypy/issues/3004>`_) that causes it to
             complain if you try to assign a :class:`.Volume`-valued property
             anything other than a :class:`.Volume`.  To get around this, you can
             set the value using :func:`compute_min_fill`.
-        
+
         """
         return self.volume_from_spec(self._min_fill, lambda: Volume.ZERO)
 
@@ -1964,18 +1964,18 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         is called, and the result of adding the required :class:`.Volume` would
         leave the :attr:`volume` greater than this amount, :func:`empty_well` is
         called first.
-        
+
         This can be set to a :class:`.Volume` or a :class:`.Callable` that
         returns one.  If not set (or set to ``None``) the value will be
         :attr:`capacity`.
-        
+
         Note:
             As of 4/20/22, MyPy has a bug (`issue #3004
             <https://github.com/python/mypy/issues/3004>`_) that causes it to
             complain if you try to assign a :class:`.Volume`-valued property
             anything other than a :class:`.Volume`.  To get around this, you can
             set the value using :func:`compute_max_fill`.
-        
+
         """
         return self.volume_from_spec(self._max_fill, lambda: self.capacity)
 
@@ -2003,18 +2003,18 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def fill_to(self) -> Volume:
         """
         The target :attr:`volume` after a call to :func:`refill`.
-        
+
         This can be set to a :class:`.Volume` or a :class:`.Callable` that
         returns one.  If not set (or set to ``None``) the value will be the
         minimum of :attr:`required` (if it is not ``None``) and :attr:`capacity`.
-        
+
         Note:
             As of 4/20/22, MyPy has a bug (`issue #3004
             <https://github.com/python/mypy/issues/3004>`_) that causes it to
             complain if you try to assign a :class:`.Volume`-valued property
             anything other than a :class:`.Volume`.  To get around this, you can
             set the value using :func:`compute_fill_to`.
-        
+
         """
         def default_fill_line() -> Volume:
             if self.required is None:
@@ -2046,17 +2046,17 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def empty_to(self) -> Volume:
         """
         The target :attr:`volume` after a call to :func:`empty_well`.
-        
+
         This can be set to a :class:`.Volume` or a :class:`.Callable` that
         returns one.  If not set (or set to ``None``) the value will be zero.
-        
+
         Note:
             As of 4/20/22, MyPy has a bug (`issue #3004
             <https://github.com/python/mypy/issues/3004>`_) that causes it to
             complain if you try to assign a :class:`.Volume`-valued property
             anything other than a :class:`.Volume`.  To get around this, you can
             set the value using :func:`compute_empty_to`.
-        
+
         """
         return self.volume_from_spec(self._empty_to, lambda: Volume.ZERO)
 
@@ -2091,40 +2091,40 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                  ) -> None:
         """
         Initialize the object.
-        
+
         If ``group`` is a :class:`TransitionFunc` rather than a
         :class:`DispenseGroup`, a new :class:`DispenseGroup` is created to use
         it.  This :class:`Well` will be the only one that refers to this group.
-        
+
         ``gate`` and all of the :class:`WellPad`\s in ``shared_pads`` will get
         their :attr:`~WellPad.well` and :attr:`~WellPad.index` set by calling
         :attr:`~WellPad.set_location` on them.
-        
+
         Keyword Args:
             board: the :class:`Board` the :class:`Well` is on
             number: the index into :attr:`board`'s list of :attr:`~Board.wells`
-            
+
             group: the :class:`DispenseGroup` the :class:`Well` is a member of
                    or a :class:`TransitionFunc` to use to create one containing only it
-            
+
             exit_pad: the :class:`Well`'s :attr:`exit_pad`
             gate: the :class:`Well`'s :gate:
-            
+
             shared_pads: the :class:`WellPad`\s the :class:`Well` shares control
                          of with other members of its :attr:`group`
-            
+
             capacity: the maximum :class:`.Volume` that can be contained in the
                       :class:`Well`
-            
+
             dispensed_volume: the :class:`.Volume` nominally dispensed by the
-                              :class:`Well` 
-                              
+                              :class:`Well`
+
             exit_dir: the direction from the :class:`Well`'s :attr:`gate` to its
                       :attr:`exit_pad`
-            
+
             is_voidable: is the :class:`Well` truly empty when its
                          :attr:`volume` hits zero?
-            
+
             shape: an optional :class:`WellShape` describing the shape of the
                    :class:`Well`
         """
@@ -2169,9 +2169,9 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                        last: bool) -> None:
         """
         Called when the :class:`.Pipettor` has finished adding :class:`.Liquid`.
-        
+
         Uses :func:`transfer_in` to update :attr:`contents`.
-        
+
         If ``mix_result`` is not ``None``, it should be used as the result of
         mixing the delivered :class:`.Liquid` to what is already there.  If
         ``last`` is ``False``, there will be at least one more transfer before
@@ -2182,7 +2182,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             volume: the :class:`.Volume` of :class:`.Reagent` added
         Keyword Args:
             mix_result: the (optional) result of mixing the added
-                        :class:`.Liquid` with what's already there. 
+                        :class:`.Liquid` with what's already there.
             last: ``True`` if this is the last transfer in a transfer request.
         """
         got = Liquid(reagent, volume)
@@ -2192,13 +2192,13 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                          last: bool) -> None: # @UnusedVariable
         """
         Called when the :class:`.Pipettor` has finished removing
-        :class:`.Liquid`. 
-        
+        :class:`.Liquid`.
+
         Uses :func:`transfer_out` to update :attr:`contents`.
 
         If ``last`` is ``False``, there will be at least one more transfer
         before the overall transfer operation is complete.
-        
+
         Args:
             reagent: the :class:`.Reagent` removed
             volume: the :class:`.Volume` of :class:`.Reagent` removed
@@ -2210,12 +2210,12 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 
     def volume_from_spec(self, spec: Optional[WellVolumeSpec], default_fn: Callable[[], Volume]) -> Volume:
         """
-        Obtain a :class:`.Volume` from an optional :class:`WellVolumeSpec`.  
-        
+        Obtain a :class:`.Volume` from an optional :class:`WellVolumeSpec`.
+
         If ``spec`` is a :class:`Volume`, it is used.  Otherwise, if it is not
         ``None``, it is called to obtain the value.  If ``spec`` is ``None``,
         ``default_fn`` is called to get the value.
-        
+
         Args:
             spec: a :class:`.Volume`, a :class:`.Callable` that returns one, or
                   ``None``, indicating that ``default_fn`` should be used
@@ -2233,16 +2233,16 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def can_accept(self, reagent: Reagent) -> bool:
         """
         Can the :class:`Well` accept ``reagent``?
-        
+
         Returns ``True`` if
-        
+
             1. the :class:`Well` is :attr:`available`, or
-            2. ``reagent`` matches the :class:`Well`'s :attr:`reagent`, or 
+            2. ``reagent`` matches the :class:`Well`'s :attr:`reagent`, or
             3. either :class:`.Reagent` is the
                :attr:`~mpam.types.unknown_reagent`, or
             4. the :class:`Well`'s :attr:`reagent` is the
                :attr:`~mpam.types.waste_reagent`.
-        
+
         Args:
             reagent: the :class:`.Reagent` being provided
         Returns:
@@ -2258,19 +2258,19 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def can_provide(self, reagent: Reagent) -> bool:
         """
         Can the :class:`Well` provide ``reagent``?
-        
+
         Returns ``True`` if
-        
+
             1. the :class:`Well` is :attr:`available`, or
-            2. ``reagent`` matches the :class:`Well`'s :attr:`reagent`, or 
+            2. ``reagent`` matches the :class:`Well`'s :attr:`reagent`, or
             3. either :class:`.Reagent` is the
                :attr:`~mpam.types.unknown_reagent`, or
             4. ``reagent`` is the :attr:`~mpam.types.waste_reagent`.
-               
+
         The reason :func:`can_provide` returns ``True`` if the :class:`Well` is
         :attr:`available` is that it is assumed that :func:`ensure_content` will
         be called before anything is removed, and this will call :func:`refill`.
-        
+
         Args:
             reagent: the :class:`.Reagent` required
         Returns:
@@ -2295,26 +2295,26 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         ``liquid``.  If ``volume`` is specified, only that much of ``liquid`` is
         used.  If ``volume`` is greater than ``liquid``'s
         :attr:`.Liquid.volume`, all of ``liquid`` is used.
-        
+
         Note:
             ``liquid`` is adjusted to account for the transfer as well.
-            
+
         If the transfer would result in the :attr:`capacity` of the
         :class:`Well` being exceeded, ``on_overflow`` is invoked.
-        
+
         If it's not the case that the :class:`Well` :func:`can_accept`
-        ``liquid``'s :attr:`~.Liquid.reagent` and ``mix_result`` is ``None``, 
+        ``liquid``'s :attr:`~.Liquid.reagent` and ``mix_result`` is ``None``,
         ``on_reagent_mismatch`` is invoked.
-            
+
         After the adjustments, callbacks registered using
         :func:`on_liquid_change` are run, passing in the new :attr:`contents` as
         both old and new values.
-        
+
         Note:
             If :attr:`contents` was ``None``, it will first be changed to a
             volume-zero :class:`.Liquid` with the incoming :class:`.Reagent`.
             This will also trigger the liquid-change callbacks.
-        
+
         Args:
             liquid: the :class:`.Liquid` that forms the source of the transfer
         Keyword Args:
@@ -2328,7 +2328,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                          ``liquid``'s :attr:`~.Liquid.reagent` doesn't match
                          that of the :class:`Well`
             mix_result: the (optional) result of mixing the added
-                        :class:`.Liquid` with what's already there. 
+                        :class:`.Liquid` with what's already there.
         """
         if volume is None:
             volume = liquid.volume
@@ -2355,24 +2355,24 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                      on_empty: ErrorHandler = PRINT) -> Liquid:
         """
         Adjust the :class:`Well`'s :attr:`contents` to reflect the removal of
-        ``volume`` from :attr:`contents`.  
-        
+        ``volume`` from :attr:`contents`.
+
         If :attr:`volume` is less than ``volume``, ``on_empty`` is invoked.
         After the handler is invoked, ``volume`` is clipped to (the possibly
         altered) :attr:`volume`.
-        
+
         If :attr:`reagent` is not ``None``, ``volume`` is subtracted from it.
         If this would render it zero or negative, it is set to ``None``.
-        
+
         After the adjustments, callbacks registered using
         :func:`on_liquid_change` are run, passing in the new :attr:`contents` as
         both old and new values.
-        
+
         Note:
             In order to deal with rounding errors, ``on_empty`` is not invoked
             if ``volume`` exceeds :attr:`volume` by less than 5% of
             :attr:`dispensed_volume`.
-        
+
         Args:
             volume: the :class:`.Volume` of :attr:`reagent` to remove
         Keyword Args:
@@ -2381,7 +2381,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Returns:
             a :class:`Liquid` containing ``volume`` of :attr:`reagent`
         """
-        on_empty.expect_true(self.volume >= volume 
+        on_empty.expect_true(self.volume >= volume
                              or self.volume.is_close_to(volume,
                                                         abs_tol=0.05*self.dispensed_volume),
                                 lambda : f"Tried to draw {volume} from {self}, which only has {self.volume}")
@@ -2405,14 +2405,14 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def contains(self, content: Union[Liquid, Reagent],
                  *, on_overflow: ErrorHandler = PRINT) -> None:
         """
-        Assert the :attr:`contents` of the :class:`Well`.  
-        
+        Assert the :attr:`contents` of the :class:`Well`.
+
         If ``content`` is a :class:`.Reagent`, the volume is taken to be zero.
-        
+
         If the volume is greater than the :class:`Well`'s :attr:`capacity`,
         ``on_overflow`` is invoked and the volume is trimmed to the
         :attr:`capacity`.
-        
+
         Args:
             content: the initial :attr:`contents`, either a :class:`.Liquid` or
                      a :class:`.Reagent`
@@ -2436,11 +2436,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Attempts to reserve the :class:`Well`'s gate for a dispense operation by
         setting :attr:`gate_reserved` to ``True``.  Fails if
         :attr:`gate_reserved` was already ``True``.
-        
+
         It is expected that the caller will loop until this method returns
         ``True`` and then explicitly set :attr:`gate_reserved` to ``False`` when
         the reason for the reservation has finished.
-        
+
         Returns:
             ``True`` if the gate was successfully reserved, ``False`` otherwise.
         """
@@ -2458,36 +2458,36 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Request that ``volume`` of ``reagent`` be added to the :class:`Well`.
         Returns a :class:`.Delayed`\[:class:`Well`] that will receive this
         :class:`Well` as a value when the action is complete.
-        
+
         Note:
             The default implementation of :func:`add` requires that
             :attr:`~PipettingTarget.pipettor` not be ``None``.  As ``None`` is
             the default, for :func:`add` to succeed, it must be set first.  If
             it is not, an assertion will fail.
-        
+
         Note:
             The actual addition may take place in several steps.  If action
             should be taken on intermediate transfers, use
             :func:`on_liquid_change` to register a callback or override
             :func:`pipettor_added`.
-            
+
         Note:
             If the request cannot be fully satisfied, ``on_insufficient`` or
             ``on_no_source`` will be invoked, but he action will still complete.
-            
+
         Warning:
             If the ``on_insufficient`` or ``on_no_source`` is invoked, it is
             likely that this will be in a different thread running the
             :attr:`~PipettingTarget.pipettor` and raising an exception will
             cause it to terminate in an unrecoverable way, so :class:`.RAISE`
             :class:`.ErrorHandler`\s should probably not be used.
-                
+
         Args:
             reagent: the :class:`.Reagent` to add
             volume: the :class:`.Volume` of ``reagent`` to add
         Keyword Args:
             mix_result: the (optional) result of mixing the added
-                        :class:`.Liquid` with what's already there. 
+                        :class:`.Liquid` with what's already there.
             on_insufficient: an :class:`.ErrorHandler` invoked when the
                              :class:`Well`'s :attr:`~PipettingTarget.pipettor`
                              cannot provide ``volume`` of ``reagent``.
@@ -2514,30 +2514,30 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Request that ``volume`` of the :class:`Well`'s :attr:`reagent` be
         removed from the :class:`Well`. Returns a
         :class:`.Delayed`\[:class:`Well`] that will receive this :class:`Well`
-        as a value when the action is complete.  
-        
-        "Completion" in this sense, is intended to be the point at which the last 
+        as a value when the action is complete.
+
+        "Completion" in this sense, is intended to be the point at which the last
         of the :class:`.Liquid` is removed, not when it reaches its destination.
-        
+
         Note:
             The default implementation of :func:`remove` requires that
             :attr:`~PipettingTarget.pipettor` not be ``None``.  As ``None`` is
             the default, for :func:`remove` to succeed, it must be set first.  If
             it is not, an assertion will fail.
-        
+
         Note:
             The actual removal may take place in several steps.  If action
             should be taken on intermediate transfers, use
             :func:`on_liquid_change` to register a callback or override
             :func:`pipettor_removed`.
-            
+
         Note:
             If the :attr:`~PipettingTarget.pipettor` does not know where to put
             the :class:`Well`'s :attr:`reagent`, ``on_no_sink`` will be invoked,
             but the transfer is expected to take place, with the :attr:`reagent`
             going wherever the :attr:`~PipettingTarget.pipettor` would put the
             :attr:`mpam.types.waste_reagent`.
-            
+
         Warning:
             If the ``on_insufficient`` or ``on_no_source`` is invoked, it is
             likely that this will be in a different thread running the
@@ -2569,11 +2569,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         :attr:`volume` to its current :attr:`fill_to` level.  If the
         :class:`Well`'s :attr:`volume` is already at or above that level, post
         the :class:`Well` to the returned :class:`Delayed` object immediately.
-        
+
         Note:
             :func:`refill` is implemented by calling :func:`add`, which requires
             that :attr:`~PipettingTarget.pipettor` not be ``None``.
-        
+
         Note:
             The actual addition may take place in several steps.  If action
             should be taken on intermediate transfers, use
@@ -2602,11 +2602,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         :attr:`volume` to its current :attr:`empty_to` level.  If the
         :class:`Well`'s :attr:`volume` is already at or below that level, post
         the :class:`Well` to the returned :class:`Delayed` object immediately.
-        
+
         Note:
             :func:`empty_well` is implemented by calling :func:`remove`, which
             requires that :attr:`~PipettingTarget.pipettor` not be ``None``.
-        
+
         Note:
             The actual removal may take place in several steps.  If action
             should be taken on intermediate transfers, use
@@ -2635,21 +2635,21 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         :class:`Well` without taking its :attr:`volume` below its current
         :attr:`min_fill` level.  If this is not the case, :func:`refill` is
         called first.
-        
+
         If it's not the case that the :class:`Well` :func:`can_provide`
         ``reagent``, ``on_reagent_mismatch`` is invoked.
-            
+
         :class:`.Reagent` matching is checked (and ``on_reagent_mismatch``
         invoked, if necessary) before the :attr:`volume` is checked, so on some
         architectures, a mismatch can be fixed by emptying the :class:`Well`
         first::
-        
+
             empty_first = FIX_BY(lambda: well.remove(well.volume).wait())
             well.ensure_content(reagent=reagent, on_reagent_mismatch=empty_first)
-            
+
         This will empty the :class:`Well`, setting its :attr:`volume` to zero,
         and then :func:`refill` it.
-        
+
         Note:
             In order to deal with rounding errors, :func:`refill` is not called
             if the resulting :attr:`volume` would undershoot :attr:`min_fill` by
@@ -2667,7 +2667,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Returns:
             a :class:`.Delayed`\[:class:`Well`] that will receive this
             :class:`Well` when the availability has been confirmed
-        
+
         """
         if volume is None:
             volume = self.dispensed_volume
@@ -2691,7 +2691,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Ensure that ``volume`` of ``reagent`` can be added to the :class:`Well`
         without taking its :attr:`volume` above its current :attr:`max_fill`
         level.  If this is not the case, :func:`empty_well` is called first.
-        
+
         If it's not the case that the :class:`Well` :func:`can_accept`
         ``reagent``, ``on_reagent_mismatch`` is invoked.
 
@@ -2699,28 +2699,28 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         invoked, if necessary) before the :attr:`volume` is checked, so on some
         architectures, a mismatch can be fixed by emptying the :class:`Well`
         first::
-        
+
             empty_first = FIX_BY(lambda: well.remove(well.volume).wait())
             well.ensure_content(reagent=reagent, on_reagent_mismatch=empty_first)
-            
+
         The downside to this approach is that the :func:`.Delayed.wait` call
         will block the thread until the :class:`.Liquid` has been removed.  If
         this is a problem, :class:`.RAISE` should be used instead::
-        
+
             class Mismatch(RuntimeError): ...
-            
+
             try:
-                f = well.ensure_space(volume, reagent, 
+                f = well.ensure_space(volume, reagent,
                                       on_reagent_mismatch=RAISE(Mismatch))
              except Mismatch:
                 f = Delayed[Well]()
                 def call_again(_) -> None:
                     well.ensure_space(volume, reagent).post_to(f)
                 well.remove(well.volume).then_call(call_again)
-    
+
         This catches the mismatch and calls :func:`remove`, but schedules a
         retry of :func:`ensure_space` after it is done.
-            
+
         Note:
             In order to deal with rounding errors, :func:`refill` is not called
             if the resulting :attr:`volume` would undershoot :attr:`min_fill` by
@@ -2738,7 +2738,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Returns:
             a :class:`.Delayed`\[:class:`Well`] that will receive this
             :class:`Well` when the availability has been confirmed
-        
+
         """
         if reagent is not None:
             on_reagent_mismatch.expect_true(self.can_accept(reagent),
@@ -2757,21 +2757,21 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     def on_liquid_change(self, cb: ChangeCallback[Optional[Liquid]], *, key: Optional[Hashable] = None) -> None:
         """
         Add a new liquid-change handler, replacing any with the specified key. If
-        ``key`` is ``None``, ``cb`` is used as the key.  
-        
+        ``key`` is ``None``, ``cb`` is used as the key.
+
         This will receive liquid changes when :attr:`contents` is set or
         :func:`transfer_in()` or :func:`transfer_out()` is called.  In the
         transfer function cases, the state (i.e., :attr:`~.Liquid.reagent`
         and/or :attr:`~.Liquid.volume`) of :attr:`contents` will have changed,
         but the object remains the same and is passed in as both ``old`` and
         ``new`` arguments.
-        
+
         Args:
             cb: the handler
         Keyword Args:
             key: the (optional) key
         """
-        
+
         self._liquid_change_callbacks.add(cb, key=key)
 
 
@@ -2781,14 +2781,14 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         a new :class:`WellState`.  Typically called from
         :class:`.Drop.DispenseFrom` (``target`` = :attr:`~WellState.DISPENSED`)
         or :class:`.Drop.EnterWell` (``target`` = :attr:`~WellState.ABSORBED`).
-        
+
         Implemented by creating a :class:`WellMotion` and iterating through its
         :func:`~WellMotion.iterator`.  The value posted to the resulting
         :class:`Delayed` object on completion will be the :class:`Well` this
         :class:`.Operation` is scheduled for.
         """
         target: Final[WellState]    #: The target :class:`WellState`
-        guard: Final[Optional[Iterator[bool]]] 
+        guard: Final[Optional[Iterator[bool]]]
         """
         The :class:`WellMonition`'s :attr:`~WellMonition.guard`
         """
@@ -2798,7 +2798,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                      ) -> None:
             """
             Initialize the object.
-            
+
             Args:
                 target: the target :class:`WellState`
                 guard: an optional guard to use when creating the
@@ -2812,13 +2812,13 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                           post_result: bool = True,
                           )-> Delayed[Well]:
             """
-            The implementation of :func:`~.Operation.schedule_for`.  
-            
+            The implementation of :func:`~.Operation.schedule_for`.
+
             Creates a :class:`WellMotion` and iterates through its
-            :func:`~WellMotion.iterator`.  
-            
-            The posted value will be ``well``.  
-            
+            :func:`~WellMotion.iterator`.
+
+            The posted value will be ``well``.
+
             :meta public:
             Args:
                 well: the :class:`Well` to schedule the operation for
@@ -2830,7 +2830,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                 a :class:`Delayed`\[:class:`.Well`] future object to which
                 ``well`` will be posted unless ``post_result`` is ``False``
             """
-            
+
             board = well.board
             motion = WellMotion(well, self.target, post_result=post_result, guard=self.guard)
             # target = self.target
@@ -2853,13 +2853,13 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 class Magnet(BinaryComponent['Magnet']):
     """
     A magnet that affects a set of :class:`Pad`\s.
-    
+
     As a :class:`BinaryComponent`, it has a :attr:`~BoardComponent.board` and a
     :attr:`~BinaryComponent.current_state`, it can act as both a
     :class:`.CommunicationScheduler` and a
     :class:`.OpScheduler`\[:class:`Magnet`], and it supports
-    :func:`~BinaryComponent.on_state_change`. 
-    
+    :func:`~BinaryComponent.on_state_change`.
+
     To initialize this asspect of the :class:`Magnet`, when it is created, it
     must be associated with a :class:`.State`\[:class:`.OnOff`] object that
     knows how to effect any changes on a physical device (via its
@@ -2872,14 +2872,14 @@ class Magnet(BinaryComponent['Magnet']):
     def __init__(self, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
         """
         Initialize the object.
-        
+
         Args:
             board: the containing :class:`Board`
         Keyword Args:
             state: the associated :class:`.State`\[:class:`.OnOff`]
             pads: the :class:`Pad`\s affected by this :class:`Magnet`
         """
-        
+
         BinaryComponent.__init__(self, board, state=state)
         self.pads = pads
         for pad in pads:
@@ -3103,9 +3103,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                 # TODO: Do I need to wait on this somewhere?
                 p.schedule(Pad.TurnOff, post_result=False)
 
-
-
-
     def transfer_out(self, *,
                      liquid: Optional[Liquid] = None,
                      on_no_sink: ErrorHandler = PRINT,
@@ -3326,7 +3323,6 @@ class SystemComponent(ABC):
 
     # def schedule_before(self, cb: C):
 
-
 class ChangeJournal:
     turned_on: Final[set[DropLoc]]
     turned_off: Final[set[DropLoc]]
@@ -3363,7 +3359,6 @@ class ChangeJournal:
     def process_changes(self) -> None:
         from mpam.drop import Blob # @Reimport
         Blob.process_changes(self)
-
 
 class Board(SystemComponent):
     pads: Final[PadArray]
