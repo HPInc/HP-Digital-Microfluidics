@@ -30,6 +30,7 @@ from functools import reduce
 from erk.basic import LazyPattern, not_None
 from re import Match
 from threading import RLock
+import re
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -59,6 +60,23 @@ class UnknownUnitDimensionError(CompilationError):
         super().__init__(f"Unit {unit} has unknown dimensionality {dim}")
         self.unit = unit
         self.dimensionality = dim
+        
+def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
+    def check(*args) -> MaybeError[Val_]:
+        first = args[0]
+        if isinstance(first, EvaluationError):
+            return first
+        return fn(*args)
+    return check
+
+def error_check_delayed(fn: Callable[..., Delayed[Val_]]) -> Callable[..., Delayed[MaybeError[Val_]]]:
+    def check(*args) -> Delayed[MaybeError[Val_]]:
+        first = args[0]
+        if isinstance(first, EvaluationError):
+            return Delayed.complete(first)
+        # Well, *that's* a kludge
+        return fn(*args).transformed(lambda x: x)
+    return check
 
 class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
@@ -990,9 +1008,12 @@ class DMFCompiler(DMFVisitor):
         else:
             def run(env: Environment) -> Delayed[Any]:
                 args: List[Any] = []
+                def stash_arg(arg: Any) -> Any:
+                    args.append(arg)
+                    return arg
                 def make_lambda(ae: Executable, pt: Type) -> Callable[[Any], Delayed]:
                     return lambda maybe_error: (ae.check_and_eval(maybe_error, env,pt)
-                                                .transformed(lambda arg: args.append(arg)))
+                                                .transformed(stash_arg))
                 lambdas = [make_lambda(ae,pt) for ae,pt in zip(arg_execs, sig.param_types)]
                 future = (Delayed.complete(None) if len(arg_execs) == 0
                           else reduce(lambda fut,fn: fut.chain(fn),
@@ -1295,13 +1316,11 @@ class DMFCompiler(DMFVisitor):
                               return_type=Type.PAUSE):
             return e
         def run(env: Environment) -> Delayed[MaybeError[None]]:
-            def pause(d: MaybeError[DelayType], env: Environment) -> Delayed[MaybeError[None]]:
-                if isinstance(d, EvaluationError):
-                    return Delayed.complete(d)
+            def pause(d: DelayType, env: Environment) -> Delayed[None]:
                 print(f"Delaying for {d}")
                 return env.board.delayed(lambda: None, after=d)
             return (duration.evaluate(env, Type.DELAY)
-                    .chain(lambda d: pause(d, env)))
+                    .chain(lambda d: error_check_delayed(pause)(d, env)))
         return Executable(Type.PAUSE, run, (duration,))
 
     def visitExpr_stat(self, ctx:DMFParser.Expr_statContext) -> Executable:
@@ -1426,14 +1445,12 @@ class DMFCompiler(DMFVisitor):
                     else:
                         return else_body.evaluate(env, result_type)
                     
-                def checked_test(v: MaybeError[bool]) -> Delayed:
-                    if isinstance(v, EvaluationError):
-                        return Delayed.complete(v)
-                    elif v:
+                def next_try(v: bool) -> Delayed:
+                    if v:
                         return bodies[i].evaluate(env, result_type)
                     else:
                         return check(i+1)
-                return tests[i].evaluate(env, Type.BOOL).chain(checked_test)
+                return tests[i].evaluate(env, Type.BOOL).chain(error_check_delayed(next_try))
             return check(0)
         
         
@@ -1543,16 +1560,10 @@ class DMFCompiler(DMFVisitor):
             return self.error(ctx, Type.BOOL,
                               f"Can't compare {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
         def run(env: Environment) -> Delayed[MaybeError[bool]]:
-            def combine(x, y) -> MaybeError[bool]:
-                if isinstance(y, EvaluationError):
-                    return y
-                return rel.test(x, y) 
-            future: Delayed = lhs.evaluate(env)
-            def second(x: Any) -> Delayed[MaybeError[bool]]:
-                if isinstance(x, EvaluationError):
-                    return Delayed.complete(x)
-                return rhs.evaluate(env).transformed(lambda y: combine(x, y))
-            return future.chain(second)
+            return (lhs.evaluate(env)
+                    .chain(lambda x: (rhs.check_and_eval(x, env)
+                                      .transformed(error_check(lambda y: rel.test(x, y))))))
+            # return future.chain(second)
         return Executable(Type.BOOL, run, (lhs,rhs))
     
     
@@ -1580,7 +1591,10 @@ class DMFCompiler(DMFVisitor):
                 if isinstance(v, EvaluationError):
                     return v
                 return v is not None
-            return obj.evaluate(env, ot).chain(extractor).transformed(check)
+            return (obj.evaluate(env, ot)
+                    .chain(error_check_delayed(extractor))
+                    .transformed(error_check(lambda v: v is not None)))
+            # return obj.evaluate(env, ot).chain(extractor).transformed(check)
         return Executable(Type.BOOL, run, (obj,))
     
     
@@ -1773,17 +1787,16 @@ class DMFCompiler(DMFVisitor):
             def extractor(obj) -> Delayed[Any]:
                 def check(val):
                     if val is None:
-                        ex = MaybeNotSatisfiedError(f"{obj} does not have {attr.func.name}")
+                        name = attr.func.name
+                        if (m := re.fullmatch("'(.*)' attribute", name)) is not None:
+                            name = m.group(1)
+                        ex = MaybeNotSatisfiedError(f"{obj} has no '{name}'")
                         return ex
                     return val
                 return real_extractor(obj).transformed(check)
             rt = rt.if_there_type
         def run(env: Environment) -> Delayed[Any]:
-            def after_obj(obj) -> Delayed[Any]:
-                if isinstance(obj, EvaluationError):
-                    return Delayed.complete(obj)
-                return extractor(obj)
-            return obj.evaluate(env, ot).chain(after_obj)
+            return obj.evaluate(env, ot).chain(error_check_delayed(extractor))
         return Executable(rt, run, (obj,))
 
 
@@ -1793,11 +1806,8 @@ class DMFCompiler(DMFVisitor):
         if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
             return e
         def run(env: Environment) -> Delayed[MaybeError[Well]]:
-            def after_n(n: MaybeError[int]) -> MaybeError[Well]:
-                if isinstance(n, EvaluationError):
-                    return n
-                return env.board.wells[n]
-            return which.evaluate(env, Type.INT).transformed(after_n)
+            return (which.evaluate(env, Type.INT)
+                    .transformed(error_check(lambda n: env.board.wells[n])))
         return Executable(Type.WELL, run, (which,))
 
 
@@ -1869,22 +1879,16 @@ class DMFCompiler(DMFVisitor):
                     return self.error(ctx, Type.MOTION, f"Did you forget 'row' or 'column'?: {self.text_of(ctx)}")
                 return self.error(ctx, Type.MOTION, f"'to' expr without 'row' or 'column' takes a PAD: {self.text_of(ctx)}")
             def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
-                def after_pad(pad: MaybeError[Pad]) -> MaybeError[ToPadValue]:
-                    if isinstance(pad, EvaluationError):
-                        return pad
-                    return ToPadValue(pad)
-                return which.evaluate(env, Type.PAD).transformed(after_pad)
+                return (which.evaluate(env, Type.PAD)
+                        .transformed(error_check(lambda pad: ToPadValue(pad))))
         else:
             if not self.compatible(which.return_type, Type.INT):
                 return self.error(ctx.which, Type.MOTION, 
                                   f"Row or column name not an int ({which.return_type.name}): {self.text_of(ctx.which)}")
             verticalp = cast(bool, axis.verticalp)
             def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
-                def after_n(n: MaybeError[int]) -> MaybeError[ToRowColValue]:
-                    if isinstance(n, EvaluationError):
-                        return n
-                    return ToRowColValue(n, verticalp)
-                return which.evaluate(env, Type.INT).transformed(after_n)
+                return (which.evaluate(env, Type.INT)
+                        .transformed(error_check(lambda n: ToRowColValue(n, verticalp))))
         return Executable(Type.MOTION, run, (which,))
     
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
@@ -1978,11 +1982,8 @@ class DMFCompiler(DMFVisitor):
                               return_type=Type.PAUSE):
             return e
         def run(env: Environment) -> Delayed[MaybeError[PauseValue]]:
-            def after_duration(d: MaybeError[DelayType]) -> MaybeError[PauseValue]:
-                if isinstance(d, EvaluationError):
-                    return d
-                return PauseValue(d, env.board)
-            return duration.evaluate(env, Type.DELAY).transformed(after_duration)
+            return (duration.evaluate(env, Type.DELAY)
+                    .transformed(error_check(lambda d: PauseValue(d, env.board))))
         return Executable(Type.PAUSE, run, (duration,))
                 
     def visitMacro_header(self, ctx:DMFParser.Macro_headerContext):
