@@ -467,12 +467,13 @@ class Robot:
         dirs = {"fill": Direction.FILL, "empty": Direction.EMPTY}
         well_map = self.board.well_map
         while True:
-            # self.message("Making ready call")
+            self.message("Making ready call")
             call_params = self.prepare_call()
             if self.last_product_well is not None:
                 call_params["product_well"] = str(self.last_product_well)
-
+            self.message(f"Calling ready: {call_params}")
             resp = self.http_post("ready", json = call_params)
+            self.message(f"Back from ready: {resp}")
             assert resp is not None, f"No endpoint to call"
             body = resp.json()
             # self.message(f"Body is {body}")

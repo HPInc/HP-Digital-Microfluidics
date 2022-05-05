@@ -345,6 +345,9 @@ class ProtocolManager(Thread):
         # return status_code == 200
         
     def concatenate_files(self, config: JSONObj, files: Sequence[str]) ->str:
+        
+        
+        
         return "\n".join(["COMBINED_FILES_KLUDGE = True",
                          "".join([*fileinput.input(files=files)]),
                          f"config = {json.dumps(config)}\n"])
@@ -373,14 +376,24 @@ class ProtocolManager(Thread):
                 tmp.write("from __future__ import annotations\n")
                 tmp.write("__name__ = '__main__'\n")
                 tmp.write("COMBINED_FILES_KLUDGE = True\n")
+                lines: list[str] = []
+                imports: list[str] = []
                 for file in (self.ot_file("schedule_xfers.py"),
                               self.ot_file("opentrons_support.py"),
                               self.ot_file("looping_protocol.py")):
                     with open(file) as f:
                         for line in f.readlines():
                             if not line.startswith("from __future"):
-                                tmp.write(line)
-                        tmp.write("\n")
+                                if line.startswith("from ") or line.startswith("import"):
+                                    imports.append(line)
+                                else:
+                                    lines.append(line)
+                        lines.append("\n")
+                for line in imports:
+                    tmp.write(line)
+                tmp.write("\n")
+                for line in lines:
+                    tmp.write(line)
                 tmp.write(f"config = {json.dumps(self.config)}\n")
             payload = open(tmp.name, "rb")
             response = self.post_request("protocols", files={"files": payload})
@@ -413,7 +426,7 @@ class ProtocolManager(Thread):
         events = response["data"]["actions"]
         # printed_something = False
         for e in events:
-            print(e)
+            # print(e)
             continue
             if e["source"] != "protocol":
                 continue
@@ -435,7 +448,7 @@ class ProtocolManager(Thread):
             if not self.run_check():
                 raise ShutdownDetected()
             response = self.get_request(f"runs/{self.session_id}")
-            print(f"Get status result: {response}")
+            # print(f"Get status result: {response}")
             current_state = response["data"]["status"]
             self.extract_messages(response)
             if current_state == looking_for:

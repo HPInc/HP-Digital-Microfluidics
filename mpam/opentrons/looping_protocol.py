@@ -25,7 +25,8 @@ config = None
 def run(protocol: protocol_api.ProtocolContext) -> None:
     if "COMBINED_FILES_KLUDGE" not in globals():
         from opentrons_support import Robot, load_config
-    
+    else:
+        global Robot
     global config
     if config is None:
         config = load_config("config.json")
