@@ -9,7 +9,7 @@ from mpam.device import Heater, Pad
 from mpam.drop import Drop
 from mpam.paths import Path
 from mpam.processes import MultiDropProcessType, FinishFunction, PairwiseMix
-from mpam.types import Delayed, Dir
+from mpam.types import Delayed, Dir, Postable
 from quantities.dimensions import Time
 from quantities.temperature import TemperaturePoint, absolute_zero
 from quantities.timestamp import time_now, Timestamp
@@ -89,25 +89,24 @@ class HeaterState:
         self.lock = Lock()
         
     def change_to(self, target: Optional[TemperaturePoint]) -> Delayed[Timestamp]:
-        val_future = Delayed[Timestamp]()
         if self.target is not None and self.target == target:
-            val_future.post(self.ready_time)
-        else:
-            self.target = target
-            self.ready = False
-            needed = len(self.heaters)
-            def update(_) -> None:
-                nonlocal needed
-                with self.lock:
-                    if needed == 1:
-                        now = self.ready_time = time_now()
-                        val_future.post(now)
-                        self.ready = True
-                    else:
-                        needed -= 1
-            for heater in self.heaters:
-                future = heater.schedule(Heater.SetTemperature(target))
-                future.then_call(update)
+            return Delayed.complete(self.ready_time)
+        val_future = Postable[Timestamp]()
+        self.target = target
+        self.ready = False
+        needed = len(self.heaters)
+        def update(_) -> None:
+            nonlocal needed
+            with self.lock:
+                if needed == 1:
+                    now = self.ready_time = time_now()
+                    val_future.post(now)
+                    self.ready = True
+                else:
+                    needed -= 1
+        for heater in self.heaters:
+            future = heater.schedule(Heater.SetTemperature(target))
+            future.then_call(update)
         return val_future
      
 class BoundChannel:
