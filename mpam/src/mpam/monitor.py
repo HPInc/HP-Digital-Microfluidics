@@ -39,6 +39,9 @@ from quantities.temperature import abs_C
 from quantities.timestamp import time_now
 from weakref import WeakKeyDictionary
 
+import uuid
+from mpam.tk_canvas import TkCanvas, Root
+
 
 class ClickableMonitor(ABC):
     component: Final[BinaryComponent]
@@ -138,7 +141,7 @@ class PadMonitor(ClickableMonitor):
         self.note_state(pad.current_state)
         board_monitor.plot.add_patch(square)
         self.capacity = board_monitor.board.drop_size
-        
+
         if isinstance(pad, Pad) and pad.exists:
             if pad.magnet is None:
                 m = None
@@ -176,8 +179,8 @@ class PadMonitor(ClickableMonitor):
                             edgecolor='black')
                 self.port = ep
                 board_monitor.plot.add_patch(ep)
-                
-            
+
+
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
             
@@ -216,13 +219,25 @@ class PadMonitor(ClickableMonitor):
         
     def note_state(self, state: OnOff) -> None:
         # print(f"{self.pad} now {state}")
+        
+        x = self.square.get_x()
+        y = self.square.get_y()
+        rect_id = "active-pad:{}-{}".format(str(x), str(y))
         if state:
             self.square.set_linewidth(3)
             self.square.set_edgecolor('green')
+            
+            x = self.square.get_x()
+            y = self.square.get_y()
+            oval_coords = canvas.get_coord_from_center(x,18-y)
+            canvas.create_rectangle(oval_coords["x0"], oval_coords["y0"], oval_coords["x1"], oval_coords["y1"], width=3, fill="white",tags=f"playbutton {rect_id}", outline="green")
+
         else:
             self.square.set_linewidth(1)
             self.square.set_edgecolor('black')
-            
+
+            if canvas.gettags(rect_id):
+                canvas.delete(rect_id)
             
     def preview_state(self, state: OnOff) -> None:
         # print(f"{self.pad} will be {state}")
@@ -288,10 +303,61 @@ class PadMonitor(ClickableMonitor):
             y = square.get_y()
             dm = self.board_monitor.drop_monitor(new)
             dm.circle.center = (x+0.5*w, y+0.5*w)
+
+            try:
+                new.tag
+            except AttributeError:
+                new.tag = str(uuid.uuid4())
+            drop_id = new.tag
+            
+            if canvas.gettags(drop_id):
+                try:
+                    canvas.delete(drop_id)
+                except Exception as e:
+                    # TODO: handle proper exception here
+                    pass
+
+            _REG_RADIUS = 0.45
+            circle_radius = canvas.RECT_WIDTH / 2
+            m = dm.circle.radius / _REG_RADIUS  
+            circle_radius *= m
+
+            if len(dm.circle.slices) == 1:
+                oval_coords = canvas.get_coord_from_center(x,17-y)
+                x0 = oval_coords["x0"]
+                y1 = oval_coords["y1"]
+                
+                fill_color = canvas._from_rgb(dm.circle.slices[0]._facecolor)
+                canvas.create_circle(x0+circle_radius, y1+circle_radius, circle_radius-1, fill=fill_color, outline="#DDD", width=1, tag=drop_id)
+            else:
+                for s in dm.circle.slices:
+                    start = s.theta1
+                    end = s.theta2
+                    extent = end - start
+                    fill_color = canvas._from_rgb(s._facecolor)
+                    
+                    oval_coords = canvas.get_coord_from_center(x,18-y)
+                    x0 = oval_coords["x0"]
+                    x1 = oval_coords["x1"]
+                    y0 = oval_coords["y0"]
+                    y1 = oval_coords["y1"]
+                    
+                    width = abs(x0-x1)
+                    new_radius = width * m
+                    extension = abs((new_radius - width) / 2)
+
+                    canvas.create_arc(x0-extension, y0-extension, x1+extension, y1+extension, start=start, extent=extent, fill=fill_color, tag=drop_id)
+
             dm.circle.visible = True
         if old is not None and old.status is not DropStatus.ON_BOARD:
             dm = self.board_monitor.drop_monitor(old)
             dm.circle.visible = False
+            drop_id = old.tag
+            try:
+                canvas.delete(drop_id)
+            except Exception as e:
+                # TODO: handle proper exception here
+                pass
             if old.status is not DropStatus.IN_MIX:
                 del self.board_monitor.drop_map[old]
                 
@@ -1274,5 +1340,9 @@ class BoardMonitor:
             self.process_display_updates()
             self.figure.canvas.draw_idle()
             pyplot.pause(pause)
-        
-            
+
+
+root = Root()
+canvas = TkCanvas(parent=root)
+canvas.grid(row=0, column=0)
+canvas.create_board()
