@@ -6,12 +6,12 @@ from typing import Union, Optional, Sequence
 from devices import bilby
 from joey import JoeyExerciser
 from mpam.device import System, Well, Heater, Magnet, Board
-from mpam.exerciser import Task, volume_arg, Exerciser
+from mpam.exerciser import Task, volume_arg, Exerciser, voltage_arg
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, Reagent
-from quantities.SI import sec, ms, uL
-from quantities.dimensions import Time, Volume
+from quantities.SI import sec, ms, uL, V
+from quantities.dimensions import Time, Volume, Voltage
 from quantities.temperature import TemperaturePoint, abs_C
 
 class DispenseAndWalk(Task):
@@ -136,12 +136,25 @@ class BilbyExerciser(JoeyExerciser):
                            The directory that WallabyElectrodes.csv and WallabyHeaters.csv
                            are found in.  Defaults to the current directory.
                            ''')
+        default_voltage = 60*V
+        group.add_argument("--voltage", type=voltage_arg, metavar="VOLTAGE", default=default_voltage,
+                           help=f'''
+                           The voltage to set.  A value of 0V disables
+                           the high voltage.  Any other value enables it.
+                           The defaults is {default_voltage}.
+                           ''')
+        
 
     def make_board(self, args:Namespace)->Board:
-        return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir)
+        voltage: Optional[Voltage] = args.voltage
+        assert voltage is not None
+        if voltage == 0:
+            voltage = None
+        return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir, voltage=voltage)
 
 if __name__ == '__main__':
     Time.default_units = ms
     Volume.default_units = uL
+    Voltage.default_units = V
     exerciser = BilbyExerciser()
     exerciser.parse_args_and_run()

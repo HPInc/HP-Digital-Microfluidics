@@ -10,7 +10,7 @@ from mpam.pipettor import Pipettor
 from mpam.types import OnOff, State, DummyState, GridRegion, Delayed
 from mpam import device
 from mpam.device import Pad
-from quantities.dimensions import Time
+from quantities.dimensions import Time, Voltage
 from quantities.SI import ms
 from erk.stringutils import conj_str
 from quantities.temperature import TemperaturePoint
@@ -102,7 +102,8 @@ class Board(joey.Board):
     def __init__(self, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None,
-                 pipettor: Optional[Pipettor] = None) -> None:
+                 pipettor: Optional[Pipettor] = None,
+                 voltage: Optional[Voltage]) -> None:
         self._device = GliderClient(pyglider.BoardId.Wallaby, dll_dir=dll_dir, config_dir=config_dir)
         super().__init__(pipettor=pipettor)
         on_electrodes = self._device.on_electrodes()
@@ -110,6 +111,12 @@ class Board(joey.Board):
             for e in on_electrodes:
                 e.current_state = OnOff.ON
             self.infer_drop_motion()
+        if voltage is None:
+            print("Turning off high voltage")
+        else:
+            print(f"Turning on high voltage at {voltage}")
+        
+        self._device.voltage_level = voltage
         
     def update_state(self) -> None:
         self._device.update_state()
