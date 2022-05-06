@@ -10,7 +10,7 @@ from mpam.device import SystemComponent, UserOperation, PipettingTarget, System,
     ProductLocation
 from mpam.types import Reagent, OpScheduler, Callback, DelayType, \
     Liquid, Operation, Delayed, AsyncFunctionSerializer, T, XferDir, \
-    unknown_reagent, MixResult
+    unknown_reagent, MixResult, Postable
 from quantities.SI import uL
 from quantities.dimensions import Volume
 from mpam.engine import Worker
@@ -26,11 +26,11 @@ class XferTarget(ABC):
     on_insufficient: Final[ErrorHandler]
     got: Volume
 
-    future: Final[Delayed[Liquid]]
+    future: Final[Postable[Liquid]]
 
     def __init__(self, target: PipettingTarget, volume: Volume,
                  *,
-                 future: Delayed[Liquid],
+                 future: Postable[Liquid],
                  allow_merge: bool,
                  on_unknown: ErrorHandler,
                  on_insufficient: ErrorHandler,
@@ -80,7 +80,7 @@ class FillTarget(XferTarget):
 
     def __init__(self, target: PipettingTarget, volume: Volume,
                  *,
-                 future: Delayed[Liquid],
+                 future: Postable[Liquid],
                  allow_merge: bool,
                  mix_result: Optional[MixResult],
                  on_unknown: ErrorHandler,
@@ -99,13 +99,13 @@ class FillTarget(XferTarget):
 
 
 class EmptyTarget(XferTarget):
-    product_loc: Final[Optional[Delayed[ProductLocation]]]
+    product_loc: Final[Optional[Postable[ProductLocation]]]
 
     def __init__(self, target: PipettingTarget, volume: Volume,
                  *,
-                 future: Delayed[Liquid],
+                 future: Postable[Liquid],
                  allow_merge: bool,
-                 product_loc: Optional[Delayed[ProductLocation]],
+                 product_loc: Optional[Postable[ProductLocation]],
                  on_unknown: ErrorHandler,
                  on_insufficient: ErrorHandler) -> None:
         super().__init__(target, volume, future=future, allow_merge=allow_merge,
@@ -184,7 +184,7 @@ class TransferSchedule:
             reagent: Reagent,
             volume: Volume,
             *,
-            future: Delayed[Liquid],
+            future: Postable[Liquid],
             allow_merge: bool = False,
             mix_result: Optional[MixResult] = None,
             on_insufficient: ErrorHandler = PRINT,
@@ -200,12 +200,12 @@ class TransferSchedule:
                reagent: Reagent,
                volume: Volume,
                *,
-               future: Delayed[Liquid],
+               future: Postable[Liquid],
                allow_merge: bool = False,
                on_insufficient: ErrorHandler = PRINT,
                on_unknown: ErrorHandler = PRINT,
                is_product: bool,
-               product_loc: Optional[Delayed[ProductLocation]]) -> None:
+               product_loc: Optional[Postable[ProductLocation]]) -> None:
         transfer_dict = None if is_product else self.empties
         xt = EmptyTarget(target, volume,
                         future=future, allow_merge=allow_merge,
@@ -305,7 +305,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
 
-            future = Delayed[Liquid]()
+            future = Postable[Liquid]()
             def schedule_it() -> None:
                 pipettor.xfer_sched.add(self.target, self.reagent, self.volume,
                                         future=future, allow_merge=self.allow_merge,
@@ -324,7 +324,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         on_insufficient_space: Final[ErrorHandler]
         on_no_liquid: Final[ErrorHandler]
         is_product: Final[bool]
-        product_loc: Final[Optional[Delayed[ProductLocation]]]
+        product_loc: Final[Optional[Postable[ProductLocation]]]
 
         def __init__(self, volume: Optional[Volume], target: PipettingTarget, *,
                      on_no_sink: ErrorHandler=PRINT,
@@ -332,7 +332,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                      on_no_liquid: ErrorHandler=PRINT,
                      allow_merge: bool = False,
                      is_product: bool = False,
-                     product_loc: Optional[Delayed[ProductLocation]] = None,
+                     product_loc: Optional[Postable[ProductLocation]] = None,
                      reagent: Optional[Reagent] = None
                      ) -> None:
             self.volume = volume
@@ -350,7 +350,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
 
-            future = Delayed[Liquid]()
+            future = Postable[Liquid]()
             def schedule_it() -> None:
                 target = self.target
                 contents = target.contents

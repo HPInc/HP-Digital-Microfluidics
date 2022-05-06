@@ -1,10 +1,12 @@
 from __future__ import annotations
-from devices.opentrons import OT2
+
 from devices.joey import Board
+from devices.opentrons import OT2
 from mpam.device import System
-from mpam.types import Liquid, Reagent
 from quantities.SI import uL
 from quantities.dimensions import Volume
+
+from mpam.types import Reagent
 
 pipettor = OT2(robot_ip_addr = "192.168.86.32",
                config="../inputs/ot2.json",
@@ -25,7 +27,7 @@ drops = board.drop_unit
 Volume.default_units = uL 
 
 with system:
-    wells[0].add(Liquid(pm_primers, 20*uL)).wait()
+    wells[0].add(pm_primers, 20*uL).wait()
     print("Back from call")
     print(f"Now contains {wells[0].contents}")
     
