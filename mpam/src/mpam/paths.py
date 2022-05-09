@@ -11,7 +11,7 @@ from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Ticks, Delayed, \
     DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T, \
-    WaitableType, Callback
+    WaitableType, Callback, Postable
 from quantities.dimensions import Volume
 
 
@@ -160,7 +160,7 @@ class Path:
 
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
-                         product_loc: Optional[Delayed[ProductLocation]] = None,
+                         product_loc: Optional[Postable[ProductLocation]] = None,
                          after: Optional[Ticks] = None) -> Path.Full:
             return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
 
@@ -203,12 +203,13 @@ class Path:
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[Drop]:
-            future = Delayed[Drop]()
             if after is None:
-                future.post(obj)
+                future = Delayed.complete(obj)
             else:
+                postable = Postable[Drop]()
                 assert isinstance(obj.pad, BoardComponent)
-                obj.pad.board.before_tick(lambda: future.post(obj), delta=after)
+                obj.pad.board.before_tick(lambda: postable.post(obj), delta=after)
+                future = postable
 
             middle = self.middle_steps
             last = len(middle) - 1
@@ -282,7 +283,7 @@ class Path:
 
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
-                         product_loc: Optional[Delayed[ProductLocation]] = None,
+                         product_loc: Optional[Postable[ProductLocation]] = None,
                          after: Optional[Ticks] = None) -> Path.End:
             return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
 
@@ -309,12 +310,13 @@ class Path:
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[None]:
-            future = Delayed[Drop]()
             if after is None:
-                future.post(obj)
+                future = Delayed.complete(obj)
             else:
+                postable = Postable[Drop]()
                 assert isinstance(obj.pad, BoardComponent)
-                obj.pad.board.before_tick(lambda: future.post(obj), delta=after)
+                obj.pad.board.before_tick(lambda: postable.post(obj), delta=after)
+                future = postable
 
             middle = self.middle_steps
             for step in middle:
@@ -513,7 +515,7 @@ class Path:
         def __init__(self, *,
                      volume: Optional[Volume] = None,
                      after: Optional[Ticks],
-                     product_loc: Optional[Delayed[ProductLocation]] = None,
+                     product_loc: Optional[Postable[ProductLocation]] = None,
                      ) -> None:
             super().__init__(Drop.TeleportOut(volume=volume, product_loc=product_loc), after)
     class EnterWellStep(EndStep):
@@ -563,7 +565,7 @@ class Path:
         def __init__(self, fn: Callable[[Drop], Any],
                      after: Optional[Ticks] = None) -> None:
             def fn2(drop: Drop) -> Delayed[Drop]:
-                future = Delayed[Drop]()
+                future = Postable[Drop]()
                 fn(drop)
                 future.post(drop)
                 return future
@@ -573,7 +575,7 @@ class Path:
         def __init__(self, fn: Callable[[Drop], Delayed[Any]],
                      after: Optional[Ticks] = None) -> None:
             def fn2(drop: Drop) -> Delayed[Drop]:
-                future = Delayed[Drop]()
+                future = Postable[Drop]()
                 fn(drop).then_call(lambda _: future.post(drop))
                 return future
             super().__init__(ComputeOp[Drop,Drop](fn2), after)
@@ -583,7 +585,7 @@ class Path:
                      wait: bool = True,
                      after: Optional[Ticks] = None) -> None:
             def pass_through(drop: Drop) -> Delayed[Drop]:
-                future = Delayed[Drop]()
+                future = Postable[Drop]()
                 barrier.pass_through(drop)
                 future.post(drop)
                 return future

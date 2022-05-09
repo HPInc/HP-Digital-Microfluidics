@@ -16,7 +16,7 @@ from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
 from mpam.exceptions import NoSuchPad, NotAtWell
 from mpam.types import Liquid, Dir, Delayed, DelayType, \
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
-    StaticOperation, Reagent, Callback, T, MixResult
+    StaticOperation, Reagent, Callback, T, MixResult, Postable
 from quantities.core import qstr
 from quantities.dimensions import Volume
 
@@ -669,7 +669,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
 
         if steps == 0:
             return Delayed.complete(drop)
-        future = Delayed[Drop]()
+        future = Postable[Drop]()
 
         one_tick: Ticks = 1*tick
         allow_unsafe = self.allow_unsafe
@@ -817,7 +817,7 @@ class Drop(OpScheduler['Drop']):
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
-            future = Delayed[Drop]()
+            future = Postable[Drop]()
             pad = self.pad
             def make_drop(_) -> None:
                 # We want it to happen immediately, so we use our own journal.
@@ -860,11 +860,11 @@ class Drop(OpScheduler['Drop']):
 
     class TeleportOut(Operation['Drop', None]):
         volume: Final[Optional[Volume]]
-        product_loc: Final[Optional[Delayed[ProductLocation]]]
+        product_loc: Final[Optional[Postable[ProductLocation]]]
 
         def __init__(self, *,
                      volume: Optional[Volume],
-                     product_loc: Optional[Delayed[ProductLocation]] = None
+                     product_loc: Optional[Postable[ProductLocation]] = None
                      ) -> None:
             self.volume = volume
             self.product_loc = product_loc
@@ -874,7 +874,7 @@ class Drop(OpScheduler['Drop']):
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[None]:
             op = ExtractionPoint.TransferOut(volume=self.volume, product_loc=self.product_loc)
-            future = Delayed[None]()
+            future = Postable[None]()
 
             def do_it() -> None:
                 ep = cast(Pad, drop.pad).extraction_point
@@ -948,7 +948,7 @@ class Drop(OpScheduler['Drop']):
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
-            future = Delayed[Drop]()
+            future = Postable[Drop]()
             well = self.well
             pad = well.exit_pad
             volume = well.dispensed_volume
@@ -1029,7 +1029,7 @@ class Drop(OpScheduler['Drop']):
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[None]:
-            future = Delayed[None]()
+            future = Postable[None]()
             if self.well is None:
                 if not isinstance(drop.pad, Pad) or drop.pad.well is None:
                     raise NotAtWell(f"{drop} not at a well")

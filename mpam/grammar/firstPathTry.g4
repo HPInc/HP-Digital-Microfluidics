@@ -1,4 +1,4 @@
-grammar path;
+grammar firstPathTry;
 
 options {
 	language = Python3;

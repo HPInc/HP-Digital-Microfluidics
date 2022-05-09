@@ -1,4 +1,4 @@
-# Generated from path.g4 by ANTLR 4.9.2
+# Generated from firstPathTry.g4 by ANTLR 4.9.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -69,9 +69,9 @@ def serializedATN():
         return buf.getvalue()
 
 
-class pathParser ( Parser ):
+class firstPathTryParser ( Parser ):
 
-    grammarFileName = "path.g4"
+    grammarFileName = "firstPathTry.g4"
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
@@ -168,7 +168,7 @@ class pathParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return pathParser.RULE_expr
+            return firstPathTryParser.RULE_expr
 
      
         def copyFrom(self, ctx:ParserRuleContext):
@@ -177,12 +177,12 @@ class pathParser ( Parser ):
 
     class Paren_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def expr(self):
-            return self.getTypedRuleContext(pathParser.ExprContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.ExprContext,0)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -202,12 +202,12 @@ class pathParser ( Parser ):
 
     class Int_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def INT(self):
-            return self.getToken(pathParser.INT, 0)
+            return self.getToken(firstPathTryParser.INT, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterInt_expr" ):
@@ -226,7 +226,7 @@ class pathParser ( Parser ):
 
     class Coord_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.first = None # ExprContext
             self.second = None # ExprContext
@@ -234,9 +234,9 @@ class pathParser ( Parser ):
 
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(pathParser.ExprContext)
+                return self.getTypedRuleContexts(firstPathTryParser.ExprContext)
             else:
-                return self.getTypedRuleContext(pathParser.ExprContext,i)
+                return self.getTypedRuleContext(firstPathTryParser.ExprContext,i)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -256,7 +256,7 @@ class pathParser ( Parser ):
 
     class Horiz_distContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.dist = None # ExprContext
             self.unit_dist = None # Token
@@ -264,21 +264,21 @@ class pathParser ( Parser ):
             self.copyFrom(ctx)
 
         def horiz_dir(self):
-            return self.getTypedRuleContext(pathParser.Horiz_dirContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.Horiz_dirContext,0)
 
         def INT(self):
-            return self.getToken(pathParser.INT, 0)
+            return self.getToken(firstPathTryParser.INT, 0)
         def horiz_unit(self):
-            return self.getTypedRuleContext(pathParser.Horiz_unitContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.Horiz_unitContext,0)
 
         def undirected_unit(self):
-            return self.getTypedRuleContext(pathParser.Undirected_unitContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.Undirected_unitContext,0)
 
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(pathParser.ExprContext)
+                return self.getTypedRuleContexts(firstPathTryParser.ExprContext)
             else:
-                return self.getTypedRuleContext(pathParser.ExprContext,i)
+                return self.getTypedRuleContext(firstPathTryParser.ExprContext,i)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -298,19 +298,19 @@ class pathParser ( Parser ):
 
     class Injection_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.who = None # ExprContext
             self.what = None # ExprContext
             self.copyFrom(ctx)
 
         def INJECT(self):
-            return self.getToken(pathParser.INJECT, 0)
+            return self.getToken(firstPathTryParser.INJECT, 0)
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(pathParser.ExprContext)
+                return self.getTypedRuleContexts(firstPathTryParser.ExprContext)
             else:
-                return self.getTypedRuleContext(pathParser.ExprContext,i)
+                return self.getTypedRuleContext(firstPathTryParser.ExprContext,i)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -330,13 +330,13 @@ class pathParser ( Parser ):
 
     class Drop_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.loc = None # ExprContext
             self.copyFrom(ctx)
 
         def expr(self):
-            return self.getTypedRuleContext(pathParser.ExprContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.ExprContext,0)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -356,20 +356,20 @@ class pathParser ( Parser ):
 
     class Function_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self._expr = None # ExprContext
             self.args = list() # of ExprContexts
             self.copyFrom(ctx)
 
         def name(self):
-            return self.getTypedRuleContext(pathParser.NameContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.NameContext,0)
 
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(pathParser.ExprContext)
+                return self.getTypedRuleContexts(firstPathTryParser.ExprContext)
             else:
-                return self.getTypedRuleContext(pathParser.ExprContext,i)
+                return self.getTypedRuleContext(firstPathTryParser.ExprContext,i)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -389,12 +389,12 @@ class pathParser ( Parser ):
 
     class Name_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.copyFrom(ctx)
 
         def name(self):
-            return self.getTypedRuleContext(pathParser.NameContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.NameContext,0)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -414,7 +414,7 @@ class pathParser ( Parser ):
 
     class Addsub_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.lhs = None # ExprContext
             self.rhs = None # ExprContext
@@ -422,14 +422,14 @@ class pathParser ( Parser ):
 
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(pathParser.ExprContext)
+                return self.getTypedRuleContexts(firstPathTryParser.ExprContext)
             else:
-                return self.getTypedRuleContext(pathParser.ExprContext,i)
+                return self.getTypedRuleContext(firstPathTryParser.ExprContext,i)
 
         def ADD(self):
-            return self.getToken(pathParser.ADD, 0)
+            return self.getToken(firstPathTryParser.ADD, 0)
         def SUB(self):
-            return self.getToken(pathParser.SUB, 0)
+            return self.getToken(firstPathTryParser.SUB, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterAddsub_expr" ):
@@ -448,7 +448,7 @@ class pathParser ( Parser ):
 
     class Muldiv_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.lhs = None # ExprContext
             self.rhs = None # ExprContext
@@ -456,14 +456,14 @@ class pathParser ( Parser ):
 
         def expr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(pathParser.ExprContext)
+                return self.getTypedRuleContexts(firstPathTryParser.ExprContext)
             else:
-                return self.getTypedRuleContext(pathParser.ExprContext,i)
+                return self.getTypedRuleContext(firstPathTryParser.ExprContext,i)
 
         def MUL(self):
-            return self.getToken(pathParser.MUL, 0)
+            return self.getToken(firstPathTryParser.MUL, 0)
         def DIV(self):
-            return self.getToken(pathParser.DIV, 0)
+            return self.getToken(firstPathTryParser.DIV, 0)
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterMuldiv_expr" ):
@@ -482,7 +482,7 @@ class pathParser ( Parser ):
 
     class Attr_exprContext(ExprContext):
 
-        def __init__(self, parser, ctx:ParserRuleContext): # actually a pathParser.ExprContext
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a firstPathTryParser.ExprContext
             super().__init__(parser)
             self.obj = None # ExprContext
             self._name = None # NameContext
@@ -490,15 +490,15 @@ class pathParser ( Parser ):
             self.copyFrom(ctx)
 
         def ATTR(self):
-            return self.getToken(pathParser.ATTR, 0)
+            return self.getToken(firstPathTryParser.ATTR, 0)
         def expr(self):
-            return self.getTypedRuleContext(pathParser.ExprContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.ExprContext,0)
 
         def name(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(pathParser.NameContext)
+                return self.getTypedRuleContexts(firstPathTryParser.NameContext)
             else:
-                return self.getTypedRuleContext(pathParser.NameContext,i)
+                return self.getTypedRuleContext(firstPathTryParser.NameContext,i)
 
 
         def enterRule(self, listener:ParseTreeListener):
@@ -520,7 +520,7 @@ class pathParser ( Parser ):
     def expr(self, _p:int=0):
         _parentctx = self._ctx
         _parentState = self.state
-        localctx = pathParser.ExprContext(self, self._ctx, _parentState)
+        localctx = firstPathTryParser.ExprContext(self, self._ctx, _parentState)
         _prevctx = localctx
         _startState = 0
         self.enterRecursionRule(localctx, 0, self.RULE_expr, _p)
@@ -531,43 +531,43 @@ class pathParser ( Parser ):
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,3,self._ctx)
             if la_ == 1:
-                localctx = pathParser.Paren_exprContext(self, localctx)
+                localctx = firstPathTryParser.Paren_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
 
                 self.state = 17
-                self.match(pathParser.T__0)
+                self.match(firstPathTryParser.T__0)
                 self.state = 18
                 self.expr(0)
                 self.state = 19
-                self.match(pathParser.T__1)
+                self.match(firstPathTryParser.T__1)
                 pass
 
             elif la_ == 2:
-                localctx = pathParser.Coord_exprContext(self, localctx)
+                localctx = firstPathTryParser.Coord_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
                 self.state = 21
-                self.match(pathParser.T__0)
+                self.match(firstPathTryParser.T__0)
                 self.state = 22
                 localctx.first = self.expr(0)
                 self.state = 23
-                self.match(pathParser.T__2)
+                self.match(firstPathTryParser.T__2)
                 self.state = 24
                 localctx.second = self.expr(0)
                 self.state = 25
-                self.match(pathParser.T__1)
+                self.match(firstPathTryParser.T__1)
                 pass
 
             elif la_ == 3:
-                localctx = pathParser.Drop_exprContext(self, localctx)
+                localctx = firstPathTryParser.Drop_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
                 self.state = 27
-                self.match(pathParser.T__3)
+                self.match(firstPathTryParser.T__3)
                 self.state = 28
                 _la = self._input.LA(1)
-                if not(_la==pathParser.T__4 or _la==pathParser.T__5):
+                if not(_la==firstPathTryParser.T__4 or _la==firstPathTryParser.T__5):
                     self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
@@ -577,11 +577,11 @@ class pathParser ( Parser ):
                 pass
 
             elif la_ == 4:
-                localctx = pathParser.Horiz_distContext(self, localctx)
+                localctx = firstPathTryParser.Horiz_distContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
                 self.state = 30
-                localctx.unit_dist = self.match(pathParser.INT)
+                localctx.unit_dist = self.match(firstPathTryParser.INT)
                 self.state = 31
                 if not  (0 if localctx.unit_dist is None else int(localctx.unit_dist.text))==1:
                     from antlr4.error.Errors import FailedPredicateException
@@ -605,7 +605,7 @@ class pathParser ( Parser ):
                 la_ = self._interp.adaptivePredict(self._input,1,self._ctx)
                 if la_ == 1:
                     self.state = 37
-                    self.match(pathParser.T__6)
+                    self.match(firstPathTryParser.T__6)
                     self.state = 38
                     localctx.base = self.expr(0)
 
@@ -613,11 +613,11 @@ class pathParser ( Parser ):
                 pass
 
             elif la_ == 5:
-                localctx = pathParser.Horiz_distContext(self, localctx)
+                localctx = firstPathTryParser.Horiz_distContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
                 self.state = 41
-                localctx.unit_dist = self.match(pathParser.INT)
+                localctx.unit_dist = self.match(firstPathTryParser.INT)
                 self.state = 42
                 if not  (0 if localctx.unit_dist is None else int(localctx.unit_dist.text))==1:
                     from antlr4.error.Errors import FailedPredicateException
@@ -627,22 +627,22 @@ class pathParser ( Parser ):
                 pass
 
             elif la_ == 6:
-                localctx = pathParser.Function_exprContext(self, localctx)
+                localctx = firstPathTryParser.Function_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
                 self.state = 44
                 self.name()
                 self.state = 45
-                self.match(pathParser.T__0)
+                self.match(firstPathTryParser.T__0)
                 self.state = 46
                 localctx._expr = self.expr(0)
                 localctx.args.append(localctx._expr)
                 self.state = 51
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while _la==pathParser.T__2:
+                while _la==firstPathTryParser.T__2:
                     self.state = 47
-                    self.match(pathParser.T__2)
+                    self.match(firstPathTryParser.T__2)
                     self.state = 48
                     localctx._expr = self.expr(0)
                     localctx.args.append(localctx._expr)
@@ -651,11 +651,11 @@ class pathParser ( Parser ):
                     _la = self._input.LA(1)
 
                 self.state = 54
-                self.match(pathParser.T__1)
+                self.match(firstPathTryParser.T__1)
                 pass
 
             elif la_ == 7:
-                localctx = pathParser.Name_exprContext(self, localctx)
+                localctx = firstPathTryParser.Name_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
                 self.state = 56
@@ -663,11 +663,11 @@ class pathParser ( Parser ):
                 pass
 
             elif la_ == 8:
-                localctx = pathParser.Int_exprContext(self, localctx)
+                localctx = firstPathTryParser.Int_exprContext(self, localctx)
                 self._ctx = localctx
                 _prevctx = localctx
                 self.state = 57
-                self.match(pathParser.INT)
+                self.match(firstPathTryParser.INT)
                 pass
 
 
@@ -684,7 +684,7 @@ class pathParser ( Parser ):
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,7,self._ctx)
                     if la_ == 1:
-                        localctx = pathParser.Muldiv_exprContext(self, pathParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = firstPathTryParser.Muldiv_exprContext(self, firstPathTryParser.ExprContext(self, _parentctx, _parentState))
                         localctx.lhs = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 60
@@ -693,7 +693,7 @@ class pathParser ( Parser ):
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 6)")
                         self.state = 61
                         _la = self._input.LA(1)
-                        if not(_la==pathParser.DIV or _la==pathParser.MUL):
+                        if not(_la==firstPathTryParser.DIV or _la==firstPathTryParser.MUL):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -703,7 +703,7 @@ class pathParser ( Parser ):
                         pass
 
                     elif la_ == 2:
-                        localctx = pathParser.Addsub_exprContext(self, pathParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = firstPathTryParser.Addsub_exprContext(self, firstPathTryParser.ExprContext(self, _parentctx, _parentState))
                         localctx.lhs = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 63
@@ -712,7 +712,7 @@ class pathParser ( Parser ):
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 5)")
                         self.state = 64
                         _la = self._input.LA(1)
-                        if not(_la==pathParser.ADD or _la==pathParser.SUB):
+                        if not(_la==firstPathTryParser.ADD or _la==firstPathTryParser.SUB):
                             self._errHandler.recoverInline(self)
                         else:
                             self._errHandler.reportMatch(self)
@@ -722,7 +722,7 @@ class pathParser ( Parser ):
                         pass
 
                     elif la_ == 3:
-                        localctx = pathParser.Injection_exprContext(self, pathParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = firstPathTryParser.Injection_exprContext(self, firstPathTryParser.ExprContext(self, _parentctx, _parentState))
                         localctx.who = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 66
@@ -730,13 +730,13 @@ class pathParser ( Parser ):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 4)")
                         self.state = 67
-                        self.match(pathParser.INJECT)
+                        self.match(firstPathTryParser.INJECT)
                         self.state = 68
                         localctx.what = self.expr(5)
                         pass
 
                     elif la_ == 4:
-                        localctx = pathParser.Horiz_distContext(self, pathParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = firstPathTryParser.Horiz_distContext(self, firstPathTryParser.ExprContext(self, _parentctx, _parentState))
                         localctx.dist = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 69
@@ -762,7 +762,7 @@ class pathParser ( Parser ):
                         la_ = self._interp.adaptivePredict(self._input,5,self._ctx)
                         if la_ == 1:
                             self.state = 75
-                            self.match(pathParser.T__6)
+                            self.match(firstPathTryParser.T__6)
                             self.state = 76
                             localctx.base = self.expr(0)
 
@@ -770,7 +770,7 @@ class pathParser ( Parser ):
                         pass
 
                     elif la_ == 5:
-                        localctx = pathParser.Horiz_distContext(self, pathParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = firstPathTryParser.Horiz_distContext(self, firstPathTryParser.ExprContext(self, _parentctx, _parentState))
                         localctx.dist = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 79
@@ -782,7 +782,7 @@ class pathParser ( Parser ):
                         pass
 
                     elif la_ == 6:
-                        localctx = pathParser.Attr_exprContext(self, pathParser.ExprContext(self, _parentctx, _parentState))
+                        localctx = firstPathTryParser.Attr_exprContext(self, firstPathTryParser.ExprContext(self, _parentctx, _parentState))
                         localctx.obj = _prevctx
                         self.pushNewRecursionContext(localctx, _startState, self.RULE_expr)
                         self.state = 81
@@ -790,7 +790,7 @@ class pathParser ( Parser ):
                             from antlr4.error.Errors import FailedPredicateException
                             raise FailedPredicateException(self, "self.precpred(self._ctx, 7)")
                         self.state = 82
-                        self.match(pathParser.ATTR)
+                        self.match(firstPathTryParser.ATTR)
                         self.state = 84 
                         self._errHandler.sync(self)
                         _alt = 1
@@ -833,7 +833,7 @@ class pathParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return pathParser.RULE_horiz_unit
+            return firstPathTryParser.RULE_horiz_unit
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterHoriz_unit" ):
@@ -854,7 +854,7 @@ class pathParser ( Parser ):
 
     def horiz_unit(self, sing:bool):
 
-        localctx = pathParser.Horiz_unitContext(self, self._ctx, self.state, sing)
+        localctx = firstPathTryParser.Horiz_unitContext(self, self._ctx, self.state, sing)
         self.enterRule(localctx, 2, self.RULE_horiz_unit)
         try:
             self.state = 99
@@ -863,13 +863,13 @@ class pathParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 93
-                self.match(pathParser.T__7)
+                self.match(firstPathTryParser.T__7)
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 94
-                self.match(pathParser.T__8)
+                self.match(firstPathTryParser.T__8)
                 pass
 
             elif la_ == 3:
@@ -879,7 +879,7 @@ class pathParser ( Parser ):
                     from antlr4.error.Errors import FailedPredicateException
                     raise FailedPredicateException(self, " $sing ")
                 self.state = 96
-                self.match(pathParser.T__9)
+                self.match(firstPathTryParser.T__9)
                 pass
 
             elif la_ == 4:
@@ -889,7 +889,7 @@ class pathParser ( Parser ):
                     from antlr4.error.Errors import FailedPredicateException
                     raise FailedPredicateException(self, " $sing ")
                 self.state = 98
-                self.match(pathParser.T__10)
+                self.match(firstPathTryParser.T__10)
                 pass
 
 
@@ -913,7 +913,7 @@ class pathParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return pathParser.RULE_vert_unit
+            return firstPathTryParser.RULE_vert_unit
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterVert_unit" ):
@@ -934,7 +934,7 @@ class pathParser ( Parser ):
 
     def vert_unit(self, sing:bool):
 
-        localctx = pathParser.Vert_unitContext(self, self._ctx, self.state, sing)
+        localctx = firstPathTryParser.Vert_unitContext(self, self._ctx, self.state, sing)
         self.enterRule(localctx, 4, self.RULE_vert_unit)
         try:
             self.state = 104
@@ -943,7 +943,7 @@ class pathParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 101
-                self.match(pathParser.T__11)
+                self.match(firstPathTryParser.T__11)
                 pass
 
             elif la_ == 2:
@@ -953,7 +953,7 @@ class pathParser ( Parser ):
                     from antlr4.error.Errors import FailedPredicateException
                     raise FailedPredicateException(self, " $sing ")
                 self.state = 103
-                self.match(pathParser.T__12)
+                self.match(firstPathTryParser.T__12)
                 pass
 
 
@@ -977,7 +977,7 @@ class pathParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return pathParser.RULE_undirected_unit
+            return firstPathTryParser.RULE_undirected_unit
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterUndirected_unit" ):
@@ -998,7 +998,7 @@ class pathParser ( Parser ):
 
     def undirected_unit(self, sing:bool):
 
-        localctx = pathParser.Undirected_unitContext(self, self._ctx, self.state, sing)
+        localctx = firstPathTryParser.Undirected_unitContext(self, self._ctx, self.state, sing)
         self.enterRule(localctx, 6, self.RULE_undirected_unit)
         try:
             self.state = 112
@@ -1007,13 +1007,13 @@ class pathParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 106
-                self.match(pathParser.T__13)
+                self.match(firstPathTryParser.T__13)
                 pass
 
             elif la_ == 2:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 107
-                self.match(pathParser.T__14)
+                self.match(firstPathTryParser.T__14)
                 pass
 
             elif la_ == 3:
@@ -1023,7 +1023,7 @@ class pathParser ( Parser ):
                     from antlr4.error.Errors import FailedPredicateException
                     raise FailedPredicateException(self, " $sing ")
                 self.state = 109
-                self.match(pathParser.T__15)
+                self.match(firstPathTryParser.T__15)
                 pass
 
             elif la_ == 4:
@@ -1033,7 +1033,7 @@ class pathParser ( Parser ):
                     from antlr4.error.Errors import FailedPredicateException
                     raise FailedPredicateException(self, " $sing ")
                 self.state = 111
-                self.match(pathParser.T__16)
+                self.match(firstPathTryParser.T__16)
                 pass
 
 
@@ -1055,19 +1055,19 @@ class pathParser ( Parser ):
             self.direction = None
 
         def LEFT(self):
-            return self.getToken(pathParser.LEFT, 0)
+            return self.getToken(firstPathTryParser.LEFT, 0)
 
         def RIGHT(self):
-            return self.getToken(pathParser.RIGHT, 0)
+            return self.getToken(firstPathTryParser.RIGHT, 0)
 
         def EAST(self):
-            return self.getToken(pathParser.EAST, 0)
+            return self.getToken(firstPathTryParser.EAST, 0)
 
         def WEST(self):
-            return self.getToken(pathParser.WEST, 0)
+            return self.getToken(firstPathTryParser.WEST, 0)
 
         def getRuleIndex(self):
-            return pathParser.RULE_horiz_dir
+            return firstPathTryParser.RULE_horiz_dir
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterHoriz_dir" ):
@@ -1088,34 +1088,34 @@ class pathParser ( Parser ):
 
     def horiz_dir(self):
 
-        localctx = pathParser.Horiz_dirContext(self, self._ctx, self.state)
+        localctx = firstPathTryParser.Horiz_dirContext(self, self._ctx, self.state)
         self.enterRule(localctx, 8, self.RULE_horiz_dir)
         try:
             self.state = 122
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [pathParser.LEFT]:
+            if token in [firstPathTryParser.LEFT]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 114
-                self.match(pathParser.LEFT)
+                self.match(firstPathTryParser.LEFT)
                 localctx.direction=Dir.LEFT
                 pass
-            elif token in [pathParser.RIGHT]:
+            elif token in [firstPathTryParser.RIGHT]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 116
-                self.match(pathParser.RIGHT)
+                self.match(firstPathTryParser.RIGHT)
                 localctx.direction=Dir.RIGHT
                 pass
-            elif token in [pathParser.EAST]:
+            elif token in [firstPathTryParser.EAST]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 118
-                self.match(pathParser.EAST)
+                self.match(firstPathTryParser.EAST)
                 localctx.direction=Dir.RIGHT
                 pass
-            elif token in [pathParser.WEST]:
+            elif token in [firstPathTryParser.WEST]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 120
-                self.match(pathParser.WEST)
+                self.match(firstPathTryParser.WEST)
                 localctx.direction=Dir.LEFT
                 pass
             else:
@@ -1139,19 +1139,19 @@ class pathParser ( Parser ):
             self.direction = None
 
         def UP(self):
-            return self.getToken(pathParser.UP, 0)
+            return self.getToken(firstPathTryParser.UP, 0)
 
         def DOWN(self):
-            return self.getToken(pathParser.DOWN, 0)
+            return self.getToken(firstPathTryParser.DOWN, 0)
 
         def NORTH(self):
-            return self.getToken(pathParser.NORTH, 0)
+            return self.getToken(firstPathTryParser.NORTH, 0)
 
         def SOUTH(self):
-            return self.getToken(pathParser.SOUTH, 0)
+            return self.getToken(firstPathTryParser.SOUTH, 0)
 
         def getRuleIndex(self):
-            return pathParser.RULE_vertical_dir
+            return firstPathTryParser.RULE_vertical_dir
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterVertical_dir" ):
@@ -1172,34 +1172,34 @@ class pathParser ( Parser ):
 
     def vertical_dir(self):
 
-        localctx = pathParser.Vertical_dirContext(self, self._ctx, self.state)
+        localctx = firstPathTryParser.Vertical_dirContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_vertical_dir)
         try:
             self.state = 132
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [pathParser.UP]:
+            if token in [firstPathTryParser.UP]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 124
-                self.match(pathParser.UP)
+                self.match(firstPathTryParser.UP)
                 localctx.direction=Dir.UP
                 pass
-            elif token in [pathParser.DOWN]:
+            elif token in [firstPathTryParser.DOWN]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 126
-                self.match(pathParser.DOWN)
+                self.match(firstPathTryParser.DOWN)
                 localctx.direction=Dir.DOWN
                 pass
-            elif token in [pathParser.NORTH]:
+            elif token in [firstPathTryParser.NORTH]:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 128
-                self.match(pathParser.NORTH)
+                self.match(firstPathTryParser.NORTH)
                 localctx.direction=Dir.UP
                 pass
-            elif token in [pathParser.SOUTH]:
+            elif token in [firstPathTryParser.SOUTH]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 130
-                self.match(pathParser.SOUTH)
+                self.match(firstPathTryParser.SOUTH)
                 localctx.direction=Dir.DOWN
                 pass
             else:
@@ -1222,14 +1222,14 @@ class pathParser ( Parser ):
             self.parser = parser
 
         def ID(self):
-            return self.getToken(pathParser.ID, 0)
+            return self.getToken(firstPathTryParser.ID, 0)
 
         def kwd_names(self):
-            return self.getTypedRuleContext(pathParser.Kwd_namesContext,0)
+            return self.getTypedRuleContext(firstPathTryParser.Kwd_namesContext,0)
 
 
         def getRuleIndex(self):
-            return pathParser.RULE_name
+            return firstPathTryParser.RULE_name
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterName" ):
@@ -1250,18 +1250,18 @@ class pathParser ( Parser ):
 
     def name(self):
 
-        localctx = pathParser.NameContext(self, self._ctx, self.state)
+        localctx = firstPathTryParser.NameContext(self, self._ctx, self.state)
         self.enterRule(localctx, 12, self.RULE_name)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 136
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [pathParser.ID]:
+            if token in [firstPathTryParser.ID]:
                 self.state = 134
-                self.match(pathParser.ID)
+                self.match(firstPathTryParser.ID)
                 pass
-            elif token in [pathParser.T__17]:
+            elif token in [firstPathTryParser.T__17]:
                 self.state = 135
                 self.kwd_names()
                 pass
@@ -1286,7 +1286,7 @@ class pathParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return pathParser.RULE_kwd_names
+            return firstPathTryParser.RULE_kwd_names
 
         def enterRule(self, listener:ParseTreeListener):
             if hasattr( listener, "enterKwd_names" ):
@@ -1307,12 +1307,12 @@ class pathParser ( Parser ):
 
     def kwd_names(self):
 
-        localctx = pathParser.Kwd_namesContext(self, self._ctx, self.state)
+        localctx = firstPathTryParser.Kwd_namesContext(self, self._ctx, self.state)
         self.enterRule(localctx, 14, self.RULE_kwd_names)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 138
-            self.match(pathParser.T__17)
+            self.match(firstPathTryParser.T__17)
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)

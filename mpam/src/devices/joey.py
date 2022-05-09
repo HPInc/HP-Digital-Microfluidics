@@ -13,7 +13,7 @@ from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State,\
-    OnOff, DummyState
+    OnOff, DummyState, Postable
 
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.core import DerivedDim
@@ -112,7 +112,7 @@ class EmulatedHeater(device.Heater):
         self._last_read_time = now
 
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
-        future = Delayed[Optional[TemperaturePoint]]()
+        future = Postable[Optional[TemperaturePoint]]()
         self._update_temp(self.target)
         future.post(self._last_reading)
         return future
