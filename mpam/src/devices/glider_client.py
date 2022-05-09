@@ -6,6 +6,8 @@ from typing import Union, Optional, Final
 from mpam.types import State, OnOff
 from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
+from quantities.dimensions import Voltage
+from quantities.SI import volts
 
 def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
     if isinstance(p, str):
@@ -57,12 +59,27 @@ class Heater:
         temp = 0.0 if target is None else target.as_number(abs_C)
         # print(f"Setting target for {self.name} to {target}")
         self.remote.SetTargetTemperature(temp)
-
+        
 class GliderClient:
     remote: Final[pyglider.Board]
     electrodes: Final[dict[str, Electrode]]
     heaters: Final[dict[str, Heater]]
     # remote_electrodes: Final[dict[str, pyglider.Electrode]]
+    
+    _voltage_level: Optional[Voltage] = None 
+    
+    @property
+    def voltage_level(self) -> Optional[Voltage]:
+        return self._voltage_level
+    
+    @voltage_level.setter
+    def voltage_level(self, opt_volts: Optional[Voltage]) -> None:
+        self._voltage_level = opt_volts
+        if opt_volts is None:
+            self.remote.DisableHighVoltage()
+        else:
+            self.remote.SetHighVoltage(opt_volts.as_number(volts))
+            self.remote.EnableHighVoltage()
     
     def __init__(self, board_type: pyglider.BoardId, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,

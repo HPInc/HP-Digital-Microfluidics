@@ -10,9 +10,10 @@ from typing import Final, Mapping, Union, Optional, Sequence, Any
 import logging.config
 
 from mpam.device import Board, System
-from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs
+from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs,\
+    volts
 from quantities.core import Unit
-from quantities.dimensions import Time, Volume
+from quantities.dimensions import Time, Volume, Voltage
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from quantities import temperature
 from threading import Event
@@ -20,6 +21,7 @@ from matplotlib.gridspec import SubplotSpec
 from mpam.monitor import BoardMonitor
 import pathlib
 from erk.stringutils import conj_str
+from quantities.prefixes import kilo
 
 logger = logging.getLogger(__name__)
 
@@ -114,6 +116,28 @@ def temperature_arg(arg: str) -> TemperaturePoint:
         raise ValueError(f"{ustr} is not a known temperature unit")
     val = n*unit
     return val
+
+voltage_arg_units: Final[Mapping[str, Unit[Voltage]]] = {
+    "V": volts,
+    "v": volts,
+    "kV": kilo(volts),
+    "kv": kilo(volts)
+    }
+voltage_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(voltage_arg_units)})")
+
+def voltage_arg(arg: str) -> Voltage:
+    m = voltage_arg_re.fullmatch(arg)
+    if m is None:
+        raise ArgumentTypeError(f"""
+                    {arg} not parsable as a voltage value.
+                    Requires a number followed immediately by units, e.g. '100V'""")
+    n = float(m.group(1))
+    unit = voltage_arg_units.get(m.group(2), None)
+    if unit is None:
+        raise ValueError(f"{m.group(2)} is not a known time unit")
+    val = n*unit
+    return val
+
 
 class Task(ABC):
     name: Final[str]

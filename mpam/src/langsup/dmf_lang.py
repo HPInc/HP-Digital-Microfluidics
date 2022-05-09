@@ -21,7 +21,7 @@ from mpam.device import Pad, Board, BinaryComponent, Well,\
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    Ticks, DelayType, Turn, Reagent, Mixture
+    Ticks, DelayType, Turn, Reagent, Mixture, Postable
 from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume
 from erk.stringutils import map_str, conj_str
@@ -1377,7 +1377,7 @@ class DMFCompiler(DMFVisitor):
                 return stat_execs[0].evaluate(local_env)
             barrier = Barrier[Any](required = len(stat_execs))
             error: MaybeError[None] = None
-            trigger_future = Delayed[None]()
+            trigger_future = Postable[None]()
             barrier.wait(None, trigger_future)
             future = trigger_future.transformed(lambda _: error)
             def note_error(ex: EvaluationError) -> None: 

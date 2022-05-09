@@ -25,7 +25,7 @@ from mpam.processes import PlacedMixSequence, Transform
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
 from mpam.types import Reagent, Liquid, Dir, Color, waste_reagent, Barrier, \
-    schedule, Delayed
+    schedule, Delayed, Postable
 from quantities.SI import ms, second, seconds, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import abs_C
@@ -736,7 +736,7 @@ class CombSynth(PCRTask):
         c1,c2,c3,c4,c5,c6 = mixing
         # We'll get c6 out out of the way first so it doesn't block the others.
         if c6 is not None:
-            product_loc = Delayed[ProductLocation]()
+            product_loc = Postable[ProductLocation]()
             product_loc.then_call(lambda pl: print(f"Product {pl.reagent} wound up in {pl.location}"))
             paths.append((c6.lead_drop,
                           Path.empty()
