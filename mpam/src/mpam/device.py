@@ -3105,10 +3105,9 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             got = Liquid(reagent, volume)
             self.pad.liquid_added(got, mix_result=mix_result)
         if last:
-            # self.pad.reserved = False
             logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
             for pad in self.reserved_pads:
-                pad.reserved = False
+                pad.unreserve()
             self.reserved_pads.clear()
 
 
