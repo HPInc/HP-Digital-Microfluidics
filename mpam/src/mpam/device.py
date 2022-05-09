@@ -524,8 +524,8 @@ class LocatedPad:
 
 class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     """
-    A pad, typically in the main array of its associated :class:`Board`
-    (i.e., not in a :class:`Well`).
+    A pad, typically in the main array of its associated
+    :class:`Board` (i.e., not in a :class:`Well`).
 
     *   As a :class:`BinaryComponent`, it has a :attr:`~BoardComponent.board` and a
         :attr:`~BinaryComponent.current_state`, it can act as both a
@@ -591,17 +591,17 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
             * A thread participating in this traffic control will only
               move a :class:`.Drop` onto a :class:`Pad` if it has
               successfully called :func:`reserve` on it.  This will
-              only succeed if the :class:`Pad` is not already
-              reserved, and it will have the side-effect of of marking
-              the :class:`Pad` as reserved.
+              only succeed if :attr:`reserved` is ``False``, and it
+              will have the side-effect of setting :attr:`reserved` to
+              ``True``.
 
             * Before calling :func:`reserve`, the thread will first
               determine that the :class:`Pad` is :attr:`safe` (or
               :func:`safe_except()` for the :class:`Pad` or
               :class:`Well` that is the source of the motion). A
               :class:`Pad` is :attr:`safe` if it is :class:`empty` and
-              none of its neighboring :class:`Pad`\s are reserved or
-              have a :class:`.Drop`.
+              none of its neighboring :class:`Pad`\s are
+              :attr:`reserved` or have a :class:`.Drop`.
 
             * After the :class:`.Drop` has moved to the :class:`.Pad`,
               the thread should set call :func:`unreserve` to clear
@@ -738,7 +738,6 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
             self._neighbors = ns
         return ns
 
-
     @property
     def between_pads(self) -> Mapping[Pad, Pad]:
         """
@@ -752,6 +751,13 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
                         and (p := m.neighbor(d)) is not None}
             self._between_pads = bps
         return bps
+
+    @property
+    def reserved(self) -> bool:
+        """
+        Has the :class:`Pad` been reserved
+        """
+        return self._reserved
 
     def __init__(self, loc: XYCoord, board: Board,
                  state: State[OnOff], *, exists: bool = True) -> None:
@@ -772,6 +778,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         # self.broken = False
         self._pads = board.pad_array
         self._dried_liquid = None
+        self._reserved = False
         self._reserved_change_callbacks = ChangeCallbackList[bool]()
         def journal_change(old: OnOff, new: OnOff) -> None:
             if old is not new:
@@ -790,7 +797,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         Args:
             d: the :class:`Dir` to look
         Returns:
-            the neighboring :class:`Pad` if one exists, otherwise ``None`.
+            the neighboring :class:`Pad` if one exists, otherwise `None`.
         """
         n = self.board.orientation.neighbor(d, self.location)
         p = self._pads.get(n, None)
@@ -810,14 +817,14 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         """
         Is it safe to :func:`reserve` the :class:`Pad`?  A :class:`Pad` is
         safe if it is :attr:`empty` and all of its neighbors are
-        :attr:`empty` and none are reserved.
+        :attr:`empty` and none are :attr:`reserved`.
 
         """
         w = self.well
         if w is not None and (w.gate_on or w.gate_reserved):
             return False
         return self.empty and all(
-            map(lambda n : n.empty and not n._reserved, self.all_neighbors))
+            map(lambda n : n.empty and not n.reserved, self.all_neighbors))
 
     def safe_except(self, padOrWell: Union[Pad, Well]) -> bool:
         """
@@ -832,16 +839,20 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         if w is not None and w is not padOrWell and (w.gate_on or w.gate_reserved):
             return False
         for p in self.all_neighbors:
-            if p is not padOrWell and (not p.empty or p._reserved):
+            if p is not padOrWell and (not p.empty or p.reserved):
                 return False
         return True
 
 
     def reserve(self) -> bool:
-        """
-        Reserve the :class:`Pad`.  Returns ``False`` if the :class:`Pad` is
+        """Reserve the :class:`Pad`.  Returns ``False`` if the :class:`Pad` is
         already :attr:`reserved`, otherwise sets :attr:`reserved` to ``True``
         and returns ``True``.
+
+        Returns:
+            `True` if the :class:`Pad` has been successfly reserved
+            and `False` if the :class:`Pad` cannot be reserved because
+            it has already been reserved.
         """
         if self._reserved:
             return False
@@ -849,15 +860,16 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         self._reserved_change_callbacks.process(False, True)
         return True
 
-    def unreserve(self):
+    def unreserve(self) -> None:
         """
         Clears the reservation on the :class:`Pad`. If the pad is not
         reserved, it has no effect.
 
         """
-        if self._reserved:
-            self._reserved_change_callbacks.process(True, False)
+        prev_reserved = self._reserved
         self._reserved = False
+        if prev_reserved:
+            self._reserved_change_callbacks.process(True, False)
 
     def on_reserved_change(self, cb: ChangeCallback[bool], *, key: Optional[Hashable] = None):
         self._reserved_change_callbacks.add(cb, key=key)
@@ -1444,7 +1456,7 @@ class WellMotion:
                         well = g.well
                         pad = well.exit_pad
                         # The pad should already be reserved.
-                        assert pad._reserved
+                        assert pad.reserved
                         # while not pad.safe_except(well):
                         #     yield True
                         # while not pad.reserve():
@@ -3100,7 +3112,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             got = Liquid(reagent, volume)
             self.pad.liquid_added(got, mix_result=mix_result)
         if last:
-            self.pad.reserved = False
+            self.pad.unreserve()
 
     def prepare_for_remove(self) -> None:
         self.ensure_drop().wait()
