@@ -695,7 +695,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     last_pad.schedule(Pad.TurnOff, post_result=False)
                     real_next_pad = next_pad
                     def unreserve() -> None:
-                        real_next_pad.reserved = False
+                        real_next_pad.unreserve()
                     board.after_tick(unreserve)
                     # logger.debug(f"{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                     if post_result and i == steps-1:
@@ -965,7 +965,7 @@ class Drop(OpScheduler['Drop']):
                     (self.before_release)()
 
                 well.gate_reserved = False
-                pad.reserved = False
+                pad.unreserve()
                 if post_result:
                     board.after_tick(lambda: future.post(pad.checked_drop))
 
