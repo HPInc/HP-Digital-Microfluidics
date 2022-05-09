@@ -4,7 +4,7 @@ from _collections import defaultdict
 from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
     Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple,\
-    TYPE_CHECKING
+    TYPE_CHECKING, overload
 import typing
 
 from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext, \
@@ -17,13 +17,13 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit
 from mpam.device import Pad, Board, BinaryComponent, Well,\
-    WellGate, WellPad
+    WellGate, WellPad, Heater
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable
 from quantities.core import Unit, Dimensionality
-from quantities.dimensions import Time, Volume
+from quantities.dimensions import Time, Volume, Temperature
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
@@ -31,6 +31,8 @@ from erk.basic import LazyPattern, not_None
 from re import Match
 from threading import RLock
 import re
+from quantities.temperature import TemperaturePoint, abs_C
+from quantities.SI import deg_C
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -50,6 +52,10 @@ class MaybeNotSatisfiedError(EvaluationError): ...
 class AlreadyDropError(EvaluationError): ...
 
 class UninitializedVariableError(EvaluationError): ...
+
+class NoSuchComponentError(EvaluationError):
+    def __init__(self, kind: str, which: int, max_val: int) -> None:
+        super().__init__(f"{kind} #{which} does not exist.  Max is {max_val}.")
         
 class UnknownUnitDimensionError(CompilationError):
     unit: Final[Unit]
@@ -57,7 +63,7 @@ class UnknownUnitDimensionError(CompilationError):
     
     def __init__(self, unit: Unit) -> None:
         dim = unit.dimensionality()
-        super().__init__(f"Unit {unit} has unknown dimensionality {dim}")
+        super().__init__(f"Unit {unit} has unknown dimensionality {dim}.")
         self.unit = unit
         self.dimensionality = dim
         
@@ -498,6 +504,7 @@ Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
 Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
 Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
 Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
+Attributes["number"].register(Type.HEATER, Type.INT, lambda w : w.num)
 
 Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
 Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
@@ -530,6 +537,13 @@ Attributes["contents"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w
 Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
 Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
 
+Attributes["heater"].register(Type.PAD, Type.HEATER.maybe, lambda p: p.heater)
+
+Attributes["#current_temperature"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.current_temperature)
+def _set_heater_target(h: Heater, t: Optional[TemperaturePoint]):
+    h.target = t
+Attributes["#target_temperature"].register(Type.HEATER, Type.ABS_TEMP.maybe, lambda h: h.target)
+Attributes["#target_temperature"].register_setter(Type.HEATER, Type.ABS_TEMP.maybe, _set_heater_target)
 
 Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
 Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
@@ -603,6 +617,58 @@ DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
     Ticks.dim(): (Type.TICKS, Type.INT),
     }
 
+AnyTemp = Union[Temperature, TemperaturePoint, "AmbiguousTemp"]
+class AmbiguousTemp:
+    absolute: Final[TemperaturePoint]
+    relative: Final[Temperature]
+    
+    def __init__(self, absolute: TemperaturePoint, relative: Temperature) -> None:
+        self.absolute = absolute
+        self.relative = relative
+    
+    def __str__(self) -> str:
+        return (f"Ambiguous[abs: {self.absolute}, rel: {self.relative}]")
+    
+    @overload
+    def __add__(self, rhs: Union[Temperature, AmbiguousTemp]) -> AmbiguousTemp: ... # @UnusedVariable
+    @overload
+    def __add__(self, rhs: TemperaturePoint) -> TemperaturePoint: ... # @UnusedVariable
+    def __add__(self, rhs: AnyTemp) -> AnyTemp:
+        if isinstance(rhs, TemperaturePoint):
+            return rhs+self.relative
+        if not isinstance(rhs, Temperature):
+            rhs = rhs.relative
+        return AmbiguousTemp(self.absolute+rhs, self.relative+rhs)
+    
+    @overload
+    def __radd__(self, lhs: Temperature) -> AmbiguousTemp: ... # @UnusedVariable
+    @overload
+    def __radd__(self, lhs: TemperaturePoint) -> TemperaturePoint: ... # @UnusedVariable
+    def __radd__(self, lhs: Union[Temperature, TemperaturePoint]) -> AnyTemp:
+        return self+lhs
+        
+        
+    @overload
+    def __sub__(self, rhs: TemperaturePoint) -> Temperature: ... # @UnusedVariable
+    @overload
+    def __sub__(self, rhs: Union[Temperature, AmbiguousTemp]) -> AmbiguousTemp: ... # @UnusedVariable
+    def __sub__(self, rhs: AnyTemp) -> Union[Temperature, AmbiguousTemp]:
+        if isinstance(rhs, TemperaturePoint):
+            return self.absolute-rhs
+        if not isinstance(rhs, Temperature):
+            rhs = rhs.relative
+        return AmbiguousTemp(self.absolute-rhs, self.relative-rhs)
+    
+    @overload
+    def __rsub__(self, lhs: Temperature) -> Temperature: ... # @UnusedVariable
+    @overload
+    def __rsub__(self, lhs: TemperaturePoint) -> AmbiguousTemp: ... # @UnusedVariable
+    def __rsub__(self, lhs: Union[Temperature, TemperaturePoint]) -> Union[Temperature, AmbiguousTemp]:
+        if isinstance(lhs, Temperature):
+            return lhs-self.relative
+        return AmbiguousTemp(lhs-self.relative, lhs-self.absolute)
+    
+    
 rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.DROP: Drop,
         Type.INT: int,
@@ -628,7 +694,13 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.STRING: str,
         Type.REAGENT: Reagent,
         Type.SCALED_REAGENT: ScaledReagent,
+        Type.ABS_TEMP: TemperaturePoint,
+        Type.REL_TEMP: Temperature,
+        Type.AMBIG_TEMP: AmbiguousTemp,
+        Type.HEATER: Heater,
+        Type.NONE: type(None),
     }
+
 
 # class Conversions:
 #     known: ClassVar[dict[tuple[Type,Type], Callable[[Any], Any]]] = {}
@@ -695,6 +767,8 @@ Type.register_conversion(Type.INT, Type.FLOAT, float)
 Type.register_conversion(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
 Type.register_conversion(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
 Type.register_conversion(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
+Type.register_conversion(Type.AMBIG_TEMP, Type.ABS_TEMP, lambda t: t.absolute)
+Type.register_conversion(Type.AMBIG_TEMP, Type.REL_TEMP, lambda t: t.relative)
 
 
 
@@ -1552,16 +1626,37 @@ class DMFCompiler(DMFVisitor):
         lhs = self.visit(ctx.lhs)
         rhs = self.visit(ctx.rhs)
         rel: Rel = ctx.rel().which
-        ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME)
-        if rel is not Rel.EQ and rel is not Rel.NE:
-            if e:=self.type_check(ok_types, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
-                return e
-        if lhs.return_type is not rhs.return_type:
+        lhs_t = lhs.return_type
+        rhs_t = rhs.return_type
+        upper_bounds = Type.upper_bounds(lhs_t, rhs_t)
+        works = len(upper_bounds) > 0
+        if works:
+            if rel is Rel.EQ or rel is Rel.NE:
+                ub_t = upper_bounds[0]
+            else:
+                ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME, 
+                            Type.ABS_TEMP, Type.REL_TEMP)
+                def first_matching() -> Optional[Type]:
+                    for t in upper_bounds:
+                        for ok in ok_types:
+                            if t <= ok:
+                                return ok
+                    return None
+                match_t = first_matching()
+                if match_t is None:
+                    works = False
+                else:
+                    ub_t = match_t
+        # if rel is not Rel.EQ and rel is not Rel.NE:
+        #     if e:=self.type_check(ok_types, lhs_t, ctx.lhs, return_type=Type.BOOL):
+        #         return e
+        # if lhs_t is not rhs_t:
+        if not works:
             return self.error(ctx, Type.BOOL,
-                              f"Can't compare {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
+                              f"Can't compare {lhs_t.name} and {rhs_t.name}: {self.text_of(ctx)}")
         def run(env: Environment) -> Delayed[MaybeError[bool]]:
-            return (lhs.evaluate(env)
-                    .chain(lambda x: (rhs.check_and_eval(x, env)
+            return (lhs.evaluate(env, ub_t)
+                    .chain(lambda x: (rhs.check_and_eval(x, env, ub_t)
                                       .transformed(error_check(lambda y: rel.test(x, y))))))
             # return future.chain(second)
         return Executable(Type.BOOL, run, (lhs,rhs))
@@ -1806,9 +1901,30 @@ class DMFCompiler(DMFVisitor):
         if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
             return e
         def run(env: Environment) -> Delayed[MaybeError[Well]]:
+            def find_well(n: int) -> MaybeError[Well]:
+                wells = env.board.wells
+                try:
+                    return wells[n]
+                except IndexError:
+                    return NoSuchComponentError("well", n, len(wells)-1)
             return (which.evaluate(env, Type.INT)
-                    .transformed(error_check(lambda n: env.board.wells[n])))
+                    .transformed(error_check(find_well)))
         return Executable(Type.WELL, run, (which,))
+
+    def visitHeater_expr(self, ctx:DMFParser.Well_exprContext) -> Executable:
+        which = self.visit(ctx.which)
+        if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
+            return e
+        def run(env: Environment) -> Delayed[MaybeError[Heater]]:
+            def find_heater(n: int) -> MaybeError[Heater]:
+                heaters = env.board.heaters
+                try:
+                    return heaters[n]
+                except IndexError:
+                    return NoSuchComponentError("heater", n, len(heaters)-1)
+            return (which.evaluate(env, Type.INT)
+                    .transformed(error_check(find_heater)))
+        return Executable(Type.HEATER, run, (which,))
 
 
 
@@ -1971,6 +2087,9 @@ class DMFCompiler(DMFVisitor):
     def visitUnit_string_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
         return self.unit_string_exec(ctx.dim_unit().unit, ctx, ctx.quant)
     
+    def visitTemperature_expr(self, ctx:DMFParser.Temperature_exprContext):
+        return self.use_function("TEMP_C", ctx, (ctx.amount,))
+    
     # def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
     #     return self.use_function("DROP_VOL", ctx, (ctx.amount,))
         
@@ -2010,7 +2129,8 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["NEGATE"]
         fn.prefix_op("-")
         fn.register_all_immediate([((Type.INT,), Type.INT),
-                                   ((Type.FLOAT,), Type.FLOAT)
+                                   ((Type.FLOAT,), Type.FLOAT),
+                                   ((Type.REL_TEMP,), Type.REL_TEMP),
                                    ], lambda x: -x)
         
         fn = Functions["INDEX"]
@@ -2031,7 +2151,12 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TIME,Type.TIME), Type.TIME),
                                    ((Type.TICKS,Type.TICKS), Type.TICKS),
                                    ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
-                                   ((Type.STRING,Type.STRING), Type.STRING)
+                                   ((Type.STRING,Type.STRING), Type.STRING),
+                                   # ((Type.AMBIG_TEMP, Type.AMBIG_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.AMBIG_TEMP, Type.REL_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
+                                   ((Type.REL_TEMP, Type.ABS_TEMP), Type.ABS_TEMP),
+                                   ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
                                    ], lambda x,y: x+y)
         fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, d.dist))
         fn.register_all_immediate([((Type.STRING, Type.NUMBER), Type.STRING),
@@ -2051,6 +2176,11 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TIME,Type.TIME), Type.TIME),
                                    ((Type.TICKS,Type.TICKS), Type.TICKS),
                                    ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
+                                   # ((Type.AMBIG_TEMP, Type.AMBIG_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.AMBIG_TEMP, Type.REL_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
+                                   ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
+                                   ((Type.ABS_TEMP, Type.ABS_TEMP), Type.REL_TEMP),
                                    ], lambda x,y: x-y)
         
          
@@ -2098,6 +2228,9 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TICKS,Type.FLOAT), Type.TICKS),
                                    ((Type.FLOAT,Type.VOLUME), Type.VOLUME),
                                    ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
+                                   ((Type.REL_TEMP,Type.FLOAT), Type.REL_TEMP),
+                                   ((Type.FLOAT,Type.REL_TEMP), Type.REL_TEMP),
+                                   # ((Type.AMBIG_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    ], lambda x,y: x*y)
         fn.register_immediate((Type.NUMBER, Type.REAGENT), Type.SCALED_REAGENT,
                               lambda n,r: ScaledReagent(n,r))
@@ -2109,6 +2242,8 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TIME,Type.FLOAT), Type.TIME),
                                    ((Type.TICKS,Type.FLOAT), Type.TICKS),
                                    ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
+                                   ((Type.REL_TEMP,Type.FLOAT), Type.REL_TEMP),
+                                   # ((Type.AMBIG_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    ], lambda x,y: x/y)
         fn.register_immediate((Type.LIQUID, Type.FLOAT), Type.LIQUID,
                               lambda liquid, split: Liquid(liquid.reagent, liquid.volume/split)
@@ -2189,6 +2324,11 @@ class DMFCompiler(DMFVisitor):
         fn.register_all_immediate([((Type.SCALED_REAGENT,)*n, Type.REAGENT) for n in range(1,8)], 
                                   mix_reagent)
         
+        fn = Functions["TEMP_C"]
+        fn.postfix_op("C")
+        fn.register_immediate((Type.NUMBER,), Type.AMBIG_TEMP, 
+                              lambda n: AmbiguousTemp(absolute=n*abs_C, relative=n*deg_C))
+        
     @classmethod
     def setup_special_vars(cls) -> None:
         name = "interactive reagent"
@@ -2204,7 +2344,12 @@ class DMFCompiler(DMFVisitor):
         def set_volume(monitor: BoardMonitor, volume: Volume):
             monitor.interactive_volume = volume
         SpecialVars[name] = MonitorVariable(name, Type.VOLUME, getter=get_volume, setter=set_volume)
-
+        
+        name = "none"
+        def get_none(env: Environment) -> None: # @UnusedVariable
+            return None
+        SpecialVars["none"] = SpecialVariable(Type.NONE, getter=lambda _env: None)
+        
         
 DMFCompiler.setup_function_table()
 DMFCompiler.setup_special_vars()
