@@ -226,7 +226,7 @@ class PadMonitor(ClickableMonitor):
             self.square.set_linewidth(1)
             self.square.set_edgecolor('black')
 
-    def note_reserved(self, reserved: OnOff) -> None:
+    def note_reserved(self, reserved: bool) -> None:
         # logger.debug("{} is {}reserved".format(self.pad, "" if reserved else "not "))
         if reserved:
             self.square.set_facecolor('lightgray')
