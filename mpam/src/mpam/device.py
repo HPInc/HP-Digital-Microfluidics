@@ -527,8 +527,8 @@ class LocatedPad:
 
 class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     """
-    A pad, typically in the main array of its associated :class:`Board` (i.e.,
-    not in a :class:`Well`).
+    A pad, typically in the main array of its associated
+    :class:`Board` (i.e., not in a :class:`Well`).
 
     *   As a :class:`BinaryComponent`, it has a :attr:`~BoardComponent.board` and a
         :attr:`~BinaryComponent.current_state`, it can act as both a
@@ -591,21 +591,24 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         The :class:`Pad` provides a rudimentary form of *traffic control* for
         :class:`.Drop` motion.  The basic notion is that
 
-            * A thread participating in this traffic control will only move a
-              :class:`.Drop` onto a :class:`Pad` if it has successfully called
-              :func:`reserve` on it.  This will only succeed if :attr:`reserved`
-              is ``False``, and it will have the side-effect of setting
-              :attr:`reserved` to ``True``.
+            * A thread participating in this traffic control will only
+              move a :class:`.Drop` onto a :class:`Pad` if it has
+              successfully called :func:`reserve` on it.  This will
+              only succeed if :attr:`reserved` is ``False``, and it
+              will have the side-effect of setting :attr:`reserved` to
+              ``True``.
 
-            * Before calling :func:`reserve`, the thread will first determine
-              that the :class:`Pad` is :attr:`safe` (or :func:`safe_except()`
-              for the :class:`Pad` or :class:`Well` that is the source of the
-              motion). A :class:`Pad` is :attr:`safe` if it is :class:`empty`
-              and none of its neighboring :class:`Pad`\s are :attr:`reserved` or
-              have a :class:`.Drop`.
+            * Before calling :func:`reserve`, the thread will first
+              determine that the :class:`Pad` is :attr:`safe` (or
+              :func:`safe_except()` for the :class:`Pad` or
+              :class:`Well` that is the source of the motion). A
+              :class:`Pad` is :attr:`safe` if it is :class:`empty` and
+              none of its neighboring :class:`Pad`\s are
+              :attr:`reserved` or have a :class:`.Drop`.
 
-            * After the :class:`.Drop` has moved to the :class:`.Pad`, the
-              thread should set :reserved` to ``False``.
+            * After the :class:`.Drop` has moved to the :class:`.Pad`,
+              the thread should set call :func:`unreserve` to clear
+              the reservation on the :class:`Pad`.
 
     Warning:
         This protocol is not thread-safe.  It probably should be made to be.
@@ -631,10 +634,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
                     target.schedule(Pad.TurnOn)
                     source.schedule(Pad.TurnOff)
 
-                    def unreserve() -> None:
-                        target.reserved = False
-
-                    board.after_tick(unreserve)
+                    board.after_tick(target.unreserve)
 
                 return None
 
@@ -653,10 +653,10 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         This :class:`.Drop` motion inference is asynchronous to any inference
         due to :class:`Pad` state changes.  This is because transfers are
         typically asynchronouse with respect to the :class:`Board`'s clock.
+
     """
     exists: Final[bool]         #: Is this a real :class:`Pad`
 
-    reserved: bool = False      #: Has the :class:`Pad` been reserved
     # broken: bool
 
     _pads: Final[PadArray]
@@ -669,7 +669,8 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     _heater: Optional[Heater] = None
     _extraction_point: Optional[ExtractionPoint] = None
 
-
+    _reserved: bool = False
+    _reserved_change_callbacks: Final[ChangeCallbackList[bool]]
 
     @property
     def well(self) -> Optional[Well]:
@@ -740,8 +741,6 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
             self._neighbors = ns
         return ns
 
-
-
     @property
     def between_pads(self) -> Mapping[Pad, Pad]:
         """
@@ -755,6 +754,13 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
                         and (p := m.neighbor(d)) is not None}
             self._between_pads = bps
         return bps
+
+    @property
+    def reserved(self) -> bool:
+        """
+        Has the :class:`Pad` been reserved
+        """
+        return self._reserved
 
     def __init__(self, loc: XYCoord, board: Board,
                  state: State[OnOff], *, exists: bool = True) -> None:
@@ -775,11 +781,12 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         # self.broken = False
         self._pads = board.pad_array
         self._dried_liquid = None
+        self._reserved = False
+        self._reserved_change_callbacks = ChangeCallbackList[bool]()
         def journal_change(old: OnOff, new: OnOff) -> None:
             if old is not new:
                 board.journal_state_change(self, new)
         self.on_state_change(journal_change, key=f"Journal Change {self}")
-
 
     def __repr__(self) -> str:
         return f"Pad({self.column},{self.row})"
@@ -793,7 +800,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         Args:
             d: the :class:`Dir` to look
         Returns:
-            the neighboring :class:`Pad` if one exists, otherwise ``None`.
+            the neighboring :class:`Pad` if one exists, otherwise `None`.
         """
         n = self.board.orientation.neighbor(d, self.location)
         p = self._pads.get(n, None)
@@ -811,13 +818,16 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     @property
     def safe(self) -> bool:
         """
-        Is it safe to :func:`reserve` the :class:`Pad`?  A :class:`Pad` is safe if it is :attr:`empty` and
-        all of its neighbors are :attr:`empty` and none are :attr:`reserved`.
+        Is it safe to :func:`reserve` the :class:`Pad`?  A :class:`Pad` is
+        safe if it is :attr:`empty` and all of its neighbors are
+        :attr:`empty` and none are :attr:`reserved`.
+
         """
         w = self.well
         if w is not None and (w.gate_on or w.gate_reserved):
             return False
-        return self.empty and all(map(lambda n : n.empty and not n.reserved, self.all_neighbors))
+        return self.empty and all(
+            map(lambda n : n.empty and not n.reserved, self.all_neighbors))
 
     def safe_except(self, padOrWell: Union[Pad, Well]) -> bool:
         """
@@ -836,17 +846,36 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
                 return False
         return True
 
+
     def reserve(self) -> bool:
-        """
-        Reserve the :class:`Pad`.  Returns ``False`` if the :class:`Pad` is
+        """Reserve the :class:`Pad`.  Returns ``False`` if the :class:`Pad` is
         already :attr:`reserved`, otherwise sets :attr:`reserved` to ``True``
         and returns ``True``.
+
+        Returns:
+            `True` if the :class:`Pad` has been successfly reserved
+            and `False` if the :class:`Pad` cannot be reserved because
+            it has already been reserved.
         """
-        if self.reserved:
+        if self._reserved:
             return False
-        self.reserved = True
+        self._reserved = True
+        self._reserved_change_callbacks.process(False, True)
         return True
 
+    def unreserve(self) -> None:
+        """
+        Clears the reservation on the :class:`Pad`. If the pad is not
+        reserved, it has no effect.
+
+        """
+        prev_reserved = self._reserved
+        self._reserved = False
+        if prev_reserved:
+            self._reserved_change_callbacks.process(True, False)
+
+    def on_reserved_change(self, cb: ChangeCallback[bool], *, key: Optional[Hashable] = None):
+        self._reserved_change_callbacks.add(cb, key=key)
 
     def liquid_added(self, liquid: Liquid, *, mix_result: Optional[MixResult] = None) -> None:
         """
@@ -3088,10 +3117,9 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             got = Liquid(reagent, volume)
             self.pad.liquid_added(got, mix_result=mix_result)
         if last:
-            # self.pad.reserved = False
             logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
             for pad in self.reserved_pads:
-                pad.reserved = False
+                pad.unreserve()
             self.reserved_pads.clear()
 
 
@@ -3150,7 +3178,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         # type of the argument 1 [sic] of post_transformed_to()
         def xfer_result(_) -> Drop:
             return self.transfer_in_result()
-        
+
         p_future.post_transformed_to(future, xfer_result)
         # p_future.post_transformed_to(future, lambda _: self.transfer_in_result())
         return future

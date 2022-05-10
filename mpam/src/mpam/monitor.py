@@ -180,9 +180,10 @@ class PadMonitor(ClickableMonitor):
                 self.port = ep
                 board_monitor.plot.add_patch(ep)
 
-
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
+        if isinstance(pad, Pad): # pad can be Pad or Gate
+            pad.on_reserved_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_reserved(new)))
 
 
     def list_neighbors(self)->Sequence[ClickableMonitor]:
@@ -216,9 +217,8 @@ class PadMonitor(ClickableMonitor):
     #         drop.status = DropStatus.ON_BOARD
     #         drop.pad = self.pad
 
-
     def note_state(self, state: OnOff) -> None:
-        # print(f"{self.pad} now {state}")
+        # logger.debug(f"{self.pad} now {state}")
         if state:
             self.square.set_linewidth(3)
             self.square.set_edgecolor('green')
@@ -226,9 +226,15 @@ class PadMonitor(ClickableMonitor):
             self.square.set_linewidth(1)
             self.square.set_edgecolor('black')
 
+    def note_reserved(self, reserved: bool) -> None:
+        # logger.debug("{} is {}reserved".format(self.pad, "" if reserved else "not "))
+        if reserved:
+            self.square.set_facecolor('lightgray')
+        else:
+            self.square.set_facecolor('white')
 
     def preview_state(self, state: OnOff) -> None:
-        # print(f"{self.pad} will be {state}")
+        # logger.debug(f"{self.pad} will be {state}")
         if state:
             self.square.set_linewidth(5)
             self.square.set_edgecolor('green')
