@@ -25,7 +25,7 @@ from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
-    Callback, MixResult, State, CommunicationScheduler
+    Callback, MixResult, State, CommunicationScheduler, Postable
 from quantities.SI import sec, ms
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
@@ -221,7 +221,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             if obj.broken:
                 raise PadBrokenError(obj)
             mod = self.mod
-            future = Delayed[OnOff]()
+            future = Postable[OnOff]()
             # state_obj = obj.state
 
             def cb() -> Optional[Callback]:
@@ -375,7 +375,7 @@ class PipettingTarget:
         ...
 
     @abstractmethod
-    def pipettor_removed(self, reagent: Reagent, volume: Volume, *,
+    def pipettor_removed(self, reagent: Reagent, volume: Volume, *, # @UnusedVariable
                          last: bool) -> None: # @UnusedVariable
         """
         Called when the :class:`.Pipettor` has finished removing
@@ -1184,7 +1184,7 @@ class WellMotion:
     board: Final[Board]         #: The :class:`Board` of the :class:`Well`\s
     target: Final[WellState]    #: The target :class:`WellState`
     initial_future: Final[Delayed[Well]] #: The :class:`.Delayed` object we were created with
-    futures: Final[list[tuple[Well, Delayed[Well]]]]
+    futures: Final[list[tuple[Well, Postable[Well]]]]
     """
     A list of pairs of :class:`Well` values and future to post the values to
     upon completion
@@ -1220,7 +1220,7 @@ class WellMotion:
         """
         self.group = well.group
         self.board = well.board
-        self.initial_future = Delayed[Well]()
+        self.initial_future = Postable[Well]()
         self.futures = [(well, self.initial_future)] if post_result else []
         self.target = target
         # self.post_result = post_result
@@ -2169,7 +2169,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 
     def pipettor_added(self, reagent: Reagent, volume: Volume, *,
                        mix_result: Optional[MixResult],
-                       last: bool) -> None:
+                        last: bool) -> None: # @UnusedVariable
         """
         Called when the :class:`.Pipettor` has finished adding :class:`.Liquid`.
 
@@ -2191,7 +2191,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         got = Liquid(reagent, volume)
         self.transfer_in(got, mix_result=mix_result)
 
-    def pipettor_removed(self, reagent: Reagent, volume: Volume, *,
+    def pipettor_removed(self, reagent: Reagent, volume: Volume, *, # @UnusedVariable
                          last: bool) -> None: # @UnusedVariable
         """
         Called when the :class:`.Pipettor` has finished removing
@@ -2337,8 +2337,10 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             volume = liquid.volume
         else:
             volume = min(volume, liquid.volume)
-            liquid = Liquid(liquid.reagent, volume)
-            liquid.volume -= volume
+            if volume < liquid.volume:
+                new_liquid = Liquid(liquid.reagent, volume)
+                liquid.volume -= volume
+                liquid = new_liquid
         on_overflow.expect_true(self.remaining_capacity >= volume,
                     lambda : f"Tried to add {volume} to {self}.  Remaining capacity only {self.remaining_capacity}")
         # available implies _contents is not None, but MyPy can't do the inference for the else
@@ -2967,9 +2969,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
 
     # If the implementation doesn't override, then we always get back None (immediately)
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
-        future = Delayed[Optional[TemperaturePoint]]()
-        future.post(None)
-        return future
+        return Delayed.complete(None)
 
 
     def on_temperature_change(self, cb: ChangeCallback[Optional[TemperaturePoint]], *, key: Optional[Hashable] = None):
@@ -2985,7 +2985,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[Heater]:
-            future = Delayed[Heater]()
+            future = Postable[Heater]()
             target = self.target
 
             def do_it() -> None:
@@ -3117,7 +3117,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                      liquid: Optional[Liquid] = None,
                      on_no_sink: ErrorHandler = PRINT,
                      is_product: bool = True,
-                     product_loc: Optional[Delayed[ProductLocation]] = None
+                     product_loc: Optional[Postable[ProductLocation]] = None
                      ) -> Delayed[Liquid]:
         pipettor = self.pipettor
         assert pipettor is not None, f"{self} has no pipettor and transfer_out() not overridden"
@@ -3145,8 +3145,14 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                                                      mix_result = mix_result,
                                                      on_insufficient = on_insufficient,
                                                      on_no_source = on_no_source))
-        future = Delayed[Drop]()
-        p_future.post_transformed_to(future, lambda _: not_None(self.transfer_in_result()))
+        future = Postable[Drop]()
+        # If I use a lambda, Mypy complains about not being able to infer the
+        # type of the argument 1 [sic] of post_transformed_to()
+        def xfer_result(_) -> Drop:
+            return self.transfer_in_result()
+        
+        p_future.post_transformed_to(future, xfer_result)
+        # p_future.post_transformed_to(future, lambda _: self.transfer_in_result())
         return future
 
     def reserve_pad(self, *, expect_drop: bool = False, splash_zone: bool = False) -> Delayed[None]:
@@ -3223,7 +3229,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                           ) -> Delayed[Drop]:
             from mpam.drop import Drop # @Reimport
             volume = extraction_point.board.drop_size if self.volume is None else self.volume
-            future = Delayed[Drop]()
+            future = Postable[Drop]()
             def do_it() -> None:
                 extraction_point.transfer_in(self.reagent, volume,
                                              mix_result = self.mix_result,
@@ -3237,11 +3243,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     class TransferOut(Operation['ExtractionPoint', 'Liquid']):
         volume: Final[Optional[Volume]]
         on_no_sink: Final[ErrorHandler]
-        product_loc: Final[Optional[Delayed[ProductLocation]]]
+        product_loc: Final[Optional[Postable[ProductLocation]]]
 
         def __init__(self, volume: Optional[Volume] = None, *,
                      on_no_sink: ErrorHandler = PRINT,
-                     product_loc: Optional[Delayed[ProductLocation]] = None
+                     product_loc: Optional[Postable[ProductLocation]] = None
                      ) -> None:
             self.volume = volume
             self.on_no_sink = on_no_sink
@@ -3251,7 +3257,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                           after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
-            future = Delayed[Liquid]()
+            future = Postable[Liquid]()
             def finish(liquid: Liquid) -> None:
                 future.post(liquid)
             def do_it() -> None:
@@ -3359,7 +3365,7 @@ class SystemComponent(ABC):
                      val_fn: Callable[[], T]) -> Delayed[T]:
         if pred():
             return Delayed.complete(val_fn())
-        future = Delayed[T]()
+        future = Postable[T]()
         one_tick = 1 * tick
         def keep_trying() -> Iterator[Optional[Ticks]]:
             while not pred():
@@ -3833,7 +3839,7 @@ class System:
                 after: Optional[DelayType]) -> Delayed[T]:
         if after is None:
             return Delayed.complete(function())
-        future = Delayed[T]()
+        future = Postable[T]()
         def run_then_post() -> None:
             future.post(function())
         if isinstance(after, Time):

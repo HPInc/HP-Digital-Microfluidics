@@ -8,7 +8,7 @@ from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
 from mpam.device import Pad, Board
 from mpam.drop import Drop
 from mpam.types import Delayed, Callback, Ticks, tick, Operation, \
-    DelayType, Reagent, waste_reagent, OnOff
+    DelayType, Reagent, waste_reagent, OnOff, Postable
 from enum import Enum
 from _collections import defaultdict
 import sys
@@ -17,7 +17,7 @@ from erk.basic import not_None
 
 
 
-FinishFunction = Callable[[MutableMapping[Pad, Delayed[Drop]]], bool]
+FinishFunction = Callable[[MutableMapping[Pad, Postable[Drop]]], bool]
 
 class MultiDropProcessType(ABC):
     n_drops: Final[int]
@@ -41,21 +41,21 @@ class MultiDropProcessType(ABC):
     def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:  # @UnusedVariable
         ...
 
-    def start(self, lead_drop: Drop, future: Delayed[Drop]) -> None:
+    def start(self, lead_drop: Drop, future: Postable[Drop]) -> None:
         process = MultiDropProcess(self, lead_drop, future)
         process.start()
 
 
 class MultiDropProcess:
     process_type: Final[MultiDropProcessType]
-    futures: Final[dict[Pad, Delayed[Drop]]]
+    futures: Final[dict[Pad, Postable[Drop]]]
     drops: Final[list[Optional[Drop]]]
 
     global_lock: Final[Lock] = Lock()
 
     def __init__(self, process_type: MultiDropProcessType,
                  lead_drop: Drop,
-                 lead_future: Delayed[Drop]
+                 lead_future: Postable[Drop]
                  ) -> None:
         self.process_type = process_type
         self.futures = {lead_drop.on_board_pad: lead_future}
@@ -71,10 +71,10 @@ class MultiDropProcess:
         pending_drops = 0
         lock = self.global_lock
 
-        def on_join_factory(i: int) -> Callable[[Drop, Delayed[Drop]],
+        def on_join_factory(i: int) -> Callable[[Drop, Postable[Drop]],
                                          Optional[Callback]]:
             # Called with global_lock locked.  Returns true if last one.
-            def on_join(drop: Drop, future: Delayed[Drop]) -> Optional[Callback]:
+            def on_join(drop: Drop, future: Postable[Drop]) -> Optional[Callback]:
                 nonlocal pending_drops
                 drops[i+1] = drop
                 futures[drop.on_board_pad] = future
@@ -87,7 +87,7 @@ class MultiDropProcess:
 
         with lock:
             for i,p in enumerate(secondary_pads):
-                future: Optional[Delayed[Drop]] = getattr(p, "_waiting_to_join", None)
+                future: Optional[Postable[Drop]] = getattr(p, "_waiting_to_join", None)
                 if future is None:
                     setattr(p, "_on_join", on_join_factory(i))
                     pending_drops += 1
@@ -172,7 +172,7 @@ class StartProcess(Operation[Drop,Drop]):
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[Drop]:
         board = drop.on_board_pad.board
-        future = Delayed[Drop]()
+        future = Postable[Drop]()
 
         def before_tick() -> None:
             # If all the other drops are waiting, this will install a callback on the next tick and then
@@ -193,7 +193,7 @@ class JoinProcess(Operation[Drop,Drop]):
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[Drop]:
         board = drop.on_board_pad.board
-        future = Delayed[Drop]()
+        future = Postable[Drop]()
 
         def before_tick() -> None:
             # print(f"Joining process with {drop}")
@@ -402,7 +402,7 @@ class DropCombinationProcessType(MultiDropProcessType):
             yield None
         result = self.result
         fully_mixed = { pads[i] for i in self.mix_seq.fully_mixed }
-        def finish(futures: MutableMapping[Pad, Delayed[Drop]]) -> bool:  # @UnusedVariable
+        def finish(futures: MutableMapping[Pad, Postable[Drop]]) -> bool:  # @UnusedVariable
             printed = False
             for pad in pads:
                 if pad in fully_mixed:

@@ -29,6 +29,8 @@ from quantities.SI import uL
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')    ; "A generic type variable"
+Tco = TypeVar('Tco', covariant=True) ; "A generic covariant type variable"
+Tcontra = TypeVar('Tcontra', contravariant=True) ; "A generic contravariant type variable"
 V = TypeVar('V')    ; "A generic type variable"
 V2 = TypeVar('V2')  ; "A generic type variable"
 H = TypeVar('H', bound=Hashable)    ; "A generic type variable representing a :class:`typing.Hashable` type"
@@ -607,7 +609,7 @@ class Operation(Generic[T, V], ABC):
         #     logger.debug(f'{obj}|after:{after}')
 
         if isinstance(obj, Delayed):
-            future = Delayed[V]()
+            future = Postable[V]()
             def schedule_and_post(x: T) -> None:
                 f = self._schedule_for(x, after=after, post_result=post_result)
                 f.when_value(lambda val: future.post(val))
@@ -675,8 +677,8 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        def fn2(obj: V):
-            future = Delayed[V2]()
+        def fn2(obj: V) -> Delayed[V2]:
+            future = Postable[V2]()
             future.post(fn(obj))
             return future
         return self.then_compute(fn2)
@@ -933,7 +935,7 @@ class OpScheduler(Generic[CS]):
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted
             """
-            future = Delayed[CS]()
+            future = Postable[CS]()
             if after is None:
                 self.barrier.pause(obj, future)
             else:
@@ -981,7 +983,7 @@ class OpScheduler(Generic[CS]):
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted unless ``post_result`` is ``False``
             """
-            future = Delayed[CS]()
+            future = Postable[CS]()
             if after is None:
                 self.barrier.pass_through(obj)
                 if post_result:
@@ -1040,7 +1042,7 @@ class OpScheduler(Generic[CS]):
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted
             """
-            future = Delayed[CS]()
+            future = Postable[CS]()
 
             waitable = self.waitable
 
@@ -1137,7 +1139,7 @@ class StaticOperation(Generic[V], ABC):
             value will be posted unless ``post_result`` is ``False``
         """
         if on_future is not None:
-            future = Delayed[V]()
+            future = Postable[V]()
             def schedule_and_post(_) -> None:
                 f = self._schedule(after=after, post_result=post_result)
                 f.when_value(lambda val: future.post(val))
@@ -1203,7 +1205,7 @@ class StaticOperation(Generic[V], ABC):
             the new :class:`StaticOperation`
         """
         def fn2(obj: V) -> Delayed[V2]:
-            future = Delayed[V2]()
+            future = Postable[V2]()
             future.post(fn(obj))
             return future
         return self.then_compute(fn2)
@@ -1288,26 +1290,31 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
         return self.first._schedule(after=after) \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
 
-# In an earlier iteration, Delayed[T] took a mandatory "guess" argument, and had "initial_guess" and "best_guess"
-# properties (the latter returned the value if it was there and the initial guess otherwise).  This seemed to
-# unnecessarily complicate things and made me have to do things like creating a drop before it actually existed,
-# which enabled errors.
-class Delayed(Generic[T]):
+class Delayed(Generic[Tco]):
     """
     A container that will (or may) eventually contain a value of type :attr:`T`.
-
-    The value may be asserted when the :class:`Delayed` object is created by
-    saying ::
+    
+    :class:`Delayed` is an abstract class.  Instances are created either by
+    using the :func:`complete` class method::
 
         dv = Delayed.complete(val)
 
-    or it may be specified later by saying ::
+    to create an instance that has its value from the start or by creating a
+    :class:`Postable` subclass.  In the latter case, the value is asserted by
+    calling the :class:`Postable`'s :func:`~Postable.post` method::
 
-        dv.post(val)
+        postable.post(val)
 
     The value may only be specified once (although it need not ever be
     specified).  When a value is posted, any registered *callbacks* will be
     invoked and passed the posted value.
+    
+    :class:`Delayed` is *covariant* in its type parameter, so a
+    :class:`Delayed`\[``Derived``] can be treated as a
+    :class:`Delayed`\[``Base``].  Conversely, the concrete subclass
+    :class:`Postable` is *contravariant* in its type parameter, so a
+    :class:`Postable`\[``Base``] can be treated as a
+    :class:`Postable`\[``Derived``].
 
     To register a callback, the :func:`when_value` method (or its alias,
     :func:`then_call`) or one of the many methods that delegate to it are used
@@ -1325,7 +1332,8 @@ class Delayed(Generic[T]):
     Note:
         If the :class:`Delayed` object already has a value at the time the
         callback is added, the callback is invoked immediately.  Otherwise, it
-        is remembered and invoked in the thread that calls :func:`post`.
+        is remembered and invoked in the thread that calls
+        :func:`~Postable.post` on its :class:`Postable` subclass instance.
 
     All methods that register callbacks return :class:`Delayed` objects and can,
     therefore, be chained to add more callbacks::
@@ -1363,10 +1371,10 @@ class Delayed(Generic[T]):
     values, use :func:`join`.
 
     Args:
-        T: The type of the value that will be asserted.
+        Tco: The covariant type of the value that will be asserted.
     """
 
-    _val: ValTuple[T] = (False, cast(T, None))
+    _val: ValTuple[Tco] = (False, cast(Tco, None))
     """
     A tuple containing the validity status and value (if valid)
 
@@ -1383,7 +1391,7 @@ class Delayed(Generic[T]):
     A lock object, if any callbacks have been asserted.
     """
 
-    _callbacks: list[Callable[[T], Any]]
+    _callbacks: list[Callable[[Tco], Any]]
     """
     The list of callbacks.  This is created within :attr:`_lock` if necessary.
 
@@ -1423,6 +1431,8 @@ class Delayed(Generic[T]):
             self._callbacks = []
         return lock
 
+    @abstractmethod
+    def _define_in_concrete(self) -> None: ...
 
     @property
     def has_value(self) -> bool:
@@ -1431,7 +1441,7 @@ class Delayed(Generic[T]):
         """
         return self._val[0]
 
-    def peek(self) -> ValTuple[T]:
+    def peek(self) -> ValTuple[Tco]:
         """
         Check both whether a value has been asserted and what that value is.
 
@@ -1456,7 +1466,10 @@ class Delayed(Generic[T]):
         """
         if not self.has_value:
             e = Event()
-            self.when_value(lambda _: e.set())
+            def do_set(_) -> None:
+                e.set()
+            self.when_value(do_set)
+            # self.when_value(lambda _: e.set())
             while not e.is_set():
                 # We probably want a timeout here to allow it to be interrupted
                 e.wait()
@@ -1464,7 +1477,7 @@ class Delayed(Generic[T]):
     and_wait = wait
 
     @property
-    def value(self) -> T:
+    def value(self) -> Tco:
         """
         The asserted value, blocking if necessary.
         """
@@ -1483,12 +1496,10 @@ class Delayed(Generic[T]):
         Returns:
             A new :class:`Delayed` object with ``val`` as the asserted value.
         """
-        future = Delayed[T]()
-        future._val = (True, val)
-        return future
+        return _CompleteDelayed(val)
 
-    def then_schedule(self, op: Union[Operation[T,V], StaticOperation[V],
-                                      Callable[[], Operation[T,V]],
+    def then_schedule(self, op: Union[Operation[Tco,V], StaticOperation[V],
+                                      Callable[[], Operation[Tco,V]],
                                       Callable[[], StaticOperation[V]]], *,
                       after: Optional[DelayType] = None,
                       post_result: bool = True) -> Delayed[V]:
@@ -1517,7 +1528,7 @@ class Delayed(Generic[T]):
         else:
             return self.then_schedule(op(), after=after, post_result=post_result)
 
-    def chain(self, fn: Callable[[T], Delayed[V]]) -> Delayed[V]:
+    def chain(self, fn: Callable[[Tco], Delayed[V]]) -> Delayed[V]:
         """
         When a value is asserted, pass it to a function.  This is used when the
         function returns a :class:`Delayed` value.
@@ -1539,11 +1550,14 @@ class Delayed(Generic[T]):
             A :class:`Delayed` object that will mirror the one returned by
             ``fn``
         """
-        future = Delayed[V]()
-        self.when_value(lambda val: fn(val).post_to(future))
+        future = Postable[V]()
+        def fn2(val) -> None:
+            fn(val).post_to(future)
+        self.when_value(fn2)
+        # self.when_value(lambda val: fn(val).post_to(future))
         return future
 
-    def transformed(self, fn: Callable[[T], V]) -> Delayed[V]:
+    def transformed(self, fn: Callable[[Tco], V]) -> Delayed[V]:
         """
         When a value is asserted, pass it to a function.
 
@@ -1556,11 +1570,14 @@ class Delayed(Generic[T]):
         Returns:
             A :class:`Delayed` object that will receive the transformed value.
         """
-        future = Delayed[V]()
-        self.when_value(lambda val: future.post(fn(val)))
+        future = Postable[V]()
+        def post_transformed(val) -> None:
+            future.post(fn(val))
+        self.when_value(post_transformed)
+        # self.when_value(lambda val: future.post(fn(val)))
         return future
 
-    def then_trigger(self, trigger: Trigger) -> Delayed[T]:
+    def then_trigger(self, trigger: Trigger) -> Delayed[Tco]:
         """
         When a value is asserted, fire a :class:`Trigger`.
 
@@ -1569,10 +1586,13 @@ class Delayed(Generic[T]):
         Returns
             this :class:`Delayed` object
         """
-        self.when_value(lambda _: trigger.fire())
+        def do_trigger(_) -> None:
+            trigger.fire()
+        self.when_value(do_trigger)
+        # self.when_value(lambda _: trigger.fire())
         return self
 
-    def post_to(self, other: Delayed[T]) -> Delayed[T]:
+    def post_to(self, other: Postable[Tco]) -> Delayed[Tco]:
         """
         When a value is asserted, post it to another :class:`Delayed` object.
 
@@ -1581,10 +1601,13 @@ class Delayed(Generic[T]):
         Returns
             this :class:`Delayed` object
         """
-        self.when_value(lambda val: other.post(val))
+        def do_post(val) -> None:
+            other.post(val)
+        self.when_value(do_post)
+        # self.when_value(lambda val: other.post(val))
         return self
 
-    def post_val_to(self, other: Delayed[V], value: V) -> Delayed[T]:
+    def post_val_to(self, other: Postable[V], value: V) -> Delayed[Tco]:
         """
         When a value is asserted, post a specific value to another
         :class:`Delayed` object.
@@ -1595,11 +1618,14 @@ class Delayed(Generic[T]):
         Returns
             this :class:`Delayed` object
         """
-        self.when_value(lambda _: other.post(value))
+        def do_post(_) -> None:
+            other.post(value)
+        self.when_value(do_post)
+        # self.when_value(lambda _: other.post(value))
         return self
 
-    def post_transformed_to(self, other: Delayed[V],
-                            transform: Callable[[T], V]) -> Delayed[T]:
+    def post_transformed_to(self, other: Postable[V],
+                            transform: Callable[[T], V]) -> Delayed[Tco]:
         """
         When a value is asserted, transform it and post it to another
         :class:`Delayed` object.
@@ -1611,10 +1637,13 @@ class Delayed(Generic[T]):
         Returns
             this :class:`Delayed` object
         """
-        self.when_value(lambda val: other.post(transform(val)))
+        def do_post(val) -> None:
+            other.post(transform(val))
+        self.when_value(do_post)
+        # self.when_value(lambda val: other.post(transform(cast(T, val))))
         return self
 
-    def when_value(self, fn: Callable[[T], Any]) -> Delayed[T]:
+    def when_value(self, fn: Callable[[Tco], Any]) -> Delayed[Tco]:
         """
         Register a callback to be passed the asserted value.
 
@@ -1648,6 +1677,60 @@ class Delayed(Generic[T]):
     # or maybe then_call should create a new future, posted at the end.
     then_call = when_value
 
+
+    @classmethod
+    def join(cls, futures: Union[Delayed, Iterable[Delayed]]) -> None:
+        """
+        Block the thread until the provided :class:`Delayed` objects have all
+        received values.
+
+        Args:
+            futures: a :class:`Delayed` object or a sequence of them.
+        """
+        if isinstance(futures, Delayed):
+            futures.wait()
+        else:
+            for f in futures:
+                f.wait()
+                
+class _CompleteDelayed(Delayed[T]):
+    def _define_in_concrete(self)->None: ...
+
+    def __init__(self, val: T) -> None:
+        self._val = (True, val)
+
+class Postable(Delayed[Tcontra]):
+    """
+    A concrete subclass of :class:`Delayed` that provides a :func:`post` method
+    to assert a value, which will be passed to any waiting callbacks.
+    
+    :class:`Delayed` is *covariant* in its type parameter, so a
+    :class:`Delayed`\[``Derived``] can be treated as a
+    :class:`Delayed`\[``Base``].  Conversely, the concrete subclass
+    :class:`Postable` is *contravariant* in its type parameter, so a
+    :class:`Postable`\[``Base``] can be treated as a
+    :class:`Postable`\[``Derived``].
+
+    More concretely, given ::
+    
+        class Top: ...
+        class Middle(Top): ...
+        class Bottom(Middle): ...
+        
+        p = Postable[Middle]()
+    ``p`` can be treated as a :class:`Delayed`\[``Middle``], a
+    :class:`Delayed`\[``Top``], or a :class:`Postable`\[``Bottom``].
+    
+    :func:`post` may only be called once (although it need not ever be called).
+    When a value is posted, any registered *callbacks* will be invoked and
+    passed the posted value.
+    
+    Args: 
+        Tcontra: the contravariant type that can be asserted using :func:`post`.
+    """
+    
+    def _define_in_concrete(self) -> None: ...
+    
     # The logic here is a bit tricky, but I think it works.
     # We're racing against when_value().  If we see that there's
     # no _maybe_lock, that means that when_value() hasn't yet called
@@ -1658,16 +1741,15 @@ class Delayed(Generic[T]):
     # Conversely, if we see that there's a lock, we lock it.  Either
     # we beat the lock in when_value(), in which case it will notice
     # the value and not add, or it's already added and we process it.
-    def post(self, val: T) -> None:
+    def post(self, val: Tcontra) -> None:
         """
         Assert a value and pass it to any registered callbacks.  Any callbacks
         registered after this point will immediately execute with this value.
 
         Note:
-            :func:`post` may only be called once for any :class:`Delayed`
+            :func:`post` may only be called once for any :class:`Postable`
             object.  Calling it a second time will result in an assertion
-            failure. (If the :class:`Delayed` object was created by
-            :func:`Delayed.complete`, :func:`post` may not be called at all.)
+            failure. 
         Note:
             Once :func:`post` has been called, any registered callbacks are
             forgotten.
@@ -1687,20 +1769,6 @@ class Delayed(Generic[T]):
                 # The callbacks are never going to be needed again
                 del self._callbacks
 
-    @classmethod
-    def join(cls, futures: Union[Delayed, Iterable[Delayed]]) -> None:
-        """
-        Block the thread until the provided :class:`Delayed` objects have all
-        received values.
-
-        Args:
-            futures: a :class:`Delayed` object or a sequence of them.
-        """
-        if isinstance(futures, Delayed):
-            futures.wait()
-        else:
-            for f in futures:
-                f.wait()
 
 class Trigger:
     """
@@ -1723,7 +1791,7 @@ class Trigger:
 
     :class:`Trigger` objects are thread safe
     """
-    waiting: list[tuple[Any,Delayed]]
+    waiting: list[tuple[Any,Postable]]
     """
     The list of actions waiting to be executed
 
@@ -1747,7 +1815,7 @@ class Trigger:
         self.waiting = []
         self.lock = RLock()
 
-    def wait(self, val: Any, future: Delayed) -> None:
+    def wait(self, val: Any, future: Postable) -> None:
         """
         When the :class:`Trigger` next fires, post a value to a future.
 
@@ -1765,7 +1833,7 @@ class Trigger:
         Args:
             fn: the function (taking no arguments) to call
         """
-        future = Delayed[None]()
+        future = Postable[None]()
         future.then_call(lambda _: fn())
         self.wait(None, future)
 
@@ -1839,7 +1907,7 @@ class Barrier(Trigger, Generic[T]):
     def __str__(self) -> str:
         name = (self.name+", ") if self.name is not None else ""
         return f"Barrier({name}{self.required}, {self.waiting_for})"
-    def reach(self, val: T, future: Optional[Delayed[T]] = None) -> int:
+    def reach(self, val: T, future: Optional[Postable[T]] = None) -> int:
         """
         Note that an object reached the :class:`Barrier`.  If this is the last
         one, :func:`fire` the :class:`Barrier`, unpausing any paused objects.
@@ -1874,7 +1942,7 @@ class Barrier(Trigger, Generic[T]):
             future.post(val)
         return ab
 
-    def pause(self, val: T, future: Delayed[T]) -> int:
+    def pause(self, val: T, future: Postable[T]) -> int:
         """
         Reach the :class:`Barrier` and pause there.  Equivalent to calling
         :func:`reach`, but ``future`` is not optional.
