@@ -3088,6 +3088,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     pad: Final[Pad]
     removed: Optional[Volume] = None
     reserved_pads: set[Pad]
+    splash_radius: int
 
     @property
     def contents(self) -> Optional[Liquid]:
@@ -3096,18 +3097,19 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             return None
         return drop.blob.contents
 
-    def __init__(self, pad: Pad) -> None:
+    def __init__(self, pad: Pad, splash_radius: int = 0) -> None:
         BoardComponent.__init__(self, pad.board)
         self.pad = pad
-        pad._extraction_point = self
+        self.splash_radius = splash_radius
         self.reserved_pads = set()
+        pad._extraction_point = self
 
     def __repr__(self) -> str:
         return f"ExtractionPoint[{self.pad.location}]"
 
     def prepare_for_add(self) -> None:
         expect_drop = self.pad.drop is not None
-        self.reserve_pad(expect_drop=expect_drop, splash_zone=True).wait()
+        self.reserve_pads(expect_drop=expect_drop).wait()
         self.pad.schedule(Pad.TurnOn).wait()
 
     def pipettor_added(self, reagent: Reagent, volume: Volume, *,
@@ -3117,13 +3119,10 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             got = Liquid(reagent, volume)
             self.pad.liquid_added(got, mix_result=mix_result)
         if last:
-            logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
-            for pad in self.reserved_pads:
-                pad.unreserve()
-            self.reserved_pads.clear()
-
+            self.unreserve_pads()
 
     def prepare_for_remove(self) -> None:
+        self.reserve_pads().wait()
         self.ensure_drop().wait()
 
     def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
@@ -3140,6 +3139,8 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                 assert isinstance(p, Pad)
                 # TODO: Do I need to wait on this somewhere?
                 p.schedule(Pad.TurnOff, post_result=False)
+        if last:
+            self.unreserve_pads()
 
     def transfer_out(self, *,
                      liquid: Optional[Liquid] = None,
@@ -3183,7 +3184,39 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         # p_future.post_transformed_to(future, lambda _: self.transfer_in_result())
         return future
 
-    def reserve_pad(self, *, expect_drop: bool = False, splash_zone: bool = False) -> Delayed[None]:
+    def compute_splash_zone(self) -> set[Pad]:
+        zone = set([self.pad])
+        if self.splash_radius:
+            radius = self.splash_radius
+            border = set([self.pad])
+            while radius > 0 or len(border):
+                next_border = set()
+                for pad in border:
+                    next_border.update(set(pad.all_neighbors) - zone)
+                    # Extend the splash zone
+                    zone.update(pad.all_neighbors)
+
+                # Decide the border for the next iteration
+                radius -= 1
+                if radius > 0:
+                    border = next_border
+                elif radius == 0:
+                    # We reached the end of the splash radius. If any
+                    # pads on the border have drops, extend the splash
+                    # zone to including the neighbors of the pads with
+                    # drops. This way we stop the drops on the border
+                    # from turning the pad off to move out of the
+                    # splash zone.
+                    border = set()
+                    for pad in next_border:
+                        if pad.drop is not None:
+                            # Add to border the pads with drops
+                            border.add(pad)
+                else:
+                    border = set()
+        return zone
+
+    def reserve_pads(self, *, expect_drop: bool = False) -> Delayed[None]:
         """
         If `expect_drop` is `True`, we wait until a drop is presend on the
         pad. If `expect_drop` is `False` we wait until a drop is **not**
@@ -3192,11 +3225,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         Once the *drop expectation* is meet, we wait until we can
         reserve the pad.
         """
-
-        # pad = self.pad
-        # return pad.board.on_condition(lambda: expect_drop == (pad.drop is not None)
-        #                                         and pad.reserve(),
-        #                               lambda: None)
+        to_reserve = self.compute_splash_zone()
 
         def reserve_condition():
             # Check if the drop expectation is not met
@@ -3205,29 +3234,27 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             if not expect_drop and self.pad.drop is not None:
                 return False
 
-            # Reserve pad
-            if self.pad not in self.reserved_pads:
-                if self.pad.reserve():
-                    self.reserved_pads.add(self.pad)
-                    logging.debug(f'{self.pad}|splash|reserved:{self.pad}')
-                else:
-                    return False
+            nonlocal to_reserve
+            for pad in to_reserve:
+                if pad.reserve():
+                    self.reserved_pads.add(pad)
+                    logging.debug(f'{self.pad}|splash|reserved:{pad}')
+            to_reserve -= self.reserved_pads
 
-            # Reserve splash zone pads
-            if splash_zone:
-                for pad in self.pad.all_neighbors:
-                    if pad not in self.reserved_pads:
-                        if pad.reserve():
-                            self.reserved_pads.add(pad)
-                            logging.debug(f'{self.pad}|splash|reserved:{pad}')
-                        else:
-                            return False
+            if len(to_reserve) == 0:
                 logging.debug(f'{self.pad}|splash|reserved all:{self.reserved_pads}')
-                return True
-            else:
-                return True
+
+            return len(to_reserve) == 0
 
         return self.pad.board.on_condition(reserve_condition, lambda: None)
+
+    def unreserve_pads(self):
+        """
+        Unreserve any reserved pads
+        """
+        logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
+        while self.reserved_pads:
+            self.reserved_pads.pop().unreserve()
 
     def ensure_drop(self) -> Delayed[None]:
         pad = self.pad
