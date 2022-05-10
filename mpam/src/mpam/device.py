@@ -778,7 +778,6 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         # self.broken = False
         self._pads = board.pad_array
         self._dried_liquid = None
-        self._reserved = False
         self._reserved_change_callbacks = ChangeCallbackList[bool]()
         def journal_change(old: OnOff, new: OnOff) -> None:
             if old is not new:
@@ -797,7 +796,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         Args:
             d: the :class:`Dir` to look
         Returns:
-            the neighboring :class:`Pad` if one exists, otherwise `None`.
+            the neighboring :class:`Pad` if one exists, otherwise ``None``.
         """
         n = self.board.orientation.neighbor(d, self.location)
         p = self._pads.get(n, None)
