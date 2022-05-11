@@ -1,0 +1,208 @@
+quantities.dimensions.Time
+==========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Time
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Time.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Time.dimensionality
+      ~Time.is_negative
+      ~Time.is_positive
+      ~Time.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Time.dim
+      ~Time.in_HM
+      ~Time.in_HMS
+      ~Time.in_MS
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Time.__init__
+      ~Time.a
+      ~Time.an
+      ~Time.as_dimensionality
+      ~Time.as_number
+      ~Time.as_unit
+      ~Time.as_unit_expr
+      ~Time.base_unit
+      ~Time.cast
+      ~Time.check_dimensionality
+      ~Time.decomposed
+      ~Time.divide_by
+      ~Time.has_dimensionality
+      ~Time.in_denom
+      ~Time.in_units
+      ~Time.is_close_to
+      ~Time.multiply_by
+      ~Time.of
+      ~Time.ratio
+      ~Time.restricted
+      ~Time.to_power
+      ~Time.unit
+   
+   
+   

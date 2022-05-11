@@ -1,0 +1,78 @@
+mpam.device.UserOperation
+=========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: UserOperation
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~UserOperation.idle_barrier
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~UserOperation.is_idle
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~UserOperation.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~UserOperation.idle
+      ~UserOperation.not_idle
+   
+   
+   

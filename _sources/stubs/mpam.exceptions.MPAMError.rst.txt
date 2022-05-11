@@ -1,0 +1,6 @@
+mpam.exceptions.MPAMError
+=========================
+
+.. currentmodule:: mpam.exceptions
+
+.. autoexception:: MPAMError

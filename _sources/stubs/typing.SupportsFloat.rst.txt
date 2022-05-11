@@ -1,0 +1,43 @@
+typing.SupportsFloat
+====================
+
+.. currentmodule:: typing
+
+.. autoclass:: SupportsFloat
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SupportsFloat.__init__
+   
+   
+   
+
+   
+   
+   
+   

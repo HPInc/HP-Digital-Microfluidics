@@ -1,0 +1,258 @@
+mpam.engine.ClockThread
+=======================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: ClockThread
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ClockThread.running
+      ~ClockThread.tick_event
+      ~ClockThread.pre_tick_queue
+      ~ClockThread.post_tick_queue
+      ~ClockThread.on_tick_queue
+      ~ClockThread.update_interval
+      ~ClockThread.work
+      ~ClockThread.next_tick
+      ~ClockThread.last_tick_time
+      ~ClockThread.outstanding_tick_request
+      ~ClockThread.engine
+      ~ClockThread.state
+      ~ClockThread.lock
+      ~ClockThread.idle_barrier
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~ClockThread.daemon
+      ~ClockThread.ident
+      ~ClockThread.is_idle
+      ~ClockThread.name
+      ~ClockThread.native_id
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ClockThread.__init__
+      ~ClockThread.after_tick
+      ~ClockThread.before_tick
+      ~ClockThread.on_tick
+      ~ClockThread.pause_clock
+      ~ClockThread.run
+      ~ClockThread.start_clock
+      ~ClockThread.wake_up
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~ClockThread.abort_requested
+      ~ClockThread.ensure_running
+      ~ClockThread.getName
+      ~ClockThread.idle
+      ~ClockThread.isDaemon
+      ~ClockThread.is_alive
+      ~ClockThread.join
+      ~ClockThread.not_idle
+      ~ClockThread.print_exception
+      ~ClockThread.request_abort
+      ~ClockThread.request_stop
+      ~ClockThread.setDaemon
+      ~ClockThread.setName
+      ~ClockThread.start
+   
+   
+   

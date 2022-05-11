@@ -1,0 +1,158 @@
+mpam.pipettor.PipettorSysCpt
+============================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: PipettorSysCpt
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PipettorSysCpt.pipettor
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~PipettorSysCpt.no_delay
+      ~PipettorSysCpt.system
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PipettorSysCpt.__init__
+      ~PipettorSysCpt.system_shutdown
+      ~PipettorSysCpt.update_state
+      ~PipettorSysCpt.user_operation
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~PipettorSysCpt.add_monitor
+      ~PipettorSysCpt.after_tick
+      ~PipettorSysCpt.before_tick
+      ~PipettorSysCpt.call_after
+      ~PipettorSysCpt.call_at
+      ~PipettorSysCpt.communicate
+      ~PipettorSysCpt.delayed
+      ~PipettorSysCpt.finish_update
+      ~PipettorSysCpt.in_system
+      ~PipettorSysCpt.join_system
+      ~PipettorSysCpt.make_request
+      ~PipettorSysCpt.on_condition
+      ~PipettorSysCpt.on_tick
+      ~PipettorSysCpt.schedule
+   
+   
+   

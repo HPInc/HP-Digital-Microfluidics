@@ -1,0 +1,193 @@
+quantities.dimensions.Illuminance
+=================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Illuminance
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Illuminance.derived
+      ~Illuminance.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Illuminance.dimensionality
+      ~Illuminance.is_negative
+      ~Illuminance.is_positive
+      ~Illuminance.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Illuminance.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Illuminance.__init__
+      ~Illuminance.a
+      ~Illuminance.an
+      ~Illuminance.as_dimensionality
+      ~Illuminance.as_number
+      ~Illuminance.as_unit
+      ~Illuminance.as_unit_expr
+      ~Illuminance.cast
+      ~Illuminance.check_dimensionality
+      ~Illuminance.decomposed
+      ~Illuminance.divide_by
+      ~Illuminance.has_dimensionality
+      ~Illuminance.in_denom
+      ~Illuminance.in_units
+      ~Illuminance.is_close_to
+      ~Illuminance.multiply_by
+      ~Illuminance.of
+      ~Illuminance.ratio
+      ~Illuminance.restricted
+      ~Illuminance.to_power
+      ~Illuminance.unit
+   
+   
+   

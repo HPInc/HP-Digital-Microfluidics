@@ -1,0 +1,73 @@
+quantities.core.NamedDimMeta
+============================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: NamedDimMeta
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~NamedDimMeta.ZERO
+      ~NamedDimMeta.default_units
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NamedDimMeta.__init__
+      ~NamedDimMeta.as_dimensionality
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~NamedDimMeta.mro
+   
+   
+   

@@ -1,0 +1,68 @@
+mpam.device.ProductLocation
+===========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: ProductLocation
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ProductLocation.location
+      ~ProductLocation.reagent
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~ProductLocation.__init__
+      ~ProductLocation.count
+      ~ProductLocation.index
+   
+   
+   

@@ -1,0 +1,193 @@
+quantities.dimensions.Capacitance
+=================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Capacitance
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Capacitance.derived
+      ~Capacitance.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Capacitance.dimensionality
+      ~Capacitance.is_negative
+      ~Capacitance.is_positive
+      ~Capacitance.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Capacitance.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Capacitance.__init__
+      ~Capacitance.a
+      ~Capacitance.an
+      ~Capacitance.as_dimensionality
+      ~Capacitance.as_number
+      ~Capacitance.as_unit
+      ~Capacitance.as_unit_expr
+      ~Capacitance.cast
+      ~Capacitance.check_dimensionality
+      ~Capacitance.decomposed
+      ~Capacitance.divide_by
+      ~Capacitance.has_dimensionality
+      ~Capacitance.in_denom
+      ~Capacitance.in_units
+      ~Capacitance.is_close_to
+      ~Capacitance.multiply_by
+      ~Capacitance.of
+      ~Capacitance.ratio
+      ~Capacitance.restricted
+      ~Capacitance.to_power
+      ~Capacitance.unit
+   
+   
+   

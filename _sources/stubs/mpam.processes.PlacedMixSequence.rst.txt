@@ -1,0 +1,88 @@
+mpam.processes.PlacedMixSequence
+================================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: PlacedMixSequence
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PlacedMixSequence.fully_mixed_pads
+      ~PlacedMixSequence.num_drops
+      ~PlacedMixSequence.num_steps
+      ~PlacedMixSequence.pads
+      ~PlacedMixSequence.secondary_pads
+      ~PlacedMixSequence.mix_seq
+      ~PlacedMixSequence.lead_drop_pad
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PlacedMixSequence.__init__
+      ~PlacedMixSequence.as_process
+   
+   
+   
+
+   
+   
+   
+   

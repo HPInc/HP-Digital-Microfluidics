@@ -1,124 +1,218 @@
-
 <!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mpam.processes &#8212; MPAM  documentation</title>
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/haiku.css" />
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/doctools.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.processes &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="mpam.pipettor" href="mpam.pipettor.html" /> 
-  </head><body>
-      <div class="header" role="banner"><h1 class="heading"><a href="../index.html">
-          <span>MPAM  documentation</span></a></h1>
-        <h2 class="heading"><span>mpam.processes</span></h2>
-      </div>
-      <div class="topnav" role="navigation" aria-label="top navigation">
-      
-        <p>
-        «&#160;&#160;<a href="mpam.pipettor.html">mpam.pipettor</a>
-        &#160;&#160;::&#160;&#160;
-        <a class="uplink" href="../index.html">Contents</a>
-        </p>
+    <link rel="next" title="mpam.processes.DropCombinationProcessType" href="mpam.processes.DropCombinationProcessType.html" />
+    <link rel="prev" title="mpam.pipettor.XferTarget" href="mpam.pipettor.XferTarget.html" /> 
+</head>
 
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">mpam.processes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.DropCombinationProcessType.html">mpam.processes.DropCombinationProcessType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.JoinProcess.html">mpam.processes.JoinProcess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.MSL_Cache_Key.html">mpam.processes.MSL_Cache_Key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.MixSequence.html">mpam.processes.MixSequence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.MixSequenceLibrary.html">mpam.processes.MixSequenceLibrary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.MultiDropProcess.html">mpam.processes.MultiDropProcess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.MultiDropProcessType.html">mpam.processes.MultiDropProcessType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.PM.html">mpam.processes.PM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.PairwiseMix.html">mpam.processes.PairwiseMix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.PlacedMixSequence.html">mpam.processes.PlacedMixSequence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.StartProcess.html">mpam.processes.StartProcess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.processes.Transform.html">mpam.processes.Transform</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
       </div>
-      <div class="content" role="main">
-        
-        
-  <div class="section" id="module-mpam.processes">
-<span id="mpam-processes"></span><h1>mpam.processes<a class="headerlink" href="#module-mpam.processes" title="Permalink to this headline">¶</a></h1>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>mpam.processes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.processes.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-mpam.processes">
+<span id="mpam-processes"></span><h1>mpam.processes<a class="headerlink" href="#module-mpam.processes" title="Permalink to this headline"></a></h1>
 <p class="rubric">Classes</p>
-<table class="longtable docutils align-default">
+<table class="autosummary longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.processes.DropCombinationProcessType" title="mpam.processes.DropCombinationProcessType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DropCombinationProcessType</span></code></a>(mix_seq, *, …)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.processes.DropCombinationProcessType.html#mpam.processes.DropCombinationProcessType" title="mpam.processes.DropCombinationProcessType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DropCombinationProcessType</span></code></a>(mix_seq, *[, ...])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mpam.processes.JoinProcess" title="mpam.processes.JoinProcess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JoinProcess</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.processes.JoinProcess.html#mpam.processes.JoinProcess" title="mpam.processes.JoinProcess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JoinProcess</span></code></a>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.processes.MSL_Cache_Key" title="mpam.processes.MSL_Cache_Key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MSL_Cache_Key</span></code></a>(n, fullp, tolerance, rows, cols)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.processes.MSL_Cache_Key.html#mpam.processes.MSL_Cache_Key" title="mpam.processes.MSL_Cache_Key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MSL_Cache_Key</span></code></a>(n, fullp, tolerance, rows, cols)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mpam.processes.MixSequence" title="mpam.processes.MixSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MixSequence</span></code></a>(error, locations, steps, …)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.processes.MixSequence.html#mpam.processes.MixSequence" title="mpam.processes.MixSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MixSequence</span></code></a>(error, locations, steps, ...)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">MixSequenceLibrary</span></code>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.processes.MixSequenceLibrary.html#mpam.processes.MixSequenceLibrary" title="mpam.processes.MixSequenceLibrary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MixSequenceLibrary</span></code></a>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">MultiDropProcess</span></code>(process_type, lead_drop, …)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.processes.MultiDropProcess.html#mpam.processes.MultiDropProcess" title="mpam.processes.MultiDropProcess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MultiDropProcess</span></code></a>(process_type, lead_drop, ...)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.processes.MultiDropProcessType" title="mpam.processes.MultiDropProcessType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MultiDropProcessType</span></code></a>(n_drops)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.processes.MultiDropProcessType.html#mpam.processes.MultiDropProcessType" title="mpam.processes.MultiDropProcessType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MultiDropProcessType</span></code></a>(n_drops)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mpam.processes.PM" title="mpam.processes.PM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PM</span></code></a></p></td>
-<td><p>alias of <a class="reference internal" href="#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.processes.PairwiseMix</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.processes.PM.html#mpam.processes.PM" title="mpam.processes.PM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PM</span></code></a></p></td>
+<td><p>alias of <a class="reference internal" href="mpam.processes.PairwiseMix.html#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><code class="xref py py-class docutils literal notranslate"><span class="pre">PairwiseMix</span></code></a></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PairwiseMix</span></code></a>(drop1_index, drop2_index)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.processes.PairwiseMix.html#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PairwiseMix</span></code></a>(drop1_index, drop2_index)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlacedMixSequence</span></code>(mix_seq, lead_drop_pad)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.processes.PlacedMixSequence.html#mpam.processes.PlacedMixSequence" title="mpam.processes.PlacedMixSequence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlacedMixSequence</span></code></a>(mix_seq, lead_drop_pad)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.processes.StartProcess" title="mpam.processes.StartProcess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StartProcess</span></code></a>(process_type)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.processes.StartProcess.html#mpam.processes.StartProcess" title="mpam.processes.StartProcess"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StartProcess</span></code></a>(process_type)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mpam.processes.Transform" title="mpam.processes.Transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Transform</span></code></a>(value)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.processes.Transform.html#mpam.processes.Transform" title="mpam.processes.Transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Transform</span></code></a>(value)</p></td>
 <td><p>An enumeration.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.DropCombinationProcessType">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">DropCombinationProcessType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mix_seq</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.processes.MixSequence" title="mpam.processes.MixSequence"><span class="pre">mpam.processes.MixSequence</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.Reagent</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_shuttles</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.DropCombinationProcessType" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">DropCombinationProcessType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mix_seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.processes.MixSequence.html#mpam.processes.MixSequence" title="mpam.processes.MixSequence"><span class="pre">MixSequence</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_shuttles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.DropCombinationProcessType" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.processes.MultiDropProcessType.html#mpam.processes.MultiDropProcessType" title="mpam.processes.MultiDropProcessType"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultiDropProcessType</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.processes.DropCombinationProcessType.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mix_seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.processes.MixSequence.html#mpam.processes.MixSequence" title="mpam.processes.MixSequence"><span class="pre">MixSequence</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_shuttles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.processes.DropCombinationProcessType.__init__" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+</dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.JoinProcess">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">JoinProcess</span></span><a class="headerlink" href="#mpam.processes.JoinProcess" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">JoinProcess</span></span><a class="headerlink" href="#mpam.processes.JoinProcess" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>, <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.processes.JoinProcess._schedule_for">
+<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><span class="pre">Drop</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><span class="pre">Drop</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.processes.JoinProcess._schedule_for" title="Permalink to this definition"></a></dt>
+<dd><p>The implementation of <code class="xref py py-func docutils literal notranslate"><span class="pre">schedule_for()</span></code>.  There is no default implementation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – the <code class="xref py py-attr docutils literal notranslate"><span class="pre">T</span></code> object to schedule the operation for</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>after</strong> – an optional delay to wait before scheduling the operation</p></li>
+<li><p><strong>post_result</strong> – whether to post the resulting value to the returned future object</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a <code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code>[<code class="xref py py-attr docutils literal notranslate"><span class="pre">V</span></code>] future object to which the resulting
+value will be posted unless <code class="docutils literal notranslate"><span class="pre">post_result</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.MSL_Cache_Key">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">MSL_Cache_Key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fullp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.MSL_Cache_Key" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">MSL_Cache_Key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fullp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tolerance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.MSL_Cache_Key" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.NamedTuple.html#typing.NamedTuple" title="typing.NamedTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></a></p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MSL_Cache_Key.cols">
-<span class="sig-name descname"><span class="pre">cols</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.cols" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">cols</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.cols" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 4</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MSL_Cache_Key.fullp">
-<span class="sig-name descname"><span class="pre">fullp</span></span><em class="property"><span class="pre">:</span> <span class="pre">bool</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.fullp" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">fullp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.fullp" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MSL_Cache_Key.n">
-<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="pre">:</span> <span class="pre">float</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.n" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.n" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MSL_Cache_Key.rows">
-<span class="sig-name descname"><span class="pre">rows</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.rows" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">rows</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.rows" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 3</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MSL_Cache_Key.tolerance">
-<span class="sig-name descname"><span class="pre">tolerance</span></span><em class="property"><span class="pre">:</span> <span class="pre">float</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.tolerance" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">tolerance</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#mpam.processes.MSL_Cache_Key.tolerance" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 2</p>
 </dd></dl>
 
@@ -126,40 +220,41 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.MixSequence">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">MixSequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fully_mixed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lead_offset</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.MixSequence" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">MixSequence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fully_mixed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lead_offset</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.MixSequence" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.NamedTuple.html#typing.NamedTuple" title="typing.NamedTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></a></p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MixSequence.error">
-<span class="sig-name descname"><span class="pre">error</span></span><em class="property"><span class="pre">:</span> <span class="pre">float</span></em><a class="headerlink" href="#mpam.processes.MixSequence.error" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">error</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#mpam.processes.MixSequence.error" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MixSequence.fully_mixed">
-<span class="sig-name descname"><span class="pre">fully_mixed</span></span><em class="property"><span class="pre">:</span> <span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.fully_mixed" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">fully_mixed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.fully_mixed" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 3</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MixSequence.lead_offset">
-<span class="sig-name descname"><span class="pre">lead_offset</span></span><em class="property"><span class="pre">:</span> <span class="pre">tuple</span></em><a class="headerlink" href="#mpam.processes.MixSequence.lead_offset" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">lead_offset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.lead_offset" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 5</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MixSequence.locations">
-<span class="sig-name descname"><span class="pre">locations</span></span><em class="property"><span class="pre">:</span> <span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.locations" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">locations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.locations" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MixSequence.size">
-<span class="sig-name descname"><span class="pre">size</span></span><em class="property"><span class="pre">:</span> <span class="pre">tuple</span></em><a class="headerlink" href="#mpam.processes.MixSequence.size" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.size" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 4</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.MixSequence.steps">
-<span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="pre">:</span> <span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><span class="pre">mpam.processes.PairwiseMix</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.steps" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">steps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.processes.PairwiseMix.html#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><span class="pre">mpam.processes.PairwiseMix</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.processes.MixSequence.steps" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 2</p>
 </dd></dl>
 
@@ -167,27 +262,34 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.MultiDropProcessType">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">MultiDropProcessType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_drops</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.MultiDropProcessType" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">MultiDropProcessType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_drops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.MultiDropProcessType" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.processes.MultiDropProcessType.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_drops</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.processes.MultiDropProcessType.__init__" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.PM">
-<span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">PM</span></span><a class="headerlink" href="#mpam.processes.PM" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of <a class="reference internal" href="#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.processes.PairwiseMix</span></code></a></p>
+<span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">PM</span></span><a class="headerlink" href="#mpam.processes.PM" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="mpam.processes.PairwiseMix.html#mpam.processes.PairwiseMix" title="mpam.processes.PairwiseMix"><code class="xref py py-class docutils literal notranslate"><span class="pre">PairwiseMix</span></code></a></p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.PairwiseMix">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">PairwiseMix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drop1_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop2_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.PairwiseMix" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">PairwiseMix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drop1_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop2_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.PairwiseMix" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.NamedTuple.html#typing.NamedTuple" title="typing.NamedTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></a></p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.PairwiseMix.drop1_index">
-<span class="sig-name descname"><span class="pre">drop1_index</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.PairwiseMix.drop1_index" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">drop1_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.PairwiseMix.drop1_index" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.processes.PairwiseMix.drop2_index">
-<span class="sig-name descname"><span class="pre">drop2_index</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.PairwiseMix.drop2_index" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">drop2_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.processes.PairwiseMix.drop2_index" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
@@ -195,32 +297,99 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.StartProcess">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">StartProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.processes.MultiDropProcessType" title="mpam.processes.MultiDropProcessType"><span class="pre">mpam.processes.MultiDropProcessType</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.StartProcess" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">StartProcess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.processes.MultiDropProcessType.html#mpam.processes.MultiDropProcessType" title="mpam.processes.MultiDropProcessType"><span class="pre">MultiDropProcessType</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.StartProcess" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>, <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.processes.StartProcess.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.processes.MultiDropProcessType.html#mpam.processes.MultiDropProcessType" title="mpam.processes.MultiDropProcessType"><span class="pre">MultiDropProcessType</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.processes.StartProcess.__init__" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.processes.StartProcess._schedule_for">
+<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">drop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><span class="pre">Drop</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><span class="pre">Drop</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.processes.StartProcess._schedule_for" title="Permalink to this definition"></a></dt>
+<dd><p>The implementation of <code class="xref py py-func docutils literal notranslate"><span class="pre">schedule_for()</span></code>.  There is no default implementation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – the <code class="xref py py-attr docutils literal notranslate"><span class="pre">T</span></code> object to schedule the operation for</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>after</strong> – an optional delay to wait before scheduling the operation</p></li>
+<li><p><strong>post_result</strong> – whether to post the resulting value to the returned future object</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a <code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code>[<code class="xref py py-attr docutils literal notranslate"><span class="pre">V</span></code>] future object to which the resulting
+value will be posted unless <code class="docutils literal notranslate"><span class="pre">post_result</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.processes.Transform">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">Transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.Transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>An enumeration.</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.processes.</span></span><span class="sig-name descname"><span class="pre">Transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.processes.Transform" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.processes.Transform.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.processes.Transform.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Either returns an existing member, or creates a new enum class.</p>
+<p>This method is used both when an enum class is given a value to match
+to an enumeration member (i.e. Color(3)) and for the functional API
+(i.e. Color = Enum(‘Color’, names=’RED GREEN BLUE’)).</p>
+<p>When used for the functional API:</p>
+<p><cite>value</cite> will be the name of the new class.</p>
+<p><cite>names</cite> should be either a string of white-space/comma delimited names
+(values will start at <cite>start</cite>), or an iterator/mapping of name, value pairs.</p>
+<p><cite>module</cite> should be set to the module this class is being created in;
+if it is not set, an attempt to find that module will be made, but if
+it fails the class will not be picklable.</p>
+<p><cite>qualname</cite> should be set to the actual location this class can be found
+at in its module; by default it is set to the global scope.  If this is
+not correct, unpickling will fail in some circumstances.</p>
+<p><cite>type</cite>, if set, will be mixed in as the first base class.</p>
 </dd></dl>
 
-</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.processes.Transform.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_neg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_neg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">swap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.processes.Transform.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
 
 
-      </div>
-      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
-      
-        <p>
-        «&#160;&#160;<a href="mpam.pipettor.html">mpam.pipettor</a>
-        &#160;&#160;::&#160;&#160;
-        <a class="uplink" href="../index.html">Contents</a>
-        </p>
-
-      </div>
-
-    <div class="footer" role="contentinfo">
-        &#169; Copyright 2022, Evan Kirshenbaum.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.1.2.
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.pipettor.XferTarget.html" class="btn btn-neutral float-left" title="mpam.pipettor.XferTarget" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.processes.DropCombinationProcessType.html" class="btn btn-neutral float-right" title="mpam.processes.DropCombinationProcessType" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
-  </body>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>

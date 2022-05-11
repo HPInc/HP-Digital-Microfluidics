@@ -1,0 +1,63 @@
+erk.errors.FIX\_BY
+==================
+
+.. currentmodule:: erk.errors
+
+.. autoclass:: FIX_BY
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FIX_BY.fixer
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FIX_BY.__init__
+      ~FIX_BY.expect_false
+      ~FIX_BY.expect_true
+   
+   
+   
+
+   
+   
+   
+   

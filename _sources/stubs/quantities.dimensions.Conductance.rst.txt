@@ -1,0 +1,193 @@
+quantities.dimensions.Conductance
+=================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Conductance
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Conductance.derived
+      ~Conductance.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Conductance.dimensionality
+      ~Conductance.is_negative
+      ~Conductance.is_positive
+      ~Conductance.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Conductance.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Conductance.__init__
+      ~Conductance.a
+      ~Conductance.an
+      ~Conductance.as_dimensionality
+      ~Conductance.as_number
+      ~Conductance.as_unit
+      ~Conductance.as_unit_expr
+      ~Conductance.cast
+      ~Conductance.check_dimensionality
+      ~Conductance.decomposed
+      ~Conductance.divide_by
+      ~Conductance.has_dimensionality
+      ~Conductance.in_denom
+      ~Conductance.in_units
+      ~Conductance.is_close_to
+      ~Conductance.multiply_by
+      ~Conductance.of
+      ~Conductance.ratio
+      ~Conductance.restricted
+      ~Conductance.to_power
+      ~Conductance.unit
+   
+   
+   

@@ -1,0 +1,193 @@
+quantities.core.BaseDim
+=======================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: BaseDim
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BaseDim.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~BaseDim.dimensionality
+      ~BaseDim.is_negative
+      ~BaseDim.is_positive
+      ~BaseDim.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BaseDim.base_unit
+      ~BaseDim.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~BaseDim.__init__
+      ~BaseDim.a
+      ~BaseDim.an
+      ~BaseDim.as_dimensionality
+      ~BaseDim.as_number
+      ~BaseDim.as_unit
+      ~BaseDim.as_unit_expr
+      ~BaseDim.cast
+      ~BaseDim.check_dimensionality
+      ~BaseDim.decomposed
+      ~BaseDim.divide_by
+      ~BaseDim.has_dimensionality
+      ~BaseDim.in_denom
+      ~BaseDim.in_units
+      ~BaseDim.is_close_to
+      ~BaseDim.multiply_by
+      ~BaseDim.of
+      ~BaseDim.ratio
+      ~BaseDim.restricted
+      ~BaseDim.to_power
+      ~BaseDim.unit
+   
+   
+   

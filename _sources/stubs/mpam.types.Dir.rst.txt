@@ -1,0 +1,168 @@
+mpam.types.Dir
+==============
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Dir
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Dir.NORTH
+      ~Dir.N
+      ~Dir.NORTHEAST
+      ~Dir.NE
+      ~Dir.EAST
+      ~Dir.E
+      ~Dir.SOUTHEAST
+      ~Dir.SE
+      ~Dir.SOUTH
+      ~Dir.S
+      ~Dir.SOUTHWEST
+      ~Dir.SW
+      ~Dir.WEST
+      ~Dir.W
+      ~Dir.NORTHWEST
+      ~Dir.NW
+      ~Dir.UP
+      ~Dir.DOWN
+      ~Dir.LEFT
+      ~Dir.RIGHT
+      ~Dir.opposite
+      ~Dir.clockwise
+      ~Dir.counterclockwise
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Dir.cardinals
+      ~Dir.turned
+   
+   
+   
+
+   
+   
+   
+   

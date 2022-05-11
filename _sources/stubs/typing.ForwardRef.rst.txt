@@ -1,0 +1,43 @@
+typing.ForwardRef
+=================
+
+.. currentmodule:: typing
+
+.. autoclass:: ForwardRef
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ForwardRef.__init__
+   
+   
+   
+
+   
+   
+   
+   

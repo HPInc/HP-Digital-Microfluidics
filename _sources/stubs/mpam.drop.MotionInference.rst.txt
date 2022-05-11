@@ -1,0 +1,78 @@
+mpam.drop.MotionInference
+=========================
+
+.. currentmodule:: mpam.drop
+
+.. autoclass:: MotionInference
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MotionInference.changes
+      ~MotionInference.pin_state
+      ~MotionInference.need_drop_update
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MotionInference.__init__
+      ~MotionInference.process_changes
+      ~MotionInference.process_pulls
+      ~MotionInference.process_transfers
+   
+   
+   
+
+   
+   
+   
+   

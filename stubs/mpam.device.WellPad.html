@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.device.WellPad &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.device.WellShape" href="mpam.device.WellShape.html" />
+    <link rel="prev" title="mpam.device.WellMotion" href="mpam.device.WellMotion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.device.html">mpam.device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.T.html">mpam.device.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BC.html">mpam.device.BC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.transitions_from.html">mpam.device.transitions_from</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Batch.html">mpam.device.Batch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BinaryComponent.html">mpam.device.BinaryComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Board.html">mpam.device.Board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BoardComponent.html">mpam.device.BoardComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ChangeJournal.html">mpam.device.ChangeJournal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Clock.html">mpam.device.Clock</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.DispenseGroup.html">mpam.device.DispenseGroup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.DropLoc.html">mpam.device.DropLoc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ExtractionPoint.html">mpam.device.ExtractionPoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.GateStatus.html">mpam.device.GateStatus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Heater.html">mpam.device.Heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.HeatingMode.html">mpam.device.HeatingMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.LocatedPad.html">mpam.device.LocatedPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Magnet.html">mpam.device.Magnet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Pad.html">mpam.device.Pad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PipettingTarget.html">mpam.device.PipettingTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ProductLocation.html">mpam.device.ProductLocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.System.html">mpam.device.System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.SystemComponent.html">mpam.device.SystemComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.UserOperation.html">mpam.device.UserOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Well.html">mpam.device.Well</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellGate.html">mpam.device.WellGate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellMotion.html">mpam.device.WellMotion</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.device.WellPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellShape.html">mpam.device.WellShape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellState.html">mpam.device.WellState</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.device.html">mpam.device</a> &raquo;</li>
+      <li>mpam.device.WellPad</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.device.WellPad.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-device-wellpad">
+<h1>mpam.device.WellPad<a class="headerlink" href="#mpam-device-wellpad" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.WellPad">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">WellPad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><span class="pre">Board</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.State.html#mpam.types.State" title="mpam.types.State"><span class="pre">State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.WellPad" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a>[<a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>], <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a></p>
+<p>A pad inside a :class:Well`.</p>
+<ul>
+<li><p>As a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a>, it has a <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code> and a
+<a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.current_state" title="mpam.device.BinaryComponent.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code></a>, it can act as both a
+<a class="reference internal" href="mpam.types.CommunicationScheduler.html#mpam.types.CommunicationScheduler" title="mpam.types.CommunicationScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommunicationScheduler</span></code></a> and a
+<a class="reference internal" href="mpam.types.OpScheduler.html#mpam.types.OpScheduler" title="mpam.types.OpScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpScheduler</span></code></a>[<a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pad</span></code></a>], and it supports
+<a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.on_state_change" title="mpam.device.BinaryComponent.on_state_change"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_state_change()</span></code></a>.</p>
+<p>To initialize this asspect of the <a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pad</span></code></a>, when it is created, it
+must be associated with a <a class="reference internal" href="mpam.engine.State.html#mpam.engine.State" title="mpam.engine.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>[<a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff" title="mpam.types.OnOff"><code class="xref py py-class docutils literal notranslate"><span class="pre">OnOff</span></code></a>] object that
+knows how to effect any changes on a physical device (via its
+<code class="xref py py-func docutils literal notranslate"><span class="pre">realize_state()</span></code> method).  If nothing needs to be done, a
+<a class="reference internal" href="mpam.types.DummyState.html#mpam.types.DummyState" title="mpam.types.DummyState"><code class="xref py py-class docutils literal notranslate"><span class="pre">DummyState</span></code></a> may be used.</p>
+</li>
+<li><p>As a <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>, it had an optional <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc.drop" title="mpam.device.DropLoc.drop"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drop</span></code></a> and
+<a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc.blob" title="mpam.device.DropLoc.blob"><code class="xref py py-attr docutils literal notranslate"><span class="pre">blob</span></code></a>, and it supports <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc.on_drop_change" title="mpam.device.DropLoc.on_drop_change"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_drop_change()</span></code></a>. It
+is <code class="xref py py-attr docutils literal notranslate"><span class="pre">empty</span></code> whenever <code class="xref py py-attr docutils literal notranslate"><span class="pre">drop</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+<p>A <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a> that is its <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a>’s <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.gate" title="mpam.device.Well.gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gate</span></code></a> will be an
+instance of the subclass <a class="reference internal" href="mpam.device.WellGate.html#mpam.device.WellGate" title="mpam.device.WellGate"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellGate</span></code></a>.  The attribute <a class="reference internal" href="#mpam.device.WellPad.is_gate" title="mpam.device.WellPad.is_gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">is_gate</span></code></a>
+can be used to distinguish gates from interior <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>s.</p>
+<p>Each <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a> had a list of <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.shared_pads" title="mpam.device.Well.shared_pads"><code class="xref py py-attr docutils literal notranslate"><span class="pre">shared_pads</span></code></a> that enumerates
+the the interior pads inside it.  A <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>’s <a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a>
+specifies its position in this list.  If it is a <a class="reference internal" href="mpam.device.WellGate.html#mpam.device.WellGate" title="mpam.device.WellGate"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellGate</span></code></a>,
+<a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a> will be <code class="docutils literal notranslate"><span class="pre">-1</span></code>.  This attribute is set by means of
+<a class="reference internal" href="#mpam.device.WellPad.set_location" title="mpam.device.WellPad.set_location"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_location()</span></code></a>, called within <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.__init__" title="mpam.device.Well.__init__"><code class="xref py py-func docutils literal notranslate"><span class="pre">Well.__init__()</span></code></a>.  (The
+<code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad`s</span> <span class="pre">are</span> <span class="pre">created</span> <span class="pre">before</span> <span class="pre">the</span> <span class="pre">:class:`Well</span></code> and passed into its
+<a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.__init__" title="mpam.device.Well.__init__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__init__()</span></code></a> method, which calls <a class="reference internal" href="#mpam.device.WellPad.set_location" title="mpam.device.WellPad.set_location"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_location()</span></code></a> to establish
+<a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a> and <a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a>.)</p>
+<p>Whenever the <code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code> changes,
+<a class="reference internal" href="mpam.device.BoardComponent.html#mpam.device.BoardComponent.board" title="mpam.device.BoardComponent.board"><code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></a>’s <code class="xref py py-func docutils literal notranslate"><span class="pre">journal_state_change()</span></code> is
+called with the (necessarily different) old and new values to prep for drop
+motion inference.</p>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellPad.is_gate" title="mpam.device.WellPad.is_gate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_gate</span></code></a></p></td>
+<td><p>Is this <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a>'s <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.gate" title="mpam.device.Well.gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gate</span></code></a>?</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-obj docutils literal notranslate"><span class="pre">well</span></code></a></p></td>
+<td><p>The associated <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">index</span></code></a></p></td>
+<td><p>The index of the <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a> in <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a>'s <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.shared_pads" title="mpam.device.Well.shared_pads"><code class="xref py py-attr docutils literal notranslate"><span class="pre">shared_pads</span></code></a> or <code class="docutils literal notranslate"><span class="pre">-1</span></code> if <a class="reference internal" href="#mpam.device.WellPad.is_gate" title="mpam.device.WellPad.is_gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">is_gate</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Toggle</span></code></p></td>
+<td><p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> to toggle the state of a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TurnOff</span></code></p></td>
+<td><p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> to turn on a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TurnOn</span></code></p></td>
+<td><p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> to turn on a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">blob</span></code></p></td>
+<td><p>The <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>, if any, this <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a> participates in</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">checked_drop</span></code></p></td>
+<td><p>The <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a> at this location.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_state</span></code></p></td>
+<td><p>The current value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop</span></code></p></td>
+<td><p>The <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>, if any, at this location.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">neighbors_for_blob</span></code></p></td>
+<td><p>The neighboring <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>s that could be part of the same <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellPad.__init__" title="mpam.device.WellPad.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(board, state, *[, live])</p></td>
+<td><p>Initialize the object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellPad.compute_neighbors_for_blob" title="mpam.device.WellPad.compute_neighbors_for_blob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_neighbors_for_blob</span></code></a>()</p></td>
+<td><p>The list of neighboring <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>s that could be part of the same <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellPad.set_location" title="mpam.device.WellPad.set_location"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_location</span></code></a>(well, index)</p></td>
+<td><p>Set the <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a> and <a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a> attributes</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">SetState</span></code>(val)</p></td>
+<td><p>A <code class="xref py py-attr docutils literal notranslate"><span class="pre">ModifyState</span></code> that sets the state to a specific value.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
+<td><p>Call a function after n optional delay by delegating to <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_drop_change</span></code>(cb, *[, key])</p></td>
+<td><p>Add a new handler, replacing any with the specified key.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_state_change</span></code>(cb, *[, key])</p></td>
+<td><p>Add a new state-change handler, replacing any with the specified key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code>(op[, after, post_result])</p></td>
+<td><p>Schedule an operation for this object, which is assumed to be a <code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule_communication</span></code>(cb, *[, after])</p></td>
+<td><p>Schedule communication of <code class="docutils literal notranslate"><span class="pre">cb</span></code> after optional delay <code class="docutils literal notranslate"><span class="pre">after</span></code> by delegating to <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">user_operation</span></code>()</p></td>
+<td><p>Create a new <a class="reference internal" href="mpam.device.UserOperation.html#mpam.device.UserOperation" title="mpam.device.UserOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserOperation</span></code></a> in the <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code>'s <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.WellPad.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><span class="pre">Board</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.State.html#mpam.types.State" title="mpam.types.State"><span class="pre">State</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff" title="mpam.types.OnOff"><span class="pre">OnOff</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">live</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.WellPad.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<p>This does not set <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a> or <a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a>, because
+<a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>/s are created before <code class="xref py py-class docutils literal notranslate"><span class="pre">Well`s.</span>&#160; <span class="pre">Rather,</span>
+<span class="pre">:func:`Well.__init__</span></code> calls <a class="reference internal" href="#mpam.device.WellPad.set_location" title="mpam.device.WellPad.set_location"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_location()</span></code></a>, which sets them.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>board</strong> – the containing <a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><code class="xref py py-class docutils literal notranslate"><span class="pre">Board</span></code></a></p></li>
+<li><p><strong>state</strong> – the associated <a class="reference internal" href="mpam.engine.State.html#mpam.engine.State" title="mpam.engine.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>[<a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff" title="mpam.types.OnOff"><code class="xref py py-class docutils literal notranslate"><span class="pre">OnOff</span></code></a>]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>live</strong> – is the <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a> live?</p></li>
+<li><p><strong>neighbors</strong> – the <a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a> values of <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>s that should
+be included in <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc.neighbors_for_blob" title="mpam.device.DropLoc.neighbors_for_blob"><code class="xref py py-attr docutils literal notranslate"><span class="pre">neighbors_for_blob</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.WellPad.compute_neighbors_for_blob">
+<span class="sig-name descname"><span class="pre">compute_neighbors_for_blob</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc" title="mpam.device.DropLoc"><span class="pre">DropLoc</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.device.WellPad.compute_neighbors_for_blob" title="Permalink to this definition"></a></dt>
+<dd><p>The list of neighboring <a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>s that could be part of the
+same <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.  This is called the first time
+<a class="reference internal" href="mpam.device.DropLoc.html#mpam.device.DropLoc.neighbors_for_blob" title="mpam.device.DropLoc.neighbors_for_blob"><code class="xref py py-attr docutils literal notranslate"><span class="pre">neighbors_for_blob</span></code></a> is referenced, and the value is
+cached.</p>
+<p>This will be the <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>s corresponding to the <code class="docutils literal notranslate"><span class="pre">neighbors</span></code>
+indices provided to <a class="reference internal" href="#mpam.device.WellPad.__init__" title="mpam.device.WellPad.__init__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__init__()</span></code></a>.  If <a class="reference internal" href="#mpam.device.WellPad.is_gate" title="mpam.device.WellPad.is_gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">is_gate</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code>
+(i.e., this is a <a class="reference internal" href="mpam.device.WellGate.html#mpam.device.WellGate" title="mpam.device.WellGate"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellGate</span></code></a>), it will also include <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a>’s
+<a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.exit_pad" title="mpam.device.Well.exit_pad"><code class="xref py py-attr docutils literal notranslate"><span class="pre">exit_pad</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code> of neighbors</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellPad.index">
+<span class="sig-name descname"><span class="pre">index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.device.WellPad.index" title="Permalink to this definition"></a></dt>
+<dd><p>The index of the <a class="reference internal" href="#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a> in <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a>’s
+<a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.shared_pads" title="mpam.device.Well.shared_pads"><code class="xref py py-attr docutils literal notranslate"><span class="pre">shared_pads</span></code></a> or <code class="docutils literal notranslate"><span class="pre">-1</span></code> if <a class="reference internal" href="#mpam.device.WellPad.is_gate" title="mpam.device.WellPad.is_gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">is_gate</span></code></a> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.device.WellPad.is_gate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_gate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mpam.device.WellPad.is_gate" title="Permalink to this definition"></a></dt>
+<dd><p>Is this <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a>’s <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.gate" title="mpam.device.Well.gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gate</span></code></a>?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.WellPad.set_location">
+<span class="sig-name descname"><span class="pre">set_location</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">well</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.WellPad.set_location" title="Permalink to this definition"></a></dt>
+<dd><p>Set the <a class="reference internal" href="#mpam.device.WellPad.well" title="mpam.device.WellPad.well"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well</span></code></a> and <a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a> attributes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>well</strong> – the associated <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a></p></li>
+<li><p><strong>index</strong> – the value for <a class="reference internal" href="#mpam.device.WellPad.index" title="mpam.device.WellPad.index"><code class="xref py py-attr docutils literal notranslate"><span class="pre">index</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellPad.well">
+<span class="sig-name descname"><span class="pre">well</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a></em><a class="headerlink" href="#mpam.device.WellPad.well" title="Permalink to this definition"></a></dt>
+<dd><p>The associated <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.device.WellMotion.html" class="btn btn-neutral float-left" title="mpam.device.WellMotion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.device.WellShape.html" class="btn btn-neutral float-right" title="mpam.device.WellShape" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

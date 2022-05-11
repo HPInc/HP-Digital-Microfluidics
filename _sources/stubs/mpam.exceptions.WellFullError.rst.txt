@@ -1,0 +1,6 @@
+mpam.exceptions.WellFullError
+=============================
+
+.. currentmodule:: mpam.exceptions
+
+.. autoexception:: WellFullError

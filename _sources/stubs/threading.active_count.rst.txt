@@ -1,0 +1,6 @@
+threading.active\_count
+=======================
+
+.. currentmodule:: threading
+
+.. autofunction:: active_count

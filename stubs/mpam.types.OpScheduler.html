@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.types.OpScheduler &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.types.Operation" href="mpam.types.Operation.html" />
+    <link rel="prev" title="mpam.types.OnOff" href="mpam.types.OnOff.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.types.html">mpam.types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.T.html">mpam.types.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tco.html">mpam.types.Tco</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tcontra.html">mpam.types.Tcontra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_reagent.html">mpam.types.unknown_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.schedule.html">mpam.types.schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.AsyncFunctionSerializer.html">mpam.types.AsyncFunctionSerializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Barrier.html">mpam.types.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ChangeCallbackList.html">mpam.types.ChangeCallbackList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Chemical.html">mpam.types.Chemical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Color.html">mpam.types.Color</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ColorAllocator.html">mpam.types.ColorAllocator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedOperation.html">mpam.types.CombinedOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.OpScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Orientation.html">mpam.types.Orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Postable.html">mpam.types.Postable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessStep.html">mpam.types.ProcessStep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessedReagent.html">mpam.types.ProcessedReagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Reagent.html">mpam.types.Reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.State.html">mpam.types.State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.StaticOperation.html">mpam.types.StaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.TickNumber.html">mpam.types.TickNumber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Ticks.html">mpam.types.Ticks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Trigger.html">mpam.types.Trigger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Turn.html">mpam.types.Turn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.UnknownConcentration.html">mpam.types.UnknownConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XYCoord.html">mpam.types.XYCoord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XferDir.html">mpam.types.XferDir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.types.html">mpam.types</a> &raquo;</li>
+      <li>mpam.types.OpScheduler</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.types.OpScheduler.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-types-opscheduler">
+<h1>mpam.types.OpScheduler<a class="headerlink" href="#mpam-types-opscheduler" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">OpScheduler</span></span><a class="headerlink" href="#mpam.types.OpScheduler" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CS</span></code></a>]</p>
+<p>A mixin base class giving a class the ability to schedule
+<a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a>, <a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><code class="xref py py-attr docutils literal notranslate"><span class="pre">V</span></code></a>]s.</p>
+<p>Typically, this will be class <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a> itself, as in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Drop</span><span class="p">(</span><span class="n">OpScheduler</span><span class="p">[</span><span class="s1">&#39;Drop&#39;</span><span class="p">]):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>There are several <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>s (e.g., <a class="reference internal" href="#mpam.types.OpScheduler.WaitAt" title="mpam.types.OpScheduler.WaitAt"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaitAt</span></code></a>,
+<a class="reference internal" href="#mpam.types.OpScheduler.Reach" title="mpam.types.OpScheduler.Reach"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reach</span></code></a>, <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor" title="mpam.types.OpScheduler.WaitFor"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaitFor</span></code></a>), that are defined for all
+<a class="reference internal" href="#mpam.types.OpScheduler" title="mpam.types.OpScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpScheduler</span></code></a>s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>CS</strong> – A subclass of <a class="reference internal" href="#mpam.types.OpScheduler" title="mpam.types.OpScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpScheduler</span></code></a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.OpScheduler.schedule" title="mpam.types.OpScheduler.schedule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code></a>(op[, after, post_result])</p></td>
+<td><p>Schedule an operation for this object, which is assumed to be a <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.Reach">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Reach</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">barrier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">Barrier</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.Reach" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CS</span></code></a>, <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CS</span></code></a>]</p>
+<p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> during which the <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a> object reaches a
+<a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Barrier</span></code></a> but does not pause there.  The operation completes
+immediately (or after the delay specified by <code class="docutils literal notranslate"><span class="pre">after</span></code>).  The
+value posted to the <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> value returned by
+<code class="xref py py-func docutils literal notranslate"><span class="pre">schedule_for()</span></code> is the object for which the operation was
+scheduled.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.Reach.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">barrier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">Barrier</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.Reach.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>barrier</strong> – the <a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Barrier</span></code></a> to reach</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.Reach._schedule_for">
+<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CS</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">CS</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.OpScheduler.Reach._schedule_for" title="Permalink to this definition"></a></dt>
+<dd><p>Implement <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation.schedule_for" title="mpam.types.Operation.schedule_for"><code class="xref py py-func docutils literal notranslate"><span class="pre">Operation.schedule_for()</span></code></a> by reaching, but not
+pausing at <a class="reference internal" href="#mpam.types.OpScheduler.Reach.barrier" title="mpam.types.OpScheduler.Reach.barrier"><code class="xref py py-attr docutils literal notranslate"><span class="pre">barrier</span></code></a>.</p>
+<dl class="field-list simple">
+</dl>
+<p>The value posted to the returned future will be <code class="docutils literal notranslate"><span class="pre">obj</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – the <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a> object to schedule the operation for</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>after</strong> – an optional delay to wait before scheduling the operation</p></li>
+<li><p><strong>post_result</strong> – whether to post the resulting value to the returned future object</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a>] future object to which <code class="docutils literal notranslate"><span class="pre">obj</span></code>
+will be posted unless <code class="docutils literal notranslate"><span class="pre">post_result</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.Reach.barrier">
+<span class="sig-name descname"><span class="pre">barrier</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">mpam.types.Barrier</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.CS</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.OpScheduler.Reach.barrier" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Barrier</span></code></a> to reach</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitAt">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">WaitAt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">barrier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">Barrier</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.WaitAt" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CS</span></code></a>, <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CS</span></code></a>]</p>
+<p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> during which the <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a> object waits at a
+<a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Barrier</span></code></a>.  The operation completes when the appropriate number
+of objects have reached the barrier.  The value posted to the
+<a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> value returned by <code class="xref py py-func docutils literal notranslate"><span class="pre">schedule_for()</span></code> is the object
+for which the operation was scheduled.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitAt.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">barrier</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">Barrier</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.WaitAt.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>barrier</strong> – the <a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Barrier</span></code></a> to wait at</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitAt._schedule_for">
+<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CS</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">CS</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.OpScheduler.WaitAt._schedule_for" title="Permalink to this definition"></a></dt>
+<dd><p>Implement <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation.schedule_for" title="mpam.types.Operation.schedule_for"><code class="xref py py-func docutils literal notranslate"><span class="pre">Operation.schedule_for()</span></code></a> by pausing at <a class="reference internal" href="#mpam.types.OpScheduler.WaitAt.barrier" title="mpam.types.OpScheduler.WaitAt.barrier"><code class="xref py py-attr docutils literal notranslate"><span class="pre">barrier</span></code></a>.</p>
+<dl class="field-list simple">
+</dl>
+<p>The value posted to the returned future will be <code class="docutils literal notranslate"><span class="pre">obj</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – the <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a> object to schedule the operation for</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>after</strong> – an optional delay to wait before scheduling the operation</p></li>
+<li><p><strong>post_result</strong> – whether to post the resulting value to the returned future object (unused)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a>] future object to which <code class="docutils literal notranslate"><span class="pre">obj</span></code>
+will be posted</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitAt.barrier">
+<span class="sig-name descname"><span class="pre">barrier</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><span class="pre">mpam.types.Barrier</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.CS</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.OpScheduler.WaitAt.barrier" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.Barrier.html#mpam.types.Barrier" title="mpam.types.Barrier"><code class="xref py py-class docutils literal notranslate"><span class="pre">Barrier</span></code></a> to wait at</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitFor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">WaitFor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">waitable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Trigger.html#mpam.types.Trigger" title="mpam.types.Trigger"><span class="pre">Trigger</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.OpScheduler.WaitFor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CS</span></code></a>, <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CS</span></code></a>]</p>
+<p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> during which the <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a> object waits for a
+<a class="reference internal" href="mpam.types.html#mpam.types.WaitableType" title="mpam.types.WaitableType"><code class="xref py py-class docutils literal notranslate"><span class="pre">WaitableType</span></code></a> to be satisfied.</p>
+<ul class="simple">
+<li><p>If <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> is a <a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><code class="xref py py-class docutils literal notranslate"><span class="pre">Time</span></code></a> or <a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ticks</span></code></a>, the
+operation completes after that delay.</p></li>
+<li><p>If <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> is a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>, the operation completes
+when a value is posted to <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a>.</p></li>
+<li><p>If <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> is a <a class="reference internal" href="mpam.types.Trigger.html#mpam.types.Trigger" title="mpam.types.Trigger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trigger</span></code></a>, the operation completes
+when <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> fires.</p></li>
+</ul>
+<p>The value posted to the <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> value returned by
+<code class="xref py py-func docutils literal notranslate"><span class="pre">schedule_for()</span></code> is the object for which the operation was
+scheduled.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitFor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">waitable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Trigger.html#mpam.types.Trigger" title="mpam.types.Trigger"><span class="pre">Trigger</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.OpScheduler.WaitFor.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>waitable</strong> – what to wait for</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitFor._schedule_for">
+<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">CS</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">CS</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.OpScheduler.WaitFor._schedule_for" title="Permalink to this definition"></a></dt>
+<dd><p>Implement <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation.schedule_for" title="mpam.types.Operation.schedule_for"><code class="xref py py-func docutils literal notranslate"><span class="pre">Operation.schedule_for()</span></code></a> by waiting for <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a>.</p>
+<dl class="field-list simple">
+</dl>
+<ul class="simple">
+<li><p>If <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> is a <a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><code class="xref py py-class docutils literal notranslate"><span class="pre">Time</span></code></a> or <a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ticks</span></code></a>, the
+operation completes after that delay.</p></li>
+<li><p>If <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> is a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>, the operation completes
+when a value is posted to <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a>.</p></li>
+<li><p>If <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> is a <a class="reference internal" href="mpam.types.Trigger.html#mpam.types.Trigger" title="mpam.types.Trigger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trigger</span></code></a>, the operation completes
+when <a class="reference internal" href="#mpam.types.OpScheduler.WaitFor.waitable" title="mpam.types.OpScheduler.WaitFor.waitable"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waitable</span></code></a> fires.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj</strong> – the <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a> object to schedule the operation for</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>after</strong> – an optional delay to wait before scheduling the operation</p></li>
+<li><p><strong>post_result</strong> – whether to post the resulting value to the returned future object (unused)</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a>] future object to which <code class="docutils literal notranslate"><span class="pre">obj</span></code>
+will be posted</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.WaitFor.waitable">
+<span class="sig-name descname"><span class="pre">waitable</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">mpam.types.Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Trigger.html#mpam.types.Trigger" title="mpam.types.Trigger"><span class="pre">mpam.types.Trigger</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.OpScheduler.WaitFor.waitable" title="Permalink to this definition"></a></dt>
+<dd><p>What to wait for</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.OpScheduler.schedule">
+<span class="sig-name descname"><span class="pre">schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><span class="pre">Operation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">CS</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">V</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><span class="pre">Operation</span></a><span class="p"><span class="pre">[</span></span><span class="pre">CS</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">V</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">V</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.OpScheduler.schedule" title="Permalink to this definition"></a></dt>
+<dd><p>Schedule an operation for this object, which is assumed to be a <a class="reference internal" href="mpam.types.CS.html#mpam.types.CS" title="mpam.types.CS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code></a>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">op</span></code> is a <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>, it is called to get the actual <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>op</strong> – The <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> to schedule or a <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> to call to obtain it.</p></li>
+<li><p><strong>after</strong> – an optional delay to wait before scheduling the operation</p></li>
+<li><p><strong>post_result</strong> – whether to post the resulting value to the returned future object</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><code class="xref py py-attr docutils literal notranslate"><span class="pre">V</span></code></a>] future object to which the resulting
+value will be posted unless <code class="docutils literal notranslate"><span class="pre">post_result</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.OnOff.html" class="btn btn-neutral float-left" title="mpam.types.OnOff" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.Operation.html" class="btn btn-neutral float-right" title="mpam.types.Operation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

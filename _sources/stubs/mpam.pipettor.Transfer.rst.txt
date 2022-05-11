@@ -1,0 +1,73 @@
+mpam.pipettor.Transfer
+======================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: Transfer
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Transfer.reagent
+      ~Transfer.xfer_dir
+      ~Transfer.targets
+      ~Transfer.is_product
+      ~Transfer.pending
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Transfer.__init__
+   
+   
+   
+
+   
+   
+   
+   

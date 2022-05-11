@@ -1,0 +1,6 @@
+mpam.exceptions.NoSuchPad
+=========================
+
+.. currentmodule:: mpam.exceptions
+
+.. autoexception:: NoSuchPad

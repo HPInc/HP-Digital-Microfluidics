@@ -1,0 +1,98 @@
+mpam.types.Orientation
+======================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Orientation
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Orientation.NORTH_POS_EAST_POS
+      ~Orientation.NORTH_NEG_EAST_POS
+      ~Orientation.NORTH_NEG_EAST_NEG
+      ~Orientation.NORTH_POS_EAST_NEG
+      ~Orientation.pos_x
+      ~Orientation.pos_y
+      ~Orientation.offset
+      ~Orientation.up_right_delta
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Orientation.__init__
+      ~Orientation.neighbor
+      ~Orientation.up_right
+   
+   
+   
+
+   
+   
+   
+   

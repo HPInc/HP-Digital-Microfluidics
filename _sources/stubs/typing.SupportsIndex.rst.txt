@@ -1,0 +1,43 @@
+typing.SupportsIndex
+====================
+
+.. currentmodule:: typing
+
+.. autoclass:: SupportsIndex
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SupportsIndex.__init__
+   
+   
+   
+
+   
+   
+   
+   

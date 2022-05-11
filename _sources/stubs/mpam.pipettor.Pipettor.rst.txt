@@ -1,0 +1,118 @@
+mpam.pipettor.Pipettor
+======================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: Pipettor
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Pipettor.OpFunc
+      ~Pipettor.sys_cpt
+      ~Pipettor.name
+      ~Pipettor.worker
+      ~Pipettor.xfer_sched
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Pipettor.__init__
+      ~Pipettor.delayed
+      ~Pipettor.idle
+      ~Pipettor.join_system
+      ~Pipettor.not_idle
+      ~Pipettor.perform
+      ~Pipettor.schedule_communication
+      ~Pipettor.system_shutdown
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Pipettor.schedule
+   
+   
+   

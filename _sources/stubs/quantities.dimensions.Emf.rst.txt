@@ -1,0 +1,193 @@
+quantities.dimensions.Emf
+=========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Emf
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Emf.derived
+      ~Emf.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Emf.dimensionality
+      ~Emf.is_negative
+      ~Emf.is_positive
+      ~Emf.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Emf.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Emf.__init__
+      ~Emf.a
+      ~Emf.an
+      ~Emf.as_dimensionality
+      ~Emf.as_number
+      ~Emf.as_unit
+      ~Emf.as_unit_expr
+      ~Emf.cast
+      ~Emf.check_dimensionality
+      ~Emf.decomposed
+      ~Emf.divide_by
+      ~Emf.has_dimensionality
+      ~Emf.in_denom
+      ~Emf.in_units
+      ~Emf.is_close_to
+      ~Emf.multiply_by
+      ~Emf.of
+      ~Emf.ratio
+      ~Emf.restricted
+      ~Emf.to_power
+      ~Emf.unit
+   
+   
+   

@@ -1,0 +1,78 @@
+threading.Barrier
+=================
+
+.. currentmodule:: threading
+
+.. autoclass:: Barrier
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Barrier.broken
+      ~Barrier.n_waiting
+      ~Barrier.parties
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Barrier.__init__
+      ~Barrier.abort
+      ~Barrier.reset
+      ~Barrier.wait
+   
+   
+   
+
+   
+   
+   
+   

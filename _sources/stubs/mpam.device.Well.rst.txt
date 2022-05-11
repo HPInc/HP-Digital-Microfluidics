@@ -1,0 +1,313 @@
+mpam.device.Well
+================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Well
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Well.available
+      ~Well.contents
+      ~Well.drop_availability
+      ~Well.empty
+      ~Well.empty_to
+      ~Well.fill_to
+      ~Well.gate_on
+      ~Well.gate_reserved
+      ~Well.max_fill
+      ~Well.min_fill
+      ~Well.reagent
+      ~Well.remaining_capacity
+      ~Well.required
+      ~Well.volume
+      ~Well.number
+      ~Well.group
+      ~Well.capacity
+      ~Well.dispensed_volume
+      ~Well.is_voidable
+      ~Well.exit_pad
+      ~Well.shared_pads
+      ~Well.gate
+      ~Well.exit_dir
+      ~Well.board
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Well.pipettor
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Well.__init__
+      ~Well.add
+      ~Well.can_accept
+      ~Well.can_provide
+      ~Well.compute_empty_to
+      ~Well.compute_fill_to
+      ~Well.compute_max_fill
+      ~Well.compute_min_fill
+      ~Well.contains
+      ~Well.empty_well
+      ~Well.ensure_content
+      ~Well.ensure_space
+      ~Well.on_liquid_change
+      ~Well.pipettor_added
+      ~Well.pipettor_removed
+      ~Well.prepare_for_add
+      ~Well.prepare_for_remove
+      ~Well.refill
+      ~Well.remove
+      ~Well.reserve_gate
+      ~Well.transfer_in
+      ~Well.transfer_out
+      ~Well.volume_from_spec
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Well.delayed
+      ~Well.schedule
+      ~Well.schedule_communication
+      ~Well.user_operation
+   
+   
+   

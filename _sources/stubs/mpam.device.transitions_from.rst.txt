@@ -1,0 +1,6 @@
+mpam.device.transitions\_from
+=============================
+
+.. currentmodule:: mpam.device
+
+.. autofunction:: transitions_from

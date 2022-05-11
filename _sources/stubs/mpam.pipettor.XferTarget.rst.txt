@@ -1,0 +1,108 @@
+mpam.pipettor.XferTarget
+========================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: XferTarget
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~XferTarget.insufficient_msg
+      ~XferTarget.target
+      ~XferTarget.volume
+      ~XferTarget.allow_merge
+      ~XferTarget.on_unknown
+      ~XferTarget.on_insufficient
+      ~XferTarget.got
+      ~XferTarget.future
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~XferTarget.__init__
+      ~XferTarget.finished
+      ~XferTarget.finished_overall_transfer
+      ~XferTarget.in_position
+      ~XferTarget.signal_done
+   
+   
+   
+
+   
+   
+   
+   

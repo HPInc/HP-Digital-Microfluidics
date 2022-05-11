@@ -1,0 +1,43 @@
+typing.SupportsComplex
+======================
+
+.. currentmodule:: typing
+
+.. autoclass:: SupportsComplex
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SupportsComplex.__init__
+   
+   
+   
+
+   
+   
+   
+   

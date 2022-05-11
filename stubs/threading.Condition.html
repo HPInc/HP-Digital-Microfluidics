@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>threading.Condition &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="threading.Event" href="threading.Event.html" />
+    <link rel="prev" title="threading.BoundedSemaphore" href="threading.BoundedSemaphore.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="threading.html">threading</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="threading.RLock.html">threading.RLock</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.activeCount.html">threading.activeCount</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.active_count.html">threading.active_count</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.currentThread.html">threading.currentThread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.current_thread.html">threading.current_thread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.enumerate.html">threading.enumerate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.getprofile.html">threading.getprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.gettrace.html">threading.gettrace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.main_thread.html">threading.main_thread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.setprofile.html">threading.setprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.settrace.html">threading.settrace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Barrier.html">threading.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.BoundedSemaphore.html">threading.BoundedSemaphore</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">threading.Condition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Event.html">threading.Event</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Semaphore.html">threading.Semaphore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Thread.html">threading.Thread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Timer.html">threading.Timer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.BrokenBarrierError.html">threading.BrokenBarrierError</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="threading.html">threading</a> &raquo;</li>
+      <li>threading.Condition</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/threading.Condition.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="threading-condition">
+<h1>threading.Condition<a class="headerlink" href="#threading-condition" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.Condition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Condition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class that implements a condition variable.</p>
+<p>A condition variable allows one or more threads to wait until they are
+notified by another thread.</p>
+<p>If the lock argument is given and not None, it must be a Lock or RLock
+object, and it is used as the underlying lock. Otherwise, a new RLock object
+is created and used as the underlying lock.</p>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#threading.Condition.__init__" title="threading.Condition.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([lock])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#threading.Condition.notify" title="threading.Condition.notify"><code class="xref py py-obj docutils literal notranslate"><span class="pre">notify</span></code></a>([n])</p></td>
+<td><p>Wake up one or more threads waiting on this condition, if any.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#threading.Condition.notifyAll" title="threading.Condition.notifyAll"><code class="xref py py-obj docutils literal notranslate"><span class="pre">notifyAll</span></code></a>()</p></td>
+<td><p>Wake up all threads waiting on this condition.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#threading.Condition.notify_all" title="threading.Condition.notify_all"><code class="xref py py-obj docutils literal notranslate"><span class="pre">notify_all</span></code></a>()</p></td>
+<td><p>Wake up all threads waiting on this condition.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#threading.Condition.wait" title="threading.Condition.wait"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wait</span></code></a>([timeout])</p></td>
+<td><p>Wait until notified or until a timeout occurs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#threading.Condition.wait_for" title="threading.Condition.wait_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wait_for</span></code></a>(predicate[, timeout])</p></td>
+<td><p>Wait until a condition evaluates to True.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.notify">
+<span class="sig-name descname"><span class="pre">notify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.notify" title="Permalink to this definition"></a></dt>
+<dd><p>Wake up one or more threads waiting on this condition, if any.</p>
+<p>If the calling thread has not acquired the lock when this method is
+called, a RuntimeError is raised.</p>
+<p>This method wakes up at most n of the threads waiting for the condition
+variable; it is a no-op if no threads are waiting.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.notifyAll">
+<span class="sig-name descname"><span class="pre">notifyAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.notifyAll" title="Permalink to this definition"></a></dt>
+<dd><p>Wake up all threads waiting on this condition.</p>
+<p>This method is deprecated, use notify_all() instead.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.notify_all">
+<span class="sig-name descname"><span class="pre">notify_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.notify_all" title="Permalink to this definition"></a></dt>
+<dd><p>Wake up all threads waiting on this condition.</p>
+<p>If the calling thread has not acquired the lock when this method
+is called, a RuntimeError is raised.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.wait">
+<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.wait" title="Permalink to this definition"></a></dt>
+<dd><p>Wait until notified or until a timeout occurs.</p>
+<p>If the calling thread has not acquired the lock when this method is
+called, a RuntimeError is raised.</p>
+<p>This method releases the underlying lock, and then blocks until it is
+awakened by a notify() or notify_all() call for the same condition
+variable in another thread, or until the optional timeout occurs. Once
+awakened or timed out, it re-acquires the lock and returns.</p>
+<p>When the timeout argument is present and not None, it should be a
+floating point number specifying a timeout for the operation in seconds
+(or fractions thereof).</p>
+<p>When the underlying lock is an RLock, it is not released using its
+release() method, since this may not actually unlock the lock when it
+was acquired multiple times recursively. Instead, an internal interface
+of the RLock class is used, which really unlocks it even when it has
+been recursively acquired several times. Another internal interface is
+then used to restore the recursion level when the lock is reacquired.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.wait_for">
+<span class="sig-name descname"><span class="pre">wait_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predicate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.wait_for" title="Permalink to this definition"></a></dt>
+<dd><p>Wait until a condition evaluates to True.</p>
+<p>predicate should be a callable which result will be interpreted as a
+boolean value.  A timeout may be provided giving the maximum time to
+wait.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="threading.BoundedSemaphore.html" class="btn btn-neutral float-left" title="threading.BoundedSemaphore" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="threading.Event.html" class="btn btn-neutral float-right" title="threading.Event" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

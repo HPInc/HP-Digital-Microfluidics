@@ -1,0 +1,128 @@
+mpam.paths.Path
+===============
+
+.. currentmodule:: mpam.paths
+
+.. autoclass:: Path
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Path.appear_at
+      ~Path.dispense_from
+      ~Path.empty
+      ~Path.enter_well
+      ~Path.from_spec
+      ~Path.in_mix
+      ~Path.join
+      ~Path.run_paths
+      ~Path.schedule_paths
+      ~Path.start
+      ~Path.teleport_into
+      ~Path.then_process
+      ~Path.to_col
+      ~Path.to_pad
+      ~Path.to_row
+      ~Path.walk
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Path.__init__
+   
+   
+   

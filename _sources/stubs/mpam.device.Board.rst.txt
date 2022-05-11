@@ -1,0 +1,278 @@
+mpam.device.Board
+=================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Board
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Board.change_journal
+      ~Board.drop_size
+      ~Board.drop_unit
+      ~Board.max_column
+      ~Board.max_row
+      ~Board.min_column
+      ~Board.min_row
+      ~Board.no_delay
+      ~Board.pad_array
+      ~Board.trace_blobs
+      ~Board.pads
+      ~Board.wells
+      ~Board.magnets
+      ~Board.heaters
+      ~Board.extraction_points
+      ~Board.orientation
+      ~Board.drop_motion_time
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Board.system
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Board.__init__
+      ~Board.abort
+      ~Board.finish_update
+      ~Board.infer_drop_motion
+      ~Board.join_system
+      ~Board.journal_delivery
+      ~Board.journal_removal
+      ~Board.journal_state_change
+      ~Board.pad_at
+      ~Board.print_blobs
+      ~Board.replace_change_journal
+      ~Board.stop
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Board.add_monitor
+      ~Board.after_tick
+      ~Board.before_tick
+      ~Board.call_after
+      ~Board.call_at
+      ~Board.communicate
+      ~Board.delayed
+      ~Board.in_system
+      ~Board.make_request
+      ~Board.on_condition
+      ~Board.on_tick
+      ~Board.schedule
+      ~Board.system_shutdown
+      ~Board.update_state
+      ~Board.user_operation
+   
+   
+   

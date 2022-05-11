@@ -1,0 +1,6 @@
+mpam.types.Tco
+==============
+
+.. currentmodule:: mpam.types
+
+.. autodata:: Tco

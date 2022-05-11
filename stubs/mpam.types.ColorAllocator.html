@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.types.ColorAllocator &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.types.CombinedOperation" href="mpam.types.CombinedOperation.html" />
+    <link rel="prev" title="mpam.types.Color" href="mpam.types.Color.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.types.html">mpam.types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.T.html">mpam.types.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tco.html">mpam.types.Tco</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tcontra.html">mpam.types.Tcontra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_reagent.html">mpam.types.unknown_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.schedule.html">mpam.types.schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.AsyncFunctionSerializer.html">mpam.types.AsyncFunctionSerializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Barrier.html">mpam.types.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ChangeCallbackList.html">mpam.types.ChangeCallbackList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Chemical.html">mpam.types.Chemical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Color.html">mpam.types.Color</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.ColorAllocator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedOperation.html">mpam.types.CombinedOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Orientation.html">mpam.types.Orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Postable.html">mpam.types.Postable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessStep.html">mpam.types.ProcessStep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessedReagent.html">mpam.types.ProcessedReagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Reagent.html">mpam.types.Reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.State.html">mpam.types.State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.StaticOperation.html">mpam.types.StaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.TickNumber.html">mpam.types.TickNumber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Ticks.html">mpam.types.Ticks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Trigger.html">mpam.types.Trigger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Turn.html">mpam.types.Turn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.UnknownConcentration.html">mpam.types.UnknownConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XYCoord.html">mpam.types.XYCoord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XferDir.html">mpam.types.XferDir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.types.html">mpam.types</a> &raquo;</li>
+      <li>mpam.types.ColorAllocator</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.types.ColorAllocator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-types-colorallocator">
+<h1>mpam.types.ColorAllocator<a class="headerlink" href="#mpam-types-colorallocator" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ColorAllocator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_reservations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">H</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><span class="pre">Color</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_colors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.ColorAllocator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a>[<a class="reference internal" href="mpam.types.H.html#mpam.types.H" title="mpam.types.H"><code class="xref py py-obj docutils literal notranslate"><span class="pre">H</span></code></a>]</p>
+<p>An allocator associating <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> objects with elments of some
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Hashable</span></code> type <a class="reference internal" href="mpam.types.H.html#mpam.types.H" title="mpam.types.H"><code class="xref py py-attr docutils literal notranslate"><span class="pre">H</span></code></a>.</p>
+<p>The basic idea is that you call <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a> to obtain a <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>
+to use to represent an element.  For example, if <code class="docutils literal notranslate"><span class="pre">alloc</span></code> is a
+<a class="reference internal" href="#mpam.types.ColorAllocator" title="mpam.types.ColorAllocator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorAllocator</span></code></a>[<a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>] and <code class="docutils literal notranslate"><span class="pre">r</span></code> is a <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, then</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c</span> <span class="o">=</span> <span class="n">alloc</span><span class="o">.</span><span class="n">get_color</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>will obtain a <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> for <code class="docutils literal notranslate"><span class="pre">r</span></code>.  If called again with the same
+argument, the same <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> will be returned.  To reserve a specific
+<a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> for an object, use <a class="reference internal" href="#mpam.types.ColorAllocator.reserve_color" title="mpam.types.ColorAllocator.reserve_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">reserve_color()</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alloc</span><span class="o">.</span><span class="n">reserve_color</span><span class="p">(</span><span class="n">waste_reagent</span><span class="p">,</span> <span class="s2">&quot;black&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">color</span></code> argument to <a class="reference internal" href="#mpam.types.ColorAllocator.reserve_color" title="mpam.types.ColorAllocator.reserve_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">reserve_color()</span></code></a> may be a <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> or
+anything usable as the argument to <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color.find" title="mpam.types.Color.find"><code class="xref py py-func docutils literal notranslate"><span class="pre">Color.find()</span></code></a> (e.g., a string or
+tuple of floats).</p>
+<p>By default, <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a> will allocate <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s from
+<a class="reference internal" href="#mpam.types.ColorAllocator.default_color_list" title="mpam.types.ColorAllocator.default_color_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">ColorAllocator.default_color_list()</span></code></a>, which is an array of 954 common
+colors that can be found at <a class="reference external" href="https://xkcd.com/color/rgb/">https://xkcd.com/color/rgb/</a>.  To use a different
+list (or a permutation of this list), specify the <code class="docutils literal notranslate"><span class="pre">all_colors</span></code> parameter
+when constructing the <a class="reference internal" href="#mpam.types.ColorAllocator" title="mpam.types.ColorAllocator"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorAllocator</span></code></a>.</p>
+<p>Internally, the class uses a <code class="xref py py-class docutils literal notranslate"><span class="pre">WeakKeyDictionary</span></code> to manage the
+associations, so it does not hold onto the objects for which
+<a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s have been allocated, and when one gets garbage collected,
+the associated <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> may become available to be associated with a
+new object.  If a color is associated with more than one object (via
+<a class="reference internal" href="#mpam.types.ColorAllocator.reserve_color" title="mpam.types.ColorAllocator.reserve_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">reserve_color()</span></code></a>), it does not become available until all such
+associations have been dropped.</p>
+<p>The colors are allocated in order, skipping any that have been reserved.
+Only when the list has been exhausted will colors that had been previously
+allocated for no-longer-extant objects be reused.  If all colors are
+associated with objects, <code class="xref py py-class docutils literal notranslate"><span class="pre">IndexError</span></code> will be raised.</p>
+<p>To remove any <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> association for an object, use
+<a class="reference internal" href="#mpam.types.ColorAllocator.release_color_for" title="mpam.types.ColorAllocator.release_color_for"><code class="xref py py-func docutils literal notranslate"><span class="pre">release_color_for()</span></code></a>.  This will render the <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> (if any)
+available for future calls to <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a>.  Note that
+<code class="xref py py-func docutils literal notranslate"><span class="pre">release_color()</span></code> for can safely be called even if its argument was
+never used in a call to <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Internally, the mapping from objects to <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s is kept in a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">WeakKeyDictionary</span></code>.  A consequence of this is that if <a class="reference internal" href="mpam.types.H.html#mpam.types.H" title="mpam.types.H"><code class="xref py py-class docutils literal notranslate"><span class="pre">H</span></code></a>
+defines equality as different from identity, non-identical equal objects
+will get the same <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>, but when the first such object gets
+garbage collected, the association will be removed from the table and
+any subsequent ones will not find a match and so will get allocated a
+new color.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>H</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">Hashable</span></code> type to associate <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s with.</p>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.all_colors" title="mpam.types.ColorAllocator.all_colors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">all_colors</span></code></a></p></td>
+<td><p>The colors accessible to <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.color_assignments" title="mpam.types.ColorAllocator.color_assignments"><code class="xref py py-obj docutils literal notranslate"><span class="pre">color_assignments</span></code></a></p></td>
+<td><p>A weak key mapping from key to <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.colors_in_use" title="mpam.types.ColorAllocator.colors_in_use"><code class="xref py py-obj docutils literal notranslate"><span class="pre">colors_in_use</span></code></a></p></td>
+<td><p>The count of objects using in-use <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.returned_colors" title="mpam.types.ColorAllocator.returned_colors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">returned_colors</span></code></a></p></td>
+<td><p>Previously-allocated <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> objects that have become available</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.next_reagent_color" title="mpam.types.ColorAllocator.next_reagent_color"><code class="xref py py-obj docutils literal notranslate"><span class="pre">next_reagent_color</span></code></a></p></td>
+<td><p>The index of the next <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> to allocate in <a class="reference internal" href="#mpam.types.ColorAllocator.all_colors" title="mpam.types.ColorAllocator.all_colors"><code class="xref py py-attr docutils literal notranslate"><span class="pre">all_colors</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.__init__" title="mpam.types.ColorAllocator.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(*[, initial_reservations, all_colors])</p></td>
+<td><p>Initialize the object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.default_color_list" title="mpam.types.ColorAllocator.default_color_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_color_list</span></code></a>()</p></td>
+<td><p>The default list of <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s to use.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_color</span></code></a>(key)</p></td>
+<td><p>Find the <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> associated with an object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.release_color_for" title="mpam.types.ColorAllocator.release_color_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">release_color_for</span></code></a>(key)</p></td>
+<td><p>Remove any <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> association with an object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ColorAllocator.reserve_color" title="mpam.types.ColorAllocator.reserve_color"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reserve_color</span></code></a>(key, color)</p></td>
+<td><p>Associate a <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> with an object.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_reservations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">H</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><span class="pre">Color</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_colors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.ColorAllocator.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<p>The values of <code class="docutils literal notranslate"><span class="pre">initial_reservation</span></code> may be anything acceptable to
+<a class="reference internal" href="#mpam.types.ColorAllocator.reserve_color" title="mpam.types.ColorAllocator.reserve_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">reserve_color()</span></code></a>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">all_colors</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, <a class="reference internal" href="#mpam.types.ColorAllocator.default_color_list" title="mpam.types.ColorAllocator.default_color_list"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_color_list()</span></code></a> will be used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Keyword Arguments</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>initial_reservations</strong> – initial <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> reservations</p></li>
+<li><p><strong>all_colors</strong> – an optional list of <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s for <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a> to use.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.all_colors">
+<span class="sig-name descname"><span class="pre">all_colors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ColorAllocator.all_colors" title="Permalink to this definition"></a></dt>
+<dd><p>The colors accessible to <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.color_assignments">
+<span class="sig-name descname"><span class="pre">color_assignments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">weakref.WeakKeyDictionary</span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.H</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><span class="pre">mpam.types.Color</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">weakref.finalize</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ColorAllocator.color_assignments" title="Permalink to this definition"></a></dt>
+<dd><p>A weak key mapping from key to <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.colors_in_use">
+<span class="sig-name descname"><span class="pre">colors_in_use</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><span class="pre">mpam.types.Color</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ColorAllocator.colors_in_use" title="Permalink to this definition"></a></dt>
+<dd><p>The count of objects using in-use <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.default_color_list">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">default_color_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.ColorAllocator.default_color_list" title="Permalink to this definition"></a></dt>
+<dd><p>The default list of <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s to use.  This list is not created
+until it is needed.</p>
+<p>The current list is an array of 954 common colors that can be found at
+<a class="reference external" href="https://xkcd.com/color/rgb/">https://xkcd.com/color/rgb/</a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.get_color">
+<span class="sig-name descname"><span class="pre">get_color</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">H</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><span class="pre">Color</span></a></span></span><a class="headerlink" href="#mpam.types.ColorAllocator.get_color" title="Permalink to this definition"></a></dt>
+<dd><p>Find the <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> associated with an object.</p>
+<p>If none has previously been associated with the object, the next
+unreserved <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> in <a class="reference internal" href="#mpam.types.ColorAllocator.all_colors" title="mpam.types.ColorAllocator.all_colors"><code class="xref py py-attr docutils literal notranslate"><span class="pre">all_colors</span></code></a> is grabbed.  If
+<a class="reference internal" href="#mpam.types.ColorAllocator.all_colors" title="mpam.types.ColorAllocator.all_colors"><code class="xref py py-attr docutils literal notranslate"><span class="pre">all_colors</span></code></a> has been exhausted, a <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> is pulled from
+<a class="reference internal" href="#mpam.types.ColorAllocator.returned_colors" title="mpam.types.ColorAllocator.returned_colors"><code class="xref py py-attr docutils literal notranslate"><span class="pre">returned_colors</span></code></a>.  If this, too, is empty, an <code class="xref py py-class docutils literal notranslate"><span class="pre">IndexError</span></code>
+is raised.</p>
+<p>If a new <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> is identified, it is associated with <code class="docutils literal notranslate"><span class="pre">key</span></code> by
+means of <a class="reference internal" href="#mpam.types.ColorAllocator.reserve_color" title="mpam.types.ColorAllocator.reserve_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">reserve_color()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> – the domain object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the associated <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a></p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>IndexError</strong> – if there are no more available <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>s</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.next_reagent_color">
+<span class="sig-name descname"><span class="pre">next_reagent_color</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.types.ColorAllocator.next_reagent_color" title="Permalink to this definition"></a></dt>
+<dd><p>The index of the next <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> to allocate in <a class="reference internal" href="#mpam.types.ColorAllocator.all_colors" title="mpam.types.ColorAllocator.all_colors"><code class="xref py py-attr docutils literal notranslate"><span class="pre">all_colors</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.release_color_for">
+<span class="sig-name descname"><span class="pre">release_color_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">H</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#mpam.types.ColorAllocator.release_color_for" title="Permalink to this definition"></a></dt>
+<dd><p>Remove any <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> association with an object.  If no other
+object is associated with that <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a>, it is added to
+<a class="reference internal" href="#mpam.types.ColorAllocator.returned_colors" title="mpam.types.ColorAllocator.returned_colors"><code class="xref py py-attr docutils literal notranslate"><span class="pre">returned_colors</span></code></a>, making it available for future calls to
+<a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a>.</p>
+<p>If <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a> is called in the future with <code class="docutils literal notranslate"><span class="pre">key</span></code> as the
+argument, a new <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> will be identified and associated with
+it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> – the domain object</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if there was an association to remove, <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.reserve_color">
+<span class="sig-name descname"><span class="pre">reserve_color</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><span class="pre">Color</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ColorAllocator.reserve_color" title="Permalink to this definition"></a></dt>
+<dd><p>Associate a <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> with an object.  This renders the
+<a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> unavailable to <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">color</span></code> may be either a <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> or a <a class="reference internal" href="mpam.types.html#mpam.types.ColorSpec" title="mpam.types.ColorSpec"><code class="xref py py-class docutils literal notranslate"><span class="pre">ColorSpec</span></code></a>, i.e.,
+anything acceptable to <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color.find" title="mpam.types.Color.find"><code class="xref py py-func docutils literal notranslate"><span class="pre">Color.find()</span></code></a>.  In particular, it may be a
+string or a 3- or 4-elment tuple of floats.</p>
+<p>If there was already a reservation for <code class="docutils literal notranslate"><span class="pre">key</span></code>, this one replaces it,
+and subsequent calls to <a class="reference internal" href="#mpam.types.ColorAllocator.get_color" title="mpam.types.ColorAllocator.get_color"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_color()</span></code></a> will return this one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – the object to associate with the <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a></p></li>
+<li><p><strong>color</strong> – the <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> or a description by which it can be identified</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.ColorAllocator.returned_colors">
+<span class="sig-name descname"><span class="pre">returned_colors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">collections.deque</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><span class="pre">mpam.types.Color</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ColorAllocator.returned_colors" title="Permalink to this definition"></a></dt>
+<dd><p>Previously-allocated <a class="reference internal" href="mpam.types.Color.html#mpam.types.Color" title="mpam.types.Color"><code class="xref py py-class docutils literal notranslate"><span class="pre">Color</span></code></a> objects that have become available</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.Color.html" class="btn btn-neutral float-left" title="mpam.types.Color" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.CombinedOperation.html" class="btn btn-neutral float-right" title="mpam.types.CombinedOperation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

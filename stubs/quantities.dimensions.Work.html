@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>quantities.dimensions.Work &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="quantities.timestamp" href="quantities.timestamp.html" />
+    <link rel="prev" title="quantities.dimensions.VolumeConcentration" href="quantities.dimensions.VolumeConcentration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Acceleration.html">quantities.dimensions.Acceleration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Amount.html">quantities.dimensions.Amount</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Area.html">quantities.dimensions.Area</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Capacitance.html">quantities.dimensions.Capacitance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Charge.html">quantities.dimensions.Charge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Conductance.html">quantities.dimensions.Conductance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Current.html">quantities.dimensions.Current</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Density.html">quantities.dimensions.Density</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Distance.html">quantities.dimensions.Distance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.ElecPotential.html">quantities.dimensions.ElecPotential</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Emf.html">quantities.dimensions.Emf</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Flux.html">quantities.dimensions.Flux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.FluxDensity.html">quantities.dimensions.FluxDensity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Force.html">quantities.dimensions.Force</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Frequency.html">quantities.dimensions.Frequency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Illuminance.html">quantities.dimensions.Illuminance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Inductance.html">quantities.dimensions.Inductance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.IonizingRadDose.html">quantities.dimensions.IonizingRadDose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.LumFlux.html">quantities.dimensions.LumFlux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.LumInt.html">quantities.dimensions.LumInt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.MagneticFlux.html">quantities.dimensions.MagneticFlux</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.MagneticInduction.html">quantities.dimensions.MagneticInduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Mass.html">quantities.dimensions.Mass</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.MassConcentration.html">quantities.dimensions.MassConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.MolarConcentration.html">quantities.dimensions.MolarConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Molarity.html">quantities.dimensions.Molarity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Power.html">quantities.dimensions.Power</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Pressure.html">quantities.dimensions.Pressure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Radioactivity.html">quantities.dimensions.Radioactivity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Resistance.html">quantities.dimensions.Resistance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Solution.html">quantities.dimensions.Solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Solvent.html">quantities.dimensions.Solvent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.SpecificVolume.html">quantities.dimensions.SpecificVolume</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Substance.html">quantities.dimensions.Substance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Temperature.html">quantities.dimensions.Temperature</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Time.html">quantities.dimensions.Time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Velocity.html">quantities.dimensions.Velocity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Voltage.html">quantities.dimensions.Voltage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.Volume.html">quantities.dimensions.Volume</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html">quantities.dimensions.VolumeConcentration</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">quantities.dimensions.Work</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="quantities.dimensions.html">quantities.dimensions</a> &raquo;</li>
+      <li>quantities.dimensions.Work</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/quantities.dimensions.Work.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quantities-dimensions-work">
+<h1>quantities.dimensions.Work<a class="headerlink" href="#quantities-dimensions-work" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.dimensions.Work">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.dimensions.</span></span><span class="sig-name descname"><span class="pre">Work</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.dimensions.Work" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.DerivedDim.html#quantities.core.DerivedDim" title="quantities.core.DerivedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">DerivedDim</span></code></a></p>
+<p>A <a class="reference internal" href="quantities.core.Quantity.html#quantities.core.Quantity" title="quantities.core.Quantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code></a> representing work (<a class="reference internal" href="quantities.dimensions.Force.html#quantities.dimensions.Force" title="quantities.dimensions.Force"><code class="xref py py-class docutils literal notranslate"><span class="pre">Force</span></code></a><code class="docutils literal notranslate"><span class="pre">*</span></code><a class="reference internal" href="quantities.dimensions.Distance.html#quantities.dimensions.Distance" title="quantities.dimensions.Distance"><code class="xref py py-class docutils literal notranslate"><span class="pre">Distance</span></code></a>)</p>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">derived</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimensionality</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_negative</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_positive</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_zero</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dim</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>(mag[, dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">a</span></code>(expected)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">an</span></code>(expected)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">as_dimensionality</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">as_number</span></code>(units)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">as_unit</span></code>(abbr, *[, singular])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">as_unit_expr</span></code>(num, denom)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">cast</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_dimensionality</span></code>(dim)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">decomposed</span></code>(units, *[, required])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">divide_by</span></code>(rhs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_dimensionality</span></code>(dim)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">in_denom</span></code>(lhs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">in_units</span></code>(units)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_close_to</span></code>(other, *[, rel_tol, abs_tol])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">multiply_by</span></code>(rhs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">of</span></code>(restriction, *[, dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ratio</span></code>(base)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">restricted</span></code>(restriction)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_power</span></code>(rhs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">unit</span></code>(abbr, quant)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quantities.dimensions.VolumeConcentration.html" class="btn btn-neutral float-left" title="quantities.dimensions.VolumeConcentration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quantities.timestamp.html" class="btn btn-neutral float-right" title="quantities.timestamp" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

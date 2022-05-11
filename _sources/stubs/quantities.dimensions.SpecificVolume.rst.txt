@@ -1,0 +1,193 @@
+quantities.dimensions.SpecificVolume
+====================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: SpecificVolume
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SpecificVolume.derived
+      ~SpecificVolume.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~SpecificVolume.dimensionality
+      ~SpecificVolume.is_negative
+      ~SpecificVolume.is_positive
+      ~SpecificVolume.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SpecificVolume.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~SpecificVolume.__init__
+      ~SpecificVolume.a
+      ~SpecificVolume.an
+      ~SpecificVolume.as_dimensionality
+      ~SpecificVolume.as_number
+      ~SpecificVolume.as_unit
+      ~SpecificVolume.as_unit_expr
+      ~SpecificVolume.cast
+      ~SpecificVolume.check_dimensionality
+      ~SpecificVolume.decomposed
+      ~SpecificVolume.divide_by
+      ~SpecificVolume.has_dimensionality
+      ~SpecificVolume.in_denom
+      ~SpecificVolume.in_units
+      ~SpecificVolume.is_close_to
+      ~SpecificVolume.multiply_by
+      ~SpecificVolume.of
+      ~SpecificVolume.ratio
+      ~SpecificVolume.restricted
+      ~SpecificVolume.to_power
+      ~SpecificVolume.unit
+   
+   
+   

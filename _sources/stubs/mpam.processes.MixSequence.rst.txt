@@ -1,0 +1,123 @@
+mpam.processes.MixSequence
+==========================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: MixSequence
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MixSequence.error
+      ~MixSequence.fully_mixed
+      ~MixSequence.lead_offset
+      ~MixSequence.locations
+      ~MixSequence.num_drops
+      ~MixSequence.num_steps
+      ~MixSequence.size
+      ~MixSequence.steps
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MixSequence.iterator
+      ~MixSequence.placed
+      ~MixSequence.run_script
+      ~MixSequence.transformed
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~MixSequence.__init__
+      ~MixSequence.count
+      ~MixSequence.index
+   
+   
+   

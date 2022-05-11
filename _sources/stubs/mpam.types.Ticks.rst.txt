@@ -1,0 +1,213 @@
+mpam.types.Ticks
+================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Ticks
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Ticks.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Ticks.checked_count
+      ~Ticks.count
+      ~Ticks.dimensionality
+      ~Ticks.is_negative
+      ~Ticks.is_positive
+      ~Ticks.is_zero
+      ~Ticks.noun_units
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Ticks.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Ticks.__init__
+      ~Ticks.a
+      ~Ticks.an
+      ~Ticks.as_dimensionality
+      ~Ticks.as_number
+      ~Ticks.as_unit
+      ~Ticks.as_unit_expr
+      ~Ticks.base_unit
+      ~Ticks.cast
+      ~Ticks.check_dimensionality
+      ~Ticks.decomposed
+      ~Ticks.divide_by
+      ~Ticks.for_noun
+      ~Ticks.has_dimensionality
+      ~Ticks.in_denom
+      ~Ticks.in_units
+      ~Ticks.is_close_to
+      ~Ticks.multiply_by
+      ~Ticks.of
+      ~Ticks.ratio
+      ~Ticks.restricted
+      ~Ticks.to_power
+      ~Ticks.unit
+   
+   
+   

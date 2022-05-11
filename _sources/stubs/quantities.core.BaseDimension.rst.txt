@@ -1,0 +1,113 @@
+quantities.core.BaseDimension
+=============================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: BaseDimension
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BaseDimension.exponents
+      ~BaseDimension.name
+      ~BaseDimension.quant_class
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~BaseDimension.default_units
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BaseDimension.__init__
+      ~BaseDimension.base_unit
+      ~BaseDimension.description
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~BaseDimension.as_dimensionality
+      ~BaseDimension.format_quantity
+      ~BaseDimension.make_quantity
+      ~BaseDimension.named
+      ~BaseDimension.of
+   
+   
+   

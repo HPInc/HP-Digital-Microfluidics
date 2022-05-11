@@ -1,0 +1,118 @@
+threading.Timer
+===============
+
+.. currentmodule:: threading
+
+.. autoclass:: Timer
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Timer.daemon
+      ~Timer.ident
+      ~Timer.name
+      ~Timer.native_id
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Timer.__init__
+      ~Timer.cancel
+      ~Timer.run
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Timer.getName
+      ~Timer.isDaemon
+      ~Timer.is_alive
+      ~Timer.join
+      ~Timer.setDaemon
+      ~Timer.setName
+      ~Timer.start
+   
+   
+   

@@ -1,0 +1,43 @@
+typing.Generic
+==============
+
+.. currentmodule:: typing
+
+.. autoclass:: Generic
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Generic.__init__
+   
+   
+   

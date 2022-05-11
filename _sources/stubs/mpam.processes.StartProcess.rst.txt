@@ -1,0 +1,83 @@
+mpam.processes.StartProcess
+===========================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: StartProcess
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~StartProcess.process_type
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~StartProcess.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~StartProcess.schedule_for
+      ~StartProcess.then
+      ~StartProcess.then_call
+      ~StartProcess.then_compute
+      ~StartProcess.then_process
+   
+   
+   

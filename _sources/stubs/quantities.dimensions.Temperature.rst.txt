@@ -1,0 +1,193 @@
+quantities.dimensions.Temperature
+=================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Temperature
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Temperature.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Temperature.dimensionality
+      ~Temperature.is_negative
+      ~Temperature.is_positive
+      ~Temperature.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Temperature.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Temperature.__init__
+      ~Temperature.a
+      ~Temperature.an
+      ~Temperature.as_dimensionality
+      ~Temperature.as_number
+      ~Temperature.as_unit
+      ~Temperature.as_unit_expr
+      ~Temperature.base_unit
+      ~Temperature.cast
+      ~Temperature.check_dimensionality
+      ~Temperature.decomposed
+      ~Temperature.divide_by
+      ~Temperature.has_dimensionality
+      ~Temperature.in_denom
+      ~Temperature.in_units
+      ~Temperature.is_close_to
+      ~Temperature.multiply_by
+      ~Temperature.of
+      ~Temperature.ratio
+      ~Temperature.restricted
+      ~Temperature.to_power
+      ~Temperature.unit
+   
+   
+   

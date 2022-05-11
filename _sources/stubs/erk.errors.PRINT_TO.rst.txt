@@ -1,0 +1,68 @@
+erk.errors.PRINT\_TO
+====================
+
+.. currentmodule:: erk.errors
+
+.. autoclass:: PRINT_TO
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PRINT_TO.where
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PRINT_TO.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~PRINT_TO.expect_false
+      ~PRINT_TO.expect_true
+   
+   
+   

@@ -1,0 +1,48 @@
+mpam.types.OnOff
+================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: OnOff
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~OnOff.OFF
+      ~OnOff.ON
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

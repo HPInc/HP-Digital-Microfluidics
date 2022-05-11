@@ -1,0 +1,58 @@
+typing.ParamSpec
+================
+
+.. currentmodule:: typing
+
+.. autoclass:: ParamSpec
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ParamSpec.args
+      ~ParamSpec.kwargs
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ParamSpec.__init__
+   
+   
+   
+
+   
+   
+   
+   

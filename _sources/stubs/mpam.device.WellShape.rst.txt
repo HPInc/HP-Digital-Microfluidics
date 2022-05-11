@@ -1,0 +1,68 @@
+mpam.device.WellShape
+=====================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: WellShape
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WellShape.gate_pad_bounds
+      ~WellShape.shared_pad_bounds
+      ~WellShape.reagent_id_circle_center
+      ~WellShape.reagent_id_circle_radius
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WellShape.__init__
+   
+   
+   
+
+   
+   
+   
+   

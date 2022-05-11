@@ -1,0 +1,6 @@
+typing.overload
+===============
+
+.. currentmodule:: typing
+
+.. autofunction:: overload

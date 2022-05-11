@@ -1,0 +1,93 @@
+mpam.types.CombinedStaticOperation
+==================================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: CombinedStaticOperation
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~CombinedStaticOperation.first
+      ~CombinedStaticOperation.second
+      ~CombinedStaticOperation.after
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CombinedStaticOperation.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~CombinedStaticOperation.schedule
+      ~CombinedStaticOperation.then
+      ~CombinedStaticOperation.then_call
+      ~CombinedStaticOperation.then_compute
+      ~CombinedStaticOperation.then_process
+   
+   
+   

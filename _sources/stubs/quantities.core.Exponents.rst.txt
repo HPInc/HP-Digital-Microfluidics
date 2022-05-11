@@ -1,0 +1,73 @@
+quantities.core.Exponents
+=========================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: Exponents
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Exponents.caret
+      ~Exponents.default_format
+      ~Exponents.html
+      ~Exponents.stars
+      ~Exponents.superscript
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Exponents.__init__
+   
+   
+   

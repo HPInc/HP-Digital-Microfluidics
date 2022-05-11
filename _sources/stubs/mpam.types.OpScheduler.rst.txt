@@ -1,0 +1,53 @@
+mpam.types.OpScheduler
+======================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: OpScheduler
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~OpScheduler.schedule
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~OpScheduler.__init__
+   
+   
+   

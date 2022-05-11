@@ -1,0 +1,93 @@
+mpam.types.ColorAllocator
+=========================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: ColorAllocator
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ColorAllocator.all_colors
+      ~ColorAllocator.color_assignments
+      ~ColorAllocator.colors_in_use
+      ~ColorAllocator.returned_colors
+      ~ColorAllocator.next_reagent_color
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ColorAllocator.__init__
+      ~ColorAllocator.default_color_list
+      ~ColorAllocator.get_color
+      ~ColorAllocator.release_color_for
+      ~ColorAllocator.reserve_color
+   
+   
+   
+
+   
+   
+   
+   

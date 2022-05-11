@@ -1,0 +1,44 @@
+﻿erk.errors
+==========
+
+.. automodule:: erk.errors
+
+   
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+      :toctree:
+   
+      IGNORE
+      PRINT
+      PRINT_TO_STDERR
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      DoNothing
+      ErrorHandler
+      FIX_BY
+      PRINT_TO
+      RAISE
+   
+   
+
+   
+   
+   
+
+
+

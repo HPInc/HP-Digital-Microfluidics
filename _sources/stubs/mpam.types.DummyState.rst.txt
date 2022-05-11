@@ -1,0 +1,78 @@
+mpam.types.DummyState
+=====================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: DummyState
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DummyState.state_change_callbacks
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~DummyState.current_state
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DummyState.realize_state
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DummyState.__init__
+      ~DummyState.on_state_change
+   
+   
+   

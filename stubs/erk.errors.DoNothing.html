@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>erk.errors.DoNothing &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="erk.errors.ErrorHandler" href="erk.errors.ErrorHandler.html" />
+    <link rel="prev" title="erk.errors.PRINT_TO_STDERR" href="erk.errors.PRINT_TO_STDERR.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="erk.errors.html">erk.errors</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.IGNORE.html">erk.errors.IGNORE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.PRINT.html">erk.errors.PRINT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.PRINT_TO_STDERR.html">erk.errors.PRINT_TO_STDERR</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">erk.errors.DoNothing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.ErrorHandler.html">erk.errors.ErrorHandler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.FIX_BY.html">erk.errors.FIX_BY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.PRINT_TO.html">erk.errors.PRINT_TO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.RAISE.html">erk.errors.RAISE</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="erk.errors.html">erk.errors</a> &raquo;</li>
+      <li>erk.errors.DoNothing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/erk.errors.DoNothing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="erk-errors-donothing">
+<h1>erk.errors.DoNothing<a class="headerlink" href="#erk-errors-donothing" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="erk.errors.DoNothing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">DoNothing</span></span><a class="headerlink" href="#erk.errors.DoNothing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a></p>
+<p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that does nothing.</p>
+<p>The condition is still evaluated, but it isn’t checked and
+the message is never computed.  This is typically used via its instance
+<a class="reference internal" href="erk.errors.IGNORE.html#erk.errors.IGNORE" title="erk.errors.IGNORE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">IGNORE</span></code></a></p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">IGNORE</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#erk.errors.DoNothing.expect_false" title="erk.errors.DoNothing.expect_false"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expect_false</span></code></a>(cond, msg_fn)</p></td>
+<td><p>Do nothing.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#erk.errors.DoNothing.expect_true" title="erk.errors.DoNothing.expect_true"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expect_true</span></code></a>(cond, msg_fn)</p></td>
+<td><p>Do nothing.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.DoNothing.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.DoNothing.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msg</strong> – a message describing the error, which is ignored</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.DoNothing.expect_false">
+<span class="sig-name descname"><span class="pre">expect_false</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.DoNothing.expect_false" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cond</span></code> is not checked, and <code class="docutils literal notranslate"><span class="pre">msg_fn</span></code> is never called</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.DoNothing.expect_true">
+<span class="sig-name descname"><span class="pre">expect_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.DoNothing.expect_true" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cond</span></code> is not checked, and <code class="docutils literal notranslate"><span class="pre">msg_fn</span></code> is never called</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="erk.errors.PRINT_TO_STDERR.html" class="btn btn-neutral float-left" title="erk.errors.PRINT_TO_STDERR" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="erk.errors.ErrorHandler.html" class="btn btn-neutral float-right" title="erk.errors.ErrorHandler" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

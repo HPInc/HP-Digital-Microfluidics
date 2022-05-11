@@ -1,0 +1,53 @@
+mpam.device.GateStatus
+======================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: GateStatus
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GateStatus.NOT_YET
+      ~GateStatus.JUST_ON
+      ~GateStatus.UNSAFE
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,43 @@
+quantities.dimensions.Solution
+==============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Solution
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Solution.__init__
+   
+   
+   

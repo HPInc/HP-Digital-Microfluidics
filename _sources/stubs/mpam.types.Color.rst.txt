@@ -1,0 +1,63 @@
+mpam.types.Color
+================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Color
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Color.description
+      ~Color.rgba
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Color.__init__
+      ~Color.find
+   
+   
+   
+
+   
+   
+   
+   

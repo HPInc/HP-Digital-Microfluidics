@@ -1,0 +1,93 @@
+mpam.types.GridRegion
+=====================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: GridRegion
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~GridRegion.lower_left
+      ~GridRegion.upper_right
+      ~GridRegion.width
+      ~GridRegion.height
+      ~GridRegion.orientation
+      ~GridRegion.min_x
+      ~GridRegion.min_y
+      ~GridRegion.max_x
+      ~GridRegion.max_y
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~GridRegion.__init__
+   
+   
+   
+
+   
+   
+   
+   

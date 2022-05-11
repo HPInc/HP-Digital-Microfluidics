@@ -1,0 +1,68 @@
+erk.errors.RAISE
+================
+
+.. currentmodule:: erk.errors
+
+.. autoclass:: RAISE
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~RAISE.factory
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~RAISE.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~RAISE.expect_false
+      ~RAISE.expect_true
+   
+   
+   

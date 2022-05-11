@@ -1,0 +1,98 @@
+mpam.processes.Transform
+========================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: Transform
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Transform.NONE
+      ~Transform.CLOCKWISE
+      ~Transform.COUNTERCLOCKWISE
+      ~Transform.ONE_EIGHTY
+      ~Transform.FLIP_X
+      ~Transform.FLIP_Y
+      ~Transform.x_neg
+      ~Transform.y_neg
+      ~Transform.swap
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Transform.__init__
+      ~Transform.apply_to
+   
+   
+   
+
+   
+   
+   
+   

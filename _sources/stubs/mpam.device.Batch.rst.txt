@@ -1,0 +1,118 @@
+mpam.device.Batch
+=================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Batch
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Batch.system
+      ~Batch.nested
+      ~Batch.buffer_communicate
+      ~Batch.buffer_call_at
+      ~Batch.buffer_call_after
+      ~Batch.buffer_before_tick
+      ~Batch.buffer_after_tick
+      ~Batch.buffer_on_tick
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Batch.__init__
+      ~Batch.after_tick
+      ~Batch.before_tick
+      ~Batch.call_after
+      ~Batch.call_at
+      ~Batch.communicate
+      ~Batch.on_tick
+   
+   
+   
+
+   
+   
+   
+   

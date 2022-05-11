@@ -1,0 +1,6 @@
+typing.get\_origin
+==================
+
+.. currentmodule:: typing
+
+.. autofunction:: get_origin

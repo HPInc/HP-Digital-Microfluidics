@@ -1,0 +1,6 @@
+mpam.types.H
+============
+
+.. currentmodule:: mpam.types
+
+.. autodata:: H

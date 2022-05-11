@@ -1,0 +1,73 @@
+mpam.types.XYCoord
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: XYCoord
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~XYCoord.col
+      ~XYCoord.coords
+      ~XYCoord.row
+      ~XYCoord.x
+      ~XYCoord.y
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~XYCoord.__init__
+   
+   
+   
+
+   
+   
+   
+   

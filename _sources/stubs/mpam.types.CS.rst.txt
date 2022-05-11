@@ -1,0 +1,6 @@
+mpam.types.CS
+=============
+
+.. currentmodule:: mpam.types
+
+.. autodata:: CS

@@ -1,0 +1,88 @@
+mpam.monitor.WellMonitor
+========================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: WellMonitor
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WellMonitor.well
+      ~WellMonitor.board_monitor
+      ~WellMonitor.gate_monitor
+      ~WellMonitor.shared_pad_monitors
+      ~WellMonitor.reagent_circle
+      ~WellMonitor.volume_description
+      ~WellMonitor.reagent_description
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WellMonitor.__init__
+      ~WellMonitor.note_liquid
+   
+   
+   
+
+   
+   
+   
+   

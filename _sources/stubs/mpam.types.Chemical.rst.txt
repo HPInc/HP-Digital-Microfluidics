@@ -1,0 +1,73 @@
+mpam.types.Chemical
+===================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Chemical
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Chemical.known
+      ~Chemical.name
+      ~Chemical.formula
+      ~Chemical.description
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Chemical.__init__
+      ~Chemical.find
+   
+   
+   
+
+   
+   
+   
+   

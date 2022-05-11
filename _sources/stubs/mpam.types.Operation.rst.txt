@@ -1,0 +1,73 @@
+mpam.types.Operation
+====================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Operation
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Operation.schedule_for
+      ~Operation.then
+      ~Operation.then_call
+      ~Operation.then_compute
+      ~Operation.then_process
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Operation.__init__
+   
+   
+   

@@ -1,0 +1,138 @@
+mpam.types.ProcessedReagent
+===========================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: ProcessedReagent
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ProcessedReagent.process_steps
+      ~ProcessedReagent.unprocessed
+      ~ProcessedReagent.last_step
+      ~ProcessedReagent.prior
+      ~ProcessedReagent.name
+      ~ProcessedReagent.composition
+      ~ProcessedReagent.min_storage_temp
+      ~ProcessedReagent.max_storage_temp
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~ProcessedReagent.is_pure
+      ~ProcessedReagent.known
+      ~ProcessedReagent.mixture
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ProcessedReagent.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~ProcessedReagent.LoseComposition
+      ~ProcessedReagent.SameComposition
+      ~ProcessedReagent.find
+      ~ProcessedReagent.liquid
+      ~ProcessedReagent.processed
+   
+   
+   

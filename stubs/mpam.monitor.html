@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.monitor &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.monitor.BoardMonitor" href="mpam.monitor.BoardMonitor.html" />
+    <link rel="prev" title="mpam.exceptions.WellFullError" href="mpam.exceptions.WellFullError.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">mpam.monitor</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.BoardMonitor.html">mpam.monitor.BoardMonitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.ClickHandler.html">mpam.monitor.ClickHandler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.ClickableMonitor.html">mpam.monitor.ClickableMonitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.DropMonitor.html">mpam.monitor.DropMonitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.InputBox.html">mpam.monitor.InputBox</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.PadMonitor.html">mpam.monitor.PadMonitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.ReagentCircle.html">mpam.monitor.ReagentCircle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.ReagentLegend.html">mpam.monitor.ReagentLegend</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.WellMonitor.html">mpam.monitor.WellMonitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.monitor.WellPadMonitor.html">mpam.monitor.WellPadMonitor</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>mpam.monitor</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.monitor.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-mpam.monitor">
+<span id="mpam-monitor"></span><h1>mpam.monitor<a class="headerlink" href="#module-mpam.monitor" title="Permalink to this headline"></a></h1>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.monitor.BoardMonitor.html#mpam.monitor.BoardMonitor" title="mpam.monitor.BoardMonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BoardMonitor</span></code></a>(board, *[, control_setup, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.monitor.ClickHandler.html#mpam.monitor.ClickHandler" title="mpam.monitor.ClickHandler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClickHandler</span></code></a>(monitor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.monitor.ClickableMonitor.html#mpam.monitor.ClickableMonitor" title="mpam.monitor.ClickableMonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClickableMonitor</span></code></a>(component)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.monitor.DropMonitor.html#mpam.monitor.DropMonitor" title="mpam.monitor.DropMonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DropMonitor</span></code></a>(drop, board_monitor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.monitor.InputBox.html#mpam.monitor.InputBox" title="mpam.monitor.InputBox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">InputBox</span></code></a>(ax, label[, initial, color, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.monitor.PadMonitor.html#mpam.monitor.PadMonitor" title="mpam.monitor.PadMonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PadMonitor</span></code></a>(pad, board_monitor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.monitor.ReagentCircle.html#mpam.monitor.ReagentCircle" title="mpam.monitor.ReagentCircle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReagentCircle</span></code></a>(reagent, *, center, radius, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.monitor.ReagentLegend.html#mpam.monitor.ReagentLegend" title="mpam.monitor.ReagentLegend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReagentLegend</span></code></a>(board_monitor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.monitor.WellMonitor.html#mpam.monitor.WellMonitor" title="mpam.monitor.WellMonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellMonitor</span></code></a>(well, board_monitor)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.monitor.WellPadMonitor.html#mpam.monitor.WellPadMonitor" title="mpam.monitor.WellPadMonitor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WellPadMonitor</span></code></a>(pad, board_monitor, bounds, ...)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.monitor.ClickableMonitor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.monitor.</span></span><span class="sig-name descname"><span class="pre">ClickableMonitor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><span class="pre">BinaryComponent</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.monitor.ClickableMonitor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.monitor.ClickableMonitor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><span class="pre">BinaryComponent</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.monitor.ClickableMonitor.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.monitor.InputBox">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.monitor.</span></span><span class="sig-name descname"><span class="pre">InputBox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.95'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hovercolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_pad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.monitor.InputBox" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TextBox</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.monitor.InputBox.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.95'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hovercolor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_pad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.monitor.InputBox.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<cite>~matplotlib.axes.Axes</cite>) – The <cite>~.axes.Axes</cite> instance the button will be placed into.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – Label for this text box.</p></li>
+<li><p><strong>initial</strong> (<em>str</em>) – Initial value in the text box.</p></li>
+<li><p><strong>color</strong> (<em>color</em>) – The color of the box.</p></li>
+<li><p><strong>hovercolor</strong> (<em>color</em>) – The color of the box when the mouse is over it.</p></li>
+<li><p><strong>label_pad</strong> (<em>float</em>) – The distance between the label and the right side of the textbox.</p></li>
+<li><p><strong>textalignment</strong> (<em>{'left'</em><em>, </em><em>'center'</em><em>, </em><em>'right'}</em>) – The horizontal location of the text.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.monitor.PadMonitor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.monitor.</span></span><span class="sig-name descname"><span class="pre">PadMonitor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">Pad</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.device.WellGate.html#mpam.device.WellGate" title="mpam.device.WellGate"><span class="pre">WellGate</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board_monitor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.monitor.BoardMonitor.html#mpam.monitor.BoardMonitor" title="mpam.monitor.BoardMonitor"><span class="pre">BoardMonitor</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.monitor.PadMonitor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.monitor.ClickableMonitor.html#mpam.monitor.ClickableMonitor" title="mpam.monitor.ClickableMonitor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClickableMonitor</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.monitor.PadMonitor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">Pad</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.device.WellGate.html#mpam.device.WellGate" title="mpam.device.WellGate"><span class="pre">WellGate</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board_monitor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.monitor.BoardMonitor.html#mpam.monitor.BoardMonitor" title="mpam.monitor.BoardMonitor"><span class="pre">BoardMonitor</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.monitor.PadMonitor.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.monitor.WellPadMonitor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.monitor.</span></span><span class="sig-name descname"><span class="pre">WellPadMonitor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.WellPad.html#mpam.device.WellPad" title="mpam.device.WellPad"><span class="pre">WellPad</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">board_monitor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.monitor.BoardMonitor.html#mpam.monitor.BoardMonitor" title="mpam.monitor.BoardMonitor"><span class="pre">BoardMonitor</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">well</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_gate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.monitor.WellPadMonitor" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.monitor.ClickableMonitor.html#mpam.monitor.ClickableMonitor" title="mpam.monitor.ClickableMonitor"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClickableMonitor</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.monitor.WellPadMonitor.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.WellPad.html#mpam.device.WellPad" title="mpam.device.WellPad"><span class="pre">WellPad</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">board_monitor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.monitor.BoardMonitor.html#mpam.monitor.BoardMonitor" title="mpam.monitor.BoardMonitor"><span class="pre">BoardMonitor</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">well</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_gate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.monitor.WellPadMonitor.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.exceptions.WellFullError.html" class="btn btn-neutral float-left" title="mpam.exceptions.WellFullError" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.monitor.BoardMonitor.html" class="btn btn-neutral float-right" title="mpam.monitor.BoardMonitor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

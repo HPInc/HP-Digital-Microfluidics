@@ -1,0 +1,6 @@
+typing.NamedTuple
+=================
+
+.. currentmodule:: typing
+
+.. autofunction:: NamedTuple

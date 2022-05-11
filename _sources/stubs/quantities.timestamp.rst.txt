@@ -1,0 +1,40 @@
+﻿quantities.timestamp
+====================
+
+.. automodule:: quantities.timestamp
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      time_in
+      time_now
+      time_since
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      Timestamp
+   
+   
+
+   
+   
+   
+
+
+

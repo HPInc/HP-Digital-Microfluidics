@@ -1,0 +1,83 @@
+mpam.types.ComputeOp
+====================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: ComputeOp
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ComputeOp.function
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ComputeOp.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~ComputeOp.schedule_for
+      ~ComputeOp.then
+      ~ComputeOp.then_call
+      ~ComputeOp.then_compute
+      ~ComputeOp.then_process
+   
+   
+   

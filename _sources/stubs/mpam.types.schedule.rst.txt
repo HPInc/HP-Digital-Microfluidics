@@ -1,0 +1,6 @@
+mpam.types.schedule
+===================
+
+.. currentmodule:: mpam.types
+
+.. autofunction:: schedule

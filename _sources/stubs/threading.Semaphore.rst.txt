@@ -1,0 +1,53 @@
+threading.Semaphore
+===================
+
+.. currentmodule:: threading
+
+.. autoclass:: Semaphore
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Semaphore.__init__
+      ~Semaphore.acquire
+      ~Semaphore.release
+   
+   
+   
+
+   
+   
+   
+   

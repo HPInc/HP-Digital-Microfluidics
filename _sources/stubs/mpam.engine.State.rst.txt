@@ -1,0 +1,63 @@
+mpam.engine.State
+=================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: State
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~State.NEW
+      ~State.RUNNING
+      ~State.SHUTDOWN_REQUESTED
+      ~State.ABORT_REQUESTED
+      ~State.DEAD
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,63 @@
+quantities.temperature.Scale
+============================
+
+.. currentmodule:: quantities.temperature
+
+.. autoclass:: Scale
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Scale.absolute_zero
+      ~Scale.relative_to_kelvin
+      ~Scale.abbr
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Scale.__init__
+   
+   
+   
+
+   
+   
+   
+   

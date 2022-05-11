@@ -1,0 +1,203 @@
+mpam.engine.DevCommThread
+=========================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: DevCommThread
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DevCommThread.condition
+      ~DevCommThread.requests
+      ~DevCommThread.signals
+      ~DevCommThread.engine
+      ~DevCommThread.state
+      ~DevCommThread.lock
+      ~DevCommThread.idle_barrier
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~DevCommThread.daemon
+      ~DevCommThread.ident
+      ~DevCommThread.is_idle
+      ~DevCommThread.name
+      ~DevCommThread.native_id
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DevCommThread.__init__
+      ~DevCommThread.add_requests
+      ~DevCommThread.run
+      ~DevCommThread.wake_up
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DevCommThread.abort_requested
+      ~DevCommThread.ensure_running
+      ~DevCommThread.getName
+      ~DevCommThread.idle
+      ~DevCommThread.isDaemon
+      ~DevCommThread.is_alive
+      ~DevCommThread.join
+      ~DevCommThread.not_idle
+      ~DevCommThread.print_exception
+      ~DevCommThread.request_abort
+      ~DevCommThread.request_stop
+      ~DevCommThread.setDaemon
+      ~DevCommThread.setName
+      ~DevCommThread.start
+   
+   
+   

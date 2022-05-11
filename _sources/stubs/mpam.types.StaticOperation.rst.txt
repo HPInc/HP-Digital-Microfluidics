@@ -1,0 +1,73 @@
+mpam.types.StaticOperation
+==========================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: StaticOperation
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~StaticOperation.schedule
+      ~StaticOperation.then
+      ~StaticOperation.then_call
+      ~StaticOperation.then_compute
+      ~StaticOperation.then_process
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~StaticOperation.__init__
+   
+   
+   

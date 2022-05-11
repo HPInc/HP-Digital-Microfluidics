@@ -1,0 +1,83 @@
+mpam.monitor.ReagentCircle
+==========================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: ReagentCircle
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ReagentCircle.center
+      ~ReagentCircle.radius
+      ~ReagentCircle.reagent
+      ~ReagentCircle.visible
+      ~ReagentCircle.board_monitor
+      ~ReagentCircle.slices
+      ~ReagentCircle.alpha
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReagentCircle.__init__
+   
+   
+   
+
+   
+   
+   
+   

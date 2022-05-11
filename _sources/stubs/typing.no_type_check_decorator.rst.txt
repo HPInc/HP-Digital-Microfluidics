@@ -1,0 +1,6 @@
+typing.no\_type\_check\_decorator
+=================================
+
+.. currentmodule:: typing
+
+.. autofunction:: no_type_check_decorator

@@ -1,0 +1,133 @@
+mpam.device.Heater
+==================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Heater
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Heater.current_temperature
+      ~Heater.target
+      ~Heater.num
+      ~Heater.pads
+      ~Heater.mode
+      ~Heater.polling_interval
+      ~Heater.board
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Heater.__init__
+      ~Heater.on_target_change
+      ~Heater.on_temperature_change
+      ~Heater.poll
+      ~Heater.start_polling
+      ~Heater.stop_polling
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Heater.delayed
+      ~Heater.schedule
+      ~Heater.schedule_communication
+      ~Heater.user_operation
+   
+   
+   

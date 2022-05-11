@@ -1,0 +1,133 @@
+mpam.monitor.WellPadMonitor
+===========================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: WellPadMonitor
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WellPadMonitor.board_monitor
+      ~WellPadMonitor.shapes
+      ~WellPadMonitor.pad
+      ~WellPadMonitor.component
+      ~WellPadMonitor.patches
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~WellPadMonitor.current_state
+      ~WellPadMonitor.live
+      ~WellPadMonitor.neighbors
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WellPadMonitor.__init__
+      ~WellPadMonitor.current_drop
+      ~WellPadMonitor.holds_drop
+      ~WellPadMonitor.list_neighbors
+      ~WellPadMonitor.note_liquid
+      ~WellPadMonitor.note_state
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~WellPadMonitor.draw
+      ~WellPadMonitor.preview_state
+   
+   
+   

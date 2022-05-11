@@ -1,0 +1,193 @@
+quantities.dimensions.Current
+=============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Current
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Current.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Current.dimensionality
+      ~Current.is_negative
+      ~Current.is_positive
+      ~Current.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Current.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Current.__init__
+      ~Current.a
+      ~Current.an
+      ~Current.as_dimensionality
+      ~Current.as_number
+      ~Current.as_unit
+      ~Current.as_unit_expr
+      ~Current.base_unit
+      ~Current.cast
+      ~Current.check_dimensionality
+      ~Current.decomposed
+      ~Current.divide_by
+      ~Current.has_dimensionality
+      ~Current.in_denom
+      ~Current.in_units
+      ~Current.is_close_to
+      ~Current.multiply_by
+      ~Current.of
+      ~Current.ratio
+      ~Current.restricted
+      ~Current.to_power
+      ~Current.unit
+   
+   
+   

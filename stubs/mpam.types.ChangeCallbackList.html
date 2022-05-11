@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.types.ChangeCallbackList &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.types.Chemical" href="mpam.types.Chemical.html" />
+    <link rel="prev" title="mpam.types.Barrier" href="mpam.types.Barrier.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.types.html">mpam.types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.T.html">mpam.types.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tco.html">mpam.types.Tco</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tcontra.html">mpam.types.Tcontra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_reagent.html">mpam.types.unknown_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.schedule.html">mpam.types.schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.AsyncFunctionSerializer.html">mpam.types.AsyncFunctionSerializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Barrier.html">mpam.types.Barrier</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.ChangeCallbackList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Chemical.html">mpam.types.Chemical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Color.html">mpam.types.Color</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ColorAllocator.html">mpam.types.ColorAllocator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedOperation.html">mpam.types.CombinedOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Orientation.html">mpam.types.Orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Postable.html">mpam.types.Postable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessStep.html">mpam.types.ProcessStep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessedReagent.html">mpam.types.ProcessedReagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Reagent.html">mpam.types.Reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.State.html">mpam.types.State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.StaticOperation.html">mpam.types.StaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.TickNumber.html">mpam.types.TickNumber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Ticks.html">mpam.types.Ticks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Trigger.html">mpam.types.Trigger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Turn.html">mpam.types.Turn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.UnknownConcentration.html">mpam.types.UnknownConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XYCoord.html">mpam.types.XYCoord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XferDir.html">mpam.types.XferDir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.types.html">mpam.types</a> &raquo;</li>
+      <li>mpam.types.ChangeCallbackList</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.types.ChangeCallbackList.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-types-changecallbacklist">
+<h1>mpam.types.ChangeCallbackList<a class="headerlink" href="#mpam-types-changecallbacklist" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ChangeCallbackList</span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a>[<a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>]</p>
+<p>A hook onto which value-change handlers may be added.  When the list is
+processed (via <a class="reference internal" href="#mpam.types.ChangeCallbackList.process" title="mpam.types.ChangeCallbackList.process"><code class="xref py py-func docutils literal notranslate"><span class="pre">process()</span></code></a>), each handler is passed the old and new
+values (which may be the same).</p>
+<p>Handlers may optionally be associated with a key (of any <code class="xref py py-class docutils literal notranslate"><span class="pre">Hashable</span></code>
+type).  If a handler is added with a key that already exists in the
+<a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a>, the old value is replaced.  If no key is specified,
+the handler itself is used as the key and no replacement will take place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>T</strong> – the type of the value being managed</p>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.callbacks" title="mpam.types.ChangeCallbackList.callbacks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">callbacks</span></code></a></p></td>
+<td><p>A mapping from keys to handlers</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.lock" title="mpam.types.ChangeCallbackList.lock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock</span></code></a></p></td>
+<td><p>The object's lock</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.__init__" title="mpam.types.ChangeCallbackList.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>()</p></td>
+<td><p>Initialize the object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.add" title="mpam.types.ChangeCallbackList.add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add</span></code></a>(cb, *[, key])</p></td>
+<td><p>Add a new handler, replacing any with the specified key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.clear" title="mpam.types.ChangeCallbackList.clear"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear</span></code></a>()</p></td>
+<td><p>Remove all handlers.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.discard" title="mpam.types.ChangeCallbackList.discard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">discard</span></code></a>(key)</p></td>
+<td><p>Remove the handler with the given key if one exists.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.process" title="mpam.types.ChangeCallbackList.process"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process</span></code></a>(old, new)</p></td>
+<td><p>Pass old and new values to all handlers.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.remove" title="mpam.types.ChangeCallbackList.remove"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove</span></code></a>(key)</p></td>
+<td><p>Remove the handler with the given key, which must have been added.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.add" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new handler, replacing any with the specified key.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">cb</span></code> is used as the key</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cb</strong> – the handler</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>key</strong> – the (optional) key</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.callbacks">
+<span class="sig-name descname"><span class="pre">callbacks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ChangeCallbackList.callbacks" title="Permalink to this definition"></a></dt>
+<dd><p>A mapping from keys to handlers</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.clear" title="Permalink to this definition"></a></dt>
+<dd><p>Remove all handlers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.discard">
+<span class="sig-name descname"><span class="pre">discard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.discard" title="Permalink to this definition"></a></dt>
+<dd><p>Remove the handler with the given key if one exists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> – the key to remove</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.lock">
+<span class="sig-name descname"><span class="pre">lock</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">threading.RLock</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ChangeCallbackList.lock" title="Permalink to this definition"></a></dt>
+<dd><p>The object’s lock</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.process">
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.process" title="Permalink to this definition"></a></dt>
+<dd><p>Pass old and new values to all handlers.</p>
+<p>The list of handlers is copied before calling any handlers, so any
+handlers added while handlers are being invoked will not be invoked
+until the next time <a class="reference internal" href="#mpam.types.ChangeCallbackList.process" title="mpam.types.ChangeCallbackList.process"><code class="xref py py-func docutils literal notranslate"><span class="pre">process()</span></code></a> is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>old</strong> – the old value</p></li>
+<li><p><strong>new</strong> – the new value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.remove" title="Permalink to this definition"></a></dt>
+<dd><p>Remove the handler with the given key, which must have been added.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> – the key to remove</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>KeyError</strong> – if no handler with that key exists</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.Barrier.html" class="btn btn-neutral float-left" title="mpam.types.Barrier" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.Chemical.html" class="btn btn-neutral float-right" title="mpam.types.Chemical" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

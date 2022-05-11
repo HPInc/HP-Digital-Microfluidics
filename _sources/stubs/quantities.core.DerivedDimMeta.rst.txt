@@ -1,0 +1,73 @@
+quantities.core.DerivedDimMeta
+==============================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: DerivedDimMeta
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~DerivedDimMeta.ZERO
+      ~DerivedDimMeta.default_units
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DerivedDimMeta.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DerivedDimMeta.as_dimensionality
+      ~DerivedDimMeta.mro
+   
+   
+   

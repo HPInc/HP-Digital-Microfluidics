@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.types.Postable &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.types.ProcessStep" href="mpam.types.ProcessStep.html" />
+    <link rel="prev" title="mpam.types.Orientation" href="mpam.types.Orientation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.types.html">mpam.types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.T.html">mpam.types.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tco.html">mpam.types.Tco</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tcontra.html">mpam.types.Tcontra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_reagent.html">mpam.types.unknown_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.schedule.html">mpam.types.schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.AsyncFunctionSerializer.html">mpam.types.AsyncFunctionSerializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Barrier.html">mpam.types.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ChangeCallbackList.html">mpam.types.ChangeCallbackList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Chemical.html">mpam.types.Chemical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Color.html">mpam.types.Color</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ColorAllocator.html">mpam.types.ColorAllocator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedOperation.html">mpam.types.CombinedOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Orientation.html">mpam.types.Orientation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.Postable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessStep.html">mpam.types.ProcessStep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessedReagent.html">mpam.types.ProcessedReagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Reagent.html">mpam.types.Reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.State.html">mpam.types.State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.StaticOperation.html">mpam.types.StaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.TickNumber.html">mpam.types.TickNumber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Ticks.html">mpam.types.Ticks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Trigger.html">mpam.types.Trigger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Turn.html">mpam.types.Turn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.UnknownConcentration.html">mpam.types.UnknownConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XYCoord.html">mpam.types.XYCoord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XferDir.html">mpam.types.XferDir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.types.html">mpam.types</a> &raquo;</li>
+      <li>mpam.types.Postable</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.types.Postable.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-types-postable">
+<h1>mpam.types.Postable<a class="headerlink" href="#mpam-types-postable" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Postable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Postable</span></span><a class="headerlink" href="#mpam.types.Postable" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<a class="reference internal" href="mpam.types.Tcontra.html#mpam.types.Tcontra" title="mpam.types.Tcontra"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tcontra</span></code></a>]</p>
+<p>A concrete subclass of <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> that provides a <a class="reference internal" href="#mpam.types.Postable.post" title="mpam.types.Postable.post"><code class="xref py py-func docutils literal notranslate"><span class="pre">post()</span></code></a> method
+to assert a value, which will be passed to any waiting callbacks.</p>
+<p><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> is <em>covariant</em> in its type parameter, so a
+<a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<code class="docutils literal notranslate"><span class="pre">Derived</span></code>] can be treated as a
+<a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<code class="docutils literal notranslate"><span class="pre">Base</span></code>].  Conversely, the concrete subclass
+<a class="reference internal" href="#mpam.types.Postable" title="mpam.types.Postable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Postable</span></code></a> is <em>contravariant</em> in its type parameter, so a
+<a class="reference internal" href="#mpam.types.Postable" title="mpam.types.Postable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Postable</span></code></a>[<code class="docutils literal notranslate"><span class="pre">Base</span></code>] can be treated as a
+<a class="reference internal" href="#mpam.types.Postable" title="mpam.types.Postable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Postable</span></code></a>[<code class="docutils literal notranslate"><span class="pre">Derived</span></code>].</p>
+<p>More concretely, given</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Top</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">class</span> <span class="nc">Middle</span><span class="p">(</span><span class="n">Top</span><span class="p">):</span> <span class="o">...</span>
+<span class="k">class</span> <span class="nc">Bottom</span><span class="p">(</span><span class="n">Middle</span><span class="p">):</span> <span class="o">...</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="n">Postable</span><span class="p">[</span><span class="n">Middle</span><span class="p">]()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">p</span></code> can be treated as a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<code class="docutils literal notranslate"><span class="pre">Middle</span></code>], a
+<a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a>[<code class="docutils literal notranslate"><span class="pre">Top</span></code>], or a <a class="reference internal" href="#mpam.types.Postable" title="mpam.types.Postable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Postable</span></code></a>[<code class="docutils literal notranslate"><span class="pre">Bottom</span></code>].</p>
+<p><a class="reference internal" href="#mpam.types.Postable.post" title="mpam.types.Postable.post"><code class="xref py py-func docutils literal notranslate"><span class="pre">post()</span></code></a> may only be called once (although it need not ever be called).
+When a value is posted, any registered <em>callbacks</em> will be invoked and
+passed the posted value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Tcontra</strong> – the contravariant type that can be asserted using <a class="reference internal" href="#mpam.types.Postable.post" title="mpam.types.Postable.post"><code class="xref py py-func docutils literal notranslate"><span class="pre">post()</span></code></a>.</p>
+</dd>
+</dl>
+<p class="rubric">Inherited Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_value</span></code></p></td>
+<td><p>Has a value been asserted?</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">value</span></code></p></td>
+<td><p>The asserted value, blocking if necessary.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Postable.post" title="mpam.types.Postable.post"><code class="xref py py-obj docutils literal notranslate"><span class="pre">post</span></code></a>(val)</p></td>
+<td><p>Assert a value and pass it to any registered callbacks.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">and_wait</span></code>()</p></td>
+<td><p>Block the thread until a value has been asserted</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">chain</span></code>(fn)</p></td>
+<td><p>When a value is asserted, pass it to a function.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">complete</span></code>(val)</p></td>
+<td><p>A class method that constructs a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object with the value already asserted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">join</span></code>(futures)</p></td>
+<td><p>Block the thread until the provided <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> objects have all received values.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">peek</span></code>()</p></td>
+<td><p>Check both whether a value has been asserted and what that value is.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">post_to</span></code>(other)</p></td>
+<td><p>When a value is asserted, post it to another <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">post_transformed_to</span></code>(other, transform)</p></td>
+<td><p>When a value is asserted, transform it and post it to another <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">post_val_to</span></code>(other, value)</p></td>
+<td><p>When a value is asserted, post a specific value to another <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">then_call</span></code>(fn)</p></td>
+<td><p>Register a callback to be passed the asserted value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">then_schedule</span></code>(op, *[, after, post_result])</p></td>
+<td><p>Schedule an <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> or <a class="reference internal" href="mpam.types.StaticOperation.html#mpam.types.StaticOperation" title="mpam.types.StaticOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticOperation</span></code></a> when a value is asserted.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">then_trigger</span></code>(trigger)</p></td>
+<td><p>When a value is asserted, fire a <a class="reference internal" href="mpam.types.Trigger.html#mpam.types.Trigger" title="mpam.types.Trigger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trigger</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">transformed</span></code>(fn)</p></td>
+<td><p>When a value is asserted, pass it to a function.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">wait</span></code>()</p></td>
+<td><p>Block the thread until a value has been asserted</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">when_value</span></code>(fn)</p></td>
+<td><p>Register a callback to be passed the asserted value.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Postable.post">
+<span class="sig-name descname"><span class="pre">post</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tcontra</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Postable.post" title="Permalink to this definition"></a></dt>
+<dd><p>Assert a value and pass it to any registered callbacks.  Any callbacks
+registered after this point will immediately execute with this value.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#mpam.types.Postable.post" title="mpam.types.Postable.post"><code class="xref py py-func docutils literal notranslate"><span class="pre">post()</span></code></a> may only be called once for any <a class="reference internal" href="#mpam.types.Postable" title="mpam.types.Postable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Postable</span></code></a>
+object.  Calling it a second time will result in an assertion
+failure.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Once <a class="reference internal" href="#mpam.types.Postable.post" title="mpam.types.Postable.post"><code class="xref py py-func docutils literal notranslate"><span class="pre">post()</span></code></a> has been called, any registered callbacks are
+forgotten.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>val</strong> – the value to assert</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.Orientation.html" class="btn btn-neutral float-left" title="mpam.types.Orientation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.ProcessStep.html" class="btn btn-neutral float-right" title="mpam.types.ProcessStep" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

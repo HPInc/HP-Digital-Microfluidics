@@ -1,0 +1,98 @@
+quantities.core.Dimensionality
+==============================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: Dimensionality
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Dimensionality.default_units
+      ~Dimensionality.exponents
+      ~Dimensionality.name
+      ~Dimensionality.quant_class
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Dimensionality.__init__
+      ~Dimensionality.as_dimensionality
+      ~Dimensionality.description
+      ~Dimensionality.format_quantity
+      ~Dimensionality.make_quantity
+      ~Dimensionality.named
+      ~Dimensionality.of
+   
+   
+   
+
+   
+   
+   
+   

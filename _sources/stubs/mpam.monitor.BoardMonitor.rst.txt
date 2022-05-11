@@ -1,0 +1,228 @@
+mpam.monitor.BoardMonitor
+=========================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: BoardMonitor
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BoardMonitor.interactive_reagent
+      ~BoardMonitor.modifiers
+      ~BoardMonitor.board
+      ~BoardMonitor.pads
+      ~BoardMonitor.wells
+      ~BoardMonitor.figure
+      ~BoardMonitor.plot
+      ~BoardMonitor.drop_map
+      ~BoardMonitor.lock
+      ~BoardMonitor.update_callbacks
+      ~BoardMonitor.color_allocator
+      ~BoardMonitor.drop_unit
+      ~BoardMonitor.click_id
+      ~BoardMonitor.close_event
+      ~BoardMonitor.legend
+      ~BoardMonitor.click_handler
+      ~BoardMonitor.macro_file_name
+      ~BoardMonitor.interactive_volume
+      ~BoardMonitor.min_x
+      ~BoardMonitor.max_x
+      ~BoardMonitor.min_y
+      ~BoardMonitor.max_y
+      ~BoardMonitor.no_bounds
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BoardMonitor.__init__
+      ~BoardMonitor.clock_widgets
+      ~BoardMonitor.default_control_widgets
+      ~BoardMonitor.dmf_lang_widgets
+      ~BoardMonitor.drop_monitor
+      ~BoardMonitor.group
+      ~BoardMonitor.in_display_thread
+      ~BoardMonitor.keep_alive
+      ~BoardMonitor.label
+      ~BoardMonitor.map_coord
+      ~BoardMonitor.path_widgets
+      ~BoardMonitor.process_display_updates
+      ~BoardMonitor.reagent_color
+      ~BoardMonitor.reserve_color
+   
+   
+   
+
+   
+   
+   
+   

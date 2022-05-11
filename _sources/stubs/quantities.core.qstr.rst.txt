@@ -1,0 +1,6 @@
+quantities.core.qstr
+====================
+
+.. currentmodule:: quantities.core
+
+.. autofunction:: qstr

@@ -1,0 +1,103 @@
+mpam.monitor.ClickableMonitor
+=============================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: ClickableMonitor
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ClickableMonitor.current_state
+      ~ClickableMonitor.live
+      ~ClickableMonitor.neighbors
+      ~ClickableMonitor.component
+      ~ClickableMonitor.patches
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ClickableMonitor.__init__
+      ~ClickableMonitor.current_drop
+      ~ClickableMonitor.draw
+      ~ClickableMonitor.holds_drop
+      ~ClickableMonitor.list_neighbors
+      ~ClickableMonitor.note_state
+      ~ClickableMonitor.preview_state
+   
+   
+   
+
+   
+   
+   
+   

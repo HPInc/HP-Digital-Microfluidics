@@ -1,0 +1,83 @@
+mpam.processes.PairwiseMix
+==========================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: PairwiseMix
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PairwiseMix.drop1_index
+      ~PairwiseMix.drop2_index
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PairwiseMix.merge
+      ~PairwiseMix.split
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~PairwiseMix.__init__
+      ~PairwiseMix.count
+      ~PairwiseMix.index
+   
+   
+   

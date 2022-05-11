@@ -1,0 +1,6 @@
+typing.TypedDict
+================
+
+.. currentmodule:: typing
+
+.. autofunction:: TypedDict

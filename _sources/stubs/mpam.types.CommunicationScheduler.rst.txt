@@ -1,0 +1,53 @@
+mpam.types.CommunicationScheduler
+=================================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: CommunicationScheduler
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CommunicationScheduler.__init__
+      ~CommunicationScheduler.delayed
+      ~CommunicationScheduler.schedule_communication
+   
+   
+   
+
+   
+   
+   
+   

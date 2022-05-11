@@ -1,0 +1,6 @@
+erk.errors.IGNORE
+=================
+
+.. currentmodule:: erk.errors
+
+.. autodata:: IGNORE

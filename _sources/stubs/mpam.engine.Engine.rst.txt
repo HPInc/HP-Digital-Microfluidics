@@ -1,0 +1,113 @@
+mpam.engine.Engine
+==================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: Engine
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Engine.idle_barrier
+      ~Engine.dev_comm_thread
+      ~Engine.timer_thread
+      ~Engine.clock_thread
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Engine.__init__
+      ~Engine.abort
+      ~Engine.after_tick
+      ~Engine.before_tick
+      ~Engine.call_after
+      ~Engine.call_at
+      ~Engine.communicate
+      ~Engine.on_tick
+      ~Engine.start
+      ~Engine.stop
+   
+   
+   
+
+   
+   
+   
+   

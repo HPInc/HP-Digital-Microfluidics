@@ -1,0 +1,78 @@
+mpam.pipettor.TransferSchedule
+==============================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: TransferSchedule
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TransferSchedule.pipettor
+      ~TransferSchedule.fills
+      ~TransferSchedule.empties
+      ~TransferSchedule.serializer
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TransferSchedule.__init__
+      ~TransferSchedule.add
+      ~TransferSchedule.remove
+   
+   
+   
+
+   
+   
+   
+   

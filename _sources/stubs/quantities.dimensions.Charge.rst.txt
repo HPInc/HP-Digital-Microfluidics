@@ -1,0 +1,193 @@
+quantities.dimensions.Charge
+============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Charge
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Charge.derived
+      ~Charge.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Charge.dimensionality
+      ~Charge.is_negative
+      ~Charge.is_positive
+      ~Charge.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Charge.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Charge.__init__
+      ~Charge.a
+      ~Charge.an
+      ~Charge.as_dimensionality
+      ~Charge.as_number
+      ~Charge.as_unit
+      ~Charge.as_unit_expr
+      ~Charge.cast
+      ~Charge.check_dimensionality
+      ~Charge.decomposed
+      ~Charge.divide_by
+      ~Charge.has_dimensionality
+      ~Charge.in_denom
+      ~Charge.in_units
+      ~Charge.is_close_to
+      ~Charge.multiply_by
+      ~Charge.of
+      ~Charge.ratio
+      ~Charge.restricted
+      ~Charge.to_power
+      ~Charge.unit
+   
+   
+   

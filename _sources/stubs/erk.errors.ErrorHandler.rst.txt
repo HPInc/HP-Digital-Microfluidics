@@ -1,0 +1,58 @@
+erk.errors.ErrorHandler
+=======================
+
+.. currentmodule:: erk.errors
+
+.. autoclass:: ErrorHandler
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ErrorHandler.expect_false
+      ~ErrorHandler.expect_true
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~ErrorHandler.__init__
+   
+   
+   

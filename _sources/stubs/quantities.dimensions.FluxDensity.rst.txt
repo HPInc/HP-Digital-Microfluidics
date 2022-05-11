@@ -1,0 +1,193 @@
+quantities.dimensions.FluxDensity
+=================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: FluxDensity
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FluxDensity.derived
+      ~FluxDensity.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~FluxDensity.dimensionality
+      ~FluxDensity.is_negative
+      ~FluxDensity.is_positive
+      ~FluxDensity.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FluxDensity.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~FluxDensity.__init__
+      ~FluxDensity.a
+      ~FluxDensity.an
+      ~FluxDensity.as_dimensionality
+      ~FluxDensity.as_number
+      ~FluxDensity.as_unit
+      ~FluxDensity.as_unit_expr
+      ~FluxDensity.cast
+      ~FluxDensity.check_dimensionality
+      ~FluxDensity.decomposed
+      ~FluxDensity.divide_by
+      ~FluxDensity.has_dimensionality
+      ~FluxDensity.in_denom
+      ~FluxDensity.in_units
+      ~FluxDensity.is_close_to
+      ~FluxDensity.multiply_by
+      ~FluxDensity.of
+      ~FluxDensity.ratio
+      ~FluxDensity.restricted
+      ~FluxDensity.to_power
+      ~FluxDensity.unit
+   
+   
+   

@@ -1,0 +1,183 @@
+mpam.engine.WorkerThread
+========================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: WorkerThread
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WorkerThread.engine
+      ~WorkerThread.state
+      ~WorkerThread.lock
+      ~WorkerThread.idle_barrier
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~WorkerThread.daemon
+      ~WorkerThread.ident
+      ~WorkerThread.is_idle
+      ~WorkerThread.name
+      ~WorkerThread.native_id
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WorkerThread.__init__
+      ~WorkerThread.abort_requested
+      ~WorkerThread.ensure_running
+      ~WorkerThread.not_idle
+      ~WorkerThread.print_exception
+      ~WorkerThread.request_abort
+      ~WorkerThread.request_stop
+      ~WorkerThread.wake_up
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~WorkerThread.getName
+      ~WorkerThread.idle
+      ~WorkerThread.isDaemon
+      ~WorkerThread.is_alive
+      ~WorkerThread.join
+      ~WorkerThread.run
+      ~WorkerThread.setDaemon
+      ~WorkerThread.setName
+      ~WorkerThread.start
+   
+   
+   

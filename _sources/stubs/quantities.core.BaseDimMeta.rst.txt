@@ -1,0 +1,73 @@
+quantities.core.BaseDimMeta
+===========================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: BaseDimMeta
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~BaseDimMeta.ZERO
+      ~BaseDimMeta.default_units
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BaseDimMeta.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~BaseDimMeta.as_dimensionality
+      ~BaseDimMeta.mro
+   
+   
+   

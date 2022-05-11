@@ -1,0 +1,193 @@
+quantities.dimensions.Amount
+============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Amount
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Amount.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Amount.dimensionality
+      ~Amount.is_negative
+      ~Amount.is_positive
+      ~Amount.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Amount.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Amount.__init__
+      ~Amount.a
+      ~Amount.an
+      ~Amount.as_dimensionality
+      ~Amount.as_number
+      ~Amount.as_unit
+      ~Amount.as_unit_expr
+      ~Amount.base_unit
+      ~Amount.cast
+      ~Amount.check_dimensionality
+      ~Amount.decomposed
+      ~Amount.divide_by
+      ~Amount.has_dimensionality
+      ~Amount.in_denom
+      ~Amount.in_units
+      ~Amount.is_close_to
+      ~Amount.multiply_by
+      ~Amount.of
+      ~Amount.ratio
+      ~Amount.restricted
+      ~Amount.to_power
+      ~Amount.unit
+   
+   
+   

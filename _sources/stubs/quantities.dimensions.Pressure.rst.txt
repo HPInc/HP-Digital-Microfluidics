@@ -1,0 +1,193 @@
+quantities.dimensions.Pressure
+==============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Pressure
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Pressure.derived
+      ~Pressure.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Pressure.dimensionality
+      ~Pressure.is_negative
+      ~Pressure.is_positive
+      ~Pressure.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Pressure.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Pressure.__init__
+      ~Pressure.a
+      ~Pressure.an
+      ~Pressure.as_dimensionality
+      ~Pressure.as_number
+      ~Pressure.as_unit
+      ~Pressure.as_unit_expr
+      ~Pressure.cast
+      ~Pressure.check_dimensionality
+      ~Pressure.decomposed
+      ~Pressure.divide_by
+      ~Pressure.has_dimensionality
+      ~Pressure.in_denom
+      ~Pressure.in_units
+      ~Pressure.is_close_to
+      ~Pressure.multiply_by
+      ~Pressure.of
+      ~Pressure.ratio
+      ~Pressure.restricted
+      ~Pressure.to_power
+      ~Pressure.unit
+   
+   
+   

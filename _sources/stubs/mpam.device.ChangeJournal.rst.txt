@@ -1,0 +1,98 @@
+mpam.device.ChangeJournal
+=========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: ChangeJournal
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ChangeJournal.has_transfer
+      ~ChangeJournal.turned_on
+      ~ChangeJournal.turned_off
+      ~ChangeJournal.delivered
+      ~ChangeJournal.removed
+      ~ChangeJournal.mix_result
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ChangeJournal.__init__
+      ~ChangeJournal.change_to
+      ~ChangeJournal.note_delivery
+      ~ChangeJournal.note_removal
+      ~ChangeJournal.process_changes
+   
+   
+   
+
+   
+   
+   
+   

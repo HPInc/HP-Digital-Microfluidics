@@ -1,0 +1,193 @@
+quantities.dimensions.Distance
+==============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Distance
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Distance.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Distance.dimensionality
+      ~Distance.is_negative
+      ~Distance.is_positive
+      ~Distance.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Distance.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Distance.__init__
+      ~Distance.a
+      ~Distance.an
+      ~Distance.as_dimensionality
+      ~Distance.as_number
+      ~Distance.as_unit
+      ~Distance.as_unit_expr
+      ~Distance.base_unit
+      ~Distance.cast
+      ~Distance.check_dimensionality
+      ~Distance.decomposed
+      ~Distance.divide_by
+      ~Distance.has_dimensionality
+      ~Distance.in_denom
+      ~Distance.in_units
+      ~Distance.is_close_to
+      ~Distance.multiply_by
+      ~Distance.of
+      ~Distance.ratio
+      ~Distance.restricted
+      ~Distance.to_power
+      ~Distance.unit
+   
+   
+   

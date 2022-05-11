@@ -1,0 +1,43 @@
+quantities.dimensions.Substance
+===============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Substance
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Substance.__init__
+   
+   
+   

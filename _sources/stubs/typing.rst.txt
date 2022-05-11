@@ -1,0 +1,70 @@
+﻿typing
+======
+
+.. automodule:: typing
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      NamedTuple
+      TypedDict
+      cast
+      final
+      get_args
+      get_origin
+      get_type_hints
+      is_typeddict
+      no_type_check
+      no_type_check_decorator
+      overload
+      runtime_checkable
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      Annotated
+      BinaryIO
+      ForwardRef
+      Generic
+      IO
+      NamedTupleMeta
+      NewType
+      ParamSpec
+      ParamSpecArgs
+      ParamSpecKwargs
+      Protocol
+      SupportsAbs
+      SupportsBytes
+      SupportsComplex
+      SupportsFloat
+      SupportsIndex
+      SupportsInt
+      SupportsRound
+      TextIO
+      TypeVar
+      io
+      re
+   
+   
+
+   
+   
+   
+
+
+

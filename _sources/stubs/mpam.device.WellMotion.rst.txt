@@ -1,0 +1,108 @@
+mpam.device.WellMotion
+======================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: WellMotion
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WellMotion.group
+      ~WellMotion.board
+      ~WellMotion.target
+      ~WellMotion.initial_future
+      ~WellMotion.futures
+      ~WellMotion.well_gates
+      ~WellMotion.shared_pads
+      ~WellMotion.guard
+      ~WellMotion.gate_status
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WellMotion.__init__
+      ~WellMotion.iterator
+      ~WellMotion.post_futures
+      ~WellMotion.try_adopt
+   
+   
+   
+
+   
+   
+   
+   

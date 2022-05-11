@@ -1,0 +1,6 @@
+mpam.types.unknown\_reagent
+===========================
+
+.. currentmodule:: mpam.types
+
+.. autodata:: unknown_reagent

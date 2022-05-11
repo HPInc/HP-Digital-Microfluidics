@@ -1,0 +1,6 @@
+quantities.temperature.absolute\_zero
+=====================================
+
+.. currentmodule:: quantities.temperature
+
+.. autodata:: absolute_zero

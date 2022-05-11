@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>erk.errors &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="erk.errors.IGNORE" href="erk.errors.IGNORE.html" />
+    <link rel="prev" title="mpam.types.XferDir" href="mpam.types.XferDir.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">erk.errors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.IGNORE.html">erk.errors.IGNORE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.PRINT.html">erk.errors.PRINT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.PRINT_TO_STDERR.html">erk.errors.PRINT_TO_STDERR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.DoNothing.html">erk.errors.DoNothing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.ErrorHandler.html">erk.errors.ErrorHandler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.FIX_BY.html">erk.errors.FIX_BY</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.PRINT_TO.html">erk.errors.PRINT_TO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="erk.errors.RAISE.html">erk.errors.RAISE</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>erk.errors</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/erk.errors.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-erk.errors">
+<span id="erk-errors"></span><h1>erk.errors<a class="headerlink" href="#module-erk.errors" title="Permalink to this headline"></a></h1>
+<p class="rubric">Module Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="erk.errors.IGNORE.html#erk.errors.IGNORE" title="erk.errors.IGNORE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IGNORE</span></code></a></p></td>
+<td><p>A singleton instance of <a class="reference internal" href="erk.errors.DoNothing.html#erk.errors.DoNothing" title="erk.errors.DoNothing"><code class="xref py py-class docutils literal notranslate"><span class="pre">DoNothing</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="erk.errors.PRINT.html#erk.errors.PRINT" title="erk.errors.PRINT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PRINT</span></code></a></p></td>
+<td><p>A <a class="reference internal" href="erk.errors.PRINT_TO.html#erk.errors.PRINT_TO" title="erk.errors.PRINT_TO"><code class="xref py py-class docutils literal notranslate"><span class="pre">PRINT_TO</span></code></a> <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that prints to <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stdout</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="erk.errors.PRINT_TO_STDERR.html#erk.errors.PRINT_TO_STDERR" title="erk.errors.PRINT_TO_STDERR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PRINT_TO_STDERR</span></code></a></p></td>
+<td><p>A <a class="reference internal" href="erk.errors.PRINT_TO.html#erk.errors.PRINT_TO" title="erk.errors.PRINT_TO"><code class="xref py py-class docutils literal notranslate"><span class="pre">PRINT_TO</span></code></a> <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that prints to <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stderr</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="erk.errors.DoNothing.html#erk.errors.DoNothing" title="erk.errors.DoNothing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DoNothing</span></code></a>()</p></td>
+<td><p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that does nothing.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a>()</p></td>
+<td><p>An handler that can be used to handle (or check and, if necessary, handle) error conditions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="erk.errors.FIX_BY.html#erk.errors.FIX_BY" title="erk.errors.FIX_BY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FIX_BY</span></code></a>(function)</p></td>
+<td><p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that fixes the problem by calling an arbitrary function.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="erk.errors.PRINT_TO.html#erk.errors.PRINT_TO" title="erk.errors.PRINT_TO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PRINT_TO</span></code></a>(where)</p></td>
+<td><p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that prints a message to a <a class="reference internal" href="typing.TextIO.html#typing.TextIO" title="typing.TextIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIO</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="erk.errors.RAISE.html#erk.errors.RAISE" title="erk.errors.RAISE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RAISE</span></code></a>(factory)</p></td>
+<td><p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that raises an exception.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="erk.errors.DoNothing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">DoNothing</span></span><a class="headerlink" href="#erk.errors.DoNothing" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a></p>
+<p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that does nothing.</p>
+<p>The condition is still evaluated, but it isn’t checked and
+the message is never computed.  This is typically used via its instance
+<a class="reference internal" href="erk.errors.IGNORE.html#erk.errors.IGNORE" title="erk.errors.IGNORE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">IGNORE</span></code></a></p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">IGNORE</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.DoNothing.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.DoNothing.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msg</strong> – a message describing the error, which is ignored</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.DoNothing.expect_false">
+<span class="sig-name descname"><span class="pre">expect_false</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.DoNothing.expect_false" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cond</span></code> is not checked, and <code class="docutils literal notranslate"><span class="pre">msg_fn</span></code> is never called</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.DoNothing.expect_true">
+<span class="sig-name descname"><span class="pre">expect_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.DoNothing.expect_true" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cond</span></code> is not checked, and <code class="docutils literal notranslate"><span class="pre">msg_fn</span></code> is never called</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="erk.errors.ErrorHandler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">ErrorHandler</span></span><a class="headerlink" href="#erk.errors.ErrorHandler" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>An handler that can be used to handle (or check and, if necessary, handle)
+error conditions.</p>
+<p class="rubric">Example</p>
+<p>The following definition of <code class="docutils literal notranslate"><span class="pre">factorial</span></code> checks to make sure that the
+argument is not negative, allowing the caller to specify the action if
+it is.  By default, a warning will be printed, but this could be changed
+to having the code raise an exception or take other action.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">on_out_of_range</span><span class="p">:</span> <span class="n">ErrorHandler</span> <span class="o">=</span> <span class="n">PRINT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">on_out_of_range</span><span class="o">.</span><span class="n">expect_true</span><span class="p">(</span><span class="n">index</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+                                <span class="k">lambda</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;No element </span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">. Only </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> elements&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>All subclasses of <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> must define <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.__call__" title="erk.errors.ErrorHandler.__call__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__call__()</span></code></a>, which
+is passed in a string describing the error.  <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> itself
+defines <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.expect_true" title="erk.errors.ErrorHandler.expect_true"><code class="xref py py-func docutils literal notranslate"><span class="pre">expect_true()</span></code></a> and <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.expect_false" title="erk.errors.ErrorHandler.expect_false"><code class="xref py py-func docutils literal notranslate"><span class="pre">expect_false()</span></code></a>, which take a boolean
+and a <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> that returns a string.  If the boolean argument is
+<code class="docutils literal notranslate"><span class="pre">False</span></code> (for <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.expect_true" title="erk.errors.ErrorHandler.expect_true"><code class="xref py py-func docutils literal notranslate"><span class="pre">expect_true()</span></code></a>) or <code class="docutils literal notranslate"><span class="pre">True</span></code> (for <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.expect_false" title="erk.errors.ErrorHandler.expect_false"><code class="xref py py-func docutils literal notranslate"><span class="pre">expect_false()</span></code></a>),
+the <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> argument is evaluated and passed to <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.__call__" title="erk.errors.ErrorHandler.__call__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__call__()</span></code></a>.</p>
+<p>Defined subclasses of <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> include</p>
+<dl>
+<dt><a class="reference internal" href="erk.errors.DoNothing.html#erk.errors.DoNothing" title="erk.errors.DoNothing"><code class="xref py py-class docutils literal notranslate"><span class="pre">DoNothing</span></code></a></dt><dd><p>Do nothing.  The condition is still evaluated, but it isn’t checked and
+the message is never computed.  This is typically used via its instance
+<a class="reference internal" href="erk.errors.IGNORE.html#erk.errors.IGNORE" title="erk.errors.IGNORE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">IGNORE</span></code></a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">IGNORE</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><a class="reference internal" href="erk.errors.PRINT_TO.html#erk.errors.PRINT_TO" title="erk.errors.PRINT_TO"><code class="xref py py-class docutils literal notranslate"><span class="pre">PRINT_TO</span></code></a> <code class="docutils literal notranslate"><span class="pre">(where:</span></code> <a class="reference internal" href="typing.TextIO.html#typing.TextIO" title="typing.TextIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIO</span></code></a> <code class="docutils literal notranslate"><span class="pre">)</span></code></dt><dd><p>Print the message to <code class="docutils literal notranslate"><span class="pre">where</span></code>.  Predefined objects exist for printing
+to <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stdout</span></code> (<a class="reference internal" href="erk.errors.PRINT.html#erk.errors.PRINT" title="erk.errors.PRINT"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PRINT</span></code></a>) and <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stderr</span></code>
+(<a class="reference internal" href="erk.errors.PRINT_TO_STDERR.html#erk.errors.PRINT_TO_STDERR" title="erk.errors.PRINT_TO_STDERR"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PRINT_TO_STDERR</span></code></a>)</p>
+</dd>
+<dt><a class="reference internal" href="erk.errors.RAISE.html#erk.errors.RAISE" title="erk.errors.RAISE"><code class="xref py py-class docutils literal notranslate"><span class="pre">RAISE</span></code></a> <code class="docutils literal notranslate"><span class="pre">(factory)</span></code></dt><dd><p>Raise the exception returned by calling <code class="docutils literal notranslate"><span class="pre">factory</span></code>.  Typically, this
+will be the name of the exception class, e.g.,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">RAISE</span><span class="p">(</span><span class="n">OutOfRangeError</span><span class="p">))</span>
+</pre></div>
+</div>
+</dd>
+<dt><a class="reference internal" href="erk.errors.FIX_BY.html#erk.errors.FIX_BY" title="erk.errors.FIX_BY"><code class="xref py py-class docutils literal notranslate"><span class="pre">FIX_BY</span></code></a> <code class="docutils literal notranslate"><span class="pre">(function)</span></code></dt><dd><p>Call <code class="docutils literal notranslate"><span class="pre">function</span></code> (ignoring the message), which should, as a side effect,
+fix the problem.  For example,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">FIX_BY</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">grow_to</span><span class="p">(</span><span class="mf">1.5</span><span class="o">*</span><span class="n">n</span><span class="p">)))</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.ErrorHandler.__call__">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.ErrorHandler.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Call the handler, passing in the generated message.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is an abstract method, which must be defined by subclasses.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msg</strong> – a message describing the error</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.ErrorHandler.expect_false">
+<span class="sig-name descname"><span class="pre">expect_false</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.ErrorHandler.expect_false" title="Permalink to this definition"></a></dt>
+<dd><p>Call the handler (via <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.__call__" title="erk.errors.ErrorHandler.__call__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__call__()</span></code></a>) passing in <code class="docutils literal notranslate"><span class="pre">msg_fn()</span></code> if <code class="docutils literal notranslate"><span class="pre">cond</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.ErrorHandler.expect_true">
+<span class="sig-name descname"><span class="pre">expect_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.ErrorHandler.expect_true" title="Permalink to this definition"></a></dt>
+<dd><p>Call the handler (via <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler.__call__" title="erk.errors.ErrorHandler.__call__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__call__()</span></code></a>) passing in <code class="docutils literal notranslate"><span class="pre">msg_fn()</span></code> if <code class="docutils literal notranslate"><span class="pre">cond</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="erk.errors.FIX_BY">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">FIX_BY</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#erk.errors.FIX_BY" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a></p>
+<p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that fixes the problem by calling an arbitrary
+function.</p>
+<p>It is initialized with a <code class="xref py py-attr docutils literal notranslate"><span class="pre">factory</span></code> function taking no arguments.  Any
+value returned is ignored.</p>
+<p>This class reimplements <a class="reference internal" href="erk.errors.FIX_BY.html#erk.errors.FIX_BY.expect_true" title="erk.errors.FIX_BY.expect_true"><code class="xref py py-func docutils literal notranslate"><span class="pre">expect_true()</span></code></a> and <a class="reference internal" href="erk.errors.FIX_BY.html#erk.errors.FIX_BY.expect_false" title="erk.errors.FIX_BY.expect_false"><code class="xref py py-func docutils literal notranslate"><span class="pre">expect_false()</span></code></a> to
+never evaluate their <cite>msg_fn</cite> parameters.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The handler is assumed to have fixed the problem.  The condition is not
+rechecked.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">FIX_BY</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">grow_to</span><span class="p">(</span><span class="n">n</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.FIX_BY.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.FIX_BY.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Call <a class="reference internal" href="erk.errors.FIX_BY.html#erk.errors.FIX_BY.fixer" title="erk.errors.FIX_BY.fixer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fixer</span></code></a> to fix the problem</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msg</strong> – a message describing the error, which is ignored</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.FIX_BY.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.FIX_BY.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>function</strong> – a function of no arguments to call to fix the problem</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.FIX_BY.expect_false">
+<span class="sig-name descname"><span class="pre">expect_false</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.FIX_BY.expect_false" title="Permalink to this definition"></a></dt>
+<dd><p>Call the <a class="reference internal" href="erk.errors.FIX_BY.html#erk.errors.FIX_BY.fixer" title="erk.errors.FIX_BY.fixer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fixer</span></code></a> to fix the problem if <code class="docutils literal notranslate"><span class="pre">cond</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message, which is ignored</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.FIX_BY.expect_true">
+<span class="sig-name descname"><span class="pre">expect_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.FIX_BY.expect_true" title="Permalink to this definition"></a></dt>
+<dd><p>Call the <a class="reference internal" href="erk.errors.FIX_BY.html#erk.errors.FIX_BY.fixer" title="erk.errors.FIX_BY.fixer"><code class="xref py py-attr docutils literal notranslate"><span class="pre">fixer</span></code></a> to fix the problem if <code class="docutils literal notranslate"><span class="pre">cond</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cond</strong> – the condition to check</p></li>
+<li><p><strong>msg_fn</strong> – a function to call to get the message, which is ignored</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="erk.errors.FIX_BY.fixer">
+<span class="sig-name descname"><span class="pre">fixer</span></span><a class="headerlink" href="#erk.errors.FIX_BY.fixer" title="Permalink to this definition"></a></dt>
+<dd><p>A function of no arguments to call to fix the problem</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="erk.errors.IGNORE">
+<span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">IGNORE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;erk.errors.DoNothing</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#erk.errors.IGNORE" title="Permalink to this definition"></a></dt>
+<dd><p>A singleton instance of <a class="reference internal" href="erk.errors.DoNothing.html#erk.errors.DoNothing" title="erk.errors.DoNothing"><code class="xref py py-class docutils literal notranslate"><span class="pre">DoNothing</span></code></a></p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="erk.errors.PRINT">
+<span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">PRINT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#erk.errors.PRINT" title="Permalink to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="erk.errors.PRINT_TO.html#erk.errors.PRINT_TO" title="erk.errors.PRINT_TO"><code class="xref py py-class docutils literal notranslate"><span class="pre">PRINT_TO</span></code></a> <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that prints to <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stdout</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="erk.errors.PRINT_TO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">PRINT_TO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">where:</span> <span class="pre">~typing.TextIO</span> <span class="pre">=</span> <span class="pre">&lt;colorama.ansitowin32.StreamWrapper</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#erk.errors.PRINT_TO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a></p>
+<p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that prints a message to a <a class="reference internal" href="typing.TextIO.html#typing.TextIO" title="typing.TextIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIO</span></code></a>.</p>
+<p>Predefined objects exist for printing
+to <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stdout</span></code> (<a class="reference internal" href="erk.errors.PRINT.html#erk.errors.PRINT" title="erk.errors.PRINT"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PRINT</span></code></a>) and <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stderr</span></code>
+(<a class="reference internal" href="erk.errors.PRINT_TO_STDERR.html#erk.errors.PRINT_TO_STDERR" title="erk.errors.PRINT_TO_STDERR"><code class="xref py py-attr docutils literal notranslate"><span class="pre">PRINT_TO_STDERR</span></code></a>)</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">PRINT_TO_STDERR</span><span class="p">)</span>
+<span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">PRINT_TO</span><span class="p">(</span><span class="n">logfile</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.PRINT_TO.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.PRINT_TO.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Print <code class="docutils literal notranslate"><span class="pre">msg</span></code> to <a class="reference internal" href="erk.errors.PRINT_TO.html#erk.errors.PRINT_TO.where" title="erk.errors.PRINT_TO.where"><code class="xref py py-attr docutils literal notranslate"><span class="pre">where</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msg</strong> – a message describing the error</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.PRINT_TO.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">where:</span> <span class="pre">~typing.TextIO</span> <span class="pre">=</span> <span class="pre">&lt;colorama.ansitowin32.StreamWrapper</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#erk.errors.PRINT_TO.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>where</strong> – the <a class="reference internal" href="typing.TextIO.html#typing.TextIO" title="typing.TextIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIO</span></code></a> to print to</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="erk.errors.PRINT_TO.where">
+<span class="sig-name descname"><span class="pre">where</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="typing.TextIO.html#typing.TextIO" title="typing.TextIO"><span class="pre">TextIO</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#erk.errors.PRINT_TO.where" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="typing.TextIO.html#typing.TextIO" title="typing.TextIO"><code class="xref py py-class docutils literal notranslate"><span class="pre">TextIO</span></code></a> to print to</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="erk.errors.PRINT_TO_STDERR">
+<span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">PRINT_TO_STDERR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">&lt;erk.errors.PRINT_TO</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#erk.errors.PRINT_TO_STDERR" title="Permalink to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="erk.errors.PRINT_TO.html#erk.errors.PRINT_TO" title="erk.errors.PRINT_TO"><code class="xref py py-class docutils literal notranslate"><span class="pre">PRINT_TO</span></code></a> <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that prints to <code class="xref py py-attr docutils literal notranslate"><span class="pre">sys.stderr</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="erk.errors.RAISE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">erk.errors.</span></span><span class="sig-name descname"><span class="pre">RAISE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">factory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">BaseException</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#erk.errors.RAISE" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a></p>
+<p>An <a class="reference internal" href="erk.errors.ErrorHandler.html#erk.errors.ErrorHandler" title="erk.errors.ErrorHandler"><code class="xref py py-class docutils literal notranslate"><span class="pre">ErrorHandler</span></code></a> that raises an exception.</p>
+<p>It is initialized with a <a class="reference internal" href="erk.errors.RAISE.html#erk.errors.RAISE.factory" title="erk.errors.RAISE.factory"><code class="xref py py-attr docutils literal notranslate"><span class="pre">factory</span></code></a> function that can take the message
+string and returns an exception instance.  Typically, this will be the
+exception class itself.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">s</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">on_out_of_range</span> <span class="o">=</span> <span class="n">RAISE</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.RAISE.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">NoReturn</span></span></span><a class="headerlink" href="#erk.errors.RAISE.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Create and raise the exception</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>msg</strong> – a message describing the error</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="erk.errors.RAISE.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">factory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">BaseException</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#erk.errors.RAISE.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>factory</strong> – a factory function that takes a message string and returns
+an exception instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="erk.errors.RAISE.factory">
+<span class="sig-name descname"><span class="pre">factory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">BaseException</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#erk.errors.RAISE.factory" title="Permalink to this definition"></a></dt>
+<dd><p>A factory function that takes a message string returns an exception
+instance</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.XferDir.html" class="btn btn-neutral float-left" title="mpam.types.XferDir" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="erk.errors.IGNORE.html" class="btn btn-neutral float-right" title="erk.errors.IGNORE" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

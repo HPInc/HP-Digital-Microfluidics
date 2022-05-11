@@ -1,0 +1,193 @@
+quantities.dimensions.LumFlux
+=============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: LumFlux
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LumFlux.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~LumFlux.dimensionality
+      ~LumFlux.is_negative
+      ~LumFlux.is_positive
+      ~LumFlux.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LumFlux.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~LumFlux.__init__
+      ~LumFlux.a
+      ~LumFlux.an
+      ~LumFlux.as_dimensionality
+      ~LumFlux.as_number
+      ~LumFlux.as_unit
+      ~LumFlux.as_unit_expr
+      ~LumFlux.base_unit
+      ~LumFlux.cast
+      ~LumFlux.check_dimensionality
+      ~LumFlux.decomposed
+      ~LumFlux.divide_by
+      ~LumFlux.has_dimensionality
+      ~LumFlux.in_denom
+      ~LumFlux.in_units
+      ~LumFlux.is_close_to
+      ~LumFlux.multiply_by
+      ~LumFlux.of
+      ~LumFlux.ratio
+      ~LumFlux.restricted
+      ~LumFlux.to_power
+      ~LumFlux.unit
+   
+   
+   

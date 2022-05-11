@@ -1,0 +1,43 @@
+typing.Annotated
+================
+
+.. currentmodule:: typing
+
+.. autoclass:: Annotated
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Annotated.__init__
+   
+   
+   

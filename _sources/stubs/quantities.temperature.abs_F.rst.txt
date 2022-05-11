@@ -1,0 +1,6 @@
+quantities.temperature.abs\_F
+=============================
+
+.. currentmodule:: quantities.temperature
+
+.. autodata:: abs_F

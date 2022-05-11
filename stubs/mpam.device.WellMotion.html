@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.device.WellMotion &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.device.WellPad" href="mpam.device.WellPad.html" />
+    <link rel="prev" title="mpam.device.WellGate" href="mpam.device.WellGate.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.device.html">mpam.device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.T.html">mpam.device.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BC.html">mpam.device.BC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.transitions_from.html">mpam.device.transitions_from</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Batch.html">mpam.device.Batch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BinaryComponent.html">mpam.device.BinaryComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Board.html">mpam.device.Board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BoardComponent.html">mpam.device.BoardComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ChangeJournal.html">mpam.device.ChangeJournal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Clock.html">mpam.device.Clock</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.DispenseGroup.html">mpam.device.DispenseGroup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.DropLoc.html">mpam.device.DropLoc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ExtractionPoint.html">mpam.device.ExtractionPoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.GateStatus.html">mpam.device.GateStatus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Heater.html">mpam.device.Heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.HeatingMode.html">mpam.device.HeatingMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.LocatedPad.html">mpam.device.LocatedPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Magnet.html">mpam.device.Magnet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Pad.html">mpam.device.Pad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PipettingTarget.html">mpam.device.PipettingTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ProductLocation.html">mpam.device.ProductLocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.System.html">mpam.device.System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.SystemComponent.html">mpam.device.SystemComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.UserOperation.html">mpam.device.UserOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Well.html">mpam.device.Well</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellGate.html">mpam.device.WellGate</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.device.WellMotion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellPad.html">mpam.device.WellPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellShape.html">mpam.device.WellShape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellState.html">mpam.device.WellState</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.device.html">mpam.device</a> &raquo;</li>
+      <li>mpam.device.WellMotion</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.device.WellMotion.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-device-wellmotion">
+<h1>mpam.device.WellMotion<a class="headerlink" href="#mpam-device-wellmotion" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.WellMotion">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">WellMotion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">well</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><span class="pre">WellState</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guard</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.WellMotion" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A transition of (as subset of) the <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s in a
+<a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup" title="mpam.device.DispenseGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">DispenseGroup</span></code></a> to a target <a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellState</span></code></a>.</p>
+<p>The hard work is done by <a class="reference internal" href="#mpam.device.WellMotion.iterator" title="mpam.device.WellMotion.iterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">iterator()</span></code></a>.  This is intended to be used as
+it is in <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.TransitionTo" title="mpam.device.Well.TransitionTo"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well.TransitionTo</span></code></a></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">motion</span> <span class="o">=</span> <span class="n">WellMotion</span><span class="p">(</span><span class="n">well</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">post_result</span><span class="o">=</span><span class="n">post_result</span><span class="p">,</span> <span class="n">guard</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">guard</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">before_tick</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">Ticks</span><span class="p">]]:</span>
+    <span class="n">iterator</span> <span class="o">=</span> <span class="n">motion</span><span class="o">.</span><span class="n">iterator</span><span class="p">()</span>
+    <span class="n">one_tick</span> <span class="o">=</span> <span class="mi">1</span><span class="o">*</span><span class="n">tick</span>
+    <span class="k">while</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">one_tick</span>
+    <span class="k">yield</span> <span class="kc">None</span>
+<span class="n">iterator</span> <span class="o">=</span> <span class="n">before_tick</span><span class="p">()</span>
+<span class="n">board</span><span class="o">.</span><span class="n">before_tick</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">),</span> <span class="n">delta</span><span class="o">=</span><span class="n">after</span><span class="p">)</span>
+<span class="k">return</span> <span class="n">motion</span><span class="o">.</span><span class="n">initial_future</span>
+</pre></div>
+</div>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellMotion.group" title="mpam.device.WellMotion.group"><code class="xref py py-obj docutils literal notranslate"><span class="pre">group</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup" title="mpam.device.DispenseGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">DispenseGroup</span></code></a> being moved</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellMotion.board" title="mpam.device.WellMotion.board"><code class="xref py py-obj docutils literal notranslate"><span class="pre">board</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><code class="xref py py-class docutils literal notranslate"><span class="pre">Board</span></code></a> of the <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellMotion.target" title="mpam.device.WellMotion.target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">target</span></code></a></p></td>
+<td><p>The target <a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellState</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellMotion.initial_future" title="mpam.device.WellMotion.initial_future"><code class="xref py py-obj docutils literal notranslate"><span class="pre">initial_future</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object we were created with</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellMotion.futures" title="mpam.device.WellMotion.futures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">futures</span></code></a></p></td>
+<td><p>A list of pairs of <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a> values and future to post the values to upon completion</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellMotion.well_gates" title="mpam.device.WellMotion.well_gates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">well_gates</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.gate" title="mpam.device.Well.gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gate</span></code></a>s of the <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellMotion.shared_pads" title="mpam.device.WellMotion.shared_pads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shared_pads</span></code></a></p></td>
+<td><p>The internal <a class="reference internal" href="mpam.device.WellPad.html#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>s of the initial <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellMotion.guard" title="mpam.device.WellMotion.guard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">guard</span></code></a></p></td>
+<td><p>An optional <code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code> that yields <code class="docutils literal notranslate"><span class="pre">False</span></code> when it's safe to proceed</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellMotion.gate_status" title="mpam.device.WellMotion.gate_status"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gate_status</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.device.GateStatus.html#mpam.device.GateStatus" title="mpam.device.GateStatus"><code class="xref py py-class docutils literal notranslate"><span class="pre">GateStatus</span></code></a> of the <a class="reference internal" href="#mpam.device.WellMotion.well_gates" title="mpam.device.WellMotion.well_gates"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well_gates</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellMotion.__init__" title="mpam.device.WellMotion.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(well, target, *[, guard, post_result])</p></td>
+<td><p>Initialize the object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellMotion.iterator" title="mpam.device.WellMotion.iterator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">iterator</span></code></a>()</p></td>
+<td><p>Take one or more <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s to the <a class="reference internal" href="#mpam.device.WellMotion.target" title="mpam.device.WellMotion.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> <a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellState</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.WellMotion.post_futures" title="mpam.device.WellMotion.post_futures"><code class="xref py py-obj docutils literal notranslate"><span class="pre">post_futures</span></code></a>()</p></td>
+<td><p>Walk through <a class="reference internal" href="#mpam.device.WellMotion.futures" title="mpam.device.WellMotion.futures"><code class="xref py py-attr docutils literal notranslate"><span class="pre">futures</span></code></a> and post <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s to their respective <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> objects.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.WellMotion.try_adopt" title="mpam.device.WellMotion.try_adopt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">try_adopt</span></code></a>(other)</p></td>
+<td><p>Try to adopt another <a class="reference internal" href="#mpam.device.WellMotion" title="mpam.device.WellMotion"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellMotion</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">well</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><span class="pre">WellState</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guard</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.WellMotion.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>well</strong> – the first <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a></p></li>
+<li><p><strong>target</strong> – the target <a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellState</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>guard</strong> – an optional <code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code> that yields <code class="docutils literal notranslate"><span class="pre">False</span></code> when it’s
+safe to proceed post_result:</p></li>
+<li><p><strong>post_result</strong> – whether to post <code class="docutils literal notranslate"><span class="pre">well</span></code> to <a class="reference internal" href="#mpam.device.WellMotion.initial_future" title="mpam.device.WellMotion.initial_future"><code class="xref py py-attr docutils literal notranslate"><span class="pre">initial_future</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.board">
+<span class="sig-name descname"><span class="pre">board</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.board" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><code class="xref py py-class docutils literal notranslate"><span class="pre">Board</span></code></a> of the <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.futures">
+<span class="sig-name descname"><span class="pre">futures</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">mpam.device.Well</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Postable.html#mpam.types.Postable" title="mpam.types.Postable"><span class="pre">mpam.types.Postable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">mpam.device.Well</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.futures" title="Permalink to this definition"></a></dt>
+<dd><p>A list of pairs of <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a> values and future to post the values to
+upon completion</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.gate_status">
+<span class="sig-name descname"><span class="pre">gate_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.device.GateStatus.html#mpam.device.GateStatus" title="mpam.device.GateStatus"><span class="pre">mpam.device.GateStatus</span></a></em><a class="headerlink" href="#mpam.device.WellMotion.gate_status" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.device.GateStatus.html#mpam.device.GateStatus" title="mpam.device.GateStatus"><code class="xref py py-class docutils literal notranslate"><span class="pre">GateStatus</span></code></a> of the <a class="reference internal" href="#mpam.device.WellMotion.well_gates" title="mpam.device.WellMotion.well_gates"><code class="xref py py-attr docutils literal notranslate"><span class="pre">well_gates</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.group">
+<span class="sig-name descname"><span class="pre">group</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup" title="mpam.device.DispenseGroup"><span class="pre">mpam.device.DispenseGroup</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.group" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup" title="mpam.device.DispenseGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">DispenseGroup</span></code></a> being moved</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.guard">
+<span class="sig-name descname"><span class="pre">guard</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.guard" title="Permalink to this definition"></a></dt>
+<dd><p>An optional <code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code> that yields <code class="docutils literal notranslate"><span class="pre">False</span></code> when it’s safe to proceed</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.initial_future">
+<span class="sig-name descname"><span class="pre">initial_future</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">mpam.device.Well</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.initial_future" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object we were created with</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.iterator">
+<span class="sig-name descname"><span class="pre">iterator</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.device.WellMotion.iterator" title="Permalink to this definition"></a></dt>
+<dd><p>Take one or more <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s to the <a class="reference internal" href="#mpam.device.WellMotion.target" title="mpam.device.WellMotion.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>
+<a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellState</span></code></a>.  Yields <code class="docutils literal notranslate"><span class="pre">True`</span> <span class="pre">whenever</span> <span class="pre">it</span> <span class="pre">should</span> <span class="pre">be</span> <span class="pre">asked</span> <span class="pre">to</span>
+<span class="pre">continue</span> <span class="pre">before</span> <span class="pre">the</span> <span class="pre">next</span> <span class="pre">clock</span> <span class="pre">tick.</span>&#160; <span class="pre">Yields</span> <span class="pre">``False</span></code> if either it has
+finished or it has been adopted by another in-progress
+<a class="reference internal" href="#mpam.device.WellMotion" title="mpam.device.WellMotion"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellMotion</span></code></a>.  If it has finished, before yielding, it schedules
+calling <a class="reference internal" href="#mpam.device.WellMotion.post_futures" title="mpam.device.WellMotion.post_futures"><code class="xref py py-func docutils literal notranslate"><span class="pre">post_futures()</span></code></a> after the current tick.</p>
+<p>The basic procedure is:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Wait (yielding <code class="docutils literal notranslate"><span class="pre">True</span></code>) for any <a class="reference internal" href="#mpam.device.WellMotion.guard" title="mpam.device.WellMotion.guard"><code class="xref py py-attr docutils literal notranslate"><span class="pre">guard</span></code></a> to signal that it
+is safe to proceed.</p></li>
+<li><p>If the <a class="reference internal" href="#mpam.device.WellMotion.group" title="mpam.device.WellMotion.group"><code class="xref py py-attr docutils literal notranslate"><span class="pre">group</span></code></a> has a <a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup.motion" title="mpam.device.DispenseGroup.motion"><code class="xref py py-attr docutils literal notranslate"><span class="pre">motion</span></code></a>, see if
+it can adopt us.  If we can, yield <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p>If it can’t, try again next tick.</p></li>
+<li><p>If there is no <a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup.motion" title="mpam.device.DispenseGroup.motion"><code class="xref py py-attr docutils literal notranslate"><span class="pre">motion</span></code></a> in the
+<a class="reference internal" href="#mpam.device.WellMotion.group" title="mpam.device.WellMotion.group"><code class="xref py py-attr docutils literal notranslate"><span class="pre">group</span></code></a>, set ourselves to be it.</p></li>
+<li><p>Grab a <a class="reference internal" href="mpam.device.html#mpam.device.WellOpStepSeq" title="mpam.device.WellOpStepSeq"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellOpStepSeq</span></code></a> using the <a class="reference internal" href="#mpam.device.WellMotion.group" title="mpam.device.WellMotion.group"><code class="xref py py-attr docutils literal notranslate"><span class="pre">group</span></code></a>’s
+<a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup.transition_func" title="mpam.device.DispenseGroup.transition_func"><code class="xref py py-attr docutils literal notranslate"><span class="pre">transition_func</span></code></a>.</p></li>
+<li><p>Walk through each <a class="reference internal" href="mpam.device.html#mpam.device.WellOpStep" title="mpam.device.WellOpStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellOpStep</span></code></a> in the sequence, setting
+pads to their stated values and updating <a class="reference internal" href="#mpam.device.WellMotion.gate_status" title="mpam.device.WellMotion.gate_status"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gate_status</span></code></a>.</p>
+<ul class="simple">
+<li><p>At any point here, another <a class="reference internal" href="#mpam.device.WellMotion" title="mpam.device.WellMotion"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellMotion</span></code></a> may call
+<a class="reference internal" href="#mpam.device.WellMotion.try_adopt" title="mpam.device.WellMotion.try_adopt"><code class="xref py py-func docutils literal notranslate"><span class="pre">try_adopt()</span></code></a> on us to get us to adopt them.</p></li>
+</ul>
+</li>
+<li><p>When we are done, schedule calling <a class="reference internal" href="#mpam.device.WellMotion.post_futures" title="mpam.device.WellMotion.post_futures"><code class="xref py py-func docutils literal notranslate"><span class="pre">post_futures()</span></code></a> for after
+the next clock tick and yield <code class="docutils literal notranslate"><span class="pre">False</span></code> to signal that we’re done.</p></li>
+</ol>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>self</strong> – </p>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the next value should be computed before the next clock
+tick, <code class="docutils literal notranslate"><span class="pre">False</span></code> if the motion is complete (or has been adopted)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.post_futures">
+<span class="sig-name descname"><span class="pre">post_futures</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.WellMotion.post_futures" title="Permalink to this definition"></a></dt>
+<dd><p>Walk through <a class="reference internal" href="#mpam.device.WellMotion.futures" title="mpam.device.WellMotion.futures"><code class="xref py py-attr docutils literal notranslate"><span class="pre">futures</span></code></a> and post <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s to their
+respective <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> objects.</p>
+<p>Note that if <code class="docutils literal notranslate"><span class="pre">post_result</span></code> was <code class="docutils literal notranslate"><span class="pre">False</span></code> for a <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>, nothing
+would be added to <a class="reference internal" href="#mpam.device.WellMotion.futures" title="mpam.device.WellMotion.futures"><code class="xref py py-attr docutils literal notranslate"><span class="pre">futures</span></code></a> for that <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.shared_pads">
+<span class="sig-name descname"><span class="pre">shared_pads</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.WellPad.html#mpam.device.WellPad" title="mpam.device.WellPad"><span class="pre">mpam.device.WellPad</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.shared_pads" title="Permalink to this definition"></a></dt>
+<dd><p>The internal <a class="reference internal" href="mpam.device.WellPad.html#mpam.device.WellPad" title="mpam.device.WellPad"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellPad</span></code></a>s of the initial <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><span class="pre">mpam.device.WellState</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.target" title="Permalink to this definition"></a></dt>
+<dd><p>The target <a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState" title="mpam.device.WellState"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellState</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.try_adopt">
+<span class="sig-name descname"><span class="pre">try_adopt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mpam.device.WellMotion" title="mpam.device.WellMotion"><span class="pre">WellMotion</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#mpam.device.WellMotion.try_adopt" title="Permalink to this definition"></a></dt>
+<dd><p>Try to adopt another <a class="reference internal" href="#mpam.device.WellMotion" title="mpam.device.WellMotion"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellMotion</span></code></a>.  If successful, <code class="docutils literal notranslate"><span class="pre">other</span></code>’s
+<a class="reference internal" href="#mpam.device.WellMotion.iterator" title="mpam.device.WellMotion.iterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">iterator()</span></code></a> will yield <code class="docutils literal notranslate"><span class="pre">False</span></code>, signalling that it is done, but
+its <a class="reference internal" href="#mpam.device.WellMotion.initial_future" title="mpam.device.WellMotion.initial_future"><code class="xref py py-attr docutils literal notranslate"><span class="pre">initial_future</span></code></a> will not get a value posted until we call
+<a class="reference internal" href="#mpam.device.WellMotion.post_futures" title="mpam.device.WellMotion.post_futures"><code class="xref py py-func docutils literal notranslate"><span class="pre">post_futures()</span></code></a>.</p>
+<p>This is called from within <a class="reference internal" href="#mpam.device.WellMotion.iterator" title="mpam.device.WellMotion.iterator"><code class="xref py py-func docutils literal notranslate"><span class="pre">iterator()</span></code></a>, with <a class="reference internal" href="#mpam.device.WellMotion.group" title="mpam.device.WellMotion.group"><code class="xref py py-attr docutils literal notranslate"><span class="pre">group</span></code></a>’s
+<a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup.lock" title="mpam.device.DispenseGroup.lock"><code class="xref py py-attr docutils literal notranslate"><span class="pre">lock</span></code></a> locked:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>after any <a class="reference internal" href="#mpam.device.WellMotion.guard" title="mpam.device.WellMotion.guard"><code class="xref py py-attr docutils literal notranslate"><span class="pre">guard</span></code></a> has yielded <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p>after it has been determined that the <a class="reference internal" href="#mpam.device.WellMotion.group" title="mpam.device.WellMotion.group"><code class="xref py py-attr docutils literal notranslate"><span class="pre">group</span></code></a>’s
+<a class="reference internal" href="mpam.device.DispenseGroup.html#mpam.device.DispenseGroup.motion" title="mpam.device.DispenseGroup.motion"><code class="xref py py-attr docutils literal notranslate"><span class="pre">motion</span></code></a> is this <a class="reference internal" href="#mpam.device.WellMotion" title="mpam.device.WellMotion"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellMotion</span></code></a>.</p></li>
+</ul>
+</div></blockquote>
+<p><a class="reference internal" href="#mpam.device.WellMotion.try_adopt" title="mpam.device.WellMotion.try_adopt"><code class="xref py py-func docutils literal notranslate"><span class="pre">try_adopt()</span></code></a> will fail if</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>the two values of <a class="reference internal" href="#mpam.device.WellMotion.target" title="mpam.device.WellMotion.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> do not match or</p></li>
+<li><p>our <a class="reference internal" href="#mpam.device.WellMotion.gate_status" title="mpam.device.WellMotion.gate_status"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gate_status</span></code></a> is <a class="reference internal" href="mpam.device.GateStatus.html#mpam.device.GateStatus.UNSAFE" title="mpam.device.GateStatus.UNSAFE"><code class="xref py py-attr docutils literal notranslate"><span class="pre">UNSAFE</span></code></a> or</p></li>
+<li><p>the target is <a class="reference internal" href="mpam.device.WellState.html#mpam.device.WellState.DISPENSED" title="mpam.device.WellState.DISPENSED"><code class="xref py py-attr docutils literal notranslate"><span class="pre">DISPENSED</span></code></a> and we are already
+working on the other’s <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>.</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>other</strong> – the other <a class="reference internal" href="#mpam.device.WellMotion" title="mpam.device.WellMotion"><code class="xref py py-class docutils literal notranslate"><span class="pre">WellMotion</span></code></a></p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if we successfully adopted</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.WellMotion.well_gates">
+<span class="sig-name descname"><span class="pre">well_gates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.WellGate.html#mpam.device.WellGate" title="mpam.device.WellGate"><span class="pre">mpam.device.WellGate</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.WellMotion.well_gates" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well.gate" title="mpam.device.Well.gate"><code class="xref py py-attr docutils literal notranslate"><span class="pre">gate</span></code></a>s of the <a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><code class="xref py py-class docutils literal notranslate"><span class="pre">Well</span></code></a>s</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.device.WellGate.html" class="btn btn-neutral float-left" title="mpam.device.WellGate" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.device.WellPad.html" class="btn btn-neutral float-right" title="mpam.device.WellPad" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

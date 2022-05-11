@@ -1,0 +1,6 @@
+typing.cast
+===========
+
+.. currentmodule:: typing
+
+.. autofunction:: cast

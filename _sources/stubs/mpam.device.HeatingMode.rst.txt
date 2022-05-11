@@ -1,0 +1,58 @@
+mpam.device.HeatingMode
+=======================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: HeatingMode
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~HeatingMode.OFF
+      ~HeatingMode.MAINTAINING
+      ~HeatingMode.HEATING
+      ~HeatingMode.COOLING
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

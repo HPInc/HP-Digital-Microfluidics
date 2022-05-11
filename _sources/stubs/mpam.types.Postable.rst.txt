@@ -1,0 +1,138 @@
+mpam.types.Postable
+===================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Postable
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Postable.has_value
+      ~Postable.value
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Postable.post
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Postable.__init__
+      ~Postable.and_wait
+      ~Postable.chain
+      ~Postable.complete
+      ~Postable.join
+      ~Postable.peek
+      ~Postable.post_to
+      ~Postable.post_transformed_to
+      ~Postable.post_val_to
+      ~Postable.then_call
+      ~Postable.then_schedule
+      ~Postable.then_trigger
+      ~Postable.transformed
+      ~Postable.wait
+      ~Postable.when_value
+   
+   
+   

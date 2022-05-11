@@ -1,0 +1,68 @@
+mpam.engine.Worker
+==================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: Worker
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Worker.is_idle
+      ~Worker.idle_barrier
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Worker.__init__
+      ~Worker.idle
+      ~Worker.not_idle
+   
+   
+   
+
+   
+   
+   
+   

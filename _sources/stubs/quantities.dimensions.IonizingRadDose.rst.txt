@@ -1,0 +1,193 @@
+quantities.dimensions.IonizingRadDose
+=====================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: IonizingRadDose
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~IonizingRadDose.derived
+      ~IonizingRadDose.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~IonizingRadDose.dimensionality
+      ~IonizingRadDose.is_negative
+      ~IonizingRadDose.is_positive
+      ~IonizingRadDose.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~IonizingRadDose.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~IonizingRadDose.__init__
+      ~IonizingRadDose.a
+      ~IonizingRadDose.an
+      ~IonizingRadDose.as_dimensionality
+      ~IonizingRadDose.as_number
+      ~IonizingRadDose.as_unit
+      ~IonizingRadDose.as_unit_expr
+      ~IonizingRadDose.cast
+      ~IonizingRadDose.check_dimensionality
+      ~IonizingRadDose.decomposed
+      ~IonizingRadDose.divide_by
+      ~IonizingRadDose.has_dimensionality
+      ~IonizingRadDose.in_denom
+      ~IonizingRadDose.in_units
+      ~IonizingRadDose.is_close_to
+      ~IonizingRadDose.multiply_by
+      ~IonizingRadDose.of
+      ~IonizingRadDose.ratio
+      ~IonizingRadDose.restricted
+      ~IonizingRadDose.to_power
+      ~IonizingRadDose.unit
+   
+   
+   

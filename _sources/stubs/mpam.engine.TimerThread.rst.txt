@@ -1,0 +1,213 @@
+mpam.engine.TimerThread
+=======================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: TimerThread
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TimerThread.condition
+      ~TimerThread.queue
+      ~TimerThread.timer
+      ~TimerThread.n_daemons
+      ~TimerThread.engine
+      ~TimerThread.state
+      ~TimerThread.lock
+      ~TimerThread.idle_barrier
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~TimerThread.daemon
+      ~TimerThread.ident
+      ~TimerThread.is_idle
+      ~TimerThread.name
+      ~TimerThread.native_id
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TimerThread.__init__
+      ~TimerThread.call_after
+      ~TimerThread.call_at
+      ~TimerThread.run
+      ~TimerThread.wake_up
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~TimerThread.abort_requested
+      ~TimerThread.ensure_running
+      ~TimerThread.getName
+      ~TimerThread.idle
+      ~TimerThread.isDaemon
+      ~TimerThread.is_alive
+      ~TimerThread.join
+      ~TimerThread.not_idle
+      ~TimerThread.print_exception
+      ~TimerThread.request_abort
+      ~TimerThread.request_stop
+      ~TimerThread.setDaemon
+      ~TimerThread.setName
+      ~TimerThread.start
+   
+   
+   

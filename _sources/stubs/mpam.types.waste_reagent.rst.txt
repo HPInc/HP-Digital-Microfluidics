@@ -1,0 +1,6 @@
+mpam.types.waste\_reagent
+=========================
+
+.. currentmodule:: mpam.types
+
+.. autodata:: waste_reagent

@@ -1,0 +1,48 @@
+mpam.engine.Updatable
+=====================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: Updatable
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Updatable.__init__
+      ~Updatable.update_state
+   
+   
+   
+
+   
+   
+   
+   

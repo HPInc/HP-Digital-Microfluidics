@@ -1,0 +1,88 @@
+mpam.monitor.ClickHandler
+=========================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: ClickHandler
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ClickHandler.monitor
+      ~ClickHandler.lock
+      ~ClickHandler.scheduled
+      ~ClickHandler.changes
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ClickHandler.__init__
+      ~ClickHandler.prepare
+      ~ClickHandler.process_click
+      ~ClickHandler.process_shift_clicl
+      ~ClickHandler.run
+   
+   
+   
+
+   
+   
+   
+   

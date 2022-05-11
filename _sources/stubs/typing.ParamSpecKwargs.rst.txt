@@ -1,0 +1,43 @@
+typing.ParamSpecKwargs
+======================
+
+.. currentmodule:: typing
+
+.. autoclass:: ParamSpecKwargs
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ParamSpecKwargs.__init__
+   
+   
+   
+
+   
+   
+   
+   

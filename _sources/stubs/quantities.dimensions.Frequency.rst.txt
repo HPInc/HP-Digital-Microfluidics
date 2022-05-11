@@ -1,0 +1,193 @@
+quantities.dimensions.Frequency
+===============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Frequency
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Frequency.derived
+      ~Frequency.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Frequency.dimensionality
+      ~Frequency.is_negative
+      ~Frequency.is_positive
+      ~Frequency.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Frequency.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Frequency.__init__
+      ~Frequency.a
+      ~Frequency.an
+      ~Frequency.as_dimensionality
+      ~Frequency.as_number
+      ~Frequency.as_unit
+      ~Frequency.as_unit_expr
+      ~Frequency.cast
+      ~Frequency.check_dimensionality
+      ~Frequency.decomposed
+      ~Frequency.divide_by
+      ~Frequency.has_dimensionality
+      ~Frequency.in_denom
+      ~Frequency.in_units
+      ~Frequency.is_close_to
+      ~Frequency.multiply_by
+      ~Frequency.of
+      ~Frequency.ratio
+      ~Frequency.restricted
+      ~Frequency.to_power
+      ~Frequency.unit
+   
+   
+   

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>threading &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="threading.RLock" href="threading.RLock.html" />
+    <link rel="prev" title="quantities.US" href="quantities.US.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">threading</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="threading.RLock.html">threading.RLock</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.activeCount.html">threading.activeCount</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.active_count.html">threading.active_count</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.currentThread.html">threading.currentThread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.current_thread.html">threading.current_thread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.enumerate.html">threading.enumerate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.getprofile.html">threading.getprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.gettrace.html">threading.gettrace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.main_thread.html">threading.main_thread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.setprofile.html">threading.setprofile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.settrace.html">threading.settrace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Barrier.html">threading.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.BoundedSemaphore.html">threading.BoundedSemaphore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Condition.html">threading.Condition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Event.html">threading.Event</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Semaphore.html">threading.Semaphore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Thread.html">threading.Thread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.Timer.html">threading.Timer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="threading.BrokenBarrierError.html">threading.BrokenBarrierError</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>threading</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/threading.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-threading">
+<span id="threading"></span><h1>threading<a class="headerlink" href="#module-threading" title="Permalink to this headline"></a></h1>
+<p>Thread module emulating a subset of Java’s threading model.</p>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.RLock.html#threading.RLock" title="threading.RLock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RLock</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Factory function that returns a new reentrant lock.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.activeCount.html#threading.activeCount" title="threading.activeCount"><code class="xref py py-obj docutils literal notranslate"><span class="pre">activeCount</span></code></a>()</p></td>
+<td><p>Return the number of Thread objects currently alive.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.active_count.html#threading.active_count" title="threading.active_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">active_count</span></code></a>()</p></td>
+<td><p>Return the number of Thread objects currently alive.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.currentThread.html#threading.currentThread" title="threading.currentThread"><code class="xref py py-obj docutils literal notranslate"><span class="pre">currentThread</span></code></a>()</p></td>
+<td><p>Return the current Thread object, corresponding to the caller's thread of control.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.current_thread.html#threading.current_thread" title="threading.current_thread"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_thread</span></code></a>()</p></td>
+<td><p>Return the current Thread object, corresponding to the caller's thread of control.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.enumerate.html#threading.enumerate" title="threading.enumerate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enumerate</span></code></a>()</p></td>
+<td><p>Return a list of all Thread objects currently alive.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.getprofile.html#threading.getprofile" title="threading.getprofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getprofile</span></code></a>()</p></td>
+<td><p>Get the profiler function as set by threading.setprofile().</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.gettrace.html#threading.gettrace" title="threading.gettrace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gettrace</span></code></a>()</p></td>
+<td><p>Get the trace function as set by threading.settrace().</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.main_thread.html#threading.main_thread" title="threading.main_thread"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main_thread</span></code></a>()</p></td>
+<td><p>Return the main thread object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.setprofile.html#threading.setprofile" title="threading.setprofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setprofile</span></code></a>(func)</p></td>
+<td><p>Set a profile function for all threads started from the threading module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.settrace.html#threading.settrace" title="threading.settrace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">settrace</span></code></a>(func)</p></td>
+<td><p>Set a trace function for all threads started from the threading module.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.Barrier.html#threading.Barrier" title="threading.Barrier"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Barrier</span></code></a>(parties[, action, timeout])</p></td>
+<td><p>Implements a Barrier.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.BoundedSemaphore.html#threading.BoundedSemaphore" title="threading.BoundedSemaphore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BoundedSemaphore</span></code></a>([value])</p></td>
+<td><p>Implements a bounded semaphore.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.Condition.html#threading.Condition" title="threading.Condition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Condition</span></code></a>([lock])</p></td>
+<td><p>Class that implements a condition variable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.Event.html#threading.Event" title="threading.Event"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Event</span></code></a>()</p></td>
+<td><p>Class implementing event objects.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.Semaphore.html#threading.Semaphore" title="threading.Semaphore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Semaphore</span></code></a>([value])</p></td>
+<td><p>This class implements semaphore objects.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="threading.Thread.html#threading.Thread" title="threading.Thread"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Thread</span></code></a>([group, target, name, args, kwargs, ...])</p></td>
+<td><p>A class that represents a thread of control.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.Timer.html#threading.Timer" title="threading.Timer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Timer</span></code></a>(interval, function[, args, kwargs])</p></td>
+<td><p>Call a function after a specified number of seconds:</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Exceptions</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="threading.BrokenBarrierError.html#threading.BrokenBarrierError" title="threading.BrokenBarrierError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BrokenBarrierError</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.Barrier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Barrier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Barrier" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Implements a Barrier.</p>
+<p>Useful for synchronizing a fixed number of threads at known synchronization
+points.  Threads block on ‘wait()’ and are simultaneously awoken once they
+have all made that call.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Barrier.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Barrier.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Create a barrier, initialised to ‘parties’ threads.</p>
+<p>‘action’ is a callable which, when supplied, will be called by one of
+the threads after they have all entered the barrier and just prior to
+releasing them all. If a ‘timeout’ is provided, it is used as the
+default for all subsequent ‘wait()’ calls.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Barrier.abort">
+<span class="sig-name descname"><span class="pre">abort</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Barrier.abort" title="Permalink to this definition"></a></dt>
+<dd><p>Place the barrier into a ‘broken’ state.</p>
+<p>Useful in case of error.  Any currently waiting threads and threads
+attempting to ‘wait()’ will have BrokenBarrierError raised.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="threading.Barrier.broken">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">broken</span></span><a class="headerlink" href="#threading.Barrier.broken" title="Permalink to this definition"></a></dt>
+<dd><p>Return True if the barrier is in a broken state.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="threading.Barrier.n_waiting">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_waiting</span></span><a class="headerlink" href="#threading.Barrier.n_waiting" title="Permalink to this definition"></a></dt>
+<dd><p>Return the number of threads currently waiting at the barrier.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="threading.Barrier.parties">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parties</span></span><a class="headerlink" href="#threading.Barrier.parties" title="Permalink to this definition"></a></dt>
+<dd><p>Return the number of threads required to trip the barrier.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Barrier.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Barrier.reset" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the barrier to the initial state.</p>
+<p>Any threads currently waiting will get the BrokenBarrier exception
+raised.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Barrier.wait">
+<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Barrier.wait" title="Permalink to this definition"></a></dt>
+<dd><p>Wait for the barrier.</p>
+<p>When the specified number of threads have started waiting, they are all
+simultaneously awoken. If an ‘action’ was provided for the barrier, one
+of the threads will have executed that callback prior to returning.
+Returns an individual index number from 0 to ‘parties-1’.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.BoundedSemaphore">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">BoundedSemaphore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.BoundedSemaphore" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="threading.Semaphore.html#threading.Semaphore" title="threading.Semaphore"><code class="xref py py-class docutils literal notranslate"><span class="pre">Semaphore</span></code></a></p>
+<p>Implements a bounded semaphore.</p>
+<p>A bounded semaphore checks to make sure its current value doesn’t exceed its
+initial value. If it does, ValueError is raised. In most situations
+semaphores are used to guard resources with limited capacity.</p>
+<p>If the semaphore is released too many times it’s a sign of a bug. If not
+given, value defaults to 1.</p>
+<p>Like regular semaphores, bounded semaphores manage a counter representing
+the number of release() calls minus the number of acquire() calls, plus an
+initial value. The acquire() method blocks if necessary until it can return
+without making the counter negative. If not given, value defaults to 1.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.BoundedSemaphore.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.BoundedSemaphore.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.BoundedSemaphore.release">
+<span class="sig-name descname"><span class="pre">release</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.BoundedSemaphore.release" title="Permalink to this definition"></a></dt>
+<dd><p>Release a semaphore, incrementing the internal counter by one or more.</p>
+<p>When the counter is zero on entry and another thread is waiting for it
+to become larger than zero again, wake up that thread.</p>
+<p>If the number of releases exceeds the number of acquires,
+raise a ValueError.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="threading.BrokenBarrierError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">BrokenBarrierError</span></span><a class="headerlink" href="#threading.BrokenBarrierError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.Condition">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Condition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class that implements a condition variable.</p>
+<p>A condition variable allows one or more threads to wait until they are
+notified by another thread.</p>
+<p>If the lock argument is given and not None, it must be a Lock or RLock
+object, and it is used as the underlying lock. Otherwise, a new RLock object
+is created and used as the underlying lock.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.notify">
+<span class="sig-name descname"><span class="pre">notify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.notify" title="Permalink to this definition"></a></dt>
+<dd><p>Wake up one or more threads waiting on this condition, if any.</p>
+<p>If the calling thread has not acquired the lock when this method is
+called, a RuntimeError is raised.</p>
+<p>This method wakes up at most n of the threads waiting for the condition
+variable; it is a no-op if no threads are waiting.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.notifyAll">
+<span class="sig-name descname"><span class="pre">notifyAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.notifyAll" title="Permalink to this definition"></a></dt>
+<dd><p>Wake up all threads waiting on this condition.</p>
+<p>This method is deprecated, use notify_all() instead.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.notify_all">
+<span class="sig-name descname"><span class="pre">notify_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.notify_all" title="Permalink to this definition"></a></dt>
+<dd><p>Wake up all threads waiting on this condition.</p>
+<p>If the calling thread has not acquired the lock when this method
+is called, a RuntimeError is raised.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.wait">
+<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.wait" title="Permalink to this definition"></a></dt>
+<dd><p>Wait until notified or until a timeout occurs.</p>
+<p>If the calling thread has not acquired the lock when this method is
+called, a RuntimeError is raised.</p>
+<p>This method releases the underlying lock, and then blocks until it is
+awakened by a notify() or notify_all() call for the same condition
+variable in another thread, or until the optional timeout occurs. Once
+awakened or timed out, it re-acquires the lock and returns.</p>
+<p>When the timeout argument is present and not None, it should be a
+floating point number specifying a timeout for the operation in seconds
+(or fractions thereof).</p>
+<p>When the underlying lock is an RLock, it is not released using its
+release() method, since this may not actually unlock the lock when it
+was acquired multiple times recursively. Instead, an internal interface
+of the RLock class is used, which really unlocks it even when it has
+been recursively acquired several times. Another internal interface is
+then used to restore the recursion level when the lock is reacquired.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Condition.wait_for">
+<span class="sig-name descname"><span class="pre">wait_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">predicate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Condition.wait_for" title="Permalink to this definition"></a></dt>
+<dd><p>Wait until a condition evaluates to True.</p>
+<p>predicate should be a callable which result will be interpreted as a
+boolean value.  A timeout may be provided giving the maximum time to
+wait.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.Event">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Event</span></span><a class="headerlink" href="#threading.Event" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class implementing event objects.</p>
+<p>Events manage a flag that can be set to true with the set() method and reset
+to false with the clear() method. The wait() method blocks until the flag is
+true.  The flag is initially false.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Event.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Event.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Event.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Event.clear" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the internal flag to false.</p>
+<p>Subsequently, threads calling wait() will block until set() is called to
+set the internal flag to true again.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Event.isSet">
+<span class="sig-name descname"><span class="pre">isSet</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Event.isSet" title="Permalink to this definition"></a></dt>
+<dd><p>Return true if and only if the internal flag is true.</p>
+<p>This method is deprecated, use notify_all() instead.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Event.is_set">
+<span class="sig-name descname"><span class="pre">is_set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Event.is_set" title="Permalink to this definition"></a></dt>
+<dd><p>Return true if and only if the internal flag is true.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Event.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Event.set" title="Permalink to this definition"></a></dt>
+<dd><p>Set the internal flag to true.</p>
+<p>All threads waiting for it to become true are awakened. Threads
+that call wait() once the flag is true will not block at all.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Event.wait">
+<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Event.wait" title="Permalink to this definition"></a></dt>
+<dd><p>Block until the internal flag is true.</p>
+<p>If the internal flag is true on entry, return immediately. Otherwise,
+block until another thread calls set() to set the flag to true, or until
+the optional timeout occurs.</p>
+<p>When the timeout argument is present and not None, it should be a
+floating point number specifying a timeout for the operation in seconds
+(or fractions thereof).</p>
+<p>This method returns the internal flag on exit, so it will always return
+True except if a timeout is given and the operation times out.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="threading.ExceptHookArgs">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">ExceptHookArgs</span></span><a class="headerlink" href="#threading.ExceptHookArgs" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">_ExceptHookArgs</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.Lock">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Lock</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Lock" title="Permalink to this definition"></a></dt>
+<dd><p>allocate_lock() -&gt; lock object
+(allocate() is an obsolete synonym)</p>
+<p>Create a new lock object. See help(type(threading.Lock())) for
+information about locks.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.RLock">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">RLock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.RLock" title="Permalink to this definition"></a></dt>
+<dd><p>Factory function that returns a new reentrant lock.</p>
+<p>A reentrant lock must be released by the thread that acquired it. Once a
+thread has acquired a reentrant lock, the same thread may acquire it again
+without blocking; the thread must release it once for each time it has
+acquired it.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.Semaphore">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Semaphore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Semaphore" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class implements semaphore objects.</p>
+<p>Semaphores manage a counter representing the number of release() calls minus
+the number of acquire() calls, plus an initial value. The acquire() method
+blocks if necessary until it can return without making the counter
+negative. If not given, value defaults to 1.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Semaphore.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Semaphore.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Semaphore.acquire">
+<span class="sig-name descname"><span class="pre">acquire</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blocking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Semaphore.acquire" title="Permalink to this definition"></a></dt>
+<dd><p>Acquire a semaphore, decrementing the internal counter by one.</p>
+<p>When invoked without arguments: if the internal counter is larger than
+zero on entry, decrement it by one and return immediately. If it is zero
+on entry, block, waiting until some other thread has called release() to
+make it larger than zero. This is done with proper interlocking so that
+if multiple acquire() calls are blocked, release() will wake exactly one
+of them up. The implementation may pick one at random, so the order in
+which blocked threads are awakened should not be relied on. There is no
+return value in this case.</p>
+<p>When invoked with blocking set to true, do the same thing as when called
+without arguments, and return true.</p>
+<p>When invoked with blocking set to false, do not block. If a call without
+an argument would block, return false immediately; otherwise, do the
+same thing as when called without arguments, and return true.</p>
+<p>When invoked with a timeout other than None, it will block for at
+most timeout seconds.  If acquire does not complete successfully in
+that interval, return false.  Return true otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Semaphore.release">
+<span class="sig-name descname"><span class="pre">release</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Semaphore.release" title="Permalink to this definition"></a></dt>
+<dd><p>Release a semaphore, incrementing the internal counter by one or more.</p>
+<p>When the counter is zero on entry and another thread is waiting for it
+to become larger than zero again, wake up that thread.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.Thread">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Thread</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class that represents a thread of control.</p>
+<p>This class can be safely subclassed in a limited fashion. There are two ways
+to specify the activity: by passing a callable object to the constructor, or
+by overriding the run() method in a subclass.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>This constructor should always be called with keyword arguments. Arguments are:</p>
+<p><em>group</em> should be None; reserved for future extension when a ThreadGroup
+class is implemented.</p>
+<p><em>target</em> is the callable object to be invoked by the run()
+method. Defaults to None, meaning nothing is called.</p>
+<p><em>name</em> is the thread name. By default, a unique name is constructed of
+the form “Thread-N” where N is a small decimal number.</p>
+<p><em>args</em> is the argument tuple for the target invocation. Defaults to ().</p>
+<p><em>kwargs</em> is a dictionary of keyword arguments for the target
+invocation. Defaults to {}.</p>
+<p>If a subclass overrides the constructor, it must make sure to invoke
+the base class constructor (Thread.__init__()) before doing anything
+else to the thread.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="threading.Thread.daemon">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">daemon</span></span><a class="headerlink" href="#threading.Thread.daemon" title="Permalink to this definition"></a></dt>
+<dd><p>A boolean value indicating whether this thread is a daemon thread.</p>
+<p>This must be set before start() is called, otherwise RuntimeError is
+raised. Its initial value is inherited from the creating thread; the
+main thread is not a daemon thread and therefore all threads created in
+the main thread default to daemon = False.</p>
+<p>The entire Python program exits when only daemon threads are left.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.getName">
+<span class="sig-name descname"><span class="pre">getName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.getName" title="Permalink to this definition"></a></dt>
+<dd><p>Return a string used for identification purposes only.</p>
+<p>This method is deprecated, use the name attribute instead.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="threading.Thread.ident">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ident</span></span><a class="headerlink" href="#threading.Thread.ident" title="Permalink to this definition"></a></dt>
+<dd><p>Thread identifier of this thread or None if it has not been started.</p>
+<p>This is a nonzero integer. See the get_ident() function. Thread
+identifiers may be recycled when a thread exits and another thread is
+created. The identifier is available even after the thread has exited.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.isDaemon">
+<span class="sig-name descname"><span class="pre">isDaemon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.isDaemon" title="Permalink to this definition"></a></dt>
+<dd><p>Return whether this thread is a daemon.</p>
+<p>This method is deprecated, use the daemon attribute instead.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.is_alive">
+<span class="sig-name descname"><span class="pre">is_alive</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.is_alive" title="Permalink to this definition"></a></dt>
+<dd><p>Return whether the thread is alive.</p>
+<p>This method returns True just before the run() method starts until just
+after the run() method terminates. See also the module function
+enumerate().</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.join">
+<span class="sig-name descname"><span class="pre">join</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.join" title="Permalink to this definition"></a></dt>
+<dd><p>Wait until the thread terminates.</p>
+<p>This blocks the calling thread until the thread whose join() method is
+called terminates – either normally or through an unhandled exception
+or until the optional timeout occurs.</p>
+<p>When the timeout argument is present and not None, it should be a
+floating point number specifying a timeout for the operation in seconds
+(or fractions thereof). As join() always returns None, you must call
+is_alive() after join() to decide whether a timeout happened – if the
+thread is still alive, the join() call timed out.</p>
+<p>When the timeout argument is not present or None, the operation will
+block until the thread terminates.</p>
+<p>A thread can be join()ed many times.</p>
+<p>join() raises a RuntimeError if an attempt is made to join the current
+thread as that would cause a deadlock. It is also an error to join() a
+thread before it has been started and attempts to do so raises the same
+exception.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="threading.Thread.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#threading.Thread.name" title="Permalink to this definition"></a></dt>
+<dd><p>A string used for identification purposes only.</p>
+<p>It has no semantics. Multiple threads may be given the same name. The
+initial name is set by the constructor.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="threading.Thread.native_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">native_id</span></span><a class="headerlink" href="#threading.Thread.native_id" title="Permalink to this definition"></a></dt>
+<dd><p>Native integral thread ID of this thread, or None if it has not been started.</p>
+<p>This is a non-negative integer. See the get_native_id() function.
+This represents the Thread ID as reported by the kernel.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.run" title="Permalink to this definition"></a></dt>
+<dd><p>Method representing the thread’s activity.</p>
+<p>You may override this method in a subclass. The standard run() method
+invokes the callable object passed to the object’s constructor as the
+target argument, if any, with sequential and keyword arguments taken
+from the args and kwargs arguments, respectively.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.setDaemon">
+<span class="sig-name descname"><span class="pre">setDaemon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">daemonic</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.setDaemon" title="Permalink to this definition"></a></dt>
+<dd><p>Set whether this thread is a daemon.</p>
+<p>This method is deprecated, use the .daemon property instead.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.setName">
+<span class="sig-name descname"><span class="pre">setName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.setName" title="Permalink to this definition"></a></dt>
+<dd><p>Set the name string for this thread.</p>
+<p>This method is deprecated, use the name attribute instead.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Thread.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Thread.start" title="Permalink to this definition"></a></dt>
+<dd><p>Start the thread’s activity.</p>
+<p>It must be called at most once per thread object. It arranges for the
+object’s run() method to be invoked in a separate thread of control.</p>
+<p>This method will raise a RuntimeError if called more than once on the
+same thread object.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="threading.ThreadError">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">ThreadError</span></span><a class="headerlink" href="#threading.ThreadError" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="threading.Timer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Timer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Timer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="threading.Thread.html#threading.Thread" title="threading.Thread"><code class="xref py py-class docutils literal notranslate"><span class="pre">Thread</span></code></a></p>
+<p>Call a function after a specified number of seconds:</p>
+<p>t = Timer(30.0, f, args=None, kwargs=None)
+t.start()
+t.cancel()     # stop the timer’s action if it’s still waiting</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Timer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Timer.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>This constructor should always be called with keyword arguments. Arguments are:</p>
+<p><em>group</em> should be None; reserved for future extension when a ThreadGroup
+class is implemented.</p>
+<p><em>target</em> is the callable object to be invoked by the run()
+method. Defaults to None, meaning nothing is called.</p>
+<p><em>name</em> is the thread name. By default, a unique name is constructed of
+the form “Thread-N” where N is a small decimal number.</p>
+<p><em>args</em> is the argument tuple for the target invocation. Defaults to ().</p>
+<p><em>kwargs</em> is a dictionary of keyword arguments for the target
+invocation. Defaults to {}.</p>
+<p>If a subclass overrides the constructor, it must make sure to invoke
+the base class constructor (Thread.__init__()) before doing anything
+else to the thread.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Timer.cancel">
+<span class="sig-name descname"><span class="pre">cancel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Timer.cancel" title="Permalink to this definition"></a></dt>
+<dd><p>Stop the timer if it hasn’t finished yet.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="threading.Timer.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.Timer.run" title="Permalink to this definition"></a></dt>
+<dd><p>Method representing the thread’s activity.</p>
+<p>You may override this method in a subclass. The standard run() method
+invokes the callable object passed to the object’s constructor as the
+target argument, if any, with sequential and keyword arguments taken
+from the args and kwargs arguments, respectively.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.active_count">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">active_count</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.active_count" title="Permalink to this definition"></a></dt>
+<dd><p>Return the number of Thread objects currently alive.</p>
+<p>The returned count is equal to the length of the list returned by
+enumerate().</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.current_thread">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">current_thread</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.current_thread" title="Permalink to this definition"></a></dt>
+<dd><p>Return the current Thread object, corresponding to the caller’s thread of control.</p>
+<p>If the caller’s thread of control was not created through the threading
+module, a dummy thread object with limited functionality is returned.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.enumerate">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">enumerate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.enumerate" title="Permalink to this definition"></a></dt>
+<dd><p>Return a list of all Thread objects currently alive.</p>
+<p>The list includes daemonic threads, dummy thread objects created by
+current_thread(), and the main thread. It excludes terminated threads and
+threads that have not yet been started.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.excepthook">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">excepthook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exc_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exc_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exc_traceback</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thread</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.excepthook" title="Permalink to this definition"></a></dt>
+<dd><p>Handle uncaught Thread.run() exception.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.get_ident">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">get_ident</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">integer</span></span></span><a class="headerlink" href="#threading.get_ident" title="Permalink to this definition"></a></dt>
+<dd><p>Return a non-zero integer that uniquely identifies the current thread
+amongst other threads that exist simultaneously.
+This may be used to identify per-thread resources.
+Even though on some platforms threads identities may appear to be
+allocated consecutive numbers starting at 1, this behavior should not
+be relied upon, and the number should be seen purely as a magic cookie.
+A thread’s identity may be reused for another thread after it exits.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.get_native_id">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">get_native_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">integer</span></span></span><a class="headerlink" href="#threading.get_native_id" title="Permalink to this definition"></a></dt>
+<dd><p>Return a non-negative integer identifying the thread as reported
+by the OS (kernel). This may be used to uniquely identify a
+particular thread within a system.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.getprofile">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">getprofile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.getprofile" title="Permalink to this definition"></a></dt>
+<dd><p>Get the profiler function as set by threading.setprofile().</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.gettrace">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">gettrace</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.gettrace" title="Permalink to this definition"></a></dt>
+<dd><p>Get the trace function as set by threading.settrace().</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="threading.local">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">local</span></span><a class="headerlink" href="#threading.local" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">_local</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.main_thread">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">main_thread</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#threading.main_thread" title="Permalink to this definition"></a></dt>
+<dd><p>Return the main thread object.</p>
+<p>In normal conditions, the main thread is the thread from which the
+Python interpreter was started.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.setprofile">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">setprofile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.setprofile" title="Permalink to this definition"></a></dt>
+<dd><p>Set a profile function for all threads started from the threading module.</p>
+<p>The func will be passed to sys.setprofile() for each thread, before its
+run() method is called.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.settrace">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">settrace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.settrace" title="Permalink to this definition"></a></dt>
+<dd><p>Set a trace function for all threads started from the threading module.</p>
+<p>The func will be passed to sys.settrace() for each thread, before its run()
+method is called.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="threading.stack_size">
+<span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">stack_size</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em><span class="optional">]</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">size</span></span></span><a class="headerlink" href="#threading.stack_size" title="Permalink to this definition"></a></dt>
+<dd><p>Return the thread stack size used when creating new threads.  The
+optional size argument specifies the stack size (in bytes) to be used
+for subsequently created threads, and must be 0 (use platform or
+configured default) or a positive integer value of at least 32,768 (32k).
+If changing the thread stack size is unsupported, a ThreadError
+exception is raised.  If the specified size is invalid, a ValueError
+exception is raised, and the stack size is unmodified.  32k bytes</p>
+<blockquote>
+<div><p>currently the minimum supported stack size value to guarantee</p>
+</div></blockquote>
+<p>sufficient stack space for the interpreter itself.</p>
+<p>Note that some platforms may have particular restrictions on values for
+the stack size, such as requiring a minimum stack size larger than 32 KiB or
+requiring allocation in multiples of the system memory page size
+- platform documentation should be referred to for more information
+(4 KiB pages are common; using multiples of 4096 for the stack size is
+the suggested approach in the absence of more specific information).</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quantities.US.html" class="btn btn-neutral float-left" title="quantities.US" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="threading.RLock.html" class="btn btn-neutral float-right" title="threading.RLock" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

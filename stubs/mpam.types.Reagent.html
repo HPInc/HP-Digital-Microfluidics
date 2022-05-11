@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.types.Reagent &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.types.State" href="mpam.types.State.html" />
+    <link rel="prev" title="mpam.types.ProcessedReagent" href="mpam.types.ProcessedReagent.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.types.html">mpam.types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.T.html">mpam.types.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tco.html">mpam.types.Tco</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tcontra.html">mpam.types.Tcontra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_reagent.html">mpam.types.unknown_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.schedule.html">mpam.types.schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.AsyncFunctionSerializer.html">mpam.types.AsyncFunctionSerializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Barrier.html">mpam.types.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ChangeCallbackList.html">mpam.types.ChangeCallbackList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Chemical.html">mpam.types.Chemical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Color.html">mpam.types.Color</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ColorAllocator.html">mpam.types.ColorAllocator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedOperation.html">mpam.types.CombinedOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Orientation.html">mpam.types.Orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Postable.html">mpam.types.Postable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessStep.html">mpam.types.ProcessStep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessedReagent.html">mpam.types.ProcessedReagent</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.Reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.State.html">mpam.types.State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.StaticOperation.html">mpam.types.StaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.TickNumber.html">mpam.types.TickNumber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Ticks.html">mpam.types.Ticks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Trigger.html">mpam.types.Trigger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Turn.html">mpam.types.Turn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.UnknownConcentration.html">mpam.types.UnknownConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XYCoord.html">mpam.types.XYCoord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XferDir.html">mpam.types.XferDir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.types.html">mpam.types</a> &raquo;</li>
+      <li>mpam.types.Reagent</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.types.Reagent.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-types-reagent">
+<h1>mpam.types.Reagent<a class="headerlink" href="#mpam-types-reagent" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Reagent">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Reagent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Reagent" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A reagent.  All <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>s have</p>
+<ul class="simple">
+<li><p>a <a class="reference internal" href="#mpam.types.Reagent.name" title="mpam.types.Reagent.name"><code class="xref py py-attr docutils literal notranslate"><span class="pre">name</span></code></a></p></li>
+<li><p>a chemical <a class="reference internal" href="#mpam.types.Reagent.composition" title="mpam.types.Reagent.composition"><code class="xref py py-attr docutils literal notranslate"><span class="pre">composition</span></code></a> (which will be an empty dict unless
+specified) as a mapping from <a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><code class="xref py py-class docutils literal notranslate"><span class="pre">Chemical</span></code></a> to <code class="xref py py-class docutils literal notranslate"><span class="pre">Composition</span></code></p></li>
+<li><p>optional minimum (<a class="reference internal" href="#mpam.types.Reagent.min_storage_temp" title="mpam.types.Reagent.min_storage_temp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">min_storage_temp</span></code></a>) and maximum
+(<a class="reference internal" href="#mpam.types.Reagent.max_storage_temp" title="mpam.types.Reagent.max_storage_temp"><code class="xref py py-attr docutils literal notranslate"><span class="pre">max_storage_temp</span></code></a>) storage temperatures</p></li>
+<li><p>a <a class="reference internal" href="#mpam.types.Reagent.mixture" title="mpam.types.Reagent.mixture"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mixture</span></code></a> description, useful when a <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> is a not-
+otherwise-named mixture of two or more <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>s</p></li>
+<li><p>an indication of whether the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> <a class="reference internal" href="#mpam.types.Reagent.is_pure" title="mpam.types.Reagent.is_pure"><code class="xref py py-attr docutils literal notranslate"><span class="pre">is_pure</span></code></a> (i.e., not a
+mixture).</p></li>
+<li><p>a tuple of <code class="xref py py-attr docutils literal notranslate"><span class="pre">process_step</span></code> that the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> has gone
+through.</p></li>
+<li><p>the <a class="reference internal" href="#mpam.types.Reagent.unprocessed" title="mpam.types.Reagent.unprocessed"><code class="xref py py-attr docutils literal notranslate"><span class="pre">unprocessed</span></code></a> <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> prior to any processing.  (Often
+this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> itself.)</p></li>
+</ul>
+<p><a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>s can be ordered, and sort by their <a class="reference internal" href="#mpam.types.Reagent.name" title="mpam.types.Reagent.name"><code class="xref py py-attr docutils literal notranslate"><span class="pre">name</span></code></a>s.</p>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.is_pure" title="mpam.types.Reagent.is_pure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_pure</span></code></a></p></td>
+<td><p>Is the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> not a mixture?  <code class="docutils literal notranslate"><span class="pre">True</span></code> iff <a class="reference internal" href="#mpam.types.Reagent.mixture" title="mpam.types.Reagent.mixture"><code class="xref py py-func docutils literal notranslate"><span class="pre">mixture()</span></code></a> has exactly one element.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Reagent.known" title="mpam.types.Reagent.known"><code class="xref py py-obj docutils literal notranslate"><span class="pre">known</span></code></a></p></td>
+<td><p>A cache of known <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>s, by name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.mixture" title="mpam.types.Reagent.mixture"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mixture</span></code></a></p></td>
+<td><p>A description of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> as a mixture of other <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>s.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Reagent.process_steps" title="mpam.types.Reagent.process_steps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_steps</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a>s this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> has gone through.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.unprocessed" title="mpam.types.Reagent.unprocessed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unprocessed</span></code></a></p></td>
+<td><p>The unprocessed version of this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Reagent.name" title="mpam.types.Reagent.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>The name of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.composition" title="mpam.types.Reagent.composition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">composition</span></code></a></p></td>
+<td><p>The composition of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Reagent.min_storage_temp" title="mpam.types.Reagent.min_storage_temp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_storage_temp</span></code></a></p></td>
+<td><p>The (optional) minimum storage temperature of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.max_storage_temp" title="mpam.types.Reagent.max_storage_temp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max_storage_temp</span></code></a></p></td>
+<td><p>The (optional) maximum storage temperature of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.LoseComposition" title="mpam.types.Reagent.LoseComposition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LoseComposition</span></code></a>(composition)</p></td>
+<td><p>A composition-altering function that returns an unknown composition.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Reagent.SameComposition" title="mpam.types.Reagent.SameComposition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SameComposition</span></code></a>(composition)</p></td>
+<td><p>A composition-altering function that doesn't change the composition.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.__init__" title="mpam.types.Reagent.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(name, *[, composition, ...])</p></td>
+<td><p>Initialize the object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Reagent.find" title="mpam.types.Reagent.find"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find</span></code></a>(name, *[, composition, ...])</p></td>
+<td><p>Find or create the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> with a given name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Reagent.liquid" title="mpam.types.Reagent.liquid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">liquid</span></code></a>(volume, *[, inexact])</p></td>
+<td><p>A <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> containing a specified <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a> of this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Reagent.processed" title="mpam.types.Reagent.processed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">processed</span></code></a>(step[, new_composition_function, ...])</p></td>
+<td><p>A new version of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> after it has been processed.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Reagent.LoseComposition">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LoseComposition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.Reagent.LoseComposition" title="Permalink to this definition"></a></dt>
+<dd><p>A composition-altering function that returns an unknown composition.</p>
+<p>This function suitable for use as the <code class="docutils literal notranslate"><span class="pre">new_omposition_function</span></code>
+argument to <a class="reference internal" href="#mpam.types.Reagent.processed" title="mpam.types.Reagent.processed"><code class="xref py py-func docutils literal notranslate"><span class="pre">processed()</span></code></a> when the <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a> has an
+unknown effect on the chemical composition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>composition</strong> – the old composition</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>an unknown composition (e.g., <code class="docutils literal notranslate"><span class="pre">{}</span></code>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Reagent.SameComposition">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SameComposition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.Reagent.SameComposition" title="Permalink to this definition"></a></dt>
+<dd><p>A composition-altering function that doesn’t change the composition.</p>
+<p>This function suitable for use as the <code class="docutils literal notranslate"><span class="pre">new_omposition_function</span></code>
+argument to <a class="reference internal" href="#mpam.types.Reagent.processed" title="mpam.types.Reagent.processed"><code class="xref py py-func docutils literal notranslate"><span class="pre">processed()</span></code></a> when the <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a> does not
+change the chemical composition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>composition</strong> – the old composition</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">composition</span></code> unchanged.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Reagent.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Reagent.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<p>The new <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> will be pure (i.e., not a mixture) and will
+have no process steps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – the name of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>composition</strong> – an optional composition as a mapping from
+<a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><code class="xref py py-class docutils literal notranslate"><span class="pre">Chemical</span></code></a> to <a class="reference internal" href="mpam.types.html#mpam.types.Concentration" title="mpam.types.Concentration"><code class="xref py py-class docutils literal notranslate"><span class="pre">Concentration</span></code></a></p></li>
+<li><p><strong>min_storage_temp</strong> – an optional minimum storage temperature</p></li>
+<li><p><strong>max_storage_temp</strong> – an optional maximum storage temperature</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Reagent.composition">
+<span class="sig-name descname"><span class="pre">composition</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">mpam.types.Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">quantities.dimensions.MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">quantities.dimensions.Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">quantities.dimensions.VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">mpam.types.UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Reagent.composition" title="Permalink to this definition"></a></dt>
+<dd><p>The composition of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.  If this is empty, nothing is known
+about the composition.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Reagent.find">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">composition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></span><a class="headerlink" href="#mpam.types.Reagent.find" title="Permalink to this definition"></a></dt>
+<dd><p>Find or create the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> with a given name.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If an existing <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> with this name has previously been
+created, it will be returned and any specified <code class="docutils literal notranslate"><span class="pre">composition</span></code>,
+<code class="docutils literal notranslate"><span class="pre">min_storage_temp</span></code>, or <code class="docutils literal notranslate"><span class="pre">max_storage_temp</span></code> will be ignored.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> – the name of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>composition</strong> – an optional composition as a mapping from
+<a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><code class="xref py py-class docutils literal notranslate"><span class="pre">Chemical</span></code></a> to <a class="reference internal" href="mpam.types.html#mpam.types.Concentration" title="mpam.types.Concentration"><code class="xref py py-class docutils literal notranslate"><span class="pre">Concentration</span></code></a></p></li>
+<li><p><strong>min_storage_temp</strong> – an optional minimum storage temperature</p></li>
+<li><p><strong>max_storage_temp</strong> – an optional maximum storage temperature</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the found or created <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Reagent.is_pure">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_pure</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mpam.types.Reagent.is_pure" title="Permalink to this definition"></a></dt>
+<dd><p>Is the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> not a mixture?  <code class="docutils literal notranslate"><span class="pre">True</span></code> iff <a class="reference internal" href="#mpam.types.Reagent.mixture" title="mpam.types.Reagent.mixture"><code class="xref py py-func docutils literal notranslate"><span class="pre">mixture()</span></code></a> has
+exactly one element.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Reagent.known">
+<span class="sig-name descname"><span class="pre">known</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'unknown':</span> <span class="pre">Reagent('unknown'),</span> <span class="pre">'waste':</span> <span class="pre">Reagent('waste')}</span></em><a class="headerlink" href="#mpam.types.Reagent.known" title="Permalink to this definition"></a></dt>
+<dd><p>A cache of known <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>s, by name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Reagent.liquid">
+<span class="sig-name descname"><span class="pre">liquid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">Volume</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inexact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a></span></span><a class="headerlink" href="#mpam.types.Reagent.liquid" title="Permalink to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> containing a specified <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a> of this
+<a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>volume</strong> – the volume of the resulting liquid</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>inexact</strong> – whether the volume is inexact</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a new <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Reagent.max_storage_temp">
+<span class="sig-name descname"><span class="pre">max_storage_temp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Reagent.max_storage_temp" title="Permalink to this definition"></a></dt>
+<dd><p>The (optional) maximum storage temperature of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Reagent.min_storage_temp">
+<span class="sig-name descname"><span class="pre">min_storage_temp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Reagent.min_storage_temp" title="Permalink to this definition"></a></dt>
+<dd><p>The (optional) minimum storage temperature of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Reagent.mixture">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mixture</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'Reagent'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">fractions.Fraction</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Reagent.mixture" title="Permalink to this definition"></a></dt>
+<dd><p>A description of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> as a mixture of other
+<a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>s.  The description is a tuple of tuples, each of which
+contains a <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> and a <code class="xref py py-class docutils literal notranslate"><span class="pre">Fraction</span></code> specifying how much
+of the overall mixture that <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> constitutes.</p>
+<p>The elements of this tuple will be sorted by <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> name,
+rendering the whole thing useful as a mapping key.</p>
+<p>This <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> <a class="reference internal" href="#mpam.types.Reagent.is_pure" title="mpam.types.Reagent.is_pure"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_pure()</span></code></a> if and only if the the resulting
+tuple has one element, and the first element of that element will be
+this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p>
+<p>The second elements of each element of this tuple (<code class="xref py py-class docutils literal notranslate"><span class="pre">Fraction</span></code>s)
+will all add up to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Reagent.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Reagent.name" title="Permalink to this definition"></a></dt>
+<dd><p>The name of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Reagent.process_steps">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process_steps</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><span class="pre">mpam.types.ProcessStep</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Reagent.process_steps" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a>s this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> has gone through.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Reagent.processed">
+<span class="sig-name descname"><span class="pre">processed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><span class="pre">ProcessStep</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_composition_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_storage_temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></span><a class="headerlink" href="#mpam.types.Reagent.processed" title="Permalink to this definition"></a></dt>
+<dd><p>A new version of the <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> after it has been processed.</p>
+<p>If this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> is the <a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a>, it is returned
+unchanged.</p>
+<p>The results of calling <a class="reference internal" href="#mpam.types.Reagent.processed" title="mpam.types.Reagent.processed"><code class="xref py py-func docutils literal notranslate"><span class="pre">processed()</span></code></a> on a given <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> are
+cached, and an existing value will be reused.</p>
+<p>If a new one is created, the composition and minimum and maximum storage
+temperatures are modified as specified by the parameters or, if
+unspecified, copied from this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If a cached result of a prior call to <a class="reference internal" href="#mpam.types.Reagent.processed" title="mpam.types.Reagent.processed"><code class="xref py py-func docutils literal notranslate"><span class="pre">processed()</span></code></a> with this
+<code class="docutils literal notranslate"><span class="pre">step</span></code> is found, it will be returned, and the other arguments will
+be ignored.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step</strong> – the <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a> applied or the name used to find or
+create it.</p></li>
+<li><p><strong>new_composition_function</strong> – an optional function to determine the new
+composition.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>min_storage_temp</strong> – an optional minimum storage temperature</p></li>
+<li><p><strong>max_storage_temp</strong> – an optional maximum storage temperature</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the resulting <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Reagent.unprocessed">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unprocessed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a></em><a class="headerlink" href="#mpam.types.Reagent.unprocessed" title="Permalink to this definition"></a></dt>
+<dd><p>The unprocessed version of this <a class="reference internal" href="#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.ProcessedReagent.html" class="btn btn-neutral float-left" title="mpam.types.ProcessedReagent" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.State.html" class="btn btn-neutral float-right" title="mpam.types.State" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

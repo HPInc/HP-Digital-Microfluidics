@@ -1,0 +1,68 @@
+mpam.processes.MultiDropProcessType
+===================================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: MultiDropProcessType
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MultiDropProcessType.n_drops
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MultiDropProcessType.__init__
+      ~MultiDropProcessType.iterator
+      ~MultiDropProcessType.secondary_pads
+      ~MultiDropProcessType.start
+   
+   
+   
+
+   
+   
+   
+   

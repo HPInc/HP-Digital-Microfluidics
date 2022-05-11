@@ -1,0 +1,83 @@
+mpam.device.PipettingTarget
+===========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: PipettingTarget
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PipettingTarget.contents
+      ~PipettingTarget.pipettor
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PipettingTarget.pipettor_added
+      ~PipettingTarget.pipettor_removed
+      ~PipettingTarget.prepare_for_add
+      ~PipettingTarget.prepare_for_remove
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~PipettingTarget.__init__
+   
+   
+   

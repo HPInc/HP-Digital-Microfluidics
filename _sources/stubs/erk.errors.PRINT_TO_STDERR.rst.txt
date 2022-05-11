@@ -1,0 +1,6 @@
+erk.errors.PRINT\_TO\_STDERR
+============================
+
+.. currentmodule:: erk.errors
+
+.. autodata:: PRINT_TO_STDERR

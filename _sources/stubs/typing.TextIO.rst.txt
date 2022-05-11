@@ -1,0 +1,168 @@
+typing.TextIO
+=============
+
+.. currentmodule:: typing
+
+.. autoclass:: TextIO
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TextIO.buffer
+      ~TextIO.encoding
+      ~TextIO.errors
+      ~TextIO.line_buffering
+      ~TextIO.newlines
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~TextIO.closed
+      ~TextIO.mode
+      ~TextIO.name
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~TextIO.__init__
+      ~TextIO.close
+      ~TextIO.fileno
+      ~TextIO.flush
+      ~TextIO.isatty
+      ~TextIO.read
+      ~TextIO.readable
+      ~TextIO.readline
+      ~TextIO.readlines
+      ~TextIO.seek
+      ~TextIO.seekable
+      ~TextIO.tell
+      ~TextIO.truncate
+      ~TextIO.writable
+      ~TextIO.write
+      ~TextIO.writelines
+   
+   
+   

@@ -1,0 +1,43 @@
+typing.SupportsRound
+====================
+
+.. currentmodule:: typing
+
+.. autoclass:: SupportsRound
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SupportsRound.__init__
+   
+   
+   
+
+   
+   
+   
+   

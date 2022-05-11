@@ -1,0 +1,218 @@
+mpam.drop.Blob
+==============
+
+.. currentmodule:: mpam.drop
+
+.. autoclass:: Blob
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Blob.attached_to_well
+      ~Blob.attachment_attr
+      ~Blob.has_board_pad
+      ~Blob.has_gate
+      ~Blob.has_inner_well_pad
+      ~Blob.is_empty
+      ~Blob.is_singleton
+      ~Blob.n_display_pads
+      ~Blob.n_inner_well_pads
+      ~Blob.only_pad
+      ~Blob.per_pad_volume
+      ~Blob.pull_key
+      ~Blob.reagent
+      ~Blob.size
+      ~Blob.total_volume
+      ~Blob.unpinned
+      ~Blob.well
+      ~Blob.pads
+      ~Blob.pinned
+      ~Blob.contents
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Blob.__init__
+      ~Blob.attach_to_well
+      ~Blob.detach_from_well
+      ~Blob.die
+      ~Blob.disappear
+      ~Blob.drop_in
+      ~Blob.extend
+      ~Blob.merge_in
+      ~Blob.mix_in
+      ~Blob.note_pad
+      ~Blob.partition
+      ~Blob.process_changes
+      ~Blob.pull_from_well
+      ~Blob.remove_drops
+      ~Blob.update_drops
+   
+   
+   
+
+   
+   
+   
+   

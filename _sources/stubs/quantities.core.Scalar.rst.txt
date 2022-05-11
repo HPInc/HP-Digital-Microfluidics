@@ -1,0 +1,188 @@
+quantities.core.Scalar
+======================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: Scalar
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Scalar.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Scalar.dimensionality
+      ~Scalar.is_negative
+      ~Scalar.is_positive
+      ~Scalar.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Scalar.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Scalar.__init__
+      ~Scalar.a
+      ~Scalar.an
+      ~Scalar.as_dimensionality
+      ~Scalar.as_number
+      ~Scalar.as_unit
+      ~Scalar.as_unit_expr
+      ~Scalar.cast
+      ~Scalar.check_dimensionality
+      ~Scalar.decomposed
+      ~Scalar.divide_by
+      ~Scalar.has_dimensionality
+      ~Scalar.in_denom
+      ~Scalar.in_units
+      ~Scalar.is_close_to
+      ~Scalar.multiply_by
+      ~Scalar.of
+      ~Scalar.ratio
+      ~Scalar.restricted
+      ~Scalar.to_power
+      ~Scalar.unit
+   
+   
+   

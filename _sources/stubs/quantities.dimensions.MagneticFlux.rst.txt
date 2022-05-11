@@ -1,0 +1,193 @@
+quantities.dimensions.MagneticFlux
+==================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: MagneticFlux
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MagneticFlux.derived
+      ~MagneticFlux.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~MagneticFlux.dimensionality
+      ~MagneticFlux.is_negative
+      ~MagneticFlux.is_positive
+      ~MagneticFlux.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MagneticFlux.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~MagneticFlux.__init__
+      ~MagneticFlux.a
+      ~MagneticFlux.an
+      ~MagneticFlux.as_dimensionality
+      ~MagneticFlux.as_number
+      ~MagneticFlux.as_unit
+      ~MagneticFlux.as_unit_expr
+      ~MagneticFlux.cast
+      ~MagneticFlux.check_dimensionality
+      ~MagneticFlux.decomposed
+      ~MagneticFlux.divide_by
+      ~MagneticFlux.has_dimensionality
+      ~MagneticFlux.in_denom
+      ~MagneticFlux.in_units
+      ~MagneticFlux.is_close_to
+      ~MagneticFlux.multiply_by
+      ~MagneticFlux.of
+      ~MagneticFlux.ratio
+      ~MagneticFlux.restricted
+      ~MagneticFlux.to_power
+      ~MagneticFlux.unit
+   
+   
+   

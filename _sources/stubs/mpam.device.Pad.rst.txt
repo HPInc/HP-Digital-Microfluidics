@@ -1,0 +1,263 @@
+mpam.device.Pad
+===============
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Pad
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Pad.all_neighbors
+      ~Pad.between_pads
+      ~Pad.corner_neighbors
+      ~Pad.dried_liquid
+      ~Pad.empty
+      ~Pad.extraction_point
+      ~Pad.heater
+      ~Pad.magnet
+      ~Pad.neighbors
+      ~Pad.reserved
+      ~Pad.safe
+      ~Pad.well
+      ~Pad.exists
+      ~Pad.state
+      ~Pad.broken
+      ~Pad.live
+      ~Pad.board
+      ~Pad.location
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Pad.Toggle
+      ~Pad.TurnOff
+      ~Pad.TurnOn
+      ~Pad.blob
+      ~Pad.checked_drop
+      ~Pad.column
+      ~Pad.current_state
+      ~Pad.drop
+      ~Pad.neighbors_for_blob
+      ~Pad.row
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Pad.__init__
+      ~Pad.compute_neighbors_for_blob
+      ~Pad.liquid_added
+      ~Pad.liquid_removed
+      ~Pad.neighbor
+      ~Pad.reserve
+      ~Pad.safe_except
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Pad.SetState
+      ~Pad.delayed
+      ~Pad.on_drop_change
+      ~Pad.on_state_change
+      ~Pad.schedule
+      ~Pad.schedule_communication
+      ~Pad.user_operation
+   
+   
+   

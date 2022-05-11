@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.device.DropLoc &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.device.ExtractionPoint" href="mpam.device.ExtractionPoint.html" />
+    <link rel="prev" title="mpam.device.DispenseGroup" href="mpam.device.DispenseGroup.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.device.html">mpam.device</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.T.html">mpam.device.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BC.html">mpam.device.BC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.transitions_from.html">mpam.device.transitions_from</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Batch.html">mpam.device.Batch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BinaryComponent.html">mpam.device.BinaryComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Board.html">mpam.device.Board</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.BoardComponent.html">mpam.device.BoardComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ChangeJournal.html">mpam.device.ChangeJournal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Clock.html">mpam.device.Clock</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.DispenseGroup.html">mpam.device.DispenseGroup</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.device.DropLoc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ExtractionPoint.html">mpam.device.ExtractionPoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.GateStatus.html">mpam.device.GateStatus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Heater.html">mpam.device.Heater</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.HeatingMode.html">mpam.device.HeatingMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.LocatedPad.html">mpam.device.LocatedPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Magnet.html">mpam.device.Magnet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Pad.html">mpam.device.Pad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PipettingTarget.html">mpam.device.PipettingTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.ProductLocation.html">mpam.device.ProductLocation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.System.html">mpam.device.System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.SystemComponent.html">mpam.device.SystemComponent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.UserOperation.html">mpam.device.UserOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Well.html">mpam.device.Well</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellGate.html">mpam.device.WellGate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellMotion.html">mpam.device.WellMotion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellPad.html">mpam.device.WellPad</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellShape.html">mpam.device.WellShape</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.WellState.html">mpam.device.WellState</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.device.html">mpam.device</a> &raquo;</li>
+      <li>mpam.device.DropLoc</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.device.DropLoc.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-device-droploc">
+<h1>mpam.device.DropLoc<a class="headerlink" href="#mpam-device-droploc" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.device.DropLoc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">DropLoc</span></span><a class="headerlink" href="#mpam.device.DropLoc" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code>, <a class="reference internal" href="mpam.types.CommunicationScheduler.html#mpam.types.CommunicationScheduler" title="mpam.types.CommunicationScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommunicationScheduler</span></code></a></p>
+<p>A location that can hold a <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a> and participate in a <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.</p>
+<p>It maintains a <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> for its <a class="reference internal" href="#mpam.device.DropLoc.drop" title="mpam.device.DropLoc.drop"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drop</span></code></a> attribute
+to which callbacks can be added by means of <a class="reference internal" href="#mpam.device.DropLoc.on_drop_change" title="mpam.device.DropLoc.on_drop_change"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_drop_change()</span></code></a>.</p>
+<p><a class="reference internal" href="#mpam.device.DropLoc.checked_drop" title="mpam.device.DropLoc.checked_drop"><code class="xref py py-attr docutils literal notranslate"><span class="pre">checked_drop</span></code></a> is the same as <a class="reference internal" href="#mpam.device.DropLoc.drop" title="mpam.device.DropLoc.drop"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drop</span></code></a>, but it is guaranteed to be
+a <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>, raising a <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code> if <a class="reference internal" href="#mpam.device.DropLoc.drop" title="mpam.device.DropLoc.drop"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drop</span></code></a> is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a> is an abstract class.  In addition to the abstract
+methods inherited from <a class="reference internal" href="mpam.types.CommunicationScheduler.html#mpam.types.CommunicationScheduler" title="mpam.types.CommunicationScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommunicationScheduler</span></code></a>, concrete
+subclasses must also define <a class="reference internal" href="#mpam.device.DropLoc.compute_neighbors_for_blob" title="mpam.device.DropLoc.compute_neighbors_for_blob"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_neighbors_for_blob()</span></code></a>.</p>
+</div>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.DropLoc.blob" title="mpam.device.DropLoc.blob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">blob</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>, if any, this <a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a> participates in</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.DropLoc.checked_drop" title="mpam.device.DropLoc.checked_drop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">checked_drop</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a> at this location.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.DropLoc.drop" title="mpam.device.DropLoc.drop"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>, if any, at this location.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.DropLoc.neighbors_for_blob" title="mpam.device.DropLoc.neighbors_for_blob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">neighbors_for_blob</span></code></a></p></td>
+<td><p>The neighboring <a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>s that could be part of the same <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.DropLoc.__init__" title="mpam.device.DropLoc.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>()</p></td>
+<td><p>Initialize the object</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.DropLoc.compute_neighbors_for_blob" title="mpam.device.DropLoc.compute_neighbors_for_blob"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_neighbors_for_blob</span></code></a>()</p></td>
+<td><p>The list of neighboring <a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>s that could be part of the same <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.DropLoc.on_drop_change" title="mpam.device.DropLoc.on_drop_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_drop_change</span></code></a>(cb, *[, key])</p></td>
+<td><p>Add a new handler, replacing any with the specified key.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
+<td><p>Call a function after n optional delay.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule_communication</span></code>(cb, *[, after])</p></td>
+<td><p>Schedule communication of <code class="docutils literal notranslate"><span class="pre">cb</span></code> after optional delay <code class="docutils literal notranslate"><span class="pre">after</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.DropLoc.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.DropLoc.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.DropLoc.blob">
+<span class="sig-name descname"><span class="pre">blob</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><span class="pre">Blob</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#mpam.device.DropLoc.blob" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>, if any, this <a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a> participates in</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.device.DropLoc.checked_drop">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">checked_drop</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><span class="pre">Drop</span></a></em><a class="headerlink" href="#mpam.device.DropLoc.checked_drop" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a> at this location.  If there is none (i.e., if
+<a class="reference internal" href="#mpam.device.DropLoc.drop" title="mpam.device.DropLoc.drop"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drop</span></code></a> is <code class="docutils literal notranslate"><span class="pre">None</span></code>), a <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code> will be raised.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.DropLoc.compute_neighbors_for_blob">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">compute_neighbors_for_blob</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><span class="pre">DropLoc</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.device.DropLoc.compute_neighbors_for_blob" title="Permalink to this definition"></a></dt>
+<dd><p>The list of neighboring <a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>s that could be part of the
+same <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.  This is called the first time
+<a class="reference internal" href="#mpam.device.DropLoc.neighbors_for_blob" title="mpam.device.DropLoc.neighbors_for_blob"><code class="xref py py-attr docutils literal notranslate"><span class="pre">neighbors_for_blob</span></code></a> is referenced, and the value is cached.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is an abstract method which must be defined by concrete
+subclasses.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code> of neighbors</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.device.DropLoc.drop">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">drop</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><span class="pre">Drop</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.DropLoc.drop" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><code class="xref py py-class docutils literal notranslate"><span class="pre">Drop</span></code></a>, if any, at this location.  When this attribute is
+set (even if set to the same value), callbacks registered by
+<a class="reference internal" href="#mpam.device.DropLoc.on_drop_change" title="mpam.device.DropLoc.on_drop_change"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_drop_change()</span></code></a> are called.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.device.DropLoc.neighbors_for_blob">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">neighbors_for_blob</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><span class="pre">mpam.device.DropLoc</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.DropLoc.neighbors_for_blob" title="Permalink to this definition"></a></dt>
+<dd><p>The neighboring <a class="reference internal" href="#mpam.device.DropLoc" title="mpam.device.DropLoc"><code class="xref py py-class docutils literal notranslate"><span class="pre">DropLoc</span></code></a>s that could be part of the same <a class="reference internal" href="mpam.drop.Blob.html#mpam.drop.Blob" title="mpam.drop.Blob"><code class="xref py py-class docutils literal notranslate"><span class="pre">Blob</span></code></a>.</p>
+<p>The first time this is referenced, <a class="reference internal" href="#mpam.device.DropLoc.compute_neighbors_for_blob" title="mpam.device.DropLoc.compute_neighbors_for_blob"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_neighbors_for_blob()</span></code></a> is
+called, and the value is cached.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.DropLoc.on_drop_change">
+<span class="sig-name descname"><span class="pre">on_drop_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ChangeCallback</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.drop.Drop.html#mpam.drop.Drop" title="mpam.drop.Drop"><span class="pre">Drop</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.DropLoc.on_drop_change" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new handler, replacing any with the specified key.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">cb</span></code> is used as the key</p>
+<p>After <a class="reference internal" href="#mpam.device.DropLoc.drop" title="mpam.device.DropLoc.drop"><code class="xref py py-attr docutils literal notranslate"><span class="pre">drop</span></code></a> is changed, <code class="docutils literal notranslate"><span class="pre">cb</span></code> will be called with both the old
+and new value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cb</strong> – the handler</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>key</strong> – the (optional) key</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.device.DispenseGroup.html" class="btn btn-neutral float-left" title="mpam.device.DispenseGroup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.device.ExtractionPoint.html" class="btn btn-neutral float-right" title="mpam.device.ExtractionPoint" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

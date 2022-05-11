@@ -1,0 +1,178 @@
+mpam.monitor.InputBox
+=====================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: InputBox
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~InputBox.history
+      ~InputBox.history_pos
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~InputBox.DIST_FROM_LEFT
+      ~InputBox.active
+      ~InputBox.change_observers
+      ~InputBox.cids
+      ~InputBox.cnt
+      ~InputBox.drawon
+      ~InputBox.eventson
+      ~InputBox.submit_observers
+      ~InputBox.text
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~InputBox.__init__
+      ~InputBox.add_to_history
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~InputBox.begin_typing
+      ~InputBox.connect_event
+      ~InputBox.disconnect
+      ~InputBox.disconnect_events
+      ~InputBox.get_active
+      ~InputBox.ignore
+      ~InputBox.on_submit
+      ~InputBox.on_text_change
+      ~InputBox.position_cursor
+      ~InputBox.set_active
+      ~InputBox.set_val
+      ~InputBox.stop_typing
+   
+   
+   

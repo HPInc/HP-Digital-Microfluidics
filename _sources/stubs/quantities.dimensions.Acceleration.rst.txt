@@ -1,0 +1,193 @@
+quantities.dimensions.Acceleration
+==================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Acceleration
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Acceleration.derived
+      ~Acceleration.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Acceleration.dimensionality
+      ~Acceleration.is_negative
+      ~Acceleration.is_positive
+      ~Acceleration.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Acceleration.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Acceleration.__init__
+      ~Acceleration.a
+      ~Acceleration.an
+      ~Acceleration.as_dimensionality
+      ~Acceleration.as_number
+      ~Acceleration.as_unit
+      ~Acceleration.as_unit_expr
+      ~Acceleration.cast
+      ~Acceleration.check_dimensionality
+      ~Acceleration.decomposed
+      ~Acceleration.divide_by
+      ~Acceleration.has_dimensionality
+      ~Acceleration.in_denom
+      ~Acceleration.in_units
+      ~Acceleration.is_close_to
+      ~Acceleration.multiply_by
+      ~Acceleration.of
+      ~Acceleration.ratio
+      ~Acceleration.restricted
+      ~Acceleration.to_power
+      ~Acceleration.unit
+   
+   
+   

@@ -1,0 +1,43 @@
+typing.SupportsBytes
+====================
+
+.. currentmodule:: typing
+
+.. autoclass:: SupportsBytes
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SupportsBytes.__init__
+   
+   
+   
+
+   
+   
+   
+   

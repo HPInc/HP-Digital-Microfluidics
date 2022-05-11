@@ -1,0 +1,6 @@
+threading.getprofile
+====================
+
+.. currentmodule:: threading
+
+.. autofunction:: getprofile

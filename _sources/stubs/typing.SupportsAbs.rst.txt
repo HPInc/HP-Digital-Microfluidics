@@ -1,0 +1,43 @@
+typing.SupportsAbs
+==================
+
+.. currentmodule:: typing
+
+.. autoclass:: SupportsAbs
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SupportsAbs.__init__
+   
+   
+   
+
+   
+   
+   
+   

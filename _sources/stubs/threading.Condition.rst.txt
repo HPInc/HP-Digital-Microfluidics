@@ -1,0 +1,68 @@
+threading.Condition
+===================
+
+.. currentmodule:: threading
+
+.. autoclass:: Condition
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Condition.__init__
+      ~Condition.notify
+      ~Condition.notifyAll
+      ~Condition.notify_all
+      ~Condition.wait
+      ~Condition.wait_for
+   
+   
+   
+
+   
+   
+   
+   

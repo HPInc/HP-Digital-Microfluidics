@@ -1,0 +1,58 @@
+mpam.drop.DropStatus
+====================
+
+.. currentmodule:: mpam.drop
+
+.. autoclass:: DropStatus
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DropStatus.ON_BOARD
+      ~DropStatus.IN_WELL
+      ~DropStatus.IN_MIX
+      ~DropStatus.OFF_BOARD
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

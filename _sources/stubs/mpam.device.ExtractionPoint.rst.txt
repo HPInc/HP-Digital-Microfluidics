@@ -1,0 +1,148 @@
+mpam.device.ExtractionPoint
+===========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: ExtractionPoint
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ExtractionPoint.contents
+      ~ExtractionPoint.removed
+      ~ExtractionPoint.pad
+      ~ExtractionPoint.board
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~ExtractionPoint.pipettor
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ExtractionPoint.__init__
+      ~ExtractionPoint.ensure_drop
+      ~ExtractionPoint.pipettor_added
+      ~ExtractionPoint.pipettor_removed
+      ~ExtractionPoint.prepare_for_add
+      ~ExtractionPoint.prepare_for_remove
+      ~ExtractionPoint.reserve_pad
+      ~ExtractionPoint.transfer_in
+      ~ExtractionPoint.transfer_in_result
+      ~ExtractionPoint.transfer_out
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~ExtractionPoint.delayed
+      ~ExtractionPoint.schedule
+      ~ExtractionPoint.schedule_communication
+      ~ExtractionPoint.user_operation
+   
+   
+   

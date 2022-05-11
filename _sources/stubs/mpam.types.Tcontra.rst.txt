@@ -1,0 +1,6 @@
+mpam.types.Tcontra
+==================
+
+.. currentmodule:: mpam.types
+
+.. autodata:: Tcontra

@@ -1,0 +1,58 @@
+mpam.types.Turn
+===============
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Turn
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Turn.NONE
+      ~Turn.LEFT
+      ~Turn.RIGHT
+      ~Turn.AROUND
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

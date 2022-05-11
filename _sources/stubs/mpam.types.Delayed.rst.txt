@@ -1,0 +1,133 @@
+mpam.types.Delayed
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Delayed
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Delayed.has_value
+      ~Delayed.value
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Delayed.and_wait
+      ~Delayed.chain
+      ~Delayed.complete
+      ~Delayed.join
+      ~Delayed.peek
+      ~Delayed.post_to
+      ~Delayed.post_transformed_to
+      ~Delayed.post_val_to
+      ~Delayed.then_call
+      ~Delayed.then_schedule
+      ~Delayed.then_trigger
+      ~Delayed.transformed
+      ~Delayed.wait
+      ~Delayed.when_value
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Delayed.__init__
+   
+   
+   

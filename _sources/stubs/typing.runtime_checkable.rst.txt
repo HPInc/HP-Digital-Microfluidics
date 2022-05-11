@@ -1,0 +1,6 @@
+typing.runtime\_checkable
+=========================
+
+.. currentmodule:: typing
+
+.. autofunction:: runtime_checkable

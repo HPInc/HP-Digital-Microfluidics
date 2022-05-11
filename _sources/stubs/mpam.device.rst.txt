@@ -5,6 +5,14 @@
 
    
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+      :toctree:
+   
+      T
+      BC
+   
    
 
    
@@ -12,6 +20,7 @@
    .. rubric:: Functions
 
    .. autosummary::
+      :toctree:
    
       transitions_from
    
@@ -22,6 +31,8 @@
    .. rubric:: Classes
 
    .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
    
       Batch
       BinaryComponent
@@ -45,7 +56,6 @@
       UserOperation
       Well
       WellGate
-      WellGroupDead
       WellMotion
       WellPad
       WellShape

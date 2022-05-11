@@ -1,0 +1,88 @@
+mpam.monitor.ReagentLegend
+==========================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: ReagentLegend
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ReagentLegend.legend
+      ~ReagentLegend.board_monitor
+      ~ReagentLegend.contents
+      ~ReagentLegend.contents_count
+      ~ReagentLegend.mixtures_count
+      ~ReagentLegend.pending_redraw
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ReagentLegend.__init__
+      ~ReagentLegend.changed_reagent
+      ~ReagentLegend.redraw
+   
+   
+   
+
+   
+   
+   
+   

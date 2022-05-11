@@ -1,0 +1,73 @@
+mpam.device.DispenseGroup
+=========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: DispenseGroup
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DispenseGroup.key
+      ~DispenseGroup.lock
+      ~DispenseGroup.motion
+      ~DispenseGroup.state
+      ~DispenseGroup.transition_func
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DispenseGroup.__init__
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,193 @@
+mpam.device.WellGate
+====================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: WellGate
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WellGate.is_gate
+      ~WellGate.well
+      ~WellGate.index
+      ~WellGate.state
+      ~WellGate.broken
+      ~WellGate.live
+      ~WellGate.board
+      ~WellGate.location
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~WellGate.Toggle
+      ~WellGate.TurnOff
+      ~WellGate.TurnOn
+      ~WellGate.blob
+      ~WellGate.checked_drop
+      ~WellGate.column
+      ~WellGate.current_state
+      ~WellGate.drop
+      ~WellGate.neighbors_for_blob
+      ~WellGate.row
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WellGate.__init__
+      ~WellGate.compute_neighbors_for_blob
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~WellGate.SetState
+      ~WellGate.delayed
+      ~WellGate.on_drop_change
+      ~WellGate.on_state_change
+      ~WellGate.schedule
+      ~WellGate.schedule_communication
+      ~WellGate.set_location
+      ~WellGate.user_operation
+   
+   
+   

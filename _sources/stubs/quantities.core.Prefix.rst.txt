@@ -1,0 +1,63 @@
+quantities.core.Prefix
+======================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: Prefix
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Prefix.prefix
+      ~Prefix.multiplier
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Prefix.__init__
+      ~Prefix.scale
+   
+   
+   
+
+   
+   
+   
+   

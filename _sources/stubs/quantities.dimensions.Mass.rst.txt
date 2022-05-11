@@ -1,0 +1,193 @@
+quantities.dimensions.Mass
+==========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Mass
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Mass.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Mass.dimensionality
+      ~Mass.is_negative
+      ~Mass.is_positive
+      ~Mass.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Mass.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Mass.__init__
+      ~Mass.a
+      ~Mass.an
+      ~Mass.as_dimensionality
+      ~Mass.as_number
+      ~Mass.as_unit
+      ~Mass.as_unit_expr
+      ~Mass.base_unit
+      ~Mass.cast
+      ~Mass.check_dimensionality
+      ~Mass.decomposed
+      ~Mass.divide_by
+      ~Mass.has_dimensionality
+      ~Mass.in_denom
+      ~Mass.in_units
+      ~Mass.is_close_to
+      ~Mass.multiply_by
+      ~Mass.of
+      ~Mass.ratio
+      ~Mass.restricted
+      ~Mass.to_power
+      ~Mass.unit
+   
+   
+   

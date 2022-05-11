@@ -1,0 +1,63 @@
+mpam.device.LocatedPad
+======================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: LocatedPad
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LocatedPad.column
+      ~LocatedPad.row
+      ~LocatedPad.location
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LocatedPad.__init__
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,43 @@
+typing.TypeVar
+==============
+
+.. currentmodule:: typing
+
+.. autoclass:: TypeVar
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TypeVar.__init__
+   
+   
+   
+
+   
+   
+   
+   

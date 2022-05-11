@@ -1,0 +1,93 @@
+mpam.device.DropLoc
+===================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: DropLoc
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DropLoc.blob
+      ~DropLoc.checked_drop
+      ~DropLoc.drop
+      ~DropLoc.neighbors_for_blob
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DropLoc.__init__
+      ~DropLoc.compute_neighbors_for_blob
+      ~DropLoc.on_drop_change
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DropLoc.delayed
+      ~DropLoc.schedule_communication
+   
+   
+   

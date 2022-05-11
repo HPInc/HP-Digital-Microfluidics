@@ -1,0 +1,98 @@
+mpam.processes.DropCombinationProcessType
+=========================================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: DropCombinationProcessType
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DropCombinationProcessType.num_drops
+      ~DropCombinationProcessType.num_steps
+      ~DropCombinationProcessType.mix_seq
+      ~DropCombinationProcessType.result
+      ~DropCombinationProcessType.n_shuttles
+      ~DropCombinationProcessType.n_drops
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DropCombinationProcessType.__init__
+      ~DropCombinationProcessType.iterator
+      ~DropCombinationProcessType.secondary_pads
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DropCombinationProcessType.start
+   
+   
+   

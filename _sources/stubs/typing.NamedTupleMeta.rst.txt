@@ -1,0 +1,48 @@
+typing.NamedTupleMeta
+=====================
+
+.. currentmodule:: typing
+
+.. autoclass:: NamedTupleMeta
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~NamedTupleMeta.__init__
+      ~NamedTupleMeta.mro
+   
+   
+   

@@ -1,0 +1,163 @@
+quantities.core.UnknownDimQuant
+===============================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: UnknownDimQuant
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~UnknownDimQuant.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~UnknownDimQuant.dimensionality
+      ~UnknownDimQuant.is_negative
+      ~UnknownDimQuant.is_positive
+      ~UnknownDimQuant.is_zero
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~UnknownDimQuant.__init__
+      ~UnknownDimQuant.a
+      ~UnknownDimQuant.an
+      ~UnknownDimQuant.as_number
+      ~UnknownDimQuant.as_unit
+      ~UnknownDimQuant.as_unit_expr
+      ~UnknownDimQuant.cast
+      ~UnknownDimQuant.check_dimensionality
+      ~UnknownDimQuant.decomposed
+      ~UnknownDimQuant.divide_by
+      ~UnknownDimQuant.has_dimensionality
+      ~UnknownDimQuant.in_denom
+      ~UnknownDimQuant.in_units
+      ~UnknownDimQuant.is_close_to
+      ~UnknownDimQuant.multiply_by
+      ~UnknownDimQuant.of
+      ~UnknownDimQuant.ratio
+      ~UnknownDimQuant.to_power
+   
+   
+   

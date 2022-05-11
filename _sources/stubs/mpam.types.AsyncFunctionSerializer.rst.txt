@@ -1,0 +1,93 @@
+mpam.types.AsyncFunctionSerializer
+==================================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: AsyncFunctionSerializer
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~AsyncFunctionSerializer.thread
+      ~AsyncFunctionSerializer.lock
+      ~AsyncFunctionSerializer.thread_name
+      ~AsyncFunctionSerializer.daemon_thread
+      ~AsyncFunctionSerializer.before_task
+      ~AsyncFunctionSerializer.after_task
+      ~AsyncFunctionSerializer.on_empty_queue
+      ~AsyncFunctionSerializer.on_nonempty_queue
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~AsyncFunctionSerializer.__init__
+      ~AsyncFunctionSerializer.enqueue
+   
+   
+   
+
+   
+   
+   
+   

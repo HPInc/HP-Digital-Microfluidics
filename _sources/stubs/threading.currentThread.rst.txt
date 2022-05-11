@@ -1,0 +1,6 @@
+threading.currentThread
+=======================
+
+.. currentmodule:: threading
+
+.. autofunction:: currentThread

@@ -1,0 +1,193 @@
+quantities.dimensions.Inductance
+================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Inductance
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Inductance.derived
+      ~Inductance.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Inductance.dimensionality
+      ~Inductance.is_negative
+      ~Inductance.is_positive
+      ~Inductance.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Inductance.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Inductance.__init__
+      ~Inductance.a
+      ~Inductance.an
+      ~Inductance.as_dimensionality
+      ~Inductance.as_number
+      ~Inductance.as_unit
+      ~Inductance.as_unit_expr
+      ~Inductance.cast
+      ~Inductance.check_dimensionality
+      ~Inductance.decomposed
+      ~Inductance.divide_by
+      ~Inductance.has_dimensionality
+      ~Inductance.in_denom
+      ~Inductance.in_units
+      ~Inductance.is_close_to
+      ~Inductance.multiply_by
+      ~Inductance.of
+      ~Inductance.ratio
+      ~Inductance.restricted
+      ~Inductance.to_power
+      ~Inductance.unit
+   
+   
+   

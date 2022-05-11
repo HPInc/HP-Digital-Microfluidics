@@ -1,0 +1,93 @@
+mpam.types.CombinedOperation
+============================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: CombinedOperation
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~CombinedOperation.first
+      ~CombinedOperation.second
+      ~CombinedOperation.after
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CombinedOperation.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~CombinedOperation.schedule_for
+      ~CombinedOperation.then
+      ~CombinedOperation.then_call
+      ~CombinedOperation.then_compute
+      ~CombinedOperation.then_process
+   
+   
+   

@@ -1,0 +1,78 @@
+mpam.engine.IdleBarrier
+=======================
+
+.. currentmodule:: mpam.engine
+
+.. autoclass:: IdleBarrier
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~IdleBarrier.event
+      ~IdleBarrier.lock
+      ~IdleBarrier.running_components
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~IdleBarrier.__init__
+      ~IdleBarrier.idle
+      ~IdleBarrier.running
+      ~IdleBarrier.wait
+   
+   
+   
+
+   
+   
+   
+   

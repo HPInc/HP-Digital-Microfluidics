@@ -1,0 +1,6 @@
+mpam.exceptions.NotAtWell
+=========================
+
+.. currentmodule:: mpam.exceptions
+
+.. autoexception:: NotAtWell

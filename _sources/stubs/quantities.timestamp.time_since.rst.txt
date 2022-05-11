@@ -1,0 +1,6 @@
+quantities.timestamp.time\_since
+================================
+
+.. currentmodule:: quantities.timestamp
+
+.. autofunction:: time_since

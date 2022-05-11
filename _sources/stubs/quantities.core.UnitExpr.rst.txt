@@ -1,0 +1,98 @@
+quantities.core.UnitExpr
+========================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: UnitExpr
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~UnitExpr.quantity
+      ~UnitExpr.num
+      ~UnitExpr.denom
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~UnitExpr.__init__
+      ~UnitExpr.a
+      ~UnitExpr.an
+      ~UnitExpr.as_unit
+      ~UnitExpr.choose_abbr
+      ~UnitExpr.description
+      ~UnitExpr.dimensionality
+      ~UnitExpr.format
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,108 @@
+mpam.types.Liquid
+=================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Liquid
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Liquid.reagent
+      ~Liquid.volume
+      ~Liquid.inexact
+      ~Liquid.volume_change_callbacks
+      ~Liquid.reagent_change_callbacks
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Liquid.__init__
+      ~Liquid.mix_in
+      ~Liquid.mix_together
+      ~Liquid.mix_with
+      ~Liquid.on_reagent_change
+      ~Liquid.on_volume_change
+      ~Liquid.processed
+      ~Liquid.split_to
+   
+   
+   
+
+   
+   
+   
+   

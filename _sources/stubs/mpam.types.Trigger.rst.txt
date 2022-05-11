@@ -1,0 +1,83 @@
+mpam.types.Trigger
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Trigger
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Trigger.count
+      ~Trigger.waiting
+      ~Trigger.lock
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Trigger.__init__
+      ~Trigger.fire
+      ~Trigger.on_trigger
+      ~Trigger.reset
+      ~Trigger.wait
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,53 @@
+quantities.core.DimLike
+=======================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: DimLike
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DimLike.as_dimensionality
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DimLike.__init__
+   
+   
+   

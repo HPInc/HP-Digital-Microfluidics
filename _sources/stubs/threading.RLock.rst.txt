@@ -1,0 +1,6 @@
+threading.RLock
+===============
+
+.. currentmodule:: threading
+
+.. autofunction:: RLock

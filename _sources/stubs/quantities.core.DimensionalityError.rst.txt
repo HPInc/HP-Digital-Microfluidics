@@ -1,0 +1,6 @@
+quantities.core.DimensionalityError
+===================================
+
+.. currentmodule:: quantities.core
+
+.. autoexception:: DimensionalityError

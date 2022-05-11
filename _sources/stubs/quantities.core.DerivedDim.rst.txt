@@ -1,0 +1,188 @@
+quantities.core.DerivedDim
+==========================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: DerivedDim
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DerivedDim.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~DerivedDim.dimensionality
+      ~DerivedDim.is_negative
+      ~DerivedDim.is_positive
+      ~DerivedDim.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DerivedDim.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DerivedDim.__init__
+      ~DerivedDim.a
+      ~DerivedDim.an
+      ~DerivedDim.as_dimensionality
+      ~DerivedDim.as_number
+      ~DerivedDim.as_unit
+      ~DerivedDim.as_unit_expr
+      ~DerivedDim.cast
+      ~DerivedDim.check_dimensionality
+      ~DerivedDim.decomposed
+      ~DerivedDim.divide_by
+      ~DerivedDim.has_dimensionality
+      ~DerivedDim.in_denom
+      ~DerivedDim.in_units
+      ~DerivedDim.is_close_to
+      ~DerivedDim.multiply_by
+      ~DerivedDim.of
+      ~DerivedDim.ratio
+      ~DerivedDim.restricted
+      ~DerivedDim.to_power
+      ~DerivedDim.unit
+   
+   
+   

@@ -1,0 +1,63 @@
+mpam.types.TickNumber
+=====================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: TickNumber
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TickNumber.number
+      ~TickNumber.tick
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TickNumber.ZERO
+      ~TickNumber.__init__
+   
+   
+   
+
+   
+   
+   
+   

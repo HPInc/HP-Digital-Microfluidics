@@ -1,0 +1,193 @@
+quantities.dimensions.MagneticInduction
+=======================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: MagneticInduction
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MagneticInduction.derived
+      ~MagneticInduction.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~MagneticInduction.dimensionality
+      ~MagneticInduction.is_negative
+      ~MagneticInduction.is_positive
+      ~MagneticInduction.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MagneticInduction.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~MagneticInduction.__init__
+      ~MagneticInduction.a
+      ~MagneticInduction.an
+      ~MagneticInduction.as_dimensionality
+      ~MagneticInduction.as_number
+      ~MagneticInduction.as_unit
+      ~MagneticInduction.as_unit_expr
+      ~MagneticInduction.cast
+      ~MagneticInduction.check_dimensionality
+      ~MagneticInduction.decomposed
+      ~MagneticInduction.divide_by
+      ~MagneticInduction.has_dimensionality
+      ~MagneticInduction.in_denom
+      ~MagneticInduction.in_units
+      ~MagneticInduction.is_close_to
+      ~MagneticInduction.multiply_by
+      ~MagneticInduction.of
+      ~MagneticInduction.ratio
+      ~MagneticInduction.restricted
+      ~MagneticInduction.to_power
+      ~MagneticInduction.unit
+   
+   
+   

@@ -1,0 +1,36 @@
+﻿mpam.exceptions
+===============
+
+.. automodule:: mpam.exceptions
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+      :toctree:
+   
+      MPAMError
+      NoSuchPad
+      NotAtWell
+      PadBrokenError
+      UnsafeMotion
+      WellEmptyError
+      WellFullError
+   
+   
+
+
+

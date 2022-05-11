@@ -1,0 +1,6 @@
+typing.get\_type\_hints
+=======================
+
+.. currentmodule:: typing
+
+.. autofunction:: get_type_hints

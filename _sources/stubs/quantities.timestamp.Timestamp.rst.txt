@@ -1,0 +1,73 @@
+quantities.timestamp.Timestamp
+==============================
+
+.. currentmodule:: quantities.timestamp
+
+.. autoclass:: Timestamp
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Timestamp.time
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Timestamp.__init__
+      ~Timestamp.epoch
+      ~Timestamp.never
+      ~Timestamp.now
+      ~Timestamp.strftime
+   
+   
+   
+
+   
+   
+   
+   

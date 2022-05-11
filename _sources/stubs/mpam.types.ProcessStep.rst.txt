@@ -1,0 +1,58 @@
+mpam.types.ProcessStep
+======================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: ProcessStep
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ProcessStep.description
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ProcessStep.__init__
+      ~ProcessStep.find_or_create
+   
+   
+   
+
+   
+   
+   
+   

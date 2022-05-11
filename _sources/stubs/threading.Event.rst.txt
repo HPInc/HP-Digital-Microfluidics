@@ -1,0 +1,68 @@
+threading.Event
+===============
+
+.. currentmodule:: threading
+
+.. autoclass:: Event
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Event.__init__
+      ~Event.clear
+      ~Event.isSet
+      ~Event.is_set
+      ~Event.set
+      ~Event.wait
+   
+   
+   
+
+   
+   
+   
+   

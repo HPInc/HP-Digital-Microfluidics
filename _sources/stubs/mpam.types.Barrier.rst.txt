@@ -1,0 +1,128 @@
+mpam.types.Barrier
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Barrier
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Barrier.at_barrier
+      ~Barrier.required
+      ~Barrier.waiting_for
+      ~Barrier.name
+      ~Barrier.waiting
+      ~Barrier.lock
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Barrier.count
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Barrier.__init__
+      ~Barrier.pass_through
+      ~Barrier.pause
+      ~Barrier.reach
+      ~Barrier.reset
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Barrier.fire
+      ~Barrier.on_trigger
+      ~Barrier.wait
+   
+   
+   

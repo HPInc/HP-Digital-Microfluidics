@@ -1,0 +1,178 @@
+mpam.device.WellPad
+===================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: WellPad
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WellPad.is_gate
+      ~WellPad.well
+      ~WellPad.index
+      ~WellPad.state
+      ~WellPad.broken
+      ~WellPad.live
+      ~WellPad.board
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~WellPad.Toggle
+      ~WellPad.TurnOff
+      ~WellPad.TurnOn
+      ~WellPad.blob
+      ~WellPad.checked_drop
+      ~WellPad.current_state
+      ~WellPad.drop
+      ~WellPad.neighbors_for_blob
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~WellPad.__init__
+      ~WellPad.compute_neighbors_for_blob
+      ~WellPad.set_location
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~WellPad.SetState
+      ~WellPad.delayed
+      ~WellPad.on_drop_change
+      ~WellPad.on_state_change
+      ~WellPad.schedule
+      ~WellPad.schedule_communication
+      ~WellPad.user_operation
+   
+   
+   

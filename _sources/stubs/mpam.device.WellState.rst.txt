@@ -1,0 +1,58 @@
+mpam.device.WellState
+=====================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: WellState
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~WellState.EXTRACTABLE
+      ~WellState.READY
+      ~WellState.DISPENSED
+      ~WellState.ABSORBED
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

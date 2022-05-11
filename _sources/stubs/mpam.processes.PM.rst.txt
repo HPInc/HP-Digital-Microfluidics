@@ -1,0 +1,83 @@
+mpam.processes.PM
+=================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: PM
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PM.drop1_index
+      ~PM.drop2_index
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PM.merge
+      ~PM.split
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~PM.__init__
+      ~PM.count
+      ~PM.index
+   
+   
+   

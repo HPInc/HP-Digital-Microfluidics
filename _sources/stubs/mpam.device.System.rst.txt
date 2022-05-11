@@ -1,0 +1,143 @@
+mpam.device.System
+==================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: System
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~System.monitor
+      ~System.running
+      ~System.board
+      ~System.engine
+      ~System.clock
+      ~System.components
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~System.__init__
+      ~System.abort
+      ~System.after_tick
+      ~System.batched
+      ~System.before_tick
+      ~System.call_after
+      ~System.call_at
+      ~System.communicate
+      ~System.component_joined
+      ~System.delayed
+      ~System.on_tick
+      ~System.run_monitored
+      ~System.shutdown
+      ~System.stop
+   
+   
+   
+
+   
+   
+   
+   

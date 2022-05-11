@@ -1,0 +1,68 @@
+mpam.processes.JoinProcess
+==========================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: JoinProcess
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~JoinProcess.__init__
+      ~JoinProcess.schedule_for
+      ~JoinProcess.then
+      ~JoinProcess.then_call
+      ~JoinProcess.then_compute
+      ~JoinProcess.then_process
+   
+   
+   

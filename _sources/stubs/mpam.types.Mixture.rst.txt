@@ -1,0 +1,138 @@
+mpam.types.Mixture
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Mixture
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Mixture.mixture
+      ~Mixture.name
+      ~Mixture.composition
+      ~Mixture.min_storage_temp
+      ~Mixture.max_storage_temp
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Mixture.is_pure
+      ~Mixture.known
+      ~Mixture.process_steps
+      ~Mixture.unprocessed
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Mixture.__init__
+      ~Mixture.find_or_compute
+      ~Mixture.new_mixture
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Mixture.LoseComposition
+      ~Mixture.SameComposition
+      ~Mixture.find
+      ~Mixture.liquid
+      ~Mixture.processed
+   
+   
+   

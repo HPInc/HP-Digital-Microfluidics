@@ -1,0 +1,6 @@
+threading.settrace
+==================
+
+.. currentmodule:: threading
+
+.. autofunction:: settrace

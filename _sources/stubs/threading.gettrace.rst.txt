@@ -1,0 +1,6 @@
+threading.gettrace
+==================
+
+.. currentmodule:: threading
+
+.. autofunction:: gettrace

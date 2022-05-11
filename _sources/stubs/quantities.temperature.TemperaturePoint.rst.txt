@@ -1,0 +1,68 @@
+quantities.temperature.TemperaturePoint
+=======================================
+
+.. currentmodule:: quantities.temperature
+
+.. autoclass:: TemperaturePoint
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TemperaturePoint.default_scale
+      ~TemperaturePoint.absolute
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~TemperaturePoint.__init__
+      ~TemperaturePoint.as_number
+      ~TemperaturePoint.on_scale
+   
+   
+   
+
+   
+   
+   
+   

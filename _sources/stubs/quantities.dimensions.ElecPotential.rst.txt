@@ -1,0 +1,193 @@
+quantities.dimensions.ElecPotential
+===================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: ElecPotential
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ElecPotential.derived
+      ~ElecPotential.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~ElecPotential.dimensionality
+      ~ElecPotential.is_negative
+      ~ElecPotential.is_positive
+      ~ElecPotential.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ElecPotential.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~ElecPotential.__init__
+      ~ElecPotential.a
+      ~ElecPotential.an
+      ~ElecPotential.as_dimensionality
+      ~ElecPotential.as_number
+      ~ElecPotential.as_unit
+      ~ElecPotential.as_unit_expr
+      ~ElecPotential.cast
+      ~ElecPotential.check_dimensionality
+      ~ElecPotential.decomposed
+      ~ElecPotential.divide_by
+      ~ElecPotential.has_dimensionality
+      ~ElecPotential.in_denom
+      ~ElecPotential.in_units
+      ~ElecPotential.is_close_to
+      ~ElecPotential.multiply_by
+      ~ElecPotential.of
+      ~ElecPotential.ratio
+      ~ElecPotential.restricted
+      ~ElecPotential.to_power
+      ~ElecPotential.unit
+   
+   
+   

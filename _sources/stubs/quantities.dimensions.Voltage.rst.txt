@@ -1,0 +1,193 @@
+quantities.dimensions.Voltage
+=============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Voltage
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Voltage.derived
+      ~Voltage.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Voltage.dimensionality
+      ~Voltage.is_negative
+      ~Voltage.is_positive
+      ~Voltage.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Voltage.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Voltage.__init__
+      ~Voltage.a
+      ~Voltage.an
+      ~Voltage.as_dimensionality
+      ~Voltage.as_number
+      ~Voltage.as_unit
+      ~Voltage.as_unit_expr
+      ~Voltage.cast
+      ~Voltage.check_dimensionality
+      ~Voltage.decomposed
+      ~Voltage.divide_by
+      ~Voltage.has_dimensionality
+      ~Voltage.in_denom
+      ~Voltage.in_units
+      ~Voltage.is_close_to
+      ~Voltage.multiply_by
+      ~Voltage.of
+      ~Voltage.ratio
+      ~Voltage.restricted
+      ~Voltage.to_power
+      ~Voltage.unit
+   
+   
+   

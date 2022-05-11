@@ -1,0 +1,43 @@
+typing.ParamSpecArgs
+====================
+
+.. currentmodule:: typing
+
+.. autoclass:: ParamSpecArgs
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ParamSpecArgs.__init__
+   
+   
+   
+
+   
+   
+   
+   

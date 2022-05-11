@@ -1,0 +1,188 @@
+quantities.core.NamedDim
+========================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: NamedDim
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~NamedDim.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~NamedDim.dimensionality
+      ~NamedDim.is_negative
+      ~NamedDim.is_positive
+      ~NamedDim.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NamedDim.__init__
+      ~NamedDim.as_dimensionality
+      ~NamedDim.dim
+      ~NamedDim.restricted
+      ~NamedDim.unit
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~NamedDim.a
+      ~NamedDim.an
+      ~NamedDim.as_number
+      ~NamedDim.as_unit
+      ~NamedDim.as_unit_expr
+      ~NamedDim.cast
+      ~NamedDim.check_dimensionality
+      ~NamedDim.decomposed
+      ~NamedDim.divide_by
+      ~NamedDim.has_dimensionality
+      ~NamedDim.in_denom
+      ~NamedDim.in_units
+      ~NamedDim.is_close_to
+      ~NamedDim.multiply_by
+      ~NamedDim.of
+      ~NamedDim.ratio
+      ~NamedDim.to_power
+   
+   
+   

@@ -1,0 +1,103 @@
+mpam.drop.Drop
+==============
+
+.. currentmodule:: mpam.drop
+
+.. autoclass:: Drop
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Drop.blob
+      ~Drop.blob_volume
+      ~Drop.display_volume
+      ~Drop.on_board_pad
+      ~Drop.pad
+      ~Drop.reagent
+      ~Drop.status
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Drop.__init__
+      ~Drop.delayed
+      ~Drop.schedule_communication
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Drop.schedule
+   
+   
+   

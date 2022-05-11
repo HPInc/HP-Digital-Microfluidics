@@ -1,0 +1,118 @@
+mpam.pipettor.FillTarget
+========================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: FillTarget
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FillTarget.insufficient_msg
+      ~FillTarget.mix_result
+      ~FillTarget.target
+      ~FillTarget.volume
+      ~FillTarget.allow_merge
+      ~FillTarget.on_unknown
+      ~FillTarget.on_insufficient
+      ~FillTarget.got
+      ~FillTarget.future
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FillTarget.__init__
+      ~FillTarget.in_position
+      ~FillTarget.signal_done
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~FillTarget.finished
+      ~FillTarget.finished_overall_transfer
+   
+   
+   

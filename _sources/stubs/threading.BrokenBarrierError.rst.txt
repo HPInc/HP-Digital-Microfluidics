@@ -1,0 +1,6 @@
+threading.BrokenBarrierError
+============================
+
+.. currentmodule:: threading
+
+.. autoexception:: BrokenBarrierError

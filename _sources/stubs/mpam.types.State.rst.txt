@@ -1,0 +1,68 @@
+mpam.types.State
+================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: State
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~State.current_state
+      ~State.state_change_callbacks
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~State.__init__
+      ~State.on_state_change
+      ~State.realize_state
+   
+   
+   
+
+   
+   
+   
+   

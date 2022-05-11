@@ -1,0 +1,188 @@
+mpam.monitor.PadMonitor
+=======================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: PadMonitor
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PadMonitor.heating_mode_colors
+      ~PadMonitor.pad
+      ~PadMonitor.board_monitor
+      ~PadMonitor.square
+      ~PadMonitor.magnet
+      ~PadMonitor.heater
+      ~PadMonitor.port
+      ~PadMonitor.origin
+      ~PadMonitor.width
+      ~PadMonitor.center
+      ~PadMonitor.capacity
+      ~PadMonitor.component
+      ~PadMonitor.patches
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~PadMonitor.current_state
+      ~PadMonitor.live
+      ~PadMonitor.neighbors
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PadMonitor.__init__
+      ~PadMonitor.current_drop
+      ~PadMonitor.drop_radius
+      ~PadMonitor.holds_drop
+      ~PadMonitor.list_neighbors
+      ~PadMonitor.note_drop_change
+      ~PadMonitor.note_magnet_state
+      ~PadMonitor.note_new_temperature
+      ~PadMonitor.note_state
+      ~PadMonitor.preview_state
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~PadMonitor.draw
+   
+   
+   

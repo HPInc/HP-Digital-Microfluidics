@@ -1,0 +1,213 @@
+quantities.core.CountDim
+========================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: CountDim
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~CountDim.checked_count
+      ~CountDim.count
+      ~CountDim.noun_units
+      ~CountDim.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~CountDim.dimensionality
+      ~CountDim.is_negative
+      ~CountDim.is_positive
+      ~CountDim.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~CountDim.base_unit
+      ~CountDim.dim
+      ~CountDim.for_noun
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~CountDim.__init__
+      ~CountDim.a
+      ~CountDim.an
+      ~CountDim.as_dimensionality
+      ~CountDim.as_number
+      ~CountDim.as_unit
+      ~CountDim.as_unit_expr
+      ~CountDim.cast
+      ~CountDim.check_dimensionality
+      ~CountDim.decomposed
+      ~CountDim.divide_by
+      ~CountDim.has_dimensionality
+      ~CountDim.in_denom
+      ~CountDim.in_units
+      ~CountDim.is_close_to
+      ~CountDim.multiply_by
+      ~CountDim.of
+      ~CountDim.ratio
+      ~CountDim.restricted
+      ~CountDim.to_power
+      ~CountDim.unit
+   
+   
+   

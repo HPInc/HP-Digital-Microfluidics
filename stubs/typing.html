@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>typing &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="typing.NamedTuple" href="typing.NamedTuple.html" />
+    <link rel="prev" title="threading.BrokenBarrierError" href="threading.BrokenBarrierError.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">typing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="typing.NamedTuple.html">typing.NamedTuple</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.TypedDict.html">typing.TypedDict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.cast.html">typing.cast</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.final.html">typing.final</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.get_args.html">typing.get_args</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.get_origin.html">typing.get_origin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.get_type_hints.html">typing.get_type_hints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.is_typeddict.html">typing.is_typeddict</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.no_type_check.html">typing.no_type_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.no_type_check_decorator.html">typing.no_type_check_decorator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.overload.html">typing.overload</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.runtime_checkable.html">typing.runtime_checkable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.Annotated.html">typing.Annotated</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.BinaryIO.html">typing.BinaryIO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.ForwardRef.html">typing.ForwardRef</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.Generic.html">typing.Generic</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.IO.html">typing.io</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.NamedTupleMeta.html">typing.NamedTupleMeta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.NewType.html">typing.NewType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.ParamSpec.html">typing.ParamSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.ParamSpecArgs.html">typing.ParamSpecArgs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.ParamSpecKwargs.html">typing.ParamSpecKwargs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.Protocol.html">typing.Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.SupportsAbs.html">typing.SupportsAbs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.SupportsBytes.html">typing.SupportsBytes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.SupportsComplex.html">typing.SupportsComplex</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.SupportsFloat.html">typing.SupportsFloat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.SupportsIndex.html">typing.SupportsIndex</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.SupportsInt.html">typing.SupportsInt</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.SupportsRound.html">typing.SupportsRound</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.TextIO.html">typing.TextIO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.TypeVar.html">typing.TypeVar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.re.html">typing.re</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>typing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/typing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-typing">
+<span id="typing"></span><h1>typing<a class="headerlink" href="#module-typing" title="Permalink to this headline"></a></h1>
+<p>The typing module: Support for gradual typing as defined by PEP 484.</p>
+<p>At large scale, the structure of the module is following:
+* Imports and exports, all public names should be explicitly added to __all__.
+* Internal helper functions: these should never be used in code outside this module.
+* _SpecialForm and its instances (special forms):</p>
+<blockquote>
+<div><p>Any, NoReturn, ClassVar, Union, Optional, Concatenate</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Classes whose instances can be type arguments in addition to types:
+ForwardRef, TypeVar and ParamSpec</p></li>
+<li><p>The core of internal generics API: _GenericAlias and _VariadicGenericAlias, the latter is
+currently only used by Tuple and Callable. All subscripted types like X[int], Union[int, str],
+etc., are instances of either of these classes.</p></li>
+<li><p>The public counterpart of the generics API consists of two classes: Generic and Protocol.</p></li>
+<li><p>Public helper functions: get_type_hints, overload, cast, no_type_check,
+no_type_check_decorator.</p></li>
+<li><p>Generic aliases for collections.abc ABCs and few additional protocols.</p></li>
+<li><p>Special types: NewType, NamedTuple, TypedDict.</p></li>
+<li><p>Wrapper submodules for re and io related types.</p></li>
+</ul>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.NamedTuple.html#typing.NamedTuple" title="typing.NamedTuple"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NamedTuple</span></code></a>(typename[, fields])</p></td>
+<td><p>Typed version of namedtuple.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.TypedDict.html#typing.TypedDict" title="typing.TypedDict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TypedDict</span></code></a>(typename[, fields, total])</p></td>
+<td><p>A simple typed namespace.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.cast.html#typing.cast" title="typing.cast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cast</span></code></a>(typ, val)</p></td>
+<td><p>Cast a value to a type.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.final.html#typing.final" title="typing.final"><code class="xref py py-obj docutils literal notranslate"><span class="pre">final</span></code></a>(f)</p></td>
+<td><p>A decorator to indicate final methods and final classes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.get_args.html#typing.get_args" title="typing.get_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_args</span></code></a>(tp)</p></td>
+<td><p>Get type arguments with all substitutions performed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.get_origin.html#typing.get_origin" title="typing.get_origin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_origin</span></code></a>(tp)</p></td>
+<td><p>Get the unsubscripted version of a type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.get_type_hints.html#typing.get_type_hints" title="typing.get_type_hints"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_type_hints</span></code></a>(obj[, globalns, localns, ...])</p></td>
+<td><p>Return type hints for an object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.is_typeddict.html#typing.is_typeddict" title="typing.is_typeddict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_typeddict</span></code></a>(tp)</p></td>
+<td><p>Check if an annotation is a TypedDict class</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.no_type_check.html#typing.no_type_check" title="typing.no_type_check"><code class="xref py py-obj docutils literal notranslate"><span class="pre">no_type_check</span></code></a>(arg)</p></td>
+<td><p>Decorator to indicate that annotations are not type hints.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.no_type_check_decorator.html#typing.no_type_check_decorator" title="typing.no_type_check_decorator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">no_type_check_decorator</span></code></a>(decorator)</p></td>
+<td><p>Decorator to give another decorator the &#64;no_type_check effect.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.overload.html#typing.overload" title="typing.overload"><code class="xref py py-obj docutils literal notranslate"><span class="pre">overload</span></code></a>(func)</p></td>
+<td><p>Decorator for overloaded functions/methods.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.runtime_checkable.html#typing.runtime_checkable" title="typing.runtime_checkable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runtime_checkable</span></code></a>(cls)</p></td>
+<td><p>Mark a protocol class as a runtime protocol.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.Annotated.html#typing.Annotated" title="typing.Annotated"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Annotated</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Add context specific metadata to a type.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.BinaryIO.html#typing.BinaryIO" title="typing.BinaryIO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BinaryIO</span></code></a>()</p></td>
+<td><p>Typed version of the return of open() in binary mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.ForwardRef.html#typing.ForwardRef" title="typing.ForwardRef"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ForwardRef</span></code></a>(arg[, is_argument, module, is_class])</p></td>
+<td><p>Internal wrapper to hold a forward reference.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Generic</span></code></a>()</p></td>
+<td><p>Abstract base class for generic types.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#typing.IO" title="typing.IO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IO</span></code></a>()</p></td>
+<td><p>Generic base class for TextIO and BinaryIO.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.NamedTupleMeta.html#typing.NamedTupleMeta" title="typing.NamedTupleMeta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NamedTupleMeta</span></code></a>(typename, bases, ns)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.NewType.html#typing.NewType" title="typing.NewType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NewType</span></code></a>(name, tp)</p></td>
+<td><p>NewType creates simple unique types with almost zero runtime overhead. NewType(name, tp) is considered a subtype of tp by static type checkers. At runtime, NewType(name, tp) returns a dummy callable that simply returns its argument. Usage::.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.ParamSpec.html#typing.ParamSpec" title="typing.ParamSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParamSpec</span></code></a>(name, *[, bound, covariant, ...])</p></td>
+<td><p>Parameter specification variable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.ParamSpecArgs.html#typing.ParamSpecArgs" title="typing.ParamSpecArgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParamSpecArgs</span></code></a>(origin)</p></td>
+<td><p>The args for a ParamSpec object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.ParamSpecKwargs.html#typing.ParamSpecKwargs" title="typing.ParamSpecKwargs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ParamSpecKwargs</span></code></a>(origin)</p></td>
+<td><p>The kwargs for a ParamSpec object.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Protocol</span></code></a>()</p></td>
+<td><p>Base class for protocol classes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.SupportsAbs.html#typing.SupportsAbs" title="typing.SupportsAbs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupportsAbs</span></code></a>(*args, **kwargs)</p></td>
+<td><p>An ABC with one abstract method __abs__ that is covariant in its return type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.SupportsBytes.html#typing.SupportsBytes" title="typing.SupportsBytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupportsBytes</span></code></a>(*args, **kwargs)</p></td>
+<td><p>An ABC with one abstract method __bytes__.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.SupportsComplex.html#typing.SupportsComplex" title="typing.SupportsComplex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupportsComplex</span></code></a>(*args, **kwargs)</p></td>
+<td><p>An ABC with one abstract method __complex__.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.SupportsFloat.html#typing.SupportsFloat" title="typing.SupportsFloat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupportsFloat</span></code></a>(*args, **kwargs)</p></td>
+<td><p>An ABC with one abstract method __float__.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.SupportsIndex.html#typing.SupportsIndex" title="typing.SupportsIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupportsIndex</span></code></a>(*args, **kwargs)</p></td>
+<td><p>An ABC with one abstract method __index__.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.SupportsInt.html#typing.SupportsInt" title="typing.SupportsInt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupportsInt</span></code></a>(*args, **kwargs)</p></td>
+<td><p>An ABC with one abstract method __int__.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.SupportsRound.html#typing.SupportsRound" title="typing.SupportsRound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SupportsRound</span></code></a>(*args, **kwargs)</p></td>
+<td><p>An ABC with one abstract method __round__ that is covariant in its return type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.TextIO.html#typing.TextIO" title="typing.TextIO"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TextIO</span></code></a>()</p></td>
+<td><p>Typed version of the return of open() in text mode.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.TypeVar.html#typing.TypeVar" title="typing.TypeVar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(name, *constraints[, bound, ...])</p></td>
+<td><p>Type variable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="typing.IO.html#typing.io" title="typing.io"><code class="xref py py-obj docutils literal notranslate"><span class="pre">io</span></code></a></p></td>
+<td><p>alias of <a class="reference internal" href="typing.IO.html#typing.io" title="typing.io"><code class="xref py py-class docutils literal notranslate"><span class="pre">io</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="typing.re.html#typing.re" title="typing.re"><code class="xref py py-obj docutils literal notranslate"><span class="pre">re</span></code></a></p></td>
+<td><p>alias of <a class="reference internal" href="typing.re.html#typing.re" title="typing.re"><code class="xref py py-class docutils literal notranslate"><span class="pre">re</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.Annotated">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">Annotated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.Annotated" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Add context specific metadata to a type.</p>
+<p>Example: Annotated[int, runtime_check.Unsigned] indicates to the
+hypothetical runtime_check module that this type is an unsigned int.
+Every other consumer of this type can ignore this metadata and treat
+this type as int.</p>
+<p>The first argument to Annotated must be a valid type.</p>
+<p>Details:</p>
+<ul>
+<li><p>It’s an error to call <cite>Annotated</cite> with less than two arguments.</p></li>
+<li><p>Nested Annotated are flattened:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Annotated</span><span class="p">[</span><span class="n">Annotated</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Ann1</span><span class="p">,</span> <span class="n">Ann2</span><span class="p">],</span> <span class="n">Ann3</span><span class="p">]</span> <span class="o">==</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">Ann1</span><span class="p">,</span> <span class="n">Ann2</span><span class="p">,</span> <span class="n">Ann3</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Instantiating an annotated type is equivalent to instantiating the</p></li>
+</ul>
+<p>underlying type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Annotated</span><span class="p">[</span><span class="n">C</span><span class="p">,</span> <span class="n">Ann1</span><span class="p">](</span><span class="mi">5</span><span class="p">)</span> <span class="o">==</span> <span class="n">C</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul>
+<li><p>Annotated can be used as a generic type alias:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Optimized</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">runtime</span><span class="o">.</span><span class="n">Optimize</span><span class="p">()]</span>
+<span class="n">Optimized</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">==</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">runtime</span><span class="o">.</span><span class="n">Optimize</span><span class="p">()]</span>
+
+<span class="n">OptimizedList</span> <span class="o">=</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">runtime</span><span class="o">.</span><span class="n">Optimize</span><span class="p">()]</span>
+<span class="n">OptimizedList</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">==</span> <span class="n">Annotated</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">runtime</span><span class="o">.</span><span class="n">Optimize</span><span class="p">()]</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.BinaryIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">BinaryIO</span></span><a class="headerlink" href="#typing.BinaryIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#typing.IO" title="typing.IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">IO</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>]</p>
+<p>Typed version of the return of open() in binary mode.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.ForwardRef">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">ForwardRef</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_argument</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ForwardRef" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_Final</span></code></p>
+<p>Internal wrapper to hold a forward reference.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.ForwardRef.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_argument</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ForwardRef.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.Generic">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">Generic</span></span><a class="headerlink" href="#typing.Generic" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Abstract base class for generic types.</p>
+<p>A generic type is typically declared by inheriting from
+this class parameterized with one or more type variables.
+For example, a generic mapping type might be defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Mapping</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">KT</span><span class="p">,</span> <span class="n">VT</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">KT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VT</span><span class="p">:</span>
+        <span class="o">...</span>
+    <span class="c1"># Etc.</span>
+</pre></div>
+</div>
+<p>This class can then be used as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">lookup_name</span><span class="p">(</span><span class="n">mapping</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">KT</span><span class="p">,</span> <span class="n">VT</span><span class="p">],</span> <span class="n">key</span><span class="p">:</span> <span class="n">KT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">VT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VT</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">default</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.IO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">IO</span></span><a class="headerlink" href="#typing.IO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
+<p>Generic base class for TextIO and BinaryIO.</p>
+<p>This is an abstract, generic version of the return of open().</p>
+<p>NOTE: This does not distinguish between the different possible
+classes (text vs. binary, read vs. write vs. read/write,
+append-only, unbuffered).  The TextIO and BinaryIO subclasses
+below capture the distinctions between text vs. binary, which is
+pervasive in the interface; however we currently do not offer a
+way to track the other distinctions in the type system.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.NamedTuple">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">NamedTuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">typename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.NamedTuple" title="Permalink to this definition"></a></dt>
+<dd><p>Typed version of namedtuple.</p>
+<p>Usage in Python versions &gt;= 3.6:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Employee</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+</pre></div>
+</div>
+<p>This is equivalent to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Employee</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;Employee&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The resulting class has an extra __annotations__ attribute, giving a
+dict that maps field names to types.  (The field names are also in
+the _fields attribute, which is part of the namedtuple API.)
+Alternative equivalent keyword syntax is also accepted:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Employee</span> <span class="o">=</span> <span class="n">NamedTuple</span><span class="p">(</span><span class="s1">&#39;Employee&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In Python versions &lt;= 3.5 use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Employee</span> <span class="o">=</span> <span class="n">NamedTuple</span><span class="p">(</span><span class="s1">&#39;Employee&#39;</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">)])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.NewType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">NewType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.NewType" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>NewType creates simple unique types with almost zero
+runtime overhead. NewType(name, tp) is considered a subtype of tp
+by static type checkers. At runtime, NewType(name, tp) returns
+a dummy callable that simply returns its argument. Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">UserId</span> <span class="o">=</span> <span class="n">NewType</span><span class="p">(</span><span class="s1">&#39;UserId&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">name_by_id</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">UserId</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="o">...</span>
+
+<span class="n">UserId</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">)</span>          <span class="c1"># Fails type check</span>
+
+<span class="n">name_by_id</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>          <span class="c1"># Fails type check</span>
+<span class="n">name_by_id</span><span class="p">(</span><span class="n">UserId</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>  <span class="c1"># OK</span>
+
+<span class="n">num</span> <span class="o">=</span> <span class="n">UserId</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>     <span class="c1"># type: int</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.NewType.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.NewType.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Call self as a function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.NewType.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.NewType.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.ParamSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">ParamSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contravariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ParamSpec" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_Final</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_Immutable</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_TypeVarLike</span></code></p>
+<p>Parameter specification variable.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">P</span> <span class="o">=</span> <span class="n">ParamSpec</span><span class="p">(</span><span class="s1">&#39;P&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Parameter specification variables exist primarily for the benefit of static
+type checkers.  They are used to forward the parameter types of one
+callable to another callable, a pattern commonly found in higher order
+functions and decorators.  They are only valid when used in <code class="docutils literal notranslate"><span class="pre">Concatenate</span></code>,
+or s the first argument to <code class="docutils literal notranslate"><span class="pre">Callable</span></code>, or as parameters for user-defined
+Generics.  See class Generic for more information on generic types.  An
+example for annotating a decorator:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+<span class="n">P</span> <span class="o">=</span> <span class="n">ParamSpec</span><span class="p">(</span><span class="s1">&#39;P&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">add_logging</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">T</span><span class="p">]:</span>
+    <span class="sd">&#39;&#39;&#39;A type-safe decorator to add logging to a function.&#39;&#39;&#39;</span>
+    <span class="k">def</span> <span class="nf">inner</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> was called&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inner</span>
+
+<span class="nd">@add_logging</span>
+<span class="k">def</span> <span class="nf">add_two</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="sd">&#39;&#39;&#39;Add two numbers together.&#39;&#39;&#39;</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
+</pre></div>
+</div>
+<p>Parameter specification variables defined with covariant=True or
+contravariant=True can be used to declare covariant or contravariant
+generic types.  These keyword arguments are valid, but their actual semantics
+are yet to be decided.  See PEP 612 for details.</p>
+<p>Parameter specification variables can be introspected. e.g.:</p>
+<blockquote>
+<div><p>P.__name__ == ‘T’
+P.__bound__ == None
+P.__covariant__ == False
+P.__contravariant__ == False</p>
+</div></blockquote>
+<p>Note that only parameter specification variables defined in global scope can
+be pickled.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.ParamSpec.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contravariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ParamSpec.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.ParamSpecArgs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">ParamSpecArgs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">origin</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ParamSpecArgs" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_Final</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_Immutable</span></code></p>
+<p>The args for a ParamSpec object.</p>
+<p>Given a ParamSpec object P, P.args is an instance of ParamSpecArgs.</p>
+<p>ParamSpecArgs objects have a reference back to their ParamSpec:</p>
+<blockquote>
+<div><p>P.args.__origin__ is P</p>
+</div></blockquote>
+<p>This type is meant for runtime introspection and has no special meaning to
+static type checkers.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.ParamSpecArgs.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">origin</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ParamSpecArgs.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.ParamSpecKwargs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">ParamSpecKwargs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">origin</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ParamSpecKwargs" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_Final</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_Immutable</span></code></p>
+<p>The kwargs for a ParamSpec object.</p>
+<p>Given a ParamSpec object P, P.kwargs is an instance of ParamSpecKwargs.</p>
+<p>ParamSpecKwargs objects have a reference back to their ParamSpec:</p>
+<blockquote>
+<div><p>P.kwargs.__origin__ is P</p>
+</div></blockquote>
+<p>This type is meant for runtime introspection and has no special meaning to
+static type checkers.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.ParamSpecKwargs.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">origin</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.ParamSpecKwargs.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.Protocol">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">Protocol</span></span><a class="headerlink" href="#typing.Protocol" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
+<p>Base class for protocol classes.</p>
+<p>Protocol classes are defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Proto</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<p>Such classes are primarily used with static type checkers that recognize
+structural subtyping (static duck-typing), for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+<span class="k">def</span> <span class="nf">func</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Proto</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">meth</span><span class="p">()</span>
+
+<span class="n">func</span><span class="p">(</span><span class="n">C</span><span class="p">())</span>  <span class="c1"># Passes static type check</span>
+</pre></div>
+</div>
+<p>See PEP 544 for details. Protocol classes decorated with
+&#64;typing.runtime_checkable act as simple-minded runtime protocols that check
+only the presence of given attributes, ignoring their type signatures.
+Protocol classes can be generic, they are defined as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">GenProto</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+    <span class="k">def</span> <span class="nf">meth</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.SupportsAbs">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">SupportsAbs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsAbs" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>An ABC with one abstract method __abs__ that is covariant in its return type.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.SupportsAbs.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsAbs.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.SupportsBytes">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">SupportsBytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsBytes" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>An ABC with one abstract method __bytes__.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.SupportsBytes.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsBytes.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.SupportsComplex">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">SupportsComplex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsComplex" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>An ABC with one abstract method __complex__.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.SupportsComplex.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsComplex.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.SupportsFloat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">SupportsFloat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsFloat" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>An ABC with one abstract method __float__.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.SupportsFloat.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsFloat.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.SupportsIndex">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">SupportsIndex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsIndex" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>An ABC with one abstract method __index__.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.SupportsIndex.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsIndex.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.SupportsInt">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">SupportsInt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsInt" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>An ABC with one abstract method __int__.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.SupportsInt.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsInt.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.SupportsRound">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">SupportsRound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsRound" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Protocol.html#typing.Protocol" title="typing.Protocol"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>An ABC with one abstract method __round__ that is covariant in its return type.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.SupportsRound.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.SupportsRound.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="typing.Text">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">Text</span></span><a class="headerlink" href="#typing.Text" title="Permalink to this definition"></a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.TextIO">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">TextIO</span></span><a class="headerlink" href="#typing.TextIO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#typing.IO" title="typing.IO"><code class="xref py py-class docutils literal notranslate"><span class="pre">IO</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+<p>Typed version of the return of open() in text mode.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.TypeVar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">TypeVar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">constraints</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contravariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.TypeVar" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_Final</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_Immutable</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_TypeVarLike</span></code></p>
+<p>Type variable.</p>
+<p>Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>  <span class="c1"># Can be anything</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>  <span class="c1"># Must be str or bytes</span>
+</pre></div>
+</div>
+<p>Type variables exist primarily for the benefit of static type
+checkers.  They serve as the parameters for generic types as well
+as for generic function definitions.  See class Generic for more
+information on generic types.  Generic functions work as follows:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>def repeat(x: T, n: int) -&gt; List[T]:</dt><dd><p>‘’’Return a list containing n references to x.’’’
+return [x]*n</p>
+</dd>
+<dt>def longest(x: A, y: A) -&gt; A:</dt><dd><p>‘’’Return the longest of two strings.’’’
+return x if len(x) &gt;= len(y) else y</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>The latter example’s signature is essentially the overloading
+of (str, str) -&gt; str and (bytes, bytes) -&gt; bytes.  Also note
+that if the arguments are instances of some subclass of str,
+the return type is still plain str.</p>
+<p>At runtime, isinstance(x, T) and issubclass(C, T) will raise TypeError.</p>
+<p>Type variables defined with covariant=True or contravariant=True
+can be used to declare covariant or contravariant generic types.
+See PEP 484 for more details. By default generic types are invariant
+in all type variables.</p>
+<p>Type variables can be introspected. e.g.:</p>
+<blockquote>
+<div><p>T.__name__ == ‘T’
+T.__constraints__ == ()
+T.__covariant__ == False
+T.__contravariant__ = False
+A.__constraints__ == (str, bytes)</p>
+</div></blockquote>
+<p>Note that only type variables defined in global scope can be pickled.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="typing.TypeVar.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">constraints</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contravariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.TypeVar.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.TypedDict">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">TypedDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">typename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.TypedDict" title="Permalink to this definition"></a></dt>
+<dd><p>A simple typed namespace. At runtime it is equivalent to a plain dict.</p>
+<p>TypedDict creates a dictionary type that expects all of its
+instances to have a certain set of keys, where each key is
+associated with a value of a consistent type. This expectation
+is not checked at runtime but is only enforced by type checkers.
+Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Point2D</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="n">a</span><span class="p">:</span> <span class="n">Point2D</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;good&#39;</span><span class="p">}</span>  <span class="c1"># OK</span>
+<span class="n">b</span><span class="p">:</span> <span class="n">Point2D</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;bad&#39;</span><span class="p">}</span>           <span class="c1"># Fails type check</span>
+
+<span class="k">assert</span> <span class="n">Point2D</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The type info can be accessed via the Point2D.__annotations__ dict, and
+the Point2D.__required_keys__ and Point2D.__optional_keys__ frozensets.
+TypedDict supports two additional equivalent forms:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Point2D</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span><span class="s1">&#39;Point2D&#39;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+<span class="n">Point2D</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span><span class="s1">&#39;Point2D&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>By default, all keys must be present in a TypedDict. It is possible
+to override this by specifying totality.
+Usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">point2D</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">int</span>
+</pre></div>
+</div>
+<p>This means that a point2D TypedDict can have any of the keys omitted.A type
+checker is only expected to support a literal False or True as the value of
+the total argument. True is the default, and makes all items defined in the
+class body be required.</p>
+<p>The class syntax is only supported in Python 3.6+, while two other
+syntax forms work for Python 2.7 and 3.2+</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.cast">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">cast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">typ</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.cast" title="Permalink to this definition"></a></dt>
+<dd><p>Cast a value to a type.</p>
+<p>This returns the value unchanged.  To the type checker this
+signals that the return value has the designated type, but at
+runtime we intentionally don’t check anything (we want this
+to be as fast as possible).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.final">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">final</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.final" title="Permalink to this definition"></a></dt>
+<dd><p>A decorator to indicate final methods and final classes.</p>
+<p>Use this decorator to indicate to type checkers that the decorated
+method cannot be overridden, and decorated class cannot be subclassed.
+For example:</p>
+<blockquote>
+<div><dl>
+<dt>class Base:</dt><dd><p>&#64;final
+def done(self) -&gt; None:</p>
+<blockquote>
+<div><p>…</p>
+</div></blockquote>
+</dd>
+<dt>class Sub(Base):</dt><dd><dl class="simple">
+<dt>def done(self) -&gt; None:  # Error reported by type checker</dt><dd><p>…</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>&#64;final
+class Leaf:</p>
+<blockquote>
+<div><p>…</p>
+</div></blockquote>
+<dl class="simple">
+<dt>class Other(Leaf):  # Error reported by type checker</dt><dd><p>…</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>There is no runtime checking of these properties.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.get_args">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">get_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.get_args" title="Permalink to this definition"></a></dt>
+<dd><p>Get type arguments with all substitutions performed.</p>
+<p>For unions, basic simplifications used by Union constructor are performed.
+Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">get_args</span><span class="p">(</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">==</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+<span class="n">get_args</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="o">==</span> <span class="p">()</span>
+<span class="n">get_args</span><span class="p">(</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">str</span><span class="p">][</span><span class="nb">int</span><span class="p">])</span> <span class="o">==</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+<span class="n">get_args</span><span class="p">(</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="nb">int</span><span class="p">]][</span><span class="nb">str</span><span class="p">])</span> <span class="o">==</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span>
+<span class="n">get_args</span><span class="p">(</span><span class="n">Callable</span><span class="p">[[],</span> <span class="n">T</span><span class="p">][</span><span class="nb">int</span><span class="p">])</span> <span class="o">==</span> <span class="p">([],</span> <span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.get_origin">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">get_origin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.get_origin" title="Permalink to this definition"></a></dt>
+<dd><p>Get the unsubscripted version of a type.</p>
+<p>This supports generic types, Callable, Tuple, Union, Literal, Final, ClassVar
+and Annotated. Return None for unsupported types. Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">get_origin</span><span class="p">(</span><span class="n">Literal</span><span class="p">[</span><span class="mi">42</span><span class="p">])</span> <span class="ow">is</span> <span class="n">Literal</span>
+<span class="n">get_origin</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+<span class="n">get_origin</span><span class="p">(</span><span class="n">ClassVar</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="ow">is</span> <span class="n">ClassVar</span>
+<span class="n">get_origin</span><span class="p">(</span><span class="n">Generic</span><span class="p">)</span> <span class="ow">is</span> <span class="n">Generic</span>
+<span class="n">get_origin</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="ow">is</span> <span class="n">Generic</span>
+<span class="n">get_origin</span><span class="p">(</span><span class="n">Union</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="ow">is</span> <span class="n">Union</span>
+<span class="n">get_origin</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">T</span><span class="p">]][</span><span class="nb">int</span><span class="p">])</span> <span class="o">==</span> <span class="nb">list</span>
+<span class="n">get_origin</span><span class="p">(</span><span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="ow">is</span> <span class="n">P</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.get_type_hints">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">get_type_hints</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">globalns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">localns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_extras</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.get_type_hints" title="Permalink to this definition"></a></dt>
+<dd><p>Return type hints for an object.</p>
+<p>This is often the same as obj.__annotations__, but it handles
+forward references encoded as string literals, adds Optional[t] if a
+default value equal to None is set and recursively replaces all
+‘Annotated[T, …]’ with ‘T’ (unless ‘include_extras=True’).</p>
+<p>The argument may be a module, class, method, or function. The annotations
+are returned as a dictionary. For classes, annotations include also
+inherited members.</p>
+<p>TypeError is raised if the argument is not of a type that can contain
+annotations, and an empty dictionary is returned if no annotations are
+present.</p>
+<p>BEWARE – the behavior of globalns and localns is counterintuitive
+(unless you are familiar with how eval() and exec() work).  The
+search order is locals first, then globals.</p>
+<ul class="simple">
+<li><p>If no dict arguments are passed, an attempt is made to use the
+globals from obj (or the respective module’s globals for classes),
+and these are also used as the locals.  If the object does not appear
+to have globals, an empty dictionary is used.  For classes, the search
+order is globals first then locals.</p></li>
+<li><p>If one dict argument is passed, it is used for both globals and
+locals.</p></li>
+<li><p>If two dict arguments are passed, they specify globals and
+locals, respectively.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.is_typeddict">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">is_typeddict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tp</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.is_typeddict" title="Permalink to this definition"></a></dt>
+<dd><p>Check if an annotation is a TypedDict class</p>
+<dl>
+<dt>For example::</dt><dd><dl class="simple">
+<dt>class Film(TypedDict):</dt><dd><p>title: str
+year: int</p>
+</dd>
+</dl>
+<p>is_typeddict(Film)  # =&gt; True
+is_typeddict(Union[list, str])  # =&gt; False</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.no_type_check">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">no_type_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.no_type_check" title="Permalink to this definition"></a></dt>
+<dd><p>Decorator to indicate that annotations are not type hints.</p>
+<p>The argument must be a class or function; if it is a class, it
+applies recursively to all methods and classes defined in that class
+(but not to methods defined in its superclasses or subclasses).</p>
+<p>This mutates the function(s) or class(es) in place.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.no_type_check_decorator">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">no_type_check_decorator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decorator</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.no_type_check_decorator" title="Permalink to this definition"></a></dt>
+<dd><p>Decorator to give another decorator the &#64;no_type_check effect.</p>
+<p>This wraps the decorator with something that wraps the decorated
+function in &#64;no_type_check.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.overload">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">overload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.overload" title="Permalink to this definition"></a></dt>
+<dd><p>Decorator for overloaded functions/methods.</p>
+<p>In a stub file, place two or more stub definitions for the same
+function in a row, each decorated with &#64;overload.  For example:</p>
+<blockquote>
+<div><p>&#64;overload
+def utf8(value: None) -&gt; None: …
+&#64;overload
+def utf8(value: bytes) -&gt; bytes: …
+&#64;overload
+def utf8(value: str) -&gt; bytes: …</p>
+</div></blockquote>
+<p>In a non-stub file (i.e. a regular .py file), do the same but
+follow it with an implementation.  The implementation should <em>not</em>
+be decorated with &#64;overload.  For example:</p>
+<blockquote>
+<div><p>&#64;overload
+def utf8(value: None) -&gt; None: …
+&#64;overload
+def utf8(value: bytes) -&gt; bytes: …
+&#64;overload
+def utf8(value: str) -&gt; bytes: …
+def utf8(value):</p>
+<blockquote>
+<div><p># implementation goes here</p>
+</div></blockquote>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="typing.runtime_checkable">
+<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">runtime_checkable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.runtime_checkable" title="Permalink to this definition"></a></dt>
+<dd><p>Mark a protocol class as a runtime protocol.</p>
+<p>Such protocol can be used with isinstance() and issubclass().
+Raise TypeError if applied to a non-protocol class.
+This allows a simple-minded structural check very similar to
+one trick ponies in collections.abc such as Iterable.
+For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@runtime_checkable</span>
+<span class="k">class</span> <span class="nc">Closable</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="o">...</span>
+
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s1">&#39;/some/file&#39;</span><span class="p">),</span> <span class="n">Closable</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Warning: this will check only the presence of the required methods,
+not their type signatures!</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="threading.BrokenBarrierError.html" class="btn btn-neutral float-left" title="threading.BrokenBarrierError" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="typing.NamedTuple.html" class="btn btn-neutral float-right" title="typing.NamedTuple" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+typing.NewType
+==============
+
+.. currentmodule:: typing
+
+.. autoclass:: NewType
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~NewType.__init__
+   
+   
+   
+
+   
+   
+   
+   

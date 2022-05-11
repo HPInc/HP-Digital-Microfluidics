@@ -1,0 +1,193 @@
+quantities.dimensions.Area
+==========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Area
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Area.derived
+      ~Area.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Area.dimensionality
+      ~Area.is_negative
+      ~Area.is_positive
+      ~Area.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Area.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Area.__init__
+      ~Area.a
+      ~Area.an
+      ~Area.as_dimensionality
+      ~Area.as_number
+      ~Area.as_unit
+      ~Area.as_unit_expr
+      ~Area.cast
+      ~Area.check_dimensionality
+      ~Area.decomposed
+      ~Area.divide_by
+      ~Area.has_dimensionality
+      ~Area.in_denom
+      ~Area.in_units
+      ~Area.is_close_to
+      ~Area.multiply_by
+      ~Area.of
+      ~Area.ratio
+      ~Area.restricted
+      ~Area.to_power
+      ~Area.unit
+   
+   
+   

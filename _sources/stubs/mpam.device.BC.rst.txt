@@ -1,0 +1,6 @@
+mpam.device.BC
+==============
+
+.. currentmodule:: mpam.device
+
+.. autodata:: BC

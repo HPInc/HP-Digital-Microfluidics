@@ -1,0 +1,6 @@
+typing.is\_typeddict
+====================
+
+.. currentmodule:: typing
+
+.. autofunction:: is_typeddict

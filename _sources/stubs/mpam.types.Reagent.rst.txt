@@ -1,0 +1,118 @@
+mpam.types.Reagent
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Reagent
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Reagent.is_pure
+      ~Reagent.known
+      ~Reagent.mixture
+      ~Reagent.process_steps
+      ~Reagent.unprocessed
+      ~Reagent.name
+      ~Reagent.composition
+      ~Reagent.min_storage_temp
+      ~Reagent.max_storage_temp
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Reagent.LoseComposition
+      ~Reagent.SameComposition
+      ~Reagent.__init__
+      ~Reagent.find
+      ~Reagent.liquid
+      ~Reagent.processed
+   
+   
+   
+
+   
+   
+   
+   

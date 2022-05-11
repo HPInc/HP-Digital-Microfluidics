@@ -1,0 +1,193 @@
+quantities.dimensions.Radioactivity
+===================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Radioactivity
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Radioactivity.derived
+      ~Radioactivity.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Radioactivity.dimensionality
+      ~Radioactivity.is_negative
+      ~Radioactivity.is_positive
+      ~Radioactivity.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Radioactivity.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Radioactivity.__init__
+      ~Radioactivity.a
+      ~Radioactivity.an
+      ~Radioactivity.as_dimensionality
+      ~Radioactivity.as_number
+      ~Radioactivity.as_unit
+      ~Radioactivity.as_unit_expr
+      ~Radioactivity.cast
+      ~Radioactivity.check_dimensionality
+      ~Radioactivity.decomposed
+      ~Radioactivity.divide_by
+      ~Radioactivity.has_dimensionality
+      ~Radioactivity.in_denom
+      ~Radioactivity.in_units
+      ~Radioactivity.is_close_to
+      ~Radioactivity.multiply_by
+      ~Radioactivity.of
+      ~Radioactivity.ratio
+      ~Radioactivity.restricted
+      ~Radioactivity.to_power
+      ~Radioactivity.unit
+   
+   
+   

@@ -1,0 +1,6 @@
+erk.errors.PRINT
+================
+
+.. currentmodule:: erk.errors
+
+.. autodata:: PRINT

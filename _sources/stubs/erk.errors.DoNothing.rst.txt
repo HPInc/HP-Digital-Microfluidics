@@ -1,0 +1,58 @@
+erk.errors.DoNothing
+====================
+
+.. currentmodule:: erk.errors
+
+.. autoclass:: DoNothing
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DoNothing.expect_false
+      ~DoNothing.expect_true
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~DoNothing.__init__
+   
+   
+   

@@ -1,0 +1,73 @@
+mpam.monitor.DropMonitor
+========================
+
+.. currentmodule:: mpam.monitor
+
+.. autoclass:: DropMonitor
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~DropMonitor.drop
+      ~DropMonitor.board_monitor
+      ~DropMonitor.circle
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~DropMonitor.__init__
+      ~DropMonitor.note_reagent
+      ~DropMonitor.note_volume
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,78 @@
+mpam.processes.MixSequenceLibrary
+=================================
+
+.. currentmodule:: mpam.processes
+
+.. autoclass:: MixSequenceLibrary
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MixSequenceLibrary.registered
+      ~MixSequenceLibrary.cache
+      ~MixSequenceLibrary.lock
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MixSequenceLibrary.__init__
+      ~MixSequenceLibrary.lookup
+      ~MixSequenceLibrary.lookup_placed
+      ~MixSequenceLibrary.register
+   
+   
+   
+
+   
+   
+   
+   

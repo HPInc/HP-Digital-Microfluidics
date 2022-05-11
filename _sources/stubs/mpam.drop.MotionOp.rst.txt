@@ -1,0 +1,88 @@
+mpam.drop.MotionOp
+==================
+
+.. currentmodule:: mpam.drop
+
+.. autoclass:: MotionOp
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MotionOp.allow_unsafe
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MotionOp.__init__
+      ~MotionOp.dirAndSteps
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~MotionOp.schedule_for
+      ~MotionOp.then
+      ~MotionOp.then_call
+      ~MotionOp.then_compute
+      ~MotionOp.then_process
+   
+   
+   

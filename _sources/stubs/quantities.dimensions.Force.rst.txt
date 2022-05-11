@@ -1,0 +1,193 @@
+quantities.dimensions.Force
+===========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Force
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Force.derived
+      ~Force.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Force.dimensionality
+      ~Force.is_negative
+      ~Force.is_positive
+      ~Force.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Force.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Force.__init__
+      ~Force.a
+      ~Force.an
+      ~Force.as_dimensionality
+      ~Force.as_number
+      ~Force.as_unit
+      ~Force.as_unit_expr
+      ~Force.cast
+      ~Force.check_dimensionality
+      ~Force.decomposed
+      ~Force.divide_by
+      ~Force.has_dimensionality
+      ~Force.in_denom
+      ~Force.in_units
+      ~Force.is_close_to
+      ~Force.multiply_by
+      ~Force.of
+      ~Force.ratio
+      ~Force.restricted
+      ~Force.to_power
+      ~Force.unit
+   
+   
+   

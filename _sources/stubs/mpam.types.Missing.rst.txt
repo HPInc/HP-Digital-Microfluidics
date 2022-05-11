@@ -1,0 +1,43 @@
+mpam.types.Missing
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Missing
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Missing.__init__
+   
+   
+   

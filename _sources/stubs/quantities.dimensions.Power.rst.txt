@@ -1,0 +1,193 @@
+quantities.dimensions.Power
+===========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Power
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Power.derived
+      ~Power.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Power.dimensionality
+      ~Power.is_negative
+      ~Power.is_positive
+      ~Power.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Power.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Power.__init__
+      ~Power.a
+      ~Power.an
+      ~Power.as_dimensionality
+      ~Power.as_number
+      ~Power.as_unit
+      ~Power.as_unit_expr
+      ~Power.cast
+      ~Power.check_dimensionality
+      ~Power.decomposed
+      ~Power.divide_by
+      ~Power.has_dimensionality
+      ~Power.in_denom
+      ~Power.in_units
+      ~Power.is_close_to
+      ~Power.multiply_by
+      ~Power.of
+      ~Power.ratio
+      ~Power.restricted
+      ~Power.to_power
+      ~Power.unit
+   
+   
+   

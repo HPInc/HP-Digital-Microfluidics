@@ -1,0 +1,6 @@
+mpam.exceptions.UnsafeMotion
+============================
+
+.. currentmodule:: mpam.exceptions
+
+.. autoexception:: UnsafeMotion

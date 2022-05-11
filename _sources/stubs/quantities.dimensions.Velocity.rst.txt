@@ -1,0 +1,193 @@
+quantities.dimensions.Velocity
+==============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Velocity
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Velocity.derived
+      ~Velocity.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Velocity.dimensionality
+      ~Velocity.is_negative
+      ~Velocity.is_positive
+      ~Velocity.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Velocity.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Velocity.__init__
+      ~Velocity.a
+      ~Velocity.an
+      ~Velocity.as_dimensionality
+      ~Velocity.as_number
+      ~Velocity.as_unit
+      ~Velocity.as_unit_expr
+      ~Velocity.cast
+      ~Velocity.check_dimensionality
+      ~Velocity.decomposed
+      ~Velocity.divide_by
+      ~Velocity.has_dimensionality
+      ~Velocity.in_denom
+      ~Velocity.in_units
+      ~Velocity.is_close_to
+      ~Velocity.multiply_by
+      ~Velocity.of
+      ~Velocity.ratio
+      ~Velocity.restricted
+      ~Velocity.to_power
+      ~Velocity.unit
+   
+   
+   

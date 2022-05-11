@@ -1,0 +1,123 @@
+mpam.pipettor.EmptyTarget
+=========================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: EmptyTarget
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~EmptyTarget.insufficient_msg
+      ~EmptyTarget.product_loc
+      ~EmptyTarget.target
+      ~EmptyTarget.volume
+      ~EmptyTarget.allow_merge
+      ~EmptyTarget.on_unknown
+      ~EmptyTarget.on_insufficient
+      ~EmptyTarget.got
+      ~EmptyTarget.future
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~EmptyTarget.__init__
+      ~EmptyTarget.in_position
+      ~EmptyTarget.note_product_loc
+      ~EmptyTarget.signal_done
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~EmptyTarget.finished
+      ~EmptyTarget.finished_overall_transfer
+   
+   
+   

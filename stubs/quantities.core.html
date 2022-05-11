@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>quantities.core &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="quantities.core.qstr" href="quantities.core.qstr.html" />
+    <link rel="prev" title="erk.errors.RAISE" href="erk.errors.RAISE.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.types.html">mpam.types</a></li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">quantities.core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.qstr.html">quantities.core.qstr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDim.html">quantities.core.BaseDim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimMeta.html">quantities.core.BaseDimMeta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimension.html">quantities.core.BaseDimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.CountDim.html">quantities.core.CountDim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDim.html">quantities.core.DerivedDim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDimMeta.html">quantities.core.DerivedDimMeta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.DimLike.html">quantities.core.DimLike</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Dimensionality.html">quantities.core.Dimensionality</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Exponents.html">quantities.core.Exponents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.NamedDim.html">quantities.core.NamedDim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.NamedDimMeta.html">quantities.core.NamedDimMeta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Prefix.html">quantities.core.Prefix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Quantity.html">quantities.core.Quantity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Scalar.html">quantities.core.Scalar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Unit.html">quantities.core.Unit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.UnitExpr.html">quantities.core.UnitExpr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.UnknownDimQuant.html">quantities.core.UnknownDimQuant</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.DimMismatchError.html">quantities.core.DimMismatchError</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.DimensionalityError.html">quantities.core.DimensionalityError</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>quantities.core</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/quantities.core.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-quantities.core">
+<span id="quantities-core"></span><h1>quantities.core<a class="headerlink" href="#module-quantities.core" title="Permalink to this headline"></a></h1>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.qstr.html#quantities.core.qstr" title="quantities.core.qstr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">qstr</span></code></a>(n, singular, *[, plural])</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.BaseDim.html#quantities.core.BaseDim" title="quantities.core.BaseDim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseDim</span></code></a>(mag[, dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.BaseDimMeta.html#quantities.core.BaseDimMeta" title="quantities.core.BaseDimMeta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseDimMeta</span></code></a>(name, base, dct)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.BaseDimension.html#quantities.core.BaseDimension" title="quantities.core.BaseDimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseDimension</span></code></a>(name)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.CountDim.html#quantities.core.CountDim" title="quantities.core.CountDim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CountDim</span></code></a>(mag[, dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.DerivedDim.html#quantities.core.DerivedDim" title="quantities.core.DerivedDim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DerivedDim</span></code></a>(mag[, dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.DerivedDimMeta.html#quantities.core.DerivedDimMeta" title="quantities.core.DerivedDimMeta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DerivedDimMeta</span></code></a>(name, base, dct)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.DimLike.html#quantities.core.DimLike" title="quantities.core.DimLike"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DimLike</span></code></a>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Dimensionality</span></code></a>(expts[, name])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.Exponents.html#quantities.core.Exponents" title="quantities.core.Exponents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Exponents</span></code></a>()</p></td>
+<td><p>A collection of <a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a>s</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.NamedDim.html#quantities.core.NamedDim" title="quantities.core.NamedDim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NamedDim</span></code></a>(mag[, dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.NamedDimMeta.html#quantities.core.NamedDimMeta" title="quantities.core.NamedDimMeta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NamedDimMeta</span></code></a>(name, base, dct)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.Prefix.html#quantities.core.Prefix" title="quantities.core.Prefix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Prefix</span></code></a>(prefix, mult)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.Quantity.html#quantities.core.Quantity" title="quantities.core.Quantity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Quantity</span></code></a>(mag, dim)</p></td>
+<td><p>A dimensioned quantity</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.Scalar.html#quantities.core.Scalar" title="quantities.core.Scalar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Scalar</span></code></a>(mag[, dim])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.Unit.html#quantities.core.Unit" title="quantities.core.Unit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Unit</span></code></a>(abbr, quant, *[, check, singular])</p></td>
+<td><p>A dimensional unit.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.UnitExpr.html#quantities.core.UnitExpr" title="quantities.core.UnitExpr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnitExpr</span></code></a>(quant, num, denom)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.UnknownDimQuant.html#quantities.core.UnknownDimQuant" title="quantities.core.UnknownDimQuant"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnknownDimQuant</span></code></a>(mag, dim)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Exceptions</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.core.DimMismatchError.html#quantities.core.DimMismatchError" title="quantities.core.DimMismatchError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DimMismatchError</span></code></a>(lhs, op, rhs)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.core.DimensionalityError.html#quantities.core.DimensionalityError" title="quantities.core.DimensionalityError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DimensionalityError</span></code></a>(expected, got)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.BaseDim">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">BaseDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.BaseDim" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.NamedDim.html#quantities.core.NamedDim" title="quantities.core.NamedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedDim</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.BaseDimMeta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">BaseDimMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.BaseDimMeta" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.NamedDimMeta.html#quantities.core.NamedDimMeta" title="quantities.core.NamedDimMeta"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedDimMeta</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.BaseDimMeta.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.BaseDimMeta.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.BaseDimension">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">BaseDimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.BaseDimension" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dimensionality</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">BD</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.BaseDimension.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.BaseDimension.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.CountDim">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">CountDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.CountDim" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.BaseDim.html#quantities.core.BaseDim" title="quantities.core.BaseDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDim</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.DerivedDim">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">DerivedDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.DerivedDim" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.NamedDim.html#quantities.core.NamedDim" title="quantities.core.NamedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedDim</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.DerivedDimMeta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">DerivedDimMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.DerivedDimMeta" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.NamedDimMeta.html#quantities.core.NamedDimMeta" title="quantities.core.NamedDimMeta"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedDimMeta</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.DerivedDimMeta.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.DerivedDimMeta.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.DimLike">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">DimLike</span></span><a class="headerlink" href="#quantities.core.DimLike" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="quantities.core.DimMismatchError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">DimMismatchError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.DimMismatchError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.DimMismatchError.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lhs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rhs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.DimMismatchError.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.Dimensionality">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">Dimensionality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'BaseDimension'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Dimensionality" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">D</span></code>], <a class="reference internal" href="quantities.core.DimLike.html#quantities.core.DimLike" title="quantities.core.DimLike"><code class="xref py py-class docutils literal notranslate"><span class="pre">DimLike</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Dimensionality.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'BaseDimension'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.Dimensionality.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="quantities.core.DimensionalityError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">DimensionalityError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expected</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">got</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.DimensionalityError" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.DimensionalityError.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expected</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">got</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.DimensionalityError.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.Exponents">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">Exponents</span></span><a class="headerlink" href="#quantities.core.Exponents" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A collection of <a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a>s</p>
+<p><a class="reference internal" href="quantities.core.Exponents.html#quantities.core.Exponents.default_format" title="quantities.core.Exponents.default_format"><code class="xref py py-attr docutils literal notranslate"><span class="pre">Exponents.default_format</span></code></a> can be set to the default
+<a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a> to use.  It defaults to <a class="reference internal" href="quantities.core.Exponents.html#quantities.core.Exponents.stars" title="quantities.core.Exponents.stars"><code class="xref py py-attr docutils literal notranslate"><span class="pre">stars</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Exponents.caret">
+<span class="sig-name descname"><span class="pre">caret</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Exponents.caret" title="Permalink to this definition"></a></dt>
+<dd><p>An <a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a> that uses <code class="docutils literal notranslate"><span class="pre">^</span></code>.  For example <code class="docutils literal notranslate"><span class="pre">2</span></code> maps onto
+<code class="docutils literal notranslate"><span class="pre">^2</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Exponents.default_format">
+<span class="sig-name descname"><span class="pre">default_format</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Exponents.default_format" title="Permalink to this definition"></a></dt>
+<dd><p>The default <a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a> to use.  It defaults to <a class="reference internal" href="quantities.core.Exponents.html#quantities.core.Exponents.stars" title="quantities.core.Exponents.stars"><code class="xref py py-attr docutils literal notranslate"><span class="pre">stars</span></code></a>,
+but can be modified.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Exponents.html">
+<span class="sig-name descname"><span class="pre">html</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Exponents.html" title="Permalink to this definition"></a></dt>
+<dd><p>An <a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a> that HTML superscript formatting.  For example
+<code class="docutils literal notranslate"><span class="pre">2</span></code> maps onto <code class="docutils literal notranslate"><span class="pre">&lt;sup&gt;2&lt;/sup&gt;</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Exponents.stars">
+<span class="sig-name descname"><span class="pre">stars</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Exponents.stars" title="Permalink to this definition"></a></dt>
+<dd><p>An <a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a> that uses <code class="docutils literal notranslate"><span class="pre">**</span></code>.  For example <code class="docutils literal notranslate"><span class="pre">2</span></code> maps onto
+<code class="docutils literal notranslate"><span class="pre">**2</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Exponents.superscript">
+<span class="sig-name descname"><span class="pre">superscript</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Exponents.superscript" title="Permalink to this definition"></a></dt>
+<dd><p>An <a class="reference internal" href="#quantities.core.ExptFormatter" title="quantities.core.ExptFormatter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExptFormatter</span></code></a> that uses Unicode superscript characters.  For
+example <code class="docutils literal notranslate"><span class="pre">2</span></code> maps onto <code class="docutils literal notranslate"><span class="pre">²</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="quantities.core.ExptFormatter">
+<span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">ExptFormatter</span></span><a class="headerlink" href="#quantities.core.ExptFormatter" title="Permalink to this definition"></a></dt>
+<dd><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> that maps integers to strings representing that integer as
+an expoinent</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.NamedDim">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">NamedDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.NamedDim" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.Quantity.html#quantities.core.Quantity" title="quantities.core.Quantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.NamedDim.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.NamedDim.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.NamedDimMeta">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">NamedDimMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.NamedDimMeta" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code>, <a class="reference internal" href="quantities.core.DimLike.html#quantities.core.DimLike" title="quantities.core.DimLike"><code class="xref py py-class docutils literal notranslate"><span class="pre">DimLike</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.NamedDimMeta.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dct</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.NamedDimMeta.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.Quantity">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">Quantity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Quantity" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A dimensioned quantity</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Quantity.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.Quantity.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.Scalar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">Scalar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Scalar" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.NamedDim.html#quantities.core.NamedDim" title="quantities.core.NamedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedDim</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.Unit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">Unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abbr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quant</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.core.UnitExpr.html#quantities.core.UnitExpr" title="quantities.core.UnitExpr"><span class="pre">UnitExpr</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">singular</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Unit" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.UnitExpr.html#quantities.core.UnitExpr" title="quantities.core.UnitExpr"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitExpr</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">D</span></code>]</p>
+<p>A dimensional unit.  When a number is multiplied by a <a class="reference internal" href="quantities.core.Unit.html#quantities.core.Unit" title="quantities.core.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a>, a
+<a class="reference internal" href="quantities.core.Quantity.html#quantities.core.Quantity" title="quantities.core.Quantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code></a> of the appropriate <a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dimensionality</span></code></a> is produced.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>D</strong> – The subclass of <a class="reference internal" href="quantities.core.Quantity.html#quantities.core.Quantity" title="quantities.core.Quantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code></a> that this <a class="reference internal" href="quantities.core.Unit.html#quantities.core.Unit" title="quantities.core.Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">Unit</span></code></a> produces
+when a number is multiplied by.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.Unit.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abbr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quant</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.core.UnitExpr.html#quantities.core.UnitExpr" title="quantities.core.UnitExpr"><span class="pre">UnitExpr</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">singular</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Unit.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.UnitExpr">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">UnitExpr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">denom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.UnitExpr" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">D</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="quantities.core.UnitExpr.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quant</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">denom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.UnitExpr.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="quantities.core.UnknownDimQuant">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">UnknownDimQuant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.UnknownDimQuant" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.Quantity.html#quantities.core.Quantity" title="quantities.core.Quantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code></a></p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="erk.errors.RAISE.html" class="btn btn-neutral float-left" title="erk.errors.RAISE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quantities.core.qstr.html" class="btn btn-neutral float-right" title="quantities.core.qstr" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

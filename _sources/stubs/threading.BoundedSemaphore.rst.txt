@@ -1,0 +1,58 @@
+threading.BoundedSemaphore
+==========================
+
+.. currentmodule:: threading
+
+.. autoclass:: BoundedSemaphore
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BoundedSemaphore.__init__
+      ~BoundedSemaphore.release
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~BoundedSemaphore.acquire
+   
+   
+   

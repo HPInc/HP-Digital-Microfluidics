@@ -1,0 +1,68 @@
+mpam.device.BoardComponent
+==========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: BoardComponent
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BoardComponent.board
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BoardComponent.__init__
+      ~BoardComponent.delayed
+      ~BoardComponent.schedule_communication
+      ~BoardComponent.user_operation
+   
+   
+   
+
+   
+   
+   
+   

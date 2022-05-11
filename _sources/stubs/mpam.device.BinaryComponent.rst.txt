@@ -1,0 +1,123 @@
+mpam.device.BinaryComponent
+===========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: BinaryComponent
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~BinaryComponent.Toggle
+      ~BinaryComponent.TurnOff
+      ~BinaryComponent.TurnOn
+      ~BinaryComponent.current_state
+      ~BinaryComponent.state
+      ~BinaryComponent.broken
+      ~BinaryComponent.live
+      ~BinaryComponent.board
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BinaryComponent.SetState
+      ~BinaryComponent.__init__
+      ~BinaryComponent.on_state_change
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~BinaryComponent.delayed
+      ~BinaryComponent.schedule
+      ~BinaryComponent.schedule_communication
+      ~BinaryComponent.user_operation
+   
+   
+   

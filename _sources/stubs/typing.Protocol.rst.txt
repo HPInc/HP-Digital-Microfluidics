@@ -1,0 +1,43 @@
+typing.Protocol
+===============
+
+.. currentmodule:: typing
+
+.. autoclass:: Protocol
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Protocol.__init__
+   
+   
+   

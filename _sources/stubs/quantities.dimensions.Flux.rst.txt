@@ -1,0 +1,193 @@
+quantities.dimensions.Flux
+==========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Flux
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Flux.derived
+      ~Flux.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Flux.dimensionality
+      ~Flux.is_negative
+      ~Flux.is_positive
+      ~Flux.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Flux.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Flux.__init__
+      ~Flux.a
+      ~Flux.an
+      ~Flux.as_dimensionality
+      ~Flux.as_number
+      ~Flux.as_unit
+      ~Flux.as_unit_expr
+      ~Flux.cast
+      ~Flux.check_dimensionality
+      ~Flux.decomposed
+      ~Flux.divide_by
+      ~Flux.has_dimensionality
+      ~Flux.in_denom
+      ~Flux.in_units
+      ~Flux.is_close_to
+      ~Flux.multiply_by
+      ~Flux.of
+      ~Flux.ratio
+      ~Flux.restricted
+      ~Flux.to_power
+      ~Flux.unit
+   
+   
+   

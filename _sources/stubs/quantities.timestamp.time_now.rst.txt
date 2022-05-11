@@ -1,0 +1,6 @@
+quantities.timestamp.time\_now
+==============================
+
+.. currentmodule:: quantities.timestamp
+
+.. autofunction:: time_now

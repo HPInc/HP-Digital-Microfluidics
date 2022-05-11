@@ -1,0 +1,133 @@
+mpam.device.Magnet
+==================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Magnet
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Magnet.pads
+      ~Magnet.state
+      ~Magnet.broken
+      ~Magnet.live
+      ~Magnet.board
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Magnet.Toggle
+      ~Magnet.TurnOff
+      ~Magnet.TurnOn
+      ~Magnet.current_state
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Magnet.__init__
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Magnet.SetState
+      ~Magnet.delayed
+      ~Magnet.on_state_change
+      ~Magnet.schedule
+      ~Magnet.schedule_communication
+      ~Magnet.user_operation
+   
+   
+   

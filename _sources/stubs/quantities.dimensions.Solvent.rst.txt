@@ -1,0 +1,43 @@
+quantities.dimensions.Solvent
+=============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Solvent
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Solvent.__init__
+   
+   
+   

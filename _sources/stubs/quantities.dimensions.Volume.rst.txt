@@ -1,0 +1,193 @@
+quantities.dimensions.Volume
+============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Volume
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Volume.derived
+      ~Volume.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Volume.dimensionality
+      ~Volume.is_negative
+      ~Volume.is_positive
+      ~Volume.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Volume.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Volume.__init__
+      ~Volume.a
+      ~Volume.an
+      ~Volume.as_dimensionality
+      ~Volume.as_number
+      ~Volume.as_unit
+      ~Volume.as_unit_expr
+      ~Volume.cast
+      ~Volume.check_dimensionality
+      ~Volume.decomposed
+      ~Volume.divide_by
+      ~Volume.has_dimensionality
+      ~Volume.in_denom
+      ~Volume.in_units
+      ~Volume.is_close_to
+      ~Volume.multiply_by
+      ~Volume.of
+      ~Volume.ratio
+      ~Volume.restricted
+      ~Volume.to_power
+      ~Volume.unit
+   
+   
+   

@@ -1,0 +1,83 @@
+mpam.types.ChangeCallbackList
+=============================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: ChangeCallbackList
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ChangeCallbackList.callbacks
+      ~ChangeCallbackList.lock
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ChangeCallbackList.__init__
+      ~ChangeCallbackList.add
+      ~ChangeCallbackList.clear
+      ~ChangeCallbackList.discard
+      ~ChangeCallbackList.process
+      ~ChangeCallbackList.remove
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,6 @@
+quantities.core.DimMismatchError
+================================
+
+.. currentmodule:: quantities.core
+
+.. autoexception:: DimMismatchError

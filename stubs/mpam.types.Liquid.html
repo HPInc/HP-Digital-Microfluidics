@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.types.Liquid &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.types.Missing" href="mpam.types.Missing.html" />
+    <link rel="prev" title="mpam.types.GridRegion" href="mpam.types.GridRegion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.types.html">mpam.types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.T.html">mpam.types.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tco.html">mpam.types.Tco</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tcontra.html">mpam.types.Tcontra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_reagent.html">mpam.types.unknown_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.schedule.html">mpam.types.schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.AsyncFunctionSerializer.html">mpam.types.AsyncFunctionSerializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Barrier.html">mpam.types.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ChangeCallbackList.html">mpam.types.ChangeCallbackList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Chemical.html">mpam.types.Chemical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Color.html">mpam.types.Color</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ColorAllocator.html">mpam.types.ColorAllocator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedOperation.html">mpam.types.CombinedOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.Liquid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Orientation.html">mpam.types.Orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Postable.html">mpam.types.Postable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessStep.html">mpam.types.ProcessStep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessedReagent.html">mpam.types.ProcessedReagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Reagent.html">mpam.types.Reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.State.html">mpam.types.State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.StaticOperation.html">mpam.types.StaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.TickNumber.html">mpam.types.TickNumber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Ticks.html">mpam.types.Ticks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Trigger.html">mpam.types.Trigger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Turn.html">mpam.types.Turn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.UnknownConcentration.html">mpam.types.UnknownConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XYCoord.html">mpam.types.XYCoord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XferDir.html">mpam.types.XferDir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.types.html">mpam.types</a> &raquo;</li>
+      <li>mpam.types.Liquid</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.types.Liquid.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-types-liquid">
+<h1>mpam.types.Liquid<a class="headerlink" href="#mpam-types-liquid" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Liquid">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Liquid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">Volume</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inexact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Liquid" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A quantity of a <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>.  Both the <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> and the
+<a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> can change over time, and so differnt <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s may
+have the same state, but each will retain its own identity.</p>
+<p>Callbacks can be hung off <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a>s for both
+<a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> and <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> by calling</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">liq</span><span class="o">.</span><span class="n">on_reagent_change</span><span class="p">(</span><span class="n">note_reagent_change</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">nrc_key</span><span class="p">)</span>
+<span class="n">liq</span><span class="o">.</span><span class="n">on_volume_change</span><span class="p">(</span><span class="n">note_volume_change</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To delete a callback, use <a class="reference internal" href="#mpam.types.Liquid.volume_change_callbacks" title="mpam.types.Liquid.volume_change_callbacks"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume_change_callbacks</span></code></a> and
+<a class="reference internal" href="#mpam.types.Liquid.reagent_change_callbacks" title="mpam.types.Liquid.reagent_change_callbacks"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent_change_callbacks</span></code></a> directly, e.g.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">liq</span><span class="o">.</span><span class="n">reagent_change_callbacks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">nrc_key</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In addition to <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a>, a <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> also has an indication of
+whether the <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> is <a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inexact</span></code></a>.  Typically, this will be
+<code class="docutils literal notranslate"><span class="pre">False</span></code>, but if it is <code class="docutils literal notranslate"><span class="pre">True</span></code>, it is not safe to assume that, e.g.,
+incrementally removing volume will necessarily have removed all of it.</p>
+<p>As a convenience, a <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a> can be added to or subtracted from a
+<a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>, e.g.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">liq</span> <span class="o">-=</span> <span class="mi">2</span><span class="o">*</span><span class="n">uL</span>
+</pre></div>
+</div>
+<p>The resulting <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a> is clipped at zero.</p>
+<p><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s can be mixed together in several ways:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#mpam.types.Liquid.mix_with" title="mpam.types.Liquid.mix_with"><code class="xref py py-func docutils literal notranslate"><span class="pre">mix_with()</span></code></a> returns the result of mixing a given <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> with
+another.  Neither <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is modified.</p></li>
+<li><p><a class="reference internal" href="#mpam.types.Liquid.mix_in" title="mpam.types.Liquid.mix_in"><code class="xref py py-func docutils literal notranslate"><span class="pre">mix_in()</span></code></a> modifies a given <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> by setting it to the
+result of mixing in another.  The other <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> gets the
+<a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> of the mixture, but its <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> is set to zero.</p></li>
+<li><p><a class="reference internal" href="#mpam.types.Liquid.mix_together" title="mpam.types.Liquid.mix_together"><code class="xref py py-func docutils literal notranslate"><span class="pre">Liquid.mix_together()</span></code></a> returns the result of mixing together several</p></li>
+</ul>
+<p><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s (or parts of them).  None are modified.</p>
+<p>For all of these, the resulting <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> will be proportional to the
+volumes.  For example, after</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">liq1</span> <span class="o">=</span> <span class="n">r1</span><span class="o">.</span><span class="n">liquid</span><span class="p">(</span><span class="mi">1</span><span class="o">*</span><span class="n">mL</span><span class="p">)</span>
+<span class="n">liq2</span> <span class="o">=</span> <span class="n">r2</span><span class="o">.</span><span class="n">liquid</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">mL</span><span class="p">)</span>
+<span class="n">r1</span><span class="o">.</span><span class="n">mix_in</span><span class="p">(</span><span class="n">r2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">r1.volume</span></code> will be <code class="docutils literal notranslate"><span class="pre">3*mL</span></code> and <code class="docutils literal notranslate"><span class="pre">r1.reagent</span></code> will print as <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">r1</span> <span class="pre">+</span> <span class="pre">2</span>
+<span class="pre">r2</span></code>.  (<code class="docutils literal notranslate"><span class="pre">r2</span></code> will have the same reagent, but its volume will be zero.)</p>
+<p>The mixing methods all take an optional <code class="docutils literal notranslate"><span class="pre">result</span></code> parameter, which is
+either a <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> or a string.  If it is a <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, it will
+be used as the reagent for the mixture.  If it is a string, it will be used
+as the name for the resulting (computed) mixture unless either the reagents
+of the two liquids are the same (in which case the mixture has the same
+reagent) or one of them is the <a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a> (in which case the
+mixture will be, as well).</p>
+<p>To split the contents of a <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> into two parts, use
+<a class="reference internal" href="#mpam.types.Liquid.split_to" title="mpam.types.Liquid.split_to"><code class="xref py py-func docutils literal notranslate"><span class="pre">split_to()</span></code></a>.  As this overwrites the content of the other
+<a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>, it should only be used when the other is known to be empty.
+It is particularly useful when doing a “merge and split”, as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">liq1</span><span class="o">.</span><span class="n">mix_in</span><span class="p">(</span><span class="n">liq2</span><span class="p">)</span>
+<span class="n">liq1</span><span class="o">.</span><span class="n">split_to</span><span class="p">(</span><span class="n">liq2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After this sequence, both <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s will have the same (mixed)
+reagent and a volume that is the average of the two original volumes.</p>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reagent</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> of the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-obj docutils literal notranslate"><span class="pre">volume</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a> of the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inexact</span></code></a></p></td>
+<td><p>Is <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> inexact?</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Liquid.volume_change_callbacks" title="mpam.types.Liquid.volume_change_callbacks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">volume_change_callbacks</span></code></a></p></td>
+<td><p>A <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Liquid.reagent_change_callbacks" title="mpam.types.Liquid.reagent_change_callbacks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reagent_change_callbacks</span></code></a></p></td>
+<td><p>A <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Liquid.__init__" title="mpam.types.Liquid.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(reagent, volume, *[, inexact])</p></td>
+<td><p>Initialize the object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Liquid.mix_in" title="mpam.types.Liquid.mix_in"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mix_in</span></code></a>(other, *[, result])</p></td>
+<td><p>Modify this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to be the result of mixing it with another.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Liquid.mix_together" title="mpam.types.Liquid.mix_together"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mix_together</span></code></a>(liquids, *[, result])</p></td>
+<td><p>A new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that is the result of mixing several <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s together.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Liquid.mix_with" title="mpam.types.Liquid.mix_with"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mix_with</span></code></a>(other, *[, result])</p></td>
+<td><p>A new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that is the result of mixing this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> with another.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Liquid.on_reagent_change" title="mpam.types.Liquid.on_reagent_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_reagent_change</span></code></a>(cb, *[, key])</p></td>
+<td><p>Register a callback for changes to <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Liquid.on_volume_change" title="mpam.types.Liquid.on_volume_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_volume_change</span></code></a>(cb, *[, key])</p></td>
+<td><p>Register a callback for changes to <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Liquid.processed" title="mpam.types.Liquid.processed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">processed</span></code></a>(step[, new_composition_function])</p></td>
+<td><p>Alter this <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> to note a <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Liquid.split_to" title="mpam.types.Liquid.split_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_to</span></code></a>(other)</p></td>
+<td><p>Split this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> such that half of its <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> is transfered to <code class="docutils literal notranslate"><span class="pre">other</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">Volume</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inexact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Liquid.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reagent</strong> – the <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> of the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a></p></li>
+<li><p><strong>volume</strong> – the <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a> of the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>inexact</strong> – is <code class="docutils literal notranslate"><span class="pre">volume</span></code> inexact?</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Liquid.inexact">
+<span class="sig-name descname"><span class="pre">inexact</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#mpam.types.Liquid.inexact" title="Permalink to this definition"></a></dt>
+<dd><p>Is <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> inexact?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.mix_in">
+<span class="sig-name descname"><span class="pre">mix_in</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Liquid.mix_in" title="Permalink to this definition"></a></dt>
+<dd><p>Modify this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to be the result of mixing it with another.</p>
+<p>The <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> of the result is the sum of the volumes of the two
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Liquids</span></code>.  The <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> of the result is</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">result</span></code> if this is a <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p></li>
+<li><p><a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> if this is the same for both <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s</p></li>
+<li><p><a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a>, if the <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> for either <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>
+is <a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a></p></li>
+<li><p>the result of calling <a class="reference internal" href="mpam.types.Mixture.html#mpam.types.Mixture.find_or_compute" title="mpam.types.Mixture.find_or_compute"><code class="xref py py-func docutils literal notranslate"><span class="pre">Mixture.find_or_compute()</span></code></a>, passing in
+<code class="docutils literal notranslate"><span class="pre">result</span></code> (which is either a string or <code class="docutils literal notranslate"><span class="pre">None</span></code>) as the <code class="docutils literal notranslate"><span class="pre">name</span></code>
+parameter.</p></li>
+</ul>
+<p>The resulting <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is <a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inexact</span></code></a> if either
+<a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is.</p>
+<p>After the operation, <code class="docutils literal notranslate"><span class="pre">other</span></code> will have the same <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> as
+this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>, but its <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> will be zero and it will
+not be <a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inexact</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method modifies both <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s.  To simply compute the
+result of such mixing and return it as a new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> without
+modifying either, use <a class="reference internal" href="#mpam.types.Liquid.mix_with" title="mpam.types.Liquid.mix_with"><code class="xref py py-func docutils literal notranslate"><span class="pre">mix_with()</span></code></a>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>other</strong> – the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to mix in</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>result</strong> – the resulting <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, the name of the computed
+<a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (indicating that the name
+should be computed)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.mix_together">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mix_together</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">liquids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">mpam.types.Liquid</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a></span></span><a class="headerlink" href="#mpam.types.Liquid.mix_together" title="Permalink to this definition"></a></dt>
+<dd><p>A new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that is the result of mixing several <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s
+together.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">liquids</span></code> parameter specifies not only the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s to
+use, but also the portion of the volume each to use.  (The default, if
+just the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is specified, is <code class="docutils literal notranslate"><span class="pre">1</span></code>, repesenting that the
+whole volume is to be used.  This is useful when a given <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>
+is participating in more than one mixture at the same time.  By
+providing, e.g., <code class="docutils literal notranslate"><span class="pre">0.5</span></code> as the second element for each call to
+<a class="reference internal" href="#mpam.types.Liquid.mix_together" title="mpam.types.Liquid.mix_together"><code class="xref py py-func docutils literal notranslate"><span class="pre">mix_together()</span></code></a>, half the volume will be used in each.</p>
+<p>The <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> of the result is the sum of the volumes used for each
+element of <code class="docutils literal notranslate"><span class="pre">liquids</span></code>. The <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> of the result is</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">result</span></code>, if this is a <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p></li>
+<li><p>the common <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a>, if all <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s have the same
+<a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a>,</p></li>
+<li><p><a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a>, if the <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> for any <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>
+is <a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a></p></li>
+<li><p>the result of calling <a class="reference internal" href="mpam.types.Mixture.html#mpam.types.Mixture.find_or_compute" title="mpam.types.Mixture.find_or_compute"><code class="xref py py-func docutils literal notranslate"><span class="pre">Mixture.find_or_compute()</span></code></a>, passing in
+<code class="docutils literal notranslate"><span class="pre">result</span></code> (which is either a string or <code class="docutils literal notranslate"><span class="pre">None</span></code>) as the <code class="docutils literal notranslate"><span class="pre">name</span></code>
+parameter.</p></li>
+</ul>
+<p>The resulting <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is <a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inexact</span></code></a> if any
+<a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is.</p>
+<p>This method does not modify any member of <code class="docutils literal notranslate"><span class="pre">liquids</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">liquids</span></code> is empty, the result will be a new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> whose
+<a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> is the <a class="reference internal" href="mpam.types.unknown_reagent.html#mpam.types.unknown_reagent" title="mpam.types.unknown_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">unknown_reagent</span></code></a> and whose <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a>
+is zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>liquids</strong> – the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s to mix together.  These may be
+specified alone or paired with a number indicating the
+portion of the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to use</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>result</strong> – the resulting <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, the name of the computed
+<a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (indicating that the name
+should be computed)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> with the resulting <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> and <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.mix_with">
+<span class="sig-name descname"><span class="pre">mix_with</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a></span></span><a class="headerlink" href="#mpam.types.Liquid.mix_with" title="Permalink to this definition"></a></dt>
+<dd><p>A new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that is the result of mixing this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>
+with another.</p>
+<p>The <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> of the result is the sum of the volumes of the two
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Liquids</span></code>.  The <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> of the result is</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">result</span></code> if this is a <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a></p></li>
+<li><p><a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> if this is the same for both <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>s</p></li>
+<li><p><a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a>, if the <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> for either <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>
+is <a class="reference internal" href="mpam.types.waste_reagent.html#mpam.types.waste_reagent" title="mpam.types.waste_reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">waste_reagent</span></code></a></p></li>
+<li><p>the result of calling <a class="reference internal" href="mpam.types.Mixture.html#mpam.types.Mixture.find_or_compute" title="mpam.types.Mixture.find_or_compute"><code class="xref py py-func docutils literal notranslate"><span class="pre">Mixture.find_or_compute()</span></code></a>, passing in
+<code class="docutils literal notranslate"><span class="pre">result</span></code> (which is either a string or <code class="docutils literal notranslate"><span class="pre">None</span></code>) as the <code class="docutils literal notranslate"><span class="pre">name</span></code>
+parameter.</p></li>
+</ul>
+<p>The resulting <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is <a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inexact</span></code></a> if either
+<a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Neither <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> is modified.  To modify this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>
+to be the result of the mixture (and clear the other), use
+<a class="reference internal" href="#mpam.types.Liquid.mix_in" title="mpam.types.Liquid.mix_in"><code class="xref py py-func docutils literal notranslate"><span class="pre">mix_in()</span></code></a>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>other</strong> – the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to mix with</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>result</strong> – the resulting <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, the name of the computed
+<a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (indicating that the name
+should be computed)</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a new <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> with the resulting <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> and <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.on_reagent_change">
+<span class="sig-name descname"><span class="pre">on_reagent_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Liquid.on_reagent_change" title="Permalink to this definition"></a></dt>
+<dd><p>Register a callback for changes to <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a>.  The callback will be
+placed on <a class="reference internal" href="#mpam.types.Liquid.reagent_change_callbacks" title="mpam.types.Liquid.reagent_change_callbacks"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent_change_callbacks</span></code></a>.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is specified, it
+will be used as the key that can be used to remove the callback in the
+future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cb</strong> – the callback</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>key</strong> – an optional key to use to remove the callback</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.on_volume_change">
+<span class="sig-name descname"><span class="pre">on_volume_change</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Liquid.on_volume_change" title="Permalink to this definition"></a></dt>
+<dd><p>Register a callback for changes to <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a>.  The callback will be
+placed on <a class="reference internal" href="#mpam.types.Liquid.volume_change_callbacks" title="mpam.types.Liquid.volume_change_callbacks"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume_change_callbacks</span></code></a>.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is specified, it
+will be used as the key that can be used to remove the callback in the
+future.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cb</strong> – the callback</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>key</strong> – an optional key to use to remove the callback</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.processed">
+<span class="sig-name descname"><span class="pre">processed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><span class="pre">ProcessStep</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_composition_function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Chemical.html#mpam.types.Chemical" title="mpam.types.Chemical"><span class="pre">Chemical</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.MolarConcentration.html#quantities.dimensions.MolarConcentration" title="quantities.dimensions.MolarConcentration"><span class="pre">MolarConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Density.html#quantities.dimensions.Density" title="quantities.dimensions.Density"><span class="pre">Density</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.VolumeConcentration.html#quantities.dimensions.VolumeConcentration" title="quantities.dimensions.VolumeConcentration"><span class="pre">VolumeConcentration</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.UnknownConcentration.html#mpam.types.UnknownConcentration" title="mpam.types.UnknownConcentration"><span class="pre">UnknownConcentration</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a></span></span><a class="headerlink" href="#mpam.types.Liquid.processed" title="Permalink to this definition"></a></dt>
+<dd><p>Alter this <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> to note a <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step</strong> – the <a class="reference internal" href="mpam.types.ProcessStep.html#mpam.types.ProcessStep" title="mpam.types.ProcessStep"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProcessStep</span></code></a> applied or the name used to find or
+create it.</p></li>
+<li><p><strong>new_composition_function</strong> – an optional function to determine the new
+composition.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent.processed" title="mpam.types.Reagent.processed"><code class="xref py py-func docutils literal notranslate"><span class="pre">Reagent.processed()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Liquid.reagent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">reagent</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a></em><a class="headerlink" href="#mpam.types.Liquid.reagent" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><code class="xref py py-class docutils literal notranslate"><span class="pre">Reagent</span></code></a> of the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p>
+<p>Setting <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a> will trigger the callbacks in
+<a class="reference internal" href="#mpam.types.Liquid.reagent_change_callbacks" title="mpam.types.Liquid.reagent_change_callbacks"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent_change_callbacks</span></code></a> only if the new value is not the same
+as the old value.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Liquid.reagent_change_callbacks">
+<span class="sig-name descname"><span class="pre">reagent_change_callbacks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><span class="pre">mpam.types.ChangeCallbackList</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Liquid.reagent_change_callbacks" title="Permalink to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Liquid.split_to">
+<span class="sig-name descname"><span class="pre">split_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">Liquid</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Liquid.split_to" title="Permalink to this definition"></a></dt>
+<dd><p>Split this <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> such that half of its <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> is transfered to <code class="docutils literal notranslate"><span class="pre">other</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The incoming values of <a class="reference internal" href="#mpam.types.Liquid.reagent" title="mpam.types.Liquid.reagent"><code class="xref py py-attr docutils literal notranslate"><span class="pre">reagent</span></code></a>, <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a>, and
+<a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inexact</span></code></a> are overwritten.  This method is designed to be used
+following <a class="reference internal" href="#mpam.types.Liquid.mix_in" title="mpam.types.Liquid.mix_in"><code class="xref py py-func docutils literal notranslate"><span class="pre">mix_in()</span></code></a>, which clears its argument <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>other</strong> – the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to mix in</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Liquid.volume">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">volume</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">quantities.dimensions.Volume</span></a></em><a class="headerlink" href="#mpam.types.Liquid.volume" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a> of the <a class="reference internal" href="#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.  In some cases, this should
+be interpreted in conjunction with <a class="reference internal" href="#mpam.types.Liquid.inexact" title="mpam.types.Liquid.inexact"><code class="xref py py-attr docutils literal notranslate"><span class="pre">inexact</span></code></a>.</p>
+<p>Setting <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a> will trigger the callbacks in
+<a class="reference internal" href="#mpam.types.Liquid.volume_change_callbacks" title="mpam.types.Liquid.volume_change_callbacks"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume_change_callbacks</span></code></a> only if the new value is not equal to
+the old value.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Liquid.volume_change_callbacks">
+<span class="sig-name descname"><span class="pre">volume_change_callbacks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><span class="pre">mpam.types.ChangeCallbackList</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">quantities.dimensions.Volume</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Liquid.volume_change_callbacks" title="Permalink to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.types.Liquid.volume" title="mpam.types.Liquid.volume"><code class="xref py py-attr docutils literal notranslate"><span class="pre">volume</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.GridRegion.html" class="btn btn-neutral float-left" title="mpam.types.GridRegion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.Missing.html" class="btn btn-neutral float-right" title="mpam.types.Missing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

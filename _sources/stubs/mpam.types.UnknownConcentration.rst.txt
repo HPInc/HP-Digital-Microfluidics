@@ -1,0 +1,43 @@
+mpam.types.UnknownConcentration
+===============================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: UnknownConcentration
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~UnknownConcentration.__init__
+   
+   
+   

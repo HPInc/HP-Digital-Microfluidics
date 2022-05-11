@@ -1,0 +1,6 @@
+typing.final
+============
+
+.. currentmodule:: typing
+
+.. autofunction:: final

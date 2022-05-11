@@ -5,6 +5,22 @@
 
    
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+      :toctree:
+   
+      T
+      Tco
+      Tcontra
+      V
+      V2
+      H
+      CS
+      unknown_concentration
+      waste_reagent
+      unknown_reagent
+   
    
 
    
@@ -12,6 +28,7 @@
    .. rubric:: Functions
 
    .. autosummary::
+      :toctree:
    
       schedule
    
@@ -22,6 +39,8 @@
    .. rubric:: Classes
 
    .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
    
       AsyncFunctionSerializer
       Barrier
@@ -44,6 +63,7 @@
       OpScheduler
       Operation
       Orientation
+      Postable
       ProcessStep
       ProcessedReagent
       Reagent

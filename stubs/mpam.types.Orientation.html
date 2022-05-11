@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mpam.types.Orientation &mdash; MPAM  documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="mpam.types.Postable" href="mpam.types.Postable.html" />
+    <link rel="prev" title="mpam.types.Operation" href="mpam.types.Operation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> MPAM
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mpam.device.html">mpam.device</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.drop.html">mpam.drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.engine.html">mpam.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.exceptions.html">mpam.exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.monitor.html">mpam.monitor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.paths.html">mpam.paths</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mpam.processes.html">mpam.processes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="mpam.types.html">mpam.types</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.T.html">mpam.types.T</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tco.html">mpam.types.Tco</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Tcontra.html">mpam.types.Tcontra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_reagent.html">mpam.types.unknown_reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.schedule.html">mpam.types.schedule</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.AsyncFunctionSerializer.html">mpam.types.AsyncFunctionSerializer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Barrier.html">mpam.types.Barrier</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ChangeCallbackList.html">mpam.types.ChangeCallbackList</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Chemical.html">mpam.types.Chemical</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Color.html">mpam.types.Color</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ColorAllocator.html">mpam.types.ColorAllocator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedOperation.html">mpam.types.CombinedOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.Orientation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Postable.html">mpam.types.Postable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessStep.html">mpam.types.ProcessStep</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ProcessedReagent.html">mpam.types.ProcessedReagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Reagent.html">mpam.types.Reagent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.State.html">mpam.types.State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.StaticOperation.html">mpam.types.StaticOperation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.TickNumber.html">mpam.types.TickNumber</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Ticks.html">mpam.types.Ticks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Trigger.html">mpam.types.Trigger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Turn.html">mpam.types.Turn</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.UnknownConcentration.html">mpam.types.UnknownConcentration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XYCoord.html">mpam.types.XYCoord</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.XferDir.html">mpam.types.XferDir</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.core.html">quantities.core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.dimensions.html">quantities.dimensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.timestamp.html">quantities.timestamp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.temperature.html">quantities.temperature</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.SI.html">quantities.SI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quantities.US.html">quantities.US</a></li>
+<li class="toctree-l1"><a class="reference internal" href="threading.html">threading</a></li>
+<li class="toctree-l1"><a class="reference internal" href="typing.html">typing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MPAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="mpam.types.html">mpam.types</a> &raquo;</li>
+      <li>mpam.types.Orientation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/stubs/mpam.types.Orientation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="mpam-types-orientation">
+<h1>mpam.types.Orientation<a class="headerlink" href="#mpam-types-orientation" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="mpam.types.Orientation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Orientation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Orientation" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>An enumeration describing the orientation of an array indexed by <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a> objects.</p>
+<p>This class arose because we needed to support devices whose internal
+coordinate system had <cite>y</cite> coordinates increasing from bottom to top and
+those that hand them increasing from top to bottom.  These are encapsulated
+here by the values <a class="reference internal" href="#mpam.types.Orientation.NORTH_POS_EAST_POS" title="mpam.types.Orientation.NORTH_POS_EAST_POS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NORTH_POS_EAST_POS</span></code></a> and <a class="reference internal" href="#mpam.types.Orientation.NORTH_NEG_EAST_POS" title="mpam.types.Orientation.NORTH_NEG_EAST_POS"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NORTH_NEG_EAST_POS</span></code></a>
+respectively.  The other values are included for completeness, although I
+don’t expect to see them in practice.</p>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Orientation.NORTH_POS_EAST_POS" title="mpam.types.Orientation.NORTH_POS_EAST_POS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NORTH_POS_EAST_POS</span></code></a></p></td>
+<td><p>Going north increases <cite>x</cite>; going east increases <cite>y</cite></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Orientation.NORTH_NEG_EAST_POS" title="mpam.types.Orientation.NORTH_NEG_EAST_POS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NORTH_NEG_EAST_POS</span></code></a></p></td>
+<td><p>Going north decreases <cite>x</cite>; going east increases <cite>y</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Orientation.NORTH_NEG_EAST_NEG" title="mpam.types.Orientation.NORTH_NEG_EAST_NEG"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NORTH_NEG_EAST_NEG</span></code></a></p></td>
+<td><p>Going north decreases <cite>x</cite>; going east decreases <cite>y</cite></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Orientation.NORTH_POS_EAST_NEG" title="mpam.types.Orientation.NORTH_POS_EAST_NEG"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NORTH_POS_EAST_NEG</span></code></a></p></td>
+<td><p>Going north increases <cite>x</cite>; going east decreases <cite>y</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Orientation.pos_x" title="mpam.types.Orientation.pos_x"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pos_x</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> in which <cite>x</cite> coordinates increase</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Orientation.pos_y" title="mpam.types.Orientation.pos_y"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pos_y</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> in which <cite>y</cite> coordinates increase</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Orientation.offset" title="mpam.types.Orientation.offset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">offset</span></code></a></p></td>
+<td><p>A mapping from <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> to x-y pairs representing coordinate offset in that direction</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Orientation.up_right_delta" title="mpam.types.Orientation.up_right_delta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">up_right_delta</span></code></a></p></td>
+<td><p>A tuple representing the offsets when going up and to the right (i.e., <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.NORTHEAST" title="mpam.types.Dir.NORTHEAST"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NORTHEAST</span></code></a>).</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Orientation.__init__" title="mpam.types.Orientation.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(offset)</p></td>
+<td><p><dl class="field-list simple">
+<dt class="field-odd">param offset</dt>
+<dd class="field-odd"><p>A mapping from <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> to x-y pairs representing coordinate offset in that direction</p>
+</dd>
+</dl>
+</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.Orientation.neighbor" title="mpam.types.Orientation.neighbor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">neighbor</span></code></a>(direction, coord, *[, steps])</p></td>
+<td><p>The coordinates of a neighbor of a given coordinate a given number of steps (default 1) away in a given direction</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Orientation.up_right" title="mpam.types.Orientation.up_right"><code class="xref py py-obj docutils literal notranslate"><span class="pre">up_right</span></code></a>(coord, x, y)</p></td>
+<td><p>The <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a> obtained by going <cite>x</cite> steps <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.EAST" title="mpam.types.Dir.EAST"><code class="xref py py-attr docutils literal notranslate"><span class="pre">EAST</span></code></a> and <cite>y</cite> steps <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.NORTH" title="mpam.types.Dir.NORTH"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NORTH</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Orientation.NORTH_NEG_EAST_NEG">
+<span class="sig-name descname"><span class="pre">NORTH_NEG_EAST_NEG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{&lt;Dir.NORTH:</span> <span class="pre">1&gt;:</span> <span class="pre">(0,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.NORTHEAST:</span> <span class="pre">2&gt;:</span> <span class="pre">(-1,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.EAST:</span> <span class="pre">3&gt;:</span> <span class="pre">(-1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.SOUTHEAST:</span> <span class="pre">4&gt;:</span> <span class="pre">(-1,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.SOUTH:</span> <span class="pre">5&gt;:</span> <span class="pre">(0,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.SOUTHWEST:</span> <span class="pre">6&gt;:</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.WEST:</span> <span class="pre">7&gt;:</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.NORTHWEST:</span> <span class="pre">8&gt;:</span> <span class="pre">(1,</span> <span class="pre">-1)}</span></em><a class="headerlink" href="#mpam.types.Orientation.NORTH_NEG_EAST_NEG" title="Permalink to this definition"></a></dt>
+<dd><p>Going north decreases <cite>x</cite>; going east decreases <cite>y</cite></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Orientation.NORTH_NEG_EAST_POS">
+<span class="sig-name descname"><span class="pre">NORTH_NEG_EAST_POS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{&lt;Dir.NORTH:</span> <span class="pre">1&gt;:</span> <span class="pre">(0,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.NORTHEAST:</span> <span class="pre">2&gt;:</span> <span class="pre">(1,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.EAST:</span> <span class="pre">3&gt;:</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.SOUTHEAST:</span> <span class="pre">4&gt;:</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.SOUTH:</span> <span class="pre">5&gt;:</span> <span class="pre">(0,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.SOUTHWEST:</span> <span class="pre">6&gt;:</span> <span class="pre">(-1,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.WEST:</span> <span class="pre">7&gt;:</span> <span class="pre">(-1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.NORTHWEST:</span> <span class="pre">8&gt;:</span> <span class="pre">(-1,</span> <span class="pre">-1)}</span></em><a class="headerlink" href="#mpam.types.Orientation.NORTH_NEG_EAST_POS" title="Permalink to this definition"></a></dt>
+<dd><p>Going north decreases <cite>x</cite>; going east increases <cite>y</cite></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Orientation.NORTH_POS_EAST_NEG">
+<span class="sig-name descname"><span class="pre">NORTH_POS_EAST_NEG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{&lt;Dir.NORTH:</span> <span class="pre">1&gt;:</span> <span class="pre">(0,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.NORTHEAST:</span> <span class="pre">2&gt;:</span> <span class="pre">(1,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.EAST:</span> <span class="pre">3&gt;:</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.SOUTHEAST:</span> <span class="pre">4&gt;:</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.SOUTH:</span> <span class="pre">5&gt;:</span> <span class="pre">(0,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.SOUTHWEST:</span> <span class="pre">6&gt;:</span> <span class="pre">(-1,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.WEST:</span> <span class="pre">7&gt;:</span> <span class="pre">(-1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.NORTHWEST:</span> <span class="pre">8&gt;:</span> <span class="pre">(-1,</span> <span class="pre">-1)}</span></em><a class="headerlink" href="#mpam.types.Orientation.NORTH_POS_EAST_NEG" title="Permalink to this definition"></a></dt>
+<dd><p>Going north increases <cite>x</cite>; going east decreases <cite>y</cite></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Orientation.NORTH_POS_EAST_POS">
+<span class="sig-name descname"><span class="pre">NORTH_POS_EAST_POS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{&lt;Dir.NORTH:</span> <span class="pre">1&gt;:</span> <span class="pre">(0,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.NORTHEAST:</span> <span class="pre">2&gt;:</span> <span class="pre">(1,</span> <span class="pre">1),</span> <span class="pre">&lt;Dir.EAST:</span> <span class="pre">3&gt;:</span> <span class="pre">(1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.SOUTHEAST:</span> <span class="pre">4&gt;:</span> <span class="pre">(1,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.SOUTH:</span> <span class="pre">5&gt;:</span> <span class="pre">(0,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.SOUTHWEST:</span> <span class="pre">6&gt;:</span> <span class="pre">(-1,</span> <span class="pre">-1),</span> <span class="pre">&lt;Dir.WEST:</span> <span class="pre">7&gt;:</span> <span class="pre">(-1,</span> <span class="pre">0),</span> <span class="pre">&lt;Dir.NORTHWEST:</span> <span class="pre">8&gt;:</span> <span class="pre">(-1,</span> <span class="pre">1)}</span></em><a class="headerlink" href="#mpam.types.Orientation.NORTH_POS_EAST_POS" title="Permalink to this definition"></a></dt>
+<dd><p>Going north increases <cite>x</cite>; going east increases <cite>y</cite></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Orientation.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal[1]]]]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Orientation.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>offset</strong> – A mapping from <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> to x-y pairs representing coordinate offset in that direction</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Orientation.neighbor">
+<span class="sig-name descname"><span class="pre">neighbor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">direction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">Dir</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">coord</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></span><a class="headerlink" href="#mpam.types.Orientation.neighbor" title="Permalink to this definition"></a></dt>
+<dd><p>The coordinates of a neighbor of a given coordinate a given number of steps (default 1) away in a given direction</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>direction</strong> – The direction in which to look.</p></li>
+<li><p><strong>coord</strong> – The starting point.</p></li>
+<li><p><strong>steps</strong> – The number of steps to take.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the resulting <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Orientation.offset">
+<span class="sig-name descname"><span class="pre">offset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final[Mapping[mpam.types.Dir,</span> <span class="pre">tuple[typing.Union[typing.Literal[-1],</span> <span class="pre">typing.Literal[0],</span> <span class="pre">typing.Literal[1]],</span> <span class="pre">typing.Union[typing.Literal[-1],</span> <span class="pre">typing.Literal[0],</span> <span class="pre">typing.Literal[1]]]]]</span></em><a class="headerlink" href="#mpam.types.Orientation.offset" title="Permalink to this definition"></a></dt>
+<dd><p>A mapping from <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> to x-y pairs representing coordinate offset in that direction</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Orientation.pos_x">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_x</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></em><a class="headerlink" href="#mpam.types.Orientation.pos_x" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> in which <cite>x</cite> coordinates increase</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.types.Orientation.pos_y">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pos_y</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></em><a class="headerlink" href="#mpam.types.Orientation.pos_y" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a> in which <cite>y</cite> coordinates increase</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.Orientation.up_right">
+<span class="sig-name descname"><span class="pre">up_right</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coord</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></span><a class="headerlink" href="#mpam.types.Orientation.up_right" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a> obtained by going <cite>x</cite> steps <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.EAST" title="mpam.types.Dir.EAST"><code class="xref py py-attr docutils literal notranslate"><span class="pre">EAST</span></code></a> and <cite>y</cite> steps <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.NORTH" title="mpam.types.Dir.NORTH"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NORTH</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coord</strong> – the starting coordinate</p></li>
+<li><p><strong>x</strong> – The number of steps to travel <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.EAST" title="mpam.types.Dir.EAST"><code class="xref py py-attr docutils literal notranslate"><span class="pre">EAST</span></code></a></p></li>
+<li><p><strong>y</strong> – The number of steps to travel <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.NORTH" title="mpam.types.Dir.NORTH"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NORTH</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the resulting <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.types.Orientation.up_right_delta">
+<span class="sig-name descname"><span class="pre">up_right_delta</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple[typing.Union[typing.Literal[-1],</span> <span class="pre">typing.Literal[0],</span> <span class="pre">typing.Literal[1]],</span> <span class="pre">typing.Union[typing.Literal[-1],</span> <span class="pre">typing.Literal[0],</span> <span class="pre">typing.Literal[1]]]</span></em><a class="headerlink" href="#mpam.types.Orientation.up_right_delta" title="Permalink to this definition"></a></dt>
+<dd><p>A tuple representing the offsets when going up and to the right (i.e., <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir.NORTHEAST" title="mpam.types.Dir.NORTHEAST"><code class="xref py py-attr docutils literal notranslate"><span class="pre">NORTHEAST</span></code></a>).</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mpam.types.Operation.html" class="btn btn-neutral float-left" title="mpam.types.Operation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.Postable.html" class="btn btn-neutral float-right" title="mpam.types.Postable" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Evan Kirshenbaum.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

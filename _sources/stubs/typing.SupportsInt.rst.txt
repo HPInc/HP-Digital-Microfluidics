@@ -1,0 +1,43 @@
+typing.SupportsInt
+==================
+
+.. currentmodule:: typing
+
+.. autoclass:: SupportsInt
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SupportsInt.__init__
+   
+   
+   
+
+   
+   
+   
+   

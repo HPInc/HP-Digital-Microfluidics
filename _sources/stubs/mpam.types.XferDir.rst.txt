@@ -1,0 +1,48 @@
+mpam.types.XferDir
+==================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: XferDir
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~XferDir.FILL
+      ~XferDir.EMPTY
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

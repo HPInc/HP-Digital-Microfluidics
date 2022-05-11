@@ -1,0 +1,6 @@
+mpam.exceptions.PadBrokenError
+==============================
+
+.. currentmodule:: mpam.exceptions
+
+.. autoexception:: PadBrokenError

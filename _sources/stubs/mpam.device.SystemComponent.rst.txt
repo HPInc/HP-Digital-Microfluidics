@@ -1,0 +1,143 @@
+mpam.device.SystemComponent
+===========================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: SystemComponent
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~SystemComponent.no_delay
+      ~SystemComponent.system
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~SystemComponent.__init__
+      ~SystemComponent.add_monitor
+      ~SystemComponent.after_tick
+      ~SystemComponent.before_tick
+      ~SystemComponent.call_after
+      ~SystemComponent.call_at
+      ~SystemComponent.communicate
+      ~SystemComponent.delayed
+      ~SystemComponent.finish_update
+      ~SystemComponent.in_system
+      ~SystemComponent.join_system
+      ~SystemComponent.make_request
+      ~SystemComponent.on_condition
+      ~SystemComponent.on_tick
+      ~SystemComponent.schedule
+      ~SystemComponent.system_shutdown
+      ~SystemComponent.update_state
+      ~SystemComponent.user_operation
+   
+   
+   
+
+   
+   
+   
+   

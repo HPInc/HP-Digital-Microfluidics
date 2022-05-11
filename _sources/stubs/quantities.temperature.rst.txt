@@ -1,0 +1,42 @@
+﻿quantities.temperature
+======================
+
+.. automodule:: quantities.temperature
+
+   
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+      :toctree:
+   
+      abs_K
+      abs_C
+      abs_F
+      absolute_zero
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      Scale
+      TemperaturePoint
+   
+   
+
+   
+   
+   
+
+
+

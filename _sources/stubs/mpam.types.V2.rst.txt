@@ -1,0 +1,6 @@
+mpam.types.V2
+=============
+
+.. currentmodule:: mpam.types
+
+.. autodata:: V2

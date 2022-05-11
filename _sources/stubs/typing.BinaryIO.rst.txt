@@ -1,0 +1,143 @@
+typing.BinaryIO
+===============
+
+.. currentmodule:: typing
+
+.. autoclass:: BinaryIO
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~BinaryIO.closed
+      ~BinaryIO.mode
+      ~BinaryIO.name
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~BinaryIO.write
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~BinaryIO.__init__
+      ~BinaryIO.close
+      ~BinaryIO.fileno
+      ~BinaryIO.flush
+      ~BinaryIO.isatty
+      ~BinaryIO.read
+      ~BinaryIO.readable
+      ~BinaryIO.readline
+      ~BinaryIO.readlines
+      ~BinaryIO.seek
+      ~BinaryIO.seekable
+      ~BinaryIO.tell
+      ~BinaryIO.truncate
+      ~BinaryIO.writable
+      ~BinaryIO.writelines
+   
+   
+   

@@ -1,0 +1,193 @@
+quantities.dimensions.Work
+==========================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Work
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Work.derived
+      ~Work.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Work.dimensionality
+      ~Work.is_negative
+      ~Work.is_positive
+      ~Work.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Work.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Work.__init__
+      ~Work.a
+      ~Work.an
+      ~Work.as_dimensionality
+      ~Work.as_number
+      ~Work.as_unit
+      ~Work.as_unit_expr
+      ~Work.cast
+      ~Work.check_dimensionality
+      ~Work.decomposed
+      ~Work.divide_by
+      ~Work.has_dimensionality
+      ~Work.in_denom
+      ~Work.in_units
+      ~Work.is_close_to
+      ~Work.multiply_by
+      ~Work.of
+      ~Work.ratio
+      ~Work.restricted
+      ~Work.to_power
+      ~Work.unit
+   
+   
+   

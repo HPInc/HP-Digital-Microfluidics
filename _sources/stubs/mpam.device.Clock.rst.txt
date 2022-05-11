@@ -1,0 +1,138 @@
+mpam.device.Clock
+=================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Clock
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Clock.last_tick
+      ~Clock.next_tick
+      ~Clock.running
+      ~Clock.update_interval
+      ~Clock.update_rate
+      ~Clock.system
+      ~Clock.engine
+      ~Clock.clock_thread
+      ~Clock.interval_change_callbacks
+      ~Clock.state_change_callbacks
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Clock.__init__
+      ~Clock.advance
+      ~Clock.after_tick
+      ~Clock.await_tick
+      ~Clock.before_tick
+      ~Clock.on_interval_change
+      ~Clock.on_state_change
+      ~Clock.pause
+      ~Clock.start
+   
+   
+   
+
+   
+   
+   
+   

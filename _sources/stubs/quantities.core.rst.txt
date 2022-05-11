@@ -1,0 +1,62 @@
+﻿quantities.core
+===============
+
+.. automodule:: quantities.core
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree:
+   
+      qstr
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree:
+      :template: custom-class-template.rst
+   
+      BaseDim
+      BaseDimMeta
+      BaseDimension
+      CountDim
+      DerivedDim
+      DerivedDimMeta
+      DimLike
+      Dimensionality
+      Exponents
+      NamedDim
+      NamedDimMeta
+      Prefix
+      Quantity
+      Scalar
+      Unit
+      UnitExpr
+      UnknownDimQuant
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+      :toctree:
+   
+      DimMismatchError
+      DimensionalityError
+   
+   
+
+
+

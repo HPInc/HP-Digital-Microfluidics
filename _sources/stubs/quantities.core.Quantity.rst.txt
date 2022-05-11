@@ -1,0 +1,158 @@
+quantities.core.Quantity
+========================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: Quantity
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Quantity.dimensionality
+      ~Quantity.is_negative
+      ~Quantity.is_positive
+      ~Quantity.is_zero
+      ~Quantity.magnitude
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Quantity.__init__
+      ~Quantity.a
+      ~Quantity.an
+      ~Quantity.as_number
+      ~Quantity.as_unit
+      ~Quantity.as_unit_expr
+      ~Quantity.cast
+      ~Quantity.check_dimensionality
+      ~Quantity.decomposed
+      ~Quantity.divide_by
+      ~Quantity.has_dimensionality
+      ~Quantity.in_denom
+      ~Quantity.in_units
+      ~Quantity.is_close_to
+      ~Quantity.multiply_by
+      ~Quantity.of
+      ~Quantity.ratio
+      ~Quantity.to_power
+   
+   
+   
+
+   
+   
+   
+   

@@ -1,0 +1,193 @@
+quantities.dimensions.Resistance
+================================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: Resistance
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Resistance.derived
+      ~Resistance.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Resistance.dimensionality
+      ~Resistance.is_negative
+      ~Resistance.is_positive
+      ~Resistance.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Resistance.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Resistance.__init__
+      ~Resistance.a
+      ~Resistance.an
+      ~Resistance.as_dimensionality
+      ~Resistance.as_number
+      ~Resistance.as_unit
+      ~Resistance.as_unit_expr
+      ~Resistance.cast
+      ~Resistance.check_dimensionality
+      ~Resistance.decomposed
+      ~Resistance.divide_by
+      ~Resistance.has_dimensionality
+      ~Resistance.in_denom
+      ~Resistance.in_units
+      ~Resistance.is_close_to
+      ~Resistance.multiply_by
+      ~Resistance.of
+      ~Resistance.ratio
+      ~Resistance.restricted
+      ~Resistance.to_power
+      ~Resistance.unit
+   
+   
+   

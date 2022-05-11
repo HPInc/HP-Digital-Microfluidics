@@ -1,0 +1,193 @@
+quantities.dimensions.LumInt
+============================
+
+.. currentmodule:: quantities.dimensions
+
+.. autoclass:: LumInt
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~LumInt.magnitude
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~LumInt.dimensionality
+      ~LumInt.is_negative
+      ~LumInt.is_positive
+      ~LumInt.is_zero
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~LumInt.dim
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~LumInt.__init__
+      ~LumInt.a
+      ~LumInt.an
+      ~LumInt.as_dimensionality
+      ~LumInt.as_number
+      ~LumInt.as_unit
+      ~LumInt.as_unit_expr
+      ~LumInt.base_unit
+      ~LumInt.cast
+      ~LumInt.check_dimensionality
+      ~LumInt.decomposed
+      ~LumInt.divide_by
+      ~LumInt.has_dimensionality
+      ~LumInt.in_denom
+      ~LumInt.in_units
+      ~LumInt.is_close_to
+      ~LumInt.multiply_by
+      ~LumInt.of
+      ~LumInt.ratio
+      ~LumInt.restricted
+      ~LumInt.to_power
+      ~LumInt.unit
+   
+   
+   

@@ -1,0 +1,118 @@
+quantities.core.Unit
+====================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: Unit
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Unit.abbreviation
+      ~Unit.singular
+      ~Unit.quantity
+      ~Unit.num
+      ~Unit.denom
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Unit.__init__
+      ~Unit.description
+      ~Unit.of
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Unit.a
+      ~Unit.an
+      ~Unit.as_unit
+      ~Unit.choose_abbr
+      ~Unit.dimensionality
+      ~Unit.format
+   
+   
+   

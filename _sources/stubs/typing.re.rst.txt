@@ -1,0 +1,58 @@
+typing.re
+=========
+
+.. currentmodule:: typing
+
+.. autoclass:: re
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~re.Match
+      ~re.Pattern
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~re.__init__
+   
+   
+   
