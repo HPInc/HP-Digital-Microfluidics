@@ -25,6 +25,7 @@ from quantities.dimensions import Molarity, MassConcentration, \
 from quantities.temperature import TemperaturePoint
 
 from quantities.SI import uL
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -532,6 +533,7 @@ ValTuple = tuple[bool, T]
 
 class Missing: ...
 MISSING: Final[Missing] = Missing()
+MissingOr = Union[Missing, T]
 
 class Operation(Generic[T, V], ABC):
     '''
@@ -2058,9 +2060,13 @@ class ChangeCallbackList(Generic[T]):
             key = cb
         with self.lock:
             self.callbacks[key] = cb
+            # print(f"Now {len(self.callbacks)} callback(s) on {self}")
             # if key is not cb:
                 # print(f"Adding callback {key}")
                 # print(f"  Callbacks now {map_str(list(self.callbacks.keys()))}")
+                
+    def __call__(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
+        self.add(cb, key=key)
 
     def remove(self, key: Hashable) -> None:
         """
@@ -2114,6 +2120,166 @@ class ChangeCallbackList(Generic[T]):
             # print(f"Callback ({old}->{new}: {k}")
             cb(old, new)
 
+OT = TypeVar("OT") 
+OTcontra = TypeVar("OTcontra", contravariant=True)
+class Gettable(Protocol[OTcontra, Tco]):
+    def __get__(self, obj: OTcontra, objtype: type[OTcontra]) -> Tco: ...
+
+class monitored_property(Generic[OT, T]):
+    _key: Final[str]
+    def __init__(self, get_fn: Callable[[OT], T],
+                 set_fn: Optional[Callable[[OT, T], None]] = None,
+                 ) -> None:
+        if set_fn is None:
+            print(f"{get_fn.__name__}")
+        self._key = f"_{get_fn.__name__}_callback_list_{random.random()}"
+        print(f"Key is {self._key}")
+        self.get_fn = get_fn
+        self.set_fn = set_fn
+    
+    @overload
+    def __get__(self, obj: None, objtype: type[OT]) -> monitored_property[OT, T]: ... # @UnusedVariable
+    @overload
+    def __get__(self, obj: OT, objtype: type[OT]) -> T: ... # @UnusedVariable
+    def __get__(self, obj: Optional[OT], 
+                objtype: type[OT]) -> Union[T, monitored_property[OT, T]]: # @UnusedVariable
+        if obj is None:
+            return self
+        return self.get_fn(obj)
+
+    def __set__(self, obj: OT, value: T):
+        if self.set_fn is None:
+            raise AttributeError("can't set attribute")
+        old = self.__get__(obj, type(obj))
+        print(f"Changing from {self.__get__(obj, type(obj))} to {value}")
+        self.set_fn(obj, value)
+        new = self.__get__(obj, type(obj))
+        if new is not old:
+            self._callback_list(obj).process(old, new)
+        
+    def _callback_list(self, obj: OT) -> ChangeCallbackList[T]:
+        key = self._key
+        ccl = getattr(obj, key, None)
+        if ccl is None:
+            ccl = ChangeCallbackList[T]()
+            print(f"ccl for {obj} is {ccl}")
+            setattr(obj, key, ccl)
+        return ccl
+        
+    def setter(self, fset: Callable[[OT, T], None]) -> monitored_property[OT, T]:
+        return type(self)(self.get_fn, fset)
+    
+    def callbacks(self, _fn: Callable[[OT], T]) -> Gettable[OT, ChangeCallbackList[T]]:
+        me = self
+        class inner:
+            def __get__(self, obj: OT, objtype: type[OT]) -> ChangeCallbackList[T]:
+                return me._callback_list(obj)
+            
+        return inner()
+ 
+class MonitoredProperty(Generic[T]):
+    attr: Final[str]
+    val_attr: Final[str]
+    callback_list_attr: Final[str]
+    _process_duplicates: Final[bool]
+    
+    def __init__(self, attr: Optional[str] = None, *,
+                 val_attr: Optional[str] = None,
+                 callback_list_attr: Optional[str] = None,
+                 default: MissingOr[T] = MISSING,
+                 default_fn: Optional[Callable[[Any], MissingOr[T]]] = None,
+                 process_duplicates: bool = False
+                 ) -> None:
+        if attr is None:
+            attr = f"monitored_{random.random()}"
+        self.attr = attr
+        if val_attr is None:
+            val_attr = f"_{attr}"
+        self.val_attr = val_attr
+        if callback_list_attr is None:
+            callback_list_attr = f"{val_attr}_callback_list"
+        self.callback_list_attr = callback_list_attr
+        self._default_val = default
+        self._default_fn = default_fn
+        self._process_duplicates = process_duplicates
+        self._transform: Callable[[Any, T], MissingOr[T]] = lambda _obj, v: v
+        
+    def _default_value(self, obj) -> MissingOr[T]:
+        dfn = self._default_fn
+        if dfn is not None:
+            val = dfn(obj)
+            if val is not MISSING:
+                return val
+        return self._default_val
+        
+        
+    def _lookup(self, obj) -> MissingOr[T]:
+        key = self.val_attr
+        val: MissingOr[T] = getattr(obj, key, MISSING)
+        if val is MISSING:
+            val = self._default_value(obj)
+        return val
+        
+    def _callback_list(self, obj) -> Optional[ChangeCallbackList[T]]:
+        key = self.callback_list_attr
+        ccl = getattr(obj, key, None)
+        return ccl
+        
+    @overload
+    def __get__(self, obj: None, objtype) -> MonitoredProperty[T]: ... # @UnusedVariable
+    @overload
+    def __get__(self, obj: Any, objtype) -> T: ... # @UnusedVariable
+    def __get__(self, obj, objtype) -> Union[T, MonitoredProperty[T]]: # @UnusedVariable
+        if obj is None:
+            return self
+        val = self._lookup(obj)
+        if val is MISSING:
+            raise AttributeError(f"Attribute '{self.attr}' not set in {obj}")
+        assert not isinstance(val, Missing)
+        return val
+
+    def __set__(self, obj, value: T) -> None:
+        key = self.val_attr
+        maybe_value = (self._transform)(obj, value)
+        if maybe_value is MISSING:
+            return 
+        value = cast(T, maybe_value)
+        old = self._lookup(obj)
+        setattr(obj, key, value)
+        if old is not MISSING and (old != value or self._process_duplicates):
+            ccl = self._callback_list(obj)
+            if ccl is not None:
+                assert not isinstance(old, Missing)
+                ccl.process(old, value)
+            
+    def __delete__(self, obj) -> None:
+        key = self.val_attr
+        delattr(obj, key)
+        
+    @property
+    def callback_list(self) -> Gettable[object, ChangeCallbackList[T]]:
+        me = self
+        class CCL:
+            def __get__(self, obj, objtype) -> ChangeCallbackList[T]: # @UnusedVariable
+                ccl = me._callback_list(obj)
+                if ccl is None:
+                    ccl = ChangeCallbackList[T]()
+                    setattr(obj, me.callback_list_attr, ccl)
+                return ccl
+        return CCL()
+    
+    @property
+    def value_check(self) -> Gettable[object, bool]:
+        me = self
+        class VC:
+            def __get__(self, obj, objtype) -> bool: # @UnusedVariable
+                val = me._lookup(obj)
+                return val is not MISSING
+        return VC()
+    
+    def transform(self, fn: Callable[[Any, T], MissingOr[T]]) -> Callable[[Any, T], MissingOr[T]]:
+        self._transform = fn
+        return fn
 
 # Used in the case when a chemical is there, but its concentration
 # cannot be computed.  Usually when two reagents specify the chemical,
