@@ -47,7 +47,7 @@ time_arg_units: Final[Mapping[str, Unit[Time]]] = {
     "day": days
     }
 
-time_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)\\s*({'|'.join(time_arg_units)})")
+time_arg_re: Final[Pattern] = re.compile(f"(-?\\d+(?:.\\d+)?)\\s*({'|'.join(time_arg_units)})")
 
 def time_arg(arg: str) -> Time:
     m = time_arg_re.fullmatch(arg)
@@ -174,6 +174,7 @@ class Exerciser(ABC):
     default_initial_delay: Time = 5*secs
     default_min_time: Time = 5*minutes
     default_update_interval: Time = 20*ms
+    default_off_on_delay: Time = 0*ms
 
     def __init__(self, description: str = "run tasks on a board") -> None:
         self.parser = ArgumentParser(description=description)
@@ -249,7 +250,7 @@ class Exerciser(ABC):
                 level = "INFO"
         if level is not None:
             log_level = getattr(logging, level.upper())
-            if (log_level <= logging.INFO):
+            if (log_level < logging.INFO):
                 logging.basicConfig(level=log_level,
                                     format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
                 logging.getLogger('matplotlib').setLevel(logging.INFO)
@@ -300,6 +301,7 @@ class Exerciser(ABC):
         group = parser.add_argument_group(title="common options")
         self.add_device_specific_common_args(group, parser)
         default_clock_interval=100*ms
+        default_off_on_delay=0*ms
         group.add_argument('-cs', '--clock-speed', type=time_arg, default=default_clock_interval, metavar='TIME',
                            help=f'''
                            The amount of time between clock ticks.
@@ -309,6 +311,13 @@ class Exerciser(ABC):
                            help='''
                            Don't start the clock automatically. Note that operations that are not gated
                            by the clock may still run.
+                           ''')
+        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', default=self.default_off_on_delay,
+                           help=f'''
+                           The amount of time to wait between turning pads off
+                           and turning pads on in a clock tick.  0ms is no
+                           delay.  Negative values means pads are turned on before pads are turned off.
+                           Default is {self.fmt_time(self.default_initial_delay)}.
                            ''')
         group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=self.default_initial_delay,
                            help=f'''

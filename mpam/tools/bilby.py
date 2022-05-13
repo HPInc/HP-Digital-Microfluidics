@@ -150,7 +150,9 @@ class BilbyExerciser(JoeyExerciser):
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir, voltage=voltage)
+        return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir,
+                           off_on_delay=args.off_on_delay, 
+                           voltage=voltage)
 
 if __name__ == '__main__':
     Time.default_units = ms
