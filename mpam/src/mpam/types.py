@@ -2407,6 +2407,18 @@ class MonitoredProperty(Generic[T]):
         the actual assignment.  (Any previous assignments would have triggered
         their own callbacks.)
     
+    Note:
+        When extracting documentation using Sphinx/Napoleon, the types of the
+        properties and their derived properties are not picked up unless you are
+        explicit::
+        
+            class Counter:
+                count: MonitoredProperty[int] = MonitoredProperty("count", default=0)
+                on_count_change: ChangeCallbackList[in] = count.callback_list
+                
+        MyPy won't let you annotate the property as ``int``, even though it
+        reasons correctly about it.
+        
     Args:
         T: the type of the value stored in the property.
     """
@@ -3460,16 +3472,12 @@ class Liquid:
     :attr:`reagent` can change over time, and so differnt :class:`Liquid`\s may
     have the same state, but each will retain its own identity.
 
-    Callbacks can be hung off :class:`ChangeCallbackList`\s for both
-    :attr:`volume` and :attr:`reagent` by calling ::
+    Callbacks can be registered for both :attr:`volume` and :attr:`reagent` by
+    using the :class:`ChangeCallbackList`\s :attr:`on_volume_change` and
+    :attr:`on_reagent_change`::
 
         liq.on_reagent_change(note_reagent_change, key=nrc_key)
         liq.on_volume_change(note_volume_change)
-
-    To delete a callback, use :attr:`volume_change_callbacks` and
-    :attr:`reagent_change_callbacks` directly, e.g. ::
-
-        liq.reagent_change_callbacks.remove(nrc_key)
 
     In addition to :attr:`volume`, a :class:`Liquid` also has an indication of
     whether the :attr:`volume` is :attr:`inexact`.  Typically, this will be
@@ -3527,51 +3535,31 @@ class Liquid:
 
 
     """
-    _reagent: Reagent   #: Internal :attr:`reagent` pointer
-    _volume: Volume     #: Internal :attr:`volume` pointer
     inexact: bool       #: Is :attr:`volume` inexact?
 
-    volume_change_callbacks: Final[ChangeCallbackList[Volume]]
-    "A :class:`ChangeCallbackList` monitoring :attr:`volume`"
-    reagent_change_callbacks: Final[ChangeCallbackList[Reagent]]
-    "A :class:`ChangeCallbackList` monitoring :attr:`reagent`"
+    volume: MonitoredProperty[Volume] = MonitoredProperty("volume")
+    """
+    The :class:`.Volume` of the :class:`Liquid`.  In some cases, this should
+    be interpreted in conjunction with :attr:`inexact`.
 
-    @property
-    def volume(self) -> Volume:
-        """
-        The :class:`.Volume` of the :class:`Liquid`.  In some cases, this should
-        be interpreted in conjunction with :attr:`inexact`.
+    Setting :attr:`volume` to a :class:`.Volume` different from the previous
+    value will trigger the callbacks in :attr:`volume_change_callbacks`
+    """
 
-        Setting :attr:`volume` will trigger the callbacks in
-        :attr:`volume_change_callbacks` only if the new value is not equal to
-        the old value.
-        """
-        return self._volume
+    on_volume_change: ChangeCallbackList[Volume] = volume.callback_list
+    "The :class:`ChangeCallbackList` monitoring :attr:`volume`"
 
-    @volume.setter
-    def volume(self, new: Volume) -> None:
-        old = self._volume
-        if old != new:
-            self._volume = new
-            self.volume_change_callbacks.process(old, new)
+    reagent: MonitoredProperty[Reagent] = MonitoredProperty("reagent")
+    """
+    The :class:`Reagent` of the :class:`Liquid`.
 
-    @property
-    def reagent(self) -> Reagent:
-        """
-        The :class:`Reagent` of the :class:`Liquid`.
-
-        Setting :attr:`reagent` will trigger the callbacks in
-        :attr:`reagent_change_callbacks` only if the new value is not the same
-        as the old value.
-        """
-        return self._reagent
-
-    @reagent.setter
-    def reagent(self, new: Reagent) -> None:
-        old = self._reagent
-        if old is not new:
-            self._reagent = new
-            self.reagent_change_callbacks.process(old, new)
+    Setting :attr:`reagent` to a :class:`.Reagent` different from the previous
+    value will trigger the callbacks in :attr:`reagent_change_callbacks` only if
+    the new value is not the same as the old value.
+    """
+    
+    on_reagent_change: ChangeCallbackList[Reagent] = reagent.callback_list
+    "The :class:`ChangeCallbackList` monitoring :attr:`reagent`"
 
     def __init__(self, reagent: Reagent, volume: Volume, *, inexact: bool = False) -> None:
         """
@@ -3587,9 +3575,6 @@ class Liquid:
         self._volume = volume
         self.inexact = inexact
 
-        self.volume_change_callbacks = ChangeCallbackList[Volume]()
-        self.reagent_change_callbacks = ChangeCallbackList[Reagent]()
-
     def __repr__(self) -> str:
         return f"Liquid[{'~' if self.inexact else ''}{self.volume.in_units(uL)}, {self.reagent}]"
 
@@ -3603,38 +3588,6 @@ class Liquid:
     def __isub__(self, rhs: Volume) -> Liquid:
         self.volume = max(self.volume-rhs, Volume.ZERO)
         return self
-
-    def on_volume_change(self, cb: ChangeCallback[Volume], *, key: Optional[Hashable] = None):
-        """
-        Register a callback for changes to :attr:`volume`.  The callback will be
-        placed on :attr:`volume_change_callbacks`.  If ``key`` is specified, it
-        will be used as the key that can be used to remove the callback in the
-        future.
-
-        Args:
-            cb: the callback
-        Keyword Args:
-            key: an optional key to use to remove the callback
-        """
-        if key is None:
-            key = cb
-        self.volume_change_callbacks.add(cb, key=key)
-
-    def on_reagent_change(self, cb: ChangeCallback[Reagent], *, key: Optional[Hashable] = None):
-        """
-        Register a callback for changes to :attr:`reagent`.  The callback will be
-        placed on :attr:`reagent_change_callbacks`.  If ``key`` is specified, it
-        will be used as the key that can be used to remove the callback in the
-        future.
-
-        Args:
-            cb: the callback
-        Keyword Args:
-            key: an optional key to use to remove the callback
-        """
-        if key is None:
-            key = cb
-        self.reagent_change_callbacks.add(cb, key=key)
 
     def mix_with(self, other: Liquid, *, result: Optional[MixResult] = None) -> Liquid:
         """
@@ -4395,31 +4348,24 @@ class State(Generic[T], ABC):
     Args:
         T: The value type
     """
-    _state: T   #: The current value
-
-    @property
-    def current_state(self) -> T:
-        """
-        The current value.  Setting this will invoke any
-        :attr:`state_change_callbacks`, regardless of whether the new value is
-        equal to the old value.
-        """
-        return self._state
-
-    @current_state.setter
-    def current_state(self, val: T) -> None:
-        old = self._state
-        self._state = val
-        self.state_change_callbacks.process(old, val)
-
+    # _state: T   #: The current value
+    
+    current_state: MonitoredProperty[T] = MonitoredProperty("state")
+    """
+    The current value.  When this value is set to a value not equal to the prior
+    value, callbacks registerd to :attr:`on_state_change` are called.
+    """
+    on_state_change: ChangeCallbackList[T] = current_state.callback_list
+    """
+    The :class:`.ChangeCallbackList` monitoring :attr:`current_state`.
+    """
 
     def __init__(self, *, initial_state: T) -> None:
         """
         Keyword Args:
             initial_state: the initial value
         """
-        self._state = initial_state
-        self.state_change_callbacks: Final[ChangeCallbackList[T]] = ChangeCallbackList[T]()
+        self.current_state = initial_state
         "Callbacks invoked when :attr:`current_state` is set"
 
     @abstractmethod
@@ -4437,18 +4383,6 @@ class State(Generic[T], ABC):
             new_state: the value to realize
         """
         ...
-
-    def on_state_change(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
-        """
-        Add a new handler, replacing any with the specified key.  If ``key`` is
-        ``None``, ``cb`` is used as the key
-
-        Args:
-            cb: the handler
-        Keyword Args:
-            key: the (optional) key
-        """
-        self.state_change_callbacks.add(cb, key=key)
 
 
 class DummyState(State[T]):

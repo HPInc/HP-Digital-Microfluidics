@@ -301,7 +301,6 @@ class Exerciser(ABC):
         group = parser.add_argument_group(title="common options")
         self.add_device_specific_common_args(group, parser)
         default_clock_interval=100*ms
-        default_off_on_delay=0*ms
         group.add_argument('-cs', '--clock-speed', type=time_arg, default=default_clock_interval, metavar='TIME',
                            help=f'''
                            The amount of time between clock ticks.

@@ -79,11 +79,11 @@ class EmulatedHeater(device.Heater):
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
         self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
-        self._last_reading = self.ambient_temperature
+        self.current_temperature = self.ambient_temperature
         # It really seems as though we should be able to just override the target setter, but I
         # can't get the compiler (and MyPy) to accept it
         key=(self, "target changed", random.random())
-        self.on_target_change(lambda old,new: self._update_temp(old), key=key)  # @UnusedVariable
+        self.on_target_change(lambda old,new: self._update_temp(new), key=key)  # @UnusedVariable
         
     def _update_temp(self, target: Optional[TemperaturePoint]) -> None:
         now = time_now()
@@ -91,20 +91,20 @@ class EmulatedHeater(device.Heater):
         mode = self.mode
         if mode is HeatingMode.MAINTAINING:
             return
-        assert self._last_reading is not None
-        if mode is HeatingMode.OFF and self._last_reading == self.ambient_temperature:
+        assert self.current_temperature is not None
+        if mode is HeatingMode.OFF and self.current_temperature == self.ambient_temperature:
             return
         # target = self.target
         delta: Temperature
         if mode is HeatingMode.HEATING:
             delta = (self._heating_rate*elapsed).a(Temperature)
-            new_temp = self._last_reading + delta
+            new_temp = self.current_temperature + delta
             if target is not None:
                 new_temp = min(new_temp, target)
             self.current_temperature = new_temp
         else:
             delta = (self._cooling_rate*elapsed).a(Temperature)
-            new_temp = self._last_reading - delta
+            new_temp = self.current_temperature - delta
             if target is None:
                 new_temp = max(new_temp, self.ambient_temperature)
             else:
@@ -115,7 +115,7 @@ class EmulatedHeater(device.Heater):
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
         future = Postable[Optional[TemperaturePoint]]()
         self._update_temp(self.target)
-        future.post(self._last_reading)
+        future.post(self.current_temperature)
         return future
 
     

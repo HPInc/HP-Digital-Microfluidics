@@ -353,7 +353,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             future = Postable[Liquid]()
             def schedule_it() -> None:
                 target = self.target
-                contents = target.contents
+                contents = target.removable_liquid
                 volume = self.volume
                 if volume is None:
                     if contents is None:

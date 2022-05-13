@@ -6,7 +6,6 @@ import json
 import random
 import socket
 from threading import Thread, Event, Condition, RLock
-from time import sleep
 import traceback
 from typing import Union, Final, Any, cast, Optional, Callable, NamedTuple, \
     Sequence

@@ -402,7 +402,7 @@ class Blob:
             old.attached_to_well = False
         self.attached_to_well = True
         setattr(well, attr, self)
-        well.on_liquid_change(lambda old,new: self.pull_from_well(), key=Blob.pull_key) # @UnusedVariable
+        well.on_liquid_change(lambda _old,_new: self.pull_from_well(), key=Blob.pull_key)
 
 
     def detach_from_well(self) -> None:
@@ -410,7 +410,7 @@ class Blob:
         assert well is not None
         setattr(well, self.attachment_attr, None)
         self.attached_to_well = False
-        well._liquid_change_callbacks.remove(Blob.pull_key)
+        well.on_liquid_change.remove(Blob.pull_key)
         self.well = None
 
 

@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-
 from mpam.types import MonitoredProperty
-from enum import Enum, auto
-from typing import Union, Final
 
 
 sn: int = 100
