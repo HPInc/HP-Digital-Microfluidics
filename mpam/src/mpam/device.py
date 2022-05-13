@@ -31,12 +31,15 @@ from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
 from _collections import defaultdict
+import logging
 
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
     from mpam.monitor import BoardMonitor
     from mpam.pipettor import Pipettor
+
+logger = logging.getLogger(__name__)
 
 PadArray = Mapping[XYCoord, 'Pad']
 
@@ -3380,6 +3383,7 @@ class Board(SystemComponent):
     # _well_groups: Mapping[str, WellGroup]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
+    off_on_delay: Time
     _drop_size: Volume
     _reserved_well_gates: list[Well]
     _lock: Final[Lock]
@@ -3402,7 +3406,8 @@ class Board(SystemComponent):
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
                  orientation: Orientation,
-                 drop_motion_time: Time) -> None:
+                 drop_motion_time: Time,
+                 off_on_delay: Time = Time.ZERO) -> None:
         super().__init__()
         self._change_journal = ChangeJournal()
         self.pads = pads
@@ -3412,6 +3417,8 @@ class Board(SystemComponent):
         self.extraction_points = [] if extraction_points is None else extraction_points
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
+        self.off_on_delay = off_on_delay
+        logger.info("off-on delay is %s", off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
         # self._drops = []

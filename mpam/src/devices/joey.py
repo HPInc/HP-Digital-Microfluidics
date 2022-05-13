@@ -224,7 +224,8 @@ class Board(device.Board):
         return EmulatedHeater(num, board=self, regions=regions, polling_interval=polling_interval)
         
     def __init__(self, *,
-                 pipettor: Optional[Pipettor] = None) -> None:
+                 pipettor: Optional[Pipettor] = None,
+                 off_on_delay: Time = Time.ZERO) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
@@ -236,7 +237,8 @@ class Board(device.Board):
                          heaters=heaters,
                          extraction_points=extraction_points,
                          orientation=Orientation.NORTH_POS_EAST_POS,
-                         drop_motion_time=500*ms)
+                         drop_motion_time=500*ms,
+                         off_on_delay=off_on_delay)
         
         dead_region = GridRegion(XYCoord(7,8), width=5, height=3)
         

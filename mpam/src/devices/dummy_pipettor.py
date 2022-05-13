@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from time import sleep
 import logging
 
 from mpam.pipettor import Pipettor, Transfer, EmptyTarget
@@ -64,7 +63,7 @@ class DummyPipettor(Pipettor):
         self.flow_rate *= factor
 
     def _sleep_for(self, time: Time) -> None:
-        sleep(time.as_number(seconds))
+        time.sleep()
 
     def move_to(self, pos = ArmPos) -> None:
         if pos is self.arm_pos:
