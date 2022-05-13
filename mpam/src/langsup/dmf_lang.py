@@ -1270,6 +1270,7 @@ class DMFCompiler(DMFVisitor):
                         return f"{otn}'s {a} is not mutable: {text}"
                     return self.error(ctx, value.return_type, emessage)
             else:
+                otn = obj.return_type.name
                 def emessage(text: str) -> str:
                     if len(allowed) == 1:
                         req = allowed[0].name
