@@ -4,7 +4,7 @@ from _collections import defaultdict
 from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
     Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple,\
-    TYPE_CHECKING
+    TYPE_CHECKING, overload
 import typing
 
 from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext, \
@@ -17,18 +17,22 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit
 from mpam.device import Pad, Board, BinaryComponent, Well,\
-    WellGate, WellPad
+    WellGate, WellPad, Heater
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable
 from quantities.core import Unit, Dimensionality
-from quantities.dimensions import Time, Volume
+from quantities.dimensions import Time, Volume, Temperature
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
 from erk.basic import LazyPattern, not_None
 from re import Match
+from threading import RLock
+import re
+from quantities.temperature import TemperaturePoint, abs_C
+from quantities.SI import deg_C
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -39,11 +43,19 @@ Val_ = TypeVar("Val_")
 
 class EvaluationError(RuntimeError): ...
 
+MaybeError = Union[Val_, EvaluationError]
+
 class CompilationError(RuntimeError): ...
 
 class MaybeNotSatisfiedError(EvaluationError): ...
 
 class AlreadyDropError(EvaluationError): ...
+
+class UninitializedVariableError(EvaluationError): ...
+
+class NoSuchComponentError(EvaluationError):
+    def __init__(self, kind: str, which: int, max_val: int) -> None:
+        super().__init__(f"{kind} #{which} does not exist.  Max is {max_val}.")
         
 class UnknownUnitDimensionError(CompilationError):
     unit: Final[Unit]
@@ -51,9 +63,26 @@ class UnknownUnitDimensionError(CompilationError):
     
     def __init__(self, unit: Unit) -> None:
         dim = unit.dimensionality()
-        super().__init__(f"Unit {unit} has unknown dimensionality {dim}")
+        super().__init__(f"Unit {unit} has unknown dimensionality {dim}.")
         self.unit = unit
         self.dimensionality = dim
+        
+def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
+    def check(*args) -> MaybeError[Val_]:
+        first = args[0]
+        if isinstance(first, EvaluationError):
+            return first
+        return fn(*args)
+    return check
+
+def error_check_delayed(fn: Callable[..., Delayed[Val_]]) -> Callable[..., Delayed[MaybeError[Val_]]]:
+    def check(*args) -> Delayed[MaybeError[Val_]]:
+        first = args[0]
+        if isinstance(first, EvaluationError):
+            return Delayed.complete(first)
+        # Well, *that's* a kludge
+        return fn(*args).transformed(lambda x: x)
+    return check
 
 class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
@@ -407,7 +436,7 @@ class ByNameCache(dict[K_,V_]):
         return ret
 
 Functions = ByNameCache[str, Func](lambda name: Func(name))
-Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"{name} attribute"]))
+Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"'{name}' attribute"]))
 
 ERUnitLookup: dict[EnvRelativeUnit, tuple[Type, Type, Callable[[Environment], Unit]]] = {
         EnvRelativeUnit.DROP: (Type.VOLUME, Type.FLOAT, lambda env: env.board.drop_unit),
@@ -475,6 +504,7 @@ Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
 Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
 Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
 Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
+Attributes["number"].register(Type.HEATER, Type.INT, lambda w : w.num)
 
 Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
 Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
@@ -507,6 +537,13 @@ Attributes["contents"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w
 Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
 Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
 
+Attributes["heater"].register(Type.PAD, Type.HEATER.maybe, lambda p: p.heater)
+
+Attributes["#current_temperature"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.current_temperature)
+def _set_heater_target(h: Heater, t: Optional[TemperaturePoint]):
+    h.target = t
+Attributes["#target_temperature"].register(Type.HEATER, Type.ABS_TEMP.maybe, lambda h: h.target)
+Attributes["#target_temperature"].register_setter(Type.HEATER, Type.ABS_TEMP.maybe, _set_heater_target)
 
 Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
 Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
@@ -580,6 +617,58 @@ DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
     Ticks.dim(): (Type.TICKS, Type.INT),
     }
 
+AnyTemp = Union[Temperature, TemperaturePoint, "AmbiguousTemp"]
+class AmbiguousTemp:
+    absolute: Final[TemperaturePoint]
+    relative: Final[Temperature]
+    
+    def __init__(self, absolute: TemperaturePoint, relative: Temperature) -> None:
+        self.absolute = absolute
+        self.relative = relative
+    
+    def __str__(self) -> str:
+        return (f"Ambiguous[abs: {self.absolute}, rel: {self.relative}]")
+    
+    @overload
+    def __add__(self, rhs: Union[Temperature, AmbiguousTemp]) -> AmbiguousTemp: ... # @UnusedVariable
+    @overload
+    def __add__(self, rhs: TemperaturePoint) -> TemperaturePoint: ... # @UnusedVariable
+    def __add__(self, rhs: AnyTemp) -> AnyTemp:
+        if isinstance(rhs, TemperaturePoint):
+            return rhs+self.relative
+        if not isinstance(rhs, Temperature):
+            rhs = rhs.relative
+        return AmbiguousTemp(self.absolute+rhs, self.relative+rhs)
+    
+    @overload
+    def __radd__(self, lhs: Temperature) -> AmbiguousTemp: ... # @UnusedVariable
+    @overload
+    def __radd__(self, lhs: TemperaturePoint) -> TemperaturePoint: ... # @UnusedVariable
+    def __radd__(self, lhs: Union[Temperature, TemperaturePoint]) -> AnyTemp:
+        return self+lhs
+        
+        
+    @overload
+    def __sub__(self, rhs: TemperaturePoint) -> Temperature: ... # @UnusedVariable
+    @overload
+    def __sub__(self, rhs: Union[Temperature, AmbiguousTemp]) -> AmbiguousTemp: ... # @UnusedVariable
+    def __sub__(self, rhs: AnyTemp) -> Union[Temperature, AmbiguousTemp]:
+        if isinstance(rhs, TemperaturePoint):
+            return self.absolute-rhs
+        if not isinstance(rhs, Temperature):
+            rhs = rhs.relative
+        return AmbiguousTemp(self.absolute-rhs, self.relative-rhs)
+    
+    @overload
+    def __rsub__(self, lhs: Temperature) -> Temperature: ... # @UnusedVariable
+    @overload
+    def __rsub__(self, lhs: TemperaturePoint) -> AmbiguousTemp: ... # @UnusedVariable
+    def __rsub__(self, lhs: Union[Temperature, TemperaturePoint]) -> Union[Temperature, AmbiguousTemp]:
+        if isinstance(lhs, Temperature):
+            return lhs-self.relative
+        return AmbiguousTemp(lhs-self.relative, lhs-self.absolute)
+    
+    
 rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.DROP: Drop,
         Type.INT: int,
@@ -605,7 +694,13 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.STRING: str,
         Type.REAGENT: Reagent,
         Type.SCALED_REAGENT: ScaledReagent,
+        Type.ABS_TEMP: TemperaturePoint,
+        Type.REL_TEMP: Temperature,
+        Type.AMBIG_TEMP: AmbiguousTemp,
+        Type.HEATER: Heater,
+        Type.NONE: type(None),
     }
+
 
 # class Conversions:
 #     known: ClassVar[dict[tuple[Type,Type], Callable[[Any], Any]]] = {}
@@ -672,6 +767,8 @@ Type.register_conversion(Type.INT, Type.FLOAT, float)
 Type.register_conversion(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
 Type.register_conversion(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
 Type.register_conversion(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
+Type.register_conversion(Type.AMBIG_TEMP, Type.ABS_TEMP, lambda t: t.absolute)
+Type.register_conversion(Type.AMBIG_TEMP, Type.REL_TEMP, lambda t: t.relative)
 
 
 
@@ -714,6 +811,12 @@ class Executable:
         #         assert isinstance(val, check), f"Expected {check}, got {val}"
         return future
     
+    def check_and_eval(self, maybe_error: Any, 
+                       env: Environment, required: Optional[Type] = None) -> Delayed[Any]:
+        if isinstance(maybe_error, EvaluationError):
+            return Delayed.complete(maybe_error)
+        return self.evaluate(env, required)
+    
 class LazyEval:
     Definition = Callable[[Environment, Sequence[Executable]], Delayed[Any]]
     def __init__(self, 
@@ -747,7 +850,9 @@ class DMFInterpreter:
             if executable.contains_error:
                 print(f"Macro file '{file_name}' contained error, not loading.")
             else:
-                executable.evaluate(self.globals).wait()
+                val = executable.evaluate(self.globals).value
+                if isinstance(val, EvaluationError):
+                    print(f"Exception caught while loading '{file_name}': {val}")
         
     def set_global(self, name: str, val: Any, vtype: Type):
         self.namespace[name] = vtype
@@ -768,7 +873,10 @@ class DMFInterpreter:
         if cache_as is not None and executable.return_type is not Type.IGNORE:
             cvar = cache_as
             future.then_call(lambda val: self.set_global(cvar, val, executable.return_type))
-        return future.transformed(lambda val: (executable.return_type, val))
+        def munge_result(val) -> Tuple[Type, Any]:
+            t = Type.ERROR if isinstance(val, EvaluationError) else executable.return_type
+            return (t, val)
+        return future.transformed(munge_result)
     
     def get_parser(self, input_stream: InputStream) -> DMFParser:
         lexer = DMFLexer(input_stream)
@@ -974,21 +1082,29 @@ class DMFCompiler(DMFVisitor):
         else:
             def run(env: Environment) -> Delayed[Any]:
                 args: List[Any] = []
+                def stash_arg(arg: Any) -> Any:
+                    args.append(arg)
+                    return arg
                 def make_lambda(ae: Executable, pt: Type) -> Callable[[Any], Delayed]:
-                    return lambda _: ae.evaluate(env,pt).transformed(lambda arg: args.append(arg))
+                    return lambda maybe_error: (ae.check_and_eval(maybe_error, env,pt)
+                                                .transformed(stash_arg))
                 lambdas = [make_lambda(ae,pt) for ae,pt in zip(arg_execs, sig.param_types)]
-                if len(lambdas) == 0:
-                    return fn()
-                first = lambdas[0](None)
                 future = (Delayed.complete(None) if len(arg_execs) == 0
                           else reduce(lambda fut,fn: fut.chain(fn),
                                       lambdas[1:],
-                                      first))
-                if isinstance(fn, WithEnv):
-                    future = future.chain(lambda _: fn(env, *args, *extra_args))
-                else:
-                    future = future.chain(lambda _: fn(*args, *extra_args))
-                return future            
+                                      lambdas[0](None)))
+                def chain_call(maybe_error) -> Delayed[Any]:
+                    if isinstance(maybe_error, EvaluationError):
+                        return Delayed.complete(maybe_error)
+                    else:
+                        try:
+                            if isinstance(fn, WithEnv):
+                                return fn(env, *args, *extra_args)
+                            else:
+                                return fn(*args, *extra_args)
+                        except EvaluationError as ex:
+                            return Delayed.complete(ex)
+                return future.chain(chain_call)
         return Executable(sig.return_type, run, arg_execs)
     
     def use_function(self, func: Union[Func, str],
@@ -1038,7 +1154,7 @@ class DMFCompiler(DMFVisitor):
             future: Delayed[Any] = stats[0].evaluate(env)
             for stat in stats[1:]:
                 def evaluator(s: Executable):
-                    return lambda _: s.evaluate(env)
+                    return lambda maybe_error: s.check_and_eval(maybe_error, env)
                 future = future.chain(evaluator(stat))
             return future
         return Executable(Type.NONE, run, stats)
@@ -1125,7 +1241,8 @@ class DMFCompiler(DMFVisitor):
             self.current_types.define(name, returned_type)
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val) -> Any:
-                setter(env, val)
+                if not isinstance(val, EvaluationError):
+                    setter(env, val)
                 return val
             return value.evaluate(env, var_type).transformed(do_assignment)
         return Executable(returned_type, run, (value,))
@@ -1153,6 +1270,7 @@ class DMFCompiler(DMFVisitor):
                         return f"{otn}'s {a} is not mutable: {text}"
                     return self.error(ctx, value.return_type, emessage)
             else:
+                otn = obj.return_type.name
                 def emessage(text: str) -> str:
                     if len(allowed) == 1:
                         req = allowed[0].name
@@ -1165,11 +1283,12 @@ class DMFCompiler(DMFVisitor):
         ot, vt = sig.param_types
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(o,v) -> Any:
-                setter(o,v)
+                if not isinstance(v, EvaluationError):
+                    setter(o,v)
                 return v
             
             return (obj.evaluate(env, ot) 
-                        .chain(lambda o: value.evaluate(env, vt)
+                        .chain(lambda o: value.check_and_eval(o, env, vt)
                                 .transformed(lambda v: do_assignment(o,v))))
         return Executable(value.return_type, run, (obj, value))
 
@@ -1237,6 +1356,8 @@ class DMFCompiler(DMFVisitor):
         real_val = value
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val) -> Any:
+                if isinstance(val, EvaluationError):
+                    return val
                 if just_assign:
                     env[name] = val
                 else:
@@ -1269,12 +1390,12 @@ class DMFCompiler(DMFVisitor):
                                 f"Delay ({have} must be time or ticks: {text}",
                               return_type=Type.PAUSE):
             return e
-        def run(env: Environment) -> Delayed[None]:
+        def run(env: Environment) -> Delayed[MaybeError[None]]:
             def pause(d: DelayType, env: Environment) -> Delayed[None]:
                 print(f"Delaying for {d}")
                 return env.board.delayed(lambda: None, after=d)
             return (duration.evaluate(env, Type.DELAY)
-                    .chain(lambda d: pause(d, env)))
+                    .chain(lambda d: error_check_delayed(pause)(d, env)))
         return Executable(Type.PAUSE, run, (duration,))
 
     def visitExpr_stat(self, ctx:DMFParser.Expr_statContext) -> Executable:
@@ -1293,26 +1414,28 @@ class DMFCompiler(DMFVisitor):
             
         ret_type = Type.NONE if len(stat_execs) == 0 else stat_execs[-1].return_type
 
-        def run(env: Environment) -> Delayed[None]:
-            local_env = env.new_child()
+        def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
                 return Delayed.complete(None)
-            
-            def execute(i: int) -> Delayed[None]:
+            local_env = env.new_child()
+            if len(stat_execs) == 1:
+                return stat_execs[0].evaluate(local_env)
+            def execute(maybe_error, i: int) -> Delayed[MaybeError[None]]:
                 # print(f"***Executing {self.text_of(stat_contexts[i])}")
-                return stat_execs[i].evaluate(local_env)
+                return stat_execs[i].check_and_eval(maybe_error, local_env)
             
-            future = execute(0)
+            future = execute(None, 0)
             for i in range(1, len(stat_execs)):
                 # We have to do something like this to ensure that each lambda gets a different i
-                def executor(j: int) -> Callable[[Any], Delayed[None]]:
-                    return lambda _: execute(j)
+                def executor(j: int) -> Callable[[Any], Delayed[MaybeError[None]]]:
+                    return lambda maybe_error: execute(maybe_error, j)
                 # print(f"Scheduling {self.text_of(stat_contexts[i])}")
                 future = future.chain(executor(i))
             return future
         return Executable(ret_type, run, stat_execs)
 
 
+    _par_block_error_lock = RLock()
 
     def visitPar_block(self, ctx:DMFParser.Par_blockContext) -> Executable:
         stat_contexts: Sequence[DMFParser.StatContext] = ctx.stat()
@@ -1321,16 +1444,38 @@ class DMFCompiler(DMFVisitor):
             
         ret_type = Type.NONE
         
-        def run(env: Environment) -> Delayed[None]:
-            local_env = env.new_child()
+        def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
                 return Delayed.complete(None)
+            local_env = env.new_child()
+            if len(stat_execs) == 1:
+                return stat_execs[0].evaluate(local_env)
             barrier = Barrier[Any](required = len(stat_execs))
-            future = Postable[None]()
-            barrier.wait(None, future)
+            error: MaybeError[None] = None
+            trigger_future = Postable[None]()
+            barrier.wait(None, trigger_future)
+            future = trigger_future.transformed(lambda _: error)
+            def note_error(ex: EvaluationError) -> None: 
+                nonlocal error
+                first = False
+                with self._par_block_error_lock:
+                    if error is None:
+                        first = True
+                        error = ex
+                    if first:
+                        # Firing the barrier will post the trigger_future, which
+                        # will cause future to return the error we just set. It
+                        # will fire again when all the statements reach it, but
+                        # nobody will be waiting.
+                        barrier.fire()
+            
             with env.board.in_system().batched():
+                def reach_barrier(maybe_error: MaybeError[None]) -> None:
+                    if isinstance(maybe_error, EvaluationError):
+                        note_error(maybe_error)
+                    barrier.reach(maybe_error)
                 for se in stat_execs:
-                    se.evaluate(local_env).then_call(lambda v: barrier.reach(v))
+                    se.evaluate(local_env).then_call(reach_barrier)
             return future
         return Executable(ret_type, run, stat_execs)
     
@@ -1374,9 +1519,13 @@ class DMFCompiler(DMFVisitor):
                         return Delayed.complete(None)
                     else:
                         return else_body.evaluate(env, result_type)
-                return (tests[i].evaluate(env, Type.BOOL)
-                        .chain(lambda v: (bodies[i].evaluate(env, result_type)
-                                          if v else check(i+1))))
+                    
+                def next_try(v: bool) -> Delayed:
+                    if v:
+                        return bodies[i].evaluate(env, result_type)
+                    else:
+                        return check(i+1)
+                return tests[i].evaluate(env, Type.BOOL).chain(error_check_delayed(next_try))
             return check(0)
         
         
@@ -1417,7 +1566,10 @@ class DMFCompiler(DMFVisitor):
         if var_type is None:
             return self.error(ctx.param_type(), Type.NONE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
-            return Delayed.complete(env[name])
+            val = env.lookup(name)
+            if val is None:
+                return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
+            return Delayed.complete(val)
         return Executable(var_type, run)
     
     
@@ -1443,7 +1595,10 @@ class DMFCompiler(DMFVisitor):
         if var_type is None:
             return self.error(ctx.name(), Type.NONE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
-            return Delayed.complete(env[name])
+            val = env.lookup(name)
+            if val is None:
+                return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
+            return Delayed.complete(val)
         return Executable(var_type, run)
 
     def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
@@ -1472,19 +1627,39 @@ class DMFCompiler(DMFVisitor):
         lhs = self.visit(ctx.lhs)
         rhs = self.visit(ctx.rhs)
         rel: Rel = ctx.rel().which
-        ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME)
-        if rel is not Rel.EQ and rel is not Rel.NE:
-            if e:=self.type_check(ok_types, lhs.return_type, ctx.lhs, return_type=Type.BOOL):
-                return e
-        if lhs.return_type is not rhs.return_type:
+        lhs_t = lhs.return_type
+        rhs_t = rhs.return_type
+        upper_bounds = Type.upper_bounds(lhs_t, rhs_t)
+        works = len(upper_bounds) > 0
+        if works:
+            if rel is Rel.EQ or rel is Rel.NE:
+                ub_t = upper_bounds[0]
+            else:
+                ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME, 
+                            Type.ABS_TEMP, Type.REL_TEMP)
+                def first_matching() -> Optional[Type]:
+                    for t in upper_bounds:
+                        for ok in ok_types:
+                            if t <= ok:
+                                return ok
+                    return None
+                match_t = first_matching()
+                if match_t is None:
+                    works = False
+                else:
+                    ub_t = match_t
+        # if rel is not Rel.EQ and rel is not Rel.NE:
+        #     if e:=self.type_check(ok_types, lhs_t, ctx.lhs, return_type=Type.BOOL):
+        #         return e
+        # if lhs_t is not rhs_t:
+        if not works:
             return self.error(ctx, Type.BOOL,
-                              f"Can't compare {lhs.return_type.name} and {rhs.return_type.name}: {self.text_of(ctx)}")
-        def run(env: Environment) -> Delayed[bool]:
-            def combine(x, y) -> bool:
-                return rel.test(x, y) 
-            future: Delayed = lhs.evaluate(env)
-            return future.chain(lambda x: (rhs.evaluate(env)
-                                            .transformed(lambda y: combine(x,y))))
+                              f"Can't compare {lhs_t.name} and {rhs_t.name}: {self.text_of(ctx)}")
+        def run(env: Environment) -> Delayed[MaybeError[bool]]:
+            return (lhs.evaluate(env, ub_t)
+                    .chain(lambda x: (rhs.check_and_eval(x, env, ub_t)
+                                      .transformed(error_check(lambda y: rel.test(x, y))))))
+            # return future.chain(second)
         return Executable(Type.BOOL, run, (lhs,rhs))
     
     
@@ -1507,9 +1682,15 @@ class DMFCompiler(DMFVisitor):
             self.error(ctx.attr(), Type.BOOL,
                        lambda txt:  f"{txt} is not a 'maybe' attribute. 'has' will always return True.")
             return Executable(Type.BOOL, (lambda _: Delayed.complete(True)), (obj,))
-        def run(env: Environment) -> Delayed[Any]:
-            f: Delayed = obj.evaluate(env, ot)
-            return f.chain(extractor).transformed(lambda v: v is not None)
+        def run(env: Environment) -> Delayed[MaybeError[bool]]:
+            def check(v: Any) -> MaybeError[bool]:
+                if isinstance(v, EvaluationError):
+                    return v
+                return v is not None
+            return (obj.evaluate(env, ot)
+                    .chain(error_check_delayed(extractor))
+                    .transformed(error_check(lambda v: v is not None)))
+            # return obj.evaluate(env, ot).chain(extractor).transformed(check)
         return Executable(Type.BOOL, run, (obj,))
     
     
@@ -1539,12 +1720,14 @@ class DMFCompiler(DMFVisitor):
             return self.error(ctx, Type.ANY, 
                               lambda txt: f"Conditional expression branches incompatible ({t1} and {t2}): {txt}")
         def run(env: Environment) -> Delayed:
-            def branch(c: bool) -> Delayed:
+            def branch(c: MaybeError[bool]) -> Delayed:
+                if isinstance(c, EvaluationError):
+                    return Delayed.complete(c)
                 if c:
                     return first.evaluate(env, result_type)
                 else:
                     return second.evaluate(env, result_type)
-            return cond.evaluate(env, Type.BOOL).chain(lambda v: branch(v))
+            return cond.evaluate(env, Type.BOOL).chain(branch)
         return Executable(result_type, run, (first, cond, second))
 
     def visitDelta_expr(self, ctx:DMFParser.Delta_exprContext) -> Executable:
@@ -1552,10 +1735,12 @@ class DMFCompiler(DMFVisitor):
         direction: Dir = ctx.direction().d
         if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
             return e
-        def run(env: Environment) -> Delayed[DeltaValue]:
-            return (dist.evaluate(env, Type.INT)
-                    .transformed(lambda n: DeltaValue(n, direction))
-                    )
+        def run(env: Environment) -> Delayed[MaybeError[DeltaValue]]:
+            def to_delta(n: MaybeError[int]) -> MaybeError[DeltaValue]:
+                if isinstance(n, EvaluationError):
+                    return n
+                return DeltaValue(n, direction)
+            return dist.evaluate(env, Type.INT).transformed(to_delta)
         return Executable(Type.DELTA, run, (dist,))
 
     def visitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext) -> Executable: 
@@ -1565,12 +1750,18 @@ class DMFCompiler(DMFVisitor):
             return e
         if e:=self.type_check(Type.DIR, direction, ctx.d, return_type=Type.DELTA):
             return e
-        def run(env: Environment) -> Delayed[DeltaValue]:
-                def combine(n: int, d: Dir) -> DeltaValue:
+        def run(env: Environment) -> Delayed[MaybeError[DeltaValue]]:
+                def combine(n: int, d: MaybeError[Dir]) -> MaybeError[DeltaValue]:
+                    if isinstance(d, EvaluationError):
+                        return d
                     return DeltaValue(n, d)
-                future: Delayed[int] = dist.evaluate(env, Type.INT)
-                return future.chain(lambda n: (direction.evaluate(env, Type.DIR)
-                                               .transformed(lambda d: combine(n,d))))
+                def after_n(n: MaybeError[int]) -> Delayed[MaybeError[DeltaValue]]:
+                    if isinstance(n, EvaluationError):
+                        return Delayed.complete(n)
+                    real_n = n
+                    return direction.evaluate(env, Type.DIR).transformed(lambda d: combine(real_n,d))
+                future: Delayed[MaybeError[int]] = dist.evaluate(env, Type.INT)
+                return future.chain(after_n)
         return Executable(Type.DELTA, run, (dist, direction))
 
 
@@ -1587,10 +1778,13 @@ class DMFCompiler(DMFVisitor):
         direction: Dir = ctx.rc().d
         if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
             return e
-        def run(env: Environment) -> Delayed[DeltaValue]:
-            return (dist.evaluate(env, Type.INT)
-                    .transformed(lambda n: DeltaValue(n, direction))
-                    )
+        def run(env: Environment) -> Delayed[MaybeError[DeltaValue]]:
+            def to_delta(n: MaybeError[int]) -> MaybeError[DeltaValue]:
+                if isinstance(n, EvaluationError):
+                    return n
+                return DeltaValue(n, direction)
+            return dist.evaluate(env, Type.INT).transformed(to_delta)
+
         return Executable(Type.DELTA, run, (dist,))
 
     def visitConst_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
@@ -1620,12 +1814,16 @@ class DMFCompiler(DMFVisitor):
         if self.compatible(who.return_type, first_arg_type):
             def run(env: Environment) -> Delayed[Any]:
                 def inject(obj, func) -> Delayed[Any]:
+                    if isinstance(func, EvaluationError):
+                        return Delayed.complete(func)
                     assert isinstance(func, CallableValue)
                     future = func.apply((obj,))
                     return future if not return_first_arg else future.transformed(lambda _: obj)
-                return (who.evaluate(env, first_arg_type)
-                        .chain(lambda obj: (what.evaluate(env, inj_type)
-                                            .chain(lambda func: inject(obj, func)))))
+                def after_who(who) -> Delayed[Any]:
+                    if isinstance(who, EvaluationError):
+                        return Delayed.complete(who)
+                    return what.evaluate(env, inj_type).chain(lambda func: inject(who, func))
+                return who.evaluate(env, first_arg_type).chain(after_who)
             # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
             return Executable(return_type, run, (who, what))
         elif injected_type is Type.DIR or isinstance(injected_type, CallableType):
@@ -1643,12 +1841,17 @@ class DMFCompiler(DMFVisitor):
             chain_type = CompositionType.find(injected_type.param_types, chain_return_type)
             
             def chain(env: Environment) -> Delayed[Any]:
-                def combine(first: CallableValue, second: CallableValue) -> Delayed[Any]:
+                def combine(first: CallableValue, second: MaybeError[CallableValue]) -> Delayed[Any]:
+                    if isinstance(second, EvaluationError):
+                        return Delayed.complete(second)
                     comp = ComposedCallable(chain_type, first, second, pass_first_arg)
                     return Delayed.complete(comp)
-                return (who.evaluate(env, injected_type)
-                        .chain(lambda first: (what.evaluate(env, inj_type)
-                                              .chain(lambda second: combine(first, second)))))
+                def after_first(first: MaybeError[CallableValue]) -> Delayed[Any]:
+                    if isinstance(first, EvaluationError):
+                        return Delayed.complete(first)
+                    real_first=first
+                    return what.evaluate(env, inj_type).chain(lambda second: combine(real_first, second))
+                return who.evaluate(env, injected_type).chain(after_first)
             return Executable(chain_type, chain, (who, what))
         e = self.type_check(first_arg_type, who, ctx.who,
                             (lambda want,have,text:
@@ -1677,16 +1880,19 @@ class DMFCompiler(DMFVisitor):
         check: Optional[Callable[[Any], Any]] = None
         if isinstance(rt, MaybeType):
             real_extractor = extractor
-            def extractor(obj):
+            def extractor(obj) -> Delayed[Any]:
                 def check(val):
                     if val is None:
-                        raise MaybeNotSatisfiedError(f"{obj} does not have {attr}")
+                        name = attr.func.name
+                        if (m := re.fullmatch("'(.*)' attribute", name)) is not None:
+                            name = m.group(1)
+                        ex = MaybeNotSatisfiedError(f"{obj} has no '{name}'")
+                        return ex
                     return val
                 return real_extractor(obj).transformed(check)
             rt = rt.if_there_type
         def run(env: Environment) -> Delayed[Any]:
-            f: Delayed = obj.evaluate(env, ot)
-            return f.chain(extractor)
+            return obj.evaluate(env, ot).chain(error_check_delayed(extractor))
         return Executable(rt, run, (obj,))
 
 
@@ -1695,10 +1901,31 @@ class DMFCompiler(DMFVisitor):
         which = self.visit(ctx.which)
         if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
             return e
-        def run(env: Environment) -> Delayed[Well]:
-            f: Delayed[int] = which.evaluate(env, Type.INT)
-            return f.transformed(lambda n: env.board.wells[n])
+        def run(env: Environment) -> Delayed[MaybeError[Well]]:
+            def find_well(n: int) -> MaybeError[Well]:
+                wells = env.board.wells
+                try:
+                    return wells[n]
+                except IndexError:
+                    return NoSuchComponentError("well", n, len(wells)-1)
+            return (which.evaluate(env, Type.INT)
+                    .transformed(error_check(find_well)))
         return Executable(Type.WELL, run, (which,))
+
+    def visitHeater_expr(self, ctx:DMFParser.Well_exprContext) -> Executable:
+        which = self.visit(ctx.which)
+        if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
+            return e
+        def run(env: Environment) -> Delayed[MaybeError[Heater]]:
+            def find_heater(n: int) -> MaybeError[Heater]:
+                heaters = env.board.heaters
+                try:
+                    return heaters[n]
+                except IndexError:
+                    return NoSuchComponentError("heater", n, len(heaters)-1)
+            return (which.evaluate(env, Type.INT)
+                    .transformed(error_check(find_heater)))
+        return Executable(Type.HEATER, run, (which,))
 
 
 
@@ -1768,15 +1995,17 @@ class DMFCompiler(DMFVisitor):
                 if self.compatible(which.return_type, Type.INT):
                     return self.error(ctx, Type.MOTION, f"Did you forget 'row' or 'column'?: {self.text_of(ctx)}")
                 return self.error(ctx, Type.MOTION, f"'to' expr without 'row' or 'column' takes a PAD: {self.text_of(ctx)}")
-            def run(env: Environment) -> Delayed[MotionValue]:
-                return which.evaluate(env, Type.PAD).transformed(lambda pad: ToPadValue(pad))
+            def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
+                return (which.evaluate(env, Type.PAD)
+                        .transformed(error_check(lambda pad: ToPadValue(pad))))
         else:
             if not self.compatible(which.return_type, Type.INT):
                 return self.error(ctx.which, Type.MOTION, 
                                   f"Row or column name not an int ({which.return_type.name}): {self.text_of(ctx.which)}")
             verticalp = cast(bool, axis.verticalp)
-            def run(env: Environment) -> Delayed[MotionValue]:
-                return which.evaluate(env, Type.INT).transformed(lambda n: ToRowColValue(n, verticalp))
+            def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
+                return (which.evaluate(env, Type.INT)
+                        .transformed(error_check(lambda n: ToRowColValue(n, verticalp))))
         return Executable(Type.MOTION, run, (which,))
     
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
@@ -1859,6 +2088,9 @@ class DMFCompiler(DMFVisitor):
     def visitUnit_string_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
         return self.unit_string_exec(ctx.dim_unit().unit, ctx, ctx.quant)
     
+    def visitTemperature_expr(self, ctx:DMFParser.Temperature_exprContext):
+        return self.use_function("TEMP_C", ctx, (ctx.amount,))
+    
     # def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
     #     return self.use_function("DROP_VOL", ctx, (ctx.amount,))
         
@@ -1869,9 +2101,9 @@ class DMFCompiler(DMFVisitor):
                                 f"Delay ({have} must be time or ticks: {text}",
                               return_type=Type.PAUSE):
             return e
-        def run(env: Environment) -> Delayed[PauseValue]:
+        def run(env: Environment) -> Delayed[MaybeError[PauseValue]]:
             return (duration.evaluate(env, Type.DELAY)
-                    .transformed(lambda d: PauseValue(d, env.board)))
+                    .transformed(error_check(lambda d: PauseValue(d, env.board))))
         return Executable(Type.PAUSE, run, (duration,))
                 
     def visitMacro_header(self, ctx:DMFParser.Macro_headerContext):
@@ -1898,7 +2130,8 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["NEGATE"]
         fn.prefix_op("-")
         fn.register_all_immediate([((Type.INT,), Type.INT),
-                                   ((Type.FLOAT,), Type.FLOAT)
+                                   ((Type.FLOAT,), Type.FLOAT),
+                                   ((Type.REL_TEMP,), Type.REL_TEMP),
                                    ], lambda x: -x)
         
         fn = Functions["INDEX"]
@@ -1919,7 +2152,12 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TIME,Type.TIME), Type.TIME),
                                    ((Type.TICKS,Type.TICKS), Type.TICKS),
                                    ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
-                                   ((Type.STRING,Type.STRING), Type.STRING)
+                                   ((Type.STRING,Type.STRING), Type.STRING),
+                                   # ((Type.AMBIG_TEMP, Type.AMBIG_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.AMBIG_TEMP, Type.REL_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
+                                   ((Type.REL_TEMP, Type.ABS_TEMP), Type.ABS_TEMP),
+                                   ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
                                    ], lambda x,y: x+y)
         fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, d.dist))
         fn.register_all_immediate([((Type.STRING, Type.NUMBER), Type.STRING),
@@ -1939,6 +2177,11 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TIME,Type.TIME), Type.TIME),
                                    ((Type.TICKS,Type.TICKS), Type.TICKS),
                                    ((Type.VOLUME,Type.VOLUME), Type.VOLUME),
+                                   # ((Type.AMBIG_TEMP, Type.AMBIG_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.AMBIG_TEMP, Type.REL_TEMP), Type.AMBIG_TEMP),
+                                   ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
+                                   ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
+                                   ((Type.ABS_TEMP, Type.ABS_TEMP), Type.REL_TEMP),
                                    ], lambda x,y: x-y)
         
          
@@ -1953,23 +2196,27 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["AND"]
         fn.infix_op("and")
         
-        def sc_and(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
+        def sc_and(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[MaybeError[bool]]:
             lhs, rhs = arg_execs
-            return (lhs.evaluate(env, Type.BOOL)
-                    .chain(lambda x: (Delayed.complete(x) if not x
-                                      else rhs.evaluate(env, Type.BOOL)))
-                    )
+            def after_lhs(x: MaybeError[bool]) -> Delayed[MaybeError[bool]]:
+                if isinstance(x, EvaluationError) or not x:
+                    return Delayed.complete(x)
+                else:
+                    return rhs.evaluate(env, Type.BOOL)
+            return lhs.evaluate(env, Type.BOOL).chain(after_lhs)
         fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(sc_and))
 
         fn = Functions["OR"]
         fn.infix_op("or")
         
-        def sc_or(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[bool]:
+        def sc_or(env: Environment, arg_execs: Sequence[Executable]) -> Delayed[MaybeError[bool]]:
             lhs, rhs = arg_execs
-            return (lhs.evaluate(env, Type.BOOL)
-                    .chain(lambda x: (Delayed.complete(x) if x
-                                      else rhs.evaluate(env, Type.BOOL)))
-                    )
+            def after_lhs(x: MaybeError[bool]) -> Delayed[MaybeError[bool]]:
+                if isinstance(x, EvaluationError) or x:
+                    return Delayed.complete(x)
+                else:
+                    return rhs.evaluate(env, Type.BOOL)
+            return lhs.evaluate(env, Type.BOOL).chain(after_lhs)
         fn.register((Type.BOOL,Type.BOOL), Type.BOOL, LazyEval(sc_or))
 
         fn = Functions["MULTIPLY"]
@@ -1982,6 +2229,9 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TICKS,Type.FLOAT), Type.TICKS),
                                    ((Type.FLOAT,Type.VOLUME), Type.VOLUME),
                                    ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
+                                   ((Type.REL_TEMP,Type.FLOAT), Type.REL_TEMP),
+                                   ((Type.FLOAT,Type.REL_TEMP), Type.REL_TEMP),
+                                   # ((Type.AMBIG_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    ], lambda x,y: x*y)
         fn.register_immediate((Type.NUMBER, Type.REAGENT), Type.SCALED_REAGENT,
                               lambda n,r: ScaledReagent(n,r))
@@ -1993,6 +2243,8 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.TIME,Type.FLOAT), Type.TIME),
                                    ((Type.TICKS,Type.FLOAT), Type.TICKS),
                                    ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
+                                   ((Type.REL_TEMP,Type.FLOAT), Type.REL_TEMP),
+                                   # ((Type.AMBIG_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    ], lambda x,y: x/y)
         fn.register_immediate((Type.LIQUID, Type.FLOAT), Type.LIQUID,
                               lambda liquid, split: Liquid(liquid.reagent, liquid.volume/split)
@@ -2019,7 +2271,7 @@ class DMFCompiler(DMFVisitor):
         
         fn = Functions["FIND_DROP"]
         fn.prefix_op("drop @")
-        def new_drop(pad: Pad, liquid: Optional[Union[Liquid, Volume]] = None) -> Drop:
+        def new_drop(pad: Pad, liquid: Optional[Union[Liquid, Volume]] = None) -> MaybeError[Drop]:
             if liquid is None:
                 liquid = Liquid(unknown_reagent, pad.board.drop_size)
             elif isinstance(liquid, Volume):
@@ -2028,7 +2280,7 @@ class DMFCompiler(DMFVisitor):
                 # We copy the liquid, since the drop will adopt it.
                 liquid = Liquid(liquid.reagent, liquid.volume)
             if pad.drop is not None:
-                raise AlreadyDropError(f"There is already a drop at {pad}")
+                return AlreadyDropError(f"There is already a drop at {pad}")
             pad.liquid_added(liquid)
             return not_None(pad.drop)
         fn.register_immediate((Type.PAD,), Type.DROP,
@@ -2073,6 +2325,11 @@ class DMFCompiler(DMFVisitor):
         fn.register_all_immediate([((Type.SCALED_REAGENT,)*n, Type.REAGENT) for n in range(1,8)], 
                                   mix_reagent)
         
+        fn = Functions["TEMP_C"]
+        fn.postfix_op("C")
+        fn.register_immediate((Type.NUMBER,), Type.AMBIG_TEMP, 
+                              lambda n: AmbiguousTemp(absolute=n*abs_C, relative=n*deg_C))
+        
     @classmethod
     def setup_special_vars(cls) -> None:
         name = "interactive reagent"
@@ -2088,7 +2345,12 @@ class DMFCompiler(DMFVisitor):
         def set_volume(monitor: BoardMonitor, volume: Volume):
             monitor.interactive_volume = volume
         SpecialVars[name] = MonitorVariable(name, Type.VOLUME, getter=get_volume, setter=set_volume)
-
+        
+        name = "none"
+        def get_none(env: Environment) -> None: # @UnusedVariable
+            return None
+        SpecialVars["none"] = SpecialVariable(Type.NONE, getter=lambda _env: None)
+        
         
 DMFCompiler.setup_function_table()
 DMFCompiler.setup_special_vars()

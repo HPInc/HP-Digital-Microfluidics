@@ -8,6 +8,10 @@ from serial import Serial
 from devices import joey
 from mpam.types import OnOff, State, DummyState
 from erk.basic import ComputedDefaultDict
+from quantities.dimensions import Time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 _pins: Mapping[str, int] = {
@@ -155,9 +159,11 @@ class Electrode(State[OnOff]):
 class Board(joey.Board):
     _device: Final[Optional[str]]
     _states: Final[bytearray]
+    _last_states: bytearray
     _port: Optional[Serial] 
     _od_version: Final[OpenDropVersion]
     _electrodes: Final[dict[int, Electrode]]
+    _double_write: Final[bool]
     is_yaminon: Final[bool]
     
     def make_electrode(self, pin: int) -> Electrode:
@@ -201,7 +207,9 @@ class Board(joey.Board):
         return self._electrode(cell)
     
     def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
-                 is_yaminon: bool = False) -> None:
+                 is_yaminon: bool = False,
+                 off_on_delay: Time = Time.ZERO,
+                 double_write: bool = True) -> None:
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -209,21 +217,44 @@ class Board(joey.Board):
         else:
             assert False, f"Unknown OpenDrop version: {od_version}"
         self._states = bytearray(n_state_bytes)
+        self._last_states = bytearray(n_state_bytes)
         self._od_version = od_version
         self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
+        logger.info("is_yaminon = %s", is_yaminon)
         self.is_yaminon = is_yaminon
-        super().__init__()
+        logger.info("double_write = %s", double_write)
+        self._double_write = double_write
+        super().__init__(off_on_delay=off_on_delay)
         self._device = device
         self._port = None
         
-    def update_state(self) -> None:
-        if self._port is None and self._device is not None:
-            self._port = Serial(self._device)
+    def send_states(self, states: bytearray) -> None:
+        logger.debug("sending %s", states.hex())
         if self._port is not None:
-            self._port.write(self._states)
+            self._port.write(states)
             # I'm not sure why, but it seems that nothing happens until the 
             # first byte of the next round gets sent. (Sending 129 bytes works, 
             # but then the next round will use that extra byte.  Sending everything
             # twice seems to do the job.  I'll look into this further.
-            self._port.write(self._states)
+            self._port.write(states)
+        
+        
+    def update_state(self) -> None:
+        if self._port is None and self._device is not None:
+            self._port = Serial(self._device)
+        delay = self.off_on_delay
+        new_states = bytearray(self._states)
+        send_first: Optional[bytearray] = None
+        if delay > 0:
+            # First we send 
+            send_first = bytearray(x&y for x,y in zip(self._last_states, new_states))
+        elif delay < 0:
+            send_first = bytearray(x|y for x,y in zip(self._last_states, new_states))
+            delay = -delay
+        if send_first is not None:
+            self.send_states(send_first)
+            logger.debug("Delaying for %s", delay)
+            delay.sleep()
+        self.send_states(new_states)
+        self._last_states = new_states
         super().update_state()

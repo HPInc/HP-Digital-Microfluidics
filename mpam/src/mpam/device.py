@@ -3,14 +3,16 @@ Classes that describe hardware, but not specific devices.
 """
 from __future__ import annotations
 
+from _collections import defaultdict
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 import itertools
+import logging
 import random
 from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator,\
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator, \
     NamedTuple, Iterable
 
 from matplotlib.gridspec import SubplotSpec
@@ -24,19 +26,21 @@ from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
-    Callback, MixResult, State, CommunicationScheduler, Postable
+    Callback, MixResult, State, CommunicationScheduler, Postable, \
+    MonitoredProperty
 from quantities.SI import sec, ms
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
-from _collections import defaultdict
 
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
     from mpam.monitor import BoardMonitor
     from mpam.pipettor import Pipettor
+
+logger = logging.getLogger(__name__)
 
 PadArray = Mapping[XYCoord, 'Pad']
 
@@ -114,8 +118,8 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 
     Each :class:`BinaryComponent` objects is associated with a
     :class:`.State`\[:class:`.OnOff`] object (:attr:`state`), which it delegates
-    to to implement :attr:`current_state` and :func:`on_state_change`.
-
+    to to implement :attr:`current_state` and :attr:`on_state_change`.
+    
     A :class:`BinaryComponent` may be :attr:`broken`, in which case attempting
     to schedule one of its :attr:`ModifyState` operations will result in
     :class:`.PadBrokenError` being raised.
@@ -156,29 +160,35 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
     @property
     def current_state(self) -> OnOff:
         """
-        The current value.  Implemented by delegating to :attr:`state`.
-
-        Setting this will invoke any :attr:`state_change_callbacks`, regardless
-        of whether the new value is equal to the old value.
+        The current value.  Implemented by delegating to :attr:`state`. When
+        this value is set to a value not equal to the prior value, callbacks
+        registerd to :attr:`on_state_change` are called.
         """
         return self.state.current_state
 
     @current_state.setter
     def current_state(self, val: OnOff) -> None:
         self.state.current_state = val
-
-    def on_state_change(self, cb: ChangeCallback[OnOff], *, key: Optional[Hashable] = None):
+        
+    @property
+    def on_state_change(self) -> ChangeCallbackList[OnOff]:
         """
-        Add a new state-change handler, replacing any with the specified key. If
-        ``key`` is ``None``, ``cb`` is used as the key.  This is implemented by
-        delegating to :attr:`state`.
-
-        Args:
-            cb: the handler
-        Keyword Args:
-            key: the (optional) key
+        The :class:`.ChangeCallbackList` monitoring :attr:`current_state`.
         """
-        self.state.on_state_change(cb, key=key)
+        return self.state.on_state_change
+
+    # def on_state_change(self, cb: ChangeCallback[OnOff], *, key: Optional[Hashable] = None):
+    #     """
+    #     Add a new state-change handler, replacing any with the specified key. If
+    #     ``key`` is ``None``, ``cb`` is used as the key.  This is implemented by
+    #     delegating to :attr:`state`.
+    #
+    #     Args:
+    #         cb: the handler
+    #     Keyword Args:
+    #         key: the (optional) key
+    #     """
+    #     self.state.on_state_change(cb, key=key)
 
     class ModifyState(Operation[BC, OnOff]):
         """
@@ -268,7 +278,7 @@ BinaryComponent[BC].TurnOn = BinaryComponent.ModifyState(lambda _: OnOff.ON)
 BinaryComponent[BC].TurnOff = BinaryComponent.ModifyState(lambda _: OnOff.OFF)
 BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
 
-class PipettingTarget:
+class PipettingTarget(ABC):
     """
     A place a :class:`.Pipettor` can add :class:`.Liquid` to or take it from.
 
@@ -298,7 +308,7 @@ class PipettingTarget:
 
     @property
     @abstractmethod
-    def contents(self) -> Optional[Liquid]:
+    def removable_liquid(self) -> Optional[Liquid]: 
         """
         The :class:`.Liquid` that could be removed via this
         :class:`PipettingTarget` or ``None`` if there is no such
@@ -396,8 +406,8 @@ class DropLoc(ABC, CommunicationScheduler):
     A location that can hold a :class:`.Drop` and participate in a :class:`.Blob`.
 
     It maintains a :class:`.ChangeCallbackList` for its :attr:`drop` attribute
-    to which callbacks can be added by means of :func:`on_drop_change`.
-
+    to which callbacks can be added by means of :attr:`on_drop_change`.
+    
     :attr:`checked_drop` is the same as :attr:`drop`, but it is guaranteed to be
     a :class:`.Drop`, raising a :class:`.TypeError` if :attr:`drop` is ``None``.
 
@@ -407,24 +417,19 @@ class DropLoc(ABC, CommunicationScheduler):
         subclasses must also define :func:`compute_neighbors_for_blob`.
     """
     blob: Optional[Blob] = None     #: The :class:`.Blob`, if any, this :class:`DropLoc` participates in
-    _drop: Optional[Drop] = None    #: The :class:`.Drop`, if any, at this :class:`DropLoc`
     _neighbors_for_blob: Optional[Sequence[DropLoc]] = None
-    _drop_change_callbacks: Final[ChangeCallbackList[Optional[Drop]]]
+    
+    drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty("drop", default=None)
+    """
+    The :class:`.Drop`, if any, at this location.  When this value changes,
+    callbacks registered to :attr:`on_drop_change` are called.
+    """
 
-    @property
-    def drop(self) -> Optional[Drop]:
-        """
-        The :class:`.Drop`, if any, at this location.  When this attribute is
-        set (even if set to the same value), callbacks registered by
-        :func:`on_drop_change` are called.
-        """
-        return self._drop
+    on_drop_change: ChangeCallbackList[Optional[Drop]] = drop.callback_list
+    """
+    The :class:`.ChangeCallbackList` monitoring :attr:`drop`.
+    """
 
-    @drop.setter
-    def drop(self, drop: Optional[Drop]):
-        old = self._drop
-        self._drop = drop
-        self._drop_change_callbacks.process(old, drop)
 
     @property
     def checked_drop(self) -> Drop:
@@ -432,9 +437,9 @@ class DropLoc(ABC, CommunicationScheduler):
         The :class:`.Drop` at this location.  If there is none (i.e., if
         :attr:`drop` is ``None``), a :class:`.TypeError` will be raised.
         """
-        if self._drop is not None:
-            return self._drop
-        print(f"Drop at {self}: {self._drop}")
+        if self.drop is not None:
+            return self.drop
+        print(f"Drop at {self}: {self.drop}")
         raise TypeError(f"{self} has no drop")
 
 
@@ -450,28 +455,6 @@ class DropLoc(ABC, CommunicationScheduler):
         if ns is None:
             ns = self._neighbors_for_blob = self.compute_neighbors_for_blob()
         return ns
-
-    def __init__(self) -> None:
-        """
-        Initialize the object
-        """
-        self._drop_change_callbacks = ChangeCallbackList()
-
-    def on_drop_change(self, cb: ChangeCallback[Optional[Drop]], *, key: Optional[Hashable] = None):
-        """
-        Add a new handler, replacing any with the specified key.  If ``key`` is
-        ``None``, ``cb`` is used as the key
-
-        After :attr:`drop` is changed, ``cb`` will be called with both the old
-        and new value.
-
-        Args:
-            cb: the handler
-        Keyword Args:
-            key: the (optional) key
-        """
-        self._drop_change_callbacks.add(cb, key=key)
-
 
     @abstractmethod
     def compute_neighbors_for_blob(self) -> Sequence[DropLoc]:
@@ -1673,8 +1656,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     * As a :class:`PipettingTarget`, it participates in the pipetting protocol
       by defining :func:`prepare_for_add`, :func:`prepare_for_remove`,
       :func:`pipettor_added`, and :func:`pipettor_removed`.
-
-    Callbacks registered by :func:`on_liquid_change` are fired both when
+      
+    Callbacks registered to :attr:`on_liquid_change` are fired both when
     :attr:`contents` is set and on calls to :func:`transfer_in` and
     :func:`transfer_out`.  Note that on the transfer functions, the same value
     will be passed as both the ``old`` and ``new`` parameters.  To monitor
@@ -1834,7 +1817,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     Set by :func:`reserve_gate` and eplicitly set to ``False`` under control of
     whoever got ``True` from it.
     """
-    _contents: Optional[Liquid]
+    # _contents: Optional[Liquid]
     _shape: Final[Optional[WellShape]]
 
     required: Optional[Volume] = None
@@ -1849,24 +1832,32 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     an estimate of how much will be needed for the remainder of the run.
     """
 
-    _liquid_change_callbacks: Final[ChangeCallbackList[Optional[Liquid]]]
+    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty("contents", 
+                                                                      default=None)
+    """
+    The :class:`.Liquid` contained in the :class:`Well`, or ``None`` if the
+    :class:`Well` has never contained a :class:`.Liquid`.
+    
+    When :attr:`contents` is set to an ``Optional[``:class:`.Liquid` ``]``
+    different from its prior value, the callbacks registered to
+    :attr:`on_liquid_change` are run, passing in the old and new values.
+    """
+    
+    on_liquid_change: ChangeCallbackList[Optional[Liquid]] = contents.callback_list
+    """
+    The :class:`.ChangeCallbackList` monitoring :attr:`contents`.
+
+    Callbacks will be invoked both when :attr:`contents` is set to a different
+    (optional) :class:`.Liquid` and when :func:`transfer_in()` or
+    :func:`transfer_out()` is called.  In the transfer function cases, the state
+    (i.e., :attr:`~.Liquid.reagent` and/or :attr:`~.Liquid.volume`) of
+    :attr:`contents` will have changed, but the object remains the same and is
+    passed in as both ``old`` and ``new`` arguments.
+    """
 
     @property
-    def contents(self) -> Optional[Liquid]:
-        """
-        The :class:`.Liquid` contained in the :class:`Well`, or ``None`` if the
-        :class:`Well` has never contained a :class:`Liquid`.
-
-        When :attr:`contents` is set, the callbacks registered with
-        :func:`on_liquid_change` are run, passing in the old and new values.
-        """
-        return self._contents
-
-    @contents.setter
-    def contents(self, liquid: Optional[Liquid]):
-        old = self._contents
-        self._contents = liquid
-        self._liquid_change_callbacks.process(old, liquid)
+    def removable_liquid(self) -> Optional[Liquid]:
+        return self.contents
 
     @property
     def volume(self) -> Volume:
@@ -1874,7 +1865,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         The :attr:`.Liquid.volume` of :attr:`contents` or zero if
         :attr:`contents` is ``None``
         """
-        c = self._contents
+        c = self.contents
         if c is None:
             return Volume.ZERO
         else:
@@ -1887,7 +1878,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         :attr:`.unknown_reagent` if :attr:`contents` is ``None``
         """
 
-        c = self._contents
+        c = self.contents
         if c is None:
             return unknown_reagent
         else:
@@ -1927,7 +1918,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             * :attr:`volume` is zero, and
             * :attr:`contents` is not :attr:`~.Liquid.inexact`
         """
-        c = self._contents
+        c = self.contents
         return c is None or self.is_voidable and c.volume==Volume.ZERO and not c.inexact
 
     @property
@@ -2170,8 +2161,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         self.is_voidable = is_voidable
         self._contents = None
         self._shape = shape
-        self._liquid_change_callbacks = ChangeCallbackList()
-
 
         assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
         exit_pad._well = self
@@ -2335,7 +2324,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         ``on_reagent_mismatch`` is invoked.
 
         After the adjustments, callbacks registered using
-        :func:`on_liquid_change` are run, passing in the new :attr:`contents` as
+        :attr:`on_liquid_change` are run, passing in the new :attr:`contents` as
         both old and new values.
 
         Note:
@@ -2370,15 +2359,15 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                     lambda : f"Tried to add {volume} to {self}.  Remaining capacity only {self.remaining_capacity}")
         # available implies _contents is not None, but MyPy can't do the inference for the else
         # clause if I don't check it here.
-        if self._contents is None or self.available:
+        if self.contents is None or self.available:
             self.contents = Liquid(liquid.reagent, Volume.ZERO)
         else:
-            r = self._contents.reagent
+            r = self.contents.reagent
             on_reagent_mismatch.expect_true(mix_result is not None or self.can_accept(liquid.reagent),
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
-        assert self._contents is not None
-        self._contents.mix_in(liquid, result=mix_result)
-        self._liquid_change_callbacks.process(self._contents, self._contents)
+        assert self.contents is not None
+        self.contents.mix_in(liquid, result=mix_result)
+        self.on_liquid_change.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
 
     def transfer_out(self, volume: Volume, *,
@@ -2393,11 +2382,10 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 
         If :attr:`reagent` is not ``None``, ``volume`` is subtracted from it.
         If this would render it zero or negative, it is set to ``None``.
-
-        After the adjustments, callbacks registered using
-        :func:`on_liquid_change` are run, passing in the new :attr:`contents` as
-        both old and new values.
-
+        
+        After the adjustments, callbacks registered to :attr:`on_liquid_change`
+        are run, passing in the new :attr:`contents` as both old and new values.
+        
         Note:
             In order to deal with rounding errors, ``on_empty`` is not invoked
             if ``volume`` exceeds :attr:`volume` by less than 5% of
@@ -2417,18 +2405,20 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                                 lambda : f"Tried to draw {volume} from {self}, which only has {self.volume}")
         v = min(self.volume, volume)
         reagent: Reagent
-        if self._contents is None:
+        c = self.contents
+        if c is None:
             reagent = unknown_reagent
         else:
-            reagent = self._contents.reagent
+            reagent = c.reagent
             # print(f"Removing {v} from {self._contents}")
-            self._contents -= v
+            if v > 0:
+                c -= v
+                self.on_liquid_change.process(c, c)
         if self.required is not None:
             if self.required <= v:
                 self.required = None
             else:
                 self.required -= v
-        self._liquid_change_callbacks.process(self._contents, self._contents)
         # print(f"{self} now contains {self.contents}")
         return Liquid(reagent, v)
 
@@ -2498,7 +2488,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Note:
             The actual addition may take place in several steps.  If action
             should be taken on intermediate transfers, use
-            :func:`on_liquid_change` to register a callback or override
+            :attr:`on_liquid_change` to register a callback or override
             :func:`pipettor_added`.
 
         Note:
@@ -2558,7 +2548,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Note:
             The actual removal may take place in several steps.  If action
             should be taken on intermediate transfers, use
-            :func:`on_liquid_change` to register a callback or override
+            :attr:`on_liquid_change` to register a callback or override
             :func:`pipettor_removed`.
 
         Note:
@@ -2607,7 +2597,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Note:
             The actual addition may take place in several steps.  If action
             should be taken on intermediate transfers, use
-            :func:`on_liquid_change` to register a callback or override
+            :attr:`on_liquid_change` to register a callback or override
             :func:`pipettor_added`.
 
         Keyword Args:
@@ -2640,7 +2630,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         Note:
             The actual removal may take place in several steps.  If action
             should be taken on intermediate transfers, use
-            :func:`on_liquid_change` to register a callback or override
+            :attr:`on_liquid_change` to register a callback or override
             :func:`pipettor_removed`.
 
         Returns:
@@ -2782,29 +2772,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         # print(f"Need to empty well ({resulting_volume:g} > {self.max_fill:g}")
         return self.empty_well()
 
-
-
-    def on_liquid_change(self, cb: ChangeCallback[Optional[Liquid]], *, key: Optional[Hashable] = None) -> None:
-        """
-        Add a new liquid-change handler, replacing any with the specified key. If
-        ``key`` is ``None``, ``cb`` is used as the key.
-
-        This will receive liquid changes when :attr:`contents` is set or
-        :func:`transfer_in()` or :func:`transfer_out()` is called.  In the
-        transfer function cases, the state (i.e., :attr:`~.Liquid.reagent`
-        and/or :attr:`~.Liquid.volume`) of :attr:`contents` will have changed,
-        but the object remains the same and is passed in as both ``old`` and
-        ``new`` arguments.
-
-        Args:
-            cb: the handler
-        Keyword Args:
-            key: the (optional) key
-        """
-
-        self._liquid_change_callbacks.add(cb, key=key)
-
-
     class TransitionTo(Operation['Well','Well']):
         """
         An :class:`.Operation` that requests that a :class:`Well` transition to
@@ -2930,35 +2897,17 @@ class Heater(OpScheduler['Heater'], BoardComponent):
     num: Final[int]
     pads: Final[Sequence[Pad]]
     mode: HeatingMode
-    _last_reading: Optional[TemperaturePoint]
-    _target: Optional[TemperaturePoint]
     polling_interval: Final[Time]
-    _temperature_change_callbacks: Final[ChangeCallbackList[Optional[TemperaturePoint]]]
-    _target_change_callbacks: Final[ChangeCallbackList[Optional[TemperaturePoint]]]
     _lock: Final[Lock]
     _current_op_key: Any
     _polling: bool = False
 
+    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("current_temperature",
+                                                                                           default=None)
+    on_temperature_change: ChangeCallbackList[Optional[TemperaturePoint]] = current_temperature.callback_list
 
-    @property
-    def current_temperature(self) -> Optional[TemperaturePoint]:
-        return self._last_reading
-
-    @current_temperature.setter
-    def current_temperature(self, new: Optional[TemperaturePoint]) -> None:
-        old = self._last_reading
-        self._last_reading = new
-        self._temperature_change_callbacks.process(old, new)
-
-    @property
-    def target(self) -> Optional[TemperaturePoint]:
-        return self._target
-
-    @target.setter
-    def target(self, new: Optional[TemperaturePoint]) -> None:
-        old = self._target
-        self._target = new
-        self._target_change_callbacks.process(old, new)
+    target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("target", default=None)
+    on_target_change: ChangeCallbackList[Optional[TemperaturePoint]] = target.callback_list
 
     def __init__(self, num: int, board: Board, *,
                  pads: Sequence[Pad],
@@ -2968,10 +2917,6 @@ class Heater(OpScheduler['Heater'], BoardComponent):
         self.pads = pads
         self.mode = HeatingMode.OFF
         self.polling_interval = polling_interval
-        self._last_reading = None
-        self._target = None
-        self._temperature_change_callbacks = ChangeCallbackList()
-        self._target_change_callbacks = ChangeCallbackList()
         self._lock = Lock()
         self._current_op_key = None
         for pad in pads:
@@ -2996,13 +2941,6 @@ class Heater(OpScheduler['Heater'], BoardComponent):
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
         return Delayed.complete(None)
 
-
-    def on_temperature_change(self, cb: ChangeCallback[Optional[TemperaturePoint]], *, key: Optional[Hashable] = None):
-        self._temperature_change_callbacks.add(cb, key=key)
-
-    def on_target_change(self, cb: ChangeCallback[Optional[TemperaturePoint]], *, key: Optional[Hashable] = None):
-        self._target_change_callbacks.add(cb, key=key)
-
     class SetTemperature(Operation['Heater','Heater']):
         target: Final[Optional[TemperaturePoint]]
 
@@ -3017,7 +2955,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                 ambient_threshold = 80*abs_F
                 with heater._lock:
                     if heater._current_op_key is not None:
-                        heater._temperature_change_callbacks.remove(heater._current_op_key)
+                        heater.on_temperature_change.remove(heater._current_op_key)
                     heater.target = target
                     temp = heater.current_temperature
 
@@ -3065,7 +3003,7 @@ class Heater(OpScheduler['Heater'], BoardComponent):
                             with heater._lock:
                                 user_op.__exit__(None, None, None)
                                 heater.mode = HeatingMode.OFF if target is None else HeatingMode.MAINTAINING
-                                heater._temperature_change_callbacks.remove(key)
+                                heater.on_temperature_change.remove(key)
                             if post_result:
                                 future.post(heater)
                     heater.on_temperature_change(check, key=key)
@@ -3085,7 +3023,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     removed: Optional[Volume] = None
 
     @property
-    def contents(self) -> Optional[Liquid]:
+    def removable_liquid(self) -> Optional[Liquid]:
         drop = self.pad.drop
         if drop is None:
             return None
@@ -3408,6 +3346,7 @@ class Board(SystemComponent):
     # _well_groups: Mapping[str, WellGroup]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
+    off_on_delay: Time
     _drop_size: Volume
     _reserved_well_gates: list[Well]
     _lock: Final[Lock]
@@ -3430,7 +3369,8 @@ class Board(SystemComponent):
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
                  orientation: Orientation,
-                 drop_motion_time: Time) -> None:
+                 drop_motion_time: Time,
+                 off_on_delay: Time = Time.ZERO) -> None:
         super().__init__()
         self._change_journal = ChangeJournal()
         self.pads = pads
@@ -3440,6 +3380,8 @@ class Board(SystemComponent):
         self.extraction_points = [] if extraction_points is None else extraction_points
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
+        self.off_on_delay = off_on_delay
+        logger.info("off-on delay is %s", off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
         # self._drops = []
@@ -3572,15 +3514,15 @@ class Clock:
     engine: Final[Engine]
     clock_thread: Final[ClockThread]
 
-    interval_change_callbacks: Final[ChangeCallbackList[Time]]
-    state_change_callbacks: Final[ChangeCallbackList[bool]]
+    on_interval_change: Final[ChangeCallbackList[Time]]
+    on_state_change: Final[ChangeCallbackList[bool]]
 
     def __init__(self, system: System) -> None:
         self.system = system
         self.engine = system.engine
         self.clock_thread = system.engine.clock_thread
-        self.interval_change_callbacks = ChangeCallbackList[Time]()
-        self.state_change_callbacks = ChangeCallbackList[bool]()
+        self.on_interval_change = ChangeCallbackList[Time]()
+        self.on_state_change = ChangeCallbackList[bool]()
 
     @property
     def update_interval(self) -> Time:
@@ -3591,10 +3533,7 @@ class Clock:
         old = self.clock_thread.update_interval
         if old != interval:
             self.clock_thread.update_interval = interval
-            self.interval_change_callbacks.process(old, interval)
-
-    def on_interval_change(self, cb: ChangeCallback[Time], *, key: Optional[Hashable] = None):
-        self.interval_change_callbacks.add(cb, key=key)
+            self.on_interval_change.process(old, interval)
 
     @property
     def update_rate(self) -> Frequency:
@@ -3660,21 +3599,18 @@ class Clock:
                 return
         ct.wake_up()
 
-    def on_state_change(self, cb: ChangeCallback[bool], *, key: Optional[Hashable] = None):
-        self.state_change_callbacks.add(cb, key=key)
-
     def start(self, interval: Optional[Union[Time,Frequency]] = None) -> None:
         assert not self.running, "Clock.start() called while clock is running"
         if isinstance(interval, Frequency):
             interval = (1/interval).a(Time)
         if interval is not None:
             self.update_interval = interval
-        self.state_change_callbacks.process(False, True)
+        self.on_state_change.process(False, True)
         self.clock_thread.start_clock(interval)
 
     def pause(self) -> None:
         assert self.running, "Clock.pause() called while clock is running"
-        self.state_change_callbacks.process(True, False)
+        self.on_state_change.process(True, False)
         self.clock_thread.pause_clock()
 
 class Batch:

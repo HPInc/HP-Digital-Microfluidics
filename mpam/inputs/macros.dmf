@@ -156,3 +156,13 @@ r2 = reagent "r2";
 //d2 = 1 drop of r2 @ (4,3);
 t1 = 2 sec;
 w2 = well #2;
+
+ctest = macro(int n) {
+  if n < 5 {
+    print n, "<5", (2,3)'s drop;
+  } else if n < 10 {
+    print n, "<10";
+  } else {
+    print n, ">=10";
+  }
+};

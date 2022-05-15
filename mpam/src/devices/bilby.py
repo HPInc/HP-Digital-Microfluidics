@@ -103,9 +103,10 @@ class Board(joey.Board):
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None,
                  pipettor: Optional[Pipettor] = None,
+                 off_on_delay: Time = Time.ZERO,
                  voltage: Optional[Voltage]) -> None:
         self._device = GliderClient(pyglider.BoardId.Wallaby, dll_dir=dll_dir, config_dir=config_dir)
-        super().__init__(pipettor=pipettor)
+        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay)
         on_electrodes = self._device.on_electrodes()
         if on_electrodes:
             for e in on_electrodes:

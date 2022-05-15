@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, Scalar
-
+import time
 
 class Mass(BaseDim): 
     """
@@ -166,6 +166,10 @@ class Time(BaseDim):
         return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
     def __rtruediv__(self, lhs: float) -> Frequency:
         return super().__rtruediv__(lhs).a(Frequency)
+    
+    def sleep(self) -> None:
+        from quantities import SI
+        time.sleep(self.as_number(SI.seconds))
     
     # class _UnitExpr(UnitExpr[Time]): ...
     # class _Unit(Unit[Time]): ...

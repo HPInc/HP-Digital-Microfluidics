@@ -38,6 +38,9 @@ from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C
 from quantities.timestamp import time_now
 from weakref import WeakKeyDictionary
+from erk.stringutils import match_width
+import traceback
+from langsup import dmf_lang
 
 
 class ClickableMonitor(ABC):
@@ -1178,12 +1181,26 @@ class BoardMonitor:
         interp = DMFInterpreter(macro_file, board=self.board)
         def on_press(event: KeyEvent) -> None: # @UnusedVariable
             expr = text.text.strip()
+            def print_result(pair: tuple[dmf_lang.Type, Any]) -> None:
+                ret_type, val = pair
+                if ret_type is dmf_lang.Type.ERROR:
+                    assert isinstance(val, dmf_lang.EvaluationError)
+                    print(f"  Caught exception ({type(val).__name__}): {val}")
+                else:
+                    print(f"  Interactive cmd val ({ret_type.name}): {val}")
             if len(expr) > 0:
                 print(f"Interactive cmd: {expr}")
                 text.add_to_history(expr)
-                (interp.evaluate(expr, cache_as="last")
-                    .then_call(lambda pair: print(f"  Interactive cmd val ({pair[0].name}): {pair[1]}")))
-                text.set_val("")
+                try:
+                    (interp.evaluate(expr, cache_as="last")
+                        .then_call(print_result))
+                    text.set_val("")
+                except RuntimeError as ex:
+                    header = f"Exception caught evaluating '{expr}':"
+                    print(header)
+                    print(match_width(header, repeating="-"))
+                    traceback.print_exception(type(ex), ex, ex.__traceback__)
+                    
         apply.on_clicked(on_press)
         text.on_submit(on_press)
 

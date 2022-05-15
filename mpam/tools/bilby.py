@@ -10,8 +10,8 @@ from mpam.exerciser import Task, volume_arg, Exerciser, voltage_arg
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, Reagent
-from quantities.SI import sec, ms, uL, V
-from quantities.dimensions import Time, Volume, Voltage
+from quantities.SI import sec, ms, uL, V, deg_C
+from quantities.dimensions import Time, Volume, Voltage, Temperature
 from quantities.temperature import TemperaturePoint, abs_C
 
 class DispenseAndWalk(Task):
@@ -150,11 +150,14 @@ class BilbyExerciser(JoeyExerciser):
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir, voltage=voltage)
+        return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir,
+                           off_on_delay=args.off_on_delay, 
+                           voltage=voltage)
 
 if __name__ == '__main__':
     Time.default_units = ms
     Volume.default_units = uL
     Voltage.default_units = V
+    Temperature.default_units = deg_C
     exerciser = BilbyExerciser()
     exerciser.parse_args_and_run()

@@ -13,6 +13,8 @@ from mpam.types import TickNumber, ticks, Ticks
 from quantities.SI import sec, ms
 from quantities.dimensions import Time
 from quantities.timestamp import time_now, time_in, Timestamp
+import traceback
+from erk.stringutils import match_width
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +215,12 @@ class WorkerThread(Thread, Worker, ABC):
     #     self.idle_barrier.idle(self)
     #     # self.daemon = True
     #
+    
+    def print_exception(self, ex: Exception) -> None:
+        header = f"Exception caught in {self}:"
+        print(header)
+        print(match_width(header, repeating="-"))
+        traceback.print_exception(type(ex), ex, ex.__traceback__)
 
 class DCReqQueue(NamedTuple):
     requests: list[DevCommRequest] = []
@@ -256,8 +264,11 @@ class DevCommThread(WorkerThread):
                     self.signals.clear()
                 # logger.debug(f"--processing communication queue: length {len(queue_copy)}")
                 for req in requests:
-                    cpts = req()
-                    need_update.update(cpts)
+                    try:
+                        cpts = req()
+                        need_update.update(cpts)
+                    except RuntimeError as ex:
+                        self.print_exception(ex)
                 for c in need_update:
                     c.update_state()
                 need_update.clear()
@@ -393,12 +404,15 @@ class TimerThread(WorkerThread):
                 # we're now not locked, so we can safely either run the function or schedule it
                 now: Timestamp = time_now()
                 if now >= entry.desired_time:
-                    next_time: Optional[Union[Time,Timestamp]] = entry.func()
-                    if next_time:
-                        if isinstance(next_time, Time):
-                            next_time = time_in(next_time)
-                        with condition:
-                            heapq.heappush(queue, TimerThread.Entry(next_time, entry.func, entry.is_daemon))
+                    try:
+                        next_time: Optional[Union[Time,Timestamp]] = entry.func()
+                        if next_time:
+                            if isinstance(next_time, Time):
+                                next_time = time_in(next_time)
+                            with condition:
+                                heapq.heappush(queue, TimerThread.Entry(next_time, entry.func, entry.is_daemon))
+                    except RuntimeError as ex:
+                        self.print_exception(ex)
                     if len(queue) == self.n_daemons:
                         self.idle()
                 else:
@@ -496,14 +510,18 @@ class ClockThread(WorkerThread):
             else:
                 if _trace_ticks:
                     print(f"-- calling {fn}")
-                new_delay: Optional[Ticks] = fn()
-                if new_delay is not None:
-                    assert new_delay >= 0, f"Delay returned by before/after tick callback ({new_delay}) cannot be negative"
-                    assert new_delay > 0, f"Delay returned by before/after tick callback ({new_delay}) "+ \
-                                            "is relative to current tick number, and so cannot be zero"
-                    # The least astonishing return value for something that should happen on relative to the next tick
-                    # is 1*tick, not 0*ticks
-                    new_queue.append((new_delay-1, fn))
+                try:
+                    new_delay: Optional[Ticks] = fn()
+                    if new_delay is not None:
+                        assert new_delay >= 0, f"Delay returned by before/after tick callback ({new_delay}) cannot be negative"
+                        assert new_delay > 0, f"Delay returned by before/after tick callback ({new_delay}) "+ \
+                                                "is relative to current tick number, and so cannot be zero"
+                        # The least astonishing return value for something that should happen on relative to the next tick
+                        # is 1*tick, not 0*ticks
+                        new_queue.append((new_delay-1, fn))
+                except RuntimeError as ex:
+                    self.print_exception(ex)
+                
         if _trace_ticks and len(queue) > 0:
             deferred = len(new_queue)
             processed = len(queue)-deferred
