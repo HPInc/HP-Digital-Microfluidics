@@ -1035,7 +1035,9 @@ class PCRDriver(Exerciser):
             pipettor = OT2(robot_ip_addr = args.ot_ip,
                            config = args.ot_config,
                            reagents = args.ot_reagents)
-        return joey.Board(pipettor = pipettor)
+        off_on_delay: Time = args.off_on_delay
+        return joey.Board(pipettor = pipettor,
+                          off_on_delay=off_on_delay)
     
     def available_wells(self)->Sequence[int]:
         return range(8)

@@ -1,64 +1,75 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Callable
 
-T = TypeVar("T")
-T_co = TypeVar("T_co", covariant=True)
-T_contra = TypeVar("T_contra", contravariant=True)
-V = TypeVar("V")
+from mpam.types import MonitoredProperty
 
-class Source(Generic[T]):
-    _callbacks: list[Callable[[T], None]]
+
+sn: int = 100
+def next_sn() -> int:
+    global sn
+    val = sn
+    sn += 1
+    return val
+
+class Bar:
+    count = MonitoredProperty[int]("count",
+                                    # default=0, 
+                                    # default_fn = lambda _: next_sn(),
+                                    ) #, init=0)
+    on_count_change = count.callback_list
+    has_count = count.value_check
+    on_inc = on_count_change.filtered(lambda old, new: new > old)
     
-    def __init__(self) -> None:
-        self._callbacks = []
-        
-    def add_callback(self, cb: Callable[[T], None]) -> None:
-        self._callbacks.append(cb)
-        
-    def transform(self, xf: Callable[[T], V]) -> Source[V]:
-        sink = Sink[V]()
-        self.add_callback(lambda val: sink.receive(xf(val)))
-        return sink
-        
-class Sink(Source[T]):
-    def receive(self, val: T) -> None:
-        for cb in self._callbacks:
-            cb(val)
-
-class CoSource(Generic[T_co]):
-    _callbacks: list[Callable[[T_co], None]]
+    @count.transform
+    def double(self, val: int) -> int:
+        return 2*val
     
-    def __init__(self) -> None:
-        self._callbacks = []
+    @count.transform(chain=True)
+    def add_one(self, val: int) -> int:
+        return val+1
+
+    # @count.transform
+    # def clip(self, val: int) -> int:
+    #     return min(val, 10)
+    
+    # @count.transform
+    # def enforce_range(self, val: int) -> MissingOr[int]:
+    #     return MISSING if val > 10 else val
+    
+class Counter:
+    count = MonitoredProperty[int]("count", default=0)
+    on_count_change = count.callback_list 
+    
+    
+    
+    def inc(self, delta: int = 0) -> None:
+        self.count += delta
         
-    def add_callback(self, cb: Callable[[T_co], None]) -> None:
-        self._callbacks.append(cb)
-        
-    def transform(self, xf: Callable[[T_co], V]) -> CoSource[V]:
-        sink = ContraSink[V]()
-        def turn_around(val) -> None:
-            sink.receive(xf(val))
-        self.add_callback(turn_around)
-        # self.add_callback(lambda val: sink.receive(xf(val)))
-        return sink
-        
-class ContraSink(CoSource[T_contra]):
-    def receive(self, val: T_contra) -> None:
-        for cb in self._callbacks:
-            cb(val)
-            
-class A: ...
-class B(A): ...
+class SpecialCounter(Counter):
+    on_change = Counter.count.callback_list
 
-a_sink = ContraSink[A]()
-a_sink.add_callback(lambda a: print(a))
+print(SpecialCounter().on_change)
 
-a_source: CoSource[A] = a_sink
-a_source.add_callback(lambda a: print(a))
-def cb1(a: A): ...
-a_source.add_callback(cb1)
+bar = Bar()
+print(bar.has_count)
+bar.on_count_change(lambda old, new: print(f"{old} -> {new}"))
+bar.on_inc(lambda old, new: print(f"incremented from {old} to {new}"))
 
-str_source = a_source.transform(lambda val: f"transformed: {val}")
-str_source.add_callback(lambda a: print(a))
-
-a_sink.receive(A())
+# print(bar.count)
+bar.count = 5    
+print(bar.count)
+print(bar.has_count)
+bar.count = 10
+print(bar.count)
+bar.count = 10
+print(bar.count)
+bar.count = 20
+print(bar.count)
+bar.count = 15
+print(bar.count)
+del bar.count
+bar.count = 2
+print(bar.count)
+bar.count = 6
+print(bar.count)
+bar.count += 1
+print(bar.count)

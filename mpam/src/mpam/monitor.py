@@ -39,6 +39,12 @@ from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C
 from quantities.timestamp import time_now
 from weakref import WeakKeyDictionary
+from erk.stringutils import match_width
+import traceback
+from langsup import dmf_lang
+from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
+    BooleanOptionalAction
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +188,7 @@ class PadMonitor(ClickableMonitor):
 
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
-        if isinstance(pad, Pad): # pad can be Pad or Gate
+        if isinstance(pad, Pad) and board_monitor.cmd_line_args.highlight_reservations: # pad can be Pad or Gate
             pad.on_reserved_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_reserved(new)))
 
 
@@ -862,6 +868,7 @@ class BoardMonitor:
     macro_file_name: Final[Optional[str]]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
+    cmd_line_args: Final[Namespace]
 
     _control_widgets: Final[Any]
 
@@ -896,10 +903,12 @@ class BoardMonitor:
             self.max_y = max(y, self.max_y)
 
     def __init__(self, board: Board, *,
+                 cmd_line_args: Namespace,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                  control_fraction: Optional[float] = None,
                  macro_file_name: Optional[str] = None) -> None:
         self.board = board
+        self.cmd_line_args = cmd_line_args
         self.interactive_volume = board.drop_size
         self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()
@@ -1035,6 +1044,17 @@ class BoardMonitor:
 
 
         self.figure.canvas.draw()
+
+    @classmethod
+    def add_args_to(cls, group: _ArgumentGroup,
+                         parser: ArgumentParser) -> None: # @UnusedVariable
+        default_show_reservations=False
+        group.add_argument('--highlight-reservations', action=BooleanOptionalAction,
+                           default=default_show_reservations,
+                           help='''
+                           Highlight reserved pads on the display.
+                           ''')
+
 
     def label(self, text: str, spec: SubplotSpec,
               *,
@@ -1181,12 +1201,26 @@ class BoardMonitor:
         interp = DMFInterpreter(macro_file, board=self.board)
         def on_press(event: KeyEvent) -> None: # @UnusedVariable
             expr = text.text.strip()
+            def print_result(pair: tuple[dmf_lang.Type, Any]) -> None:
+                ret_type, val = pair
+                if ret_type is dmf_lang.Type.ERROR:
+                    assert isinstance(val, dmf_lang.EvaluationError)
+                    print(f"  Caught exception ({type(val).__name__}): {val}")
+                else:
+                    print(f"  Interactive cmd val ({ret_type.name}): {val}")
             if len(expr) > 0:
                 print(f"Interactive cmd: {expr}")
                 text.add_to_history(expr)
-                (interp.evaluate(expr, cache_as="last")
-                    .then_call(lambda pair: print(f"  Interactive cmd val ({pair[0].name}): {pair[1]}")))
-                text.set_val("")
+                try:
+                    (interp.evaluate(expr, cache_as="last")
+                        .then_call(print_result))
+                    text.set_val("")
+                except RuntimeError as ex:
+                    header = f"Exception caught evaluating '{expr}':"
+                    print(header)
+                    print(match_width(header, repeating="-"))
+                    traceback.print_exception(type(ex), ex, ex.__traceback__)
+
         apply.on_clicked(on_press)
         text.on_submit(on_press)
 

@@ -97,6 +97,8 @@ expr
   | '(' x=expr ',' y=expr ')' 		 # coord_expr
   | '-' rhs=expr                     # neg_expr
   | dist=expr direction              # delta_expr
+  | 'well' '#' which=expr            # well_expr
+  | 'heater' '#' which=expr			 # heater_expr
   | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
   | quant=expr 'as' 'a'? 'string' 'in' dim_unit # unit_string_expr
   | obj=expr ATTR attr             # attr_expr
@@ -105,6 +107,7 @@ expr
   | INT rc[$INT.int]           # const_rc_expr
   | dist=expr rc[0]           # n_rc_expr
   | amount=expr dim_unit             # unit_expr
+  | amount=expr 'C'					 # temperature_expr
   | 'the'? (reagent 'reagent'?)		 # reagent_lit_expr
   | ('the' | 'a')? 'reagent' 'named'? which=expr # reagent_expr
   | vol=expr 'of' which=expr       # liquid_expr
@@ -120,7 +123,6 @@ expr
   | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
   | 'pause' duration=expr            # pause_expr
-  | 'well' '#' which=expr            # well_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr
@@ -220,6 +222,8 @@ param_type returns[Type type]
   | 'volume' {$ctx.type=Type.VOLUME}
   | 'reagent' {$ctx.type=Type.REAGENT}
   | 'liquid' {$ctx.type=Type.LIQUID}
+  | ('temp' | 'temperature') ('diff' | 'difference' | 'delta') {$ctx.type=Type.REL_TEMP}
+  | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
   ;
   
 dim_unit returns[PhysUnit unit]
@@ -239,6 +243,8 @@ attr returns[str which]
   | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="column"}
   | 'exit' ('dir' | 'direction') {$ctx.which="#exit_dir"}
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
+  | 'target' ('temp' | 'temperature')? {$ctx.which="#target_temperature"}
+  | 'current'? ('temp' | 'temperature') {$ctx.which="#current_temperature"}
   | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | ID)
   	{$ctx.which=$n.text}
   ;
@@ -269,7 +275,9 @@ multi_word_name returns[str val]
   | 'interactive' 'volume' {$ctx.val="interactive volume"}
   ;
 
-kwd_names : 's' | 'ms' | 'x' | 'y';
+kwd_names : 's' | 'ms' | 'x' | 'y'
+  | 'diff' | 'difference' | 'delta' | 'point'
+  ;
 
 string : STRING ;
   

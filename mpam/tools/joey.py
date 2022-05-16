@@ -6,8 +6,8 @@ from typing import Sequence
 from mpam.exerciser import Exerciser, Task, time_arg, temperature_arg
 from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix,\
     Dilute
-from quantities.SI import ms, uL
-from quantities.dimensions import Time, Volume
+from quantities.SI import ms, uL, deg_C
+from quantities.dimensions import Time, Volume, Temperature
 from devices import joey
 from mpam.device import Board, System, Pad, Well
 from mpam.types import ticks, unknown_reagent, Liquid
@@ -128,7 +128,8 @@ class JoeyExerciser(Exerciser):
         
         
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
-        return joey.Board()
+        off_on_delay: Time = args.off_on_delay
+        return joey.Board(off_on_delay=off_on_delay)
     
     def available_wells(self)->Sequence[int]:
         return [0,1,2,3,4,5,6,7]
@@ -136,6 +137,7 @@ class JoeyExerciser(Exerciser):
 if __name__ == '__main__':
     Time.default_units = ms
     Volume.default_units = uL
+    Temperature.default_units = deg_C
     exerciser = JoeyExerciser()
     exerciser.parse_args_and_run()
 

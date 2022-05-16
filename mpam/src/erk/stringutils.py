@@ -86,6 +86,15 @@ def conj_str(seq: Sequence[Any], *,
 def fmt_dict(d: Mapping) -> str:
     return f"{{{', '.join(f'{k}: {v}' for k,v in d.items())}}}"
 
+def match_width(string: str, *, repeating: str = "-") -> str:
+    reps: int = len(string)//len(repeating)
+    val: str = repeating*reps
+    part = len(string)-len(val)
+    if part > 0:
+        val += repeating[0:part]
+    return val
+    
+
 if __name__ == '__main__':
     print(split_camel_case("ThisIsATest"))
     print(split_camel_case("thisIsAlsoATest"))

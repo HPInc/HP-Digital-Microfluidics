@@ -391,6 +391,9 @@ class Quantity:
         if not rhs.has_dimensionality(self.dimensionality):
             raise TypeError(f"{self.dimensionality} {op} {rhs.dimensionality} is ill-formed")
 
+    def __neg__(self: D) -> D:
+        return self.dimensionality.make_quantity(-self.magnitude)
+    
     def __add__(self: D, rhs: D) -> D:
         self._ensure_dim_match(rhs, "+")
         return self.dimensionality.make_quantity(self.magnitude+rhs.magnitude)
