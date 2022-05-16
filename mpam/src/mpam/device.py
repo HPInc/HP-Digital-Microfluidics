@@ -12,7 +12,7 @@ import random
 from threading import Event, Lock, Thread
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Hashable, Any, Iterator, \
+    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
     NamedTuple, Iterable
 
 from matplotlib.gridspec import SubplotSpec
@@ -25,7 +25,7 @@ from mpam.engine import DevCommRequest, TimerFunc, ClockCallback, \
 from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
-    unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, ChangeCallback, \
+    unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty
 from quantities.SI import sec, ms
@@ -33,6 +33,7 @@ from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
+from argparse import Namespace
 
 
 if TYPE_CHECKING:
@@ -649,8 +650,18 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     _heater: Optional[Heater] = None
     _extraction_point: Optional[ExtractionPoint] = None
 
-    _reserved: bool = False
-    _reserved_change_callbacks: Final[ChangeCallbackList[bool]]
+    # TODO: The name has to be specified, because otherwise it would be
+    # "_reserved", which would clobber this attribute.  I'm planning on adding
+    # the ability to declare a MonitoredProperty to be read-only, which would
+    # give it a private_set() method (or something similar) to do the actual
+    # modification.  When that's in, we can get rid of the val_attr.
+    _reserved: MonitoredProperty[bool] = MonitoredProperty("reserved", default=False,
+                                                           val_attr="_reservation")
+
+    on_reserved_change: ChangeCallbackList[bool] = _reserved.callback_list
+    """
+    The :class:`.ChangeCallbackList` monitoring :attr:`reserved`
+    """
 
     @property
     def well(self) -> Optional[Well]:
@@ -738,7 +749,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     @property
     def reserved(self) -> bool:
         """
-        Has the :class:`Pad` been reserved
+        Has the :class:`Pad` been reserved?
         """
         return self._reserved
 
@@ -761,7 +772,6 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         # self.broken = False
         self._pads = board.pad_array
         self._dried_liquid = None
-        self._reserved_change_callbacks = ChangeCallbackList[bool]()
         def journal_change(old: OnOff, new: OnOff) -> None:
             if old is not new:
                 board.journal_state_change(self, new)
@@ -839,7 +849,6 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         if self._reserved:
             return False
         self._reserved = True
-        self._reserved_change_callbacks.process(False, True)
         return True
 
     def unreserve(self) -> None:
@@ -848,13 +857,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         reserved, it has no effect.
 
         """
-        prev_reserved = self._reserved
         self._reserved = False
-        if prev_reserved:
-            self._reserved_change_callbacks.process(True, False)
-
-    def on_reserved_change(self, cb: ChangeCallback[bool], *, key: Optional[Hashable] = None):
-        self._reserved_change_callbacks.add(cb, key=key)
 
     def liquid_added(self, liquid: Liquid, *, mix_result: Optional[MixResult] = None) -> None:
         """
@@ -3788,6 +3791,7 @@ class System:
                       control_fraction: Optional[float] = None,
                       macro_file_name: Optional[str] = None,
                       thread_name: Optional[str] = None,
+                      cmd_line_args: Optional[Namespace] = None,
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -3803,10 +3807,13 @@ class System:
         if thread_name is None:
             thread_name = f"Monitored task @ {time_now()}"
         thread = Thread(target=run_it, name=thread_name)
+        if cmd_line_args is None:
+            cmd_line_args = Namespace()
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
                                control_fraction=control_fraction,
-                               macro_file_name=macro_file_name)
+                               macro_file_name=macro_file_name,
+                               cmd_line_args=cmd_line_args)
         self.monitor = monitor
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),

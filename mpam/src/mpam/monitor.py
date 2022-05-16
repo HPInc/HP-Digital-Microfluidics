@@ -41,7 +41,11 @@ from weakref import WeakKeyDictionary
 from erk.stringutils import match_width
 import traceback
 from langsup import dmf_lang
+from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
+    BooleanOptionalAction
+import logging
 
+logger = logging.getLogger(__name__)
 
 class ClickableMonitor(ABC):
     component: Final[BinaryComponent]
@@ -182,7 +186,7 @@ class PadMonitor(ClickableMonitor):
 
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
-        if isinstance(pad, Pad): # pad can be Pad or Gate
+        if isinstance(pad, Pad) and board_monitor.cmd_line_args.highlight_reservations: # pad can be Pad or Gate
             pad.on_reserved_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_reserved(new)))
 
 
@@ -862,6 +866,7 @@ class BoardMonitor:
     macro_file_name: Final[Optional[str]]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
+    cmd_line_args: Final[Namespace]
 
     _control_widgets: Final[Any]
 
@@ -896,10 +901,12 @@ class BoardMonitor:
             self.max_y = max(y, self.max_y)
 
     def __init__(self, board: Board, *,
+                 cmd_line_args: Namespace,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                  control_fraction: Optional[float] = None,
                  macro_file_name: Optional[str] = None) -> None:
         self.board = board
+        self.cmd_line_args = cmd_line_args
         self.interactive_volume = board.drop_size
         self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()
@@ -1035,6 +1042,17 @@ class BoardMonitor:
 
 
         self.figure.canvas.draw()
+        
+    @classmethod
+    def add_args_to(cls, group: _ArgumentGroup,
+                         parser: ArgumentParser) -> None: # @UnusedVariable
+        default_show_reservations=False
+        group.add_argument('--highlight-reservations', action=BooleanOptionalAction, 
+                           default=default_show_reservations,
+                           help='''
+                           Highlight reserved pads on the display.
+                           ''')
+
 
     def label(self, text: str, spec: SubplotSpec,
               *,
