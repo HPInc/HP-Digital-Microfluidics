@@ -3121,8 +3121,8 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.unreserve_pads()
 
     def prepare_for_remove(self) -> None:
-        self.reserve_pads().wait()
         self.ensure_drop().wait()
+        self.ensure_drop(expect_drop=True).wait()
 
     def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
                          *, last: bool) -> None: # @UnusedVariable
