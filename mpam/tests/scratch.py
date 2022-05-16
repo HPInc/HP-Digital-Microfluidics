@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from mpam.types import MonitoredProperty
 
-
 sn: int = 100
 def next_sn() -> int:
     global sn
@@ -11,7 +10,7 @@ def next_sn() -> int:
     return val
 
 class Bar:
-    count = MonitoredProperty[int]("count",
+    count = MonitoredProperty[int](#"count",
                                     # default=0, 
                                     # default_fn = lambda _: next_sn(),
                                     ) #, init=0)
@@ -35,21 +34,9 @@ class Bar:
     # def enforce_range(self, val: int) -> MissingOr[int]:
     #     return MISSING if val > 10 else val
     
-class Counter:
-    count = MonitoredProperty[int]("count", default=0)
-    on_count_change = count.callback_list 
-    
-    
-    
-    def inc(self, delta: int = 0) -> None:
-        self.count += delta
-        
-class SpecialCounter(Counter):
-    on_change = Counter.count.callback_list
-
-print(SpecialCounter().on_change)
 
 bar = Bar()
+
 print(bar.has_count)
 bar.on_count_change(lambda old, new: print(f"{old} -> {new}"))
 bar.on_inc(lambda old, new: print(f"incremented from {old} to {new}"))
@@ -73,3 +60,4 @@ bar.count = 6
 print(bar.count)
 bar.count += 1
 print(bar.count)
+

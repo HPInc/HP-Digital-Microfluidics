@@ -419,7 +419,7 @@ class DropLoc(ABC, CommunicationScheduler):
     blob: Optional[Blob] = None     #: The :class:`.Blob`, if any, this :class:`DropLoc` participates in
     _neighbors_for_blob: Optional[Sequence[DropLoc]] = None
     
-    drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty("drop", default=None)
+    drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty(default=None)
     """
     The :class:`.Drop`, if any, at this location.  When this value changes,
     callbacks registered to :attr:`on_drop_change` are called.
@@ -1805,8 +1805,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     an estimate of how much will be needed for the remainder of the run.
     """
 
-    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty("contents", 
-                                                                      default=None)
+    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty(default=None)
     """
     The :class:`.Liquid` contained in the :class:`Well`, or ``None`` if the
     :class:`Well` has never contained a :class:`.Liquid`.
@@ -2875,11 +2874,10 @@ class Heater(OpScheduler['Heater'], BoardComponent):
     _current_op_key: Any
     _polling: bool = False
 
-    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("current_temperature",
-                                                                                           default=None)
+    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_temperature_change: ChangeCallbackList[Optional[TemperaturePoint]] = current_temperature.callback_list
 
-    target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("target", default=None)
+    target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_target_change: ChangeCallbackList[Optional[TemperaturePoint]] = target.callback_list
 
     def __init__(self, num: int, board: Board, *,
