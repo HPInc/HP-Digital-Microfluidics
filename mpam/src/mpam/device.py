@@ -123,7 +123,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
     Each :class:`BinaryComponent` objects is associated with a
     :class:`.State`\[:class:`.OnOff`] object (:attr:`state`), which it delegates
     to to implement :attr:`current_state` and :attr:`on_state_change`.
-    
+
     A :class:`BinaryComponent` may be :attr:`broken`, in which case attempting
     to schedule one of its :attr:`ModifyState` operations will result in
     :class:`.PadBrokenError` being raised.
@@ -173,7 +173,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
     @current_state.setter
     def current_state(self, val: OnOff) -> None:
         self.state.current_state = val
-        
+
     @property
     def on_state_change(self) -> ChangeCallbackList[OnOff]:
         """
@@ -312,7 +312,7 @@ class PipettingTarget(ABC):
 
     @property
     @abstractmethod
-    def removable_liquid(self) -> Optional[Liquid]: 
+    def removable_liquid(self) -> Optional[Liquid]:
         """
         The :class:`.Liquid` that could be removed via this
         :class:`PipettingTarget` or ``None`` if there is no such
@@ -411,7 +411,7 @@ class DropLoc(ABC, CommunicationScheduler):
 
     It maintains a :class:`.ChangeCallbackList` for its :attr:`drop` attribute
     to which callbacks can be added by means of :attr:`on_drop_change`.
-    
+
     :attr:`checked_drop` is the same as :attr:`drop`, but it is guaranteed to be
     a :class:`.Drop`, raising a :class:`.TypeError` if :attr:`drop` is ``None``.
 
@@ -422,7 +422,7 @@ class DropLoc(ABC, CommunicationScheduler):
     """
     blob: Optional[Blob] = None     #: The :class:`.Blob`, if any, this :class:`DropLoc` participates in
     _neighbors_for_blob: Optional[Sequence[DropLoc]] = None
-    
+
     drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty("drop", default=None)
     """
     The :class:`.Drop`, if any, at this location.  When this value changes,
@@ -1662,7 +1662,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     * As a :class:`PipettingTarget`, it participates in the pipetting protocol
       by defining :func:`prepare_for_add`, :func:`prepare_for_remove`,
       :func:`pipettor_added`, and :func:`pipettor_removed`.
-      
+
     Callbacks registered to :attr:`on_liquid_change` are fired both when
     :attr:`contents` is set and on calls to :func:`transfer_in` and
     :func:`transfer_out`.  Note that on the transfer functions, the same value
@@ -1838,17 +1838,17 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     an estimate of how much will be needed for the remainder of the run.
     """
 
-    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty("contents", 
+    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty("contents",
                                                                       default=None)
     """
     The :class:`.Liquid` contained in the :class:`Well`, or ``None`` if the
     :class:`Well` has never contained a :class:`.Liquid`.
-    
+
     When :attr:`contents` is set to an ``Optional[``:class:`.Liquid` ``]``
     different from its prior value, the callbacks registered to
     :attr:`on_liquid_change` are run, passing in the old and new values.
     """
-    
+
     on_liquid_change: ChangeCallbackList[Optional[Liquid]] = contents.callback_list
     """
     The :class:`.ChangeCallbackList` monitoring :attr:`contents`.
@@ -2388,10 +2388,10 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 
         If :attr:`reagent` is not ``None``, ``volume`` is subtracted from it.
         If this would render it zero or negative, it is set to ``None``.
-        
+
         After the adjustments, callbacks registered to :attr:`on_liquid_change`
         are run, passing in the new :attr:`contents` as both old and new values.
-        
+
         Note:
             In order to deal with rounding errors, ``on_empty`` is not invoked
             if ``volume`` exceeds :attr:`volume` by less than 5% of

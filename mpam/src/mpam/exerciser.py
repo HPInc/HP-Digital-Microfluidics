@@ -165,8 +165,6 @@ class Task(ABC):
         return exerciser.control_setup(monitor, spec)
 
 
-
-
 class Exerciser(ABC):
     parser: Final[ArgumentParser]
     subparsers: Final[_SubParsersAction]
@@ -240,13 +238,13 @@ class Exerciser(ABC):
     def setup_logging(self, args: Namespace) -> None:
         level: Optional[str] = args.log_level
         file: Optional[Union[str, pathlib.Path]] = args.log_config
-        
-        default_format = '%(levelname)7s|%(module)s|%(message)s' 
-        
+
+        default_format = '%(levelname)7s|%(module)s|%(message)s'
+
         if level is None and file is None:
             path = pathlib.Path.cwd() / ".logging"
             if path.exists():
-                file = path 
+                file = path
             else:
                 level = "INFO"
         if level is not None:
@@ -261,11 +259,10 @@ class Exerciser(ABC):
                                     format=default_format)
         else:
             assert file is not None
-            logging.config.fileConfig(file, 
+            logging.config.fileConfig(file,
                                       defaults = {
                                           "format": default_format
                                           })
-            
 
     def parse_args(self,
                    args: Optional[Sequence[str]]=None,
