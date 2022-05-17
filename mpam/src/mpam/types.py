@@ -2532,7 +2532,7 @@ class MonitoredProperty(Generic[T]):
         self._transform: Callable[[Any, T], MissingOr[T]] = lambda _obj, v: v
         
     def __set_name__(self, _owner, name: str) -> None:
-        print(f"Setting name for {_owner}.{name}")
+        # print(f"Setting name for {_owner}.{name}")
         self._name = name
         
     def _default_value(self, obj) -> MissingOr[T]:

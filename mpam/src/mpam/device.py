@@ -3788,6 +3788,7 @@ class System:
                       macro_file_name: Optional[str] = None,
                       thread_name: Optional[str] = None,
                       cmd_line_args: Optional[Namespace] = None,
+                      **kwds
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -3809,7 +3810,9 @@ class System:
                                control_setup=control_setup,
                                control_fraction=control_fraction,
                                macro_file_name=macro_file_name,
-                               cmd_line_args=cmd_line_args)
+                               cmd_line_args=cmd_line_args,
+                               from_code={**kwds}
+                               )
         self.monitor = monitor
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),

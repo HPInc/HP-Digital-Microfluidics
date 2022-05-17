@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from mpam.types import MonitoredProperty, ConfigParams
 from argparse import Namespace
+from mpam.device import System
+from devices import joey
 
 sn: int = 100
 def next_sn() -> int:
@@ -72,3 +74,7 @@ print(params.highlight_reservations)
 x = params.get("highlight_reservations", 1, expect=bool)
 print(x)
 # x = params.get("highlight_reservations", expect=bool)
+
+system = System(board=joey.Board())
+
+system.run_monitored(lambda sys: ...)

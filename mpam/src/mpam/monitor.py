@@ -31,7 +31,7 @@ from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
     HeatingMode, BinaryComponent, ChangeJournal, DropLoc, WellGate
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent, ConfigParams
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
@@ -186,7 +186,7 @@ class PadMonitor(ClickableMonitor):
 
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
-        if isinstance(pad, Pad) and board_monitor.cmd_line_args.highlight_reservations: # pad can be Pad or Gate
+        if isinstance(pad, Pad) and board_monitor.config_params.highlight_reservations: # pad can be Pad or Gate
             pad.on_reserved_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_reserved(new)))
 
 
@@ -867,7 +867,7 @@ class BoardMonitor:
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
     default_cmd_line_args = Namespace(highlight_reservations=False)
-    cmd_line_args: Final[Namespace]
+    config_params: Final[ConfigParams]
 
     _control_widgets: Final[Any]
 
@@ -902,12 +902,15 @@ class BoardMonitor:
             self.max_y = max(y, self.max_y)
 
     def __init__(self, board: Board, *,
-                 cmd_line_args: Optional[Namespace],
+                 cmd_line_args: Optional[Namespace] = None,
+                 from_code: Optional[Mapping[str, Any]] = None,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                  control_fraction: Optional[float] = None,
                  macro_file_name: Optional[str] = None) -> None:
         self.board = board
-        self.cmd_line_args = cmd_line_args or self.default_cmd_line_args
+        self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
+                                          cmd_line = cmd_line_args,
+                                          from_code = from_code) 
         self.interactive_volume = board.drop_size
         self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()
