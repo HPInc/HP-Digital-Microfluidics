@@ -128,8 +128,9 @@ class JoeyExerciser(Exerciser):
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
         off_on_delay: Time = args.off_on_delay
-        return joey.Board(off_on_delay=off_on_delay)
-    
+        return joey.Board(off_on_delay=off_on_delay,
+                          extraction_point_splash_radius=args.extraction_point_splash_radius)
+
     def available_wells(self)->Sequence[int]:
         return [0,1,2,3,4,5,6,7]
 

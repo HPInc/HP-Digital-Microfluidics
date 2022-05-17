@@ -3028,7 +3028,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     pad: Final[Pad]
     removed: Optional[Volume] = None
     reserved_pads: set[Pad]
-    splash_radius: int
+    splash_radius: Final[int]
 
     @property
     def removable_liquid(self) -> Optional[Liquid]:
@@ -3037,10 +3037,13 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             return None
         return drop.blob.contents
 
-    def __init__(self, pad: Pad, splash_radius: int = 0) -> None:
+    def __init__(self, pad: Pad, splash_radius: Optional[int] = None) -> None:
         BoardComponent.__init__(self, pad.board)
         self.pad = pad
-        self.splash_radius = splash_radius
+        if splash_radius is None:
+            self.splash_radius = pad.board.extraction_point_splash_radius
+        else:
+            self.splash_radius = splash_radius
         self.reserved_pads = set()
         pad._extraction_point = self
 
@@ -3063,7 +3066,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
 
     def prepare_for_remove(self) -> None:
         self.ensure_drop().wait()
-        self.ensure_drop(expect_drop=True).wait()
+        self.reserve_pads(expect_drop=True).wait()
 
     def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
                          *, last: bool) -> None: # @UnusedVariable
@@ -3411,12 +3414,14 @@ class ChangeJournal:
         from mpam.drop import Blob # @Reimport
         Blob.process_changes(self)
 
+
 class Board(SystemComponent):
     pads: Final[PadArray]
     wells: Final[Sequence[Well]]
     magnets: Final[Sequence[Magnet]]
     heaters: Final[Sequence[Heater]]
     extraction_points: Final[Sequence[ExtractionPoint]]
+    extraction_point_splash_radius: Final[int]
     # _well_groups: Mapping[str, WellGroup]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
@@ -3442,6 +3447,7 @@ class Board(SystemComponent):
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
+                 extraction_point_splash_radius: Optional[int] = 0,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  off_on_delay: Time = Time.ZERO) -> None:
@@ -3452,6 +3458,7 @@ class Board(SystemComponent):
         self.magnets = [] if magnets is None else magnets
         self.heaters = [] if heaters is None else heaters
         self.extraction_points = [] if extraction_points is None else extraction_points
+        self.extraction_point_splash_radius = extraction_point_splash_radius
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
         self.off_on_delay = off_on_delay
@@ -3567,6 +3574,7 @@ class Board(SystemComponent):
     def journal_delivery(self, pad: DropLoc, liquid: Liquid, *,
                          mix_result: Optional[MixResult] = None):
         self.change_journal.note_delivery(pad, liquid, mix_result=mix_result)
+
 
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier) -> None:

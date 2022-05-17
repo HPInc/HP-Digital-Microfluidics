@@ -129,8 +129,8 @@ class ArmPos(Enum):
 class ExtractionPoint(device.ExtractionPoint):
     _pipettor: Final[Pipettor]
 
-    def __init__(self, pad: device.Pad, pipettor: Pipettor) -> None:
-        super().__init__(pad)
+    def __init__(self, pad: device.Pad, pipettor: Pipettor, splash_radius: Optional[int] = None) -> None:
+        super().__init__(pad, splash_radius)
         self._pipettor = pipettor
 
     @property
@@ -223,7 +223,8 @@ class Board(device.Board):
 
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None,
-                 off_on_delay: Time = Time.ZERO) -> None:
+                 off_on_delay: Time = Time.ZERO,
+                 extraction_point_splash_radius: Optional[int] = 0) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
@@ -234,6 +235,7 @@ class Board(device.Board):
                          magnets=magnets,
                          heaters=heaters,
                          extraction_points=extraction_points,
+                         extraction_point_splash_radius=extraction_point_splash_radius,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms,
                          off_on_delay=off_on_delay)
@@ -297,10 +299,11 @@ class Board(device.Board):
         heaters.append(self._heater(2, regions=[GridRegion(XYCoord(16,12),3,7),
                                                 GridRegion(XYCoord(16,0),3,7)]))
 
-        extraction_points.append(ExtractionPoint(self.pad_at(13, 15), pipettor)) 
-        extraction_points.append(ExtractionPoint(self.pad_at(13, 9), pipettor))
-        extraction_points.append(ExtractionPoint(self.pad_at(13, 3), pipettor))
-        
+
+        for pos in ((13, 15), (13, 9), (13, 3)):
+            extraction_points.append(
+                ExtractionPoint(self.pad_at(*pos), pipettor, splash_radius=extraction_point_splash_radius))
+
         def tc_channel(row: int,
                        heaters: tuple[int,int],
                        thresholds: tuple[int,int],

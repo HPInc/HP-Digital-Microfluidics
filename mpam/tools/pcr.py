@@ -1040,9 +1040,10 @@ class PCRDriver(Exerciser):
                            config = args.ot_config,
                            reagents = args.ot_reagents)
         off_on_delay: Time = args.off_on_delay
-        return joey.Board(pipettor = pipettor,
-                          off_on_delay=off_on_delay)
-    
+        return joey.Board(pipettor=pipettor,
+                          off_on_delay=off_on_delay,
+                          extraction_point_splash_radius=args.extraction_point_splash_radius)
+
     def available_wells(self)->Sequence[int]:
         return range(8)
 
@@ -1054,24 +1055,21 @@ class PCRDriver(Exerciser):
         default_cycles = 4
         group.add_argument('--cycles', type=int, metavar='INT', default=default_cycles,
                            help=f'''
-                                 The number of times to repeat each thermocycle.  
-                                 Default is {default_cycles}.
-                                 ''')
+                           The number of times to repeat each thermocycle.
+                           Default is {default_cycles}.
+                           ''')
         default_shuttles = 0
         group.add_argument('--shuttles', type=int, metavar='INT', default=default_shuttles,
                            help=f'''
-                                 The number of extra shuttles to perform during mixing and diluting.  
-                                 Default is {default_shuttles}.
-                                 ''')
-        
+                           The number of extra shuttles to perform during mixing and diluting.
+                           Default is {default_shuttles}.
+                           ''')
         group.add_argument('-ps', '--pipettor-speed', type=float, metavar='MULT',
-                           help=f'''
-                                 A speed-up factor for dummy pipettor operations.
-                                 ''')
+                           help="A speed-up factor for dummy pipettor operations.")
         group.add_argument("-ip", "--ot-ip", metavar="IP",
-                           help=f"The IP address of the Opentrons robot")
+                           help="The IP address of the Opentrons robot")
         group.add_argument("-otc", "--ot-config", metavar="FILE",
-                           help=f"The config file for the the Opentrons robot")
+                           help="The config file for the the Opentrons robot")
         group.add_argument("-otr", "--ot-reagents", metavar="FILE",
                            help=f"The reagents JSON file for the the Opentrons robot")
 
