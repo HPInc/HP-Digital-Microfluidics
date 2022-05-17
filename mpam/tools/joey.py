@@ -15,16 +15,17 @@ from quantities.temperature import TemperaturePoint
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
 from mpam.paths import Path
 
+
 class Thermocycle(Task):
     def __init__(self) -> None:
         super().__init__(name="thermocycle",
                          description="Run drops through a thermocycle process")
 
-    def add_args_to(self, parser: ArgumentParser, *,  
+    def add_args_to(self, parser: ArgumentParser, *,
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
         group = self.arg_group_in(parser)
-        cg = group.add_mutually_exclusive_group() 
+        cg = group.add_mutually_exclusive_group()
         default_drops = 1
         cg.add_argument('-n', '--n-drops', type=int, metavar='INT', default=default_drops,
                         help=f"""The number of drops to run.  These are run in consecutive channels.
@@ -36,8 +37,8 @@ class Thermocycle(Task):
                         help=f"""Use the thermocycler channels available on the wombat board""")
         cg.add_argument('-c', '--channels', type=int, nargs='+', metavar='INT',
                         help=f"""Specific thermocycler channels to use.""")
-                        
-                                             
+
+
         group.add_argument('--names', nargs='*', metavar='NAME',
                            help=f"""The names of the phases.  Defaults to 'phase-1', etc.""")
         group.add_argument('-t', '--temperatures', nargs='+', type=temperature_arg, metavar='TEMP',
@@ -46,13 +47,13 @@ class Thermocycle(Task):
         group.add_argument('-d', '--durations', nargs='+', type=time_arg, metavar='TIME',
                            required=True,
                            help=f"""How long to hold the drops at each temperature.""")
-        
+
         default_reps = 2
         group.add_argument('-r', '--repetitions', type=int, metavar='INT', default=default_reps,
-                           help=f"""The number of time to perform the phases.  
+                           help=f"""The number of time to perform the phases.
                            Default is {default_reps}"""
                            )
-        group.add_argument('--middle', action='store_true', 
+        group.add_argument('--middle', action='store_true',
                            help=f"""Start at the middle heater.  If omitted, start at the outside heater"""
                            )
 
@@ -62,7 +63,7 @@ class Thermocycle(Task):
         default_pause_after= 0
         group.add_argument('-pa', '--pause-after', type=int, metavar='TICKS', default=default_pause_after,
                            help=f"Time to pause before the mixing operation.  Default is {default_pause_after*ticks:.0f}.")
-        
+
 
     def create_path(self, i: int, pad: Pad, well: Well, ptype: ThermocycleProcessType) -> Path.Full:
         path = Path.dispense_from(well) \
@@ -72,11 +73,11 @@ class Thermocycle(Task):
             path = path.start(ptype)
         else:
             path = path.join()
-        
+
         path = path.to_col(18).to_row(0)
-        
+
         return path.enter_well()
-    
+
     def run(self, board:Board, system:System, args:Namespace)->None:
         # print(args)
         assert isinstance(board, joey.Board)
@@ -85,7 +86,7 @@ class Thermocycle(Task):
         durations: Sequence[Time] = args.durations
         assert (len(names) == len(temps) == len(durations)), \
                 f"--names, --temperatures, --durations must have the same number of entries"
-                
+
         phases = tuple(ThermocyclePhase(*args) for args in zip(names, temps, durations))
         tc = board.thermocycler
         channels: Sequence[int]
@@ -97,9 +98,9 @@ class Thermocycle(Task):
             channels = [5,6,13,14]
         else:
             channels = list(range(args.n_drops))
-            
+
         n_iters: int = args.repetitions
-        
+
         ptype = tc.as_process(channels=channels,phases=phases,n_iterations=n_iters)
         end = 0 if args.middle else 1
         pads = sorted([tc.channels[i][end].threshold for i in channels],
@@ -108,25 +109,23 @@ class Thermocycle(Task):
         well = board.wells[2]
         well.contains(Liquid(unknown_reagent, len(pads)*drops))
         paths = [self.create_path(i, pad, well, ptype) for i,pad in enumerate(pads)]
-        
+
         with system.batched():
             for p in paths:
                 p.schedule()
-        
-        
+
 
 class JoeyExerciser(Exerciser):
     def __init__(self, name: str = "Joey") -> None:
         super().__init__(description=f"Put the {name} board through its paces")
         self.add_task(Dispense())
-        self.add_task(Absorb())      
+        self.add_task(Absorb())
         self.add_task(DisplayOnly())
         self.add_task(WalkPath())
         self.add_task(Mix())
         self.add_task(Dilute())
         self.add_task(Thermocycle())
-        
-        
+
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
         off_on_delay: Time = args.off_on_delay
         return joey.Board(off_on_delay=off_on_delay)
@@ -134,14 +133,10 @@ class JoeyExerciser(Exerciser):
     def available_wells(self)->Sequence[int]:
         return [0,1,2,3,4,5,6,7]
 
+
 if __name__ == '__main__':
     Time.default_units = ms
     Volume.default_units = uL
     Temperature.default_units = deg_C
     exerciser = JoeyExerciser()
     exerciser.parse_args_and_run()
-
-
-
-
-
