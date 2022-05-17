@@ -234,7 +234,8 @@ class Exerciser(ABC):
                                  update_interval=args.update_interval,
                                  control_setup = make_controls,
                                  macro_file_name = args.macro_file,
-                                 thread_name = f"Monitored {task.name}")
+                                 thread_name = f"Monitored {task.name}",
+                                 cmd_line_args = args)
 
     def setup_logging(self, args: Namespace) -> None:
         level: Optional[str] = args.log_level
@@ -344,6 +345,8 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
+        display_group = parser.add_argument_group("display_options")
+        BoardMonitor.add_args_to(display_group, parser)
         log_group = group.add_mutually_exclusive_group()
         level_choices = ['debug', 'info', 'warning', 'error', 'critical']
         log_group.add_argument('--log-level', metavar='LEVEL',

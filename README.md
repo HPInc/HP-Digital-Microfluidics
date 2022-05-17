@@ -23,7 +23,19 @@ _Thylacine_ is (or, at least, will be, if all goes well) a suite of software for
 
 There will also be MPDL descriptions and MPAM API implementation libraries for various concrete DMF platforms
 
+## Developer Notes
 
+### QuickStart
 
+    cd thylacine/mpam
+    export PYTHONPATH=`pwd`/src:`pwd`/tools:`pwd`/target/generated-sources/antlr4
 
+    python tools/wombat.py display-only --min-time 1day --macro-file inputs/macros.dmf
 
+    python tools/joey.py path --clock-speed=500ms --start-pad 0 18 --path 2R3D2R1U
+
+    python tools/pcr.py cs 5 --clock-speed=100ms --shuttles=2 --cycles=2 --pipettor-speed=2 --min-time=1hr
+
+### MyPy
+
+    mypy --ignore-missing-imports src/mpam/{device,drop,paths,pipettor,processes,types}.py tests/{joey,od,wombat}_test.py tools/{bilby,wombat}.py

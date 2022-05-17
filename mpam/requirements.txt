@@ -1,6 +1,9 @@
 aiohttp>=3.8.1
-requests>=2.26.0
 antlr4-python3-runtime>=4.9.2
 clipboard>=0.0.4
 matplotlib>=3.4.2
 pyserial>=3.5
+requests>=2.26.0
+sphinx
+sphinx-rtd-theme
+sphinx-toolbox
