@@ -286,7 +286,7 @@ class MixSequence(NamedTuple):
                     mix.split(pads)
                 if i == last_step and shuttle == n_shuttles:
                     for pad in pads:
-                        pad.reserved = False
+                        pad.unreserve()
                     yield False
                 else:
                     yield True
