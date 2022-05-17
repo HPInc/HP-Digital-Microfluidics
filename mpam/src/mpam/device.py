@@ -3788,7 +3788,7 @@ class System:
                       macro_file_name: Optional[str] = None,
                       thread_name: Optional[str] = None,
                       cmd_line_args: Optional[Namespace] = None,
-                      **kwds
+                      config_params: Optional[Mapping[str, Any]] = None,
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -3811,7 +3811,7 @@ class System:
                                control_fraction=control_fraction,
                                macro_file_name=macro_file_name,
                                cmd_line_args=cmd_line_args,
-                               from_code={**kwds}
+                               from_code=config_params
                                )
         self.monitor = monitor
         thread.start()

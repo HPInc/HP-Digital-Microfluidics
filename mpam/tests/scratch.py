@@ -77,4 +77,4 @@ print(x)
 
 system = System(board=joey.Board())
 
-system.run_monitored(lambda sys: ...)
+system.run_monitored(lambda sys: ..., config_params={"highlight_reservations": True})
