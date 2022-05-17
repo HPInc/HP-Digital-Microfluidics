@@ -2254,13 +2254,22 @@ class Gettable(Protocol[OTcontra, Tco]):
     def __get__(self, obj: OTcontra, objtype: type[OTcontra]) -> Tco: ...
 
 class _CCLProperty(Generic[T]):
-    attr_base: Final[str]
-    attr: Final[str]
+    prop: Final[MonitoredProperty]
+    tag: Final[str]
+    _attr: Optional[str] = None
     
-    def __init__(self, attr_base: str, attr: str, 
+    @property
+    def attr(self) -> str:
+        a = self._attr
+        if a is None:
+            a = f"{self.prop.callback_list_attr}{self.tag}"
+            self._attr = a
+        return a
+    
+    def __init__(self, prop: MonitoredProperty, tag: str,
                  creator: Callable[[object], ChangeCallbackList[T]]) -> None:
-        self.attr_base = attr_base
-        self.attr = attr
+        self.prop = prop
+        self.tag = tag
         self.creator = creator
     @overload
     def __get__(self, obj: None, objtype) -> _CCLProperty[T]: ...
@@ -2276,25 +2285,27 @@ class _CCLProperty(Generic[T]):
             setattr(obj, attr, ccl)
         return ccl
     
+    @staticmethod
+    def new_tag() -> str:
+        return f"_{random.randrange(1000000)}"
+    
     def mapped(self, transform: Callable[[T,T], Optional[tuple[V,V]]], *,
                key: Optional[Hashable] = None
                ) -> Gettable[object, ChangeCallbackList[V]]:
-        attr = f"{self.attr_base}_{random.randrange(1000000)}"
         me = self
         def creator(obj) -> ChangeCallbackList[V]:
             ccl: ChangeCallbackList[T] = me.__get__(obj, None)
             return ccl.mapped(transform, key=key)
-        return _CCLProperty(self.attr_base, attr, creator)
+        return _CCLProperty(self.prop, self.new_tag(), creator)
     
     def filtered(self, test: Callable[[T,T], bool], *,
                  key: Optional[Hashable] = None
                  ) -> Gettable[object, ChangeCallbackList[T]]:
-        attr = f"{self.attr_base}_{random.randrange(1000000)}"
         me = self
         def creator(obj) -> ChangeCallbackList[T]:
             ccl: ChangeCallbackList[T] = me.__get__(obj, None)
             return ccl.filtered(test, key=key)
-        return _CCLProperty(self.attr_base, attr, creator)
+        return _CCLProperty(self.prop, self.new_tag(), creator)
     
     
  
@@ -2307,7 +2318,7 @@ class MonitoredProperty(Generic[T]):
     :class:`ChangeCallbackList`, use its :attr:`callback_list` property::
     
         class Counter:
-            count = MonitoredProperty[int]("count", default=0)
+            count = MonitoredProperty[int](default=0)
             on_count_change = count.callback_list
             
             def inc(self, delta: int = 0) -> None:
@@ -2348,7 +2359,7 @@ class MonitoredProperty(Generic[T]):
     :attr:`value_check` property::
     
         class Counter:
-            count = MonitoredProperty[int]("count")
+            count = MonitoredProperty[int]()
             has_count = count.value_check
             
         if counter.has_count:
@@ -2366,7 +2377,7 @@ class MonitoredProperty(Generic[T]):
     :func:`~ChangeCallbackList.filtered`, e.g. ::
     
         class Counter:
-            count = MonitoredProperty[int]("count", default=0)
+            count = MonitoredProperty[int](default=0)
             on_count_change = count.callback_list
             on_count_increase = on_count_change.filtered(lambda old, new: new > old)
 
@@ -2415,7 +2426,7 @@ class MonitoredProperty(Generic[T]):
         explicit::
         
             class Counter:
-                count: MonitoredProperty[int] = MonitoredProperty("count", default=0)
+                count: MonitoredProperty[int] = MonitoredProperty(default=0)
                 on_count_change: ChangeCallbackList[in] = count.callback_list
                 
         MyPy won't let you annotate the property as ``int``, even though it
@@ -2424,12 +2435,45 @@ class MonitoredProperty(Generic[T]):
     Args:
         T: the type of the value stored in the property.
     """
-    name: Final[str]        #: The name of the property
-    val_attr: Final[str]    #: The attribute used to store the value on objects
-    callback_list_attr: Final[str] 
-    """
-    The attribute used to store the :class:`ChangeCallbackList` on objects
-    """
+    
+    _name: Optional[str] = None
+    _val_attr: Optional[str] = None
+    _callback_list_attr: Optional[str] = None
+    
+    
+    @property
+    def name(self) -> str:
+        """
+        The name of the property
+        """
+        n = self._name
+        if n is None:
+            n = f"monitored_{random.randrange(1000000)}"
+            self._name = n
+        return n
+    
+    @property
+    def val_attr(self) -> str:
+        """
+        The attribute used to store the value on objects        
+        """
+        attr = self._val_attr
+        if attr is None:
+            attr =  f"_{self.name}__value"
+            self._val_attr = attr
+        return attr
+
+    @property
+    def callback_list_attr(self) -> str:
+        """
+        The attribute used to store the :class:`ChangeCallbackList` on objects
+        """
+        attr = self._callback_list_attr
+        if attr is None:
+            attr = f"_{self.name}__callbacks"
+            self._callback_list_attr = attr
+        return attr
+    
     _process_duplicates: Final[bool]    
     """
     Should the :class:`ChangeCallbackList` be notified if a new
@@ -2446,9 +2490,15 @@ class MonitoredProperty(Generic[T]):
         """
         Initialize the object.
         
-        If ``name`` is not specified, a gensymed string (e.g.,
-        ``"monitored_12345"``) will be used.  If ``val_attr`` is not specified,
-        it will be ``name`` prepended by an underscore.  If
+        If ``name`` is not specified, the name of the class attribute will be
+        used if the :class:`MonitoredProperty` is being used to define one, as in ::
+        
+            class Counter:
+                count = MonitoredProperty[int](default=0)
+                
+        where ``name`` will be taken to be ``"count"``.  Otherwise, a gensymed
+        string (e.g., ``"monitored_12345"``) will be used. If ``val_attr`` is
+        not specified, it will be ``name`` prepended by an underscore.  If
         ``callback_list_attr`` is not specified, it will be ``val_attr``
         followed by ``"_callback_list"``.
         
@@ -2470,19 +2520,20 @@ class MonitoredProperty(Generic[T]):
                                 :class:`ChangeCallbackList` even if the new and
                                 old values are equal.
         """
-        if name is None:
-            name = f"monitored_{random.random()}"
-        self.name = name
-        if val_attr is None:
-            val_attr = f"_{name}"
-        self.val_attr = val_attr
-        if callback_list_attr is None:
-            callback_list_attr = f"{val_attr}_callback_list"
-        self.callback_list_attr = callback_list_attr
+        if name is not None:
+            self._name = name
+        if val_attr is not None:
+            self._val_attr = val_attr
+        if callback_list_attr is not None:
+            self._callback_list_attr = callback_list_attr 
         self._default_val = default
         self._default_fn = default_fn
         self._process_duplicates = process_duplicates
         self._transform: Callable[[Any, T], MissingOr[T]] = lambda _obj, v: v
+        
+    def __set_name__(self, _owner, name: str) -> None:
+        print(f"Setting name for {_owner}.{name}")
+        self._name = name
         
     def _default_value(self, obj) -> MissingOr[T]:
         dfn = self._default_fn
@@ -2568,6 +2619,7 @@ class MonitoredProperty(Generic[T]):
             obj: the object on which to set the value
             value: the value to set
         """
+        
         key = self.val_attr
         maybe_value = (self._transform)(obj, value)
         if maybe_value is MISSING:
@@ -2648,8 +2700,7 @@ class MonitoredProperty(Generic[T]):
         and only gets one if somebody refers to it by trying to add a callback.
         """
         
-        attr = self.callback_list_attr
-        return _CCLProperty(attr, attr, lambda _: ChangeCallbackList[T]())
+        return _CCLProperty(self, "", lambda _: ChangeCallbackList[T]())
     
     @property
     def value_check(self) -> Gettable[object, bool]:
@@ -3539,7 +3590,7 @@ class Liquid:
     """
     inexact: bool       #: Is :attr:`volume` inexact?
 
-    volume: MonitoredProperty[Volume] = MonitoredProperty("volume")
+    volume: MonitoredProperty[Volume] = MonitoredProperty()
     """
     The :class:`.Volume` of the :class:`Liquid`.  In some cases, this should
     be interpreted in conjunction with :attr:`inexact`.
@@ -3551,7 +3602,7 @@ class Liquid:
     on_volume_change: ChangeCallbackList[Volume] = volume.callback_list
     "The :class:`ChangeCallbackList` monitoring :attr:`volume`"
 
-    reagent: MonitoredProperty[Reagent] = MonitoredProperty("reagent")
+    reagent: MonitoredProperty[Reagent] = MonitoredProperty()
     """
     The :class:`Reagent` of the :class:`Liquid`.
 
@@ -3573,8 +3624,8 @@ class Liquid:
         Keyword Args:
             inexact: is ``volume`` inexact?
         """
-        self._reagent = reagent
-        self._volume = volume
+        self.reagent = reagent
+        self.volume = volume
         self.inexact = inexact
 
     def __repr__(self) -> str:
@@ -4352,7 +4403,7 @@ class State(Generic[T], ABC):
     """
     # _state: T   #: The current value
     
-    current_state: MonitoredProperty[T] = MonitoredProperty("state")
+    current_state: MonitoredProperty[T] = MonitoredProperty()
     """
     The current value.  When this value is set to a value not equal to the prior
     value, callbacks registerd to :attr:`on_state_change` are called.

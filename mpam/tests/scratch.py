@@ -72,6 +72,3 @@ print(params.highlight_reservations)
 x = params.get("highlight_reservations", 1, expect=bool)
 print(x)
 # x = params.get("highlight_reservations", expect=bool)
-reveal_type(x)
-
-

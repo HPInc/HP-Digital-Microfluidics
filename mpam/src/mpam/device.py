@@ -420,7 +420,7 @@ class DropLoc(ABC, CommunicationScheduler):
     blob: Optional[Blob] = None     #: The :class:`.Blob`, if any, this :class:`DropLoc` participates in
     _neighbors_for_blob: Optional[Sequence[DropLoc]] = None
     
-    drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty("drop", default=None)
+    drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty(default=None)
     """
     The :class:`.Drop`, if any, at this location.  When this value changes,
     callbacks registered to :attr:`on_drop_change` are called.
@@ -1835,8 +1835,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     an estimate of how much will be needed for the remainder of the run.
     """
 
-    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty("contents", 
-                                                                      default=None)
+    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty(default=None)
     """
     The :class:`.Liquid` contained in the :class:`Well`, or ``None`` if the
     :class:`Well` has never contained a :class:`.Liquid`.
@@ -2162,7 +2161,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         self.dispensed_volume = dispensed_volume
         self.exit_dir = exit_dir
         self.is_voidable = is_voidable
-        self._contents = None
         self._shape = shape
 
         assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
@@ -2370,7 +2368,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
         assert self.contents is not None
         self.contents.mix_in(liquid, result=mix_result)
-        self.on_liquid_change.process(self._contents, self._contents)
+        self.on_liquid_change.process(self.contents, self.contents)
         # print(f"{self} now contains {self.contents}")
 
     def transfer_out(self, volume: Volume, *,
@@ -2450,7 +2448,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             liquid = content
         on_overflow.expect_true(liquid.volume <= self.capacity,
                                 lambda : f"Asserted {self} contains {liquid}. Capacity only {self.capacity}")
-        self._contents = None
         self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
         # print(f"Volume is now {self.volume}")
 
@@ -2905,11 +2902,10 @@ class Heater(OpScheduler['Heater'], BoardComponent):
     _current_op_key: Any
     _polling: bool = False
 
-    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("current_temperature",
-                                                                                           default=None)
+    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_temperature_change: ChangeCallbackList[Optional[TemperaturePoint]] = current_temperature.callback_list
 
-    target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("target", default=None)
+    target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_target_change: ChangeCallbackList[Optional[TemperaturePoint]] = target.callback_list
 
     def __init__(self, num: int, board: Board, *,
@@ -3807,6 +3803,8 @@ class System:
         if thread_name is None:
             thread_name = f"Monitored task @ {time_now()}"
         thread = Thread(target=run_it, name=thread_name)
+        if cmd_line_args is None:
+            cmd_line_args = Namespace()
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
                                control_fraction=control_fraction,
