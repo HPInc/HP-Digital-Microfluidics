@@ -26,6 +26,8 @@ from quantities.temperature import TemperaturePoint
 
 from quantities.SI import uL
 import random
+from argparse import Namespace
+import typing
 
 logger = logging.getLogger(__name__)
 
@@ -4400,7 +4402,52 @@ class DummyState(State[T]):
         Args:
             new_state: The (ignored) value tp realize
         """
-
-
-
     ...
+
+class ConfigParams:
+    defaults: Final[Namespace]
+    cmd_line: Final[Namespace]
+    from_code: Final[Mapping[str, Any]]
+    
+    def __init__(self, *,
+                 defaults: Optional[Namespace] = None,
+                 cmd_line: Optional[Namespace] = None,
+                 from_code: Optional[Mapping[str, Any]] = None) -> None:
+        self.defaults = defaults or Namespace()
+        self.cmd_line = cmd_line or Namespace()
+        self.from_code = from_code or {}
+        
+    def __getattr__(self, name: str) -> Any:
+        val = getattr(self.cmd_line, name, MISSING)
+        if val is not MISSING:
+            return val
+        val = self.from_code.get(name, MISSING)
+        if val is not MISSING:
+            return val
+        val = getattr(self.defaults, name, MISSING)
+        if val is not MISSING:
+            return val
+        raise AttributeError(name)
+    
+    _sentinel = (MISSING,)
+    
+    @overload
+    def get(self, name: str, default: tuple[Missing] = (MISSING,), *, expect: typing.Type[T]) -> T: ...
+    @overload
+    def get(self, name: str, default: V, *, expect: typing.Type[T]) -> Union[V, T]: ...
+    @overload
+    def get(self, name: str, default: V) -> Any: ...
+    @overload
+    def get(self, name: str) -> Any: ...
+    def get(self, name: str, default = (MISSING,), *, expect: Optional[typing.Type[T]] = None) -> Any:
+        try:
+            val = self.__getattr__(name)
+            if expect is None or isinstance(val, expect):
+                return val
+            raise TypeError(f"Attribute {name} wrong type.  Expected {expect}, got value {val}")
+        except AttributeError:
+            if default != self._sentinel:
+                return default
+            raise
+         
+        ...

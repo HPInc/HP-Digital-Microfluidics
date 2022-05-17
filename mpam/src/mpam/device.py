@@ -3807,8 +3807,6 @@ class System:
         if thread_name is None:
             thread_name = f"Monitored task @ {time_now()}"
         thread = Thread(target=run_it, name=thread_name)
-        if cmd_line_args is None:
-            cmd_line_args = Namespace()
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
                                control_fraction=control_fraction,
