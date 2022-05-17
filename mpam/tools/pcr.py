@@ -9,6 +9,7 @@ import random
 from re import Pattern
 import re
 from typing import Sequence, Union, Optional, Final, NamedTuple, Callable
+import logging
 
 from devices import joey
 from erk.basic import not_None
@@ -32,6 +33,8 @@ from quantities.temperature import abs_C
 from devices.dummy_pipettor import DummyPipettor
 from devices.opentrons import OT2
 from mpam.pipettor import Pipettor
+
+logger = logging.getLogger(__name__)
 
 
 def right_then_up(loc: Union[Drop,Pad]) -> tuple[int, int]:
@@ -101,11 +104,11 @@ class PCRTask(Task):
         if ps is not None:
             pipettor = board.pipettor
             if isinstance(pipettor, DummyPipettor):
-                print(f"Speeding up pipettor arm by a factor of {ps}.")
+                logger.info(f"Speeding up pipettor arm by a factor of {ps}.")
                 pipettor.speed_up(ps)
             else:
-                print(f"Cannot speed up {pipettor}.")
-        
+                logger.info(f"Cannot speed up {pipettor}.")
+
     def reagent(self, name: str, *,
                 color: Optional[Union[Color, str, tuple[float,float,float]]] = None) -> Reagent:
         r = Reagent.find(name)
@@ -474,7 +477,7 @@ class MixPrep(PCRTask):
                                               rows=3, cols=5)
 
         pads = sorted(mix4.pads, key=down_then_left)
-        print(pads)
+        logger.info(pads)
         paths = list[Schedulable]()
         for i,w in enumerate(input_wells):
             path = Path.dispense_from(w).to_pad(pads[i], row_first=False)
@@ -739,11 +742,11 @@ class CombSynth(PCRTask):
         # We'll get c6 out out of the way first so it doesn't block the others.
         if c6 is not None:
             product_loc = Postable[ProductLocation]()
-            product_loc.then_call(lambda pl: print(f"Product {pl.reagent} wound up in {pl.location}"))
+            product_loc.then_call(lambda pl: logger.info(f"Product {pl.reagent} wound up in {pl.location}"))
             paths.append((c6.lead_drop,
                           Path.empty()
                             .reach(self.phase_barrier, wait=False)
-                            .then_process(lambda drop: print(f"Extracting {drop.blob.contents}"))
+                            .then_process(lambda drop: logger.info(f"Extracting {drop.blob.contents}"))
                             .teleport_out(product_loc = product_loc))
                          )
 
