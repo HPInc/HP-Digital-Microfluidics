@@ -2161,7 +2161,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         self.dispensed_volume = dispensed_volume
         self.exit_dir = exit_dir
         self.is_voidable = is_voidable
-        self._contents = None
         self._shape = shape
 
         assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
@@ -2369,7 +2368,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
         assert self.contents is not None
         self.contents.mix_in(liquid, result=mix_result)
-        self.on_liquid_change.process(self._contents, self._contents)
+        self.on_liquid_change.process(self.contents, self.contents)
         # print(f"{self} now contains {self.contents}")
 
     def transfer_out(self, volume: Volume, *,
@@ -2449,7 +2448,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             liquid = content
         on_overflow.expect_true(liquid.volume <= self.capacity,
                                 lambda : f"Asserted {self} contains {liquid}. Capacity only {self.capacity}")
-        self._contents = None
         self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
         # print(f"Volume is now {self.volume}")
 
