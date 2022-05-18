@@ -51,5 +51,5 @@ system = System(
             drop_tip_time=1 * ms),
         extraction_point_splash_radius=2))
 args = argparse.Namespace(highlight_reservations=True)
-system.run_monitored(test_splashzones, min_time=30 * s, cmd_line_args=args)
+system.run_monitored(test_splashzones, min_time=30 * s, cmd_line_args=args, config_params = {"highlight_reservations": True})
 system.stop()
