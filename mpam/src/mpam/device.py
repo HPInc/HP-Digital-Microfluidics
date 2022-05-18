@@ -2165,7 +2165,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         self.dispensed_volume = dispensed_volume
         self.exit_dir = exit_dir
         self.is_voidable = is_voidable
-        self._contents = None
         self._shape = shape
 
         assert exit_pad._well is None, f"{exit_pad} is already associated with {exit_pad.well}"
@@ -2373,7 +2372,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                                             lambda : f"Adding {liquid.reagent} to {self} containing {r}")
         assert self.contents is not None
         self.contents.mix_in(liquid, result=mix_result)
-        self.on_liquid_change.process(self._contents, self._contents)
+        self.on_liquid_change.process(self.contents, self.contents)
         # print(f"{self} now contains {self.contents}")
 
     def transfer_out(self, volume: Volume, *,
@@ -2453,7 +2452,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             liquid = content
         on_overflow.expect_true(liquid.volume <= self.capacity,
                                 lambda : f"Asserted {self} contains {liquid}. Capacity only {self.capacity}")
-        self._contents = None
         self.transfer_in(liquid, volume=min(liquid.volume, self.capacity))
         # print(f"Volume is now {self.volume}")
 
@@ -2908,11 +2906,10 @@ class Heater(OpScheduler['Heater'], BoardComponent):
     _current_op_key: Any
     _polling: bool = False
 
-    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("current_temperature",
-                                                                                           default=None)
+    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_temperature_change: ChangeCallbackList[Optional[TemperaturePoint]] = current_temperature.callback_list
 
-    target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty("target", default=None)
+    target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_target_change: ChangeCallbackList[Optional[TemperaturePoint]] = target.callback_list
 
     def __init__(self, num: int, board: Board, *,
@@ -3871,6 +3868,7 @@ class System:
                       macro_file_name: Optional[str] = None,
                       thread_name: Optional[str] = None,
                       cmd_line_args: Optional[Namespace] = None,
+                      config_params: Optional[Mapping[str, Any]] = None,
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -3892,7 +3890,9 @@ class System:
                                control_setup=control_setup,
                                control_fraction=control_fraction,
                                macro_file_name=macro_file_name,
-                               cmd_line_args=cmd_line_args)
+                               cmd_line_args=cmd_line_args,
+                               from_code=config_params
+                               )
         self.monitor = monitor
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),
