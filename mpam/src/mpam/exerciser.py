@@ -328,7 +328,7 @@ class Exerciser(ABC):
                                help='Configuration file for logging')
 
     @staticmethod
-    def setup_logging(level: str = 'info',
+    def setup_logging(level: str = None,
                       file: Union[str, pathlib.Path] = None) -> None:
         default_format = '%(levelname)7s|%(module)s|%(message)s'
 
