@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from devices import joey, dummy_pipettor
+from mpam.exerciser import Exerciser
 from mpam.device import System
 from mpam.paths import Path
 from mpam.types import Reagent
@@ -34,11 +35,7 @@ def test_splashzones(system: System) -> None:
         for p in paths_loop + paths_waste:
             p.schedule()
 
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
-logging.getLogger('matplotlib').setLevel(logging.INFO)
-logging.getLogger('PIL').setLevel(logging.INFO)
+Exerciser.setup_logging(level='debug')
 
 system = System(
     board=joey.Board(
