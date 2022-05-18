@@ -237,41 +237,11 @@ class Exerciser(ABC):
                                  thread_name = f"Monitored {task.name}",
                                  cmd_line_args = args)
 
-    def setup_logging(self, args: Namespace) -> None:
-        level: Optional[str] = args.log_level
-        file: Optional[Union[str, pathlib.Path]] = args.log_config
-        
-        default_format = '%(levelname)7s|%(module)s|%(message)s' 
-        
-        if level is None and file is None:
-            path = pathlib.Path.cwd() / ".logging"
-            if path.exists():
-                file = path 
-            else:
-                level = "INFO"
-        if level is not None:
-            log_level = getattr(logging, level.upper())
-            if (log_level < logging.INFO):
-                logging.basicConfig(level=log_level,
-                                    format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
-                logging.getLogger('matplotlib').setLevel(logging.INFO)
-                logging.getLogger('PIL').setLevel(logging.INFO)
-            else:
-                logging.basicConfig(level=log_level,
-                                    format=default_format)
-        else:
-            assert file is not None
-            logging.config.fileConfig(file, 
-                                      defaults = {
-                                          "format": default_format
-                                          })
-            
-
     def parse_args(self,
                    args: Optional[Sequence[str]]=None,
                    namespace: Optional[Namespace]=None) -> tuple[Task, Namespace]:
         ns = self.parser.parse_args(args=args, namespace=namespace)
-        self.setup_logging(ns)
+        Exerciser.setup_logging(ns.log_level, ns.log_config)
 
 
         task: Task = ns.task
@@ -356,3 +326,31 @@ class Exerciser(ABC):
                                ''')
         log_group.add_argument('--log-config', metavar='FILE',
                                help='Configuration file for logging')
+
+    @staticmethod
+    def setup_logging(level: str = 'info',
+                      file: Union[str, pathlib.Path] = None) -> None:
+        default_format = '%(levelname)7s|%(module)s|%(message)s'
+
+        if level is None and file is None:
+            path = pathlib.Path.cwd() / ".logging"
+            if path.exists():
+                file = path
+            else:
+                level = "INFO"
+        if level is not None:
+            log_level = getattr(logging, level.upper())
+            if (log_level < logging.INFO):
+                logging.basicConfig(level=log_level,
+                                    format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
+                logging.getLogger('matplotlib').setLevel(logging.INFO)
+                logging.getLogger('PIL').setLevel(logging.INFO)
+            else:
+                logging.basicConfig(level=log_level,
+                                    format=default_format)
+        else:
+            assert file is not None
+            logging.config.fileConfig(file,
+                                      defaults = {
+                                          "format": default_format
+                                          })
