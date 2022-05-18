@@ -25,7 +25,7 @@ def test_splashzones(system: System) -> None:
 
     paths_waste = []
     for i in range(10):
-        paths_waste.append(Path.teleport_into(ep, reagent=Reagent('R')).to_pad((0, 18)).enter_well())
+        paths_waste.append(Path.teleport_into(ep, reagent=Reagent.find('R')).to_pad((0, 18)).enter_well())
 
     system.clock.start(200 * ms)
     # system.clock.update_interval = 200 * ms
@@ -35,7 +35,7 @@ def test_splashzones(system: System) -> None:
             p.schedule()
 
 
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.INFO,
                     format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
 logging.getLogger('matplotlib').setLevel(logging.INFO)
 logging.getLogger('PIL').setLevel(logging.INFO)
