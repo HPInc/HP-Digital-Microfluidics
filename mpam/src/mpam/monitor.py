@@ -32,7 +32,7 @@ from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
     HeatingMode, BinaryComponent, ChangeJournal, DropLoc, WellGate
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent, ConfigParams
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
@@ -188,7 +188,7 @@ class PadMonitor(ClickableMonitor):
 
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
-        if isinstance(pad, Pad) and board_monitor.cmd_line_args.highlight_reservations: # pad can be Pad or Gate
+        if isinstance(pad, Pad) and board_monitor.config_params.highlight_reservations: # pad can be Pad or Gate
             pad.on_reserved_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_reserved(new)))
 
 
@@ -868,7 +868,8 @@ class BoardMonitor:
     macro_file_name: Final[Optional[str]]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
-    cmd_line_args: Final[Namespace]
+    default_cmd_line_args = Namespace(highlight_reservations=False)
+    config_params: Final[ConfigParams]
 
     _control_widgets: Final[Any]
 
@@ -903,12 +904,15 @@ class BoardMonitor:
             self.max_y = max(y, self.max_y)
 
     def __init__(self, board: Board, *,
-                 cmd_line_args: Namespace,
+                 cmd_line_args: Optional[Namespace] = None,
+                 from_code: Optional[Mapping[str, Any]] = None,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                  control_fraction: Optional[float] = None,
                  macro_file_name: Optional[str] = None) -> None:
         self.board = board
-        self.cmd_line_args = cmd_line_args
+        self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
+                                          cmd_line = cmd_line_args,
+                                          from_code = from_code)
         self.interactive_volume = board.drop_size
         self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()
@@ -968,64 +972,6 @@ class BoardMonitor:
                 self.click_handler.process_click(target,
                                                  with_control=with_control,
                                                  with_shift=with_shift)
-            #
-            #
-            #     if key == "control":
-            #         cpt.schedule(BinaryComponent.Toggle)
-            #     elif key == "shift":
-            #         if isinstance(cpt, Pad):
-            #             on_neighbors = [p for p in cpt.all_neighbors if p.current_state]
-            #
-            #             def do_it() -> Iterator[Optional[Ticks]]:
-            #                 with board.in_system().batched():
-            #                     print(f"  Turning on {cpt}.  Turning off {map_str(on_neighbors)}.")
-            #                     cpt.schedule(Pad.SetState(OnOff.ON))
-            #                     for p in on_neighbors:
-            #                         p.schedule(Pad.SetState(OnOff.OFF))
-            #                 yield 1*ticks
-            #                 with board.in_system().batched():
-            #                     print(f"  Turning off {cpt}.  Turning on {map_str(on_neighbors)}.")
-            #                     cpt.schedule(Pad.SetState(OnOff.OFF))
-            #                     for p in on_neighbors:
-            #                         p.schedule(Pad.SetState(OnOff.ON))
-            #                 yield None
-            #
-            #
-            #             def print_time(_) -> None:
-            #                 # print(f"    Time is {Timestamp.now()}")
-            #                 pass
-            #             def back_on(val: OnOff) -> None:  # @UnusedVariable
-            #                 with board.in_system().batched():
-            #                     print(f"  Turning off {cpt}.  Turning on {map_str(on_neighbors)}.")
-            #                     cpt.schedule(Pad.SetState(OnOff.OFF)) \
-            #                         .then_call(print_time)
-            #                     for p in on_neighbors:
-            #                         p.schedule(Pad.SetState(OnOff.ON))
-            #             with board.in_system().batched():
-            #                 print(f"  Turning on {cpt}.  Turning off {map_str(on_neighbors)}.")
-            #                 cpt.schedule(Pad.SetState(OnOff.ON)) \
-            #                     .then_call(print_time) \
-            #                     .then_call(back_on)
-            #                 for p in on_neighbors:
-            #                     p.schedule(Pad.SetState(OnOff.OFF))
-            #
-            #             # iterator = do_it()
-            #             # board.before_tick(lambda: next(iterator))
-            #
-            #
-            #     else:
-            #         with board.in_system().batched():
-            #             for p in board.pad_array.values():
-            #                 if p.live:
-            #                     p.schedule(Pad.SetState(OnOff.ON if cpt is p else OnOff.OFF))
-            #             for wg in board.well_groups.values():
-            #                 for wp in wg.shared_pads:
-            #                     wp.schedule(Pad.SetState(OnOff.ON if cpt is wp else OnOff.OFF))
-            #                 wg.state = WellState.EXTRACTABLE
-            #             for w in board.wells:
-            #                 g = w.gate
-            #                 if g.live:
-            #                     g.schedule(Pad.SetState(OnOff.ON if cpt is g else OnOff.OFF))
             else:
                 print(f"{target} is not live")
 
