@@ -4,8 +4,10 @@ import logging
 from devices import joey, dummy_pipettor
 from mpam.device import System
 from mpam.paths import Path
-from mpam.types import Reagent
-from quantities.SI import ms, s
+from mpam.types import Reagent, StaticOperation
+from quantities.SI import ms, s, uL
+from typing import Any
+from quantities.dimensions import Volume
 
 
 
@@ -16,7 +18,7 @@ def test_splashzones(system: System) -> None:
     paths_loop = []
     for i in range(3):
         path = Path.teleport_into(ep, reagent=Reagent(f'R{i}'))
-        seq = loop * 3
+        seq: tuple[tuple[int,int],...] = loop * 3
         if i:
             seq = seq[:-i]
         for pos in seq:
@@ -31,7 +33,10 @@ def test_splashzones(system: System) -> None:
     # system.clock.update_interval = 200 * ms
 
     with system.batched():
-        for p in paths_loop + paths_waste:
+        p: StaticOperation[Any]
+        for p in paths_loop:
+            p.schedule()
+        for p in paths_waste:
             p.schedule()
 
 
@@ -40,15 +45,21 @@ logging.basicConfig(level=logging.INFO,
 logging.getLogger('matplotlib').setLevel(logging.INFO)
 logging.getLogger('PIL').setLevel(logging.INFO)
 
-system = System(
-    board=joey.Board(
-        pipettor=dummy_pipettor.DummyPipettor(
-            name="Dummy",
-            dip_time=200 * ms,
-            short_transit_time=1 * ms,
-            long_transit_time=1 * ms,
-            get_tip_time=1 * ms,
-            drop_tip_time=1 * ms),
-        extraction_point_splash_radius=2))
+Volume.default_units = uL
+
+pipettor=dummy_pipettor.DummyPipettor(
+    name="Dummy",
+    dip_time=200 * ms,
+    short_transit_time=1 * ms,
+    long_transit_time=1 * ms,
+    get_tip_time=1 * ms,
+    drop_tip_time=1 * ms)
+
+board=joey.Board(
+    pipettor=pipettor,
+    extraction_point_splash_radius=2)
+
+system = System(board=board)
+
 system.run_monitored(test_splashzones, min_time=30 * s, config_params = {"highlight_reservations": True})
 system.stop()

@@ -3035,9 +3035,8 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         BoardComponent.__init__(self, pad.board)
         self.pad = pad
         if splash_radius is None:
-            self.splash_radius = pad.board.extraction_point_splash_radius
-        else:
-            self.splash_radius = splash_radius
+            splash_radius = pad.board.extraction_point_splash_radius
+        self.splash_radius = splash_radius
         self.reserved_pads = set()
         pad._extraction_point = self
 
@@ -3441,7 +3440,7 @@ class Board(SystemComponent):
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
-                 extraction_point_splash_radius: Optional[int] = 0,
+                 extraction_point_splash_radius: int = 0,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  off_on_delay: Time = Time.ZERO) -> None:
