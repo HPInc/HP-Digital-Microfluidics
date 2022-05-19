@@ -71,6 +71,11 @@ class Type:
     REAGENT: ClassVar[Type]
     LIQUID: ClassVar[Type]
     BUILT_IN: ClassVar[Type]
+    # TEMP: ClassVar[Type]
+    ABS_TEMP: ClassVar[Type]
+    REL_TEMP: ClassVar[Type]
+    AMBIG_TEMP: ClassVar[Type]
+    HEATER: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -102,8 +107,15 @@ class Type:
     def __eq__(self, rhs: object) -> bool:
         return self is rhs
     def __lt__(self, rhs: Type) -> bool:
+        if self is rhs:
+            return False
         if isinstance(rhs, MaybeType):
-            return self <= rhs.if_there_type
+            if self is Type.NONE:
+                return True
+            elif isinstance(self, MaybeType):
+                return self.if_there_type < rhs.if_there_type
+            else:
+                return self < rhs.if_there_type
         if self in rhs.all_subs:
             return True
         return self.can_convert_to(rhs)
@@ -217,7 +229,10 @@ Type.SCALED_REAGENT = Type("SCALED_REAGENT")
 Type.REAGENT = Type("REAGENT", [Type.SCALED_REAGENT])
 Type.LIQUID = Type("LIQUID")
 Type.BUILT_IN = Type("BUILT_IN")
-
+Type.ABS_TEMP = Type("ABS_TEMP")
+Type.REL_TEMP = Type("REL_TEMP")
+Type.AMBIG_TEMP = Type("AMBIG_TEMP", [Type.ABS_TEMP, Type.REL_TEMP])
+Type.HEATER = Type("HEATER")
 
 class MaybeType(Type):
     if_there_type: Final[Type]

@@ -1,4 +1,4 @@
-#@PydevCodeAnalysisIgnore
+#type: ignore
 
 import json
 from opentrons import protocol_api, types

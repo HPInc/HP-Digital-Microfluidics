@@ -13,7 +13,7 @@ from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State,\
-    OnOff, DummyState
+    OnOff, DummyState, Postable
 
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.core import DerivedDim
@@ -79,11 +79,11 @@ class EmulatedHeater(device.Heater):
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
         self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
-        self._last_reading = self.ambient_temperature
+        self.current_temperature = self.ambient_temperature
         # It really seems as though we should be able to just override the target setter, but I
         # can't get the compiler (and MyPy) to accept it
         key=(self, "target changed", random.random())
-        self.on_target_change(lambda old,new: self._update_temp(old), key=key)  # @UnusedVariable
+        self.on_target_change(lambda old,new: self._update_temp(new), key=key)  # @UnusedVariable
         
     def _update_temp(self, target: Optional[TemperaturePoint]) -> None:
         now = time_now()
@@ -91,20 +91,20 @@ class EmulatedHeater(device.Heater):
         mode = self.mode
         if mode is HeatingMode.MAINTAINING:
             return
-        assert self._last_reading is not None
-        if mode is HeatingMode.OFF and self._last_reading == self.ambient_temperature:
+        assert self.current_temperature is not None
+        if mode is HeatingMode.OFF and self.current_temperature == self.ambient_temperature:
             return
         # target = self.target
         delta: Temperature
         if mode is HeatingMode.HEATING:
             delta = (self._heating_rate*elapsed).a(Temperature)
-            new_temp = self._last_reading + delta
+            new_temp = self.current_temperature + delta
             if target is not None:
                 new_temp = min(new_temp, target)
             self.current_temperature = new_temp
         else:
             delta = (self._cooling_rate*elapsed).a(Temperature)
-            new_temp = self._last_reading - delta
+            new_temp = self.current_temperature - delta
             if target is None:
                 new_temp = max(new_temp, self.ambient_temperature)
             else:
@@ -113,9 +113,9 @@ class EmulatedHeater(device.Heater):
         self._last_read_time = now
             
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
-        future = Delayed[Optional[TemperaturePoint]]()
+        future = Postable[Optional[TemperaturePoint]]()
         self._update_temp(self.target)
-        future.post(self._last_reading)
+        future.post(self.current_temperature)
         return future
 
     
@@ -224,7 +224,8 @@ class Board(device.Board):
         return EmulatedHeater(num, board=self, regions=regions, polling_interval=polling_interval)
         
     def __init__(self, *,
-                 pipettor: Optional[Pipettor] = None) -> None:
+                 pipettor: Optional[Pipettor] = None,
+                 off_on_delay: Time = Time.ZERO) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
@@ -236,7 +237,8 @@ class Board(device.Board):
                          heaters=heaters,
                          extraction_points=extraction_points,
                          orientation=Orientation.NORTH_POS_EAST_POS,
-                         drop_motion_time=500*ms)
+                         drop_motion_time=500*ms,
+                         off_on_delay=off_on_delay)
         
         dead_region = GridRegion(XYCoord(7,8), width=5, height=3)
         

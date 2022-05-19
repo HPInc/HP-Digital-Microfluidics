@@ -157,6 +157,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#temperature_expr.
+    def visitTemperature_expr(self, ctx:DMFParser.Temperature_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#index_expr.
     def visitIndex_expr(self, ctx:DMFParser.Index_exprContext):
         return self.visitChildren(ctx)
@@ -309,6 +314,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#coord_expr.
     def visitCoord_expr(self, ctx:DMFParser.Coord_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#heater_expr.
+    def visitHeater_expr(self, ctx:DMFParser.Heater_exprContext):
         return self.visitChildren(ctx)
 
 

@@ -10,7 +10,7 @@ from mpam.pipettor import Pipettor
 from mpam.types import OnOff, State, DummyState, GridRegion, Delayed
 from mpam import device
 from mpam.device import Pad
-from quantities.dimensions import Time
+from quantities.dimensions import Time, Voltage
 from quantities.SI import ms
 from erk.stringutils import conj_str
 from quantities.temperature import TemperaturePoint
@@ -40,7 +40,7 @@ class Heater(device.Heater):
         remote: Optional[glider_client.Heater] = None
         assert len(pads) > 0
         for pad in pads:
-            s = pad._state
+            s = pad.state
             assert isinstance(s, glider_client.Electrode)
             heater_names = s.heater_names()
             # print(f"Heaters for {pad}: {heater_names}")
@@ -102,14 +102,22 @@ class Board(joey.Board):
     def __init__(self, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None,
-                 pipettor: Optional[Pipettor] = None) -> None:
+                 pipettor: Optional[Pipettor] = None,
+                 off_on_delay: Time = Time.ZERO,
+                 voltage: Optional[Voltage]) -> None:
         self._device = GliderClient(pyglider.BoardId.Wallaby, dll_dir=dll_dir, config_dir=config_dir)
-        super().__init__(pipettor=pipettor)
+        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay)
         on_electrodes = self._device.on_electrodes()
         if on_electrodes:
             for e in on_electrodes:
                 e.current_state = OnOff.ON
             self.infer_drop_motion()
+        if voltage is None:
+            print("Turning off high voltage")
+        else:
+            print(f"Turning on high voltage at {voltage}")
+        
+        self._device.voltage_level = voltage
         
     def update_state(self) -> None:
         self._device.update_state()

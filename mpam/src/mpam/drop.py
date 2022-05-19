@@ -6,6 +6,7 @@ from enum import Enum, auto
 import math
 from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
     Sequence, Mapping, NamedTuple, cast
+import logging
 
 from erk.basic import not_None, ComputedDefaultDict, Count
 from erk.errors import FIX_BY, PRINT
@@ -15,9 +16,11 @@ from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
 from mpam.exceptions import NoSuchPad, NotAtWell
 from mpam.types import Liquid, Dir, Delayed, DelayType, \
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
-    StaticOperation, Reagent, Callback, T, MixResult
+    StaticOperation, Reagent, Callback, T, MixResult, Postable
 from quantities.core import qstr
 from quantities.dimensions import Volume
+
+logger = logging.getLogger(__name__)
 
 
 # if TYPE_CHECKING:
@@ -32,6 +35,7 @@ class Pull(NamedTuple):
     @property
     def unpinned(self) -> DropLoc:
         return self.pullee
+
 
 class MotionInference:
     changes: Final[ChangeJournal]
@@ -398,7 +402,7 @@ class Blob:
             old.attached_to_well = False
         self.attached_to_well = True
         setattr(well, attr, self)
-        well.on_liquid_change(lambda old,new: self.pull_from_well(), key=Blob.pull_key) # @UnusedVariable
+        well.on_liquid_change(lambda _old,_new: self.pull_from_well(), key=Blob.pull_key)
 
 
     def detach_from_well(self) -> None:
@@ -406,7 +410,7 @@ class Blob:
         assert well is not None
         setattr(well, self.attachment_attr, None)
         self.attached_to_well = False
-        well._liquid_change_callbacks.remove(Blob.pull_key)
+        well.on_liquid_change.remove(Blob.pull_key)
         self.well = None
 
 
@@ -627,11 +631,13 @@ class Blob:
             self.detach_from_well()
         self.die()
 
+
 class DropStatus(Enum):
     ON_BOARD = auto()
     IN_WELL = auto()
     IN_MIX = auto()
     OFF_BOARD = auto()
+
 
 class MotionOp(Operation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]
@@ -652,13 +658,18 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
 
+        # if after is None:
+        #     logger.debug(f'direction:{direction}|steps:{steps}')
+        # else:
+        #     logger.debug(f'direction:{direction}|steps:{steps}|after:{after}')
+
         if drop.status is not DropStatus.ON_BOARD:
-            print(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
+            logger.warning(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
             return Delayed.complete(drop)
 
         if steps == 0:
             return Delayed.complete(drop)
-        future = Delayed[Drop]()
+        future = Postable[Drop]()
 
         one_tick: Ticks = 1*tick
         allow_unsafe = self.allow_unsafe
@@ -670,24 +681,23 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
                 if not allow_unsafe:
                     while not next_pad.safe_except(last_pad):
-                        # print(f"unsafe: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
+                        # logger.debug(f"unsafe:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                         yield one_tick
                 while not next_pad.reserve():
                     if allow_unsafe:
                         break
-                    # print(f"can't reserve: {i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}")
+                    # logger.debug(f"can't reserve:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                     yield one_tick
                 with system.batched():
-                    # print(f"Tick number {system.clock.next_tick}")
-                    # print(f"Moving drop from {last_pad} to {next_pad}")
-                    assert last_pad == drop.pad, f"{i} of {steps}, {drop}, lp = {last_pad}, np = {next_pad}"
+                    # logger.debug(f"tick:{system.clock.next_tick}|{i}/{steps}|{drop}|{last_pad}->{next_pad}")
+                    assert last_pad == drop.pad, f"{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}"
                     next_pad.schedule(Pad.TurnOn, post_result=False)
                     last_pad.schedule(Pad.TurnOff, post_result=False)
                     real_next_pad = next_pad
                     def unreserve() -> None:
-                        real_next_pad.reserved = False
+                        real_next_pad.unreserve()
                     board.after_tick(unreserve)
-                    # print(f"i = {i}, steps = {steps}, drop = {drop}, lp = {last_pad}, np = {next_pad}")
+                    # logger.debug(f"{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
                     if post_result and i == steps-1:
                         final_pad = next_pad
                         board.after_tick(lambda : future.post(final_pad.checked_drop))
@@ -698,9 +708,6 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         iterator = before_tick()
         board.before_tick(lambda: next(iterator), delta=after)
         return future
-
-
-
 
 
 class Drop(OpScheduler['Drop']):
@@ -810,7 +817,7 @@ class Drop(OpScheduler['Drop']):
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
-            future = Delayed[Drop]()
+            future = Postable[Drop]()
             pad = self.pad
             def make_drop(_) -> None:
                 # We want it to happen immediately, so we use our own journal.
@@ -853,11 +860,11 @@ class Drop(OpScheduler['Drop']):
 
     class TeleportOut(Operation['Drop', None]):
         volume: Final[Optional[Volume]]
-        product_loc: Final[Optional[Delayed[ProductLocation]]]
+        product_loc: Final[Optional[Postable[ProductLocation]]]
 
         def __init__(self, *,
                      volume: Optional[Volume],
-                     product_loc: Optional[Delayed[ProductLocation]] = None
+                     product_loc: Optional[Postable[ProductLocation]] = None
                      ) -> None:
             self.volume = volume
             self.product_loc = product_loc
@@ -867,7 +874,7 @@ class Drop(OpScheduler['Drop']):
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[None]:
             op = ExtractionPoint.TransferOut(volume=self.volume, product_loc=self.product_loc)
-            future = Delayed[None]()
+            future = Postable[None]()
 
             def do_it() -> None:
                 ep = cast(Pad, drop.pad).extraction_point
@@ -932,8 +939,6 @@ class Drop(OpScheduler['Drop']):
             return (direction, steps) if steps >=0 else (direction.opposite, -steps)
 
 
-
-
     class DispenseFrom(StaticOperation['Drop']):
         well: Final[Well]
         reagent: Final[Optional[Reagent]]
@@ -943,7 +948,7 @@ class Drop(OpScheduler['Drop']):
                       after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
-            future = Delayed[Drop]()
+            future = Postable[Drop]()
             well = self.well
             pad = well.exit_pad
             volume = well.dispensed_volume
@@ -960,7 +965,7 @@ class Drop(OpScheduler['Drop']):
                     (self.before_release)()
 
                 well.gate_reserved = False
-                pad.reserved = False
+                pad.unreserve()
                 if post_result:
                     board.after_tick(lambda: future.post(pad.checked_drop))
 
@@ -1024,7 +1029,7 @@ class Drop(OpScheduler['Drop']):
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[None]:
-            future = Delayed[None]()
+            future = Postable[None]()
             if self.well is None:
                 if not isinstance(drop.pad, Pad) or drop.pad.well is None:
                     raise NotAtWell(f"{drop} not at a well")

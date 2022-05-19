@@ -6,7 +6,6 @@ import json
 import random
 import socket
 from threading import Thread, Event, Condition, RLock
-from time import sleep
 import traceback
 from typing import Union, Final, Any, cast, Optional, Callable, NamedTuple, \
     Sequence
@@ -437,14 +436,11 @@ class ProtocolManager(Thread):
                 self.print_event(e, "cmd")
         
             
-    def sleep_for(self, time: Time) -> None:
-        sleep(time.as_number(seconds))
-            
     def wait_until(self, looking_for: str):
         global last_msg
         # last_state = ""
         while True:
-            self.sleep_for(self.delay)
+            self.delay.sleep()
             if not self.run_check():
                 raise ShutdownDetected()
             response = self.get_request(f"runs/{self.session_id}")

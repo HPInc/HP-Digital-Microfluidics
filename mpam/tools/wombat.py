@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from argparse import ArgumentParser, Namespace, _ArgumentGroup
+from argparse import ArgumentParser, Namespace, _ArgumentGroup,\
+    BooleanOptionalAction
 from typing import Union, Optional, Sequence
 
 from devices import wombat
@@ -14,7 +15,6 @@ from quantities.SI import sec, ms, uL
 from quantities.dimensions import Time, Volume
 from quantities.temperature import TemperaturePoint, abs_C
 from devices.wombat import OpenDropVersion
-
 
 class DispenseAndWalk(Task):
     def __init__(self) -> None:
@@ -139,13 +139,22 @@ class WombatExerciser(JoeyExerciser):
                         help="The OpenDrop board uses firmware version 4.0")
         vg.add_argument('-4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
                         help="The OpenDrop board uses firmware version 4.1")
-        group.add_argument('--yaminon', action='store_true')
+        group.add_argument('--yaminon', action='store_true',
+                           help="Mirror pads on top and bottom of the board.")
+        double_write_default = True
+        group.add_argument('--double-write', action=BooleanOptionalAction, default=double_write_default,
+                           help=f'''
+                           Send state array to OpenDrop twice.  
+                           Default is {double_write_default}
+                           ''')
         parser.set_defaults(od_version=OpenDropVersion.V40)
 
 
     def make_board(self, args:Namespace)->Board:
         print(f"Version is {args.od_version}")
-        return wombat.Board(device=args.port, od_version=args.od_version, is_yaminon=args.yaminon)
+        return wombat.Board(device=args.port, od_version=args.od_version, is_yaminon=args.yaminon,
+                            off_on_delay=args.off_on_delay,
+                            double_write=args.double_write)
 
     def available_wells(self)->Sequence[int]:
         return [2,3,6,7]

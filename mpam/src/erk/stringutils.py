@@ -79,13 +79,21 @@ def conj_str(seq: Sequence[Any], *,
     if len(seq) == 2:
         return f"{seq[0]} {conj} {seq[1]}"
     prefix = ", ".join(str(e) for e in seq[:-1])
-    if oxford_comma:
-        conj = ", "+conj
-    return f"{prefix} {conj} {seq[-1]}"
+    comma = "," if oxford_comma else ""
+    return f"{prefix}{comma} {conj} {seq[-1]}"
 
 
 def fmt_dict(d: Mapping) -> str:
     return f"{{{', '.join(f'{k}: {v}' for k,v in d.items())}}}"
+
+def match_width(string: str, *, repeating: str = "-") -> str:
+    reps: int = len(string)//len(repeating)
+    val: str = repeating*reps
+    part = len(string)-len(val)
+    if part > 0:
+        val += repeating[0:part]
+    return val
+    
 
 if __name__ == '__main__':
     print(split_camel_case("ThisIsATest"))

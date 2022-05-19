@@ -2,6 +2,3 @@ eclipse.preferences.version=1
 encoding//.settings/org.python.pydev.analysis.yaml=UTF-8
 encoding//.settings/org.python.pydev.yaml=UTF-8
 encoding//src/quantities/core.py=utf-8
-encoding//target/generated-sources/antlr4/DMFParser.py=utf-8
-encoding//target/generated-sources/antlr4/pathParser.py=utf-8
-encoding//target/generated-sources/antlr4/simpleParser.py=utf-8

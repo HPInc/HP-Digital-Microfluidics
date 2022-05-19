@@ -27,6 +27,7 @@ author = 'Evan Kirshenbaum'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx_toolbox.decorators',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
@@ -36,10 +37,16 @@ autosummary_generate = True
 
 autodoc_default_options = {
     "members": True,
+    # "imported-members": True,
     "show-inheritance": True,
     "recursive": True,
     # "exclude-members": "__init__",
-    "special-members": "__init__",
+    "special-members": ",".join([
+                                "__init__", "__call__",
+                                "__get__",  "__set__", "__delete__",
+                                "__getitem__"
+                            ]),
+    # "special-members": "__init__,__call__,__get__,__set__,__getitem__",
     # "private-members": True,
     # "special-members": True,
     # "inherited-members": True,
