@@ -658,8 +658,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     # the ability to declare a MonitoredProperty to be read-only, which would
     # give it a private_set() method (or something similar) to do the actual
     # modification.  When that's in, we can get rid of the val_attr.
-    _reserved: MonitoredProperty[bool] = MonitoredProperty("reserved", default=False,
-                                                           val_attr="_reservation")
+    _reserved: MonitoredProperty[bool] = MonitoredProperty(default=False)
 
     on_reserved_change: ChangeCallbackList[bool] = _reserved.callback_list
     """
@@ -749,12 +748,10 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
             self._between_pads = bps
         return bps
 
-    @property
-    def reserved(self) -> bool:
-        """
-        Has the :class:`Pad` been reserved?
-        """
-        return self._reserved
+    reserved: bool = _reserved.getter
+    """
+    Has the :class:`Pad` been reserved?
+    """
 
     def __init__(self, loc: XYCoord, board: Board,
                  state: State[OnOff], *, exists: bool = True) -> None:
