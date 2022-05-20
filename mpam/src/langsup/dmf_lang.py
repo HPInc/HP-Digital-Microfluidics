@@ -339,12 +339,12 @@ class ToRowColValue(MotionValue):
             path = Path.to_col(self.dest)
         return path.schedule_for(drop)
     
-class TwiddlePadValue(CallableValue):
+class TwiddleBinaryValue(CallableValue):
     op: Final[BinaryComponent.ModifyState]
     
-    ON: ClassVar[TwiddlePadValue]
-    OFF: ClassVar[TwiddlePadValue]
-    TOGGLE: ClassVar[TwiddlePadValue]
+    ON: ClassVar[TwiddleBinaryValue]
+    OFF: ClassVar[TwiddleBinaryValue]
+    TOGGLE: ClassVar[TwiddleBinaryValue]
     
     _sig: ClassVar[Signature] = Signature.of((Type.BINARY_CPT,), Type.BINARY_STATE)
     
@@ -352,16 +352,26 @@ class TwiddlePadValue(CallableValue):
         super().__init__(self._sig)
         self.op = op
         
-    def apply(self, args:Sequence[Any])->Delayed[OnOff]: 
+    def apply(self, args:Sequence[Any])->Delayed[None]: 
         assert len(args) == 1
         bc = args[0]
         assert isinstance(bc, BinaryComponent)
-        return self.op.schedule_for(bc)
+        return self.op.schedule_for(bc).transformed(lambda _: None)
+    
+    def __str__(self) -> str:
+        if self is TwiddleBinaryValue.ON:
+            return "ON"
+        elif self is TwiddleBinaryValue.OFF:
+            return "OFF"
+        elif self is TwiddleBinaryValue.TOGGLE:
+            return "TOGGLE"
+        else:
+            return f"Twiddle({self.op})"
     
 
-TwiddlePadValue.ON = TwiddlePadValue(BinaryComponent.TurnOn)
-TwiddlePadValue.OFF= TwiddlePadValue(BinaryComponent.TurnOff)
-TwiddlePadValue.TOGGLE = TwiddlePadValue(BinaryComponent.Toggle)
+TwiddleBinaryValue.ON = TwiddleBinaryValue(BinaryComponent.TurnOn)
+TwiddleBinaryValue.OFF= TwiddleBinaryValue(BinaryComponent.TurnOff)
+TwiddleBinaryValue.TOGGLE = TwiddleBinaryValue(BinaryComponent.Toggle)
     
 class PauseValue(CallableValue):
     duration: Final[DelayType]
@@ -2259,11 +2269,11 @@ class DMFCompiler(DMFVisitor):
                     WithEnv(lambda env,n: n*env.board.drop_unit))
 
         fn = Functions["TURN-ON"]
-        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddlePadValue.ON)
+        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddleBinaryValue.ON)
         fn = Functions["TURN-OFF"]
-        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddlePadValue.OFF)
+        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddleBinaryValue.OFF)
         fn = Functions["TOGGLE"]
-        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddlePadValue.TOGGLE)
+        fn.register_immediate((), Type.TWIDDLE_OP, lambda: TwiddleBinaryValue.TOGGLE)
         
         fn = Functions["REMOVE-FROM-BOARD"]
         fn.register_immediate((), Type.MOTION, lambda: RemoveDropValue())

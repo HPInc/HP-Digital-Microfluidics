@@ -346,7 +346,7 @@ Type.DELTA = DeltaType()
 
 class TwiddleOpType(CallableType):
     def __init__(self):
-        super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.BINARY_STATE)
+        super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.NONE)
         
 Type.TWIDDLE_OP = TwiddleOpType()
 
