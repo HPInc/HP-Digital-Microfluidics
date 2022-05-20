@@ -57,6 +57,10 @@ class OnOff(Enum):
     def __invert__(self) -> OnOff:
         "`!ON` is `OFF, and vice versa"
         return OnOff.OFF if self else OnOff.ON
+    
+    @classmethod
+    def from_bool(cls, val: bool) -> OnOff:
+        return OnOff.ON if val else OnOff.OFF
 
 
 Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]

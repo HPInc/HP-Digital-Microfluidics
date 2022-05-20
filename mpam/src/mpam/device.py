@@ -9,7 +9,7 @@ from enum import Enum, auto
 import itertools
 import logging
 import random
-from threading import Event, Lock, Thread
+from threading import Event, Lock, Thread, RLock
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
@@ -2889,34 +2889,135 @@ class HeatingMode(Enum):
     HEATING = auto()
     COOLING = auto()
 
+class _HeaterBinState(State[OnOff]):
+    heater: Final[Heater]
+    last_target: Optional[TemperaturePoint] = None
+    
+    def __init__(self, heater: Heater) -> None:
+        self.heater = heater
+        
+    def realize_state(self, new_state: OnOff) -> None:
+        if new_state is self.current_state:
+            return
+        heater = self.heater
+        if new_state is OnOff.OFF:
+            self.last_target = heater.target
+            heater.target = None
+        else:
+            heater.target = self.last_target
 
-class Heater(OpScheduler['Heater'], BoardComponent):
+
+class Heater(BinaryComponent['Heater']):
     num: Final[int]
     pads: Final[Sequence[Pad]]
-    mode: HeatingMode
     polling_interval: Final[Time]
-    _lock: Final[Lock]
+    ambient_threshold: TemperaturePoint = 80*abs_F
+    _lock: Final[RLock]
     _current_op_key: Any
     _polling: bool = False
+    _user_op: Optional[UserOperation] = None
+    _last_target: Optional[TemperaturePoint] = None
 
     current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_temperature_change: ChangeCallbackList[Optional[TemperaturePoint]] = current_temperature.callback_list
 
     target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     on_target_change: ChangeCallbackList[Optional[TemperaturePoint]] = target.callback_list
+    
+    mode: MonitoredProperty[HeatingMode] = MonitoredProperty(default=HeatingMode.OFF)
+    on_mode_change: ChangeCallbackList[HeatingMode] = mode.callback_list
 
     def __init__(self, num: int, board: Board, *,
                  pads: Sequence[Pad],
                  polling_interval: Time) -> None:
-        BoardComponent.__init__(self, board)
+        super().__init__(board=board, state=_HeaterBinState(self))
         self.num = num
         self.pads = pads
         self.mode = HeatingMode.OFF
         self.polling_interval = polling_interval
-        self._lock = Lock()
+        self._lock = RLock()
         self._current_op_key = None
         for pad in pads:
             pad._heater = self
+            
+        self.on_state_change(self._note_state_change)
+        self.on_mode_change(self._note_mode_change)
+        self.on_target_change(self._note_target_change)
+        self.on_temperature_change(self._note_temperature_change)
+
+        
+    def _note_state_change(self, _old: OnOff, new: OnOff) -> None:
+        with self._lock:
+            # Turning on goes to the last target.  If we're called as a result
+            # of setting target, this won't be a change, so no regress.  If
+            # there was no last target, setting the target to None will turn us
+            # off.
+            if new is OnOff.OFF:
+                self.target = None
+            else:
+                self.target = self._last_target
+
+    def _note_mode_change(self, _old: HeatingMode, new: HeatingMode) -> None:
+        with self._lock:
+            # The operation ends when we hit ambient (OFF) or the target
+            # (MAINTAINING).  If we're heating or cooling, we're still (or
+            # newly) in the operation.
+            op = self._user_op
+            if op is None:
+                op = self.user_operation()
+            if new is HeatingMode.OFF or new is HeatingMode.MAINTAINING:
+                op.start()
+            else:
+                op.end()
+            # print(f"{self}.mode now {new} (target: {self.target}, current: {self.current_temperature})")
+                
+    def _new_mode(self, target: Optional[TemperaturePoint], 
+                  current: Optional[TemperaturePoint]) -> HeatingMode:
+        if current is None:
+            # If we don't have a reading, there isn't a whole lot we can do.
+            return HeatingMode.OFF if target is None else HeatingMode.HEATING
+        elif current == target:
+            return HeatingMode.MAINTAINING
+        elif target is None and current <= self.ambient_threshold:
+            return HeatingMode.OFF
+        elif target is None or current > target:
+            return HeatingMode.COOLING
+        else:
+            return HeatingMode.HEATING
+
+    def _note_target_change(self,  _old: Optional[TemperaturePoint], 
+                            new: Optional[TemperaturePoint]) -> None:
+        with self._lock:
+            # We remember this as the last target if it's non-None.  When we set
+            # the current state, it will try to set the target to this, which
+            # won't be a change, so we won't be called again.
+            if new is not None:
+                self._last_target = new
+            self.current_state = OnOff.from_bool(new is not None)
+            self.mode = self._new_mode(new, self.current_temperature)
+        
+    def _note_temperature_change(self, _d: Optional[TemperaturePoint], 
+                                 new: Optional[TemperaturePoint]) -> None:
+        if new is None:
+            return
+        with self._lock:
+            target = self.target
+            mode = self.mode
+            if mode is HeatingMode.OFF or mode is HeatingMode.MAINTAINING:
+                # If we're already off or maintaining, we assume that
+                # temperature fluctuations don't change our mode.
+                return
+            self.mode = self._new_mode(target, new)
+            if mode is HeatingMode.HEATING:
+                assert target is not None
+                if new >= target:
+                    self.mode = HeatingMode.MAINTAINING
+            else:
+                if target is None:
+                    if new <= self.ambient_threshold:
+                        self.mode = HeatingMode.OFF
+                elif new <= target:
+                    self.mode = HeatingMode.MAINTAINING
 
     def start_polling(self) -> None:
         if self._polling:
@@ -2948,61 +3049,17 @@ class Heater(OpScheduler['Heater'], BoardComponent):
             target = self.target
 
             def do_it() -> None:
-                ambient_threshold = 80*abs_F
                 with heater._lock:
                     if heater._current_op_key is not None:
-                        heater.on_temperature_change.remove(heater._current_op_key)
-                    heater.target = target
-                    temp = heater.current_temperature
-
-                    mode: HeatingMode
-                    if temp is None:
-                        mode = HeatingMode.OFF if target is None else HeatingMode.HEATING
-                        if post_result:
-                            future.post(heater)
-                        return
-                    elif temp == target:
-                        mode = HeatingMode.MAINTAINING
-                        if post_result:
-                            future.post(heater)
-                        return
-                    elif target is None and temp < ambient_threshold:
-                        mode = HeatingMode.OFF
-                        if post_result:
-                            future.post(heater)
-                        return
-                    elif target is None or temp > target:
-                        mode = HeatingMode.COOLING
-                    else:
-                        mode = HeatingMode.HEATING
-                    heater.mode = mode
-                    key = (heater, f"Temp->{target}", random.random())
-
-                    user_op = heater.user_operation()
-
-                    user_op.__enter__()
-
-                    def check(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]):  # @UnusedVariable
-                        assert mode is HeatingMode.HEATING or mode is HeatingMode.COOLING
-                        if new is None:
-                            # Not much we can do if we don't get a reading
-                            return
-                        if mode is HeatingMode.HEATING:
-                            assert target is not None
-                            done = new >= target
-                        elif target is None:
-                            done = new < ambient_threshold
-                        else:
-                            done = new <= target
-
-                        if done:
-                            with heater._lock:
-                                user_op.__exit__(None, None, None)
-                                heater.mode = HeatingMode.OFF if target is None else HeatingMode.MAINTAINING
-                                heater.on_temperature_change.remove(key)
-                            if post_result:
+                        heater.on_mode_change.remove(heater._current_op_key)
+                    if post_result:
+                        def check(_old, mode: HeatingMode) -> None:
+                            if mode is HeatingMode.OFF or mode is HeatingMode.MAINTAINING:
                                 future.post(heater)
-                    heater.on_temperature_change(check, key=key)
+                        key = (heater, f"Temp->{target}", random.random())
+                        heater._current_op_key = key
+                        heater.on_mode_change(check, key=key)
+                    heater.target = target
             heater.board.schedule(do_it, after=after)
             return future
 
@@ -3504,6 +3561,12 @@ class UserOperation(Worker):
                  exc_tb: Optional[TracebackType]) -> Literal[False]:  # @UnusedVariable
         self.idle()
         return False
+    
+    def start(self) -> None:
+        self.__enter__()
+        
+    def end(self) -> None:
+        self.__exit__(None, None, None)
 
 class Clock:
     system: Final[System]

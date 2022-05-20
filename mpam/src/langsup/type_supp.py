@@ -232,7 +232,7 @@ Type.BUILT_IN = Type("BUILT_IN")
 Type.ABS_TEMP = Type("ABS_TEMP")
 Type.REL_TEMP = Type("REL_TEMP")
 Type.AMBIG_TEMP = Type("AMBIG_TEMP", [Type.ABS_TEMP, Type.REL_TEMP])
-Type.HEATER = Type("HEATER")
+Type.HEATER = Type("HEATER", [Type.BINARY_CPT])
 
 class MaybeType(Type):
     if_there_type: Final[Type]
