@@ -34,6 +34,7 @@ from quantities.dimensions import Time, Volume, Frequency
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
 from argparse import Namespace
+from erk.stringutils import map_str
 
 
 if TYPE_CHECKING:
@@ -2880,7 +2881,7 @@ class Magnet(BinaryComponent['Magnet']):
             pad._magnet = self
 
     def __repr__(self) -> str:
-        return f"Magnet({', '.join(str(self.pads))})"
+        return f"Magnet({map_str(self.pads)})"
 
 
 class HeatingMode(Enum):

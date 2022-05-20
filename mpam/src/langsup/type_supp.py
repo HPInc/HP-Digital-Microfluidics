@@ -76,6 +76,7 @@ class Type:
     REL_TEMP: ClassVar[Type]
     AMBIG_TEMP: ClassVar[Type]
     HEATER: ClassVar[Type]
+    MAGNET: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -233,6 +234,7 @@ Type.ABS_TEMP = Type("ABS_TEMP")
 Type.REL_TEMP = Type("REL_TEMP")
 Type.AMBIG_TEMP = Type("AMBIG_TEMP", [Type.ABS_TEMP, Type.REL_TEMP])
 Type.HEATER = Type("HEATER", [Type.BINARY_CPT])
+Type.MAGNET = Type("MAGNET", [Type.BINARY_CPT])
 
 class MaybeType(Type):
     if_there_type: Final[Type]
@@ -629,6 +631,11 @@ class EnvRelativeUnit(Enum):
     DROP = auto()
     
 PhysUnit = Union[Unit,EnvRelativeUnit]
+
+class NumberedItem(Enum):
+    WELL = auto()
+    HEATER = auto()
+    MAGNET = auto()
 
 if __name__ == '__main__':
     def check(lhs: Type, rhs: Type) -> None:
