@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 import random
-from typing import Optional, Sequence, ClassVar, Final
+from typing import Optional, Sequence, Final
 
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
@@ -13,12 +13,12 @@ from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State,\
-    OnOff, DummyState, Postable
+    OnOff, DummyState
 
 from quantities.SI import uL, ms, deg_C, sec
 from quantities.core import DerivedDim
 from quantities.dimensions import Temperature, Time, Volume
-from quantities.temperature import TemperaturePoint, abs_F
+from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
 
 
@@ -64,8 +64,6 @@ class EmulatedHeater(device.Heater):
     _heating_rate: HeatingRate
     _cooling_rate: HeatingRate
     
-    ambient_temperature: ClassVar[TemperaturePoint] = 72*abs_F
-
     def __init__(self, num: int, board: Board, *, 
                  regions: Sequence[GridRegion],
                  polling_interval: Time = 200*ms) -> None:
@@ -75,48 +73,46 @@ class EmulatedHeater(device.Heater):
         
         super().__init__(num, board,
                          polling_interval = polling_interval,
-                         pads = pads)
+                         pads = pads,
+                         initial_temperature = board.ambient_temperature)
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
         self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
-        self.current_temperature = self.ambient_temperature
         # It really seems as though we should be able to just override the target setter, but I
         # can't get the compiler (and MyPy) to accept it
         key=(self, "target changed", random.random())
-        self.on_target_change(lambda old,new: self._update_temp(new), key=key)  # @UnusedVariable
         
-    def _update_temp(self, target: Optional[TemperaturePoint]) -> None:
+        def set_lrt() -> None:
+            self._last_read_time = time_now()
+        self.on_target_change(lambda _old,_new: set_lrt(), key=key)
+        
+    def new_temp(self, target: Optional[TemperaturePoint]) -> Optional[TemperaturePoint]:
         now = time_now()
         elapsed = now-self._last_read_time
+        self._last_read_time = now
         mode = self.mode
         if mode is HeatingMode.MAINTAINING:
-            return
+            return self.current_temperature
         assert self.current_temperature is not None
-        if mode is HeatingMode.OFF and self.current_temperature == self.ambient_temperature:
-            return
-        # target = self.target
+        if mode is HeatingMode.OFF and self.current_temperature <= self.board.ambient_temperature:
+            return self.current_temperature
         delta: Temperature
         if mode is HeatingMode.HEATING:
             delta = (self._heating_rate*elapsed).a(Temperature)
             new_temp = self.current_temperature + delta
             if target is not None:
                 new_temp = min(new_temp, target)
-            self.current_temperature = new_temp
         else:
             delta = (self._cooling_rate*elapsed).a(Temperature)
             new_temp = self.current_temperature - delta
             if target is None:
-                new_temp = max(new_temp, self.ambient_temperature)
+                new_temp = max(new_temp, self.board.ambient_temperature)
             else:
                 new_temp = max(new_temp, target)
-            self.current_temperature = new_temp
-        self._last_read_time = now
+        return new_temp
             
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
-        future = Postable[Optional[TemperaturePoint]]()
-        self._update_temp(self.target)
-        future.post(self.current_temperature)
-        return future
+        return Delayed.complete(self.new_temp(self.target))
 
     
 

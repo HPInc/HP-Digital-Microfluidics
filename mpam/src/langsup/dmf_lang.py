@@ -192,8 +192,6 @@ class Environment(Scope[str, Any]):
     @property
     def monitor(self) -> Optional[BoardMonitor]:
         system = self.board.system
-        if system is None:
-            return None
         return system.monitor
     
     def __init__(self, parent: Optional[Scope[str, Any]], 
@@ -505,7 +503,7 @@ Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
 Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
 Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
 Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
-Attributes["number"].register(Type.HEATER, Type.INT, lambda w : w.num)
+Attributes["number"].register(Type.HEATER, Type.INT, lambda h : h.number)
 
 Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
 Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
@@ -1471,7 +1469,7 @@ class DMFCompiler(DMFVisitor):
                         # nobody will be waiting.
                         barrier.fire()
             
-            with env.board.in_system().batched():
+            with env.board.system.batched():
                 def reach_barrier(maybe_error: MaybeError[None]) -> None:
                     if isinstance(maybe_error, EvaluationError):
                         note_error(maybe_error)

@@ -235,7 +235,7 @@ class PipettorSysCpt(SystemComponent):
         pass
 
     def user_operation(self) -> UserOperation:
-        return UserOperation(self.in_system().engine.idle_barrier)
+        return UserOperation(self.system.engine.idle_barrier)
 
     def system_shutdown(self) -> None:
         self.pipettor.system_shutdown()

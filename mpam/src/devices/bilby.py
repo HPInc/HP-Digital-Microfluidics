@@ -69,7 +69,6 @@ class Heater(device.Heater):
     
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
         temp = self.remote.read_temperature()
-        self.current_temperature = temp
         return Delayed.complete(temp)
         
 class Board(joey.Board):
