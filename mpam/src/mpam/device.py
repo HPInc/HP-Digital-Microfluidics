@@ -3033,7 +3033,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     reserved_pads: set[Pad]
     splash_radius: Final[int]
 
-    _splash_zone: Optional[Sequence[Pad]] = None
+    _splash_zone: Optional[set[Pad]] = None
     _splash_border: Optional[Sequence[Pad]] = None
 
     @property
@@ -3044,24 +3044,23 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         return drop.blob.contents
 
     @property
-    def splash_zone(self) -> Sequence[Pad]:
+    def splash_zone(self) -> Optional[set[Pad]]:
         if self._splash_zone is None:
             self._compute_splash()
         return self._splash_zone
 
     @property
-    def splash_border(self) -> Sequence[Pad]:
+    def splash_border(self) -> Optional[Sequence[Pad]]:
         if self._splash_border is None:
-            slef._compute_splash()
+            self._compute_splash()
         return self._splash_border
 
     def __init__(self, pad: Pad, splash_radius: Optional[int] = None) -> None:
         BoardComponent.__init__(self, pad.board)
         self.pad = pad
         if splash_radius is None:
-            self.splash_radius = pad.board.extraction_point_splash_radius
-        else:
-            self.splash_radius = splash_radius
+            splash_radius = pad.board.extraction_point_splash_radius
+        self.splash_radius = splash_radius
         self.reserved_pads = set()
         pad._extraction_point = self
 
@@ -3473,7 +3472,7 @@ class Board(SystemComponent):
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
-                 extraction_point_splash_radius: Optional[int] = 0,
+                 extraction_point_splash_radius: int = 0,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  off_on_delay: Time = Time.ZERO) -> None:

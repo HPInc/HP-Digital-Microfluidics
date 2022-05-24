@@ -224,7 +224,7 @@ class Board(device.Board):
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None,
                  off_on_delay: Time = Time.ZERO,
-                 extraction_point_splash_radius: Optional[int] = 0) -> None:
+                 extraction_point_splash_radius: int = 0) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
