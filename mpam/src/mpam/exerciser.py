@@ -334,7 +334,7 @@ class Exerciser(ABC):
                       file: Union[str, pathlib.Path] = None) -> None:
         default_format = '%(levelname)7s|%(module)s|%(message)s'
 
-        if not((level is None) ^ (file is None)) or:
+        if not((level is None) ^ (file is None)):
             raise Exception("Specify 'level' or 'file' to 'setup_logging' but not both.")
 
         if level is None and file is None:
