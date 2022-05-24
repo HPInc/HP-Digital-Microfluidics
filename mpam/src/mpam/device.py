@@ -552,7 +552,8 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         A :class:`Pad` can enumerate neighboring :class:`Pad`\s in several ways:
 
             * :func:`neighbor` takes a :class:`.Dir` and returns the neighboring pad
-              in that direction, if one exists.
+              in that direction, if one exists, optionally including pads with
+              :attr:`exists` set to ``False``.
 
             * :attr:`all_neighbors` is the (up to 8) neighboring pads in all directions.
 
@@ -783,20 +784,25 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     def __repr__(self) -> str:
         return f"Pad({self.column},{self.row})"
 
-    def neighbor(self, d: Dir) -> Optional[Pad]:
+    def neighbor(self, d: Dir, only_existing: bool = True) -> Optional[Pad]:
         """
-        The neighboring :class:`Pad` on the :class:`Board` in the given :`Dir`.
-        Returns ``None`` if there is no such :class:`Pad` or if :attr:`exists`
-        is ``False`` for it.
+        The neighboring :class:`Pad` on the :class:`Board` in the given
+        :`Dir`.  Returns ``None`` if there is no such :class:`Pad`. If
+        ``only_existing`` is set to ``True`` (default value), the
+        returned :class:`Pad` also needs to have :attr:`exists` set to
+        ``True``.
 
         Args:
             d: the :class:`Dir` to look
+
+            only_existing: only include pads wtih :attr:`exists` set
+                to ``True`` (default: ``True``)
         Returns:
             the neighboring :class:`Pad` if one exists, otherwise ``None``.
         """
         n = self.board.orientation.neighbor(d, self.location)
         p = self._pads.get(n, None)
-        if p is None or not p.exists:
+        if p is None or only_existing and not p.exists:
             return None
         return p
 
