@@ -330,9 +330,12 @@ class Exerciser(ABC):
                                help='Configuration file for logging')
 
     @staticmethod
-    def setup_logging(level: str = None,
+    def setup_logging(level: Optional[str] = None,
                       file: Union[str, pathlib.Path] = None) -> None:
         default_format = '%(levelname)7s|%(module)s|%(message)s'
+
+        if not((level is None) ^ (file is None)) or:
+            raise Exception("Specify 'level' or 'file' to 'setup_logging' but not both.")
 
         if level is None and file is None:
             path = pathlib.Path.cwd() / ".logging"
