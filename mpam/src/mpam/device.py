@@ -3033,12 +3033,27 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     reserved_pads: set[Pad]
     splash_radius: Final[int]
 
+    _splash_zone: Optional[Sequence[Pad]] = None
+    _splash_border: Optional[Sequence[Pad]] = None
+
     @property
     def removable_liquid(self) -> Optional[Liquid]:
         drop = self.pad.drop
         if drop is None:
             return None
         return drop.blob.contents
+
+    @property
+    def splash_zone(self) -> Sequence[Pad]:
+        if self._splash_zone is None:
+            self._compute_splash()
+        return self._splash_zone
+
+    @property
+    def splash_border(self) -> Sequence[Pad]:
+        if self._splash_border is None:
+            slef._compute_splash()
+        return self._splash_border
 
     def __init__(self, pad: Pad, splash_radius: Optional[int] = None) -> None:
         BoardComponent.__init__(self, pad.board)
@@ -3130,38 +3145,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         # p_future.post_transformed_to(future, lambda _: self.transfer_in_result())
         return future
 
-    def compute_splash_zone(self) -> set[Pad]:
-        zone = set([self.pad])
-        if self.splash_radius:
-            radius = self.splash_radius
-            border = set([self.pad])
-            while radius > 0 or len(border):
-                next_border = set()
-                for pad in border:
-                    next_border.update(set(pad.all_neighbors) - zone)
-                    # Extend the splash zone
-                    zone.update(pad.all_neighbors)
-
-                # Decide the border for the next iteration
-                radius -= 1
-                if radius > 0:
-                    border = next_border
-                elif radius == 0:
-                    # We reached the end of the splash radius. If any
-                    # pads on the border have drops, extend the splash
-                    # zone to including the neighbors of the pads with
-                    # drops. This way we stop the drops on the border
-                    # from turning the pad off to move out of the
-                    # splash zone.
-                    border = set()
-                    for pad in next_border:
-                        if pad.drop is not None:
-                            # Add to border the pads with drops
-                            border.add(pad)
-                else:
-                    border = set()
-        return zone
-
     def reserve_pads(self, *, expect_drop: bool = False) -> Delayed[None]:
         """
         If `expect_drop` is `True`, we wait until a drop is presend on the
@@ -3171,7 +3154,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         Once the *drop expectation* is meet, we wait until we can
         reserve the pad.
         """
-        to_reserve = self.compute_splash_zone()
+        # to_reserve stores pads that need to be reserved. Once a pad
+        # is reserved, it gets removed from the list
+        to_reserve = self.splash_zone
+        logging.debug(f'{self.pad}|splash zone:{self.splash_zone}')
+        logging.debug(f'{self.pad}|splash border:{self.splash_border}')
 
         def reserve_condition():
             # Check if the drop expectation is not met
@@ -3181,16 +3168,32 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                 return False
 
             nonlocal to_reserve
+            not_reserved = []
             for pad in to_reserve:
                 if pad.reserve():
                     self.reserved_pads.add(pad)
                     logging.debug(f'{self.pad}|splash|reserved:{pad}')
-            to_reserve -= self.reserved_pads
+                else:
+                    not_reserved.append(pad)
+            to_reserve = not_reserved
 
-            if len(to_reserve) == 0:
+            # For each pad on the border that had a drop, need to
+            # reserve all its neighbors as well
+            is_extra_reserved = True
+            for pad in self.splash_border:
+                if pad.drop is not None:
+                    for neighbor in pad.all_neighbors:
+                        if neighbor not in self.splash_zone and neighbor not in self.reserved_pads:
+                            if neighbor.reserve():
+                                self.reserved_pads.add(neighbor)
+                                logging.debug(f'{self.pad}|splash|reserved for border:{pad}')
+                            else:
+                                is_extra_reserved=False
+
+            if len(to_reserve) == 0 and is_extra_reserved:
                 logging.debug(f'{self.pad}|splash|reserved all:{self.reserved_pads}')
-
-            return len(to_reserve) == 0
+                return True
+            return False
 
         return self.pad.board.on_condition(reserve_condition, lambda: None)
 
@@ -3205,6 +3208,26 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     def ensure_drop(self) -> Delayed[None]:
         pad = self.pad
         return pad.board.on_condition(lambda: pad.drop is not None, lambda: None)
+
+    def _compute_splash(self) -> None:
+        zone = set([self.pad])
+        border = []
+        if self.splash_radius:
+            border = [self.pad]
+            for i in range(self.splash_radius):
+                new_border = []
+                for pad in border:
+                    new_pads = []
+                    for direction in Dir:
+                        new_pad = pad.neighbor(direction, only_existing=False)
+                        if new_pad is not None and new_pad not in zone:
+                            new_pads.append(new_pad)
+
+                    new_border.extend(new_pads)
+                    zone.update(new_pads)
+                border = new_border
+        self._splash_zone = set([p for p in zone if p.exists])
+        self._splash_border = [p for p in border if p.exists]
 
     class TransferIn(Operation['ExtractionPoint', 'Drop']):
         reagent: Final[Reagent]
