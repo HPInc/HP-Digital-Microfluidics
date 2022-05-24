@@ -81,8 +81,8 @@ def test_splashzones(system: System) -> None:
         # paths_waste.append(Path.teleport_into(ep_2, reagent=Reagent('W2')).to_pad(well_2).enter_well())
     all_paths.extend(paths_waste)
 
-    # system.clock.start(200 * ms)
-    system.clock.update_interval = 200 * ms # Start paused
+    system.clock.start(200 * ms)
+    # system.clock.update_interval = 200 * ms # Start paused
 
     with system.batched():
         for path in all_paths:
