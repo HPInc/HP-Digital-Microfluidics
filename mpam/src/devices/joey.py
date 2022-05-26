@@ -153,7 +153,7 @@ class Board(device.Board):
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
     
-    def _magnet_state(self) -> State[OnOff]:
+    def _magnet_state(self, x: int, y: int) -> State[OnOff]:
         return DummyState(initial_state=OnOff.OFF)
     
     
@@ -222,7 +222,7 @@ class Board(device.Board):
                 regions: Sequence[GridRegion],
                 polling_interval: Time=200*ms) -> Heater:
         return EmulatedHeater(num, board=self, regions=regions, polling_interval=polling_interval)
-        
+    
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None,
                  off_on_delay: Time = Time.ZERO) -> None:
@@ -289,8 +289,8 @@ class Board(device.Board):
             self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor, right_states),
             ))
         
-        magnets.append(Magnet(self, state=self._magnet_state(), 
-                              pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
+        magnets.append(Magnet(0, self, state=self._magnet_state(13,6), 
+                              pads = (self.pad_at(13, 6), self.pad_at(13, 12),)))
         
         heaters.append(self._heater(0, regions=[GridRegion(XYCoord(0,12),3,7),
                                                 GridRegion(XYCoord(0,0),3,7)]))

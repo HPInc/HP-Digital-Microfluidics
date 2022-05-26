@@ -12,7 +12,7 @@ from mpam import device
 from mpam.device import Pad
 from quantities.dimensions import Time, Voltage
 from quantities.SI import ms
-from erk.stringutils import conj_str
+from erk.stringutils import conj_str, map_str
 from quantities.temperature import TemperaturePoint
 
 
@@ -29,6 +29,8 @@ _well_gate_cells: Mapping[int, str] = {
     0: 'T26', 1: 'N26', 2: 'H26', 3: 'B26',
     4: 'T06', 5: 'N06', 6: 'H06', 7: 'B06'
     }
+
+    
 
 class Heater(device.Heater):
     remote: Final[glider_client.Heater]
@@ -85,10 +87,30 @@ class Board(joey.Board):
         # print(f"-- gate: {well} -- {cell}")
         return self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
-    def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]:
+    def _pad_state(self, x: int, y: int) -> Optional[glider_client.Electrode]:
         cell = f"{ord('B')+y:c}{25-x:02d}"
         # print(f"({x}, {y}): {cell}")
         return self._device.electrode(cell)
+    
+    def _magnet_state(self, x: int, y: int) -> State[OnOff]:
+        e = self._pad_state(x, y)
+        def on_error() -> State[OnOff]:
+            return DummyState(initial_state=OnOff.OFF)
+            
+        if e is None:
+            print(f"No magnet at nonexistent pad ({x}, {y})")
+            return on_error()
+        names = e.magnet_names()
+        if len(names) == 0:
+            print(f"No magnet at ({x}, {y}): {e}")
+            for rm in self._device.remote.GetMagnets():
+                print(f"{rm}: {map_str(rm.GetElectrodeNames())}")
+            return on_error()
+        if len(names) > 1:
+            print(f"Multiple magnets at ({x}, {y}): {e}: {conj_str(names)}.  Using first.")
+        name = names[0]
+        m = self._device.magnet(name)
+        return m or on_error()
     
     def _heater(self, num:int, *, 
                 polling_interval: Time=200*ms,
@@ -97,6 +119,7 @@ class Board(joey.Board):
         for region in regions:
             pads += (self.pad_array[xy] for xy in region)
         return Heater(num, self, pads=pads, polling_interval=polling_interval)
+    
 
     
     def __init__(self, *,
