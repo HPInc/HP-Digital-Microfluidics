@@ -9,11 +9,16 @@ from devices.glider_client import GliderClient
 from mpam.pipettor import Pipettor
 from mpam.types import OnOff, State, DummyState, GridRegion, Delayed
 from mpam import device
-from mpam.device import Pad
+from mpam.device import Pad, PowerMode
 from quantities.dimensions import Time, Voltage
-from quantities.SI import ms
+from quantities.SI import ms, volts, millivolts
 from erk.stringutils import conj_str, map_str
 from quantities.temperature import TemperaturePoint
+import logging
+from erk.errors import ErrorHandler, PRINT
+
+
+logger = logging.getLogger(__name__)
 
 
 _shared_pad_cells: Mapping[tuple[str,int], str] = {
@@ -72,6 +77,41 @@ class Heater(device.Heater):
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
         temp = self.remote.read_temperature()
         return Delayed.complete(temp)
+    
+class PowerSupply(device.PowerSupply):
+    
+    def __init__(self, board: Board, *,
+                 min_voltage: Voltage,
+                 max_voltage: Voltage,
+                 initial_voltage: Voltage, 
+                 mode: PowerMode,
+                 can_toggle: bool = True,
+                 on_high_voltage: ErrorHandler = PRINT,
+                 on_low_voltage: ErrorHandler = PRINT,
+                 on_toggle: ErrorHandler = PRINT, 
+                 ) -> None:
+        
+        super().__init__(board,
+                         min_voltage=min_voltage,
+                         max_voltage=max_voltage,
+                         initial_voltage=initial_voltage,
+                         mode=mode,
+                         can_toggle=can_toggle,
+                         on_high_voltage=on_high_voltage,
+                         on_low_voltage=on_low_voltage,
+                         on_toggle=on_toggle,
+                         )
+        glider = board._device
+        def voltage_changed(_old, new: Voltage) -> None:
+            if new > 0:
+                print(f"Voltage level is {new}")
+            glider.voltage_level = None if new == 0 else new
+        self.on_voltage_change(voltage_changed)
+        
+        def state_changed(_old, new: OnOff) -> None:
+            which = "on" if new else "off"
+            print(f"High voltage is {which}")
+        self.on_state_change(state_changed)
         
 class Board(joey.Board):
     _device: Final[GliderClient]
@@ -119,6 +159,19 @@ class Board(joey.Board):
             pads += (self.pad_array[xy] for xy in region)
         return Heater(num, self, pads=pads, polling_interval=polling_interval)
     
+    def _power_supply(self, *, 
+                      min_voltage: Voltage, 
+                      max_voltage: Voltage, 
+                      initial_voltage: Voltage, 
+                      initial_mode: PowerMode, 
+                      can_toggle: bool) -> PowerSupply:
+        return PowerSupply(self, 
+                           min_voltage=min_voltage,
+                           max_voltage=max_voltage,
+                           initial_voltage=initial_voltage,
+                           mode=initial_mode,
+                           can_toggle=can_toggle)
+    
 
     
     def __init__(self, *,
@@ -126,20 +179,35 @@ class Board(joey.Board):
                  config_dir: Optional[Union[str, PathLike]] = None,
                  pipettor: Optional[Pipettor] = None,
                  off_on_delay: Time = Time.ZERO,
+                 ps_min_voltage: Voltage = 60*volts,
+                 ps_max_voltage: Voltage = 298*volts,
                  voltage: Optional[Voltage]) -> None:
         self._device = GliderClient(pyglider.BoardId.Wallaby, dll_dir=dll_dir, config_dir=config_dir)
-        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay)
+        
+        current_mode = PowerMode.DC
+        current_voltage = self._device.voltage_level
+        if current_voltage is None:
+            logger.info("Couldn't read Bilby voltage level.  Assuming off.")
+            current_voltage = Voltage.ZERO
+        if current_voltage.is_close_to(0):
+            logger.info(f"Near-zero voltage ({current_voltage}) read from device.  Assuming zero.")
+            current_voltage = Voltage.ZERO
+        
+        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay,
+                         ps_min_voltage=ps_min_voltage,
+                         ps_max_voltage=ps_max_voltage,
+                         ps_initial_voltage=current_voltage,
+                         ps_initial_mode=current_mode,
+                         ps_can_toggle=True,
+                         )
         on_electrodes = self._device.on_electrodes()
         if on_electrodes:
             for e in on_electrodes:
                 e.current_state = OnOff.ON
             self.infer_drop_motion()
-        if voltage is None:
-            print("Turning off high voltage")
-        else:
-            print(f"Turning on high voltage at {voltage}")
         
-        self._device.voltage_level = voltage
+        # self._device.voltage_level = voltage
+        self.power_supply.voltage = 0*volts if voltage is None else voltage
         
     def update_state(self) -> None:
         self._device.update_state()

@@ -8,6 +8,7 @@ from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
 from quantities.dimensions import Voltage
 from quantities.SI import volts
+from pyglider import ErrorCode
 
 def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
     if isinstance(p, str):
@@ -130,6 +131,14 @@ class GliderClient:
         self.electrodes = {}
         self.heaters = {}
         self.magnets = {}
+        ec, n = self.remote.GetHighVoltage()
+        if ec != pyglider.ErrorCode.ErrorSuccess:
+            print(f"Error {ec} returned trying to read voltage level.")
+            self._voltage_level = None
+        else:
+            print(f"The voltage level is {n}")
+            self._voltage_level = n*volts
+        
         # print(f"Local: {self.electrodes}")
 
     def on_electrodes(self) -> list[Electrode]:

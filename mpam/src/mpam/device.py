@@ -27,10 +27,10 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
-    MonitoredProperty, DummyState
-from quantities.SI import sec, ms
+    MonitoredProperty, DummyState, MissingOr, MISSING
+from quantities.SI import sec, ms, volts
 from quantities.core import Unit
-from quantities.dimensions import Time, Volume, Frequency, Temperature
+from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
 from argparse import Namespace
@@ -180,18 +180,6 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         """
         return self.state.on_state_change
 
-    # def on_state_change(self, cb: ChangeCallback[OnOff], *, key: Optional[Hashable] = None):
-    #     """
-    #     Add a new state-change handler, replacing any with the specified key. If
-    #     ``key`` is ``None``, ``cb`` is used as the key.  This is implemented by
-    #     delegating to :attr:`state`.
-    #
-    #     Args:
-    #         cb: the handler
-    #     Keyword Args:
-    #         key: the (optional) key
-    #     """
-    #     self.state.on_state_change(cb, key=key)
 
     class ModifyState(Operation[BC, OnOff]):
         """
@@ -3108,13 +3096,13 @@ class Heater(BinaryComponent['Heater']):
         # self._current_op_key = None
         for pad in pads:
             pad._heater = self
-        self._temperature = initial_temperature
             
         self.on_state_change(self._note_state_change)
         self.on_mode_change(self._note_mode_change)
         self.on_target_change(self._note_target_change)
         self.on_temperature_change(self._note_temperature_change)
 
+        self._temperature = initial_temperature
         
     def _note_state_change(self, _old: OnOff, new: OnOff) -> None:
         with self._lock:
@@ -4112,7 +4100,203 @@ class SystemComponent(ABC):
         return future
 
     # def schedule_before(self, cb: C):
+    
+class PowerMode(Enum):
+    DC = auto()
+    AC = auto()
 
+class PowerSupply(BinaryComponent['PowerSupply']):
+    _last_voltage: Voltage = Voltage.ZERO
+    _lock: Final[RLock]
+    
+    min_voltage: Final[Voltage]
+    max_voltage: Final[Voltage]
+    allowed_state: Final[Optional[OnOff]]
+    on_high_voltage: Final[ErrorHandler]
+    on_low_voltage: Final[ErrorHandler]
+    on_toggle: Final[ErrorHandler]
+    
+    voltage: MonitoredProperty[Voltage] = MonitoredProperty()
+    on_voltage_change: ChangeCallbackList[Voltage] = voltage.callback_list
+    
+    @voltage.transform
+    def _check_voltage_bounds(self, v: Voltage) -> MissingOr[Voltage]:
+        if v > self.max_voltage:
+            self.on_high_voltage(f"Voltage {v} > maximum ({self.max_voltage})")
+            return self.max_voltage
+        if v < self.min_voltage:
+            if v > 0:
+                self.on_low_voltage(f"Voltage {v} < maximum ({self.min_voltage})")
+                return self.min_voltage
+            elif not self.allowed_state is None or self.allowed_state is OnOff.OFF:
+                self.on_toggle("Power supply cannot be turned off")
+        return v
+    
+    mode: MonitoredProperty[PowerMode] = MonitoredProperty()
+    on_mode_change: ChangeCallbackList[PowerMode] = mode.callback_list
+    
+    def __init__(self, board: Board, *,
+                 min_voltage: Voltage,
+                 max_voltage: Voltage,
+                 initial_voltage: Voltage, 
+                 mode: PowerMode,
+                 can_toggle: bool = True,
+                 on_high_voltage: ErrorHandler = PRINT,
+                 on_low_voltage: ErrorHandler = PRINT,
+                 on_toggle: ErrorHandler = PRINT,
+                 ) -> None:
+        initial_state = initial_voltage > 0
+        super().__init__(board=board,
+                         state=DummyState(initial_state=OnOff.from_bool(initial_state)))
+        
+        allowed_states = None
+        if not can_toggle:
+            if initial_voltage == 0:
+                allowed_states = OnOff.OFF
+                min_voltage = 0*volts
+                max_voltage = 0*volts
+            else:
+                allowed_states = OnOff.ON
+            
+        self.min_voltage = min_voltage
+        self.max_voltage = max_voltage
+        
+        self.allowed_state = allowed_states
+        self.on_high_voltage = on_high_voltage
+        self.on_low_voltage = on_low_voltage
+        self.on_toggle = on_toggle
+        self._lock = RLock()
+        
+        self.mode = mode
+        self.voltage = initial_voltage
+        
+        self.on_state_change(self._note_state_change)
+        self.on_voltage_change(self._note_voltage_change)
+        
+
+    def _note_state_change(self, _old: OnOff, new: OnOff) -> None:
+        with self._lock:
+            if new is OnOff.OFF:
+                self.voltage = Voltage.ZERO
+            else:
+                self.voltage = self._last_voltage
+    
+    def _note_voltage_change(self, _old: Voltage, new: Voltage) -> None:
+        with self._lock:
+            if new > 0:
+                self._last_voltage = new
+            self.current_state = OnOff.from_bool(new > 0)
+            
+            
+    # MyPy doesn't know what to do with this, but I believe it should work, and
+    # it appears to in practice.
+    @BinaryComponent.current_state.setter   # type: ignore[attr-defined]
+    def current_state(self, val: OnOff) -> None:
+        allowed = self.allowed_state
+        if allowed is None or allowed is val:
+            BinaryComponent.current_state.fset(self, val) # type: ignore[attr-defined]
+        elif val is OnOff.ON:
+            self.on_toggle("Power supply cannot be turned on")
+        else:
+            self.on_toggle("Power supply cannot be turned off")
+            
+    def high_clip(self, v: Voltage) -> MissingOr[Voltage]: # @UnusedVariable
+        return self.max_voltage
+
+    def low_clip(self, v: Voltage) -> MissingOr[Voltage]: # @UnusedVariable
+        return 0*volts
+    
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.voltage} {self.mode.name}, {self.current_state.name})"
+    
+class DummyPowerSupply(PowerSupply):
+    def __init__(self, board: Board, *,
+                 min_voltage: Voltage = 30*volts,
+                 max_voltage: Voltage = 90*volts,
+                 initial_voltage: Voltage = 0*volts, 
+                 mode: PowerMode = PowerMode.DC) -> None:
+        super().__init__(board, 
+                         min_voltage=min_voltage, 
+                         max_voltage=max_voltage,
+                         initial_voltage=initial_voltage,
+                         mode=mode)
+        
+        def new_mode(_old, new: PowerMode) -> None:
+            print(f"Power supply mode is now {new.name}.")
+        self.on_mode_change(new_mode)
+        
+        def new_voltage(_old, new: Voltage) -> None:
+            print(f"Power supply voltage is now {new}.")
+        self.on_voltage_change(new_voltage)
+        
+        def new_state(_old, new: OnOff) -> None:
+            print(f"Power supply is now {new.name}")
+            
+
+    def high_clip(self, v:Voltage)->Voltage:
+        print(f"Clipping voltage {v} at max {self.max_voltage}")
+        return self.max_voltage
+
+    def low_clip(self, v:Voltage)->Voltage:
+        print(f"Voltage {v} below min {self.min_voltage}, turning off power supply")
+        return 0*volts
+    
+class FixedPowerSupply(PowerSupply):
+    voltage_level: Final[Voltage]
+    expected_state: Final[OnOff]
+    is_toggleable: Final[bool]
+    
+    voltage: MonitoredProperty[Voltage] = MonitoredProperty(default=Voltage.ZERO)
+    on_voltage_change: ChangeCallbackList[Voltage] = voltage.callback_list
+    
+    @voltage.transform    
+    def no_voltage_changes(self, v: Voltage) -> MissingOr[Voltage]:
+        if v == self.voltage_level:
+            return v
+        if self.is_toggleable and v == 0:
+            return v
+        print("Power supply voltage level cannot be changed")
+        return MISSING 
+
+    def __init__(self, board: Board, *,
+                 voltage_level: Voltage = 0*volts,
+                 is_toggleable: bool = False,
+                 changeable_mode: bool = False,
+                 mode: PowerMode = PowerMode.DC) -> None:
+        self.is_toggleable = is_toggleable
+        self.voltage_level = voltage_level
+        self.expected_state = OnOff.from_bool(voltage_level > 0)
+
+        super().__init__(board, 
+                         min_voltage=0*volts,
+                         max_voltage=voltage_level,
+                         initial_voltage=voltage_level,
+                         mode=mode)
+        
+        # def no_voltage_changes(ps: PowerSupply, v: Voltage) -> MissingOr[Voltage]:
+        #     if not isinstance(ps, FixedPowerSupply):
+        #         return v
+        #     if v == self.voltage_level:
+        #         return v
+        #     if is_toggleable and v == 0:
+        #         return v
+        #     print("Power supply voltage level cannot be changed")
+        #     return MISSING 
+        # PowerSupply.voltage.transform(no_voltage_changes)
+        
+        
+        
+    # MyPy doesn't know what to do with this, but I believe it should work, and
+    # it appears to in practice.
+    @BinaryComponent.current_state.setter   # type: ignore[attr-defined]
+    def current_state(self, val: OnOff) -> None:
+        if self.is_toggleable or val is self.expected_state:
+            BinaryComponent.current_state.fset(self, val) # type: ignore[attr-defined]
+        else:
+            print("Power supply cannot be turned on or off")
+        
+    
+        
 
 class ChangeJournal:
     turned_on: Final[set[DropLoc]]
@@ -4166,7 +4350,7 @@ class Board(SystemComponent):
     magnets: Final[Sequence[Magnet]]
     heaters: Final[Sequence[Heater]]
     extraction_points: Final[Sequence[ExtractionPoint]]
-    # _well_groups: Mapping[str, WellGroup]
+    power_supply: Final[PowerSupply]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
     off_on_delay: Time
@@ -4205,6 +4389,7 @@ class Board(SystemComponent):
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
+                 power_supply: Optional[PowerSupply] = None,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  off_on_delay: Time = Time.ZERO) -> None:
@@ -4215,10 +4400,12 @@ class Board(SystemComponent):
         self.magnets = [] if magnets is None else magnets
         self.heaters = [] if heaters is None else heaters
         self.extraction_points = [] if extraction_points is None else extraction_points
+        self.power_supply = power_supply or FixedPowerSupply(self)
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
         self.off_on_delay = off_on_delay
-        logger.info("off-on delay is %s", off_on_delay)
+        if off_on_delay != 0:
+            logger.info("off-on delay is %s", off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
         # self._drops = []

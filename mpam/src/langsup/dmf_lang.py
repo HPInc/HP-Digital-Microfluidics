@@ -18,13 +18,13 @@ from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit,\
     NumberedItem
 from mpam.device import Pad, Board, BinaryComponent, Well,\
-    WellGate, WellPad, Heater
+    WellGate, WellPad, Heater, PowerSupply, PowerMode
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable
 from quantities.core import Unit, Dimensionality
-from quantities.dimensions import Time, Volume, Temperature
+from quantities.dimensions import Time, Volume, Temperature, Voltage
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
@@ -545,6 +545,18 @@ def _set_heater_target(h: Heater, t: Optional[TemperaturePoint]):
 Attributes["#target_temperature"].register(Type.HEATER, Type.ABS_TEMP.maybe, lambda h: h.target)
 Attributes["#target_temperature"].register_setter(Type.HEATER, Type.ABS_TEMP.maybe, _set_heater_target)
 
+Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY, lambda b: b.power_supply)
+
+def _set_ps_voltage(ps: PowerSupply, v: Voltage):
+    ps.voltage = v
+Attributes["voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.voltage)
+Attributes["voltage"].register_setter(Type.POWER_SUPPLY, Type.VOLTAGE, _set_ps_voltage)
+
+def _set_ps_mode(ps: PowerSupply, m: PowerMode):
+    ps.mode = m
+Attributes["mode"].register(Type.POWER_SUPPLY, Type.POWER_MODE, lambda ps: ps.mode)
+Attributes["mode"].register_setter(Type.POWER_SUPPLY, Type.POWER_MODE, _set_ps_mode)
+
 Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
 Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
 Functions["CEILING"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.ceil(x))
@@ -615,6 +627,7 @@ DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
     Time.dim(): (Type.TIME, Type.FLOAT),
     Volume.dim(): (Type.VOLUME, Type.FLOAT),
     Ticks.dim(): (Type.TICKS, Type.INT),
+    Voltage.dim(): (Type.VOLTAGE, Type.FLOAT),
     }
 
 AnyTemp = Union[Temperature, TemperaturePoint, "AmbiguousTemp"]
@@ -698,6 +711,10 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.REL_TEMP: Temperature,
         Type.AMBIG_TEMP: AmbiguousTemp,
         Type.HEATER: Heater,
+        Type.BOARD: Board,
+        Type.POWER_SUPPLY: PowerSupply,
+        Type.VOLTAGE: Voltage,
+        Type.POWER_MODE: PowerMode,
         Type.NONE: type(None),
     }
 
@@ -897,6 +914,7 @@ class DMFCompiler(DMFVisitor):
                                                            Type.TIME: lambda _: Time.ZERO,
                                                            Type.VOLUME: lambda _: Volume.ZERO,
                                                            Type.TICKS: lambda _: Ticks.ZERO,
+                                                           Type.VOLTAGE: lambda _: Voltage.ZERO,
                                                           })
     
     def __init__(self, *,
@@ -1636,7 +1654,7 @@ class DMFCompiler(DMFVisitor):
                 ub_t = upper_bounds[0]
             else:
                 ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME, 
-                            Type.ABS_TEMP, Type.REL_TEMP)
+                            Type.ABS_TEMP, Type.REL_TEMP, Type.VOLTAGE)
                 def first_matching() -> Optional[Type]:
                     for t in upper_bounds:
                         for ok in ok_types:
@@ -2155,6 +2173,7 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
                                    ((Type.REL_TEMP, Type.ABS_TEMP), Type.ABS_TEMP),
                                    ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
+                                   ((Type.VOLTAGE, Type.VOLTAGE), Type.VOLTAGE)
                                    ], lambda x,y: x+y)
         fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, d.dist))
         fn.register_all_immediate([((Type.STRING, Type.NUMBER), Type.STRING),
@@ -2179,6 +2198,7 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
                                    ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
                                    ((Type.ABS_TEMP, Type.ABS_TEMP), Type.REL_TEMP),
+                                   ((Type.VOLTAGE, Type.VOLTAGE), Type.VOLTAGE)
                                    ], lambda x,y: x-y)
         
          
@@ -2229,6 +2249,8 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.REL_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    ((Type.FLOAT,Type.REL_TEMP), Type.REL_TEMP),
                                    # ((Type.AMBIG_TEMP,Type.FLOAT), Type.REL_TEMP),
+                                   ((Type.VOLTAGE,Type.FLOAT), Type.VOLTAGE),
+                                   ((Type.FLOAT,Type.VOLTAGE), Type.VOLTAGE),
                                    ], lambda x,y: x*y)
         fn.register_immediate((Type.NUMBER, Type.REAGENT), Type.SCALED_REAGENT,
                               lambda n,r: ScaledReagent(n,r))
@@ -2242,6 +2264,7 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.VOLUME,Type.FLOAT), Type.VOLUME),
                                    ((Type.REL_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    # ((Type.AMBIG_TEMP,Type.FLOAT), Type.REL_TEMP),
+                                   ((Type.VOLTAGE,Type.FLOAT), Type.VOLTAGE),
                                    ], lambda x,y: x/y)
         fn.register_immediate((Type.LIQUID, Type.FLOAT), Type.LIQUID,
                               lambda liquid, split: Liquid(liquid.reagent, liquid.volume/split)
@@ -2347,6 +2370,14 @@ class DMFCompiler(DMFVisitor):
         def get_none(env: Environment) -> None: # @UnusedVariable
             return None
         SpecialVars["none"] = SpecialVariable(Type.NONE, getter=lambda _env: None)
+        
+        name = "the board"
+        def get_board(env: Environment) -> Board:
+            return env.board
+        SpecialVars[name] = SpecialVariable(Type.BOARD, getter=get_board)
+        
+        SpecialVars["AC"] = SpecialVariable(Type.POWER_MODE, getter=lambda _env: PowerMode.AC)
+        SpecialVars["DC"] = SpecialVariable(Type.POWER_MODE, getter=lambda _env: PowerMode.DC)
         
         
 DMFCompiler.setup_function_table()

@@ -236,6 +236,7 @@ dim_unit returns[PhysUnit unit]
   | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
   | ('tick' | 'ticks') {$ctx.unit=ticks}
   | ('drop' | 'drops') {$ctx.unit=EnvRelativeUnit.DROP}
+  | ('V' | 'volt' | 'volts') {$ctx.unit=SI.volts}
   ;
   
 numbered_type returns[NumberedItem kind]
@@ -254,6 +255,7 @@ attr returns[str which]
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
   | 'target' ('temp' | 'temperature')? {$ctx.which="#target_temperature"}
   | 'current'? ('temp' | 'temperature') {$ctx.which="#current_temperature"}
+  | 'power' 'supply' {$ctx.which="#power_supply"}
   | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'magnet' | ID)
   	{$ctx.which=$n.text}
   ;
@@ -280,8 +282,9 @@ name returns[str val]
   
 multi_word_name returns[str val]
   : 'on' 'the'? 'board' {$ctx.val="on board"}
-  | 'interactive' 'reagent' {$ctx.val="interactive reagent"}
-  | 'interactive' 'volume' {$ctx.val="interactive volume"}
+  | 'the'? 'interactive' 'reagent' {$ctx.val="interactive reagent"}
+  | 'the'? 'interactive' 'volume' {$ctx.val="interactive volume"}
+  | 'the' 'board' {$ctx.val="the board"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y'

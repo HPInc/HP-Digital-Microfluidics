@@ -6,23 +6,21 @@ from typing import Optional, Sequence, Final
 
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
-    HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup,\
-    transitions_from, WellGate, Heater
+    HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
+    transitions_from, WellGate, Heater, PowerSupply, PowerMode
 import mpam.device as device
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State,\
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State, \
     OnOff, DummyState
-
-from quantities.SI import uL, ms, deg_C, sec
+from quantities.SI import uL, ms, deg_C, sec, volts
 from quantities.core import DerivedDim
-from quantities.dimensions import Temperature, Time, Volume
+from quantities.dimensions import Temperature, Time, Volume, Voltage
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
 
 
-            
 class HeatingRate(DerivedDim):
     derived = Temperature/Time
     
@@ -219,19 +217,44 @@ class Board(device.Board):
                 polling_interval: Time=200*ms) -> Heater:
         return EmulatedHeater(num, board=self, regions=regions, polling_interval=polling_interval)
     
+    def _power_supply(self, *,
+                      min_voltage: Voltage,
+                      max_voltage: Voltage,
+                      initial_voltage: Voltage,
+                      initial_mode: PowerMode,
+                      can_toggle: bool,
+                      ) -> PowerSupply:
+        return PowerSupply(self, 
+                           min_voltage=min_voltage,
+                           max_voltage=max_voltage,
+                           initial_voltage=initial_voltage,
+                           mode=initial_mode,
+                           can_toggle=can_toggle)
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None,
-                 off_on_delay: Time = Time.ZERO) -> None:
+                 off_on_delay: Time = Time.ZERO,
+                 ps_min_voltage: Voltage = 60*volts,
+                 ps_max_voltage: Voltage = 298*volts,
+                 ps_initial_voltage: Voltage = 0*volts,
+                 ps_initial_mode: PowerMode = PowerMode.DC,
+                 ps_can_toggle: bool = True,
+                 ) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
         heaters: list[Heater] = []
         extraction_points: list[ExtractionPoint] = []
+        power_supply = self._power_supply(min_voltage=ps_min_voltage,
+                                          max_voltage=ps_max_voltage,
+                                          initial_voltage=ps_initial_voltage,
+                                          initial_mode=ps_initial_mode,
+                                          can_toggle=ps_can_toggle)
         super().__init__(pads=pad_dict,
                          wells=wells,
                          magnets=magnets,
                          heaters=heaters,
                          extraction_points=extraction_points,
+                         power_supply=power_supply,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms,
                          off_on_delay=off_on_delay)

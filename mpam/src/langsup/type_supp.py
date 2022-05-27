@@ -77,6 +77,10 @@ class Type:
     AMBIG_TEMP: ClassVar[Type]
     HEATER: ClassVar[Type]
     MAGNET: ClassVar[Type]
+    BOARD: ClassVar[Type]
+    POWER_SUPPLY: ClassVar[Type]
+    VOLTAGE: ClassVar[Type]
+    POWER_MODE: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -235,6 +239,10 @@ Type.REL_TEMP = Type("REL_TEMP")
 Type.AMBIG_TEMP = Type("AMBIG_TEMP", [Type.ABS_TEMP, Type.REL_TEMP])
 Type.HEATER = Type("HEATER", [Type.BINARY_CPT])
 Type.MAGNET = Type("MAGNET", [Type.BINARY_CPT])
+Type.BOARD = Type("BOARD")
+Type.POWER_SUPPLY = Type("POWER_SUPPLY", [Type.BINARY_CPT])
+Type.VOLTAGE = Type("VOLTAGE")
+Type.POWER_MODE = Type("POWER_MODE")
 
 class MaybeType(Type):
     if_there_type: Final[Type]
