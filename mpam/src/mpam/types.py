@@ -61,6 +61,10 @@ class OnOff(Enum):
         "`!ON` is `OFF, and vice versa"
         return OnOff.OFF if self else OnOff.ON
 
+    @classmethod
+    def from_bool(cls, val: bool) -> OnOff:
+        return OnOff.ON if val else OnOff.OFF
+
 
 Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]
 """A type representing literal `-1`, `0`, or `1`.
@@ -2066,14 +2070,13 @@ class ChangeCallbackList(Generic[T]):
     Args:
         T: the type of the value being managed
     """
-    callbacks: dict[Hashable, ChangeCallback[T]]    #: A mapping from keys to handlers
+    callbacks: Optional[dict[Hashable, ChangeCallback[T]]] = None    #: A mapping from keys to handlers
     lock: Final[RLock]                              #: The object's lock
 
     def __init__(self) -> None:
         """
         Initialize the object.
         """
-        self.callbacks = {}
         self.lock = RLock()
 
     def add(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
@@ -2089,6 +2092,8 @@ class ChangeCallbackList(Generic[T]):
         if key is None:
             key = cb
         with self.lock:
+            if self.callbacks is None:
+                self.callbacks = {}
             self.callbacks[key] = cb
             # print(f"Now {len(self.callbacks)} callback(s) on {self}")
             # if key is not cb:
@@ -2198,7 +2203,12 @@ class ChangeCallbackList(Generic[T]):
         """
         with self.lock:
             # val = self.callbacks[key]
-            del self.callbacks[key]
+            cbs = self.callbacks
+            if cbs is None:
+                raise KeyError(key)
+            del cbs[key]
+            if len(cbs) == 0:
+                self.callbacks = None
             # if key is not val:
                 # print(f"Removing callback {key}")
                 # print(f"  Callbacks now {map_str(list(self.callbacks.keys()))}")
@@ -2210,15 +2220,19 @@ class ChangeCallbackList(Generic[T]):
         Args:
             key: the key to remove
         """
-        with self.lock:
-            self.callbacks.pop(key, None)
+        cbs = self.callbacks
+        if cbs is not None:
+            with self.lock:
+                cbs.pop(key, None)
+                if len(cbs) == 0:
+                    self.callbacks = None
 
     def clear(self) -> None:
         """
         Remove all handlers.
         """
         with self.lock:
-            self.callbacks.clear()
+            self.callbacks = None
 
     def process(self, old: T, new: T) -> None:
         """
@@ -2233,8 +2247,15 @@ class ChangeCallbackList(Generic[T]):
             new: the new value
         """
         # print(f"Processing callbacks")
+        if self.callbacks is None:
+            return
         with self.lock:
-            copy = list((k,cb) for k,cb in self.callbacks.items())
+            # Someone might've removed the last callback (and the list) since we
+            # looked, so we get it again.
+            if (cbs := self.callbacks) is None:
+                # MyPy thinks this is unreachable.  It's wrong.
+                return  # type: ignore [unreachable]
+            copy = list((k,cb) for k,cb in cbs.items())
         for k,cb in copy:
             # print(f"Callback ({old}->{new}: {k}")
             cb(old, new)
@@ -2372,7 +2393,17 @@ class MonitoredProperty(Generic[T]):
         del counter.count
 
     it is reset to its initial state.  The next time it is read or has its value
-    checked, it is reset to its (static or computed) default value.
+    checked, it is reset to its (static or computed) default value or, if there
+    is none, considered to not have a value.
+
+    To provide a public read-only property alongside a protected writable
+    property, use the property's :attr:`getter` property::
+
+        class Counter:
+            _count = MonitoredProperty[int](default=0)
+            count = _count.getter
+
+
 
     Callback properties can be extended using functions akin to
     :class:`ChangeCallbackList`'s :func:`~ChangeCallbackList.mapped` and
@@ -2498,18 +2529,20 @@ class MonitoredProperty(Generic[T]):
             class Counter:
                 count = MonitoredProperty[int](default=0)
 
-        where ``name`` will be taken to be ``"count"``.  Otherwise, a gensymed
-        string (e.g., ``"monitored_12345"``) will be used. If ``val_attr`` is
-        not specified, it will be ``name`` prepended by an underscore.  If
-        ``callback_list_attr`` is not specified, it will be ``val_attr``
-        followed by ``"_callback_list"``.
+        where ``name`` will be taken to be ``"count"``.  (If the attribute name
+        begins with a single underscore, the underscore will be removed.)
+        Otherwise, a gensymed string (e.g., ``"monitored_12345"``) will be used.
+        If ``val_attr`` is not specified, it will be ``"_<name>__value"``.  If
+        ``callback_list_attr`` is not specified, it will be
+        ``"_<name>__callbacks"``.
 
         Args:
-            name: the name of the property
+            name: the (optional) name of the property
         Keyword Args:
-            val_attr: the attribute used to store the value on objects
+            val_attr: the (optional) attribute used to store the value on
+                      objects
 
-            callback_list_attr: the attribute used to store the
+            callback_list_attr: the (optional) attribute used to store the
                                 :class:`ChangeCallbackList` on objects
 
             default: an optional default value to use for all objects
@@ -2534,8 +2567,12 @@ class MonitoredProperty(Generic[T]):
         self._transform: Callable[[Any, T], MissingOr[T]] = lambda _obj, v: v
 
     def __set_name__(self, _owner, name: str) -> None:
-        # print(f"Setting name for {_owner}.{name}")
-        self._name = name
+        if self._name is None:
+            # print(f"Setting name for {_owner}.{name}")
+            if name.startswith("_") and not name.startswith("__"):
+                name = name[1:]
+                # print(f"  Name now {name}")
+            self._name = name
 
     def _default_value(self, obj) -> MissingOr[T]:
         dfn = self._default_fn
@@ -2722,6 +2759,32 @@ class MonitoredProperty(Generic[T]):
             def __get__(self, obj, objtype) -> bool: # @UnusedVariable
                 val = me._lookup(obj)
                 return val is not MISSING
+        return VC()
+
+    @property
+    def getter(self) -> Gettable[object, T]:
+        """
+        A read-only property that returns the value associated with this
+        :class:`MonitoredProperty` for an object or raises ``AttributeError`` if
+        there is no such value.  This can be used to provide a read-only public
+        property alongside a writable protected property, as in ::
+
+            class Counter:
+                _count = MonitoredProperty[int](default=0)
+                on_count_change = _count.callback_list
+                count = _count.getter
+
+        With this in place, users of ``Counter`` can read ``count`` and register
+        callbacks to ``on_count_change``, but modifications can only happen by
+        means of ``_count``.
+        """
+        me = self
+        class VC:
+            def __get__(self, obj, objtype) -> T: # @UnusedVariable
+                val = me._lookup(obj)
+                if val is MISSING:
+                    raise AttributeError(f"Attribute '{me.name}' not set in {obj}")
+                return val
         return VC()
 
     @overload

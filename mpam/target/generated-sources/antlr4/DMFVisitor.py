@@ -6,7 +6,7 @@ else:
     from DMFParser import DMFParser
 
 from mpam.types import Dir, OnOff, Turn, ticks, unknown_reagent, waste_reagent
-from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit
+from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit, NumberedItem
 from quantities import SI
 
 
@@ -167,6 +167,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#numbered_expr.
+    def visitNumbered_expr(self, ctx:DMFParser.Numbered_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#rel_expr.
     def visitRel_expr(self, ctx:DMFParser.Rel_exprContext):
         return self.visitChildren(ctx)
@@ -317,18 +322,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#heater_expr.
-    def visitHeater_expr(self, ctx:DMFParser.Heater_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#pause_expr.
     def visitPause_expr(self, ctx:DMFParser.Pause_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#well_expr.
-    def visitWell_expr(self, ctx:DMFParser.Well_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -394,6 +389,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#dim_unit.
     def visitDim_unit(self, ctx:DMFParser.Dim_unitContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#numbered_type.
+    def visitNumbered_type(self, ctx:DMFParser.Numbered_typeContext):
         return self.visitChildren(ctx)
 
 

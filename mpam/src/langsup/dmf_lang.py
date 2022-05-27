@@ -15,7 +15,8 @@ from DMFLexer import DMFLexer
 from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
-    Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit
+    Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit,\
+    NumberedItem
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, Heater
 from mpam.drop import Drop, DropStatus
@@ -538,6 +539,7 @@ Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
 Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
 
 Attributes["heater"].register(Type.PAD, Type.HEATER.maybe, lambda p: p.heater)
+Attributes["magnet"].register(Type.PAD, Type.MAGNET.maybe, lambda p: p.magnet)
 
 Attributes["#current_temperature"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.current_temperature)
 def _set_heater_target(h: Heater, t: Optional[TemperaturePoint]):
@@ -1535,7 +1537,7 @@ class DMFCompiler(DMFVisitor):
         return self.visit(ctx.loop())
     
     def visitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext) -> Executable:
-        n_exec = self.visit(ctx.n)
+        # n_exec = self.visit(ctx.n)
         assert False
         # if e := self.type_check(Type.INT, n_exec, ctx,
         #                         lambda text: 
@@ -1895,37 +1897,34 @@ class DMFCompiler(DMFVisitor):
             return obj.evaluate(env, ot).chain(error_check_delayed(extractor))
         return Executable(rt, run, (obj,))
 
-
-
-    def visitWell_expr(self, ctx:DMFParser.Well_exprContext) -> Executable:
+    
+    def visitNumbered_expr(self, ctx:DMFParser.Numbered_exprContext) -> Executable:
         which = self.visit(ctx.which)
-        if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
-            return e
-        def run(env: Environment) -> Delayed[MaybeError[Well]]:
-            def find_well(n: int) -> MaybeError[Well]:
-                wells = env.board.wells
-                try:
-                    return wells[n]
-                except IndexError:
-                    return NoSuchComponentError("well", n, len(wells)-1)
-            return (which.evaluate(env, Type.INT)
-                    .transformed(error_check(find_well)))
-        return Executable(Type.WELL, run, (which,))
-
-    def visitHeater_expr(self, ctx:DMFParser.Well_exprContext) -> Executable:
-        which = self.visit(ctx.which)
-        if e:=self.type_check(Type.INT, which, ctx.which, return_type=Type.WELL):
-            return e
-        def run(env: Environment) -> Delayed[MaybeError[Heater]]:
-            def find_heater(n: int) -> MaybeError[Heater]:
-                heaters = env.board.heaters
-                try:
-                    return heaters[n]
-                except IndexError:
-                    return NoSuchComponentError("heater", n, len(heaters)-1)
-            return (which.evaluate(env, Type.INT)
-                    .transformed(error_check(find_heater)))
-        return Executable(Type.HEATER, run, (which,))
+        kind_ctx = cast(DMFParser.Numbered_typeContext, ctx.kind)
+        kind = cast(NumberedItem, kind_ctx.kind)
+        
+        def figure(to_list: Callable[[Board], Sequence[T_]],
+                   rt: Type,
+                   name: str) -> Executable:
+            if e:=self.type_check(Type.INT, which, ctx.which, return_type=rt):
+                return e
+            def run(env: Environment) -> Delayed[MaybeError[T_]]:
+                def find(n: int) -> MaybeError[T_]:
+                    cpts = to_list(env.board)
+                    try:
+                        return cpts[n]
+                    except IndexError:
+                        return NoSuchComponentError(name, n, len(cpts)-1)
+                return (which.evaluate(env, Type.INT)
+                        .transformed(error_check(find)))
+            return Executable(rt, run, (which,))
+        
+        if kind is NumberedItem.WELL:
+            return figure(lambda b: b.wells, Type.WELL, "well")
+        elif kind is NumberedItem.HEATER:
+            return figure(lambda b: b.heaters, Type.HEATER, "heater")
+        elif kind is NumberedItem.MAGNET:
+            return figure(lambda b: b.magnets, Type.MAGNET, "magnet")
 
 
 
