@@ -2863,9 +2863,11 @@ class Magnet(BinaryComponent['Magnet']):
     :class:`.DummyState` may be used.
 
     """
+    number: Final[int] 
+    """The :class:`Magnet`'s index in its :attr:`board`'s :attr:`~Board.magnets` list"""
     pads: Final[Sequence[Pad]] #: The :class:`Pad`\s affected by this :class:`Magnet`
 
-    def __init__(self, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
+    def __init__(self, num: int, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
         """
         Initialize the object.
 
@@ -2877,6 +2879,7 @@ class Magnet(BinaryComponent['Magnet']):
         """
 
         BinaryComponent.__init__(self, board, state=state)
+        self.number = num
         self.pads = pads
         for pad in pads:
             pad._magnet = self
