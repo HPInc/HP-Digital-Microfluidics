@@ -15,6 +15,7 @@ from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any, \
     Generator, Protocol, Iterable
 from weakref import WeakKeyDictionary, finalize
 import logging
+import pathlib
 
 from matplotlib._color_data import XKCD_COLORS
 
@@ -37,6 +38,8 @@ Tcontra = TypeVar('Tcontra', contravariant=True) ; "A generic contravariant type
 V = TypeVar('V')    ; "A generic type variable"
 V2 = TypeVar('V2')  ; "A generic type variable"
 H = TypeVar('H', bound=Hashable)    ; "A generic type variable representing a :class:`typing.Hashable` type"
+
+PathOrStr = Union[str, pathlib.Path]
 
 Callback = Callable[[], Any]
 
