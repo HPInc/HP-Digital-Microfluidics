@@ -14,6 +14,7 @@ from mpam.types import Reagent, OpScheduler, Callback, DelayType, \
 from quantities.SI import uL
 from quantities.dimensions import Volume
 from mpam.engine import Worker
+from erk.stringutils import map_str
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +143,14 @@ class Transfer:
         self.is_product = is_product
         self.targets = []
         self.pending = True
+        
+    def __repr__(self) -> str:
+        targets = [f"{t.target}: {t.volume}" for t in self.targets]
+        return f"Transfer({self.xfer_dir}, {self.reagent}, {map_str(targets)}"
+        
+    @property
+    def total_volume(self) -> Volume:
+        return sum((x.volume for x in self.targets), start = Volume.ZERO)
 
 class TransferSchedule:
     pipettor: Final[Pipettor]

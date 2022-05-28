@@ -15,6 +15,7 @@ from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any, \
     Generator, Protocol, Iterable
 from weakref import WeakKeyDictionary, finalize
 import logging
+import pathlib
 
 from matplotlib._color_data import XKCD_COLORS
 
@@ -38,6 +39,8 @@ V = TypeVar('V')    ; "A generic type variable"
 V2 = TypeVar('V2')  ; "A generic type variable"
 H = TypeVar('H', bound=Hashable)    ; "A generic type variable representing a :class:`typing.Hashable` type"
 
+PathOrStr = Union[str, pathlib.Path]
+
 Callback = Callable[[], Any]
 
 class OnOff(Enum):
@@ -57,6 +60,10 @@ class OnOff(Enum):
     def __invert__(self) -> OnOff:
         "`!ON` is `OFF, and vice versa"
         return OnOff.OFF if self else OnOff.ON
+
+    @classmethod
+    def from_bool(cls, val: bool) -> OnOff:
+        return OnOff.ON if val else OnOff.OFF
 
 
 Minus1To1 = Union[Literal[-1], Literal[0], Literal[1]]
@@ -533,13 +540,13 @@ TickNumber._zero = TickNumber(Ticks.ZERO)
 
 ValTuple = tuple[bool, T]
 
-class Missing(Enum): 
+class Missing(Enum):
     """
     A singleton type to use for optional values when ``None`` is a possible non-
     default value.  Should be used via the type alias :attr:`MissingOr` and the
     constant :attr:`MISSING`, as in ::
-    
-        def foo(arg: MissingOr[Optional[A]] = MISSING) -> None: 
+
+        def foo(arg: MissingOr[Optional[A]] = MISSING) -> None:
             if arg is MISSING:
                 ...
             else:
@@ -549,7 +556,7 @@ class Missing(Enum):
     SINGLETON = auto()
     def __repr__(self) -> str:
         return "MISSING"
-    
+
 MISSING: Final[Missing] = Missing.SINGLETON
 """
 The singleton :class:`Missing` value.
@@ -655,7 +662,7 @@ class Operation(Generic[T, V], ABC):
         """
         Chain this :class:`Operation` and another together to create a single
         new :class:`Operation`
-        
+
         The value produced by this :class:`Operation` will be used to schedule
         the second one (unless the second is a :class:`StaticOperation`, in
         which case the second will be scheduled after this one is done).
@@ -1030,8 +1037,8 @@ class OpScheduler(Generic[CS]):
     class WaitFor(Operation[CS,CS]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits for a
-        :class:`WaitableType` to be satisfied. 
-        
+        :class:`WaitableType` to be satisfied.
+
         * If :attr:`waitable` is a :class:`.Time` or :class:`Ticks`, the
           operation completes after that delay.
 
@@ -1323,7 +1330,7 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
 class Delayed(Generic[Tco]):
     """
     A container that will (or may) eventually contain a value of type :attr:`T`.
-    
+
     :class:`Delayed` is an abstract class.  Instances are created either by
     using the :func:`complete` class method::
 
@@ -1338,7 +1345,7 @@ class Delayed(Generic[Tco]):
     The value may only be specified once (although it need not ever be
     specified).  When a value is posted, any registered *callbacks* will be
     invoked and passed the posted value.
-    
+
     :class:`Delayed` is *covariant* in its type parameter, so a
     :class:`Delayed`\[``Derived``] can be treated as a
     :class:`Delayed`\[``Base``].  Conversely, the concrete subclass
@@ -1722,7 +1729,7 @@ class Delayed(Generic[Tco]):
         else:
             for f in futures:
                 f.wait()
-                
+
 class _CompleteDelayed(Delayed[T]):
     def _define_in_concrete(self)->None: ...
 
@@ -1733,7 +1740,7 @@ class Postable(Delayed[Tcontra]):
     """
     A concrete subclass of :class:`Delayed` that provides a :func:`post` method
     to assert a value, which will be passed to any waiting callbacks.
-    
+
     :class:`Delayed` is *covariant* in its type parameter, so a
     :class:`Delayed`\[``Derived``] can be treated as a
     :class:`Delayed`\[``Base``].  Conversely, the concrete subclass
@@ -1742,25 +1749,25 @@ class Postable(Delayed[Tcontra]):
     :class:`Postable`\[``Derived``].
 
     More concretely, given ::
-    
+
         class Top: ...
         class Middle(Top): ...
         class Bottom(Middle): ...
-        
+
         p = Postable[Middle]()
     ``p`` can be treated as a :class:`Delayed`\[``Middle``], a
     :class:`Delayed`\[``Top``], or a :class:`Postable`\[``Bottom``].
-    
+
     :func:`post` may only be called once (although it need not ever be called).
     When a value is posted, any registered *callbacks* will be invoked and
     passed the posted value.
-    
-    Args: 
+
+    Args:
         Tcontra: the contravariant type that can be asserted using :func:`post`.
     """
-    
+
     def _define_in_concrete(self) -> None: ...
-    
+
     # The logic here is a bit tricky, but I think it works.
     # We're racing against when_value().  If we see that there's
     # no _maybe_lock, that means that when_value() hasn't yet called
@@ -1779,7 +1786,7 @@ class Postable(Delayed[Tcontra]):
         Note:
             :func:`post` may only be called once for any :class:`Postable`
             object.  Calling it a second time will result in an assertion
-            failure. 
+            failure.
         Note:
             Once :func:`post` has been called, any registered callbacks are
             forgotten.
@@ -2020,7 +2027,6 @@ class Barrier(Trigger, Generic[T]):
 
 
 
-
 def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
              after: Optional[DelayType] = None,
              post_result: bool = True,
@@ -2064,14 +2070,13 @@ class ChangeCallbackList(Generic[T]):
     Args:
         T: the type of the value being managed
     """
-    callbacks: dict[Hashable, ChangeCallback[T]]    #: A mapping from keys to handlers
+    callbacks: Optional[dict[Hashable, ChangeCallback[T]]] = None    #: A mapping from keys to handlers
     lock: Final[RLock]                              #: The object's lock
 
     def __init__(self) -> None:
         """
         Initialize the object.
         """
-        self.callbacks = {}
         self.lock = RLock()
 
     def add(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
@@ -2087,19 +2092,21 @@ class ChangeCallbackList(Generic[T]):
         if key is None:
             key = cb
         with self.lock:
+            if self.callbacks is None:
+                self.callbacks = {}
             self.callbacks[key] = cb
             # print(f"Now {len(self.callbacks)} callback(s) on {self}")
             # if key is not cb:
                 # print(f"Adding callback {key}")
                 # print(f"  Callbacks now {map_str(list(self.callbacks.keys()))}")
-                
+
     def __call__(self, cb: ChangeCallback[T], *, key: Optional[Hashable] = None) -> None:
         """
         Add a new handler, replacing any with the specified key.  If ``key`` is
         ``None``, ``cb`` is used as the key.
-        
+
         An alias for :func:`add`.
-        
+
         Args:
             cb: the handler
         Keyword Args:
@@ -2113,28 +2120,28 @@ class ChangeCallbackList(Generic[T]):
         """
         Create a new :class:`ChangeCallbackList` whose handlers receive
         transformed (and possibly filtered) values.
-        
+
         ``transform`` is a function that takes the old and new values and
         returns either a tuple of transformed old and new values (possibly of a
         different type) or ``None``.  In the former case, the transformed values
         are :func:`process`ed by the new :class:`ChangeCallbackList`.  In the
         latter case, nothing is passed on.
-        
+
         For example, after ::
-        
+
             new_ccl = ccl.mapped(lambda old, new: (str(old), str(new)))
-            
+
         ``new_ccl`` is a :class:`ChangeCallbackList`\[``str``] whose handlers
         receive the values of `ccl` transformed into strings.
-        
+
         :func:`mapped` is implemented using :func:`add`.  If ``key`` is
         ``None``, the actual key will be something you can't get your hands on.
-        
+
         Note:
             If :func:`clear` is called on this (i.e., the existing)
             :class:`ChangeCallbackList`, the link with the new one will be
             severed.
-        
+
         Args:
             transform: a function that transforms old and new values into either
                        a pair of old and new values (possibly of a different
@@ -2158,22 +2165,22 @@ class ChangeCallbackList(Generic[T]):
         """
         Create a new :class:`ChangeCallbackList` whose handlers are invoked only
         if ``test`` returns ``True`` when passed the old and new values (as a pair).
-         
+
         For example, after ::
-        
+
             new_ccl = ccl.filtered(lambda old, new: new > old)
-            
+
         ``new_ccl`` is a :class:`ChangeCallbackList` whose handlers are invoked
         only when the change is an increase in value.
-        
+
         :func:`filtered` is implemented using :func:`add`.  If ``key`` is
         ``None``, the actual key will be something you can't get your hands on.
-        
+
         Note:
             If :func:`clear` is called on this (i.e., the existing)
             :class:`ChangeCallbackList`, the link with the new one will be
             severed.
-        
+
         Args:
             test: a function that returns ``True`` if the values should be
                   passed on and ``False`` otherwise
@@ -2182,7 +2189,7 @@ class ChangeCallbackList(Generic[T]):
         Returns:
             a new :class:`ChangeCallbackList`
         """
-        return self.mapped(lambda old, new: (old, new) if test(old, new) else None, 
+        return self.mapped(lambda old, new: (old, new) if test(old, new) else None,
                            key=key)
 
     def remove(self, key: Hashable) -> None:
@@ -2196,7 +2203,12 @@ class ChangeCallbackList(Generic[T]):
         """
         with self.lock:
             # val = self.callbacks[key]
-            del self.callbacks[key]
+            cbs = self.callbacks
+            if cbs is None:
+                raise KeyError(key)
+            del cbs[key]
+            if len(cbs) == 0:
+                self.callbacks = None
             # if key is not val:
                 # print(f"Removing callback {key}")
                 # print(f"  Callbacks now {map_str(list(self.callbacks.keys()))}")
@@ -2208,15 +2220,19 @@ class ChangeCallbackList(Generic[T]):
         Args:
             key: the key to remove
         """
-        with self.lock:
-            self.callbacks.pop(key, None)
+        cbs = self.callbacks
+        if cbs is not None:
+            with self.lock:
+                cbs.pop(key, None)
+                if len(cbs) == 0:
+                    self.callbacks = None
 
     def clear(self) -> None:
         """
         Remove all handlers.
         """
         with self.lock:
-            self.callbacks.clear()
+            self.callbacks = None
 
     def process(self, old: T, new: T) -> None:
         """
@@ -2231,22 +2247,29 @@ class ChangeCallbackList(Generic[T]):
             new: the new value
         """
         # print(f"Processing callbacks")
+        if self.callbacks is None:
+            return
         with self.lock:
-            copy = list((k,cb) for k,cb in self.callbacks.items())
+            # Someone might've removed the last callback (and the list) since we
+            # looked, so we get it again.
+            if (cbs := self.callbacks) is None:
+                # MyPy thinks this is unreachable.  It's wrong.
+                return  # type: ignore [unreachable]
+            copy = list((k,cb) for k,cb in cbs.items())
         for k,cb in copy:
             # print(f"Callback ({old}->{new}: {k}")
             cb(old, new)
-            
-    
 
-OT = TypeVar("OT") 
+
+
+OT = TypeVar("OT")
 OTcontra = TypeVar("OTcontra", contravariant=True)
 
 class Gettable(Protocol[OTcontra, Tco]):
     """
     A protocol specifying that calling ``__get__()`` on some object will return
     a value.
-    
+
     Args:
         OTcontra: the (contravariant) type of the object
         Tco: the (covariant) type of the value returned
@@ -2257,7 +2280,7 @@ class _CCLProperty(Generic[T]):
     prop: Final[MonitoredProperty]
     tag: Final[str]
     _attr: Optional[str] = None
-    
+
     @property
     def attr(self) -> str:
         a = self._attr
@@ -2265,7 +2288,7 @@ class _CCLProperty(Generic[T]):
             a = f"{self.prop.callback_list_attr}{self.tag}"
             self._attr = a
         return a
-    
+
     def __init__(self, prop: MonitoredProperty, tag: str,
                  creator: Callable[[object], ChangeCallbackList[T]]) -> None:
         self.prop = prop
@@ -2284,11 +2307,11 @@ class _CCLProperty(Generic[T]):
             ccl = (self.creator)(obj)
             setattr(obj, attr, ccl)
         return ccl
-    
+
     @staticmethod
     def new_tag() -> str:
         return f"_{random.randrange(1000000)}"
-    
+
     def mapped(self, transform: Callable[[T,T], Optional[tuple[V,V]]], *,
                key: Optional[Hashable] = None
                ) -> Gettable[object, ChangeCallbackList[V]]:
@@ -2297,7 +2320,7 @@ class _CCLProperty(Generic[T]):
             ccl: ChangeCallbackList[T] = me.__get__(obj, None)
             return ccl.mapped(transform, key=key)
         return _CCLProperty(self.prop, self.new_tag(), creator)
-    
+
     def filtered(self, test: Callable[[T,T], bool], *,
                  key: Optional[Hashable] = None
                  ) -> Gettable[object, ChangeCallbackList[T]]:
@@ -2306,30 +2329,30 @@ class _CCLProperty(Generic[T]):
             ccl: ChangeCallbackList[T] = me.__get__(obj, None)
             return ccl.filtered(test, key=key)
         return _CCLProperty(self.prop, self.new_tag(), creator)
-    
-    
- 
+
+
+
 class MonitoredProperty(Generic[T]):
     """
     An object that behaves like a gettable and settable property, but which also
     provides optional bounds checking, transformation, and a :class:`ChangeCallbackList`
-    
+
     To get access to the :class:`MonitoredProperty`'s
     :class:`ChangeCallbackList`, use its :attr:`callback_list` property::
-    
+
         class Counter:
             count = MonitoredProperty[int](default=0)
             on_count_change = count.callback_list
-            
+
             def inc(self, delta: int = 0) -> None:
                 self.count += delta
-                
+
         counter.on_count_change(lambda old, new: print(f"Changed from {old} to {new}")
-        
+
     Note:
         The actual :class:`ChangeCallbackList` for an object is not created
         until somebody references it (e.g., by trying to add a callback).
-        
+
     The optional ``default`` value is the default value to use for this property
     on all objects.  If ``default_fn`` is specified to be a function that takes
     the object and returns a :attr:`MissingOr`\[``T``], it is tried first the
@@ -2338,44 +2361,54 @@ class MonitoredProperty(Generic[T]):
     is :attr:`MISSING`, then the object does not have a value for the property
     and an :class:`.AttributeError` is raised.  Otherwise, the default value
     will be cached as the value.
-    
+
     When the property is set (via :func:`__set__`)::
-    
+
         counter.count = 5
-        
+
     if any callbacks have been registered for its :attr:`callback_list` on an
     object, all of the :attr:`callback_list`'s callbacks are called, passing in
     the old and new values.  This takes place after the new value has been set.
     The callbacks do not happen if
-    
+
         1. the object does not have a value (including a default value) for the
            object, either because it has not yet been set or because it has been
            deleted, or
-           
+
         2. the old and new values are equal (as defined by ``==``) and the
            ``process_duplicates`` parameter to the constructor was not ``True``.
-    
+
     To check whether an object has a value for the property, use the property's
     :attr:`value_check` property::
-    
+
         class Counter:
             count = MonitoredProperty[int]()
             has_count = count.value_check
-            
+
         if counter.has_count:
             print(counter.count)
-            
+
     After the property is deleted (via :func:`__delete__`) ::
-    
+
         del counter.count
-        
+
     it is reset to its initial state.  The next time it is read or has its value
-    checked, it is reset to its (static or computed) default value.
-    
+    checked, it is reset to its (static or computed) default value or, if there
+    is none, considered to not have a value.
+
+    To provide a public read-only property alongside a protected writable
+    property, use the property's :attr:`getter` property::
+
+        class Counter:
+            _count = MonitoredProperty[int](default=0)
+            count = _count.getter
+
+
+
     Callback properties can be extended using functions akin to
     :class:`ChangeCallbackList`'s :func:`~ChangeCallbackList.mapped` and
     :func:`~ChangeCallbackList.filtered`, e.g. ::
-    
+
         class Counter:
             count = MonitoredProperty[int](default=0)
             on_count_change = count.callback_list
@@ -2389,58 +2422,58 @@ class MonitoredProperty(Generic[T]):
 
     You can also have the property refuse or modify attempted assignment by
     using the :deco:`transform` decorator ::
-    
+
         @count.transform
         def clip_count(self, val: int) -> int:
             return min(val, self.max_count)
-            
+
         @count.transform
         def bounds_check(self, val: int) -> MissingOr[int]:
             return val if val <= self.max_count else MISSING
-            
+
         @count.transform(chain=True)
         def add_one(self, val: int) -> int:
             return val+1
-            
+
     If the ``chain`` parameter is ``True``, the function will be applied to the
     value of any previous transformations (unless they return :attr:`MISSING`).
     Otherwise, the function replaces any current transformation for the property.
-    
+
     If the function (or any function in a chain) returns :attr:`MISSING`, the
     assignment is silently aborted.
-    
+
     Note:
         The decorated transformation functions have their own name, not (as with
         ``@property``), the name of the property.
-        
+
     Note:
         The transformation chain is called **before** the old value is looked
         up, so if the transformations modify the property , the old value for
         the callbacks from this assignment will be the one immediately prior to
         the actual assignment.  (Any previous assignments would have triggered
         their own callbacks.)
-    
+
     Note:
         When extracting documentation using Sphinx/Napoleon, the types of the
         properties and their derived properties are not picked up unless you are
         explicit::
-        
+
             class Counter:
                 count: MonitoredProperty[int] = MonitoredProperty(default=0)
                 on_count_change: ChangeCallbackList[in] = count.callback_list
-                
+
         MyPy won't let you annotate the property as ``int``, even though it
         reasons correctly about it.
-        
+
     Args:
         T: the type of the value stored in the property.
     """
-    
+
     _name: Optional[str] = None
     _val_attr: Optional[str] = None
     _callback_list_attr: Optional[str] = None
-    
-    
+
+
     @property
     def name(self) -> str:
         """
@@ -2451,11 +2484,11 @@ class MonitoredProperty(Generic[T]):
             n = f"monitored_{random.randrange(1000000)}"
             self._name = n
         return n
-    
+
     @property
     def val_attr(self) -> str:
         """
-        The attribute used to store the value on objects        
+        The attribute used to store the value on objects
         """
         attr = self._val_attr
         if attr is None:
@@ -2473,13 +2506,13 @@ class MonitoredProperty(Generic[T]):
             attr = f"_{self.name}__callbacks"
             self._callback_list_attr = attr
         return attr
-    
-    _process_duplicates: Final[bool]    
+
+    _process_duplicates: Final[bool]
     """
     Should the :class:`ChangeCallbackList` be notified if a new
     value is the same as the previous one?
     """
-    
+
     def __init__(self, name: Optional[str] = None, *,
                  val_attr: Optional[str] = None,
                  callback_list_attr: Optional[str] = None,
@@ -2489,28 +2522,30 @@ class MonitoredProperty(Generic[T]):
                  ) -> None:
         """
         Initialize the object.
-        
+
         If ``name`` is not specified, the name of the class attribute will be
         used if the :class:`MonitoredProperty` is being used to define one, as in ::
-        
+
             class Counter:
                 count = MonitoredProperty[int](default=0)
-                
-        where ``name`` will be taken to be ``"count"``.  Otherwise, a gensymed
-        string (e.g., ``"monitored_12345"``) will be used. If ``val_attr`` is
-        not specified, it will be ``name`` prepended by an underscore.  If
-        ``callback_list_attr`` is not specified, it will be ``val_attr``
-        followed by ``"_callback_list"``.
-        
-        Args:
-            name: the name of the property
-        Keyword Args:
-            val_attr: the attribute used to store the value on objects
 
-            callback_list_attr: the attribute used to store the
+        where ``name`` will be taken to be ``"count"``.  (If the attribute name
+        begins with a single underscore, the underscore will be removed.)
+        Otherwise, a gensymed string (e.g., ``"monitored_12345"``) will be used.
+        If ``val_attr`` is not specified, it will be ``"_<name>__value"``.  If
+        ``callback_list_attr`` is not specified, it will be
+        ``"_<name>__callbacks"``.
+
+        Args:
+            name: the (optional) name of the property
+        Keyword Args:
+            val_attr: the (optional) attribute used to store the value on
+                      objects
+
+            callback_list_attr: the (optional) attribute used to store the
                                 :class:`ChangeCallbackList` on objects
 
-            default: an optional default value to use for all objects 
+            default: an optional default value to use for all objects
 
             default_fn: an optional function to use to compute the default value
                         based on the object.  If it returns :attr:`MISSING`,
@@ -2525,16 +2560,20 @@ class MonitoredProperty(Generic[T]):
         if val_attr is not None:
             self._val_attr = val_attr
         if callback_list_attr is not None:
-            self._callback_list_attr = callback_list_attr 
+            self._callback_list_attr = callback_list_attr
         self._default_val = default
         self._default_fn = default_fn
         self._process_duplicates = process_duplicates
         self._transform: Callable[[Any, T], MissingOr[T]] = lambda _obj, v: v
-        
+
     def __set_name__(self, _owner, name: str) -> None:
-        # print(f"Setting name for {_owner}.{name}")
-        self._name = name
-        
+        if self._name is None:
+            # print(f"Setting name for {_owner}.{name}")
+            if name.startswith("_") and not name.startswith("__"):
+                name = name[1:]
+                # print(f"  Name now {name}")
+            self._name = name
+
     def _default_value(self, obj) -> MissingOr[T]:
         dfn = self._default_fn
         if dfn is not None:
@@ -2542,8 +2581,8 @@ class MonitoredProperty(Generic[T]):
             if val is not MISSING:
                 return val
         return self._default_val
-        
-        
+
+
     def _lookup(self, obj) -> MissingOr[T]:
         key = self.val_attr
         val: MissingOr[T] = getattr(obj, key, MISSING)
@@ -2552,12 +2591,12 @@ class MonitoredProperty(Generic[T]):
             if val is not MISSING:
                 setattr(obj, key, val)
         return val
-        
+
     def _callback_list(self, obj) -> Optional[ChangeCallbackList[T]]:
         key = self.callback_list_attr
         ccl = getattr(obj, key, None)
         return ccl
-        
+
     @overload
     def __get__(self, obj: None, objtype) -> MonitoredProperty[T]: ... # @UnusedVariable
     @overload
@@ -2567,17 +2606,17 @@ class MonitoredProperty(Generic[T]):
         Get the current value of the property for ``obj``, if ``obj`` is not
         ``None``, otherwise return the property itself.  (This last is used to
         refer to the property as an attribute of the type.)
-        
+
         If the value has not yet been set, this looks for a default value:
-        
+
         1. First, the function (if any) specified as the ``default_fn`` in
            :func:`__init__` is called, passing in ``obj``.  If this returns
            a value other than :attr:`MISSING`, it is cached and returned.
         2. Otherwise, the value specified as the ``default`` in
            :func:`__init__` is checked.  If it is anything but
            :attr:`MISSING`, it is returned.
-        3. Otherwise, :class:`.AttributeError` is raised. 
-        
+        3. Otherwise, :class:`.AttributeError` is raised.
+
         :meta public:
         Args:
             obj: the object on which to look for the value
@@ -2598,19 +2637,19 @@ class MonitoredProperty(Generic[T]):
     def __set__(self, obj, value: T) -> None:
         """
         Set the value of the property for ``obj``.
-        
+
         If the property has any transformations registered by :deco:`transform`,
         the value is first transformed by calling them.  If the result is
         :attr:`MISSING`, the entire assignment is silently aborted.
-        
+
         Otherwise, if a callback has been registered to the property's
         :class:`ChangeChallbackList` for ``obj`` the callbacks are processed
         unless
-        
+
         1. ``obj`` does not have a value (including a default value) for the
            object, either because it has not yet been set or because it has been
            deleted, or
-           
+
         2. the old and new values are equal (as defined by ``==``) and the
            ``process_duplicates`` parameter to the property's constructor was
            not ``True``.
@@ -2619,11 +2658,11 @@ class MonitoredProperty(Generic[T]):
             obj: the object on which to set the value
             value: the value to set
         """
-        
+
         key = self.val_attr
         maybe_value = (self._transform)(obj, value)
         if maybe_value is MISSING:
-            return 
+            return
         value = maybe_value
         old = self._lookup(obj)
         setattr(obj, key, value)
@@ -2631,84 +2670,84 @@ class MonitoredProperty(Generic[T]):
             ccl = self._callback_list(obj)
             if ccl is not None:
                 ccl.process(old, value)
-            
+
     def __delete__(self, obj) -> None:
         """
         Remove any value of the property for ``obj``.  If it is subsequently
         read (using :func:`__get__`) before it is explicitly set, a new default
         value will be computed.
-        
+
         Note:
             Deleting the property does not delete an associated
             :class:`ChangeCallbackList`, so any registered callbacks wiil remain
             registered.  However, if there is no default value, they will not be
             called the next time the value is set, since there will be no "old"
             value.
-        
+
         Args:
             obj: the object on which to delete the value
         """
         key = self.val_attr
         delattr(obj, key)
-        
+
     @property
     def callback_list(self) -> _CCLProperty[T]:
         """
         A property that returns the :class:`ChangeCallbackList` for this
         :class:`MonitoredProperty` associated with an object.
-        
+
         When this property is accessed for an object for the first time, a
         :class:`ChangeCallbackList` is created and cached in the object.
-        
+
         Typically, this will be used to define another property in a class,
         e.g., ::
-        
+
             class Counter:
                 count = MonitoredProperty[int]("count", default=0)
                 on_count_change = count.callback_list
-                
+
                 def inc(self, delta: int = 0) -> None:
                     self.count += delta
-                    
+
         Then the defined property can be used::
 
             counter.on_count_change(lambda old, new: print(f"Changed from {old} to {new}")
-        
+
         As this is the :class:`ChangeCallbackList` itself, other methods can
         also be used, e.g., ::
-        
+
             counter.on_count_change(fn, key="my callback")
             counter.on_count_change.add(fn, key="my callback")
             counter.on_count_change.remove("my callback")
             counter.on_count_change.discard("my callback")
             counter.on_count_change.clear()
-            
+
         The actual object returned by :attr:`callback_list` is a property object
         that can be extended (in the class, at least) to other similar
         properties using functions akin to :class:`ChangeCallbackList`'s
         :func:`~ChangeCallbackList.mapped` and
         :func:`~ChangeCallbackList.filtered`, e.g. ::
-        
+
             class Counter:
                 count = MonitoredProperty[int]("count", default=0)
                 on_count_change = count.callback_list
                 on_count_increase = on_count_change.filtered(lambda old, new: new > old)
-    
+
         Here, a counter's ``on_count_increase`` is a :class:`ChangeCallbackList`
         whose callbacks are only invoked when a change is an increase.  As with
         ``on_count_change``, each object gets its own :class:`ChangeCallbackList`,
         and only gets one if somebody refers to it by trying to add a callback.
         """
-        
+
         return _CCLProperty(self, "", lambda _: ChangeCallbackList[T]())
-    
+
     @property
     def value_check(self) -> Gettable[object, bool]:
         """
         A property a property that returns ``True`` when an object doesn't have
         a value (including a default) value associated with this
         :class:`MonitoredProperty`.
-        
+
         If there is no default value, the value starts out ``False``, becomes
         ``True`` the first time the :class:`MonitoredProperty` is set on an
         object, and becomes ``False`` again when the :class:`MonitoredProperty`
@@ -2721,7 +2760,33 @@ class MonitoredProperty(Generic[T]):
                 val = me._lookup(obj)
                 return val is not MISSING
         return VC()
-    
+
+    @property
+    def getter(self) -> Gettable[object, T]:
+        """
+        A read-only property that returns the value associated with this
+        :class:`MonitoredProperty` for an object or raises ``AttributeError`` if
+        there is no such value.  This can be used to provide a read-only public
+        property alongside a writable protected property, as in ::
+
+            class Counter:
+                _count = MonitoredProperty[int](default=0)
+                on_count_change = _count.callback_list
+                count = _count.getter
+
+        With this in place, users of ``Counter`` can read ``count`` and register
+        callbacks to ``on_count_change``, but modifications can only happen by
+        means of ``_count``.
+        """
+        me = self
+        class VC:
+            def __get__(self, obj, objtype) -> T: # @UnusedVariable
+                val = me._lookup(obj)
+                if val is MISSING:
+                    raise AttributeError(f"Attribute '{me.name}' not set in {obj}")
+                return val
+        return VC()
+
     @overload
     def transform(self, *,
                   chain: bool = False) -> Callable[[Callable[[Any, T], MissingOr[T]]], # @UnusedVariable
@@ -2736,54 +2801,54 @@ class MonitoredProperty(Generic[T]):
         """
         A decorator that specifies that the decorated method should be called on
         the object, passing in the asserted value, e.g. ::
-            
+
             class Counter:
                 max_count = 100
                 count = ManagedProperty[T]("count", default=0)
-                
+
                 @count.transform
                 def clip(self, val: int) -> int:
                     return min(val, self.max_count)
-                    
+
         This will ensure that values greater than ``max_count`` will be clipped
         at that level, e.g. ::
-        
+
             counter.count = 250
             print(counter.count)
-            
+
         will print ``100``.
-        
+
         If the function returns :attr:`MISSING`, the assignment is silently
         aborted.  For example, ::
-        
+
             @count.transform
             def only_positive(self, val: int) -> MissingOr[in]:
                 return val if val > 0 else MISSING
-                    
+
         Now ::
-        
+
             counter.count = 2
             counter.count = -5
             print(counter.count)
-            
+
         will print ``2``.
-        
+
         If ``chain`` is ``True``, the function will be applied to the current
         transformation, unless it returns :attr:`MISSING`.  This is typically
         written calling :func:`transform` with **only** a ``chain`` parameter,
         which will return a decorator that finishes the job ::
-        
+
             @count.transform
             def only_positive(self, val: int) -> MissingOr[in]:
                 return val if val > 0 else MISSING
-                    
+
             @count.transform(chain = True)
             def clip(self, val: int) -> int:
                 return min(val, self.max_count)
-            
+
         Now, ``only_positive`` will be applied first.  If it passes the value,
         ``clip`` will be called to clip it to the maximum.
-        
+
         Args:
             fn: the function used to check and/or transform a value on
                 assignment.  If this is ``None``, the value will be a decorator
@@ -2818,7 +2883,7 @@ class UnknownConcentration:
     compute.  This usually occurs when two reagents specify the chemical, but
     they use different concentration units (e.g., :class:`.Molarity` and
     :class`.VolumeConcentration`).
-    
+
     It is expected that the only instance of :class:`UnknownConcentration` will
     be the singleton constant :attr:`unknown_concentration`.
 
@@ -3517,8 +3582,6 @@ class ProcessedReagent(Reagent):
 
 
 
-
-
 class Liquid:
     """
     A quantity of a :class:`Reagent`.  Both the :attr:`volume` and the
@@ -3536,14 +3599,14 @@ class Liquid:
     whether the :attr:`volume` is :attr:`inexact`.  Typically, this will be
     ``False``, but if it is ``True``, it is not safe to assume that, e.g.,
     incrementally removing volume will necessarily have removed all of it.
-    
+
     As a convenience, a :class:`.Volume` can be added to or subtracted from a
     :class:`Liquid`, e.g. ::
 
         liq -= 2*uL
-        
+
     The resulting :class:`.Volume` is clipped at zero.
-    
+
     :class:`Liquid`\s can be mixed together in several ways:
 
     * :func:`mix_with` returns the result of mixing a given :class:`Liquid` with
@@ -3610,7 +3673,7 @@ class Liquid:
     value will trigger the callbacks in :attr:`reagent_change_callbacks` only if
     the new value is not the same as the old value.
     """
-    
+
     on_reagent_change: ChangeCallbackList[Reagent] = reagent.callback_list
     "The :class:`ChangeCallbackList` monitoring :attr:`reagent`"
 
@@ -4281,7 +4344,7 @@ class _AFS_Thread(Thread):
         Note:
             This method assumes that :attr:`serializer`'s
             :attr:`~AsyncFunctionSeraializer.lock` is locked.
-        
+
         Args:
             fn: the callback function
         """
@@ -4317,7 +4380,7 @@ class AsyncFunctionSerializer:
     by specifying ``daemon=True`` when the :class:`AsyncFunctionSerializer` is
     initialized.
     """
-    
+
     thread: Optional[_AFS_Thread] = None        #: The background :class`.Thread`
     lock: Final[RLock]                          #: A local lock
 
@@ -4402,7 +4465,7 @@ class State(Generic[T], ABC):
         T: The value type
     """
     # _state: T   #: The current value
-    
+
     current_state: MonitoredProperty[T] = MonitoredProperty()
     """
     The current value.  When this value is set to a value not equal to the prior
@@ -4459,7 +4522,7 @@ class ConfigParams:
     defaults: Final[Namespace]
     cmd_line: Final[Namespace]
     from_code: Final[Mapping[str, Any]]
-    
+
     def __init__(self, *,
                  defaults: Optional[Namespace] = None,
                  cmd_line: Optional[Namespace] = None,
@@ -4467,7 +4530,7 @@ class ConfigParams:
         self.defaults = defaults or Namespace()
         self.cmd_line = cmd_line or Namespace()
         self.from_code = from_code or {}
-        
+
     def __getattr__(self, name: str) -> Any:
         val = getattr(self.cmd_line, name, MISSING)
         if val is not MISSING:
@@ -4479,9 +4542,9 @@ class ConfigParams:
         if val is not MISSING:
             return val
         raise AttributeError(name)
-    
+
     _sentinel = (MISSING,)
-    
+
     @overload
     def get(self, name: str, default: tuple[Missing] = (MISSING,), *, expect: typing.Type[T]) -> T: ...
     @overload
@@ -4500,5 +4563,5 @@ class ConfigParams:
             if default != self._sentinel:
                 return default
             raise
-         
+
         ...

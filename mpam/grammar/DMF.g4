@@ -8,7 +8,7 @@ options {
 
 @header {
 from mpam.types import Dir, OnOff, Turn, ticks, unknown_reagent, waste_reagent
-from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit
+from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit, NumberedItem
 from quantities import SI
 }
 
@@ -97,8 +97,9 @@ expr
   | '(' x=expr ',' y=expr ')' 		 # coord_expr
   | '-' rhs=expr                     # neg_expr
   | dist=expr direction              # delta_expr
-  | 'well' '#' which=expr            # well_expr
-  | 'heater' '#' which=expr			 # heater_expr
+  | kind=numbered_type '#' which=expr # numbered_expr
+//  | 'well' '#' which=expr            # well_expr
+//  | 'heater' '#' which=expr			 # heater_expr
   | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
   | quant=expr 'as' 'a'? 'string' 'in' dim_unit # unit_string_expr
   | obj=expr ATTR attr             # attr_expr
@@ -224,6 +225,8 @@ param_type returns[Type type]
   | 'liquid' {$ctx.type=Type.LIQUID}
   | ('temp' | 'temperature') ('diff' | 'difference' | 'delta') {$ctx.type=Type.REL_TEMP}
   | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
+  | 'heater' {$ctx.type=Type.HEATER}
+  | 'magnet' {$ctx.type=Type.MAGNET}
   ;
   
 dim_unit returns[PhysUnit unit]
@@ -233,6 +236,12 @@ dim_unit returns[PhysUnit unit]
   | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
   | ('tick' | 'ticks') {$ctx.unit=ticks}
   | ('drop' | 'drops') {$ctx.unit=EnvRelativeUnit.DROP}
+  ;
+  
+numbered_type returns[NumberedItem kind]
+  : 'well' {$ctx.kind=NumberedItem.WELL}
+  | 'heater' {$ctx.kind=NumberedItem.HEATER}
+  | 'magnet' {$ctx.kind=NumberedItem.MAGNET}
   ;
 
 attr returns[str which]
@@ -245,7 +254,7 @@ attr returns[str which]
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
   | 'target' ('temp' | 'temperature')? {$ctx.which="#target_temperature"}
   | 'current'? ('temp' | 'temperature') {$ctx.which="#current_temperature"}
-  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | ID)
+  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'magnet' | ID)
   	{$ctx.which=$n.text}
   ;
   

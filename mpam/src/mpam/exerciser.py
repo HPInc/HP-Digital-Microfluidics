@@ -5,9 +5,10 @@ from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
     _SubParsersAction, _ArgumentGroup
 from re import Pattern
 import re
-from typing import Final, Mapping, Union, Optional, Sequence, Any
+from typing import Final, Mapping, Union, Optional, Sequence, Any, Callable
 # import logging
 import logging.config
+import pathlib
 
 from mpam.device import Board, System
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs,\
@@ -19,7 +20,7 @@ from quantities import temperature
 from threading import Event
 from matplotlib.gridspec import SubplotSpec
 from mpam.monitor import BoardMonitor
-import pathlib
+from mpam.types import PathOrStr
 from erk.stringutils import conj_str
 from quantities.prefixes import kilo
 
@@ -239,7 +240,7 @@ class Exerciser(ABC):
                    args: Optional[Sequence[str]]=None,
                    namespace: Optional[Namespace]=None) -> tuple[Task, Namespace]:
         ns = self.parser.parse_args(args=args, namespace=namespace)
-        Exerciser.setup_logging(ns.log_level, ns.log_config)
+        Exerciser.setup_logging(level=ns.log_level, file=ns.log_config)
 
         task: Task = ns.task
         return task, ns
@@ -330,17 +331,23 @@ class Exerciser(ABC):
                                help='Configuration file for logging')
 
     @staticmethod
-    def setup_logging(level: Optional[str] = None,
-                      file: Union[str, pathlib.Path] = None) -> None:
+    def setup_logging(*, level: Optional[str] = None,
+                      file: PathOrStr = None,
+                      default_file: Optional[
+                          Union[PathOrStr, Callable[[], PathOrStr]]] = None) -> None:
         default_format = '%(levelname)7s|%(module)s|%(message)s'
 
-        if not((level is None) ^ (file is None)):
+        if level is not None and file is not None:
             raise Exception("Specify 'level' or 'file' to 'setup_logging' but not both.")
 
         if level is None and file is None:
-            path = pathlib.Path.cwd() / ".logging"
-            if path.exists():
-                file = path
+            if default_file is None:
+                default_file = pathlib.Path.cwd() / ".logging"
+            elif not (isinstance(default_file, str) or
+                      isinstance(default_file, pathlib.Path)):
+                default_file = default_file()
+            if pathlib.Path(default_file).exists():
+                file = default_file
             else:
                 level = "INFO"
         if level is not None:
@@ -357,5 +364,4 @@ class Exerciser(ABC):
             assert file is not None
             logging.config.fileConfig(file,
                                       defaults = {
-                                          "format": default_format
-                                          })
+                                          "format": default_format})

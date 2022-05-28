@@ -92,7 +92,7 @@ class DummyPipettor(Pipettor):
     def perform(self, transfer: Transfer) -> None:
         reagent = transfer.reagent
 
-        total_volume = sum((x.volume for x in transfer.targets), start = Volume.ZERO)
+        total_volume = transfer.total_volume
 
         self.move_to(ArmPos.TIPS)
         self.down()
