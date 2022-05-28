@@ -242,7 +242,7 @@ class Exerciser(ABC):
                    args: Optional[Sequence[str]]=None,
                    namespace: Optional[Namespace]=None) -> tuple[Task, Namespace]:
         ns = self.parser.parse_args(args=args, namespace=namespace)
-        Exerciser.setup_logging(ns.log_level, ns.log_config)
+        Exerciser.setup_logging(level=ns.log_level, file=ns.log_config)
 
         task: Task = ns.task
         return task, ns
@@ -343,7 +343,7 @@ class Exerciser(ABC):
             elif not (isinstance(default_file, str) or
                       isinstance(default_file, pathlib.Path)):
                 default_file = default_file()
-            if isinstance(default_file, pathlib.Path) and default_file.exists():
+            if pathlib.Path(default_file).exists():
                 file = default_file
             else:
                 level = "INFO"
