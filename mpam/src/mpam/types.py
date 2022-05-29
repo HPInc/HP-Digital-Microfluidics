@@ -2272,7 +2272,7 @@ class Gettable(Protocol[OTcontra, Tco]):
         OTcontra: the (contravariant) type of the object
         Tco: the (covariant) type of the value returned
     """
-    def __get__(self, obj: OTcontra, objtype: type[OTcontra]) -> Tco: ...
+    def __get__(self, obj: OTcontra, objtype: type[OTcontra]) -> Tco: ... # @UnusedVariable
 
 class _CCLProperty(Generic[T]):
     prop: Final[MonitoredProperty]

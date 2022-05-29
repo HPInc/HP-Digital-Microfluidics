@@ -144,6 +144,9 @@ class DoNothing(ErrorHandler):
         """
         pass
     
+    def __repr__(self) -> str:
+        return "IGNORE"
+    
 IGNORE = DoNothing()    #: A singleton instance of :class:`DoNothing`
     
 class PRINT_TO(ErrorHandler):
@@ -179,6 +182,13 @@ class PRINT_TO(ErrorHandler):
             where: the :class:`.TextIO` to print to
         """
         self.where = where
+        
+    def __repr__(self) -> str:
+        if self.where is sys.stdout:
+            return "PRINT_TO(stdout)"
+        if self.where is sys.stderr:
+            return "PRINT_TO(stderr)"
+        return f"PRINT_TO({self.where})"
         
 PRINT = PRINT_TO(sys.stdout)
 """
@@ -224,6 +234,9 @@ class RAISE(ErrorHandler):
             msg: a message describing the error
         """
         raise self.factory(msg)
+    
+    def __repr__(self) -> str:
+        return f"RAISE({self.factory})"
     
 class FIX_BY(ErrorHandler):
     """
@@ -292,3 +305,6 @@ class FIX_BY(ErrorHandler):
         """
         if cond:
             (self.fixer)()
+            
+    def __repr__(self) -> str:
+        return f"FIX_BY({self.fixer})"

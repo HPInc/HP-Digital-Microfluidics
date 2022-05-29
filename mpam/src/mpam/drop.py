@@ -653,7 +653,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                       ) -> Delayed[Drop]:
         assert isinstance(drop.pad, Pad), f"{drop} not on board.  Can't create MotionOp {self}"
         board = drop.pad.board
-        system = board.in_system()
+        system = board.system
 
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
