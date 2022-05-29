@@ -22,7 +22,7 @@ from mpam.device import Pad, Board, BinaryComponent, Well,\
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    Ticks, DelayType, Turn, Reagent, Mixture, Postable
+    Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr
 from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume, Temperature, Voltage
 from erk.stringutils import map_str, conj_str
@@ -188,7 +188,8 @@ class Value(NamedTuple):
         
 class Environment(Scope[str, Any]):
     board: Final[Board]
-    
+    index_base: int
+
     @property
     def monitor(self) -> Optional[BoardMonitor]:
         system = self.board.system
@@ -197,11 +198,13 @@ class Environment(Scope[str, Any]):
     def __init__(self, parent: Optional[Scope[str, Any]], 
                  *,
                  board: Board, 
-                 initial: Optional[dict[str, Any]] = None) -> None:
+                 initial: Optional[dict[str, Any]] = None,
+                 index_base: int = 0) -> None:
         super().__init__(parent, initial=initial)
         self.board = board
+        self.index_base = index_base
     def new_child(self, initial: Optional[dict[str,Any]] = None) -> Environment:
-        return Environment(parent=self, board=self.board, initial=initial)
+        return Environment(parent=self, board=self.board, initial=initial, index_base=self.index_base)
     
     
 TypeMap = Scope[str, Type]
@@ -495,6 +498,11 @@ UnitStringFuncs = ByNameCache[PhysUnit, Func](unit_string_func)
 
 Attributes["gate"].register(Type.WELL, Type.WELL_GATE, lambda well: well.gate)
 Attributes["#exit_pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
+def _set_state(c: BinaryComponent, s: OnOff) -> None:
+    c.current_state = s
+Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
+Attributes["state"].register_setter(Type.BINARY_CPT, Type.BINARY_STATE, _set_state)
+
 Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
 Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
 Attributes["direction"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
@@ -567,6 +575,11 @@ def _set_ps_mode(ps: PowerSupply, m: PowerMode):
 Attributes["mode"].register(Type.POWER_SUPPLY, Type.POWER_MODE, lambda ps: ps.mode)
 Attributes["mode"].register_setter(Type.POWER_SUPPLY, Type.POWER_MODE, _set_ps_mode)
 
+Attributes["#min_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.min_voltage)
+Attributes["#max_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.max_voltage)
+
+Attributes["fan"].register(Type.BOARD, Type.FAN.maybe, lambda b: b.fan)
+
 Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
 Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
 Functions["CEILING"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.ceil(x))
@@ -575,22 +588,33 @@ Functions["UNSAFE"].register_immediate((Type.DIR,), Type.MOTION, lambda d: Unsaf
 Functions["PRINT"].register_all_immediate([((Type.ANY,) * 10, Type.NONE) for n in range(1, 8)],
                                           print)
 Functions["STRING"].register_immediate((Type.ANY,), Type.STRING, str)
-# Functions["ON_BOARD"].register_immediate((Type.PAD,), Type.BOOL,
-#                                          )
+Functions["#is on"].register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.ON)
+Functions["#is off"].register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.OFF)
+
+def _dispense(w: Well) -> Delayed[Drop]:
+    path = Path.dispense_from(w)
+    return path.schedule()
+Functions["#dispense drop"].register((Type.WELL,), Type.DROP, _dispense)
+
+def _enter_well(d: Drop) -> Delayed[None]:
+    path = Path.enter_well()
+    return path.schedule_for(d)
+Functions["#enter well"].register((Type.DROP,), Type.NONE, _enter_well)
 
 BuiltIns = {
     "ceil": Functions["CEILING"],
     "floor": Functions["FLOOR"],
     "round": Functions["ROUND"],
     "unsafe_walk": Functions["UNSAFE"],
-    "on board": Functions["ON_BOARD"],
-    # "print": Functions["PRINT"],
     "str": Functions["STRING"],
-    "mixture": Functions["MIX"]
+    "mixture": Functions["MIX"],
+    "dispense drop": Functions["#dispense drop"],
+    "enter well": Functions["#enter well"],
     }
 
 class SpecialVariable:
     var_type: Final[Type]
+    allowed_vals: Final[Optional[tuple[Any,...]]]
     
     @property
     def is_settable(self) -> bool:
@@ -598,10 +622,14 @@ class SpecialVariable:
     
     def __init__(self, var_type: Type, *,
                  getter: Callable[[Environment], Any],
-                 setter: Optional[Callable[[Environment, Any], None]] = None) -> None:
+                 setter: Optional[Callable[[Environment, Any], None]] = None,
+                 allowed_vals: Optional[tuple[Any,...]] = None
+                 ) -> None:
+        
         self.var_type = var_type
         self._getter = getter
         self._setter = setter
+        self.allowed_vals = allowed_vals
     
     def get(self, env: Environment) -> Any:
         return (self._getter)(env)
@@ -609,6 +637,12 @@ class SpecialVariable:
     def set(self, env: Environment, val: Any) -> None:
         assert self._setter is not None
         (self._setter)(env, val)
+        
+class Constant(SpecialVariable):
+    val: Final[Any]
+    def __init__(self, var_type: Type, val: Any) -> None:
+        super().__init__(var_type, getter = lambda _env: val)
+        self.val = val
         
 class MonitorVariable(SpecialVariable):
     def __init__(self, name: str, var_type: Type, *,
@@ -698,6 +732,8 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.FLOAT: float,
         Type.NUMBER: (float, int),
         Type.BINARY_STATE: OnOff,
+        Type.ON: OnOff,
+        Type.OFF: OnOff,
         Type.BINARY_CPT: BinaryComponent,
         Type.PAD: Pad,
         Type.WELL_PAD: WellPad,
@@ -728,62 +764,6 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.NONE: type(None),
     }
 
-
-# class Conversions:
-#     known: ClassVar[dict[tuple[Type,Type], Callable[[Any], Any]]] = {}
-#     known_ok: ClassVar[set[tuple[Type,Type]]] = set()
-#
-#     @classmethod
-#     def register(cls, have: Type, want: Type, converter: Callable[[Any], Any]) -> None:
-#         cls.known[(have, want)] = converter
-#
-#     @classmethod
-#     def ok(cls, have: Union[Type, Sequence[Type]], want: Union[Type,Sequence[Type]]) -> None:
-#         if isinstance(have, Type):
-#             have = (have,)
-#         if isinstance(want, Type):
-#             want = (want,)
-#         cls.known_ok |= {(h,w) for h in have for w in want}
-#
-#     @classmethod
-#     def convert(cls, have: Type, want: Type, val: Any) -> Any:
-#         if have is want:
-#             return val
-#         if want is Type.ANY:
-#             return val
-#         if want is Type.NONE:
-#             return None
-#         if isinstance(want, MaybeType):
-#             if val is None:
-#                 return val
-#             elif isinstance(have, MaybeType):
-#                 return cls.convert(have.if_there_type, want.if_there_type, val)
-#             else:
-#                 return cls.convert(have, want.if_there_type, val)
-#         if (have,want) in cls.known_ok:
-#             return val
-#         converter = cls.known.get((have, want), None)
-#         if converter is not None:
-#             return converter(val)
-#         rep = rep_types.get(want, None)
-#         if rep is not None and isinstance(val, rep):
-#             return val
-#         assert False, f"Don't know how to convert from {have} to {want}: {val}"
-#
-#     @classmethod
-#     def can_convert(cls, have: Type, want: Type) -> bool:
-#         if have is want or want is Type.ANY or want is Type.NONE:
-#             return True
-#         key = (have, want)
-#         if key in cls.known or key in cls.known_ok:
-#             return True
-#         if isinstance(want, MaybeType):
-#             if isinstance(have, MaybeType):
-#                 return cls.can_convert(have.if_there_type, want.if_there_type)
-#             else:
-#                 return cls.can_convert(have, want.if_there_type)
-#         return False
-
     
 Type.value_compatible((Type.TIME, Type.TICKS), Type.DELAY)
 Type.value_compatible((Type.INT, Type.FLOAT), Type.NUMBER)
@@ -796,36 +776,47 @@ Type.register_conversion(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
 Type.register_conversion(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
 Type.register_conversion(Type.AMBIG_TEMP, Type.ABS_TEMP, lambda t: t.absolute)
 Type.register_conversion(Type.AMBIG_TEMP, Type.REL_TEMP, lambda t: t.relative)
-
+Type.register_conversion(Type.ON, Type.TWIDDLE_OP, lambda _: TwiddleBinaryValue.ON)
+Type.register_conversion(Type.OFF, Type.TWIDDLE_OP, lambda _: TwiddleBinaryValue.OFF)
 
 
 class Executable:
     return_type: Final[Type]
     contains_error: Final[bool]
+    const_val: Final[Any]
     
     def __init__(self, return_type: Type, func: Callable[[Environment], Delayed[Any]],
                  based_on: Sequence[Executable] = (),
                  *,
                  is_error: bool = False,
+                 const_val: Any = MISSING,
                  ) -> None:
         self.return_type = return_type
         self.func: Final[Callable[[Environment], Delayed[Any]]] = func
         self.contains_error = is_error or any(e.contains_error for e in based_on)
+        self.const_val = const_val
         
     @classmethod
     def constant(cls, return_type: Type, val: Any, based_on: Sequence[Executable] = (), *,
                  is_error: bool = False) -> Executable:
-        return Executable(return_type, lambda _: Delayed.complete(val), based_on, is_error=is_error)
+        return Executable(return_type, lambda _: Delayed.complete(val), 
+                          based_on, is_error=is_error, const_val=val)
         
     def __str__(self) -> str:
         e = "ERROR, " if self.contains_error else ""
-        return f"Executable({e}{self.return_type}, {self.func}"
+        c_or_f = f", {self.func}" if self.const_val is MISSING else f"= {self.const_val}"
+        return f"Executable({e}{self.return_type}{c_or_f}"
     
     
     def evaluate(self, env: Environment, required: Optional[Type] = None) -> Delayed[Any]:
-        assert not self.contains_error, f"attempting to evaluate {self}"
-        fn = self.func
-        future = fn(env)
+        if self.contains_error:
+            raise EvaluationError(f"attempting to evaluate {self}")
+        future: Delayed[Any]
+        if self.const_val is not MISSING:
+            future = Delayed.complete(self.const_val)
+        else:
+            fn = self.func
+            future = fn(env)
         if required is not None and required is not self.return_type:
             req_type = required
             def convert(val) -> Any:
@@ -961,6 +952,16 @@ class DMFCompiler(DMFVisitor):
             msg = msg(self.text_of(ctx))
         print(f"line {ctx.start.line}:{ctx.start.column} {msg}")
         return self.error_val(return_type, value)
+    
+    def not_yet_implemented(self,
+                            kind: str,
+                            ctx: ParserRuleContext,
+                            *, 
+                            return_type: Type = Type.NONE,
+                            value: Optional[Callable[[Environment], Any]] = None
+                            ) -> Executable:
+        msg = f"{kind} not yet implemented"
+        return self.error(ctx, return_type, msg, value=value)
     
     def args_error(self, args: Sequence[Union[Executable, Type]], 
                    arg_ctxts: Sequence[ParserRuleContext], 
@@ -1237,6 +1238,21 @@ class DMFCompiler(DMFVisitor):
                 return self.error(ctx, value.return_type,
                                   f"Can't assign to special variable '{name}'")
             var_type = special.var_type
+            allowed = special.allowed_vals
+            if allowed is not None:
+                const_val = value.const_val
+                if len(allowed) == 0:
+                    if const_val is MISSING:
+                        return self.error(ctx, value.return_type,
+                                          f"Value assigned to special variable '{name}' must be a constant")
+                elif const_val not in allowed:
+                    if len(allowed) == 1: 
+                        options = str(allowed[0])
+                    else:
+                        options = f"one of {conj_str(allowed)}"
+                    return self.error(ctx, value.return_type,
+                                      f"Value assigned to special variable '{name}' must be {options}")
+                    ...
             spec = special
             setter = lambda env,val: spec.set(env, val)
             new_decl = False
@@ -1245,6 +1261,8 @@ class DMFCompiler(DMFVisitor):
             if vt is None:
                 new_decl = True
                 var_type = value.return_type
+                if var_type < Type.BINARY_STATE:
+                    var_type = Type.BINARY_STATE
                 if not self.current_types.is_top_level:
                     self.error(ctx, var_type,
                                lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}"
@@ -1348,7 +1366,9 @@ class DMFCompiler(DMFVisitor):
 
         if var_type is None:
             assert value is not None
-            var_type = value.return_type        
+            var_type = value.return_type
+            if var_type < Type.BINARY_STATE:
+                var_type = Type.BINARY_STATE        
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
             return self.error(ctx, var_type, 
@@ -1563,13 +1583,10 @@ class DMFCompiler(DMFVisitor):
         return self.visit(ctx.loop())
     
     def visitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext) -> Executable:
-        # n_exec = self.visit(ctx.n)
-        assert False
-        # if e := self.type_check(Type.INT, n_exec, ctx,
-        #                         lambda text: 
-        #                         )
-        ...
-    
+        return self.not_yet_implemented("Repeat loops", ctx)
+
+    def visitFor_loop(self, ctx:DMFParser.For_loopContext):
+        return self.not_yet_implemented("For loops", ctx)
 
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
@@ -1617,6 +1634,8 @@ class DMFCompiler(DMFVisitor):
         if builtin is not None:
             return Executable.constant(Type.BUILT_IN, builtin)
         if (special := SpecialVars.get(name)) is not None:
+            if isinstance(special, Constant):
+                return Executable.constant(special.var_type, special.val)
             real_special = special
             return Executable(special.var_type, lambda env: Delayed.complete(real_special.get(env)))
         var_type = self.current_types.lookup(name)
@@ -1721,7 +1740,49 @@ class DMFCompiler(DMFVisitor):
             # return obj.evaluate(env, ot).chain(extractor).transformed(check)
         return Executable(Type.BOOL, run, (obj,))
     
-    
+    def visitIs_expr(self, ctx:DMFParser.Is_exprContext) -> Executable:
+        neg = ctx.NOT() is not None or ctx.ISNT() is not None
+        obj = self.visit(ctx.obj)
+        pred = self.visit(ctx.pred)
+        pred_type = pred.return_type
+        if pred_type < Type.BINARY_STATE:
+            if (e := self.type_check(Type.BINARY_CPT, obj, ctx,
+                                     lambda want, have, text:
+                                        f"Left-hand side of 'is <state>' expression needs to be {want}, was {have}: {text}",
+                                     return_type = Type.BOOL)):
+                return e 
+            if pred_type is Type.ON or neg:
+                func = "#is on"
+            else:
+                func = "#is off"
+            return self.use_function(func, ctx, (ctx.obj,))
+        if (not isinstance(pred_type, CallableType)
+            or len(pred_type.param_types) != 1
+            or pred_type.return_type is not Type.BOOL):
+            return self.error(ctx.pred, Type.BOOL,
+                              f"Not a predicate ({pred_type}): {self.text_of(ctx.pred)}")
+        first_arg_type = pred_type.param_types[0]
+        if (e := self.type_check(first_arg_type, obj, ctx,
+                                 (lambda want, have, text: 
+                                    f"Value ({have}) '{text}' not compatible with "
+                                    +f"{want}: {self.text_of(ctx.pred)}"),
+                                 return_type = Type.BOOL)):
+            return e
+        def run(env: Environment) -> Delayed[MaybeError[bool]]:
+            def inject(obj, func) -> Delayed[MaybeError[bool]]:
+                if isinstance(func, EvaluationError):
+                    return Delayed.complete(func)
+                assert isinstance(func, CallableValue)
+                future: Delayed[MaybeError[bool]] = func.apply((obj,))
+                if neg:
+                    future = future.transformed(lambda v: v if isinstance(v, EvaluationError) else not v)
+                return future
+            def after_obj(obj) -> Delayed[Any]:
+                if isinstance(obj, EvaluationError):
+                    return Delayed.complete(obj)
+                return pred.evaluate(env, pred_type).chain(lambda func: inject(obj, func))
+            return obj.evaluate(env, first_arg_type).chain(after_obj)
+        return Executable(Type.BOOL, run, (obj, pred))
 
     def visitNot_expr(self, ctx:DMFParser.Not_exprContext) -> Executable:
         return self.use_function("NOT", ctx, (ctx.expr(),))
@@ -1830,9 +1891,18 @@ class DMFCompiler(DMFVisitor):
         inj_type = what.return_type
         if inj_type is Type.DIR or inj_type <= Type.MOTION:
             inj_type = Type.MOTION
+        if inj_type <= Type.TWIDDLE_OP:
+            inj_type = Type.TWIDDLE_OP
         injected_type = who.return_type
         if injected_type <= Type.MOTION:
             injected_type = Type.MOTION
+        if injected_type <= Type.TWIDDLE_OP:
+            injected_type = Type.TWIDDLE_OP
+        if inj_type is Type.BUILT_IN:
+            func: MissingOr[Func] = what.const_val
+            if func is MISSING:
+                return self.error(ctx.what, Type.NONE, f"Internal error: {self.text_of(ctx.what)} is a built-in, but no Func value")
+            return self.use_function(func, ctx, (ctx.who,))
         if not isinstance(inj_type, CallableType) or len(inj_type.param_types) != 1:
             return self.error(ctx.what, Type.NONE, 
                               f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
@@ -1935,12 +2005,13 @@ class DMFCompiler(DMFVisitor):
             if e:=self.type_check(Type.INT, which, ctx.which, return_type=rt):
                 return e
             def run(env: Environment) -> Delayed[MaybeError[T_]]:
+                base = env.index_base
                 def find(n: int) -> MaybeError[T_]:
                     cpts = to_list(env.board)
                     try:
-                        return cpts[n]
+                        return cpts[n-base]
                     except IndexError:
-                        return NoSuchComponentError(name, n, len(cpts)-1)
+                        return NoSuchComponentError(name, n, len(cpts)-1+base)
                 return (which.evaluate(env, Type.INT)
                         .transformed(error_check(find)))
             return Executable(rt, run, (which,))
@@ -2379,16 +2450,25 @@ class DMFCompiler(DMFVisitor):
         name = "none"
         def get_none(env: Environment) -> None: # @UnusedVariable
             return None
-        SpecialVars["none"] = SpecialVariable(Type.NONE, getter=lambda _env: None)
+        SpecialVars["none"] = Constant(Type.NONE, None)
         
         name = "the board"
         def get_board(env: Environment) -> Board:
             return env.board
         SpecialVars[name] = SpecialVariable(Type.BOARD, getter=get_board)
         
-        SpecialVars["AC"] = SpecialVariable(Type.POWER_MODE, getter=lambda _env: PowerMode.AC)
-        SpecialVars["DC"] = SpecialVariable(Type.POWER_MODE, getter=lambda _env: PowerMode.DC)
+        SpecialVars["AC"] = Constant(Type.POWER_MODE, PowerMode.AC)
+        SpecialVars["DC"] = Constant(Type.POWER_MODE, PowerMode.DC)
+        SpecialVars["on"] = Constant(Type.ON, OnOff.ON)
+        SpecialVars["off"] = Constant(Type.OFF, OnOff.OFF)
         
+        name="index base"
+        def get_index_base(env: Environment) -> int:
+            return env.index_base
+        def set_index_base(env: Environment, val: int) -> None:
+            env.index_base = val
+        SpecialVars[name] = SpecialVariable(Type.INT, getter=get_index_base, setter=set_index_base,
+                                            allowed_vals=(0,1))    
         
 DMFCompiler.setup_function_table()
 DMFCompiler.setup_special_vars()

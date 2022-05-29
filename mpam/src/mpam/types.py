@@ -4475,13 +4475,22 @@ class State(Generic[T], ABC):
     """
     The :class:`.ChangeCallbackList` monitoring :attr:`current_state`.
     """
+    
+    has_state: bool = current_state.value_check
+    """
+    Does :attr:`current_state` have a value?
+    """
 
-    def __init__(self, *, initial_state: T) -> None:
+    def __init__(self, *, initial_state: MissingOr[T]) -> None:
         """
+        Initialize the object.  If ``initial_state`` is not :attr:`.MISSING`, it
+        becomes the initial value of ``current_state``
+         
         Keyword Args:
             initial_state: the initial value
         """
-        self.current_state = initial_state
+        if initial_state is not MISSING:
+            self.current_state = initial_state
         "Callbacks invoked when :attr:`current_state` is set"
 
     @abstractmethod

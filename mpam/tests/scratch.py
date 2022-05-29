@@ -9,7 +9,7 @@ from mpam.device import PowerMode
 
 Voltage.default_units = volts
 
-board = joey.Board(ps_can_toggle=False, ps_initial_voltage=0*V)
+board = joey.Board(ps_can_toggle=False, ps_initial_voltage=30*V)
 ps = board.power_supply
 
 print(ps)

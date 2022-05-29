@@ -7,7 +7,7 @@ from typing import Optional, Sequence, Final
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
-    transitions_from, WellGate, Heater, PowerSupply, PowerMode
+    transitions_from, WellGate, Heater, PowerSupply, PowerMode, Fan
 import mpam.device as device
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
@@ -19,7 +19,6 @@ from quantities.core import DerivedDim
 from quantities.dimensions import Temperature, Time, Volume, Voltage
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
-
 
 class HeatingRate(DerivedDim):
     derived = Temperature/Time
@@ -147,7 +146,7 @@ class Board(device.Board):
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
     
-    def _magnet_state(self, x: int, y: int) -> State[OnOff]:
+    def _magnet_state(self, x: int, y: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
     
     
@@ -223,13 +222,20 @@ class Board(device.Board):
                       initial_voltage: Voltage,
                       initial_mode: PowerMode,
                       can_toggle: bool,
+                      can_change_mode: bool,
                       ) -> PowerSupply:
         return PowerSupply(self, 
                            min_voltage=min_voltage,
                            max_voltage=max_voltage,
                            initial_voltage=initial_voltage,
                            mode=initial_mode,
-                           can_toggle=can_toggle)
+                           can_toggle=can_toggle,
+                           can_change_mode=can_change_mode)
+        
+    def _fan(self, *,
+             initial_state: OnOff) -> Fan:
+        return Fan(self, state=initial_state)
+    
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None,
                  off_on_delay: Time = Time.ZERO,
@@ -238,6 +244,8 @@ class Board(device.Board):
                  ps_initial_voltage: Voltage = 0*volts,
                  ps_initial_mode: PowerMode = PowerMode.DC,
                  ps_can_toggle: bool = True,
+                 ps_can_change_mode: bool = True,
+                 fan_initial_state: OnOff = OnOff.OFF,
                  ) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
@@ -248,13 +256,16 @@ class Board(device.Board):
                                           max_voltage=ps_max_voltage,
                                           initial_voltage=ps_initial_voltage,
                                           initial_mode=ps_initial_mode,
-                                          can_toggle=ps_can_toggle)
+                                          can_toggle=ps_can_toggle,
+                                          can_change_mode=ps_can_change_mode)
+        fan = self._fan(initial_state=fan_initial_state)
         super().__init__(pads=pad_dict,
                          wells=wells,
                          magnets=magnets,
                          heaters=heaters,
                          extraction_points=extraction_points,
                          power_supply=power_supply,
+                         fan=fan,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms,
                          off_on_delay=off_on_delay)

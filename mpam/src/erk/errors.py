@@ -69,29 +69,45 @@ class ErrorHandler(ABC):
         
     def expect_true(self,
                     cond: bool, 
-                    msg_fn: Callable[[], str]) -> None:
+                    msg_fn: Callable[[], str]) -> bool:
         """
         Call the handler (via :func:`__call__`) passing in ``msg_fn()`` if ``cond`` is ``False``
-
+        
+        Returns ``True`` if the expectation succeeds (i.e., ``cond`` is
+        ``True``).  This is to facilitate idioms like ::
+        
+            if not on_empty.expect_true(len(queue) > 0, lambda: f"The queue is empty"):
+                return MISSING
         Args:
             cond: the condition to check
             msg_fn: a function to call to get the message
+        Returns:
+            ``True`` if the expectation succeeds (i.e., ``cond`` is ``True``) 
         """
         if not cond:
             self(msg_fn())
+        return cond
 
     def expect_false(self,
                      cond: bool, 
-                     msg_fn: Callable[[], str]) -> None:
+                     msg_fn: Callable[[], str]) -> bool:
         """
         Call the handler (via :func:`__call__`) passing in ``msg_fn()`` if ``cond`` is ``True``
 
+        Returns ``True`` if the expectation succeeds (i.e., ``cond`` is
+        ``False``).  This is to facilitate idioms like ::
+        
+            if not on_empty.expect_false(len(queue) == 0, lambda: f"The queue is empty"):
+                return MISSING
         Args:
             cond: the condition to check
             msg_fn: a function to call to get the message
+        Returns:
+            ``True`` if the expectation succeeds (i.e., ``cond`` is ``False``) 
         """
         if cond:
             self(msg_fn())
+        return not cond
             
 class DoNothing(ErrorHandler):
     """
@@ -118,7 +134,7 @@ class DoNothing(ErrorHandler):
 
     def expect_true(self,
                     cond: bool, 
-                    msg_fn: Callable[[], str]) -> None:
+                    msg_fn: Callable[[], str]) -> bool:
         """
         Do nothing.  
         
@@ -128,11 +144,11 @@ class DoNothing(ErrorHandler):
             cond: the condition to check
             msg_fn: a function to call to get the message
         """
-        pass
+        return cond
 
     def expect_false(self,
                      cond: bool, 
-                     msg_fn: Callable[[], str]) -> None:
+                     msg_fn: Callable[[], str]) -> bool:
         """
         Do nothing.  
         
@@ -142,7 +158,7 @@ class DoNothing(ErrorHandler):
             cond: the condition to check
             msg_fn: a function to call to get the message
         """
-        pass
+        return not cond
     
     def __repr__(self) -> str:
         return "IGNORE"
@@ -282,7 +298,7 @@ class FIX_BY(ErrorHandler):
 
     def expect_true(self,
                     cond: bool, 
-                    msg_fn: Callable[[], str]) -> None: # @UnusedVariable
+                    msg_fn: Callable[[], str]) -> bool: # @UnusedVariable
         """
         Call the :attr:`fixer` to fix the problem if ``cond`` is ``False``
 
@@ -292,10 +308,11 @@ class FIX_BY(ErrorHandler):
         """
         if not cond:
             (self.fixer)()
+        return cond
 
     def expect_false(self,
                      cond: bool, 
-                     msg_fn: Callable[[], str]) -> None: # @UnusedVariable
+                     msg_fn: Callable[[], str]) -> bool: # @UnusedVariable
         """
         Call the :attr:`fixer` to fix the problem if ``cond`` is ``True``
 
@@ -305,6 +322,7 @@ class FIX_BY(ErrorHandler):
         """
         if cond:
             (self.fixer)()
+        return not cond
             
     def __repr__(self) -> str:
         return f"FIX_BY({self.fixer})"

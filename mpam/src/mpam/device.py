@@ -137,12 +137,21 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         BC: The actual subclass of :class:`BinaryComponent`
     """
     state: Final[State[OnOff]]  #: The associated :class:`.State`\[:class:`.OnOff`]
+    can_toggle: Final[bool]     #: Is changing :attr:`current_state` allowed?
+    on_illegal_toggle: Final[ErrorHandler] 
+    """
+    :class:`.ErrorHandler` invoked when :attr:`can_toggle` is ``False`` and an
+    attempt is made to change state.
+    """
     broken: bool                #: Is the :class:`BinaryComponent` broken?
     live: bool                  #: Is the :class:`BinaryComponent` live?
 
     def __init__(self, board: Board, *,
-                 state: State[OnOff],
-                 live: bool = True) -> None:
+                 state: Union[State[OnOff], OnOff],
+                 live: bool = True,
+                 can_toggle: bool = True,
+                 on_illegal_toggle: ErrorHandler = PRINT,
+                 ) -> None:
         """
         Initialize the object.
 
@@ -153,10 +162,16 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             board: the containing :class:`Board`
         Keyword Args:
             state: the associated :class:`.State`\[:class:`.OnOff`]
+            can_toggle: is changing :attr:`current_state` allowed?
             live: is the :class:`BinaryComponent` live?
         """
         super().__init__(board)
+        if isinstance(state, OnOff):
+            state = DummyState(initial_state=state)
         self.state = state
+        assert can_toggle or state.has_state, "Untoggleable BinaryComponents must have initial states"
+        self.can_toggle = can_toggle
+        self.on_illegal_toggle = on_illegal_toggle
         self.broken = False
         self.live = live
 
@@ -171,7 +186,12 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 
     @current_state.setter
     def current_state(self, val: OnOff) -> None:
-        self.state.current_state = val
+        def cannot_change() -> str:
+            requested = "on" if val else "off"
+            return f"Cannot turn {requested} {self}"
+        if self.on_illegal_toggle.expect_true(self.can_toggle or val is self.current_state, 
+                                              cannot_change):
+            self.state.current_state = val
         
     @property
     def on_state_change(self) -> ChangeCallbackList[OnOff]:
@@ -179,6 +199,13 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         The :class:`.ChangeCallbackList` monitoring :attr:`current_state`.
         """
         return self.state.on_state_change
+
+    def __repr__(self) -> str:
+        tname = type(self).__name__
+        if self.state.has_state:
+            return f"{tname}({self.current_state})"
+        else:
+            return f"{tname}(--no value--)"
 
 
     class ModifyState(Operation[BC, OnOff]):
@@ -244,8 +271,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             """
             self.mod: Final[Modifier[OnOff]] = mod
             """the function to compute the new value based on the old"""
-
-
+            
     @staticmethod
     def SetState(val: OnOff) -> ModifyState:
         """
@@ -4111,29 +4137,39 @@ class PowerSupply(BinaryComponent['PowerSupply']):
     
     min_voltage: Final[Voltage]
     max_voltage: Final[Voltage]
-    allowed_state: Final[Optional[OnOff]]
+    allowed_mode: Final[Optional[PowerMode]]
     on_high_voltage: Final[ErrorHandler]
     on_low_voltage: Final[ErrorHandler]
-    on_toggle: Final[ErrorHandler]
+    on_illegal_mode_change: Final[ErrorHandler]
     
     voltage: MonitoredProperty[Voltage] = MonitoredProperty()
     on_voltage_change: ChangeCallbackList[Voltage] = voltage.callback_list
     
     @voltage.transform
     def _check_voltage_bounds(self, v: Voltage) -> MissingOr[Voltage]:
-        if v > self.max_voltage:
-            self.on_high_voltage(f"Voltage {v} > maximum ({self.max_voltage})")
+        my_max = self.max_voltage
+        if not self.on_high_voltage.expect_true(v <= my_max,
+                                                lambda: f"Voltage {v} > maximum ({my_max})"):
             return self.max_voltage
-        if v < self.min_voltage:
-            if v > 0:
-                self.on_low_voltage(f"Voltage {v} < maximum ({self.min_voltage})")
-                return self.min_voltage
-            elif not self.allowed_state is None or self.allowed_state is OnOff.OFF:
-                self.on_toggle("Power supply cannot be turned off")
+        if not self.on_illegal_toggle.expect_true(v > 0 or self.can_toggle or self.current_state is OnOff.OFF,
+                                                  lambda: "Power supply cannot be turned off"):
+            return MISSING
+        my_min = self.min_voltage
+        if not self.on_low_voltage.expect_true(v >= my_min,
+                                                lambda: f"Voltage {v} < minimum ({my_min})"):
+            return self.min_voltage
         return v
     
     mode: MonitoredProperty[PowerMode] = MonitoredProperty()
     on_mode_change: ChangeCallbackList[PowerMode] = mode.callback_list
+    
+    @mode.transform
+    def _check_mode_change(self, m: PowerMode) -> MissingOr[PowerMode]:
+        allowed = self.allowed_mode
+        if not self.on_illegal_mode_change.expect_true(allowed is None or allowed is m,
+                                                       lambda: "Power supply mode cannot be changed"):
+            return MISSING
+        return m
     
     def __init__(self, board: Board, *,
                  min_voltage: Voltage,
@@ -4141,30 +4177,30 @@ class PowerSupply(BinaryComponent['PowerSupply']):
                  initial_voltage: Voltage, 
                  mode: PowerMode,
                  can_toggle: bool = True,
+                 can_change_mode: bool = True,
                  on_high_voltage: ErrorHandler = PRINT,
                  on_low_voltage: ErrorHandler = PRINT,
-                 on_toggle: ErrorHandler = PRINT,
+                 on_illegal_toggle: ErrorHandler = PRINT,
+                 on_illegal_mode_change: ErrorHandler = PRINT,
                  ) -> None:
         initial_state = initial_voltage > 0
         super().__init__(board=board,
-                         state=DummyState(initial_state=OnOff.from_bool(initial_state)))
+                         state=DummyState(initial_state=OnOff.from_bool(initial_state)),
+                         can_toggle=can_toggle,
+                         on_illegal_toggle=on_illegal_toggle)
         
-        allowed_states = None
         if not can_toggle:
             if initial_voltage == 0:
-                allowed_states = OnOff.OFF
                 min_voltage = 0*volts
                 max_voltage = 0*volts
-            else:
-                allowed_states = OnOff.ON
-            
+
         self.min_voltage = min_voltage
         self.max_voltage = max_voltage
         
-        self.allowed_state = allowed_states
+        self.allowed_mode = None if can_change_mode else mode
         self.on_high_voltage = on_high_voltage
         self.on_low_voltage = on_low_voltage
-        self.on_toggle = on_toggle
+        self.on_illegal_mode_change = on_illegal_mode_change
         self._lock = RLock()
         
         self.mode = mode
@@ -4188,17 +4224,17 @@ class PowerSupply(BinaryComponent['PowerSupply']):
             self.current_state = OnOff.from_bool(new > 0)
             
             
-    # MyPy doesn't know what to do with this, but I believe it should work, and
-    # it appears to in practice.
-    @BinaryComponent.current_state.setter   # type: ignore[attr-defined]
-    def current_state(self, val: OnOff) -> None:
-        allowed = self.allowed_state
-        if allowed is None or allowed is val:
-            BinaryComponent.current_state.fset(self, val) # type: ignore[attr-defined]
-        elif val is OnOff.ON:
-            self.on_toggle("Power supply cannot be turned on")
-        else:
-            self.on_toggle("Power supply cannot be turned off")
+    # # MyPy doesn't know what to do with this, but I believe it should work, and
+    # # it appears to in practice.
+    # @BinaryComponent.current_state.setter   # type: ignore[attr-defined]
+    # def current_state(self, val: OnOff) -> None:
+    #     allowed = self.allowed_state
+    #     if allowed is None or allowed is val:
+    #         BinaryComponent.current_state.fset(self, val) # type: ignore[attr-defined]
+    #     elif val is OnOff.ON:
+    #         self.on_illegal_toggle("Power supply cannot be turned on")
+    #     else:
+    #         self.on_illegal_toggle("Power supply cannot be turned off")
             
     def high_clip(self, v: Voltage) -> MissingOr[Voltage]: # @UnusedVariable
         return self.max_voltage
@@ -4208,38 +4244,6 @@ class PowerSupply(BinaryComponent['PowerSupply']):
     
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.voltage} {self.mode.name}, {self.current_state.name})"
-    
-class DummyPowerSupply(PowerSupply):
-    def __init__(self, board: Board, *,
-                 min_voltage: Voltage = 30*volts,
-                 max_voltage: Voltage = 90*volts,
-                 initial_voltage: Voltage = 0*volts, 
-                 mode: PowerMode = PowerMode.DC) -> None:
-        super().__init__(board, 
-                         min_voltage=min_voltage, 
-                         max_voltage=max_voltage,
-                         initial_voltage=initial_voltage,
-                         mode=mode)
-        
-        def new_mode(_old, new: PowerMode) -> None:
-            print(f"Power supply mode is now {new.name}.")
-        self.on_mode_change(new_mode)
-        
-        def new_voltage(_old, new: Voltage) -> None:
-            print(f"Power supply voltage is now {new}.")
-        self.on_voltage_change(new_voltage)
-        
-        def new_state(_old, new: OnOff) -> None:
-            print(f"Power supply is now {new.name}")
-            
-
-    def high_clip(self, v:Voltage)->Voltage:
-        print(f"Clipping voltage {v} at max {self.max_voltage}")
-        return self.max_voltage
-
-    def low_clip(self, v:Voltage)->Voltage:
-        print(f"Voltage {v} below min {self.min_voltage}, turning off power supply")
-        return 0*volts
     
 class FixedPowerSupply(PowerSupply):
     voltage_level: Final[Voltage]
@@ -4296,7 +4300,11 @@ class FixedPowerSupply(PowerSupply):
             print("Power supply cannot be turned on or off")
         
     
-        
+class Fan(BinaryComponent["Fan"]):
+    # There's nothing special about fans, but we make it a separate type for
+    # type checking and value printing purposes.
+    ...
+
 
 class ChangeJournal:
     turned_on: Final[set[DropLoc]]
@@ -4351,6 +4359,7 @@ class Board(SystemComponent):
     heaters: Final[Sequence[Heater]]
     extraction_points: Final[Sequence[ExtractionPoint]]
     power_supply: Final[PowerSupply]
+    fan: Final[Optional[Fan]]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
     off_on_delay: Time
@@ -4390,6 +4399,7 @@ class Board(SystemComponent):
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
                  power_supply: Optional[PowerSupply] = None,
+                 fan: Optional[Fan] = None,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  off_on_delay: Time = Time.ZERO) -> None:
@@ -4401,6 +4411,7 @@ class Board(SystemComponent):
         self.heaters = [] if heaters is None else heaters
         self.extraction_points = [] if extraction_points is None else extraction_points
         self.power_supply = power_supply or FixedPowerSupply(self)
+        self.fan = fan
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
         self.off_on_delay = off_on_delay

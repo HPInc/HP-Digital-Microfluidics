@@ -44,8 +44,10 @@ class Type:
     NUMBER: ClassVar[Type]
     INT: ClassVar[Type]
     FLOAT: ClassVar[Type]
-    BINARY_STATE: ClassVar[Type]
     WELL: ClassVar[Type]
+    BINARY_STATE: ClassVar[Type]
+    ON: ClassVar[Type]
+    OFF: ClassVar[Type]
     BINARY_CPT: ClassVar[Type]
     PAD: ClassVar[Type]
     WELL_PAD: ClassVar[Type]
@@ -81,6 +83,7 @@ class Type:
     POWER_SUPPLY: ClassVar[Type]
     VOLTAGE: ClassVar[Type]
     POWER_MODE: ClassVar[Type]
+    FAN: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -212,8 +215,8 @@ Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
 Type.FLOAT = Type("FLOAT", [Type.NUMBER])
 Type.INT = Type("INT", [Type.FLOAT])
-Type.BINARY_STATE = Type("BINARY_STATE")
 Type.BINARY_CPT = Type("BINARY_CPT")
+Type.BINARY_STATE = Type("BINARY_STATE")
 Type.PAD = Type("PAD", [Type.BINARY_CPT])
 Type.WELL_PAD = Type("WELL_PAD", [Type.BINARY_CPT])
 Type.WELL_GATE = Type("WELL_GATE", [Type.WELL_PAD])
@@ -243,6 +246,7 @@ Type.BOARD = Type("BOARD")
 Type.POWER_SUPPLY = Type("POWER_SUPPLY", [Type.BINARY_CPT])
 Type.VOLTAGE = Type("VOLTAGE")
 Type.POWER_MODE = Type("POWER_MODE")
+Type.FAN = Type("FAN", [Type.BINARY_CPT])
 
 class MaybeType(Type):
     if_there_type: Final[Type]
@@ -357,6 +361,8 @@ class TwiddleOpType(CallableType):
         super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.NONE)
         
 Type.TWIDDLE_OP = TwiddleOpType()
+Type.ON = Type("ON", [Type.BINARY_STATE, Type.TWIDDLE_OP])
+Type.OFF = Type("OFF", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 
 class PauseType(CallableType):
     def __init__(self):

@@ -8,7 +8,6 @@ from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
 from quantities.dimensions import Voltage
 from quantities.SI import volts
-from pyglider import ErrorCode
 
 def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
     if isinstance(p, str):
@@ -66,7 +65,7 @@ class Electrode(BinState[pyglider.Electrode, pyglider.Electrode.ElectrodeState])
     
 class Magnet(BinState[pyglider.Magnet, pyglider.Magnet.MagnetState]):
     def __init__(self, name: str, remote: pyglider.Magnet) -> None:
-        super().__init__(kind = "electrode",
+        super().__init__(kind = "magnet",
                          name = name,
                          remote = remote,
                          on_val = pyglider.Magnet.MagnetState.On,
@@ -118,6 +117,17 @@ class GliderClient:
         else:
             self.remote.SetHighVoltage(opt_volts.as_number(volts))
             self.remote.EnableHighVoltage()
+            
+    @property
+    def fan_state(self) -> OnOff:
+        return OnOff.from_bool(self.remote.IsFanEnabled())
+    
+    @fan_state.setter
+    def fan_state(self, val: OnOff) -> None:
+        if val:
+            self.remote.EnableFan()
+        else:
+            self.remote.DisableFan()
     
     def __init__(self, board_type: pyglider.BoardId, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,

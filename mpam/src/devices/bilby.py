@@ -11,7 +11,7 @@ from mpam.types import OnOff, State, DummyState, GridRegion, Delayed
 from mpam import device
 from mpam.device import Pad, PowerMode
 from quantities.dimensions import Time, Voltage
-from quantities.SI import ms, volts, millivolts
+from quantities.SI import ms, volts
 from erk.stringutils import conj_str, map_str
 from quantities.temperature import TemperaturePoint
 import logging
@@ -86,9 +86,11 @@ class PowerSupply(device.PowerSupply):
                  initial_voltage: Voltage, 
                  mode: PowerMode,
                  can_toggle: bool = True,
+                 can_change_mode: bool = True,
                  on_high_voltage: ErrorHandler = PRINT,
                  on_low_voltage: ErrorHandler = PRINT,
-                 on_toggle: ErrorHandler = PRINT, 
+                 on_illegal_toggle: ErrorHandler = PRINT, 
+                 on_illegal_mode_change: ErrorHandler = PRINT, 
                  ) -> None:
         
         super().__init__(board,
@@ -97,9 +99,11 @@ class PowerSupply(device.PowerSupply):
                          initial_voltage=initial_voltage,
                          mode=mode,
                          can_toggle=can_toggle,
+                         can_change_mode=can_change_mode,
                          on_high_voltage=on_high_voltage,
                          on_low_voltage=on_low_voltage,
-                         on_toggle=on_toggle,
+                         on_illegal_toggle=on_illegal_toggle,
+                         on_illegal_mode_change=on_illegal_mode_change
                          )
         glider = board._device
         def voltage_changed(_old, new: Voltage) -> None:
@@ -113,6 +117,17 @@ class PowerSupply(device.PowerSupply):
             print(f"High voltage is {which}")
         self.on_state_change(state_changed)
         
+class Fan(device.Fan):
+        def __init__(self, board: Board, *,
+                     state: OnOff,
+                     live: bool = True) -> None:
+            glider = board._device
+            super().__init__(board, state=state, live=live)
+            def state_changed(_old, new: OnOff) -> None:
+                which= "on" if new else "off"
+                print(f"Fan is {which}")
+                glider.fan_state = new
+            self.on_state_change(state_changed)
 class Board(joey.Board):
     _device: Final[GliderClient]
     
@@ -151,6 +166,9 @@ class Board(joey.Board):
         m = self._device.magnet(name)
         return m or on_error()
     
+    def _fan(self, *, initial_state: OnOff) -> Fan:
+        return Fan(self, state=initial_state)
+    
     def _heater(self, num:int, *, 
                 polling_interval: Time=200*ms,
                 regions:Sequence[GridRegion])->Heater:
@@ -164,15 +182,18 @@ class Board(joey.Board):
                       max_voltage: Voltage, 
                       initial_voltage: Voltage, 
                       initial_mode: PowerMode, 
-                      can_toggle: bool) -> PowerSupply:
+                      can_toggle: bool,
+                      can_change_mode: bool) -> PowerSupply:
         return PowerSupply(self, 
                            min_voltage=min_voltage,
                            max_voltage=max_voltage,
                            initial_voltage=initial_voltage,
                            mode=initial_mode,
-                           can_toggle=can_toggle)
+                           can_toggle=can_toggle,
+                           can_change_mode=can_change_mode)
     
-
+    # def _fan(self, *, initial_state: OnOff) -> Fan:
+    #     return joey.Board._fan(self)
     
     def __init__(self, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,
@@ -192,6 +213,8 @@ class Board(joey.Board):
         if current_voltage.is_close_to(0):
             logger.info(f"Near-zero voltage ({current_voltage}) read from device.  Assuming zero.")
             current_voltage = Voltage.ZERO
+            
+        fan_state = self._device.fan_state
         
         super().__init__(pipettor=pipettor, off_on_delay=off_on_delay,
                          ps_min_voltage=ps_min_voltage,
@@ -199,6 +222,7 @@ class Board(joey.Board):
                          ps_initial_voltage=current_voltage,
                          ps_initial_mode=current_mode,
                          ps_can_toggle=True,
+                         fan_initial_state=fan_state,
                          )
         on_electrodes = self._device.on_electrodes()
         if on_electrodes:
