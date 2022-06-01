@@ -496,110 +496,7 @@ def unit_string_func(unit: PhysUnit) -> Func:
 
 UnitStringFuncs = ByNameCache[PhysUnit, Func](unit_string_func)
 
-Attributes["gate"].register(Type.WELL, Type.WELL_GATE, lambda well: well.gate)
-Attributes["#exit_pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
-def _set_state(c: BinaryComponent, s: OnOff) -> None:
-    c.current_state = s
-Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
-Attributes["state"].register_setter(Type.BINARY_CPT, Type.BINARY_STATE, _set_state)
 
-Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
-Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
-Attributes["direction"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
-Attributes["duration"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
-def _set_pad(d: Drop, p: Pad):
-    d.pad = p
-    d.status = DropStatus.ON_BOARD
-Attributes["pad"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=_set_pad)
-Attributes["row"].register(Type.PAD, Type.INT, lambda pad: pad.row)
-Attributes["column"].register(Type.PAD, Type.INT, lambda pad: pad.column)
-Attributes["#exit_dir"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
-Attributes["well"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
-Attributes["well"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
-Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop) 
-# Attributes["magnitude"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
-Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
-Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
-Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
-Attributes["number"].register(Type.HEATER, Type.INT, lambda h : h.number)
-
-Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
-Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
-def _set_drop_volume(d: Drop, v: Volume):
-    d.blob_volume = v
-Attributes["volume"].register_setter(Type.DROP, Type.VOLUME, _set_drop_volume)
-def _set_well_volume(w: Well, v: Volume):
-    w.contains(Liquid(w.reagent, v))
-Attributes["volume"].register_setter(Type.WELL, Type.VOLUME, _set_well_volume)
-
-Attributes["reagent"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.REAGENT, lambda d: d.reagent)
-def _set_drop_reagent(d: Drop, r: Reagent):
-    d.reagent= r
-Attributes["reagent"].register_setter(Type.DROP, Type.REAGENT, _set_drop_reagent)
-def _set_well_reagent(w: Well, r: Reagent):
-    w.contains(Liquid(r, w.volume))
-Attributes["reagent"].register_setter(Type.WELL, Type.REAGENT, _set_well_reagent)
-
-def _set_drop_liquid(d: Drop, liq: Liquid):
-    d.blob_volume = liq.volume
-    d.reagent= liq.reagent
-Attributes["contents"].register(Type.DROP, Type.LIQUID, lambda d: Liquid(d.reagent, d.volume),
-                                setter=_set_drop_liquid)
-
-def _set_well_contents(w: Well, liq: Liquid):
-    w.contains(liq)
-Attributes["contents"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w.reagent, w.volume),
-                                setter=_set_well_contents)
-
-Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
-Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
-
-Attributes["heater"].register(Type.PAD, Type.HEATER.maybe, lambda p: p.heater)
-Attributes["magnet"].register(Type.PAD, Type.MAGNET.maybe, lambda p: p.magnet)
-
-Attributes["#current_temperature"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.current_temperature)
-def _set_heater_target(h: Heater, t: Optional[TemperaturePoint]):
-    h.target = t
-Attributes["#target_temperature"].register(Type.HEATER, Type.ABS_TEMP.maybe, lambda h: h.target)
-Attributes["#target_temperature"].register_setter(Type.HEATER, Type.ABS_TEMP.maybe, _set_heater_target)
-
-Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY, lambda b: b.power_supply)
-
-def _set_ps_voltage(ps: PowerSupply, v: Voltage):
-    ps.voltage = v
-Attributes["voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.voltage)
-Attributes["voltage"].register_setter(Type.POWER_SUPPLY, Type.VOLTAGE, _set_ps_voltage)
-
-def _set_ps_mode(ps: PowerSupply, m: PowerMode):
-    ps.mode = m
-Attributes["mode"].register(Type.POWER_SUPPLY, Type.POWER_MODE, lambda ps: ps.mode)
-Attributes["mode"].register_setter(Type.POWER_SUPPLY, Type.POWER_MODE, _set_ps_mode)
-
-Attributes["#min_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.min_voltage)
-Attributes["#max_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.max_voltage)
-
-Attributes["fan"].register(Type.BOARD, Type.FAN.maybe, lambda b: b.fan)
-
-Functions["ROUND"].register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
-Functions["FLOOR"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
-Functions["CEILING"].register_immediate((Type.FLOAT,), Type.INT, lambda x: math.ceil(x))
-Functions["UNSAFE"].register_immediate((Type.DELTA,), Type.MOTION, lambda d: UnsafeWalkValue(d))
-Functions["UNSAFE"].register_immediate((Type.DIR,), Type.MOTION, lambda d: UnsafeWalkValue(DeltaValue(1,d)))
-Functions["PRINT"].register_all_immediate([((Type.ANY,) * 10, Type.NONE) for n in range(1, 8)],
-                                          print)
-Functions["STRING"].register_immediate((Type.ANY,), Type.STRING, str)
-Functions["#is on"].register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.ON)
-Functions["#is off"].register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.OFF)
-
-def _dispense(w: Well) -> Delayed[Drop]:
-    path = Path.dispense_from(w)
-    return path.schedule()
-Functions["#dispense drop"].register((Type.WELL,), Type.DROP, _dispense)
-
-def _enter_well(d: Drop) -> Delayed[None]:
-    path = Path.enter_well()
-    return path.schedule_for(d)
-Functions["#enter well"].register((Type.DROP,), Type.NONE, _enter_well)
 
 BuiltIns = {
     "ceil": Functions["CEILING"],
@@ -2440,6 +2337,39 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["RESET ALL"]
         fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_all()))
         
+        fn = Functions["ROUND"]
+        fn.register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
+        fn = Functions["FLOOR"]
+        fn.register_immediate((Type.FLOAT,), Type.INT, lambda x: math.floor(x))
+        fn = Functions["CEILING"]
+        fn.register_immediate((Type.FLOAT,), Type.INT, lambda x: math.ceil(x))
+        fn = Functions["UNSAFE"]
+        fn.register_immediate((Type.DELTA,), Type.MOTION, lambda d: UnsafeWalkValue(d))
+        fn = Functions["UNSAFE"]
+        fn.register_immediate((Type.DIR,), Type.MOTION, lambda d: UnsafeWalkValue(DeltaValue(1,d)))
+        fn = Functions["PRINT"]
+        fn.register_all_immediate([((Type.ANY,) * 10, Type.NONE) for n in range(1, 8)],
+                                                  print)
+        fn = Functions["STRING"]
+        fn.register_immediate((Type.ANY,), Type.STRING, str)
+        fn = Functions["#is on"]
+        fn.register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.ON)
+        fn = Functions["#is off"]
+        fn.register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.OFF)   
+        
+
+        fn = Functions["#dispense drop"]
+        def dispense(w: Well) -> Delayed[Drop]:
+            path = Path.dispense_from(w)
+            return path.schedule()
+        fn.register((Type.WELL,), Type.DROP, dispense)
+        
+        fn = Functions["#enter well"]
+        def enter_well(d: Drop) -> Delayed[None]:
+            path = Path.enter_well()
+            return path.schedule_for(d)
+        fn.register((Type.DROP,), Type.NONE, enter_well)             
+        
     @classmethod
     def setup_special_vars(cls) -> None:
         name = "interactive reagent"
@@ -2479,6 +2409,93 @@ class DMFCompiler(DMFVisitor):
         SpecialVars[name] = SpecialVariable(Type.INT, getter=get_index_base, setter=set_index_base,
                                             allowed_vals=(0,1))    
         
+    @classmethod
+    def setup_attributes(cls) -> None:
+        Attributes["gate"].register(Type.WELL, Type.WELL_GATE, lambda well: well.gate)
+        Attributes["#exit_pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
+        def set_state(c: BinaryComponent, s: OnOff) -> None:
+            c.current_state = s
+        Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
+        Attributes["state"].register_setter(Type.BINARY_CPT, Type.BINARY_STATE, set_state)
+        
+        Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
+        Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
+        Attributes["direction"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
+        Attributes["duration"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
+        def set_pad(d: Drop, p: Pad):
+            d.pad = p
+            d.status = DropStatus.ON_BOARD
+        Attributes["pad"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=set_pad)
+        Attributes["row"].register(Type.PAD, Type.INT, lambda pad: pad.row)
+        Attributes["column"].register(Type.PAD, Type.INT, lambda pad: pad.column)
+        Attributes["#exit_dir"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
+        Attributes["well"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
+        Attributes["well"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
+        Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop) 
+        # Attributes["magnitude"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
+        Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
+        Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
+        Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
+        Attributes["number"].register(Type.HEATER, Type.INT, lambda h : h.number)
+        
+        Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
+        Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
+        def set_drop_volume(d: Drop, v: Volume):
+            d.blob_volume = v
+        Attributes["volume"].register_setter(Type.DROP, Type.VOLUME, set_drop_volume)
+        def set_well_volume(w: Well, v: Volume):
+            w.contains(Liquid(w.reagent, v))
+        Attributes["volume"].register_setter(Type.WELL, Type.VOLUME, set_well_volume)
+        
+        Attributes["reagent"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.REAGENT, lambda d: d.reagent)
+        def set_drop_reagent(d: Drop, r: Reagent):
+            d.reagent= r
+        Attributes["reagent"].register_setter(Type.DROP, Type.REAGENT, set_drop_reagent)
+        def set_well_reagent(w: Well, r: Reagent):
+            w.contains(Liquid(r, w.volume))
+        Attributes["reagent"].register_setter(Type.WELL, Type.REAGENT, set_well_reagent)
+        
+        def set_drop_liquid(d: Drop, liq: Liquid):
+            d.blob_volume = liq.volume
+            d.reagent= liq.reagent
+        Attributes["contents"].register(Type.DROP, Type.LIQUID, lambda d: Liquid(d.reagent, d.volume),
+                                        setter=set_drop_liquid)
+        
+        def set_well_contents(w: Well, liq: Liquid):
+            w.contains(liq)
+        Attributes["contents"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w.reagent, w.volume),
+                                        setter=set_well_contents)
+        
+        Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
+        Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
+        
+        Attributes["heater"].register(Type.PAD, Type.HEATER.maybe, lambda p: p.heater)
+        Attributes["magnet"].register(Type.PAD, Type.MAGNET.maybe, lambda p: p.magnet)
+        
+        Attributes["#current_temperature"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.current_temperature)
+        def set_heater_target(h: Heater, t: Optional[TemperaturePoint]):
+            h.target = t
+        Attributes["#target_temperature"].register(Type.HEATER, Type.ABS_TEMP.maybe, lambda h: h.target)
+        Attributes["#target_temperature"].register_setter(Type.HEATER, Type.ABS_TEMP.maybe, set_heater_target)
+        
+        Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY, lambda b: b.power_supply)
+        
+        def set_ps_voltage(ps: PowerSupply, v: Voltage):
+            ps.voltage = v
+        Attributes["voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.voltage)
+        Attributes["voltage"].register_setter(Type.POWER_SUPPLY, Type.VOLTAGE, set_ps_voltage)
+        
+        def set_ps_mode(ps: PowerSupply, m: PowerMode):
+            ps.mode = m
+        Attributes["mode"].register(Type.POWER_SUPPLY, Type.POWER_MODE, lambda ps: ps.mode)
+        Attributes["mode"].register_setter(Type.POWER_SUPPLY, Type.POWER_MODE, set_ps_mode)
+        
+        Attributes["#min_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.min_voltage)
+        Attributes["#max_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.max_voltage)
+        
+        Attributes["fan"].register(Type.BOARD, Type.FAN.maybe, lambda b: b.fan)
+
+DMFCompiler.setup_attributes()
 DMFCompiler.setup_function_table()
 DMFCompiler.setup_special_vars()
 
