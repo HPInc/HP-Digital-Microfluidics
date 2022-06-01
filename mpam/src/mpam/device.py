@@ -4546,6 +4546,29 @@ class Board(SystemComponent):
     def journal_delivery(self, pad: DropLoc, liquid: Liquid, *,
                          mix_result: Optional[MixResult] = None):
         self.change_journal.note_delivery(pad, liquid, mix_result=mix_result)
+        
+    def _reset(self, *cpts: BinaryComponent) -> None:
+        for c in cpts:
+            c.current_state = OnOff.OFF
+        
+    def reset_pads(self) -> None:
+        self._reset(*self.pad_array.values())
+        for well in self.wells:
+            self._reset(well.gate, *well.shared_pads)
+            
+    def reset_heaters(self) -> None:
+        self._reset(*self.heaters)
+        
+    def reset_magnets(self) -> None:
+        self._reset(*self.magnets)
+        
+    def reset_all(self) -> None:
+        self.reset_pads()
+        self.reset_heaters()
+        self.reset_magnets()
+        self._reset(self.power_supply)
+        if self.fan is not None:
+            self._reset(self.fan)
 
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier) -> None:

@@ -201,6 +201,10 @@ no_arg_action returns[str which]
   | 'turn' OFF {$ctx.which="TURN-OFF"}
   | 'toggle' 'state'? {$ctx.which="TOGGLE"}
   | 'remove' ('from' 'the'? 'board')? {$ctx.which="REMOVE-FROM-BOARD"}
+  | 'reset' 'pads' {$ctx.which="RESET PADS"}
+  | 'reset' 'magnets' {$ctx.which="RESET MAGNETS"}
+  | 'reset' 'heaters' {$ctx.which="RESET HEATERS"}
+  | 'reset' 'all' {$ctx.which="RESET ALL"}
   ;
   
 param_type returns[Type type]
@@ -304,7 +308,8 @@ kwd_names : 's' | 'ms' | 'x' | 'y'
   | 'on' | 'off'
   | 'min' | 'max' | 'minimum' | 'maximum'
   | 'diff' | 'difference' | 'delta' | 'point'
-  | 'index' | 'base' | 'dispense' | 'enter' 
+  | 'index' | 'base' | 'dispense' | 'enter'
+  | 'reset' | 'magnets' | 'pads' | 'heaters' | 'all' 
   ;
 
 string : STRING ;

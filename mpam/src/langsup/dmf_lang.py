@@ -2431,6 +2431,15 @@ class DMFCompiler(DMFVisitor):
         fn.register_immediate((Type.NUMBER,), Type.AMBIG_TEMP, 
                               lambda n: AmbiguousTemp(absolute=n*abs_C, relative=n*deg_C))
         
+        fn = Functions["RESET PADS"]
+        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_pads()))
+        fn = Functions["RESET MAGNETS"]
+        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_magnets()))
+        fn = Functions["RESET HEATERS"]
+        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_heaters()))
+        fn = Functions["RESET ALL"]
+        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_all()))
+        
     @classmethod
     def setup_special_vars(cls) -> None:
         name = "interactive reagent"

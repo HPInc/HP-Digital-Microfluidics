@@ -55,7 +55,8 @@ class Electrode(BinState[pyglider.Electrode, pyglider.Electrode.ElectrodeState])
                          remote = remote,
                          on_val = pyglider.Electrode.ElectrodeState.On,
                          off_val = pyglider.Electrode.ElectrodeState.Off,
-                         realize = lambda r,s: r.SetTargetState(s))
+                         realize = lambda r,s: r.SetTargetState(s),
+                         initial_state = lambda r: r.GetCurrentState() )
         
     def heater_names(self) -> list[str]:
         return self.remote.GetHeaters()
