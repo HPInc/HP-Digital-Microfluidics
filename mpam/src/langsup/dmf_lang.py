@@ -1110,12 +1110,80 @@ class DMFCompiler(DMFVisitor):
     # def visitMacro_def_tls(self, ctx:DMFParser.Macro_def_tlsContext) -> Executable:
     #     return 0
 
+    def build_assignment(self,
+                         modifier: Optional[str], 
+                         ctx: ParserRuleContext,
+                         *,
+                         pre_lhs: Optional[Executable],
+                         rhs: Executable, 
+                         lhs_type: Type,
+                         get_lhs: Callable[[Any], Delayed[Any]],
+                         set_lhs: Callable[[Any, Any], Delayed[None]],
+                         check: Callable[[Type], Optional[Executable]]
+                         ) -> Executable:
+        if rhs.contains_error:
+            return self.error_val(rhs.return_type)
+        
+        modify: Optional[Callable[..., Delayed]]
+        if modifier is not None:
+            if modifier not in Functions:
+                raise KeyError(f"Compiler has no implementation for function '{modifier}'")
+            func = Functions[modifier]
+            arg_types = (lhs_type, rhs.return_type)
+            desc = func[arg_types]
+            if desc is None:
+                rt = func.error_type(arg_types)
+                real_func = func
+                return self.error(ctx, rt, lambda txt: real_func.type_error(arg_types, txt))
+            sig, modify = desc
+            rhs_type = sig.return_type
+            mod_lhs_type, mod_rhs_type = sig.param_types
+        else:
+            modify = None
+            rhs_type = rhs.return_type
+            mod_rhs_type = lhs_type
+        if (e := check(rhs_type)) is not None:
+            return e
+        
+        def run(env: Environment) -> Delayed[Any]:
+            def with_obj(obj: Any) -> Delayed[Any]:
+                if isinstance(obj, EvaluationError):
+                    return Delayed.complete(obj)
+                def with_old(old: Any) -> Delayed[Any]:
+                    if isinstance(old, EvaluationError):
+                        return Delayed.complete(old)
+                    def with_delta(delta: Any) -> Delayed[Any]:
+                        if isinstance(rhs, EvaluationError):
+                            return Delayed.complete(rhs)
+                        def with_new(new: Any) -> Delayed[Any]:
+                            if isinstance(new, EvaluationError):
+                                return Delayed.complete(new)
+                            return set_lhs(obj, new)
+                        if modify is None:
+                            return with_new(delta)
+                        else:
+                            old = lhs_type.convert_to(mod_lhs_type, old)
+                            return modify(old, delta).chain(with_new)
+                    return (rhs.evaluate(env, mod_rhs_type)
+                                .chain(with_delta))
+                if modify is None:
+                    return with_old(None)
+                else:
+                    return(get_lhs(obj).chain(with_old))
+            if pre_lhs is None:
+                return with_obj(env)
+            else:
+                return (pre_lhs.evaluate(env)
+                        .chain(with_obj))
+        return Executable(lhs_type, run, (rhs,))
+
 
 
     def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext) -> Executable:
         name_ctx = cast(DMFParser.NameContext, ctx.which)
         type_ctx = cast(Optional[DMFParser.Param_typeContext], ctx.param_type())
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
+        modifier: Optional[str] = ctx.assign_op().modifier
 
         if type_ctx is None:
             name: str = cast(str, name_ctx.val)
@@ -1123,10 +1191,9 @@ class DMFCompiler(DMFVisitor):
         else:
             name = self.type_name_var(type_ctx, n)
         value = self.visit(ctx.what)
-        builtin = BuiltIns.get(name, None)
         setter: Callable[[Environment, Any], None]
         var_type: Type
-        if builtin is not None:
+        if name in BuiltIns:
             return self.error(ctx, value.return_type, 
                               f"Can't assign to built-in '{name}'")
             

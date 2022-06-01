@@ -407,6 +407,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#assign_op.
+    def visitAssign_op(self, ctx:DMFParser.Assign_opContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#bool_val.
     def visitBool_val(self, ctx:DMFParser.Bool_valContext):
         return self.visitChildren(ctx)

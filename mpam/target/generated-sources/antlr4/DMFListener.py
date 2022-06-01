@@ -718,6 +718,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#assign_op.
+    def enterAssign_op(self, ctx:DMFParser.Assign_opContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#assign_op.
+    def exitAssign_op(self, ctx:DMFParser.Assign_opContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#bool_val.
     def enterBool_val(self, ctx:DMFParser.Bool_valContext):
         pass

@@ -142,9 +142,9 @@ expr
 //  | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
   | multi_word_name                  # mw_name_expr
-  | which=name ASSIGN what=expr    # name_assign_expr
-  | obj=expr ATTR attr ASSIGN what=expr  # attr_assign_expr
-  | ptype=param_type n=INT ASSIGN what=expr # name_assign_expr
+  | which=name assign_op what=expr    # name_assign_expr
+  | obj=expr ATTR attr assign_op what=expr  # attr_assign_expr
+  | ptype=param_type n=INT assign_op what=expr # name_assign_expr
   | string # string_lit_expr
   | INT                              # int_expr
   | FLOAT							 # float_expr
@@ -281,6 +281,14 @@ rel returns[Rel which]
   | '<=' {$ctx.which=Rel.LE}
   | '>' {$ctx.which=Rel.GT}
   | '>=' {$ctx.which=Rel.GE}
+  ;
+  
+assign_op returns[Optional[str] modifier]
+  : '=' {$ctx.modifier=None}
+  | '+=' {$ctx.modifier="ADD"}
+  | '-=' {$ctx.modifier="SUBTRACT"}
+  | '*=' {$ctx.modifier="MULTIPLY"}
+  | '/=' {$ctx.modifier="DIVIDE"}
   ;
   
 bool_val returns[bool val]
