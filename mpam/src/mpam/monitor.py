@@ -1148,15 +1148,19 @@ class BoardMonitor:
             def print_result(pair: tuple[dmf_lang.Type, Any]) -> None:
                 ret_type, val = pair
                 if ret_type is dmf_lang.Type.ERROR:
-                    assert isinstance(val, dmf_lang.EvaluationError)
-                    print(f"  Caught exception ({type(val).__name__}): {val}")
+                    if isinstance(val, dmf_lang.EvaluationError):
+                        print(f"  Caught exception ({type(val).__name__}): {val}")
+                    else:
+                        raise val
                 else:
+                    # val = ret_type.to_rval(val)
+                    # ret_type = ret_type.rval
                     print(f"  Interactive cmd val ({ret_type.name}): {val}")
             if len(expr) > 0:
                 print(f"Interactive cmd: {expr}")
                 text.add_to_history(expr)
                 try:
-                    (interp.evaluate(expr, cache_as="last")
+                    (interp.evaluate(expr, cache_as="last", return_lvals=False)
                         .then_call(print_result))
                     text.set_val("")
                 except RuntimeError as ex:

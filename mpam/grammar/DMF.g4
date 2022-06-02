@@ -312,7 +312,7 @@ multi_word_name returns[str val]
   | 'enter' 'well' {$ctx.val="enter well"}
   ;
 
-kwd_names : 's' | 'ms' | 'x' | 'y'
+kwd_names : 's' | 'ms' | 'x' | 'y' | 'a'
   | 'on' | 'off'
   | 'min' | 'max' | 'minimum' | 'maximum'
   | 'diff' | 'difference' | 'delta' | 'point'

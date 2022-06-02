@@ -3,9 +3,8 @@ from __future__ import annotations
 from _collections import defaultdict
 from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
-    Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple,\
+    Callable, Any, cast, Sequence, Union, ClassVar, List, Tuple,\
     TYPE_CHECKING, overload
-import typing
 
 from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext, \
     Token
@@ -16,7 +15,7 @@ from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit,\
-    NumberedItem
+    NumberedItem, LValue
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, Heater, PowerSupply, PowerMode
 from mpam.drop import Drop, DropStatus
@@ -31,7 +30,6 @@ from functools import reduce
 from erk.basic import LazyPattern, not_None
 from re import Match
 from threading import RLock
-import re
 from quantities.temperature import TemperaturePoint, abs_C
 from quantities.SI import deg_C
 
@@ -448,7 +446,7 @@ class ByNameCache(dict[K_,V_]):
         return ret
 
 Functions = ByNameCache[str, Func](lambda name: Func(name))
-Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"'{name}' attribute"]))
+Attributes = ByNameCache[str, Attr](lambda name: Attr(name))
 
 ERUnitLookup: dict[EnvRelativeUnit, tuple[Type, Type, Callable[[Environment], Unit]]] = {
         EnvRelativeUnit.DROP: (Type.VOLUME, Type.FLOAT, lambda env: env.board.drop_unit),
@@ -509,6 +507,49 @@ BuiltIns = {
     "enter well": Functions["#enter well"],
     }
 
+class DMFLvalue(LValue):
+    def is_short_circuit_val(self, val:Any)->bool:
+        return isinstance(val, EvaluationError)
+    
+class Variable(DMFLvalue):
+    name: Final[str]
+    env: Final[Environment]
+    
+    def __init__(self, name: str, var_type: Type, env: Environment) -> None:
+        super().__init__(var_type)
+        self.name = name
+        self.env = env
+        
+    def describe(self)->str:
+        return f"Var[{self.name}]"
+
+    def get_value(self) -> Any:
+        name = self.name
+        val = self.env.lookup(name)
+        if val is None:
+            return UninitializedVariableError(f"Uninitialized variable: {name}")
+        return val
+    
+    def _set(self, val:Any) -> Any:
+        self.env.define(self.name, val)
+        return val
+            
+
+class BoundAttribute(DMFLvalue):
+    name: Final[str]
+    obj_type: Final[Type]
+    obj: Any
+    
+    def __init__(self, name: str, val_type, *,
+                 obj: Any, obj_type: Type,
+                 getter: Attr.Getter,
+                 ) -> None:
+        super().__init__(val_type)
+        self.name = name
+        self.obj_type = obj_type
+        self.obj = obj
+        self.getter: Final[Attr.Getter] = getter
+
 class SpecialVariable:
     var_type: Final[Type]
     allowed_vals: Final[Optional[tuple[Any,...]]]
@@ -534,6 +575,7 @@ class SpecialVariable:
     def set(self, env: Environment, val: Any) -> None:
         assert self._setter is not None
         (self._setter)(env, val)
+        
         
 class Constant(SpecialVariable):
     val: Final[Any]
@@ -623,7 +665,7 @@ class AmbiguousTemp:
         return AmbiguousTemp(lhs-self.relative, lhs-self.absolute)
     
     
-rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
+Type.rep_types = {
         Type.DROP: Drop,
         Type.INT: int,
         Type.FLOAT: float,
@@ -717,7 +759,7 @@ class Executable:
         if required is not None and required is not self.return_type:
             req_type = required
             def convert(val) -> Any:
-                return self.return_type.convert_to(req_type, val=val, rep_types=rep_types)
+                return self.return_type.convert_to(req_type, val=val)
                 # return Conversions.convert(have=self.return_type, want=req_type, val=val)
             future = future.transformed(convert)
         # if required is not None: 
@@ -774,7 +816,8 @@ class DMFInterpreter:
         self.globals[name] = val
         
     def evaluate(self, expr: str, required: Optional[Type] = None, *, 
-                 cache_as: Optional[str] = None) -> Delayed[tuple[Type, Any]]:
+                 cache_as: Optional[str] = None,
+                 return_lvals: bool = True) -> Delayed[tuple[Type, Any]]:
         parser = self.get_parser(InputStream(expr))
         tree = parser.interactive()
         assert isinstance(tree, DMFParser.InteractiveContext)
@@ -790,7 +833,10 @@ class DMFInterpreter:
             future.then_call(lambda val: self.set_global(cvar, val, executable.return_type))
         def munge_result(val) -> Tuple[Type, Any]:
             t = Type.ERROR if isinstance(val, EvaluationError) else executable.return_type
-            return (t, val)
+            if return_lvals:
+                return (t, val)
+            else:
+                return (t.rval, t.to_rval(val))
         return future.transformed(munge_result)
     
     def get_parser(self, input_stream: InputStream) -> DMFParser:
@@ -1605,12 +1651,10 @@ class DMFCompiler(DMFVisitor):
         var_type = self.current_types.lookup(name)
         if var_type is None:
             return self.error(ctx.name(), Type.NONE, f"Undefined variable: {name}")
+        vt = var_type
         def run(env: Environment) -> Delayed[Any]:
-            val = env.lookup(name)
-            if val is None:
-                return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
-            return Delayed.complete(val)
-        return Executable(var_type, run)
+            return Delayed.complete(Variable(name, vt, env))
+        return Executable(var_type.lval, run)
 
     def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
         val = ctx.bool_val().val
@@ -1930,6 +1974,7 @@ class DMFCompiler(DMFVisitor):
         attr = Attributes.get(attr_name, None)
         if attr is None:
             return self.not_an_attr_error(ctx, ctx.attr())
+        return_maybe = False
         getter = attr.getter(obj.return_type)
         if getter is None:
             return self.inapplicable_attr_error(attr, obj.return_type,
@@ -1939,22 +1984,19 @@ class DMFCompiler(DMFVisitor):
         sig, extractor = getter
         rt = sig.return_type
         ot = sig.param_types[0]
-        check: Optional[Callable[[Any], Any]] = None
-        if isinstance(rt, MaybeType):
+        # check: Optional[Callable[[Any], Any]] = None
+        if not return_maybe and isinstance(rt, MaybeType):
             real_extractor = extractor
-            def extractor(obj) -> Delayed[Any]:
-                def check(val):
-                    if val is None:
-                        name = attr.func.name
-                        if (m := re.fullmatch("'(.*)' attribute", name)) is not None:
-                            name = m.group(1)
-                        ex = MaybeNotSatisfiedError(f"{obj} has no '{name}'")
-                        return ex
-                    return val
-                return real_extractor(obj).transformed(check)
+            def extractor(obj: Any) -> Any:
+                val = real_extractor(obj)
+                if val is None:
+                    name = self.text_of(ctx.attr())
+                    ex = MaybeNotSatisfiedError(f"{obj} has no '{name}'")
+                    return ex
+                return val
             rt = rt.if_there_type
         def run(env: Environment) -> Delayed[Any]:
-            return obj.evaluate(env, ot).chain(error_check_delayed(extractor))
+            return obj.evaluate(env, ot).transformed(error_check(extractor))
         return Executable(rt, run, (obj,))
 
     

@@ -3,12 +3,13 @@ from __future__ import annotations
 from _collections_abc import Iterable
 from enum import Enum, auto
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
-    Any, Mapping, Union
+    Any, Mapping, Union, TypeVar, Generic
 
 from mpam.types import Delayed
 from _collections import defaultdict
 from quantities.core import Unit
 import typing
+from abc import ABC, abstractmethod
 
 class TypeMismatchError(RuntimeError):
     have: Final[Type]
@@ -26,7 +27,11 @@ class Type:
     direct_subs: Final[list[Type]]
     all_subs: Final[list[Type]]
     _maybe: Optional[MaybeType] = None
+    _lval: Optional[LvalType] = None
+    _cached_converters: Final[dict[Type, Callable[[Any], Any]]]
     
+    
+    rep_types: dict[Type, Union[typing.Type, tuple[typing.Type,...]]] = {}
     conversions: ClassVar[dict[tuple[Type,Type], Callable[[Any],Any]]] = {}
     compatible: ClassVar[set[tuple[Type,Type]]] = set()
     
@@ -36,6 +41,24 @@ class Type:
         if mt is None:
             mt = self._maybe = MaybeType(self)
         return mt
+    
+    @property
+    def lval(self) -> LvalType:
+        lt = self._lval
+        if lt is None:
+            lt = self._lval = LvalType(self)
+        return lt
+    
+    @property
+    def not_maybe(self) -> Type:
+        return self
+    
+    @property
+    def rval(self) -> Type:
+        return self
+    
+    def to_rval(self, val: Any) -> Any:
+        return val
     
     ANY: ClassVar[Type]
     NONE: ClassVar[Type]
@@ -94,6 +117,7 @@ class Type:
         self.direct_supers = supers
         self.direct_subs = []
         self.all_subs = []
+        self._cached_converters = {}
         
         ancestors = set[Type](supers) 
         
@@ -114,19 +138,32 @@ class Type:
 
     def __eq__(self, rhs: object) -> bool:
         return self is rhs
+    
+    _cached_lt: Final[dict[tuple[Type, Type], bool]] = {}
+    
     def __lt__(self, rhs: Type) -> bool:
         if self is rhs:
             return False
+        key = (self, rhs)
+        val = self._cached_lt.get(key, None)
+        if val is not None:
+            return val
+        val = self.subsumed_by(rhs)
+        self._cached_lt[key] = val
+        return val
+        
+    def subsumed_by(self, rhs: Type) -> bool:
         if isinstance(rhs, MaybeType):
             if self is Type.NONE:
                 return True
             elif isinstance(self, MaybeType):
                 return self.if_there_type < rhs.if_there_type
             else:
-                return self < rhs.if_there_type
+                return self <= rhs.if_there_type
         if self in rhs.all_subs:
             return True
         return self.can_convert_to(rhs)
+    
     def __le__(self, rhs: Type) -> bool:
         return self is rhs or self < rhs
     
@@ -167,32 +204,85 @@ class Type:
             want = (want,)
         cls.compatible |= {(h,w) for h in have for w in want}
         
-    def convert_to(self, want: Type, val: Any, *,
-                   rep_types: Optional[Mapping[Type, Union[typing.Type, tuple[typing.Type,...]]]] = None
-                   ) -> Any:
+    # def converter_to(self, want: Type) -> Callable[[Any], Any]:
+    #     if want is self:
+    #         return lambda v: v
+    #     return lambda v: self.convert_to(want, v)
+    
+    # @classmethod
+    # def cls_make_converter(cls, have: Type, want: Type) -> Optional[Callable[[Any], Any]]:
+    #     if isinstance(have, LvalType):
+    #         if isinstance(want, LvalType):
+    #             return None
+    #         rval_type = have.rval_type
+    #         def convert_lval(val: Any) -> Any:
+    #             assert isinstance(val, LValue), f"{val} has asserted type {have}, not an LValue"
+    #             return rval_type.convert_to(want, val.get_value())
+    #         return convert_lval
+    #     if isinstance(want, MaybeType):
+    #         to_type = want.if_there_type
+    #         def convert_to_maybe(val: Any) -> Any:
+    #             if val is None:
+    #                 return val
+    #             if isinstance(have, MaybeType):
+    #                 from_type = have.if_there_type
+    #             else:
+    #                 from_type = have
+    #             return from_type.convert_to(to_type, val)
+    #         return convert_to_maybe
+    #     if (have, want) in cls.compatible:
+    #         return lambda x: x
+    #     fn = cls.conversions.get((have, want), None)
+    #     if fn is not None:
+    #         return fn
+    #     have_rep = cls.rep_types.get(have, None)
+    #     want_rep = cls.rep_types.get(want, None)
+    #     if have_rep is not None and want_rep is not None:
+    #         if not isinstance(have_rep, tuple):
+    #             have_rep = (have_rep,)
+    #         compatible_reps = all(issubclass(r, want_rep) for r in have_rep)
+    #         if compatible_reps:
+    #             return lambda x: x
+    #     return None
+
+    def make_converter(self, want: Type) -> Optional[Callable[[Any], Any]]:
+        if isinstance(want, MaybeType):
+            to_type = want.if_there_type
+            def convert_to_maybe(val: Any) -> Any:
+                if val is None:
+                    return val
+                return self.not_maybe.convert_to(to_type, val)
+            return convert_to_maybe
+        if (self, want) in Type.compatible:
+            return lambda x: x
+        fn = Type.conversions.get((self, want), None)
+        if fn is not None:
+            return fn
+        have_rep = Type.rep_types.get(self, None)
+        want_rep = Type.rep_types.get(want, None)
+        if have_rep is not None and want_rep is not None:
+            if not isinstance(have_rep, tuple):
+                have_rep = (have_rep,)
+            compatible_reps = all(issubclass(r, want_rep) for r in have_rep)
+            if compatible_reps:
+                return lambda x: x
+        return None
+        
+    def convert_to(self, want: Type, val: Any) -> Any:
         if self is want:
             return val
         if want is Type.ANY:
             return val
         if want is Type.NONE:
             return None
-        if isinstance(want, MaybeType):
-            if val is None:
-                return val
-            elif isinstance(self, MaybeType):
-                return self.if_there_type.convert_to(want.if_there_type, val)
-            else:
-                return self.convert_to(want.if_there_type, val)
-        if (self, want) in self.compatible:
-            return val
-        converter = self.conversions.get((self, want), None)
-        if converter is not None:
-            return converter(val)
-        if rep_types is not None:
-            rep = rep_types.get(want, None)
-            if rep is not None and isinstance(val, rep):
-                return val
-        raise TypeMismatchError(self, want)
+        converter = self._cached_converters.get(want, None)
+        if converter is None:
+            converter = self.make_converter(want)
+            if converter is None:
+                raise TypeMismatchError(self, want)
+            self._cached_converters[want] = converter
+        return converter(val)
+
     
     def can_convert_to(self, want: Type) -> bool:
         if self is want or want is Type.ANY or want is Type.NONE:
@@ -251,6 +341,10 @@ Type.FAN = Type("FAN", [Type.BINARY_CPT])
 class MaybeType(Type):
     if_there_type: Final[Type]
     
+    @property
+    def not_maybe(self) -> Type:
+        return self.if_there_type
+
     def __init__(self, if_there_type: Type) -> None:
         super().__init__(f"MAYBE({if_there_type.name})")
         self.if_there_type = if_there_type
@@ -262,11 +356,94 @@ class MaybeType(Type):
     def __repr__(self) -> str:
         return f"Maybe({self.if_there_type})"
     
-    def __lt__(self, rhs: Type) -> bool:
-        if isinstance(rhs, MaybeType):
-            return self.if_there_type < rhs.if_there_type
-        return super().__lt__(rhs)
+    # def __lt__(self, rhs: Type) -> bool:
+    #     if isinstance(rhs, MaybeType):
+    #         return self.if_there_type < rhs.if_there_type
+    #     return super().__lt__(rhs)
     
+class LvalType(Type):
+    rval_type: Final[Type]
+    
+    @property
+    def maybe(self) -> MaybeType:
+        return self.rval_type.maybe
+    
+    @property
+    def lval(self) -> LvalType:
+        return self
+    
+    @property
+    def rval(self) -> Type:
+        return self.rval_type
+    
+    def to_rval(self, val: Any) -> Any:
+        return self._val_as_LValue(val).get_value()
+    
+    def __init__(self, rval_type: Type) -> None:
+        super().__init__(f"Lval({rval_type.name})", (rval_type,))
+        self.rval_type = rval_type
+        
+    def __repr__(self) -> str:
+        return f"LVal({self.rval_type})"
+    
+    def _val_as_LValue(self, val: Any) -> LValue:
+        assert isinstance(val, LValue), f"{val} has asserted type {self}, not an LValue"
+        return val
+    
+    def make_converter(self, want:Type)->Optional[Callable[[Any], Any]]:
+        if isinstance(want, LvalType):
+            return None
+        def convert_lval(val: Any) -> Any:
+            val = self._val_as_LValue(val)
+            return self.rval_type.convert_to(want, val.get_value())
+        return convert_lval
+
+    
+    
+class LValue(ABC):
+    val_type: Final[Type]
+    
+    def __init__(self, val_type: Type):
+        self.val_type = val_type.lval
+        
+    def describe(self) -> str:
+        return type(self).__name__
+    
+    def __str__(self):
+        return f"Lval[{self.describe()}: {self.get_value()}"
+
+    @abstractmethod
+    def get_value(self) -> Any:
+        ...
+        
+    @abstractmethod
+    def _set(self, val: Any) -> Any: # @UnusedVariable
+        ...
+        
+    def set_value(self, val: Any) -> Any:
+        if self.is_short_circuit_val(val):
+            return val
+        return self._set(val)
+    
+    def is_short_circuit_val(self, val: Any) -> bool: # @UnusedVariable
+        return False
+
+    def modify(self, *, delta: Callable[[], Delayed[Any]],
+               modifier: Callable[[Any, Any], Delayed[Any]]) -> Delayed[Any]:
+        
+        old = self.get_value()
+        if self.is_short_circuit_val(old):
+            return Delayed.complete(old)
+
+        def with_delta(d: Any) -> Delayed[Any]:
+            if self.is_short_circuit_val(d):
+                return Delayed.complete(d)
+
+            return (modifier(old, d)
+                    .transformed(lambda new: self.set_value(new)))
+        return (delta()
+                .chain(with_delta))
+                    
 
 class Signature:
     param_types: Final[tuple[Type,...]]
@@ -408,10 +585,11 @@ class MacroType(CallableType):
     
     # I'm not sure if it's really correct to put this here, but
     # it will probably do the right thing.
-    def __lt__(self, rhs:Type)->bool:
+    
+    def subsumed_by(self, rhs:Type)->bool:
         if isinstance(rhs, MacroType):
             return self.sig.narrower_than(rhs.sig)
-        return Type.__lt__(self, rhs)
+        return super().subsumed_by(rhs)
     
     # def __eq__(self, rhs:object)->bool:
     #     if isinstance(rhs, MacroType):
@@ -421,13 +599,48 @@ class MacroType(CallableType):
     def __hash__(self)->int:
         return hash(self.sig)
     
+_T = TypeVar("_T")
 
+class BySigDispatch(Generic[_T]):
+
+    @property
+    def known_sigs(self) -> Sequence[Signature]:
+        return tuple(p[0] for p in self.overloads.values())
+
+    def __init__(self) -> None:
+        self.overloads: Final[dict[tuple[Type,...], 
+                                   tuple[Signature, _T]]] = {}
+
+    def add(self, param_types: Sequence[Type], 
+            return_type: Type, 
+            definition: _T) -> None:
+        sig = Signature.of(param_types, return_type)
+        self.overloads[sig.param_types] = (sig,definition)
+
+    def add_all(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
+                definition: _T) -> None:
+        for sig in sigs:
+            if isinstance(sig, Signature):
+                param_types: Sequence[Type] = sig.param_types
+                return_type = sig.return_type
+            else:
+                param_types, return_type = sig
+            self.add(param_types, return_type, definition)
+    
+    def find_best(self, arg_types: Sequence[Type]) -> Optional[tuple[Signature, _T]]:
+        d = self.overloads
+        best: Optional[tuple[Signature, _T]] = None
+        for sig, defn in d.values():
+            if sig.callable_using(arg_types) and (best is None or sig.narrower_than(best[0])):
+                best = (sig,defn)
+        return best
+    
 class Func:
     Definition = Callable[..., Delayed]
+    table: Final[BySigDispatch[Definition]]
     TypeExprFormatter = Callable[..., Optional[str]]
     name: Final[str]
     # verb: Final[str]
-    overloads: Final[dict[tuple[Type,...], tuple[Signature,Definition]]]
     type_expr_formatters: Final[dict[Optional[int], list[TypeExprFormatter]]]
     
     def __init__(self, name: str, 
@@ -436,37 +649,27 @@ class Func:
                  # error_msg_factory: Optional[Callable[[Sequence[Type], str], Optional[str]]] = None,
                  ) -> None:
         self.name = name
+        self.table = BySigDispatch()
         # self.verb = verb or name.lower()
-        self.overloads = {}
         # self.error_msg_factory = error_msg_factory
         self.type_expr_formatters = defaultdict(list)
         
     def __repr__(self) -> str:
         return f"Func.{self.name}"
     
-    @property
-    def known_sigs(self) -> Sequence[Signature]:
-        return tuple(p[0] for p in self.overloads.values())
-
-    def register(self, param_types: Sequence[Type], return_type: Type, definition: Definition) -> Func:
-        sig = Signature.of(param_types, return_type)
-        self.overloads[sig.param_types] = (sig,definition)
+    def register(self, param_types: Sequence[Type], 
+                 return_type: Type, 
+                 definition: Definition) -> Func:
+        self.table.add(param_types, return_type, definition)
         return self
         
     def register_immediate(self, param_types: Sequence[Type], return_type: Type, definition: Callable[..., Any]) -> Func:
         def fn(*args) -> Delayed:
             return Delayed.complete(definition(*args))
         return self.register(param_types, return_type, fn)
-        
     def register_all(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
                      definition: Definition) -> Func:
-        for sig in sigs:
-            if isinstance(sig, Signature):
-                param_types: Sequence[Type] = sig.param_types
-                return_type = sig.return_type
-            else:
-                param_types, return_type = sig
-            self.register(param_types, return_type, definition)
+        self.table.add_all(sigs, definition)
         return self
         
     def register_all_immediate(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
@@ -479,15 +682,11 @@ class Func:
                 param_types, return_type = sig
             self.register_immediate(param_types, return_type, definition)
         return self
-        
-    def __getitem__(self, arg_types: Sequence[Type]) -> Optional[tuple[Signature, Func.Definition]]:
-        d = self.overloads
-        best: Optional[tuple[Signature, Func.Definition]] = None
-        for sig, defn in d.values():
-            if sig.callable_using(arg_types) and (best is None or sig.narrower_than(best[0])):
-                best = (sig,defn)
-        return best
     
+    def __getitem__(self, arg_types: Sequence[Type]) -> Optional[tuple[Signature, Definition]]:
+        return self.table.find_best(arg_types)
+    
+        
     def format_type_expr_using(self, arity: Optional[int], formatter: Func.TypeExprFormatter, *,
                                override: bool = False) -> Func:
         if override:
@@ -516,7 +715,7 @@ class Func:
     
     def type_error(self, arg_types: Sequence[Type], text: str) -> str:
         error = f"Cannot compute {self.format_type_expr(arg_types)}: {text}"
-        sigs = [sig for sig,_ in self.overloads.values()]
+        sigs = self.table.known_sigs
         if len(sigs) == 0:
             return error
         expectations = [f"{self.format_type_expr(sig.param_types)} -> {sig.return_type.name}" for sig in sigs]
@@ -539,7 +738,7 @@ class Func:
                 if not at<=pt:
                     return i
             return len(pts)
-        for sig,_ in self.overloads.values():
+        for sig in self.table.known_sigs:
             rt = sig.return_type
             ml = match_len(sig.param_types)
             if ml > penetration:
@@ -555,56 +754,62 @@ class Func:
                 
     
 class Attr:
-    func: Final[Func]
+    Getter = Callable[[Any], Any]
+    Setter = Callable[[Any,Any], Any]
+    # Definition = Callable[..., Any]
+    name: Final[str]
+    getters: Final[BySigDispatch[Getter]]
+    setters: Final[BySigDispatch[Setter]]
 
-    def __init__(self, value: Union[str, Func]) -> None:
-        if isinstance(value, str):
-            value = Func(value)
-        self.func = value
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.getters = BySigDispatch()
+        self.setters = BySigDispatch()
         
     def __repr__(self) -> str:
-        return f"Attr.{self.func.name}"
+        return f"Attr.{self.name}"
     
     @property
     def applies_to(self) -> Sequence[Type]:
-        return [sig.param_types[0] for sig in self.func.known_sigs if len(sig.param_types) == 1]
+        return [sig.param_types[0] for sig in self.getters.known_sigs if len(sig.param_types) == 1]
     
     @property
     def returns(self) -> Sequence[Type]:
-        return [sig.return_type for sig in self.func.known_sigs if len(sig.param_types) == 1]
+        return [sig.return_type for sig in self.getters.known_sigs if len(sig.param_types) == 1]
     
     def register_setter(self, otype: Union[Type, Sequence[Type]], vtype, 
                         setter: Callable[[Any,Any], Any]) -> None:
         if isinstance(otype, Type):
-            self.func.register_immediate((otype, vtype), Type.NONE, setter)
+            self.setters.add((otype, vtype), Type.NONE, setter)
         else:
             for ot in otype:
-                self.func.register_immediate((ot, vtype), Type.NONE, setter)
+                self.setters.add((ot, vtype), Type.NONE, setter)
                  
     
     def register(self, otype: Union[Type,Sequence[Type]], rtype: Type, extractor: Callable[[Any], Any],
                  *,
                  setter: Optional[Callable[[Any,Any], Any]] = None) -> None:
         if isinstance(otype, Type):
-            self.func.register_immediate((otype,), rtype, extractor)
+            self.getters.add((otype,), rtype, extractor)
         else:
             for ot in otype:
-                self.func.register_immediate((ot,), rtype, extractor)
+                self.getters.add((ot,), rtype, extractor)
         if setter is not None:
             self.register_setter(otype, rtype, setter)
                     
-    def getter(self, otype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
-        return self.func[(otype,)]
+    def getter(self, otype: Type) -> Optional[tuple[Signature, Getter]]:
+        return self.getters.find_best((otype,))
         
-    def setter(self, otype: Type, vtype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
-        return self.func[(otype, vtype)]
+    def setter(self, otype: Type, vtype: Type) -> Optional[tuple[Signature, Setter]]:
+        return self.setters.find_best((otype, vtype))
     
     # def __getitem__(self, otype: Type) -> Optional[tuple[Signature, Callable[..., Delayed]]]:
         # return self.getter(otype)
     
     def accepts_for(self, otype: Type) -> Sequence[Type]:
-        return [sig.param_types[1] for sig in self.func.known_sigs 
-                    if len(sig.param_types) == 2 and sig.param_types[0] is otype]
+        return [sig.param_types[1] for sig in self.setters.known_sigs 
+                    if len(sig.param_types) == 2 and otype <= sig.param_types[0]]
         
     @classmethod
     def new_instances(cls, names: Iterable[str]) -> None:

@@ -1,34 +1,25 @@
 from __future__ import annotations
+from langsup.type_supp import Type
 
-from devices import joey
-from quantities.SI import volts, V
-from quantities.dimensions import Voltage
-from mpam.types import OnOff
-from mpam.device import PowerMode
+def check(lhs: Type, rhs: Type) -> None:
+    print(f"{lhs} < {rhs} : {lhs < rhs}")
 
+it = Type.INT
+ft = Type.FLOAT
+vi = it.lval
+vf = ft.lval
+lmi = it.maybe.lval
+mi = it.maybe
 
-Voltage.default_units = volts
+check(it, ft)
+check(ft, it)
+check(vi, it)
+check(vi, ft)
+check(vf, it)
+check(vf, ft)
+check(vf, vi)
+check(vi, vf)
 
-board = joey.Board(ps_can_toggle=False, ps_initial_voltage=30*V)
-ps = board.power_supply
-
-print(ps)
-
-ps.mode = PowerMode.AC
-ps.voltage = 20*V
-print(ps)
-
-ps.voltage = 80*V
-print(ps)
-
-ps.voltage = 600*V
-print(ps)
-      
-ps.current_state = OnOff.OFF
-print(ps)
-
-ps.current_state = OnOff.ON
-print(ps)
-
-ps.voltage = 0*V
-print(ps)
+check(vi, lmi)
+check(lmi, vi)
+check(it, mi)
