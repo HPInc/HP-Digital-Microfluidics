@@ -1022,7 +1022,8 @@ class WellPad(BinaryComponent['WellPad'], DropLoc):
         elif self.is_gate:
             return f"WellPad({well}[gate])"
         else:
-            return f"WellPad({well}[{self.index}]"
+            # return f"WellPad({well}[{self.index}]"
+            return f"WellPad({self.index}, {well})"
 
     def set_location(self, well: Well, index: int) -> None:
         """
@@ -2259,7 +2260,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         return spec()
 
     def __repr__(self) -> str:
-        return f"Well[{self.number} <> {self.exit_pad}]"
+        # return f"Well[{self.number} <> {self.exit_pad}]"
+        return f"Well[{self.number}]"
 
     def can_accept(self, reagent: Reagent) -> bool:
         """
@@ -4155,7 +4157,7 @@ class PowerSupply(BinaryComponent['PowerSupply']):
                                                   lambda: "Power supply cannot be turned off"):
             return MISSING
         my_min = self.min_voltage
-        if not self.on_low_voltage.expect_true(v >= my_min,
+        if not self.on_low_voltage.expect_true(v >= my_min or v == 0,
                                                 lambda: f"Voltage {v} < minimum ({my_min})"):
             return self.min_voltage
         return v
