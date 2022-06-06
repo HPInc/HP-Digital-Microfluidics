@@ -1,5 +1,5 @@
 aiohttp>=3.8.1
-antlr4-python3-runtime>=4.9.2
+antlr4-python3-runtime==4.9.2
 clipboard>=0.0.4
 matplotlib>=3.4.2
 pyserial>=3.5

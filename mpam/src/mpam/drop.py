@@ -177,6 +177,7 @@ class MotionInference:
         pull_pads: dict[tuple[Blob,Blob], list[DropLoc]] = defaultdict(list)
         pullers: dict[Blob,set[Blob]] = defaultdict(set)
         for pp,up in pulls:
+            # print(f"Pulling {up} to {pp}")
             pb = not_None(pp.blob)
             assert pb.pinned
             ub = not_None(up.blob)
@@ -573,7 +574,7 @@ class Blob:
                     if ps == pin_state[n]:
                         blob.extend(n)
                         expand(n, blob, ps)
-                    elif has_volume or well is not None:
+                    elif has_volume or (well is not None and well.volume > 0):
                         # If there's no volume (i.e., we're partitioning a
                         # pinned empty blob), there's nothing to pull, so we
                         # don't bother unless we're tied to the well.  (We leave
@@ -653,7 +654,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                       ) -> Delayed[Drop]:
         assert isinstance(drop.pad, Pad), f"{drop} not on board.  Can't create MotionOp {self}"
         board = drop.pad.board
-        system = board.in_system()
+        system = board.system
 
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion

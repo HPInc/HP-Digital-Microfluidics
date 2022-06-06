@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import pyglider
-from typing import Union, Optional, Final
+from typing import Union, Optional, Final, Generic, TypeVar, Callable
 from mpam.types import State, OnOff
 from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
@@ -14,27 +14,64 @@ def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
         return Path(p)
     return p
 
-class Electrode(State[OnOff]):
+CT = TypeVar("CT")
+ST = TypeVar("ST")
+
+class BinState(Generic[CT, ST], State[OnOff]):
+    kind: Final[str]
     name: Final[str]
-    remote: Final[pyglider.Electrode]
     
-    def __init__(self, name: str, remote: pyglider.Electrode) -> None:
-        super().__init__(initial_state=OnOff.OFF)
+    def __init__(self, *, kind: str, 
+                 name: str, 
+                 remote: CT,
+                 on_val: ST,
+                 off_val: ST,
+                 realize: Callable[[CT, ST], pyglider.ErrorCode],
+                 initial_state: Union[OnOff, Callable[[CT], ST]] = OnOff.OFF) -> None:
+        if not isinstance(initial_state, OnOff):
+            initial_state = OnOff.from_bool(initial_state(remote) is on_val)
+        super().__init__(initial_state=initial_state)
+        self.kind = kind
         self.name = name
         self.remote = remote
+        self.on_val = on_val
+        self.off_val = off_val
+        self.realize = realize
         
     def __repr__(self) -> str:
-        return f"<Electrode {self.name}>"
+        return f"<{self.kind.title()} {self.name}>"
         
     def realize_state(self, new_state: OnOff)->None:
-        s = pyglider.Electrode.ElectrodeState.On if new_state else pyglider.Electrode.ElectrodeState.Off
+        s = self.on_val if new_state else self.off_val
         # print(f"Setting {self.name} to {new_state} ({s})")
-        ec = self.remote.SetTargetState(s)
+        ec = self.realize(self.remote, s)
         if ec != pyglider.ErrorCode.ErrorSuccess:
             print(f"Error {ec} returned trying to set electrode {self.name} to {new_state}.")
             
+class Electrode(BinState[pyglider.Electrode, pyglider.Electrode.ElectrodeState]):
+    def __init__(self, name: str, remote: pyglider.Electrode) -> None:
+        super().__init__(kind = "electrode",
+                         name = name,
+                         remote = remote,
+                         on_val = pyglider.Electrode.ElectrodeState.On,
+                         off_val = pyglider.Electrode.ElectrodeState.Off,
+                         realize = lambda r,s: r.SetTargetState(s),
+                         initial_state = lambda r: r.GetCurrentState() )
+        
     def heater_names(self) -> list[str]:
         return self.remote.GetHeaters()
+    
+    def magnet_names(self) -> list[str]:
+        return self.remote.GetMagnets()
+    
+class Magnet(BinState[pyglider.Magnet, pyglider.Magnet.MagnetState]):
+    def __init__(self, name: str, remote: pyglider.Magnet) -> None:
+        super().__init__(kind = "magnet",
+                         name = name,
+                         remote = remote,
+                         on_val = pyglider.Magnet.MagnetState.On,
+                         off_val = pyglider.Magnet.MagnetState.Off,
+                         realize = lambda r,s: r.SetTargetState(s))
     
 class Heater:
     name: Final[str]
@@ -64,6 +101,7 @@ class GliderClient:
     remote: Final[pyglider.Board]
     electrodes: Final[dict[str, Electrode]]
     heaters: Final[dict[str, Heater]]
+    magnets: Final[dict[str, Magnet]]
     # remote_electrodes: Final[dict[str, pyglider.Electrode]]
     
     _voltage_level: Optional[Voltage] = None 
@@ -80,6 +118,17 @@ class GliderClient:
         else:
             self.remote.SetHighVoltage(opt_volts.as_number(volts))
             self.remote.EnableHighVoltage()
+            
+    @property
+    def fan_state(self) -> OnOff:
+        return OnOff.from_bool(self.remote.IsFanEnabled())
+    
+    @fan_state.setter
+    def fan_state(self, val: OnOff) -> None:
+        if val:
+            self.remote.EnableFan()
+        else:
+            self.remote.DisableFan()
     
     def __init__(self, board_type: pyglider.BoardId, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,
@@ -92,6 +141,15 @@ class GliderClient:
         # self.electrodes = { k: Electrode(k, v) for k,v in self.remote_electrodes.items()}
         self.electrodes = {}
         self.heaters = {}
+        self.magnets = {}
+        ec, n = self.remote.GetHighVoltage()
+        if ec != pyglider.ErrorCode.ErrorSuccess:
+            print(f"Error {ec} returned trying to read voltage level.")
+            self._voltage_level = None
+        else:
+            print(f"The voltage level is {n}")
+            self._voltage_level = n*volts
+        
         # print(f"Local: {self.electrodes}")
 
     def on_electrodes(self) -> list[Electrode]:
@@ -132,4 +190,17 @@ class GliderClient:
                 h = Heater(name, re)
                 self.heaters[name] = h
         return h
+    
+    def magnet(self, name: Optional[str]) -> Optional[Magnet]:
+        if name is None:
+            return None
+        m = self.magnets.get(name)
+        if m is None:
+            re = self.remote.MagnetNamed(name)
+            if re is None:
+                print(f"No magnet named {name}")
+            else:
+                m = Magnet(name, re)
+                self.magnets[name] = m
+        return m
     

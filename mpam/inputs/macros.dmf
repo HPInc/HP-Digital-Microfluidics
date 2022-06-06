@@ -166,3 +166,7 @@ ctest = macro(int n) {
     print n, ">=10";
   }
 };
+
+hot = macro(heater h) {
+  h's temperature > 70C;
+};

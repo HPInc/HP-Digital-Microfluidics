@@ -2,27 +2,24 @@ from __future__ import annotations
 
 from enum import Enum, auto
 import random
-from typing import Optional, Sequence, ClassVar, Final
+from typing import Optional, Sequence, Final
 
 from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
-    HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup,\
-    transitions_from, WellGate, Heater
+    HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
+    transitions_from, WellGate, Heater, PowerSupply, PowerMode, Fan
 import mpam.device as device
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State,\
-    OnOff, DummyState, Postable
-
-from quantities.SI import uL, ms, deg_C, sec
+from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State, \
+    OnOff, DummyState
+from quantities.SI import uL, ms, deg_C, sec, volts
 from quantities.core import DerivedDim
-from quantities.dimensions import Temperature, Time, Volume
-from quantities.temperature import TemperaturePoint, abs_F
+from quantities.dimensions import Temperature, Time, Volume, Voltage
+from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
 
-
-            
 class HeatingRate(DerivedDim):
     derived = Temperature/Time
     
@@ -64,8 +61,6 @@ class EmulatedHeater(device.Heater):
     _heating_rate: HeatingRate
     _cooling_rate: HeatingRate
     
-    ambient_temperature: ClassVar[TemperaturePoint] = 72*abs_F
-
     def __init__(self, num: int, board: Board, *, 
                  regions: Sequence[GridRegion],
                  polling_interval: Time = 200*ms) -> None:
@@ -75,48 +70,46 @@ class EmulatedHeater(device.Heater):
         
         super().__init__(num, board,
                          polling_interval = polling_interval,
-                         pads = pads)
+                         pads = pads,
+                         initial_temperature = board.ambient_temperature)
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
         self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
-        self.current_temperature = self.ambient_temperature
         # It really seems as though we should be able to just override the target setter, but I
         # can't get the compiler (and MyPy) to accept it
         key=(self, "target changed", random.random())
-        self.on_target_change(lambda old,new: self._update_temp(new), key=key)  # @UnusedVariable
         
-    def _update_temp(self, target: Optional[TemperaturePoint]) -> None:
+        def set_lrt() -> None:
+            self._last_read_time = time_now()
+        self.on_target_change(lambda _old,_new: set_lrt(), key=key)
+        
+    def new_temp(self, target: Optional[TemperaturePoint]) -> Optional[TemperaturePoint]:
         now = time_now()
         elapsed = now-self._last_read_time
+        self._last_read_time = now
         mode = self.mode
         if mode is HeatingMode.MAINTAINING:
-            return
+            return self.current_temperature
         assert self.current_temperature is not None
-        if mode is HeatingMode.OFF and self.current_temperature == self.ambient_temperature:
-            return
-        # target = self.target
+        if mode is HeatingMode.OFF and self.current_temperature <= self.board.ambient_temperature:
+            return self.current_temperature
         delta: Temperature
         if mode is HeatingMode.HEATING:
             delta = (self._heating_rate*elapsed).a(Temperature)
             new_temp = self.current_temperature + delta
             if target is not None:
                 new_temp = min(new_temp, target)
-            self.current_temperature = new_temp
         else:
             delta = (self._cooling_rate*elapsed).a(Temperature)
             new_temp = self.current_temperature - delta
             if target is None:
-                new_temp = max(new_temp, self.ambient_temperature)
+                new_temp = max(new_temp, self.board.ambient_temperature)
             else:
                 new_temp = max(new_temp, target)
-            self.current_temperature = new_temp
-        self._last_read_time = now
+        return new_temp
             
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
-        future = Postable[Optional[TemperaturePoint]]()
-        self._update_temp(self.target)
-        future.post(self.current_temperature)
-        return future
+        return Delayed.complete(self.new_temp(self.target))
 
     
 
@@ -153,7 +146,7 @@ class Board(device.Board):
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
     
-    def _magnet_state(self) -> State[OnOff]:
+    def _magnet_state(self, x: int, y: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
     
     
@@ -222,20 +215,57 @@ class Board(device.Board):
                 regions: Sequence[GridRegion],
                 polling_interval: Time=200*ms) -> Heater:
         return EmulatedHeater(num, board=self, regions=regions, polling_interval=polling_interval)
+    
+    def _power_supply(self, *,
+                      min_voltage: Voltage,
+                      max_voltage: Voltage,
+                      initial_voltage: Voltage,
+                      initial_mode: PowerMode,
+                      can_toggle: bool,
+                      can_change_mode: bool,
+                      ) -> PowerSupply:
+        return PowerSupply(self, 
+                           min_voltage=min_voltage,
+                           max_voltage=max_voltage,
+                           initial_voltage=initial_voltage,
+                           mode=initial_mode,
+                           can_toggle=can_toggle,
+                           can_change_mode=can_change_mode)
         
+    def _fan(self, *,
+             initial_state: OnOff) -> Fan:
+        return Fan(self, state=initial_state)
+    
     def __init__(self, *,
                  pipettor: Optional[Pipettor] = None,
-                 off_on_delay: Time = Time.ZERO) -> None:
+                 off_on_delay: Time = Time.ZERO,
+                 ps_min_voltage: Voltage = 60*volts,
+                 ps_max_voltage: Voltage = 298*volts,
+                 ps_initial_voltage: Voltage = 0*volts,
+                 ps_initial_mode: PowerMode = PowerMode.DC,
+                 ps_can_toggle: bool = True,
+                 ps_can_change_mode: bool = True,
+                 fan_initial_state: OnOff = OnOff.OFF,
+                 ) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
         heaters: list[Heater] = []
         extraction_points: list[ExtractionPoint] = []
+        power_supply = self._power_supply(min_voltage=ps_min_voltage,
+                                          max_voltage=ps_max_voltage,
+                                          initial_voltage=ps_initial_voltage,
+                                          initial_mode=ps_initial_mode,
+                                          can_toggle=ps_can_toggle,
+                                          can_change_mode=ps_can_change_mode)
+        fan = self._fan(initial_state=fan_initial_state)
         super().__init__(pads=pad_dict,
                          wells=wells,
                          magnets=magnets,
                          heaters=heaters,
                          extraction_points=extraction_points,
+                         power_supply=power_supply,
+                         fan=fan,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms,
                          off_on_delay=off_on_delay)
@@ -289,8 +319,8 @@ class Board(device.Board):
             self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor, right_states),
             ))
         
-        magnets.append(Magnet(self, state=self._magnet_state(), 
-                              pads = (self.pad_at(5, 3), self.pad_at(5, 15),)))
+        magnets.append(Magnet(0, self, state=self._magnet_state(13,6), 
+                              pads = (self.pad_at(13, 6), self.pad_at(13, 12),)))
         
         heaters.append(self._heater(0, regions=[GridRegion(XYCoord(0,12),3,7),
                                                 GridRegion(XYCoord(0,0),3,7)]))

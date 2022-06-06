@@ -512,6 +512,8 @@ faradays = faraday = (96485.33212310084*C).as_unit("F")
 
 # voltage, electric potential, emf
 V = volts = volt = (J/C).a(dimensions.Voltage).as_unit("V")
+mV = millivolts = millivolt = prefixes.milli(volts)
+kV = kilovolts = kilovolt = prefixes.kilo(volts)
 
 # magnetic flux
 Wb = webers = weber = (V*s).a(dimensions.MagneticFlux).as_unit("Wb")

@@ -44,8 +44,10 @@ class Type:
     NUMBER: ClassVar[Type]
     INT: ClassVar[Type]
     FLOAT: ClassVar[Type]
-    BINARY_STATE: ClassVar[Type]
     WELL: ClassVar[Type]
+    BINARY_STATE: ClassVar[Type]
+    ON: ClassVar[Type]
+    OFF: ClassVar[Type]
     BINARY_CPT: ClassVar[Type]
     PAD: ClassVar[Type]
     WELL_PAD: ClassVar[Type]
@@ -76,6 +78,12 @@ class Type:
     REL_TEMP: ClassVar[Type]
     AMBIG_TEMP: ClassVar[Type]
     HEATER: ClassVar[Type]
+    MAGNET: ClassVar[Type]
+    BOARD: ClassVar[Type]
+    POWER_SUPPLY: ClassVar[Type]
+    VOLTAGE: ClassVar[Type]
+    POWER_MODE: ClassVar[Type]
+    FAN: ClassVar[Type]
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -207,8 +215,8 @@ Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
 Type.FLOAT = Type("FLOAT", [Type.NUMBER])
 Type.INT = Type("INT", [Type.FLOAT])
-Type.BINARY_STATE = Type("BINARY_STATE")
 Type.BINARY_CPT = Type("BINARY_CPT")
+Type.BINARY_STATE = Type("BINARY_STATE")
 Type.PAD = Type("PAD", [Type.BINARY_CPT])
 Type.WELL_PAD = Type("WELL_PAD", [Type.BINARY_CPT])
 Type.WELL_GATE = Type("WELL_GATE", [Type.WELL_PAD])
@@ -232,7 +240,13 @@ Type.BUILT_IN = Type("BUILT_IN")
 Type.ABS_TEMP = Type("ABS_TEMP")
 Type.REL_TEMP = Type("REL_TEMP")
 Type.AMBIG_TEMP = Type("AMBIG_TEMP", [Type.ABS_TEMP, Type.REL_TEMP])
-Type.HEATER = Type("HEATER")
+Type.HEATER = Type("HEATER", [Type.BINARY_CPT])
+Type.MAGNET = Type("MAGNET", [Type.BINARY_CPT])
+Type.BOARD = Type("BOARD")
+Type.POWER_SUPPLY = Type("POWER_SUPPLY", [Type.BINARY_CPT])
+Type.VOLTAGE = Type("VOLTAGE")
+Type.POWER_MODE = Type("POWER_MODE")
+Type.FAN = Type("FAN", [Type.BINARY_CPT])
 
 class MaybeType(Type):
     if_there_type: Final[Type]
@@ -344,9 +358,11 @@ Type.DELTA = DeltaType()
 
 class TwiddleOpType(CallableType):
     def __init__(self):
-        super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.BINARY_STATE)
+        super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.NONE)
         
 Type.TWIDDLE_OP = TwiddleOpType()
+Type.ON = Type("ON", [Type.BINARY_STATE, Type.TWIDDLE_OP])
+Type.OFF = Type("OFF", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 
 class PauseType(CallableType):
     def __init__(self):
@@ -629,6 +645,11 @@ class EnvRelativeUnit(Enum):
     DROP = auto()
     
 PhysUnit = Union[Unit,EnvRelativeUnit]
+
+class NumberedItem(Enum):
+    WELL = auto()
+    HEATER = auto()
+    MAGNET = auto()
 
 if __name__ == '__main__':
     def check(lhs: Type, rhs: Type) -> None:
