@@ -349,6 +349,8 @@ class Exerciser(ABC):
                 level = "INFO"
         if level is not None:
             log_level = getattr(logging, level.upper())
+            if log_level < logging.ERROR:
+                logging.getLogger("aiohttp").setLevel(logging.ERROR)
             if (log_level < logging.INFO):
                 logging.basicConfig(level=log_level,
                                     format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')

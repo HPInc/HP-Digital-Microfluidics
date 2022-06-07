@@ -24,7 +24,9 @@ from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
 import fileinput
 from tempfile import NamedTemporaryFile
+import logging
 
+logger = logging.getLogger(__name__)
 
 JSONObj = dict[str, Any]
 
@@ -79,7 +81,7 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         
         msg = body["message"]
@@ -94,7 +96,7 @@ class Listener(Thread):
         #     text = await body.text()
         #     print(f"Request was not json: {text}")
         #     return web.json_response(status=400, data = {"error": "bad-request"})
-        print("Shutting down server")
+        logger.info("Shutting down server")
         self.running = False
         raise GracefulExit()
     
@@ -155,7 +157,7 @@ class Listener(Thread):
     
     
     def enqueue_finished(self, target: XferTarget, reagent: Reagent, volume: Volume) -> None:
-        print(f"/finished: {volume} of {reagent} @ {target.target}")
+        # print(f"/finished: {volume} of {reagent} @ {target.target}")
         self.finish_queue.enqueue(lambda: target.finished(reagent, volume))
         
     def enqueue_completely_finished(self, transfer: Transfer) -> None:
@@ -170,13 +172,13 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         wv = self.well_volume_params(body)
         assert wv is not None, "/waiting called with no well/volume spec"
         xfers,v = wv
         r = self.current_reagent
-        print(f"Waiting above {xfers[0].target}")
+        logger.info(f"Waiting above {xfers[0].target}")
         xfers[0].in_position(r, v)
         return web.json_response()
 
@@ -185,7 +187,7 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         wv = self.well_volume_params(body)
         assert wv is not None, "/finished called with no well/volume spec"
@@ -210,7 +212,7 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         # The only way pending_transfer can be None is if this is the first time.  Otherwise
         # it's the last one we started.  Note that it might be non-None even on the first time
@@ -253,13 +255,13 @@ class Listener(Thread):
         app.router.add_post("/ready", self.ready)
         app.router.add_post("/finished", self.finished)
         app.router.add_post("/waiting", self.waiting)
-        print("Launching listener")
+        logger.info("Launching listener")
         self.running = True
         web.run_app(app,
                     host="0.0.0.0",
                     port=self.port)
         self.running = False
-        print("Shut down listener")
+        logger.info("Shut down listener")
         
 class ShutdownDetected(RuntimeError): ...
         
@@ -339,7 +341,7 @@ class ProtocolManager(Thread):
                 tag = f": ERRORS: {errors}"
         # status_code: int = response.status_code
         # print(f"{msg}: Response code = {status_code}")
-        print(f"{msg}{tag}")
+        logger.info(f"{msg}{tag}")
         return result
         # return status_code == 200
         
@@ -370,7 +372,7 @@ class ProtocolManager(Thread):
             #                                                 self.ot_file("opentrons_support.py"),
             #                                                 self.ot_file("looping_protocol.py")]) 
             tmp = NamedTemporaryFile(prefix="protocol_", suffix=".py", delete=False, mode="w")
-            print(f"Temp protocol file is {tmp.name}")
+            logger.info(f"Temp protocol file is {tmp.name}")
             with tmp:
                 tmp.write("from __future__ import annotations\n")
                 tmp.write("__name__ = '__main__'\n")
@@ -399,7 +401,7 @@ class ProtocolManager(Thread):
             payload.close()
             # os.remove(tmp.name)
         
-        print(f"Create Protocol result: {response}")
+        logger.info(f"Create Protocol result: {response}")
         
         self.protocol_id = response['data']['id']
         self.trace_response(f"Created protocol \"{self.protocol_id}\"", response)
@@ -446,6 +448,7 @@ class ProtocolManager(Thread):
             response = self.get_request(f"runs/{self.session_id}")
             # print(f"Get status result: {response}")
             current_state = response["data"]["status"]
+            # print(f"Current state is {current_state}")
             self.extract_messages(response)
             if current_state == looking_for:
                 return response
@@ -465,6 +468,8 @@ class ProtocolManager(Thread):
                                         "data": {"protocolId": self.protocol_id}
                                         }
                                      )
+        if "data" not in response:
+            logger.error(f"Couldn't create session: {response}")
         self.session_id = response["data"]["id"]
         self.trace_response(f'Created session "{self.session_id}"', response)
         
@@ -480,7 +485,7 @@ class ProtocolManager(Thread):
                                          )
             self.trace_response("Started run", response)
             response = self.wait_until("finished")
-            print("Run is complete")
+            logger.info("Run is complete")
             # print(response)
         except ShutdownDetected:
             ...
