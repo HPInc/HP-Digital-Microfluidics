@@ -64,8 +64,6 @@ class EmulatedHeater(device.Heater):
     _heating_rate: HeatingRate
     _cooling_rate: HeatingRate
 
-    ambient_temperature: ClassVar[TemperaturePoint] = 72*abs_F
-
     def __init__(self, num: int, board: Board, *,
                  regions: Sequence[GridRegion],
                  polling_interval: Time = 200*ms) -> None:

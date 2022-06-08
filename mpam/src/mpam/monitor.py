@@ -994,9 +994,9 @@ class BoardMonitor:
     @classmethod
     def add_args_to(cls, group: _ArgumentGroup,
                          parser: ArgumentParser) -> None: # @UnusedVariable
-        default_show_reservations=False
+        defaults = cls.default_cmd_line_args
         group.add_argument('--highlight-reservations', action=BooleanOptionalAction,
-                           default=default_show_reservations,
+                           default=defaults.highlight_reservations,
                            help='''
                            Highlight reserved pads on the display.
                            ''')

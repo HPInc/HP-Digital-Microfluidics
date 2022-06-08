@@ -439,7 +439,7 @@ class DropLoc(ABC, CommunicationScheduler):
     blob: Optional[Blob] = None     #: The :class:`.Blob`, if any, this :class:`DropLoc` participates in
     _neighbors_for_blob: Optional[Sequence[DropLoc]] = None
 
-    drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty("drop", default=None)
+    drop: MonitoredProperty[Optional[Drop]] = MonitoredProperty(default=None)
     """
     The :class:`.Drop`, if any, at this location.  When this value changes,
     callbacks registered to :attr:`on_drop_change` are called.
@@ -1858,8 +1858,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     an estimate of how much will be needed for the remainder of the run.
     """
 
-    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty("contents",
-                                                                      default=None)
+    contents: MonitoredProperty[Optional[Liquid]] = MonitoredProperty(default=None)
     """
     The :class:`.Liquid` contained in the :class:`Well`, or ``None`` if the
     :class:`Well` has never contained a :class:`.Liquid`.
@@ -3424,7 +3423,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     location) will be posted to it.
     """
     pad: Final[Pad] #: The :class:`Pad` associated with this :class:`ExtractionPoint`
-    removed: Optional[Volume] = None
     reserved_pads: set[Pad]
     splash_radius: Final[int]
 
