@@ -3,27 +3,30 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
     _SubParsersAction, _ArgumentGroup
-from re import Pattern
-import re
-from typing import Final, Mapping, Union, Optional, Sequence, Any, Callable
-# import logging
 import logging.config
 import pathlib
+from re import Pattern
+import re
+from threading import Event
+from typing import Final, Mapping, Union, Optional, Sequence, Any, Callable, \
+    NoReturn, ClassVar
 
+from matplotlib.gridspec import SubplotSpec
+
+from erk.stringutils import conj_str
 from mpam.device import Board, System
-from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs,\
+from mpam.monitor import BoardMonitor
+from mpam.types import PathOrStr
+from quantities import temperature
+from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs, \
     volts
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Voltage
-from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
-from quantities import temperature
-from threading import Event
-from matplotlib.gridspec import SubplotSpec
-from mpam.monitor import BoardMonitor
-from mpam.types import PathOrStr
-from erk.stringutils import conj_str
 from quantities.prefixes import kilo
+from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 
+
+# import logging
 logger = logging.getLogger(__name__)
 
 time_arg_units: Final[Mapping[str, Unit[Time]]] = {
@@ -139,6 +142,99 @@ def voltage_arg(arg: str) -> Voltage:
     val = n*unit
     return val
 
+class LoggingLevel:
+    desc: Final[str]
+    level: Final[int]
+    
+    built_in: ClassVar[Mapping[str, LoggingLevel]]
+    
+    @classmethod
+    def options(cls) -> Sequence[str]:
+        levels = list(cls.built_in.values())
+        levels.sort(key=lambda x: x.level)
+        return [level.desc for level in levels]
+
+    def __init__(self, desc: str, level: int) -> None:
+        self.desc = desc
+        self.level = level
+        
+    def __repr__(self) ->str:
+        return f"{type(self).__name__}('{self.desc}', {self.level})"
+        
+    @classmethod
+    def find(cls, level: Union[str, int]) -> LoggingLevel:
+        if isinstance(level, int):
+            return LoggingLevel(str(level), level)
+        val = cls.built_in.get(level.upper(), None)
+        if val is not None:
+            return val
+        try:
+            return cls.find(int(level))
+        except ValueError:
+            raise ValueError(f"Couldn't find logging level for '{level}'")
+    
+        
+LoggingLevel.built_in = {
+    "DEBUG": LoggingLevel("DEBUG", logging.DEBUG),
+    "INFO": LoggingLevel("INFO", logging.INFO),
+    "WARN": LoggingLevel("WARN", logging.WARNING),
+    "WARNING": LoggingLevel("WARNING", logging.WARNING),
+    "ERROR": LoggingLevel("ERROR", logging.ERROR),
+    "CRITICAL": LoggingLevel("CRITICAL", logging.CRITICAL)
+    }
+        
+
+class LoggingSpec:
+    level: LoggingLevel
+    name: Optional[str]
+    fmt_name: Optional[str]
+    
+    def __init__(self, level: Union[LoggingLevel, str, int], *,
+                 name: Optional[str] = None,
+                 fmt_name: Optional[str] = None) -> None:
+        if not isinstance(level, LoggingLevel):
+            level = LoggingLevel.find(level)
+        self.level = level
+        self.name = name
+        self.fmt_name = fmt_name
+        
+    def __repr__(self) -> str:
+        name = "" if self.name is None else f", name='{self.name}'"
+        fmt_name = "" if self.fmt_name is None else f", name='{self.fmt_name}'"
+        return f"{type(self).__name__}({self.level}{name}{fmt_name})"
+        
+    
+    
+logging_levels = LoggingLevel.options()
+logging_formats = {
+    'compact': '%(levelname)7s|%(module)s|%(message)s',
+    'detailed': '%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s', 
+    }
+    
+logging_spec_arg_re: Final[Pattern] = re.compile(f"""(?:(.*?):)?
+                                                   ({'|'.join(logging_levels)}|[0-9]+)
+                                                   (?::({'|'.join(logging_formats.keys())}))?""",
+                                                 re.VERBOSE | re.IGNORECASE)
+def logging_spec_arg(arg: str) -> LoggingSpec:
+    def raise_error() -> NoReturn:
+        raise ArgumentTypeError(f"""
+                "{arg}" not parsable as a logging spec.  The format is [<name>:]<level>[:<format>],
+                where <level> is an integer or one of {conj_str(logging_levels)}
+                and <format> is one of {conj_str([k.upper() for k in
+                logging_formats.keys()])}.
+                """)
+    m = logging_spec_arg_re.fullmatch(arg)
+    if m is None:
+        raise_error()
+        
+    name: Optional[str] = m.group(1)
+    level = LoggingLevel.find(m.group(2).upper())
+    fmt: Optional[str] = m.group(3)
+    if not fmt is None:
+        fmt = fmt.lower()
+    val = LoggingSpec(level, name=name, fmt_name=fmt)
+    # print(f"log spec: {val}")
+    return val
 
 class Task(ABC):
     name: Final[str]
@@ -242,7 +338,7 @@ class Exerciser(ABC):
                    args: Optional[Sequence[str]]=None,
                    namespace: Optional[Namespace]=None) -> tuple[Task, Namespace]:
         ns = self.parser.parse_args(args=args, namespace=namespace)
-        Exerciser.setup_logging(level=ns.log_level, file=ns.log_config)
+        Exerciser.setup_logging(levels=ns.log_level, file=ns.log_config)
 
         task: Task = ns.task
         return task, ns
@@ -318,49 +414,96 @@ class Exerciser(ABC):
         display_group = parser.add_argument_group("display_options")
         BoardMonitor.add_args_to(display_group, parser)
         log_group = group.add_mutually_exclusive_group()
-        level_choices = ['debug', 'info', 'warning', 'error', 'critical']
-        log_group.add_argument('--log-level', metavar='LEVEL',
-                               choices=level_choices,
-                               help=f'''
-                               Configure the logging level.  Options are {conj_str([f'"{s}"' for s in level_choices])}
-                               ''')
+        # level_choices = ['debug', 'info', 'warning', 'error', 'critical']
+        # log_group.add_argument('--log-level', metavar='LEVEL',
+        #                        choices=level_choices,
+        #                        help=f'''
+        #                        Configure the logging level.  Options are {conj_str([f'"{s}"' for s in level_choices])}
+        #                        ''')
         log_group.add_argument('--log-config', metavar='FILE',
                                help='Configuration file for logging')
+        log_group.add_argument('--log-level', metavar='SPEC', type=logging_spec_arg, action='append',
+                               help=f""" 
+                                    Configure logging.  The format is <level>,
+                                    <name>:<level> or <level>:<format>, where
+                                    <level> is an integer or one of
+                                    {conj_str(logging_levels)} and <format> is
+                                    one of {conj_str([k.upper() for k in
+                                    logging_formats.keys()])}.  If <name> is
+                                    specified, the given level is used for that
+                                    logger (or any children).  If <name> is
+                                    'modules', the level is used (by default) for loggers 
+                                    from all known imported modules.  <level>
+                                    and <format> are case-insensitive.  This
+                                    argument may be specified multiple times.
+                                    """)
+        
 
     @staticmethod
-    def setup_logging(*, level: Optional[str] = None,
+    def setup_logging(*, levels: Optional[Union[str, LoggingSpec, 
+                                                Sequence[Union[str, LoggingSpec]]]] = None,
                       file: PathOrStr = None,
                       default_file: Optional[
                           Union[PathOrStr, Callable[[], PathOrStr]]] = None) -> None:
-        default_format = '%(levelname)7s|%(module)s|%(message)s'
-
-        if level is not None and file is not None:
+        
+        if levels == ():
+            levels = None
+        if levels is not None and file is not None:
             raise Exception("Specify 'level' or 'file' to 'setup_logging' but not both.")
 
-        if level is None and file is None:
+        default_level = LoggingLevel.find("INFO")
+                
+        if levels is None and file is None:
             if default_file is None:
                 default_file = pathlib.Path.cwd() / ".logging"
-            elif not (isinstance(default_file, str) or
-                      isinstance(default_file, pathlib.Path)):
+            elif not (isinstance(default_file, (str, pathlib.Path))):
                 default_file = default_file()
             if pathlib.Path(default_file).exists():
                 file = default_file
             else:
-                level = "INFO"
-        if level is not None:
-            log_level = getattr(logging, level.upper())
-            if log_level < logging.ERROR:
-                logging.getLogger("aiohttp").setLevel(logging.ERROR)
-            if (log_level < logging.INFO):
-                logging.basicConfig(level=log_level,
-                                    format='%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s')
-                logging.getLogger('matplotlib').setLevel(logging.INFO)
-                logging.getLogger('PIL').setLevel(logging.INFO)
-            else:
-                logging.basicConfig(level=log_level,
-                                    format=default_format)
-        else:
-            assert file is not None
+                levels = (LoggingSpec(default_level),)
+                
+        if file is not None:
+            assert levels is None
             logging.config.fileConfig(file,
                                       defaults = {
-                                          "format": default_format})
+                                          "format": logging_formats["compact"]})
+            return
+
+        if isinstance(levels, (str, LoggingSpec)):
+            levels = (levels,)
+        primary: LoggingSpec = LoggingSpec(default_level)
+        
+        default_import_level = LoggingLevel.find("WARNING")
+        
+        assert levels is not None
+        
+        imports: dict[str, LoggingLevel] = {}
+        
+        for spec in levels:
+            if isinstance(spec, str):
+                spec = logging_spec_arg(spec)
+            if spec.name is None:
+                primary = spec
+            elif spec.name == "modules":
+                default_import_level = spec.level
+            else:
+                imports[spec.name] = spec.level
+                
+        default_imports = ("matplotlib", "PIL", "aiohttp")
+        for i in default_imports:
+            if i not in imports:
+                imports[i] = default_import_level         
+
+                    
+        base_level = primary.level
+        fmt = primary.fmt_name
+        if fmt is None:
+            if base_level.level < logging.INFO:
+                fmt = "detailed"
+            else:
+                fmt = "compact"
+        logging.basicConfig(level=base_level.desc, format=logging_formats[fmt])
+        
+        for name,level in imports.items():
+            logging.getLogger(name).setLevel(level.desc)
