@@ -66,7 +66,7 @@ stat
 //  | assignment TERMINATOR  # assign_stat
 //  | which=name ASSIGN macro_header body=compound # macro_def_stat
 //  | pad_op TERMINATOR    # pad_op_stat
-  | 'pause' duration=expr TERMINATOR           # pause_stat
+  | ('pause' | 'wait') duration=expr TERMINATOR           # pause_stat
   | printing TERMINATOR                           # print_stat
   | 'if' tests+=expr bodies+=compound 
      ('else' 'if' tests+=expr bodies+=compound)*
@@ -116,14 +116,14 @@ expr
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | lhs=expr rel rhs=expr            # rel_expr
   | obj=expr 'has' ('a' | 'an') attr # has_expr
-  | obj=expr 'is' NOT? pred=expr     # is_expr
+  | obj=expr ('is' NOT? | ISNT) pred=expr     # is_expr
   | 'not' expr                       # not_expr
   | lhs=expr 'and' rhs=expr          # and_expr
   | lhs=expr 'or' rhs=expr           # or_expr
   | direction dist=expr              # delta_expr
   | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
-  | 'pause' duration=expr            # pause_expr
+  | ('pause' | 'wait') duration=expr            # pause_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr
@@ -134,6 +134,7 @@ expr
 //  | 'turn'? (ON | OFF)               # twiddle_expr
 //  | 'toggle' 'state'?                # twiddle_expr
 //  | 'remove' ('from' 'the'? 'board')? # remove_expr
+
   | 'the'? param_type                # type_name_expr
   | param_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
@@ -196,10 +197,14 @@ param returns[Type type, str pname, int n, bool deprecated]
   ;
   
 no_arg_action returns[str which]
-  : 'turn'? ON {$ctx.which="TURN-ON"}
-  | 'turn'? OFF {$ctx.which="TURN-OFF"}
+  : 'turn' ON {$ctx.which="TURN-ON"}
+  | 'turn' OFF {$ctx.which="TURN-OFF"}
   | 'toggle' 'state'? {$ctx.which="TOGGLE"}
   | 'remove' ('from' 'the'? 'board')? {$ctx.which="REMOVE-FROM-BOARD"}
+  | 'reset' 'pads' {$ctx.which="RESET PADS"}
+  | 'reset' 'magnets' {$ctx.which="RESET MAGNETS"}
+  | 'reset' 'heaters' {$ctx.which="RESET HEATERS"}
+  | 'reset' 'all' {$ctx.which="RESET ALL"}
   ;
   
 param_type returns[Type type]
@@ -212,7 +217,7 @@ param_type returns[Type type]
   | 'float' {$ctx.type=Type.FLOAT}
   | 'string' {$ctx.type=Type.STRING}
   | 'state' {$ctx.type=Type.BINARY_STATE}
-  | 'electrode' {$ctx.type=Type.BINARY_CPT}
+  | 'binary' {$ctx.type=Type.BINARY_CPT}
   | 'delta' {$ctx.type=Type.DELTA}
   | 'motion' {$ctx.type=Type.MOTION}
   | 'delay' {$ctx.type=Type.DELAY}
@@ -227,6 +232,10 @@ param_type returns[Type type]
   | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
   | 'heater' {$ctx.type=Type.HEATER}
   | 'magnet' {$ctx.type=Type.MAGNET}
+//  | 'board' {$ctx.Type=Type.BOARD}
+  | 'power' 'supply' {$ctx.type=Type.POWER_SUPPLY}
+  | 'power' 'mode' {$ctx.type=Type.POWER_MODE}
+  | 'fan' {$ctx.type=Type.FAN}
   ;
   
 dim_unit returns[PhysUnit unit]
@@ -236,6 +245,7 @@ dim_unit returns[PhysUnit unit]
   | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
   | ('tick' | 'ticks') {$ctx.unit=ticks}
   | ('drop' | 'drops') {$ctx.unit=EnvRelativeUnit.DROP}
+  | ('V' | 'volt' | 'volts') {$ctx.unit=SI.volts}
   ;
   
 numbered_type returns[NumberedItem kind]
@@ -254,7 +264,13 @@ attr returns[str which]
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
   | 'target' ('temp' | 'temperature')? {$ctx.which="#target_temperature"}
   | 'current'? ('temp' | 'temperature') {$ctx.which="#current_temperature"}
-  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'magnet' | ID)
+  | 'power' 'supply' {$ctx.which="#power_supply"}
+  | ('min' | 'minimum') 'voltage' {$ctx.which="#min_voltage"}
+  | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
+  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'magnet' | 'state'
+  	   | 'fan' 
+  	   | ID
+  )
   	{$ctx.which=$n.text}
   ;
   
@@ -280,22 +296,31 @@ name returns[str val]
   
 multi_word_name returns[str val]
   : 'on' 'the'? 'board' {$ctx.val="on board"}
-  | 'interactive' 'reagent' {$ctx.val="interactive reagent"}
-  | 'interactive' 'volume' {$ctx.val="interactive volume"}
+  | 'the'? 'interactive' 'reagent' {$ctx.val="interactive reagent"}
+  | 'the'? 'interactive' 'volume' {$ctx.val="interactive volume"}
+  | 'the' 'board' {$ctx.val="the board"}
+  | 'the'? 'index' 'base' {$ctx.val="index base"}
+  | 'dispense' 'drop' {$ctx.val="dispense drop"}
+  | 'enter' 'well' {$ctx.val="enter well"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y'
+  | 'on' | 'off'
+  | 'min' | 'max' | 'minimum' | 'maximum'
   | 'diff' | 'difference' | 'delta' | 'point'
+  | 'index' | 'base' | 'dispense' | 'enter'
+  | 'reset' | 'magnets' | 'pads' | 'heaters' | 'all' 
   ;
 
 string : STRING ;
   
 ADD: '+';
 ASSIGN: '=';
-ATTR: '\'s';
+ATTR: '\'s' | '.';
 DIV: '/';
 INTERACTIVE: 'interactive';
 INJECT: ':';
+ISNT: 'isn\'t';
 LOCAL: 'local';
 MUL: '*';
 NOT: 'not';

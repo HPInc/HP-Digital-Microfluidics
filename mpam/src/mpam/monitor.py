@@ -716,7 +716,7 @@ class ClickHandler:
 
     def run(self) -> None:
         with self.lock:
-            with self.monitor.board.in_system().batched():
+            with self.monitor.board.system.batched():
                 for p in self.changes:
                     new_state = ~p.current_state
                     p.component.schedule(BinaryComponent.SetState(new_state))
@@ -1040,7 +1040,7 @@ class BoardMonitor:
 
 
     def clock_widgets(self, spec: SubplotSpec) -> Any:
-        clock = self.board.in_system().clock
+        clock = self.board.system.clock
 
         whole, group = self.group(spec, title="Clock:")
         grid = GridSpecFromSubplotSpec(1,5, whole, width_ratios=[1,1,1,1,0.5])

@@ -87,7 +87,7 @@ class PCRTask(Task):
               args: Namespace) -> None:
 
         self.board = board
-        self.monitor = board.in_system().monitor
+        self.monitor = board.system.monitor
 
         self.tc_cycles = args.cycles
         self.shuttles = args.shuttles
@@ -233,7 +233,7 @@ class Prepare(PCRTask):
                 .to_pad(tc2.pads(1)[1]) \
                 .join()
 
-        drops = Path.run_paths((p1,p2), system=self.board.in_system())
+        drops = Path.run_paths((p1,p2), system=self.board.system)
         return drops[1]
 
     def dilute(self, r1_drop: Drop) -> Sequence[Drop]:
@@ -258,26 +258,26 @@ class Prepare(PCRTask):
                             # .to_pad((p.column, p.row+2))
                             # .to_pad(p)
                         # for p in d_mix.secondary_pads)
-        return Path.run_paths(paths, system=self.board.in_system())
+        return Path.run_paths(paths, system=self.board.system)
 
     def dilute_1(self, r1_drop: Drop) -> Sequence[Drop]:
         drops = sorted(self.dilute(r1_drop), key=right_then_up)
         n_parked = 2
         parking = [(drops[i], Path.to_pad(self.park_R3[i], row_first=False))
                     for i in range(n_parked)]
-        Path.run_paths(parking, system=self.board.in_system())
+        Path.run_paths(parking, system=self.board.system)
         return drops[n_parked:]
 
 
     def dilute_2(self) -> Sequence[Drop]:
         r1_drop = self.parked_R1()
-        Path.run_paths([(r1_drop, Path.to_col(14))], system=self.board.in_system())
+        Path.run_paths([(r1_drop, Path.to_col(14))], system=self.board.system)
         drops = sorted(self.dilute(r1_drop), key=right_then_up)
         parking = [(drops[0], Path.to_pad(self.park_R3[2], row_first=False)),
                    (drops[1], Path.to_pad(self.park_R3[3], row_first=False)),
                    (drops[-1], Path.to_col(14).to_pad(self.park_R3[4])),
                    ]
-        Path.run_paths(parking, system=self.board.in_system())
+        Path.run_paths(parking, system=self.board.system)
         return drops[2:-1]
 
 
@@ -311,7 +311,7 @@ class Prepare(PCRTask):
                         .to_pad(pads[2]) \
                         .join()
             paths.append(mm_path)
-        drops = Path.run_paths(paths, system=self.board.in_system())
+        drops = Path.run_paths(paths, system=self.board.system)
         return drops
 
     def mix_3_1(self, drops: Sequence[Drop]) -> Sequence[Drop]:
@@ -319,7 +319,7 @@ class Prepare(PCRTask):
         n_parked = 2
         parking = [(drops[i], Path.to_pad(self.park_R4[i], row_first=False))
                     for i in range(n_parked)]
-        Path.run_paths(parking, system=self.board.in_system())
+        Path.run_paths(parking, system=self.board.system)
         return drops[n_parked:]
 
     def mix_3_2(self, drops: Sequence[Drop]) -> Sequence[Drop]:
@@ -332,7 +332,7 @@ class Prepare(PCRTask):
                         (self.parked_R3(3), Path.to_col(6).to_row(1)),
                         (self.parked_R3(0), Path.to_row(1)),
                         (self.parked_R3(1), Path.to_row(1)),
-                        ], system=self.board.in_system())
+                        ], system=self.board.system)
         drops = sorted(self.mix_3(drops, row_first=True), key=left_then_down)
         return drops
 
@@ -368,7 +368,7 @@ class Prepare(PCRTask):
         add_path(2, Path.to_col(4).to_pad(pads[2]))
         add_path(0, Path.to_row(2).to_col(4).to_pad(pads[3]))
 
-        drops = Path.run_paths(paths, system=self.board.in_system())
+        drops = Path.run_paths(paths, system=self.board.system)
         return drops
 
     def tc_23(self, drops: Sequence[Drop], parked: int) -> Sequence[Drop]:
@@ -405,7 +405,7 @@ class Prepare(PCRTask):
         add_path(0, Path.to_row(2).to_col(4).to_pad(pads[3]))
         add_path(15, Path.to_pad(pads[11]))
 
-        drops = Path.run_paths(paths, system=self.board.in_system())
+        drops = Path.run_paths(paths, system=self.board.system)
         return drops
 
 

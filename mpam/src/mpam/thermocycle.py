@@ -231,7 +231,7 @@ class ThermocycleProcessType(MultiDropProcessType):
 
         lead_pad = pads[0]
         board = lead_pad.board
-        system = board.in_system()
+        system = board.system
         flr = self.find_lead(lead_pad)
         this_end: ChannelEnd = flr.end
         other_end: ChannelEnd = 1 if this_end == 0 else 0

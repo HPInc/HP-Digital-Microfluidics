@@ -28,14 +28,15 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
-    MonitoredProperty
-from quantities.SI import sec, ms
+    MonitoredProperty, DummyState, MissingOr, MISSING
+from quantities.SI import sec, ms, volts
 from quantities.core import Unit
-from quantities.dimensions import Time, Volume, Frequency
+from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
 from argparse import Namespace
 from erk.stringutils import map_str
+from quantities.US import deg_F
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class BoardComponent:
         Returns:
             the created :class:`UserOperation`
         """
-        return UserOperation(self.board.in_system().engine.idle_barrier)
+        return UserOperation(self.board.system.engine.idle_barrier)
 
 BC = TypeVar('BC', bound='BinaryComponent') #: A type variable ranging over :class:`BinaryComponent`\s
 
@@ -139,12 +140,21 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         BC: The actual subclass of :class:`BinaryComponent`
     """
     state: Final[State[OnOff]]  #: The associated :class:`.State`\[:class:`.OnOff`]
+    can_toggle: Final[bool]     #: Is changing :attr:`current_state` allowed?
+    on_illegal_toggle: Final[ErrorHandler]
+    """
+    :class:`.ErrorHandler` invoked when :attr:`can_toggle` is ``False`` and an
+    attempt is made to change state.
+    """
     broken: bool                #: Is the :class:`BinaryComponent` broken?
     live: bool                  #: Is the :class:`BinaryComponent` live?
 
     def __init__(self, board: Board, *,
-                 state: State[OnOff],
-                 live: bool = True) -> None:
+                 state: Union[State[OnOff], OnOff],
+                 live: bool = True,
+                 can_toggle: bool = True,
+                 on_illegal_toggle: ErrorHandler = PRINT,
+                 ) -> None:
         """
         Initialize the object.
 
@@ -155,10 +165,16 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             board: the containing :class:`Board`
         Keyword Args:
             state: the associated :class:`.State`\[:class:`.OnOff`]
+            can_toggle: is changing :attr:`current_state` allowed?
             live: is the :class:`BinaryComponent` live?
         """
         super().__init__(board)
+        if isinstance(state, OnOff):
+            state = DummyState(initial_state=state)
         self.state = state
+        assert can_toggle or state.has_state, "Untoggleable BinaryComponents must have initial states"
+        self.can_toggle = can_toggle
+        self.on_illegal_toggle = on_illegal_toggle
         self.broken = False
         self.live = live
 
@@ -173,7 +189,12 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 
     @current_state.setter
     def current_state(self, val: OnOff) -> None:
-        self.state.current_state = val
+        def cannot_change() -> str:
+            requested = "on" if val else "off"
+            return f"Cannot turn {requested} {self}"
+        if self.on_illegal_toggle.expect_true(self.can_toggle or val is self.current_state,
+                                              cannot_change):
+            self.state.current_state = val
 
     @property
     def on_state_change(self) -> ChangeCallbackList[OnOff]:
@@ -182,18 +203,13 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         """
         return self.state.on_state_change
 
-    # def on_state_change(self, cb: ChangeCallback[OnOff], *, key: Optional[Hashable] = None):
-    #     """
-    #     Add a new state-change handler, replacing any with the specified key. If
-    #     ``key`` is ``None``, ``cb`` is used as the key.  This is implemented by
-    #     delegating to :attr:`state`.
-    #
-    #     Args:
-    #         cb: the handler
-    #     Keyword Args:
-    #         key: the (optional) key
-    #     """
-    #     self.state.on_state_change(cb, key=key)
+    def __repr__(self) -> str:
+        tname = type(self).__name__
+        if self.state.has_state:
+            return f"{tname}({self.current_state})"
+        else:
+            return f"{tname}(--no value--)"
+
 
     class ModifyState(Operation[BC, OnOff]):
         """
@@ -258,7 +274,6 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             """
             self.mod: Final[Modifier[OnOff]] = mod
             """the function to compute the new value based on the old"""
-
 
     @staticmethod
     def SetState(val: OnOff) -> ModifyState:
@@ -1016,7 +1031,8 @@ class WellPad(BinaryComponent['WellPad'], DropLoc):
         elif self.is_gate:
             return f"WellPad({well}[gate])"
         else:
-            return f"WellPad({well}[{self.index}]"
+            # return f"WellPad({well}[{self.index}]"
+            return f"WellPad({self.index}, {well})"
 
     def set_location(self, well: Well, index: int) -> None:
         """
@@ -1788,7 +1804,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
       not believe that they can accurately absorb).
     """
     number: Final[int]
-    """The :class:`Well`'s index in its :attr:`board`'s :attr:`~Board.wells` list"""
+    """The :class:`Well`'s index in its :attr:`~BoardCompoent.board`'s :attr:`~Board.wells` list"""
     group: Final[DispenseGroup]
     """The :class:`Well`'s :class:`DispenseGroup` (of which it may be the only member)"""
     capacity: Final[Volume]
@@ -1859,7 +1875,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
 
     Callbacks will be invoked both when :attr:`contents` is set to a different
     (optional) :class:`.Liquid` and when :func:`transfer_in()` or
-    :func:`transfer_out()` is called.  In the transfer function cases, the state
+    :func:`transfer_out` is called.  In the transfer function cases, the state
     (i.e., :attr:`~.Liquid.reagent` and/or :attr:`~.Liquid.volume`) of
     :attr:`contents` will have changed, but the object remains the same and is
     passed in as both ``old`` and ``new`` arguments.
@@ -2254,7 +2270,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         return spec()
 
     def __repr__(self) -> str:
-        return f"Well[{self.number} <> {self.exit_pad}]"
+        # return f"Well[{self.number} <> {self.exit_pad}]"
+        return f"Well[{self.number}]"
 
     def can_accept(self, reagent: Reagent) -> bool:
         """
@@ -2872,9 +2889,11 @@ class Magnet(BinaryComponent['Magnet']):
     :class:`.DummyState` may be used.
 
     """
+    number: Final[int]
+    """The :class:`Magnet`'s index in its :attr:`board`'s :attr:`~Board.magnets` list"""
     pads: Final[Sequence[Pad]] #: The :class:`Pad`\s affected by this :class:`Magnet`
 
-    def __init__(self, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
+    def __init__(self, num: int, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
         """
         Initialize the object.
 
@@ -2886,6 +2905,7 @@ class Magnet(BinaryComponent['Magnet']):
         """
 
         BinaryComponent.__init__(self, board, state=state)
+        self.number = num
         self.pads = pads
         for pad in pads:
             pad._magnet = self
@@ -2895,68 +2915,233 @@ class Magnet(BinaryComponent['Magnet']):
 
 
 class HeatingMode(Enum):
+    """
+    An enumeration that tells whether a :class:`Heater` is :attr:`HEATING` or
+    :attr:`COOLING` to its :attr:`~Heater.target` temperature,
+    :attr:`MAINTAINING` its :attr:`~Heater.target` temperature or :attr:`OFF`
+    and at ambient temperature
+    """
     OFF = auto()
+    """
+    The :class:`Heater`'s :attr:`~Heater.target` is ``None``, and its
+    :attr:~Heater.current_temperature` is the ambient temperature.
+    """
     MAINTAINING = auto()
+    """
+    The :class:`Heater` has reached its :attr:`~Heater.target` and is now
+    maintaining that temperature.
+    """
     HEATING = auto()
+    """
+    The :class:`Heater` is heating to its :attr:`~Heater.target`.
+    """
     COOLING = auto()
-
-class _HeaterBinState(State[OnOff]):
-    heater: Final[Heater]
-    last_target: Optional[TemperaturePoint] = None
-    
-    def __init__(self, heater: Heater) -> None:
-        self.heater = heater
-        
-    def realize_state(self, new_state: OnOff) -> None:
-        if new_state is self.current_state:
-            return
-        heater = self.heater
-        if new_state is OnOff.OFF:
-            self.last_target = heater.target
-            heater.target = None
-        else:
-            heater.target = self.last_target
+    """
+    The :class:`Heater` is cooling to its :attr:`~Heater.target`.  If the
+    :attr:`~Heater.target` is ``None``, it has not yet reached ambient
+    temperature.
+    """
 
 
 class Heater(BinaryComponent['Heater']):
-    num: Final[int]
-    pads: Final[Sequence[Pad]]
-    polling_interval: Final[Time]
-    ambient_threshold: TemperaturePoint = 80*abs_F
-    _lock: Final[RLock]
-    _current_op_key: Any
-    _polling: bool = False
-    _user_op: Optional[UserOperation] = None
-    _last_target: Optional[TemperaturePoint] = None
+    """
+    A :class:`BoardComponent` that can be used to control the temperature of its
+    associated :attr:`pads`.
 
-    current_temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
-    on_temperature_change: ChangeCallbackList[Optional[TemperaturePoint]] = current_temperature.callback_list
+    The :class:`Heater` is controlled by setting its :attr:`target` temperature.
+    If its :attr:`current_temperature` is below its :attr:`target`, it attempts
+    to become hotter until it reaches the :attr:`target`, at which point it
+    attempts to maintain that temperature.  If its :attr:`current_temperature`
+    is above its :attr:`target`, it turns off and cools off until it reaches its
+    :attr:`target`, at which point it attempts to maintain that temperature.  If
+    its :attr:`target` is ``None``, it turns off and cools down to the ambient
+    temperature.
+
+    As a :class:`.BinaryComponent`, its :attr:`~.BinaryComponent.current_state`
+    is :attr:`~.OnOff.OFF` whenever its :attr:`target` is ``None`` and
+    :attr:`~.OnOff.ON` otherwise.  Setting its
+    :attr:`~.BinaryComponent.current_state` to :attr:`~.OnOff.OFF` is equivalent
+    to setting its :attr:`target` to ``None``. Setting its
+    :attr:`~.BinaryComponent.current_state` to a :class:`.TemperaturePoint` is
+    equivalent to setting its :attr:`target` to its last non-``None`` value. (If
+    there is no such value, its :attr:`~.BinaryComponent.current_state` will be
+    reset to :attr:`~.OnOff.OFF`.)
+
+    Note:
+        The value of a :class:`Heater`'s :attr:`~.BinaryComponent.current_state`
+        is based on its :attr:`target`, not the state of its underlying
+        hardware, so it remains :attr:`~.OnOff.ON` when it is cooling to a
+        target temperature or when it turns off briefly while maintaining a
+        temperature.  It is also :attr:`~.OnOff.OFF` when its :attr:`target` is
+        ``None``, even if it has not yet cooled to the ambient temperature.
+
+    A :class:`Heater`'s public interface is primarily three
+    :class:`.MonitoredProperty`\s, in addition to
+    :attr:`~.BinaryComponent.current_state`.  Its :attr:`target` is the
+    temperature it is to get to and maintain, or ``None`` to indicate that it
+    should turn off.  Its read-only :attr:`current_temperature` is the last read
+    (or modeled) temperature.  And its read-only :attr:`mode` is an indication
+    of whether it is :attr:`~HeatingMode.MAINTAINING` its :attr:`target`,
+    :attr:`~HeatingMode.HEATING` to its :attr:`target`,
+    :attr:`~HeatingMode.COOLING` to its :attr:`target` (or to the ambient
+    temperature if its :attr:`target` is ``None``), or :attr:`~HeatingMode.OFF`
+    (and at the ambient temperature).  These each have associated
+    :class:`.CallbackChangeList`\s: :attr:`~BinaryComponent.on_state_change`,
+    :attr:`on_target_change`, :attr:`on_temperature_change`, and
+    :attr:`on_mode_change`.
+
+    Note:
+        :attr:`current_temperature` can be ``None``.  This indicates that the
+        :class:`Heater` implementation has no way to read the temperature (or
+        has not yet done so).  If this is the case, the implementation will have
+        to update :attr:`mode` itself, as the automatic updating is by callbacks
+        hung on :attr:`on_target_change` and :attr:`on_temperature_change`.
+
+
+    The actual control of the hardware is expected to be a consequence of the
+    the implementation subclass hanging a callback on :attr:`on_target_change`
+    (and perhaps :attr:`on_mode_change` or :attr:`on_temperature_change`).  The
+    :attr:`current_temperature` is set to the value posted to the result of
+    :func:`poll`, which is called every :attr:`polling_interval`.  By default,
+    it simply returns a future whose value is ``None``, but this method  is
+    expected to be overridden by implementation subclasses. The polling can be
+    stopped by :func:`stop_polling` and restarted by :func:`start_polling`.  It
+    is started as soon as the :class:`Heater` joins the :class:`System`.
+
+    Temperature changes on a :class:`Heater` take place within a
+    :class:`UserOperation`, so the :class:`System` will not be considered to be
+    idle (and will not exit a ``with system`` block) when the :class:`Heater`'s
+    :attr:`mode` is :attr:`~HeatingMode.HEATING` or
+    :attr:`~HeatingMode.COOLING`.
+
+    To set the :attr:`target` using an :class:`.Operation`, the
+    :class:`Heater.SetTemperature` operation is provided.  This
+    :class:`.Operation` completes when the desired temperature has been reached.
+    """
+    number: Final[int]
+    """
+    The :class:`Heater`'s index in its :attr:`~BoardComponent.board`'s
+    :attr:`~Board.heaters` list
+    """
+    pads: Final[Sequence[Pad]]
+    """
+    The :class:`Pad`\s affected by this :class:`Heater`
+    """
+    polling_interval: Time
+    """
+    The :class:`.Time` to wait between calls to :func:`poll` to get a new value
+    for :attr:`current_temperature`.
+    """
+    _lock: Final[RLock]
+    """
+    An internal lock guarding changes
+    """
+    _polling: bool = False
+    """
+    Are we currently polling?
+    """
+    _user_op: Optional[UserOperation] = None
+    """
+    The :class:`UserOperation` associated with this :class:`Heater`.  This
+    starts out ``None``, because it cannot be created until the :class:`Heater`
+    joins a :class:`System`.
+    """
+    _last_target: Optional[TemperaturePoint] = None
+    """
+    The last non-``None`` :attr:`target` for this :class:`Heater`.  This is the
+    value used when :attr:`~BinaryComponent.current_state` is set to
+    :attr:`.OnOff.ON`.
+    """
+
+    _temperature: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
+    """
+    The private, settable value behind :attr:`current_temperature`
+    """
+    @property
+    def current_temperature(self) -> Optional[TemperaturePoint]:
+        """
+        The current :class:`.TemperaturePoint` of the :class:`Heater`.  This is
+        set to the value (posted to the future) returned by :func:`poll`.  If
+        this value is ``None``, it means that no temperature has been
+        established yet or the device cannot read its own temperature.
+
+        Note:
+            If, for some reason, an implementation needs to set this at some
+            other time, the actual :class:`.MonitoredProperty` is
+            :attr:`_temperature`
+        """
+        return self._temperature
+    on_temperature_change: ChangeCallbackList[Optional[TemperaturePoint]] = _temperature.callback_list
+    """
+    The :class:`.ChangeCallbackList` monitoring :attr:`current_temperature`
+    """
 
     target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
+    """
+    The target :class:`.TemperaturePoint` of the :class:`Heater` or ``None`` to
+    indicate that the :class:`Heater` should turn off and return to ambient temperature.
+    """
     on_target_change: ChangeCallbackList[Optional[TemperaturePoint]] = target.callback_list
-    
-    mode: MonitoredProperty[HeatingMode] = MonitoredProperty(default=HeatingMode.OFF)
-    on_mode_change: ChangeCallbackList[HeatingMode] = mode.callback_list
+    """
+    The :class:`.ChangeCallbackList` monitoring :attr:`target`
+    """
+
+    _mode: MonitoredProperty[HeatingMode] = MonitoredProperty(default=HeatingMode.OFF)
+    @property
+    def mode(self) -> HeatingMode:
+        """
+        The :class:`Heater`'s current :class:`HeatingMode`.  If this is
+        :attr:`~HeatingMode.HEATING` or :attr:`~HeatingMode.COOLING`, the
+        :class:`Heater` is moving toward its :attr:`target` (or the ambient
+        temperature if the  :attr:`target` is ``None``).  If it is
+        :attr:`HeatingMode.MAINTAINING`, the :class:`Heater` has reached its
+        target and is attempting to maintain the temperature there.  And if it
+        is :attr:`HeatingMode.OFF`, the :attr:`target` is ``None`` and the
+        :class:`Heater` has cooled down to ambient temperature.
+        """
+        return self._mode
+    on_mode_change: ChangeCallbackList[HeatingMode] = _mode.callback_list
+    """
+    The :class:`.ChangeCallbackList` monitoring :attr:`mode`
+    """
 
     def __init__(self, num: int, board: Board, *,
                  pads: Sequence[Pad],
-                 polling_interval: Time) -> None:
-        super().__init__(board=board, state=_HeaterBinState(self))
-        self.num = num
+                 polling_interval: Time,
+                 initial_temperature: Optional[TemperaturePoint] = None) -> None:
+        """
+        Initialize the object.
+
+        Args:
+            num: the :class:`Heater`'s index in its :attr:`~BoardComponent.board`'s
+                 :attr:`~Board.heaters` list
+            board: the containing :class:`Board`
+        Keyword Args:
+            pads: the :class:`Pad`\s affected by this :class:`Heater`
+
+            polling_interval: the :class:`.Time` to wait between calls to
+                              :func:`poll`
+
+            initial_temperature: an optional initial value for
+                                 :attr:`current_temperature`
+        """
+        super().__init__(board=board, state=DummyState(initial_state=OnOff.OFF))
+        self.number = num
         self.pads = pads
-        self.mode = HeatingMode.OFF
+        self._mode = HeatingMode.OFF
         self.polling_interval = polling_interval
         self._lock = RLock()
-        self._current_op_key = None
+        # self._current_op_key = None
         for pad in pads:
             pad._heater = self
-            
+
         self.on_state_change(self._note_state_change)
         self.on_mode_change(self._note_mode_change)
         self.on_target_change(self._note_target_change)
         self.on_temperature_change(self._note_temperature_change)
 
-        
+        self._temperature = initial_temperature
+
     def _note_state_change(self, _old: OnOff, new: OnOff) -> None:
         with self._lock:
             # Turning on goes to the last target.  If we're called as a result
@@ -2969,6 +3154,7 @@ class Heater(BinaryComponent['Heater']):
                 self.target = self._last_target
 
     def _note_mode_change(self, _old: HeatingMode, new: HeatingMode) -> None:
+        print(f"Mode is now {new}")
         with self._lock:
             # The operation ends when we hit ambient (OFF) or the target
             # (MAINTAINING).  If we're heating or cooling, we're still (or
@@ -2981,22 +3167,23 @@ class Heater(BinaryComponent['Heater']):
             else:
                 op.end()
             # print(f"{self}.mode now {new} (target: {self.target}, current: {self.current_temperature})")
-                
-    def _new_mode(self, target: Optional[TemperaturePoint], 
+
+
+    def _new_mode(self, target: Optional[TemperaturePoint],
                   current: Optional[TemperaturePoint]) -> HeatingMode:
         if current is None:
             # If we don't have a reading, there isn't a whole lot we can do.
             return HeatingMode.OFF if target is None else HeatingMode.HEATING
         elif current == target:
             return HeatingMode.MAINTAINING
-        elif target is None and current <= self.ambient_threshold:
+        elif target is None and self.board.is_ambient(current):
             return HeatingMode.OFF
         elif target is None or current > target:
             return HeatingMode.COOLING
         else:
             return HeatingMode.HEATING
 
-    def _note_target_change(self,  _old: Optional[TemperaturePoint], 
+    def _note_target_change(self,  _old: Optional[TemperaturePoint],
                             new: Optional[TemperaturePoint]) -> None:
         with self._lock:
             # We remember this as the last target if it's non-None.  When we set
@@ -3005,9 +3192,9 @@ class Heater(BinaryComponent['Heater']):
             if new is not None:
                 self._last_target = new
             self.current_state = OnOff.from_bool(new is not None)
-            self.mode = self._new_mode(new, self.current_temperature)
-        
-    def _note_temperature_change(self, _d: Optional[TemperaturePoint], 
+            self._mode = self._new_mode(new, self.current_temperature)
+
+    def _note_temperature_change(self, _d: Optional[TemperaturePoint],
                                  new: Optional[TemperaturePoint]) -> None:
         if new is None:
             return
@@ -3018,57 +3205,138 @@ class Heater(BinaryComponent['Heater']):
                 # If we're already off or maintaining, we assume that
                 # temperature fluctuations don't change our mode.
                 return
-            self.mode = self._new_mode(target, new)
+            # self._mode = self._new_mode(target, new)
             if mode is HeatingMode.HEATING:
                 assert target is not None
                 if new >= target:
-                    self.mode = HeatingMode.MAINTAINING
+                    self._mode = HeatingMode.MAINTAINING
             else:
                 if target is None:
-                    if new <= self.ambient_threshold:
-                        self.mode = HeatingMode.OFF
+                    if self.board.is_ambient(new):
+                        self._mode = HeatingMode.OFF
                 elif new <= target:
-                    self.mode = HeatingMode.MAINTAINING
+                    self._mode = HeatingMode.MAINTAINING
 
     def start_polling(self) -> None:
+        """
+        Start (or resume) calling :func:`poll` to get new values for
+        :attr:`current_temperature`.  Calls will be repeated with a delay of
+        :attr:`polling_interval`.
+
+        Calling :func:`start_polling` while polling is running does nothing.
+
+        Note:
+            :func:`start_polling` is called when the :class:`Heater`'s
+            :attr:`board` joins a :class:`System`.
+        """
         if self._polling:
             return
         self._polling = True
         def do_poll() -> Optional[Time]:
-            self.poll()
+            def set_temp(t: Optional[TemperaturePoint]) -> None:
+                self._temperature = t
+            self.poll().then_call(set_temp)
             return self.polling_interval if self._polling else None
         self.board.call_after(Time.ZERO, do_poll, daemon=True)
 
     def stop_polling(self) -> None:
+        """
+        Stop calling :func:`poll` to get new values for :attr:`current_temperature`.
+
+        Calling :func:`stop_polling` while polling is stopped does nothing.
+        """
         self._polling = False
 
     def __repr__(self) -> str:
-        return f"Heater({self.num})"
+        return f"Heater({self.number})"
 
     # If the implementation doesn't override, then we always get back None (immediately)
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
+        """
+        Determine the current temperature.  Returns a :class:`.Delayed` object
+        which will receive a :class:`.TemperaturePoint` or ``None`` to indicate
+        that the temperature cannot be determined.
+
+        When this is called during polling (i.e., after :func:`start_polling`
+        has been called), when the future receives a value, it will become the
+        new value of :attr:`current_temperature`.
+
+        Note:
+            The default implementation always returns a future that contains
+            ``None``.
+
+        Returns
+            a future which will get the new value for
+            :attr:`current_temperature`
+        """
         return Delayed.complete(None)
 
     class SetTemperature(Operation['Heater','Heater']):
+        """
+        A :class:`~.Operation` that modifies the :attr:`~Heater.target` of a
+        :class:`Heater`.  The :class:`~.Operation` is considered complete (and
+        its future receives the :class:`Heater` as its value) when the
+        :class:`Heater`'s :attr:`~Heater.current_temperature` reaches this
+        target temperature.  (More precisely, when its :attr:`~Heater.mode`
+        becomes :attr:`~HeatingMode.MAINTAINING` or :attr:`~HeatingMode.OFF`.
+
+        Note:
+            If another :class:`SetTemperature` operation is scheduled before
+            this one completes, this operation is cancelled, and its future will
+            never receive a value.
+        """
         target: Final[Optional[TemperaturePoint]]
+        """
+        The target :class:`TemperaturePoint` or ``None`` to indicate that the
+        heater should turn off and return to ambient temperature.
+        """
+        key_attr: Final[str] = "__set_temp_monitor_key"
+        """
+        The name of the attribute to use to store the key for the callback
+        monitoring for :attr:`~Heater.mode` changes.
+        """
 
         def _schedule_for(self, heater: Heater, *,
                           after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[Heater]:
+            """
+            The implementation of :func:`~.Operation.schedule_for`. Sets
+            ``heater``'s :attr:`~Heater.target` and monitors changes in its
+            :attr:`~Heater.mode`.  When this becomes
+            :attr:`~HeatingMode.MAINTAINING` or :attr:`~HeatingMode.OFF`,
+            ``heater`` is posted to the returned future.
+
+            If another :class:`SetTemperature` is currently in progress, it is
+            silently aborted.
+
+            :meta public:
+            Args:
+                obj: the :class:`Heater` to schedule the operation for
+            Keyword Args:
+                after: an optional delay to wait before scheduling the operation
+                post_result: whether to post the resulting value to the returned future object
+            Returns:
+                a :class:`Delayed`\[:class:`Heater`] future object to which the resulting
+                value will be posted unless ``post_result`` is ``False``
+            """
             future = Postable[Heater]()
             target = self.target
 
             def do_it() -> None:
                 with heater._lock:
-                    if heater._current_op_key is not None:
-                        heater.on_mode_change.remove(heater._current_op_key)
+                    attr = self.key_attr
+                    old_key = getattr(heater, attr, None)
+                    if old_key is not None:
+                        heater.on_mode_change.remove(old_key)
                     if post_result:
+                        key = (heater, f"Temp->{target}", random.random())
                         def check(_old, mode: HeatingMode) -> None:
                             if mode is HeatingMode.OFF or mode is HeatingMode.MAINTAINING:
                                 future.post(heater)
-                        key = (heater, f"Temp->{target}", random.random())
-                        heater._current_op_key = key
+                                heater.on_mode_change.remove(key)
+                                setattr(heater, attr, None)
+                        setattr(heater, attr, key)
                         heater.on_mode_change(check, key=key)
                     heater.target = target
             heater.board.schedule(do_it, after=after)
@@ -3076,14 +3344,86 @@ class Heater(BinaryComponent['Heater']):
 
 
         def __init__(self, target: Optional[TemperaturePoint]) -> None:
+            """
+            Initialize the object.
+
+            Args:
+                target: the target :class:`.TemperaturePoint` or ``None`` to
+                        indicate that the :class:`Heater` should turn off.
+            """
             self.target = target
 
 class ProductLocation(NamedTuple):
+    """
+    The final disposition of the :class:`.Liquid` transfered by
+    :func:`ExtractionPoint.transfer_out`.
+
+    Contains a :class:`.Reagent` (:attr:`reagent`) and a :attr:`location`, which
+    can be of any type.
+    """
     reagent: Reagent
+    """
+    The :class:`.Reagent` that was transfered
+    """
     location: Any
+    """
+    The location to which it was transfered
+    """
 
 class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingTarget):
-    pad: Final[Pad]
+    """
+    A component, (typically a hole in a :class:`Board`'s lid) that enables a
+    :class:`.Pipettor` to add :class:`.Liquid` to or remove :class:`.Liquid`
+    from a :class:`.Pad`.
+
+    As a :class:`BoardComponent`, the :class:`ExtractionPoint` is associated
+    with the same :attr:`~BoardComponent.board` as its :attr:`pad`.
+
+    As a :class:`PipettingTarget`, :class:`ExtractionPoint` implements the
+    pipetting protocol:
+
+    * It has an (optional) associated :attr:`~PipettingTarget.pipettor`.  By
+      default this is ``None``. A subclass should either provide one or override
+      the implementations of :func:`transfer_in` and :func:`transfer_out`.
+
+    * It can report its :attr:`removable_liquid`.  By default, this will be the
+     :attr:`~.Blob.contents` of the :class:`Blob` that contains the
+     :class:`Drop` (if any) at the :class:`ExtractionPoint`'s :attr:`pad`.
+
+    * When the :class:`.Pipettor` is in position to add liquid, it calls
+      :func:`prepare_for_add` and waits for it to complete.  By default, this
+      reserves :attr:`pad` and turns it on.
+
+    * After adding liquid, the :class:`.Pipettor` calls :func:`pipettor_added`.
+      By default, this adds the described :class:`.Liquid`, and if this is the
+      last transfer, unreserves :attr:`pad`.
+
+    * When the :class:`.Pipettor` is in position to remove liquid, it calls
+      :func:`prepare_for_remove`, which waits until there is a drop on
+      :attr:`pad`.
+
+    * After adding liquid, the :class:`.Pipettor` calls
+      :func:`pipettor_removed`, which removes the described :class:`.Liquid`
+      and, if there is no further :class:`.Liquid` in :attr:`pad`'s
+      :attr:`~DropLoc.blob`, turns it off.
+
+    To request that :class:`.Liquid` be transfered via an
+    :class:`ExtractionPoint`, use :func:`transfer_in` and :func:`transfer_out`
+    (or their wrapper :class:`.Operation`\s :class:`TransferIn` and
+    :class:`TransferOut`).  The default implementations of these schedule
+    :class:`.Pipettor.Supply` and :class:`.Pipettor.Extract` on
+    :attr:`~PipettingTarget.pipettor`, failing an assertion if
+    :attr:`~PipettingTarget.pipettor` is ``None``.
+
+    When extracting using :func:`transfer_out` (or :class:`TransferOut`), if
+    ``is_product`` is ``True`` (the default), the system is instructed to treat
+    the extracted :class:`.Liquid` as a product of the overall process and
+    identify a new location (e.g., in an product well plate) to store it.  If
+    ``product_loc`` is also provided, a :class:`ProductLocation` (a combination
+    of the :class:`.Reagent` and an implementation-specific description of the
+    location) will be posted to it.
+    """
+    pad: Final[Pad] #: The :class:`Pad` associated with this :class:`ExtractionPoint`
     removed: Optional[Volume] = None
     reserved_pads: set[Pad]
     splash_radius: Final[int]
@@ -3093,6 +3433,24 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
 
     @property
     def removable_liquid(self) -> Optional[Liquid]:
+        """
+        The :class:`.Liquid` that could be removed via this
+        :class:`ExtractionPoint` or ``None`` if there is no such
+        :class:`.Liquid`.
+
+        By default, this is the :attr:`~.Blob.contents` of the :class:`.Blob` at
+        :attr:`pad` if there is a :class:`.Drop` there, otherwise ``None``.
+
+        Note:
+            The volume is that of the entire :class:`.Blob`, not merely the
+            portion allocable to the :class:`.Drop` at the :class:`Pad`.
+
+            Note also that the :class:`Pad`'s :attr:`~DropLoc.blob` may be
+            non-``None`` even if there is no :class:`Drop` (in which case its
+            volume will be zero).  In this case, :attr:`removable_liquid` will
+            be ``None``, not a zero-volume :class:`.Liquid`.
+
+        """
         drop = self.pad.drop
         if drop is None:
             return None
@@ -3111,6 +3469,12 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         return self._splash_border
 
     def __init__(self, pad: Pad, splash_radius: Optional[int] = None) -> None:
+        """
+        Initialize the object.
+
+        Args:
+            pad: the :class:`Pad` associated with the :class:`ExtractionPoint`.
+        """
         BoardComponent.__init__(self, pad.board)
         self.pad = pad
         if splash_radius is None:
@@ -3123,6 +3487,12 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         return f"ExtractionPoint[{self.pad.location}]"
 
     def prepare_for_add(self) -> None:
+        """
+        Block until it is safe for a :class:`.Pipettor` to add :class:`.Liquid`.
+        This method is called when the :class:`.Pipettor` is in position.
+
+        By default, it reserves :attr:`pad` and turns it on.
+        """
         expect_drop = self.pad.drop is not None
         self.reserve_pads(expect_drop=expect_drop).wait()
         self.pad.schedule(Pad.TurnOn).wait()
@@ -3130,6 +3500,24 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     def pipettor_added(self, reagent: Reagent, volume: Volume, *,
                        last: bool,
                        mix_result: Optional[MixResult]) -> None:
+        """
+        Called when the :class:`.Pipettor` has finished adding :class:`.Liquid`.
+        If ``mix_result`` is not ``None``, it should be used as the result of
+        mixing the delivered :class:`.Liquid` to what is already there.  If
+        ``last`` is ``False``, there will be at least one more transfer before
+        the overall transfer operation is complete.
+
+        By default, calls :func:`Pad.liquid_added` on :attr:`pad` if ``volume``
+        is non-zero.  If ``last`` is ``True``, unreserves :attr:`pad`.
+
+        Args:
+            reagent: the :class:`.Reagent` added
+            volume: the :class:`.Volume` of :class:`.Reagent` added
+        Keyword Args:
+            mix_result: the (optional) result of mixing the added
+                        :class:`.Liquid` with what's already there.
+            last: ``True`` if this is the last transfer in a transfer request.
+        """
         if volume > Volume.ZERO:
             got = Liquid(reagent, volume)
             self.pad.liquid_added(got, mix_result=mix_result)
@@ -3137,11 +3525,33 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.unreserve_pads()
 
     def prepare_for_remove(self) -> None:
+        """
+        Block until it is safe for a :class:`.Pipettor` to remove
+        :class:`.Liquid`. This method is called when the :class:`.Pipettor` is
+        in position.
+
+        By default, it waits until there is a :class:`.Drop` on :attr:`pad`.
+        """
         self.ensure_drop().wait()
         self.reserve_pads(expect_drop=True).wait()
 
     def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
                          *, last: bool) -> None: # @UnusedVariable
+        """
+        Called when the :class:`.Pipettor` has finished removing
+        :class:`.Liquid`. If ``last`` is ``False``, there will be at least one
+        more transfer before the overall transfer operation is complete.
+
+        By default, calls :func:`Pad.liquid_remove` if ``volume`` is non-zero.
+        If this results in an empty :class:`.Blob`, schedules turning off all
+        :class:`Pad`\s in the :class:`.Blob`.
+
+        Args:
+            reagent: the :class:`.Reagent` removed
+            volume: the :class:`.Volume` of :class:`.Reagent` removed
+        Keyword Args:
+            last: ``True`` if this is the last transfer in a transfer request.
+        """
         pad = self.pad
         if volume > Volume.ZERO:
             pad.liquid_removed(volume)
@@ -3158,30 +3568,121 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.unreserve_pads()
 
     def transfer_out(self, *,
-                     liquid: Optional[Liquid] = None,
+                     volume: Optional[Volume] = None,
                      on_no_sink: ErrorHandler = PRINT,
                      is_product: bool = True,
                      product_loc: Optional[Postable[ProductLocation]] = None
                      ) -> Delayed[Liquid]:
+        """
+        Request that :class:`.Liquid` be extracted through the
+        :class:`ExtractionPoint`.  The method returns a future to which the
+        :class:`.Liquid` actually transfered will be posted when all of the
+        :class:`.Liquid` that will be removed has been.
+
+        If ``volume`` is ``None``, the volume of the :class:`.Blob` at
+        :attr:`pad` (which must exist) is used.
+
+        If ``is_product`` is ``True``, this transfer represents the extraction
+        of a product and a new location (e.g., a new well in a product well
+        plate) will be chosen for it.  If ``product_loc`` is not ``None``, a
+        :class:`ProductLocation` will be posted to it describing the
+        :class:`.Reagent` and location.
+
+        If a location cannot be determined for the extracted :class:`.Liquid`,
+        ``on_no_sink`` will be invoked.  If control continues, the
+        :class:`.Pipettor` doing the removal is encouraged to dump the extracted
+        :class:`.Liquid` into a trash receptacle or waste drain.
+
+        By default, the transfer is implemented by scheduling a
+        :class:`.Pipettor.Extract` :class:`.Operation` on the
+        :class:`ExtractionPoint`'s :attr:`~PipettingTarget.pipettor` (which must
+        exist).  Subclasses are free to override :func:`transfer_out` to remove
+        this restriction.
+
+        Note:
+            The :attr:`~.Liquid.volume` of the :class:`.Liquid` posted to the
+            resulting future may be different from ``volume``.
+
+        Note:
+            The value will be posted to the resulting future when the last of
+            the liquid is removed, not when it reaches its destination.  The
+            value posted to :class:`product_loc` can happen at any time.
+
+        Args:
+
+            volume: the :class:`.Volume` to remove or ``None`` to indicate using
+                    the volume of the :class:`.Blob` at :attr:`pad` (which must
+                    exist).
+        Keyword Args:
+
+            on_no_sink: an :class:`.ErrorHandler` invoked when there is no place
+                        to store the extracted :class:`.liquid`.
+
+            is_product: ``True`` if this transfer represents the extraction of a
+                        product.
+
+            product_loc: an optional :class:`.Postable` future to which the
+                         resulting :class:`ProductLocation` will be posted if
+                         ``is_product`` is ``True``.
+        Returns:
+            a :class"`.Delayed`\[:class:`.Liquid`] which receives the
+            :class:`.Liquid` actually transfered.
+        """
         pipettor = self.pipettor
         assert pipettor is not None, f"{self} has no pipettor and transfer_out() not overridden"
-        if liquid is None:
-            drop = not_None(self.pad.drop)
-            liquid = drop.blob.contents
-        p_future = pipettor.schedule(pipettor.Extract(liquid.volume, self,
+        if volume is None:
+            drop = not_None(self.pad.drop, desc=lambda: f"volume is None and {self.pad} does not have Drop")
+            volume = drop.blob_volume
+        p_future = pipettor.schedule(pipettor.Extract(volume, self,
                                                       is_product = is_product,
                                                       product_loc = product_loc,
                                                       on_no_sink = on_no_sink))
         return p_future
 
-    def transfer_in_result(self) -> Drop:
-        return not_None(self.pad.drop)
-
     def transfer_in(self, reagent: Reagent, volume: Volume, *,
-                     mix_result: Optional[Union[Reagent, str]]=None,
+                     mix_result: Optional[MixResult]=None,
                      on_insufficient: ErrorHandler=PRINT,
                      on_no_source: ErrorHandler=PRINT
                      ) -> Delayed[Drop]:
+        """
+        Request that :class:`.Liquid` be extracted through the
+        :class:`ExtractionPoint`.  The method returns a future to which the
+        :class:`.Drop` on :attr:`pad` will be posted after all of the
+        :class:`.Liquid` that will be added has been.
+
+        ``on_no_source`` will be invoked if a source for ``reagent`` cannot be
+        determined.  ``on_insufficient`` will be invoked if ``volume`` of
+        ``reagent`` cannot be obtained.
+
+        If there is already :class:`.Liquid` on :attr:`pad`, the added
+        :class:`.Liquid` will be mixed with it.  If ``mix_result`` is not
+        ``None``, it will be used as (or to fine) the resulting
+        :class:`.Reagent`.
+
+        By default, the transfer is implemented by scheduling a
+        :class:`.Pipettor.Supply` :class:`.Operation` on the
+        :class:`ExtractionPoint`'s :attr:`~PipettingTarget.pipettor` (which must
+        exist). Subclasses are free to override :func:`transfer_in` to remove
+        this restriction.
+
+        Note:
+            The :attr:`~.Liquid.volume` of the :class:`.Liquid` posted to the
+            resulting future may be different from ``volume``.
+
+        Args:
+            reagent: the :class:`.Reagent` to transfer in
+            volume: the :class:`.Volume` of ``reagent`` to transfer in
+        Keyword Args:
+            mix_result: the resulting :class:`.Reagent`, the name of the computed
+                        :class:`.Reagent`, or ``None`` (indicating that the name
+                        should be computed), when :attr:`pad` is not empty
+
+            on_insufficient: an :class:`.ErrorHandler` invoked if ``volume`` of
+                             ``reagent`` cannot be obtained
+
+            on_no_source: an :class:`.ErrorHandler` invoked if ``reagent`` cannot
+                          be obtained
+        """
         from mpam.drop import Drop # @Reimport
         pipettor = self.pipettor
         assert pipettor is not None, f"{self} has no pipettor and transfer_in() not overridden"
@@ -3193,20 +3694,25 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         # If I use a lambda, Mypy complains about not being able to infer the
         # type of the argument 1 [sic] of post_transformed_to()
         def xfer_result(_) -> Drop:
-            return self.transfer_in_result()
+            return not_None(self.pad.drop)
 
         p_future.post_transformed_to(future, xfer_result)
-        # p_future.post_transformed_to(future, lambda _: self.transfer_in_result())
         return future
 
     def reserve_pads(self, *, expect_drop: bool = False) -> Delayed[None]:
         """
-        If `expect_drop` is `True`, we wait until a drop is presend on the
-        pad. If `expect_drop` is `False` we wait until a drop is **not**
-        present on the pad.
+        Reserve :attr:`pad`, waiting until ``expect_drop`` matches whether
+        there is a :class:`.Drop` at :attr:`pad`. A splash zone around
+        the pad is also reserved if a :attr:`splash_radius` has been
+        set.
 
-        Once the *drop expectation* is meet, we wait until we can
-        reserve the pad.
+        Args:
+            expect_drop: ``True`` if the reservation should delay until there is
+                         a :class:`.Drop` at :attr:`pad`, ``False`` if it should
+                         wait until there is not.
+        Returns:
+            a future that will receive a value when the reservation is successful
+
         """
         # to_reserve stores pads that need to be reserved. Once a pad
         # is reserved, it gets removed from the list
@@ -3260,6 +3766,13 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.reserved_pads.pop().unreserve()
 
     def ensure_drop(self) -> Delayed[None]:
+        """
+        Notify when there is a :class:`.Drop` at :attr:`pad`.
+
+        Returns:
+            a future that will receive a value when there is a :class:`.Drop` at
+            :attr:`pad`
+        """
         pad = self.pad
         return pad.board.on_condition(lambda: pad.drop is not None, lambda: None)
 
@@ -3284,17 +3797,60 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         self._splash_border = [p for p in border if p.exists]
 
     class TransferIn(Operation['ExtractionPoint', 'Drop']):
+        """
+        A :class:`~.Operation` to transfer in :class:`.Liquid` via an :class:`ExtractionPoint`.
+
+        Implemented by wrapping :func:`ExtractionPoint.transfer_in`.
+        """
         reagent: Final[Reagent]
+        """
+        The :class:`.Reagent` to transfer in
+        """
         volume: Final[Optional[Volume]]
-        mix_result: Final[Optional[Union[Reagent, str]]]
+        """
+        The :class:`.Volume` of :attr:`reagent` to transfer in
+        """
+        mix_result: Final[Optional[MixResult]]
+        """
+        the resulting :class:`.Reagent`, the name of the computed
+        :class:`.Reagent`, or ``None`` (indicating that the name should be
+        computed), when the :class:`ExtractionPoint`'s
+        :attr:`~ExtractionPoint.pad` is not empty
+        """
         on_insufficient: Final[ErrorHandler]
+        """
+        an :class:`.ErrorHandler` invoked if :attr:`volume` of :attr:`reagent`
+        cannot be obtained
+        """
         on_no_source: Final[ErrorHandler]
+        """
+        an :class:`.ErrorHandler` invoked if :attr:`reagent` cannot be obtained
+        """
 
         def __init__(self, reagent: Reagent, volume: Optional[Volume] = None, *,
                      mix_result: Optional[Union[Reagent, str]] = None,
                      on_insufficient: ErrorHandler = PRINT,
                      on_no_source: ErrorHandler = PRINT
                      ) -> None:
+            """
+            Initialize the object
+
+            Args:
+                reagent: the :class:`.Reagent` to transfer in
+                volume: the :class:`.Volume` of ``reagent`` to transfer in
+            Keyword Args:
+
+                mix_result: the resulting :class:`.Reagent`, the name of the computed
+                            :class:`.Reagent`, or ``None`` (indicating that the
+                            name should be computed), when the
+                            :class:`ExtractionPoint`'s
+                            :attr:`~ExtractionPoint.pad` is not empty
+
+                on_insufficient: an :class:`.ErrorHandler` invoked if ``volume`` of
+                                 ``reagent`` cannot be obtained
+                on_no_source: an :class:`.ErrorHandler` invoked if ``reagent`` cannot
+                              be obtained
+            """
             self.reagent = reagent
             self.volume = volume
             self.mix_result = mix_result
@@ -3305,6 +3861,20 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                           after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Drop]:
+            """
+            The implementation of :func:`schedule_for`. Calls
+            :func:`~ExtractionPoint.transfer_in` on ``extraction_point``.
+
+            :meta public:
+            Args:
+                extraction_point: the :class:`ExtractionPoint` object to schedule the operation for
+            Keyword Args:
+                after: an optional delay to wait before scheduling the operation
+                post_result: whether to post the resulting value to the returned future object
+            Returns:
+                a :class:`Delayed`\[:class:`.Drop`] future object to which the resulting
+                value will be posted unless ``post_result`` is ``False``
+            """
             from mpam.drop import Drop # @Reimport
             volume = extraction_point.board.drop_size if self.volume is None else self.volume
             future = Postable[Drop]()
@@ -3319,15 +3889,59 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             return future
 
     class TransferOut(Operation['ExtractionPoint', 'Liquid']):
+        """
+        A :class:`~.Operation` to remove :class:`.Liquid` via an :class:`ExtractionPoint`.
+
+        Implemented by wrapping :func:`ExtractionPoint.transfer_out`.
+        """
         volume: Final[Optional[Volume]]
+        """
+        The :class:`.Volume` to remove or ``None`` to indicate using the volume
+        of the :class:`.Blob` at the :class:`ExtractionPoint`'s :attr:`pad`
+        (which must exist).
+        """
+        is_product: Final[bool]
+        """
+        ``True`` if this transfer represents the extraction of a
+        product
+        """
         on_no_sink: Final[ErrorHandler]
+        """
+        An :class:`.ErrorHandler` invoked when there is no place to store
+        the extracted :class:`.Liquid`.
+        """
         product_loc: Final[Optional[Postable[ProductLocation]]]
+        """
+        An optional :class:`.Postable` future to which the resulting
+        :class:`ProductLocation` will be posted if :attr:`is_product` is
+        ``True``.
+        """
 
         def __init__(self, volume: Optional[Volume] = None, *,
+                     is_product: bool = True,
                      on_no_sink: ErrorHandler = PRINT,
                      product_loc: Optional[Postable[ProductLocation]] = None
                      ) -> None:
+            """
+            Initialize the object
+
+            Args:
+                volume: the :class:`.Volume` to remove or ``None`` to indicate using the volume
+                        of the :class:`.Blob` at the :class:`ExtractionPoint`'s
+                        :attr:`pad` (which must exist).
+            Keyword Args:
+                is_product: ``True`` if this transfer represents the extraction of a
+                            product
+                on_no_sink: an :class:`.ErrorHandler` invoked when there is no place to store
+                            the extracted :class:`.Liquid`.
+
+                product_loc: an optional :class:`.Postable` future to which the resulting
+                            :class:`ProductLocation` will be posted if
+                            :attr:`is_product` is ``True``.
+
+            """
             self.volume = volume
+            self.is_product = is_product
             self.on_no_sink = on_no_sink
             self.product_loc = product_loc
 
@@ -3335,14 +3949,26 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                           after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
+            """
+            The implementation of :func:`schedule_for`. Calls
+            :func:`~ExtractionPoint.transfer_out` on ``extraction_point``.
+
+            :meta public:
+            Args:
+                extraction_point: the :class:`ExtractionPoint` object to schedule the operation for
+            Keyword Args:
+                after: an optional delay to wait before scheduling the operation
+                post_result: whether to post the resulting value to the returned future object
+            Returns:
+                a :class:`Delayed`\[:class:`.Luiquid`] future object to which the resulting
+                value will be posted unless ``post_result`` is ``False``
+            """
             future = Postable[Liquid]()
             def finish(liquid: Liquid) -> None:
                 future.post(liquid)
             def do_it() -> None:
-                drop = not_None(extraction_point.pad.drop)
-                liquid = Liquid(drop.reagent,
-                                drop.blob_volume if self.volume is None else self.volume)
-                extraction_point.transfer_out(liquid = liquid,
+                extraction_point.transfer_out(volume = self.volume,
+                                              is_product = self.is_product,
                                               on_no_sink = self.on_no_sink,
                                               product_loc = self.product_loc
                                              ).post_to(future)
@@ -3352,31 +3978,132 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
 
 
 class SystemComponent(ABC):
-    system: Optional[System] = None
+    """
+    A component of a :class:`System`.  Primary examples are :class:`Board` and
+    :class:`.Pipettor`.
+
+    When a :class:`SystemComponent` is created, it is not associated with a
+    :class:`System`, and an attempt to read :attr:`system` will fail.
+    :attr:`joined_system` can be used to determine this state.  :attr:`system`
+    is set when :func:`join_system` is called.
+
+    Note:
+        :func:`join_system` will be called for a :class:`Board` during the
+        initialization of the :class:`System`.  For other
+        :class:`SystemComponent`\s, it must be called explicitly.  If a class
+        overrides :func:`join_system`, it should delegate to the base
+        implementation.
+
+    The primary job of a :class:`SystemComponent` qua :class:`SystemComponent`
+    is to delegate requests to its :attr:`system`, which itself will delegate
+    them to its associated :class:`.Engine`.
+
+    :attr:`.TimerFunc`\s (no-argument functions that optionally return a
+    :class:`.Time` or :class:`.Timestamp`) are scheduled using :func:`call_at`
+    or :func:`call_after`.  If they return a value (other than ``None``), they
+    are scheduled to be called again based on the value.
+
+    :attr:`.ClockCallback`\s (no-argument functions that optionally return a
+    :class:`.Ticks`) are scheduled using :func:`before_tick` or
+    :func:`after_tick`.  These schedule the function to be executed immediately
+    before or immediately after the communication functions on a tick.  They
+    take an optional ``after`` argument, which is either :class:`.Ticks` or
+    :class:`.Time` to specify a delay.  If it is not specified, the function is
+    called on the next tick.  If the :attr:`.ClockCallback` returns a
+    :class:`.Ticks` value, it is scheduled to re-run before or after
+    (respectively) that many :class:`.Ticks`.
+
+    To schedule running again on the next tick, return ``1*tick``.  A common
+    idiom is to use an :class:`.Iterable` that yields ``None`` when done and
+    ``1*tick`` otherwise, e.g., ::
+
+        def do_it() -> Iterator[Optional[Ticks]]:
+            while not pad.reserve():
+                yield 1*tick
+            # do the actual work
+            pad.unreserve()
+            yield None
+
+        iterator = do_it()
+        board.before_tick(lambda: next(iterator))
+
+    Every time the iterator fails to reserve the pad, it yields one tick (which
+    is returned from the lambda) and will get another chance before the next
+    tick, after whoever held the reservation may have released it.  This will
+    repeat until the reservation succeeds, at which point the real work can be
+    done.  When it is done, it unreserves the pad and yields ``None``,
+    signalling that it is done.
+
+
+    Note:
+        :class:`SystemComponent` is an abstract base class.  Concrete instances
+        must implement :func:`update_state`, although this implementation must
+        either delegate back to :func:`SystemComponent.update_state` or call
+        :func:`finish_update`.
+    """
+    _system: Optional[System] = None
     _after_update: Final[list[Callback]]
-    _monitor_callbacks: Final[list[Callback]]
+    # _monitor_callbacks: Final[list[Callback]]
     no_delay: DelayType = Time.ZERO
 
+    @property
+    def system(self) -> System:
+        """
+        The :class:`System` that the :class:`SystemComponent` has joined.
+
+        Note:
+            When a :class:`SystemComponent` is created, it is not associated
+            with a :class:`System`, and an attempt to read :attr:`system` will
+            fail. :attr:`joined_system` can be used to determine this state.
+            :attr:`system` is set when :func:`join_system` is called.
+        """
+        return not_None(self._system, desc=lambda: f"{self} not in a system")
+
+    @property
+    def joined_system(self) -> bool:
+        """
+        ``True`` if :func:`join_system` has been called and :attr:`system` is
+        valid.
+        """
+        return self._system is not None
+
     def __init__(self) -> None:
+        """
+        Initialize the object
+        """
         self._after_update = []
-        self._monitor_callbacks = []
+        # self._monitor_callbacks = []
 
     def join_system(self, system: System) -> None:
-        self.system = system
+        """
+        Join ``system``.  After this call, :attr:`system` will be valid and
+        :attr:`joined_system` will return ``True``.
+
+        This calls :func:`component_joined` on ``system``.
+
+        Note:
+            :func:`join_system` will be called for a :class:`Board` during the
+            initialization of the :class:`System`.  For other
+            :class:`SystemComponent`\s, it must be called explicitly.  If a class
+            overrides :func:`join_system`, it should delegate to the base
+            implementation.
+
+        Args:
+            system: the :class:`System` to join
+        """
+        self._system = system
         system.component_joined(self)
 
     def system_shutdown(self) -> None:
         pass
 
-    def in_system(self) -> System:
-        return not_None(self.system)
 
     @abstractmethod
     def update_state(self) -> None:
         self.finish_update()
 
-    def add_monitor(self, cb: Callback) -> None:
-        self._monitor_callbacks.append(cb)
+    # def add_monitor(self, cb: Callback) -> None:
+    #     self._monitor_callbacks.append(cb)
 
     def finish_update(self) -> None:
         # This is assumed to only be called in the DevComm thread, so
@@ -3384,8 +4111,8 @@ class SystemComponent(ABC):
         for cb in self._after_update:
             cb()
         self._after_update.clear()
-        for cb in self._monitor_callbacks:
-            cb()
+        # for cb in self._monitor_callbacks:
+        #     cb()
 
     def make_request(self, cb: Callable[[], Optional[Callback]]) -> DevCommRequest:
         def req() -> tuple[SystemComponent]:
@@ -3397,35 +4124,81 @@ class SystemComponent(ABC):
 
     def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO):
         req = self.make_request(cb)
-        sys = self.in_system()
+        sys = self.system
         if delta > Time.ZERO:
             self.call_after(delta, lambda : sys.communicate(req))
         else:
             sys.communicate(req)
 
-    def call_at(self, t: Timestamp, fn: TimerFunc, *, daemon: bool = False):
-        self.in_system().call_at(t, fn, daemon=daemon)
+    def call_at(self, t: Timestamp, fn: TimerFunc, *, daemon: bool = False) -> None:
+        """
+        Call :class:`.TimerFunc` ``fn`` at :class:`.Timestamp` ``t``.  This will
+        be delegated to :attr:`system`, possibly batched, and finally passed to
+        :attr:`system`'s :class:`.Engine`.  At this point, if the time is at or
+        after ``t``, it will be run, otherwise it will be scheduled to run.
 
-    def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False):
-        self.in_system().call_after(delta, fn, daemon=daemon)
+        If ``fn`` returns a :class:`Time` or :class:`Timestamp` value, it will
+        be rescheduled to run at the new time.
+
+        If ``daemon`` is ``True``, the :class:`System` can be shut down even
+        while ``fn`` is still scheduled to run (either the first time or
+        subsequent times).  If it is ``False`` (the default), the
+        :class:`System` is not considered to be idle while it is scheduled.
+
+        Args:
+            t: the :class:`.Timestamp` to run at
+            fn: the :class:`.TimerFunc` to run
+        Keyword Args
+            daemon: ``True`` if ``fn`` should be considered to be a daemon
+        """
+        self.system.call_at(t, fn, daemon=daemon)
+
+    def call_after(self, delta: Time, fn: TimerFunc, *, daemon: bool = False) -> None:
+        """
+        Call :class:`.TimerFunc` ``fn`` after a delay of ``delta``.  This will
+        be delegated to :attr:`system`, possibly batched, and finally passed to
+        :attr:`system`'s :class:`.Engine`.  At this point it will be
+        treated as if it had been ::
+
+            sys_cpt.call_at(time_now()+delta, fn, daemon=daemon)
+
+        Note:
+
+            :func:`.time_now` is not computed until all batching is finished.
+
+        If ``fn`` returns a :class:`Time` or :class:`Timestamp` value, it will
+        be rescheduled to run at the new time.
+
+        If ``daemon`` is ``True``, the :class:`System` can be shut down even
+        while ``fn`` is still scheduled to run (either the first time or
+        subsequent times).  If it is ``False`` (the default), the
+        :class:`System` is not considered to be idle while it is scheduled.
+
+        Args:
+            delta: the :class:`.Time` to delay before running
+            fn: the :class:`.TimerFunc` to run
+        Keyword Args:
+            daemon: ``True`` if ``fn`` should be considered to be a daemon
+        """
+        self.system.call_after(delta, fn, daemon=daemon)
 
     def before_tick(self, fn: ClockCallback, *, delta: Optional[DelayType]=Ticks.ZERO) -> None:
         if delta is None:
             delta = Ticks.ZERO
-        self.in_system().before_tick(fn, delta=delta)
+        self.system.before_tick(fn, delta=delta)
 
     def after_tick(self, fn: ClockCallback, *, delta: Optional[DelayType]=Ticks.ZERO) -> None:
         if delta is None:
             delta = Ticks.ZERO
-        self.in_system().after_tick(fn, delta=delta)
+        self.system.after_tick(fn, delta=delta)
 
     def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO) -> None:
         req = self.make_request(cb)
-        self.in_system().on_tick(req, delta=delta)
+        self.system.on_tick(req, delta=delta)
 
     def delayed(self, function: Callable[[], T], *,
                 after: Optional[DelayType]) -> Delayed[T]:
-        return self.in_system().delayed(function, after=after)
+        return self.system.delayed(function, after=after)
 
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
                  after: Optional[DelayType] = None) -> None:
@@ -3437,7 +4210,7 @@ class SystemComponent(ABC):
             self.communicate(cb, delta=after)
 
     def user_operation(self) -> UserOperation:
-        return UserOperation(not_None(self.system).engine.idle_barrier)
+        return UserOperation(self.system.engine.idle_barrier)
 
     def on_condition(self, pred: Callable[[], bool],
                      val_fn: Callable[[], T]) -> Delayed[T]:
@@ -3456,6 +4229,184 @@ class SystemComponent(ABC):
         return future
 
     # def schedule_before(self, cb: C):
+
+class PowerMode(Enum):
+    DC = auto()
+    AC = auto()
+
+class PowerSupply(BinaryComponent['PowerSupply']):
+    _last_voltage: Voltage = Voltage.ZERO
+    _lock: Final[RLock]
+
+    min_voltage: Final[Voltage]
+    max_voltage: Final[Voltage]
+    allowed_mode: Final[Optional[PowerMode]]
+    on_high_voltage: Final[ErrorHandler]
+    on_low_voltage: Final[ErrorHandler]
+    on_illegal_mode_change: Final[ErrorHandler]
+
+    voltage: MonitoredProperty[Voltage] = MonitoredProperty()
+    on_voltage_change: ChangeCallbackList[Voltage] = voltage.callback_list
+
+    @voltage.transform
+    def _check_voltage_bounds(self, v: Voltage) -> MissingOr[Voltage]:
+        my_max = self.max_voltage
+        if not self.on_high_voltage.expect_true(v <= my_max,
+                                                lambda: f"Voltage {v} > maximum ({my_max})"):
+            return self.max_voltage
+        if not self.on_illegal_toggle.expect_true(v > 0 or self.can_toggle or self.current_state is OnOff.OFF,
+                                                  lambda: "Power supply cannot be turned off"):
+            return MISSING
+        my_min = self.min_voltage
+        if not self.on_low_voltage.expect_true(v >= my_min or v == 0,
+                                                lambda: f"Voltage {v} < minimum ({my_min})"):
+            return self.min_voltage
+        return v
+
+    mode: MonitoredProperty[PowerMode] = MonitoredProperty()
+    on_mode_change: ChangeCallbackList[PowerMode] = mode.callback_list
+
+    @mode.transform
+    def _check_mode_change(self, m: PowerMode) -> MissingOr[PowerMode]:
+        allowed = self.allowed_mode
+        if not self.on_illegal_mode_change.expect_true(allowed is None or allowed is m,
+                                                       lambda: "Power supply mode cannot be changed"):
+            return MISSING
+        return m
+
+    def __init__(self, board: Board, *,
+                 min_voltage: Voltage,
+                 max_voltage: Voltage,
+                 initial_voltage: Voltage,
+                 mode: PowerMode,
+                 can_toggle: bool = True,
+                 can_change_mode: bool = True,
+                 on_high_voltage: ErrorHandler = PRINT,
+                 on_low_voltage: ErrorHandler = PRINT,
+                 on_illegal_toggle: ErrorHandler = PRINT,
+                 on_illegal_mode_change: ErrorHandler = PRINT,
+                 ) -> None:
+        initial_state = initial_voltage > 0
+        super().__init__(board=board,
+                         state=DummyState(initial_state=OnOff.from_bool(initial_state)),
+                         can_toggle=can_toggle,
+                         on_illegal_toggle=on_illegal_toggle)
+
+        if not can_toggle:
+            if initial_voltage == 0:
+                min_voltage = 0*volts
+                max_voltage = 0*volts
+
+        self.min_voltage = min_voltage
+        self.max_voltage = max_voltage
+
+        self.allowed_mode = None if can_change_mode else mode
+        self.on_high_voltage = on_high_voltage
+        self.on_low_voltage = on_low_voltage
+        self.on_illegal_mode_change = on_illegal_mode_change
+        self._lock = RLock()
+
+        self.mode = mode
+        self.voltage = initial_voltage
+
+        self.on_state_change(self._note_state_change)
+        self.on_voltage_change(self._note_voltage_change)
+
+
+    def _note_state_change(self, _old: OnOff, new: OnOff) -> None:
+        with self._lock:
+            if new is OnOff.OFF:
+                self.voltage = Voltage.ZERO
+            else:
+                self.voltage = self._last_voltage
+
+    def _note_voltage_change(self, _old: Voltage, new: Voltage) -> None:
+        with self._lock:
+            if new > 0:
+                self._last_voltage = new
+            self.current_state = OnOff.from_bool(new > 0)
+
+
+    # # MyPy doesn't know what to do with this, but I believe it should work, and
+    # # it appears to in practice.
+    # @BinaryComponent.current_state.setter   # type: ignore[attr-defined]
+    # def current_state(self, val: OnOff) -> None:
+    #     allowed = self.allowed_state
+    #     if allowed is None or allowed is val:
+    #         BinaryComponent.current_state.fset(self, val) # type: ignore[attr-defined]
+    #     elif val is OnOff.ON:
+    #         self.on_illegal_toggle("Power supply cannot be turned on")
+    #     else:
+    #         self.on_illegal_toggle("Power supply cannot be turned off")
+
+    def high_clip(self, v: Voltage) -> MissingOr[Voltage]: # @UnusedVariable
+        return self.max_voltage
+
+    def low_clip(self, v: Voltage) -> MissingOr[Voltage]: # @UnusedVariable
+        return 0*volts
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.voltage} {self.mode.name}, {self.current_state.name})"
+
+class FixedPowerSupply(PowerSupply):
+    voltage_level: Final[Voltage]
+    expected_state: Final[OnOff]
+    is_toggleable: Final[bool]
+
+    voltage: MonitoredProperty[Voltage] = MonitoredProperty(default=Voltage.ZERO)
+    on_voltage_change: ChangeCallbackList[Voltage] = voltage.callback_list
+
+    @voltage.transform
+    def no_voltage_changes(self, v: Voltage) -> MissingOr[Voltage]:
+        if v == self.voltage_level:
+            return v
+        if self.is_toggleable and v == 0:
+            return v
+        print("Power supply voltage level cannot be changed")
+        return MISSING
+
+    def __init__(self, board: Board, *,
+                 voltage_level: Voltage = 0*volts,
+                 is_toggleable: bool = False,
+                 changeable_mode: bool = False,
+                 mode: PowerMode = PowerMode.DC) -> None:
+        self.is_toggleable = is_toggleable
+        self.voltage_level = voltage_level
+        self.expected_state = OnOff.from_bool(voltage_level > 0)
+
+        super().__init__(board,
+                         min_voltage=0*volts,
+                         max_voltage=voltage_level,
+                         initial_voltage=voltage_level,
+                         mode=mode)
+
+        # def no_voltage_changes(ps: PowerSupply, v: Voltage) -> MissingOr[Voltage]:
+        #     if not isinstance(ps, FixedPowerSupply):
+        #         return v
+        #     if v == self.voltage_level:
+        #         return v
+        #     if is_toggleable and v == 0:
+        #         return v
+        #     print("Power supply voltage level cannot be changed")
+        #     return MISSING
+        # PowerSupply.voltage.transform(no_voltage_changes)
+
+
+
+    # MyPy doesn't know what to do with this, but I believe it should work, and
+    # it appears to in practice.
+    @BinaryComponent.current_state.setter   # type: ignore[attr-defined]
+    def current_state(self, val: OnOff) -> None:
+        if self.is_toggleable or val is self.expected_state:
+            BinaryComponent.current_state.fset(self, val) # type: ignore[attr-defined]
+        else:
+            print("Power supply cannot be turned on or off")
+
+
+class Fan(BinaryComponent["Fan"]):
+    # There's nothing special about fans, but we make it a separate type for
+    # type checking and value printing purposes.
+    ...
 
 class ChangeJournal:
     turned_on: Final[set[DropLoc]]
@@ -3495,6 +4446,14 @@ class ChangeJournal:
         Blob.process_changes(self)
 
 
+TempOrTP = Union[TemperaturePoint, Temperature]
+
+AmbientThreshold = Union[TempOrTP, tuple[TempOrTP, TempOrTP]]
+"""
+Either a :class:`.TemperaturePoint`, a :class:`.Temperature` offset, or a pair
+of such values (as lower and upper values, respectively).
+"""
+
 class Board(SystemComponent):
     pads: Final[PadArray]
     wells: Final[Sequence[Well]]
@@ -3502,7 +4461,8 @@ class Board(SystemComponent):
     heaters: Final[Sequence[Heater]]
     extraction_points: Final[Sequence[ExtractionPoint]]
     extraction_point_splash_radius: Final[int]
-    # _well_groups: Mapping[str, WellGroup]
+    power_supply: Final[PowerSupply]
+    fan: Final[Optional[Fan]]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
     off_on_delay: Time
@@ -3516,6 +4476,20 @@ class Board(SystemComponent):
     trace_blobs: ClassVar[bool] = False
     no_delay: DelayType = Ticks.ZERO
 
+    ambient_temperature: TemperaturePoint = 75*abs_F
+
+    ambient_threshold: AmbientThreshold = 5*deg_F
+    """
+    The value used by :func:`is_ambient` to compute the threshold (based on
+    :attr:`ambient_temperature`) to be used by :func:`is_ambient`. If it is a
+    :class:`.TemperaturePoint`, it is used directly as the threshold.  If it is
+    a :class:`.Temperature`, it is added to the ambient temperature.  If it is a
+    tuple, the two values are taken to be the lower and upper bounds,
+    respectively, with a lower :class:`.Temperature` subtracted from
+    :attr:`ambient_temperature`.
+    """
+
+
     @property
     def change_journal(self) -> ChangeJournal:
         with self._lock:
@@ -3528,6 +4502,8 @@ class Board(SystemComponent):
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
                  extraction_point_splash_radius: int = 0,
+                 power_supply: Optional[PowerSupply] = None,
+                 fan: Optional[Fan] = None,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  off_on_delay: Time = Time.ZERO) -> None:
@@ -3539,10 +4515,13 @@ class Board(SystemComponent):
         self.heaters = [] if heaters is None else heaters
         self.extraction_points = [] if extraction_points is None else extraction_points
         self.extraction_point_splash_radius = extraction_point_splash_radius
+        self.power_supply = power_supply or FixedPowerSupply(self)
+        self.fan = fan
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
         self.off_on_delay = off_on_delay
-        logger.info("off-on delay is %s", off_on_delay)
+        if off_on_delay != 0:
+            logger.info("off-on delay is %s", off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
         # self._drops = []
@@ -3616,6 +4595,24 @@ class Board(SystemComponent):
         for h in self.heaters:
             h.start_polling()
 
+    def _amb_threshold(self, t: TempOrTP, upper: bool) -> TemperaturePoint:
+        if isinstance(t, TemperaturePoint):
+            return t
+        elif upper:
+            return self.ambient_temperature+t
+        else:
+            return self.ambient_temperature-t
+
+
+    def is_ambient(self, temp: TemperaturePoint) -> bool:
+        at = self.ambient_threshold
+        if isinstance(at, tuple):
+            low = self._amb_threshold(at[0], False)
+            high = self._amb_threshold(at[1], True)
+            return temp <= high and temp >= low
+        else:
+            high = self._amb_threshold(at, True)
+            return temp <= high
 
     def print_blobs(self):
         from mpam.drop import Blob # @Reimport
@@ -3655,6 +4652,29 @@ class Board(SystemComponent):
                          mix_result: Optional[MixResult] = None):
         self.change_journal.note_delivery(pad, liquid, mix_result=mix_result)
 
+    def _reset(self, *cpts: BinaryComponent) -> None:
+        for c in cpts:
+            c.current_state = OnOff.OFF
+
+    def reset_pads(self) -> None:
+        self._reset(*self.pad_array.values())
+        for well in self.wells:
+            self._reset(well.gate, *well.shared_pads)
+
+    def reset_heaters(self) -> None:
+        self._reset(*self.heaters)
+
+    def reset_magnets(self) -> None:
+        self._reset(*self.magnets)
+
+    def reset_all(self) -> None:
+        self.reset_pads()
+        self.reset_heaters()
+        self.reset_magnets()
+        self._reset(self.power_supply)
+        if self.fan is not None:
+            self._reset(self.fan)
+
 
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier) -> None:
@@ -3670,10 +4690,10 @@ class UserOperation(Worker):
                  exc_tb: Optional[TracebackType]) -> Literal[False]:  # @UnusedVariable
         self.idle()
         return False
-    
+
     def start(self) -> None:
         self.__enter__()
-        
+
     def end(self) -> None:
         self.__exit__(None, None, None)
 
