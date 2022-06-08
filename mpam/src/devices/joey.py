@@ -124,8 +124,8 @@ class ArmPos(Enum):
 class ExtractionPoint(device.ExtractionPoint):
     _pipettor: Final[Pipettor]
 
-    def __init__(self, pad: device.Pad, pipettor: Pipettor, splash_radius: Optional[int] = None) -> None:
-        super().__init__(pad, splash_radius)
+    def __init__(self, pad: device.Pad, pipettor: Pipettor, *, splash_radius: Optional[int] = None) -> None:
+        super().__init__(pad, splash_radius=splash_radius)
         self._pipettor = pipettor
 
     @property

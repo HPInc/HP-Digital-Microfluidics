@@ -14,7 +14,6 @@ from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
     NamedTuple, Iterable
-import logging
 
 from matplotlib.gridspec import SubplotSpec
 
@@ -797,7 +796,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     def __repr__(self) -> str:
         return f"Pad({self.column},{self.row})"
 
-    def neighbor(self, d: Dir, only_existing: bool = True) -> Optional[Pad]:
+    def neighbor(self, d: Dir, *, only_existing: bool = True) -> Optional[Pad]:
         """
         The neighboring :class:`Pad` on the :class:`Board` in the given
         :`Dir`.  Returns ``None`` if there is no such :class:`Pad`. If
@@ -3466,7 +3465,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self._compute_splash()
         return self._splash_border
 
-    def __init__(self, pad: Pad, splash_radius: Optional[int] = None) -> None:
+    def __init__(self, pad: Pad, *, splash_radius: Optional[int] = None) -> None:
         """
         Initialize the object.
 
@@ -3791,7 +3790,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                     new_border.extend(new_pads)
                     zone.update(new_pads)
                 border = new_border
-        self._splash_zone = set([p for p in zone if p.exists])
+        self._splash_zone = set(p for p in zone if p.exists)
         self._splash_border = [p for p in border if p.exists]
 
     class TransferIn(Operation['ExtractionPoint', 'Drop']):
