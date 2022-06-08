@@ -313,7 +313,7 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
-        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, default=0,
+        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, default=self.default_extraction_point_splash_radius,
                            help=f'''
                            The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
                            Default is {self.default_extraction_point_splash_radius}.
