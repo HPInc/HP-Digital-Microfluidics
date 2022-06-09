@@ -3778,17 +3778,14 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         border = []
         if self.splash_radius:
             border = [self.pad]
-            for i in range(self.splash_radius):
+            for _ in range(self.splash_radius):
                 new_border = []
                 for pad in border:
-                    new_pads = []
                     for direction in Dir:
                         new_pad = pad.neighbor(direction, only_existing=False)
                         if new_pad is not None and new_pad not in zone:
-                            new_pads.append(new_pad)
-
-                    new_border.extend(new_pads)
-                    zone.update(new_pads)
+                            new_border.append(new_pad)
+                            zone.add(new_pad)
                 border = new_border
         self._splash_zone = set(p for p in zone if p.exists)
         self._splash_border = [p for p in border if p.exists]
