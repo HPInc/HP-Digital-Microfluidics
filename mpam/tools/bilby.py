@@ -151,8 +151,9 @@ class BilbyExerciser(JoeyExerciser):
         if voltage == 0:
             voltage = None
         return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir,
-                           off_on_delay=args.off_on_delay, 
-                           voltage=voltage)
+                           off_on_delay=args.off_on_delay,
+                           voltage=voltage,
+                           extraction_point_splash_radius=args.extraction_point_splash_radius)
 
 if __name__ == '__main__':
     Time.default_units = ms
