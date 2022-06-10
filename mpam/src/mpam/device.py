@@ -37,9 +37,6 @@ from argparse import Namespace
 from erk.stringutils import map_str
 from quantities.US import deg_F
 
-logger = logging.getLogger(__name__)
-
-
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
     from mpam.monitor import BoardMonitor
@@ -3776,7 +3773,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     def _compute_splash(self) -> None:
         zone = set([self.pad])
         border = []
-        if self.splash_radius:
+        if self.splash_radius > 0:
             border = [self.pad]
             for _ in range(self.splash_radius):
                 new_border = []

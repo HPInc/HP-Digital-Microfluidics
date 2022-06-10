@@ -38,4 +38,5 @@ There will also be MPDL descriptions and MPAM API implementation libraries for v
 
 ### MyPy
 
-    mypy --ignore-missing-imports src/mpam/{device,drop,paths,pipettor,processes,types}.py tests/{joey,od,wombat}_test.py tools/{bilby,wombat}.py
+    cd thylacine/mpam
+    mypy --ignore-missing-imports --warn-redundant-casts --warn-return-any --warn-unreachable --strict-equality src tools
