@@ -9,6 +9,7 @@ import re
 from threading import RLock, Event, Lock
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
     ClassVar, MutableMapping, Any
+import logging
 
 import clipboard
 from matplotlib import pyplot
@@ -46,6 +47,7 @@ from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class ClickableMonitor(ABC):
     component: Final[BinaryComponent]
@@ -910,7 +912,7 @@ class BoardMonitor:
         self.board = board
         self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
                                           cmd_line = cmd_line_args,
-                                          from_code = from_code) 
+                                          from_code = from_code)
         self.interactive_volume = board.drop_size
         self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()
@@ -988,12 +990,12 @@ class BoardMonitor:
 
 
         self.figure.canvas.draw()
-        
+
     @classmethod
     def add_args_to(cls, group: _ArgumentGroup,
                          parser: ArgumentParser) -> None: # @UnusedVariable
         defaults = cls.default_cmd_line_args
-        group.add_argument('--highlight-reservations', action=BooleanOptionalAction, 
+        group.add_argument('--highlight-reservations', action=BooleanOptionalAction,
                            default=defaults.highlight_reservations,
                            help='''
                            Highlight reserved pads on the display.
@@ -1090,7 +1092,7 @@ class BoardMonitor:
             self.in_display_thread(lambda: update_speed(new))
         def new_speed(s: str) -> None:
             ns = int(s)*ms
-            print(f"Setting tick to {ns}")
+            logger.info(f"Setting tick to {ns}")
             clock.update_interval=int(s)*ms
         clock.on_interval_change(interval_cb)
         speed.on_submit(new_speed)
@@ -1164,7 +1166,7 @@ class BoardMonitor:
                     print(header)
                     print(match_width(header, repeating="-"))
                     traceback.print_exception(type(ex), ex, ex.__traceback__)
-                    
+
         apply.on_clicked(on_press)
         text.on_submit(on_press)
 

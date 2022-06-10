@@ -262,8 +262,6 @@ class Task(ABC):
         return exerciser.control_setup(monitor, spec)
 
 
-
-
 class Exerciser(ABC):
     parser: Final[ArgumentParser]
     subparsers: Final[_SubParsersAction]
@@ -272,6 +270,7 @@ class Exerciser(ABC):
     default_min_time: Time = 5*minutes
     default_update_interval: Time = 20*ms
     default_off_on_delay: Time = 0*ms
+    default_extraction_point_splash_radius: int = 0
 
     def __init__(self, description: str = "run tasks on a board") -> None:
         self.parser = ArgumentParser(description=description)
@@ -285,7 +284,6 @@ class Exerciser(ABC):
 
     def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec) -> Any: # @UnusedVariable
         return None
-
 
     def add_task(self, task: Task, *,
                  name: Optional[str] = None,
@@ -411,6 +409,11 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
+        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, default=self.default_extraction_point_splash_radius,
+                           help=f'''
+                           The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
+                           Default is {self.default_extraction_point_splash_radius}.
+                           ''')
         display_group = parser.add_argument_group("display_options")
         BoardMonitor.add_args_to(display_group, parser)
         log_group = group.add_mutually_exclusive_group()

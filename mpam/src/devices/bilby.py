@@ -200,6 +200,7 @@ class Board(joey.Board):
                  config_dir: Optional[Union[str, PathLike]] = None,
                  pipettor: Optional[Pipettor] = None,
                  off_on_delay: Time = Time.ZERO,
+                 extraction_point_splash_radius: int = 0,
                  ps_min_voltage: Voltage = 60*volts,
                  ps_max_voltage: Voltage = 298*volts,
                  voltage: Optional[Voltage]) -> None:
@@ -223,6 +224,7 @@ class Board(joey.Board):
                          ps_initial_mode=current_mode,
                          ps_can_toggle=True,
                          fan_initial_state=fan_state,
+                         extraction_point_splash_radius=extraction_point_splash_radius,
                          )
         on_electrodes = self._device.on_electrodes()
         if on_electrodes:

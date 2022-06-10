@@ -27,7 +27,8 @@ class BilbyPCRDriver(PCRDriver):
         return bilby.Board(dll_dir=args.dll_dir,
                            config_dir=args.config_dir,
                            pipettor = pipettor,
-                           voltage = voltage)
+                           voltage = voltage,
+                           extraction_point_splash_radius=args.extraction_point_splash_radius)
     
     def add_device_specific_common_args(self, 
                                         group: _ArgumentGroup, 
