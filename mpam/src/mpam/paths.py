@@ -54,7 +54,6 @@ class Path:
                                         post_result=post_result)
 
 
-
     class Start(StaticOperation[Drop]):
         first_step: Final[Path.StartStep]
         middle_steps: Final[tuple[Path.MiddleStep, ...]]
@@ -175,10 +174,7 @@ class Path:
         def extended(self, path: Path.Middle) -> Path.Start:
             return self+path
 
-
-
-
-    class Middle(Operation[Drop,Drop]):
+    class Middle(Operation[Drop, Drop]):
         middle_steps: Final[tuple[Path.MiddleStep, ...]]
 
         def __init__(self, middle: tuple[Path.MiddleStep, ...]) -> None:
@@ -300,7 +296,6 @@ class Path:
         def extended(self, path: Path.Middle) -> Path.Middle:
             return self+path
 
-
     class End(Operation[Drop, None]):
         middle_steps: Final[tuple[Path.MiddleStep,...]]
         last_step: Final[Path.EndStep]
@@ -352,6 +347,7 @@ class Path:
                 future = step._schedule_after(future, post_result=True, is_last = False)
             return self.last_step._schedule_after(future, post_result=post_result)
 
+
     @classmethod
     def empty(cls) -> Path.Middle:
         return Path.Middle(())
@@ -366,8 +362,12 @@ class Path:
     @classmethod
     def teleport_into(cls, extraction_point: ExtractionPoint, *,
                       liquid: Optional[Liquid] = None,
-                      reagent: Optional[Reagent] = None) -> Path.Start:
-        return Path.Start(Path.TeleportInStep(extraction_point, liquid=liquid, reagent=reagent), ())
+                      reagent: Optional[Reagent] = None,
+                      after: Optional[DelayType] = None) -> Path.Start:
+        return Path.Start(
+            Path.TeleportInStep(
+                extraction_point, liquid=liquid, reagent=reagent, after=after),
+            ())
 
     @classmethod
     def appear_at(cls, pad: Union[Pad, XYCoord, tuple[int, int]], *,
@@ -505,9 +505,12 @@ class Path:
     class TeleportInStep(StartStep):
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,
-                     reagent: Optional[Reagent] = None
+                     reagent: Optional[Reagent] = None,
+                     after: Optional[DelayType] = None
                      ) -> None:
-            super().__init__(Drop.TeleportInTo(extraction_point, liquid=liquid, reagent=reagent))
+            super().__init__(
+                Drop.TeleportInTo(
+                    extraction_point, liquid=liquid, reagent=reagent, after=after))
     class AppearStep(StartStep):
         def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *,
                      board: Board,

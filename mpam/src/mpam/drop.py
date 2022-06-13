@@ -840,6 +840,7 @@ class Drop(OpScheduler['Drop']):
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,
                      reagent: Optional[Reagent] = None,
+                     after: Optional[DelayType] = None,
                      mix_result: Optional[Union[Reagent,str]] = None,
                      ) -> None:
             self.extraction_point = extraction_point
@@ -856,8 +857,10 @@ class Drop(OpScheduler['Drop']):
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             liquid = self.liquid
-            op = ExtractionPoint.TransferIn(liquid.reagent, liquid.volume, mix_result=self.mix_result)
-            return self.extraction_point.schedule(op, after=after, post_result=post_result)
+            op = ExtractionPoint.TransferIn(
+                liquid.reagent, liquid.volume, mix_result=self.mix_result)
+            return self.extraction_point.schedule(
+                op, after=after, post_result=post_result)
 
     class TeleportOut(Operation['Drop', None]):
         volume: Final[Optional[Volume]]
