@@ -11,8 +11,8 @@ from mpam.exerciser import Task, volume_arg, Exerciser
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, Reagent
-from quantities.SI import sec, ms, uL, deg_C, V
-from quantities.dimensions import Time, Volume, Voltage, Temperature
+from quantities.SI import sec
+from quantities.dimensions import Volume
 from quantities.temperature import TemperaturePoint, abs_C
 from devices.wombat import OpenDropVersion
 
@@ -160,9 +160,5 @@ class WombatExerciser(JoeyExerciser):
         return [2,3,6,7]
 
 if __name__ == '__main__':
-    Time.default_units = ms
-    Volume.default_units = uL
-    Voltage.default_units = V
-    Temperature.default_units = deg_C
     exerciser = WombatExerciser()
     exerciser.parse_args_and_run()

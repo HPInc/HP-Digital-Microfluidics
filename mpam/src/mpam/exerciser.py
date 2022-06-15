@@ -9,7 +9,7 @@ from re import Pattern
 import re
 from threading import Event
 from typing import Final, Mapping, Union, Optional, Sequence, Any, Callable, \
-    NoReturn, ClassVar
+    NoReturn, ClassVar, TypeVar
 
 from matplotlib.gridspec import SubplotSpec
 
@@ -19,85 +19,125 @@ from mpam.monitor import BoardMonitor
 from mpam.types import PathOrStr
 from quantities import temperature
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs, \
-    volts
-from quantities.core import Unit
-from quantities.dimensions import Time, Volume, Voltage
+    volts, deg_C
+from quantities.core import Unit, Quantity, Dimensionality
+from quantities.dimensions import Time, Volume, Voltage, Temperature
 from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
+from _collections import defaultdict
 
 
 # import logging
 logger = logging.getLogger(__name__)
 
-time_arg_units: Final[Mapping[str, Unit[Time]]] = {
-    "ns": ns,
-    "nsec": ns,
-    "us": us,
-    "usec": us,
-    "ms": ms,
-    "msec": ms,
-    "s": sec,
-    "sec": sec,
-    "secs": sec,
-    "second": sec,
-    "seconds": sec,
-    "min": minutes,
-    "minute": minutes,
-    "minutes": minutes,
-    "hr": hr,
-    "hour": hr,
-    "hours": hr,
-    "days": days,
-    "day": days
-    }
+Q_ = TypeVar("Q_", bound = Quantity)
 
-time_arg_re: Final[Pattern] = re.compile(f"(-?\\d+(?:.\\d+)?)\\s*({'|'.join(time_arg_units)})")
+class ArgUnits:
+    known: Final[dict[type[Quantity], dict[str, Unit]]] = defaultdict(dict)
+    patterns: Final[dict[type[Quantity], Pattern]] = {}
+    all_unit_pattern: Optional[Pattern] = None
+    
+    @classmethod
+    def register_units(cls, qt: type[Q_], units: Mapping[Unit[Q_], Sequence[str]]) -> None:
+        for unit,names in units.items():
+            for name in names:
+                cls.known[qt][name] = unit
+                
+    @classmethod
+    def disjunction(cls, qt: type[Quantity]) -> str:
+        return "|".join(sorted(cls.known[qt]))
+    
+    
+    @classmethod
+    def describe(cls, qt: type[Quantity], *, conj: str="and") -> str:
+        tname = qt.__name__
+        pairs = [(u,n) for n,u in cls.known[qt].items()]
+        names = [f'"{n}"' for _u,n in sorted(pairs)]
+        if len(names) == 0:
+            return f"No known units for {tname}."
+        return f"Known units for {tname} are: {conj_str(names, conj=conj)}."
+    
+    @classmethod
+    def lookup(cls, qt: type[Q_], name: str) -> Unit[Q_]:
+        units = cls.known[qt]
+        unit = units.get(name, None)
+        if unit is None:
+            raise ValueError(f"{name} is not a known {qt.__name__} unit. {cls.describe(qt)}")
+        return unit
+    
+    
+    @classmethod
+    def parse_arg(cls, qt: type[Q_], arg: str, *, 
+                  default: Optional[str] = None) -> Q_:
+        pat = cls.patterns.get(qt, None)
+        if pat is None:
+            pat = re.compile(f"(-?\\d+(?:.\\d+)?)\\s*({ArgUnits.disjunction(qt)})") 
+            cls.patterns[qt] = pat
+        m = pat.fullmatch(arg)
+        if m is None:
+            if default is None:
+                default = "200ms"
+            raise ArgumentTypeError(f"""
+                        {arg} not parsable as a {qt.__name__} value.
+                        Requires a number followed immediately by units, e.g. '{default}'.
+                        {ArgUnits.describe(qt)}""")
+        n = float(m.group(1))
+        # unit = time_arg_units.get(m.group(2), None)
+        unit = ArgUnits.lookup(qt, m.group(2))
+        val = n*unit
+        return val
+    
+    
+    @classmethod
+    def find_unit(cls, arg: str) -> Optional[Unit]:
+        for units in cls.known.values():
+            if (unit := units.get(arg, None)) is not None:
+                return unit
+        return None
+    
+    @classmethod
+    def parse_unit_arg(cls, args: str) -> Mapping[Dimensionality, Sequence[Unit]]:
+        found: dict[Dimensionality, list[Unit]] = defaultdict(list)
+        for arg in re.split(r'[ ,]\s*', args):
+            unit = cls.find_unit(arg)
+            if unit is None:
+                raise ArgumentTypeError(f"""
+                            '{arg}' not parsable as a unit.
+                            {' '.join(cls.describe(qt) for qt in cls.known)}
+                            """)
+            found[unit.dimensionality()].append(unit)
+        return found
+        
+        
+ArgUnits.register_units(Time,
+                        {
+                            ns: ("ns", "nsec"),
+                            us: ("us", "usec"),
+                            ms: ("ms", "msec"),
+                            sec: ("s", "sec", "secs", "second", "seconds"),
+                            minutes: ("min", "minute", "minutes"),
+                            hr: ("hr", "hour", "hours"),
+                            days: ("days", "day"),
+                            }                        
+                        )
 
 def time_arg(arg: str) -> Time:
-    m = time_arg_re.fullmatch(arg)
-    if m is None:
-        raise ArgumentTypeError(f"""
-                    {arg} not parsable as a time value.
-                    Requires a number followed immediately by units, e.g. '30ms'""")
-    n = float(m.group(1))
-    unit = time_arg_units.get(m.group(2), None)
-    if unit is None:
-        raise ValueError(f"{m.group(2)} is not a known time unit")
-    val = n*unit
-    return val
+    return ArgUnits.parse_arg(Time, arg, default="30ms")
 
-volume_arg_units: Final[Mapping[str, Unit[Volume]]] = {
-    "ul": uL,
-    "uL": uL,
-    "microliter": uL,
-    "microliters": uL,
-    "microlitre": uL,
-    "microliters": uL,
-    "ml": mL,
-    "mL": mL,
-    "milliliter": mL,
-    "milliiters": mL,
-    "millilitre": mL,
-    "milliliters": mL,
-    }
+ArgUnits.register_units(Volume,
+                        {
+                            uL: ("ul", "uL", "microliter", "microliters", "microlitre", "microliters"),
+                            mL: ("ml", "mL", "milliliter", "milliliters", "millilitre", "milliliters"),
+                            }
+                        )
 
-volume_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(volume_arg_units)}|drops|drop)")
+drops_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)(?:drops|drop)")
 
 def volume_arg(arg: str) -> Union[Volume,float]:
-    m = volume_arg_re.fullmatch(arg)
-    if m is None:
-        raise ArgumentTypeError(f"""
-                    {arg} not parsable as a volume value.
-                    Requires a number followed immediately by units, e.g. '30uL' or '2drops'""")
-    n = float(m.group(1))
-    ustr = m.group(2)
-    if ustr == "drops" or ustr == "drop":
-        return n
-    unit = volume_arg_units.get(ustr, None)
-    if unit is None:
-        raise ValueError(f"{ustr} is not a known volume unit")
-    val = n*unit
-    return val
+    m = drops_arg_re.fullmatch(arg)
+    if m is not None:
+        return float(m.group(1))
+    return ArgUnits.parse_arg(Volume, arg, default = "30uL' or '2drops")
 
 temperature_arg_scales: Final[Mapping[str, temperature.Scale]] = {
     "C": abs_C,
@@ -121,26 +161,17 @@ def temperature_arg(arg: str) -> TemperaturePoint:
     val = n*unit
     return val
 
-voltage_arg_units: Final[Mapping[str, Unit[Voltage]]] = {
-    "V": volts,
-    "v": volts,
-    "kV": kilo(volts),
-    "kv": kilo(volts)
-    }
-voltage_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(voltage_arg_units)})")
-
+ArgUnits.register_units(Voltage,
+                        {
+                            volts: ("V", "v", "volt", "volts"),
+                            kilo(volts): ("kV", "KV", "kv", "kilovolt", "kilovolts"),
+                        })
 def voltage_arg(arg: str) -> Voltage:
-    m = voltage_arg_re.fullmatch(arg)
-    if m is None:
-        raise ArgumentTypeError(f"""
-                    {arg} not parsable as a voltage value.
-                    Requires a number followed immediately by units, e.g. '100V'""")
-    n = float(m.group(1))
-    unit = voltage_arg_units.get(m.group(2), None)
-    if unit is None:
-        raise ValueError(f"{m.group(2)} is not a known time unit")
-    val = n*unit
-    return val
+    return ArgUnits.parse_arg(Voltage, arg, default="60V")
+
+
+def units_arg(arg: str) -> Mapping[Dimensionality, Sequence[Unit]]:
+    return ArgUnits.parse_unit_arg(arg)
 
 class LoggingLevel:
     desc: Final[str]
@@ -340,13 +371,32 @@ class Exerciser(ABC):
 
         task: Task = ns.task
         return task, ns
+    
+    @classmethod
+    def set_default_units(cls, 
+                          unit_maps: Optional[Sequence[Mapping[Dimensionality, Sequence[Unit]]]]) -> None:
+        if unit_maps is None:
+            return
+        combined: dict[Dimensionality, list[Unit]] = defaultdict(list)
+        for m in unit_maps:
+            for d,units in m.items():
+                combined[d].extend(units)
+        for d,units in combined.items():
+            d.default_units = tuple(units)
 
     def parse_args_and_run(self,
                            args: Optional[Sequence[str]]=None,
                            namespace: Optional[Namespace]=None) -> None:
+        # We set default units first so that default values for help and errors
+        # will be printed correctly by parse_args()
+        Time.default_units = ms
+        Volume.default_units = uL
+        Temperature.default_units = deg_C
+        Voltage.default_units = volts
         task, ns = self.parse_args(args=args, namespace=namespace)
         if ns.trace_blobs:
             Board.trace_blobs = True
+        self.set_default_units(ns.units)
         board = self.make_board(ns)
         self.run_task(task, ns, board=board)
 
@@ -409,11 +459,22 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
-        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, default=self.default_extraction_point_splash_radius,
+        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, metavar="PADS",
+                           default=self.default_extraction_point_splash_radius,
                            help=f'''
                            The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
                            Default is {self.default_extraction_point_splash_radius}.
                            ''')
+        group.add_argument('--units', type=units_arg, action='append',
+                           help="""
+                               A comma- or space-separated list of units to use
+                               for printing.  This argument may be specified
+                               multiple times.  If more than one value is
+                               provided for a given dimension, the unit chosen
+                               will be the largest one that's no bigger than the
+                               printed value (or the smallest if none are
+                               smaller).  Default is equivalent to 'uL,ms,V'.
+                               """)
         display_group = parser.add_argument_group("display_options")
         BoardMonitor.add_args_to(display_group, parser)
         log_group = group.add_mutually_exclusive_group()

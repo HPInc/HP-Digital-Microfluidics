@@ -27,8 +27,8 @@ from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
 from mpam.types import Reagent, Liquid, Dir, Color, waste_reagent, Barrier, \
     schedule, Delayed, Postable
-from quantities.SI import ms, second, seconds, uL
-from quantities.dimensions import Time, Volume
+from quantities.SI import second, seconds
+from quantities.dimensions import Time
 from quantities.temperature import abs_C
 from devices.dummy_pipettor import DummyPipettor
 from devices.opentrons import OT2
@@ -1075,7 +1075,5 @@ class PCRDriver(Exerciser):
 
 
 if __name__ == '__main__':
-    Time.default_units = ms
-    Volume.default_units = uL
     exerciser = PCRDriver()
     exerciser.parse_args_and_run()

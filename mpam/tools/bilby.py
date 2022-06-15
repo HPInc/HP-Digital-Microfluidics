@@ -10,8 +10,8 @@ from mpam.exerciser import Task, volume_arg, Exerciser, voltage_arg
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, Reagent
-from quantities.SI import sec, ms, uL, V, deg_C
-from quantities.dimensions import Time, Volume, Voltage, Temperature
+from quantities.SI import sec, V
+from quantities.dimensions import Volume, Voltage
 from quantities.temperature import TemperaturePoint, abs_C
 
 class DispenseAndWalk(Task):
@@ -156,9 +156,5 @@ class BilbyExerciser(JoeyExerciser):
                            extraction_point_splash_radius=args.extraction_point_splash_radius)
 
 if __name__ == '__main__':
-    Time.default_units = ms
-    Volume.default_units = uL
-    Voltage.default_units = V
-    Temperature.default_units = deg_C
     exerciser = BilbyExerciser()
     exerciser.parse_args_and_run()
