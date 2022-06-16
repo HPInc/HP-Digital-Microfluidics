@@ -295,7 +295,7 @@ class Task(ABC):
 
 class Exerciser(ABC):
     parser: Final[ArgumentParser]
-    subparsers: Final[_SubParsersAction]
+    subparsers: Final[Optional[_SubParsersAction]]
 
     default_initial_delay: Time = 5*secs
     default_min_time: Time = 5*minutes
@@ -303,9 +303,18 @@ class Exerciser(ABC):
     default_off_on_delay: Time = 0*ms
     default_extraction_point_splash_radius: int = 0
 
-    def __init__(self, description: str = "run tasks on a board") -> None:
+    def __init__(self, description: Optional[str] = None, *,
+                 task: Optional[Task] = None) -> None:
+        if description is None:
+            description = "run tasks on a board" if task is None else task.description
         self.parser = ArgumentParser(description=description)
-        self.subparsers = self.parser.add_subparsers(help="Tasks", dest='task_name', required=True, metavar='TASK')
+        subparsers: Optional[_SubParsersAction]
+        if task is not None:
+            self.setup_task(task, parser=self.parser)
+            subparsers = None
+        else:
+            subparsers = self.parser.add_subparsers(help="Tasks", dest='task_name', required=True, metavar='TASK')
+        self.subparsers = subparsers
 
     @abstractmethod
     def make_board(self, args: Namespace) -> Board: ...  # @UnusedVariable
@@ -315,19 +324,25 @@ class Exerciser(ABC):
 
     def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec) -> Any: # @UnusedVariable
         return None
+    
+    def setup_task(self, task: Task, *,
+                   parser: ArgumentParser) -> None:
+        task.add_args_to(parser, exerciser=self)
+        self.add_common_args_to(parser)
+        parser.set_defaults(task=task)
 
     def add_task(self, task: Task, *,
                  name: Optional[str] = None,
                  description: Optional[str] = None,
                  aliases: Optional[Sequence[str]] = None) -> Exerciser:
+        subparsers = self.subparsers
+        assert subparsers is not None, f"Cannot add task to single-task Exerciser '{self.parser.description}'"
         name = task.name if name is None else name
         desc = task.description if description is None else description
         aliases = task.aliases if aliases is None else aliases
-        parser = self.subparsers.add_parser(name, help=desc, description=desc, aliases=aliases)
-        task.add_args_to(parser, exerciser=self)
-        self.add_common_args_to(parser)
-        parser.set_defaults(task=task)
-
+        parser = subparsers.add_parser(name, help=desc, description=desc, aliases=aliases)
+        self.setup_task(task, parser=parser)
+        
         return self
 
     def run_task(self, task: Task, args: Namespace, *, board: Board) -> None:
