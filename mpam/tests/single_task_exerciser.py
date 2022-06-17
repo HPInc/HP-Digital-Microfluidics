@@ -13,12 +13,12 @@ class DoIt(Task):
         super().__init__(name="doit",
                          description="Do the thing")
         
-    def add_args_to(self, parser:ArgumentParser, *, exerciser:Exerciser)->None:
+    def add_args_to(self, parser:ArgumentParser, *, exerciser:Exerciser)->None: # @UnusedVariable
         group = self.arg_group_in(parser)
         group.add_argument("name", help="Your name")
         group.add_argument("--year", type=int, metavar="INT", help="Your birth year")
         
-    def run(self, board:Board, system:System, args:Namespace)->None:
+    def run(self, board:Board, system:System, args:Namespace)->None: # @UnusedVariable
         name = args.name
         year = args.year
         print(f"Hello, {name}")

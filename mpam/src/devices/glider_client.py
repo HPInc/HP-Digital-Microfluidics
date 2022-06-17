@@ -8,6 +8,7 @@ from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
 from quantities.dimensions import Voltage
 from quantities.SI import volts
+import pathlib
 
 def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
     if isinstance(p, str):
@@ -133,12 +134,21 @@ class GliderClient:
     def __init__(self, board_type: pyglider.BoardId, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None) -> None:
+        if config_dir is None:
+            config_dir = pathlib.Path.cwd()
+        dll_dir = _to_path(dll_dir)
+        config_dir = _to_path(config_dir)
         self.remote = pyglider.Board.Find(board_type, 
-                                          dll_dir=_to_path(dll_dir),
-                                          config_dir=_to_path(config_dir))
+                                          dll_dir=dll_dir,
+                                          config_dir=config_dir)
         # self.remote_electrodes = { e.GetName(): e for e in b.GetElectrodes()}
         # print(f"Remote: {self.remote_electrodes}")
         # self.electrodes = { k: Electrode(k, v) for k,v in self.remote_electrodes.items()}
+        assert self.remote is not None, f"""
+        Couldn't instantiate Glider client.  
+        DLL dir is {"<search>" if dll_dir is None else dll_dir}
+        config_dir is {config_dir}
+        """
         self.electrodes = {}
         self.heaters = {}
         self.magnets = {}

@@ -9,6 +9,9 @@ from quantities.SI import seconds, second, uL
 from quantities.core import DerivedDim
 from quantities.dimensions import Time, Volume
 from mpam.device import ProductLocation
+from mpam import exerciser
+from argparse import Namespace, _ArgumentGroup
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -143,3 +146,20 @@ class DummyPipettor(Pipettor):
             self.down()
             self.drop_tip()
             self.up()
+
+class PipettorConfig(exerciser.PipettorConfig):
+    def __init__(self) -> None:
+        super().__init__("simulated", aliases=("sim", "dummy"))
+
+    def create(self, args: Namespace) -> Pipettor:
+        pipettor = DummyPipettor()
+        speedup: Optional[float] = args.pipettor_speed
+        if speedup is not None:
+            pipettor.speed_up(speedup)
+        return pipettor
+    
+    def add_args_to(self, group:_ArgumentGroup)->None:
+        super().add_args_to(group)
+        group.add_argument('-ps', '--pipettor-speed', type=float, metavar='MULT',
+                           help="A speed-up factor for dummy pipettor operations.")
+        

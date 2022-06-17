@@ -4,7 +4,6 @@ from enum import Enum, auto
 import random
 from typing import Optional, Sequence, Final
 
-from devices.dummy_pipettor import DummyPipettor
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
     transitions_from, WellGate, Heater, PowerSupply, PowerMode, Fan
@@ -19,6 +18,9 @@ from quantities.core import DerivedDim
 from quantities.dimensions import Temperature, Time, Volume, Voltage
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
+from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser,\
+    Exerciser
+from argparse import Namespace, ArgumentParser, _ArgumentGroup
 
 
 class HeatingRate(DerivedDim):
@@ -307,6 +309,7 @@ class Board(device.Board):
         right_states = tuple(self._well_pad_state('right', n) for n in range(9))
 
         if pipettor is None:
+            from devices.dummy_pipettor import DummyPipettor
             pipettor = DummyPipettor()
         self.pipettor = pipettor
 
@@ -391,3 +394,27 @@ class Board(device.Board):
         #     self._port.close()
         #     self._port = None
         super().stop()
+        
+class PlatformTask(PlatformChoiceTask):
+    def __init__(self, name: str = "Joey",
+                 description: Optional[str] = None,
+                 *,
+                 aliases: Optional[Sequence[str]] = None) -> None:
+        super().__init__(name, description, aliases=aliases)
+    
+    
+    def make_board(self, args: Namespace, *, 
+                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+                   pipettor: Pipettor) -> Board: # @UnusedVariable
+        off_on_delay: Time = args.off_on_delay
+        return Board(pipettor=pipettor,
+                     off_on_delay=off_on_delay,
+                     extraction_point_splash_radius=args.extraction_point_splash_radius)
+        
+    def add_platform_args_to(self, 
+                             group: _ArgumentGroup, 
+                             parser: ArgumentParser) -> None:
+        super().add_platform_args_to(group, parser)
+        
+    def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable
+        return [0,1,2,3,4,5,6,7]

@@ -22,6 +22,8 @@ from mpam.types import Reagent, XferDir, AsyncFunctionSerializer
 from quantities.SI import seconds, uL
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
+from mpam import exerciser
+from argparse import Namespace, _ArgumentGroup
 
 
 JSONObj = dict[str, Any]
@@ -535,3 +537,31 @@ class OT2(Pipettor):
             while listener.pending_transfer is not None:
                 # print(f"Waiting on ready_for_transfer: {listener.pending_transfer}")
                 listener.ready_for_transfer.wait()
+
+class PipettorConfig(exerciser.PipettorConfig):
+    def __init__(self) -> None:
+        super().__init__("opentrons", aliases=("ot", "ot2"))
+
+    def create(self, args: Namespace) -> Pipettor:
+        ip: Optional[str] = args.ot_ip
+        config: Optional[str] = args.ot_config
+        reagents: Optional[str] = args.ot_reagents
+
+        if ip is None:
+            raise ValueError(f"--ot-ip must be specified to use the Opentrons pipettor")
+        if config is None:
+            raise ValueError(f"--ot-config must be specified to use the Opentrons pipettor")
+        pipettor = OT2(robot_ip_addr = ip,
+                       config = config,
+                       reagents = reagents)
+        return pipettor
+    
+    def add_args_to(self, group:_ArgumentGroup)->None:
+        super().add_args_to(group)
+        
+        group.add_argument("-otip", "--ot-ip", metavar="IP",
+                           help="The IP address of the Opentrons robot")
+        group.add_argument("-otc", "--ot-config", metavar="FILE",
+                           help="The config file for the the Opentrons robot")
+        group.add_argument("-otr", "--ot-reagents", metavar="FILE",
+                           help=f"The reagents JSON file for the the Opentrons robot")

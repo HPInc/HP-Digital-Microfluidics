@@ -2295,9 +2295,9 @@ class _CCLProperty(Generic[T]):
         self.tag = tag
         self.creator = creator
     @overload
-    def __get__(self, obj: None, objtype) -> _CCLProperty[T]: ...
+    def __get__(self, obj: None, objtype) -> _CCLProperty[T]: ... # @UnusedVariable
     @overload
-    def __get__(self, obj: Any, objtype) -> ChangeCallbackList[T]: ...
+    def __get__(self, obj: Any, objtype) -> ChangeCallbackList[T]: ... # @UnusedVariable
     def __get__(self, obj, objtype) -> Union[ChangeCallbackList[T], _CCLProperty[T]]: # @UnusedVariable
         if obj is None:
             return self
@@ -4555,13 +4555,13 @@ class ConfigParams:
     _sentinel = (MISSING,)
 
     @overload
-    def get(self, name: str, default: tuple[Missing] = (MISSING,), *, expect: typing.Type[T]) -> T: ...
+    def get(self, name: str, default: tuple[Missing] = (MISSING,), *, expect: typing.Type[T]) -> T: ... # @UnusedVariable
     @overload
-    def get(self, name: str, default: V, *, expect: typing.Type[T]) -> Union[V, T]: ...
+    def get(self, name: str, default: V, *, expect: typing.Type[T]) -> Union[V, T]: ... # @UnusedVariable
     @overload
-    def get(self, name: str, default: V) -> Any: ...
+    def get(self, name: str, default: V) -> Any: ... # @UnusedVariable
     @overload
-    def get(self, name: str) -> Any: ...
+    def get(self, name: str) -> Any: ... # @UnusedVariable
     def get(self, name: str, default = (MISSING,), *, expect: Optional[typing.Type[T]] = None) -> Any:
         try:
             val = self.__getattr__(name)

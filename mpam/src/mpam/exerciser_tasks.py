@@ -30,7 +30,7 @@ class Dispense(Task):
                     ) -> None:
         group = self.arg_group_in(parser)
         group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
-                            choices=exerciser.available_wells(),
+                            choices=self.available_wells(exerciser),
                             help="The well to dispense from")
         group.add_argument('-v', '--volume', type=volume_arg, metavar='VOLUME',
                             help="The initial volume of the well.  Default is a full well.")
@@ -63,7 +63,7 @@ class Absorb(Task):
                     ) -> None:
         group = self.arg_group_in(parser)
         group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
-                            choices=exerciser.available_wells(),
+                            choices=self.available_wells(exerciser),
                             help="The well to dispense from")
         
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
@@ -88,7 +88,7 @@ class WalkPath(Task):
         starts.add_argument('-sp', '--start-pad', type=int, nargs=2, metavar=('X','Y'), 
                             help="The (x,y) coordinates of the pad to start from.  The drop is assumed to be there")
         starts.add_argument('-sw', '--start-well', type=int, metavar='INT', 
-                            choices=exerciser.available_wells(),
+                            choices=self.available_wells(exerciser),
                             help="The well to dispense from")
         
         group.add_argument('--path', required=True,

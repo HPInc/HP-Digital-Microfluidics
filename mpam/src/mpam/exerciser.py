@@ -25,6 +25,7 @@ from quantities.dimensions import Time, Volume, Voltage, Temperature
 from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from _collections import defaultdict
+from mpam.pipettor import Pipettor
 
 
 # import logging
@@ -291,7 +292,9 @@ class Task(ABC):
 
     def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec, exerciser: Exerciser) -> Any:
         return exerciser.control_setup(monitor, spec)
-
+    
+    def available_wells(self, exerciser: Exerciser) -> Sequence[int]:
+        return exerciser.available_wells()
 
 class Exerciser(ABC):
     parser: Final[ArgumentParser]
@@ -313,8 +316,12 @@ class Exerciser(ABC):
             self.setup_task(task, parser=self.parser)
             subparsers = None
         else:
-            subparsers = self.parser.add_subparsers(help="Tasks", dest='task_name', required=True, metavar='TASK')
+            subparsers = self.parser.add_subparsers(help="Tasks", dest='task_name', required=True, 
+                                                    metavar=self._task_metavar())
         self.subparsers = subparsers
+        
+    def _task_metavar(self) -> str:
+        return "TASK"
 
     @abstractmethod
     def make_board(self, args: Namespace) -> Board: ...  # @UnusedVariable
@@ -440,13 +447,6 @@ class Exerciser(ABC):
                            help='''
                            Don't start the clock automatically. Note that operations that are not gated
                            by the clock may still run.
-                           ''')
-        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', default=self.default_off_on_delay,
-                           help=f'''
-                           The amount of time to wait between turning pads off
-                           and turning pads on in a clock tick.  0ms is no
-                           delay.  Negative values means pads are turned on before pads are turned off.
-                           Default is {self.fmt_time(self.default_initial_delay)}.
                            ''')
         group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=self.default_initial_delay,
                            help=f'''
@@ -586,3 +586,157 @@ class Exerciser(ABC):
         
         for name,level in imports.items():
             logging.getLogger(name).setLevel(level.desc)
+            
+class PlatformChoiceTask(Task):
+    
+    def __init__(self, name: str, description: Optional[str] = None, *,
+                 aliases: Optional[Sequence[str]]=None) -> None:
+        if description is None:
+            description = f"Run on the {name} platform"
+        if aliases is None:
+            lc_name = name.lower()
+            if lc_name != name:
+                aliases = (name.lower(),)
+        super().__init__(name, description, aliases=aliases)
+        
+    @abstractmethod
+    def make_board(self, args: Namespace, *, # @UnusedVariable
+                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+                   pipettor: Pipettor) -> Board: # @UnusedVariable
+        ...
+        
+    # available_wells() is implemented in Task, but we override it to make it
+    # abstract here so that subclasses have to give the right answer for their
+    # platform.
+    @abstractmethod
+    def available_wells(self, exerciser: Exerciser) -> Sequence[int]: # @UnusedVariable
+        ...
+        
+    def run(self, board: Board, system: System, args: Namespace) -> NoReturn: # @UnusedVariable
+        assert False, f"PlatformChoiceTask.run() should never be called: {self}"
+        
+    def add_args_to(self, parser:ArgumentParser, *, exerciser:Exerciser)->None: # @UnusedVariable
+        group = parser.add_argument_group(title="platform options")
+        self.add_platform_args_to(group, parser)
+        
+    def default_off_on_delay(self) -> Time:
+        return 0*ms
+    
+    @classmethod
+    def fmt_time(cls, t: Time) -> str:
+        return Exerciser.fmt_time(t)
+        
+    def add_platform_args_to(self,
+                             group: _ArgumentGroup,
+                             parser: ArgumentParser) -> None: # @UnusedVariable
+        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
+                           default=self.default_off_on_delay(),
+                           help=f'''
+                           The amount of time to wait between turning pads off
+                           and turning pads on in a clock tick.  0ms is no
+                           delay.  Negative values means pads are turned on before pads are turned off.
+                           Default is {self.fmt_time(self.default_off_on_delay())}.
+                            ''')
+        
+class PipettorConfig(ABC):
+    name: Final[str]
+    aliases: Final[tuple[str, ...]]
+    
+    @property
+    def names(self) -> str:
+        name = f'"{self.name}"'
+        aliases = ", ".join(f'"{a}"' for a in self.aliases)
+        return f"{name} ({aliases})" if aliases else name
+    
+    def __init__(self, name: str, *,
+                 aliases: Sequence[str] = ()) -> None:
+        self.name = name
+        self.aliases = tuple(sorted(aliases))
+        
+    def add_args_to(self, group: _ArgumentGroup) -> None: # @UnusedVariable
+        ...
+    
+    @abstractmethod    
+    def create(self, args: Namespace) -> Pipettor: # @UnusedVariable
+        ...
+        
+class PlatformChoiceExerciser(Exerciser):
+    task: Final[Task]
+    pipettors: Final[tuple[PipettorConfig, ...]]
+    default_pipettor: Final[PipettorConfig]
+    
+    def __init__(self, description: Optional[str] = None, *,
+                 task: Task,
+                 platforms: Sequence[PlatformChoiceTask],
+                 pipettors: Sequence[PipettorConfig] = (),
+                 default_pipettor: Optional[PipettorConfig] = None,
+                 ) -> None:
+        super().__init__(description)
+        self.task = task
+        
+        from devices import dummy_pipettor, manual_pipettor
+        dp = dummy_pipettor.PipettorConfig()
+        mp = manual_pipettor.PipettorConfig()
+        if default_pipettor is None:
+            default_pipettor = dp
+        self.default_pipettor = default_pipettor
+        plist = list(pipettors)
+        if dp not in plist:
+            plist.append(dp)
+        if mp not in plist:
+            plist.append(mp)
+        plist.sort(key=lambda p:p.name)
+        self.pipettors = tuple(plist)
+        
+        for platform in platforms:
+            self.add_task(platform)
+    
+    def _task_metavar(self)->str:
+        return "PLATFORM"
+
+    def setup_task(self, task: Task, *, 
+                   parser: ArgumentParser)->None:
+        self.task.add_args_to(parser, exerciser=self)
+        super().setup_task(task, parser=parser)
+        for pipettor in self.pipettors:
+            group = parser.add_argument_group(f"{pipettor.name} pipettor options")
+            pipettor.add_args_to(group)
+        
+    def _find_pipettor(self, name: str, args: Namespace) -> Pipettor:
+        for p in self.pipettors:
+            if name == p.name or name in p.aliases:
+                return p.create(args)
+        choices = conj_str([p.names for p in self.pipettors])
+        raise ValueError(f'"{name}" is not a known pipettor name.  Choices are {choices}.')
+        
+    def make_board(self, args: Namespace) -> Board:
+        platform: Task = args.task
+        assert isinstance(platform, PlatformChoiceTask), f"Task is not a PlatformChoiceTask: {platform}"
+        pipettor = self._find_pipettor(args.pipettor, args)
+
+        return platform.make_board(args, exerciser=self, pipettor=pipettor)
+        
+    def add_device_specific_common_args(self, 
+                                        group:_ArgumentGroup, 
+                                        parser:ArgumentParser)-> None:
+        super().add_device_specific_common_args(group, parser)
+        pipettor_choices = []
+        for p in self.pipettors:
+            pipettor_choices.append(p.name)
+            pipettor_choices.extend(p.aliases)
+        choices_desc = conj_str([p.names for p in self.pipettors])
+        group.add_argument('--pipettor', default=self.default_pipettor.name,
+                           choices=sorted(pipettor_choices),
+                           help=f'''
+                           The pipettor to use if needed.  Vali options are: {choices_desc}.  
+                           The default is "{self.default_pipettor.name}".
+                           ''')
+
+    def available_wells(self)->NoReturn:
+        assert False, f"PlatformChoiceExerciser should get available wells from the platform"
+        
+    # We've used the provided task (the platform) to set up the board.  What we
+    # really run is the Task we squirreled away.
+    def run_task(self, task: Task, args: Namespace, *, board: Board)->None: # @UnusedVariable
+        super().run_task(self.task, args, board=board)
+        

@@ -127,11 +127,11 @@ class BilbyExerciser(JoeyExerciser):
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
         super().add_device_specific_common_args(group, parser)
-        group.add_argument("--dll-dir",
+        group.add_argument("--dll-dir", 
                            help='''
                            The directory that Wallaby.dll is found in.  Defaults to searching.
                            ''')
-        group.add_argument("--config-dir",
+        group.add_argument("--config-dir", 
                            help='''
                            The directory that WallabyElectrodes.csv and WallabyHeaters.csv
                            are found in.  Defaults to the current directory.

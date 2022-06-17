@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Mapping, Final, Optional
+from typing import Mapping, Final, Optional, Sequence
 
 from serial import Serial
 
@@ -10,6 +10,10 @@ from mpam.types import OnOff, State, DummyState
 from erk.basic import ComputedDefaultDict
 from quantities.dimensions import Time
 import logging
+from mpam.exerciser import PlatformChoiceExerciser, Exerciser
+from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
+    BooleanOptionalAction
+from mpam.pipettor import Pipettor
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +213,8 @@ class Board(joey.Board):
     def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
                  is_yaminon: bool = False,
                  off_on_delay: Time = Time.ZERO,
-                 double_write: bool = True) -> None:
+                 double_write: bool = True,
+                 pipettor: Optional[Pipettor] = None) -> None:
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -224,7 +229,7 @@ class Board(joey.Board):
         self.is_yaminon = is_yaminon
         logger.info("double_write = %s", double_write)
         self._double_write = double_write
-        super().__init__(off_on_delay=off_on_delay)
+        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay)
         self._device = device
         self._port = None
         
@@ -258,3 +263,67 @@ class Board(joey.Board):
         self.send_states(new_states)
         self._last_states = new_states
         super().update_state()
+
+class PlatformTask(joey.PlatformTask):
+    def __init__(self, name: str = "Wombat",
+                 description: Optional[str] = None,
+                 *,
+                 aliases: Optional[Sequence[str]] = None) -> None:
+        super().__init__(name, description, aliases=aliases)
+    
+    
+    def make_board(self, args: Namespace, *, 
+                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+                   pipettor: Pipettor) -> Board: # @UnusedVariable
+        logger.info(f"Version is {args.od_version}")
+        return Board(pipettor=pipettor,
+                     device=args.port, od_version=args.od_version, is_yaminon=self.is_yaminon(),
+                     off_on_delay=args.off_on_delay,
+                     double_write=args.double_write)
+        
+    def is_yaminon(self) -> bool:
+        return False
+        
+    def available_wells(self, exerciser: Exerciser) -> Sequence[int]: # @UnusedVariable
+        return [2,3,6,7]
+
+    def add_platform_args_to(self, 
+                             group: _ArgumentGroup, 
+                             parser: ArgumentParser) -> None:
+        super().add_platform_args_to(group, parser)
+        group.add_argument('-p', '--port',
+                           help='''
+                           The communication port (e.g., COM5) to use to talk to the board.
+                           By default, only the display is run
+                           ''')
+        vg = group.add_mutually_exclusive_group()
+        vg.add_argument('-4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
+                        help="The OpenDrop board uses firmware version 4.0")
+        vg.add_argument('-4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
+                        help="The OpenDrop board uses firmware version 4.1")
+        # group.add_argument('--yaminon', action='store_true',
+        #                    help="Mirror pads on top and bottom of the board.")
+        double_write_default = True
+        group.add_argument('--double-write', action=BooleanOptionalAction, default=double_write_default,
+                           help=f'''
+                           Send state array to OpenDrop twice.  
+                           Default is {double_write_default}
+                           ''')
+        parser.set_defaults(od_version=OpenDropVersion.V40)
+        
+class YaminonPlatformTask(PlatformTask):
+    def __init__(self, name: str = "Yaminon",
+                 description: str = "Run tasks on the Yaminon (mirrored Wombat) platform",
+                 *,
+                 aliases: Optional[Sequence[str]] = None) -> None:
+        super().__init__(name, description, aliases=aliases)
+    
+    
+    def available_wells(self, exerciser: Exerciser) -> Sequence[int]: # @UnusedVariable
+        return range(0,8)
+    
+    def is_yaminon(self) -> bool:
+        return True
+    
+        
+        
