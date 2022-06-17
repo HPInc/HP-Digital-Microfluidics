@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, Callable, Hashable, Union
+from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast
 from threading import Lock
 from re import Pattern
 import re
@@ -81,3 +81,14 @@ class ComputedDefaultDict(dict[_H,_T]):
         ret = self.factory(key)
         self[key] = ret
         return ret
+    
+ValOrFn = Union[_T, Callable[[], _T]]
+
+def ensure_val(val: ValOrFn[_T], as_class: type[_T]) -> _T:
+    # Note, we're making an assumption that the type passed in is exactly _T. It
+    # could be a subtype, in which case, this might not work, but the explicit
+    # call we would have made would've failed, too.
+    if isinstance(val, as_class):
+        return val
+    fn = cast(Callable[[], _T], val)
+    return fn()

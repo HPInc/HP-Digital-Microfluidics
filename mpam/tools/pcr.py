@@ -1,4 +1,5 @@
 
+
 from __future__ import annotations
 
 from argparse import Namespace, _ArgumentGroup, ArgumentParser, \
@@ -18,7 +19,7 @@ from mpam.device import Board, System, Pad, Well, ExtractionPoint,\
     ProductLocation
 from mpam.dilution import dilution_sequences
 from mpam.drop import Drop
-from mpam.exerciser import Exerciser, Task
+from mpam.exerciser import Exerciser, Task, time_arg
 from mpam.mixing import mixing_sequences
 from mpam.monitor import BoardMonitor
 from mpam.paths import Path, Schedulable
@@ -117,6 +118,24 @@ class PCRTask(Task):
                 color = Color.find(color)
             self.monitor.reserve_color(r, color)
         return r
+    
+    def add_args_to(self,
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser, 
+                    *, exerciser:Exerciser)->None: # @UnusedVariable
+        default_cycles = 4
+        group.add_argument('--cycles', type=int, metavar='INT', default=default_cycles,
+                           help=f'''
+                           The number of times to repeat each thermocycle.
+                           Default is {default_cycles}.
+                           ''')
+        default_shuttles = 0
+        group.add_argument('--shuttles', type=int, metavar='INT', default=default_shuttles,
+                           help=f'''
+                           The number of extra shuttles to perform during mixing and diluting.
+                           Default is {default_shuttles}.
+                           ''')
+        
 
 
 class Prepare(PCRTask):
@@ -139,7 +158,7 @@ class Prepare(PCRTask):
     bd: Reagent
     primer: Reagent
 
-    pmo_ep: ExtractionPoint
+    pmo_ep: ExtractionPoint 
     mm_well: Well
     bd_well: Well
     primer_well: Well
@@ -149,9 +168,11 @@ class Prepare(PCRTask):
         super().__init__(name="prepare",
                          description="Run the preparation phase.")
 
-    def add_args_to(self, parser:ArgumentParser, *,
-                    exerciser:Exerciser)->None:  # @UnusedVariable
-        group = self.arg_group_in(parser)
+    def add_args_to(self,
+                    group: _ArgumentGroup, 
+                    parser:ArgumentParser, *,
+                    exerciser:Exerciser)->None: 
+        super().add_args_to(group, parser, exerciser=exerciser)
         default_speedup = 12
         speedup_options = [12]
         group.add_argument("-su", "--speed-up", type=int, metavar="FOLD", default=default_speedup,
@@ -560,12 +581,14 @@ class CombSynth(PCRTask):
         self.combo_colors = ("red", "green", "yellow", "darkblue", "brown",
                              "purple", "silver", "orange", "pink", "darkgreen")
 
-    def add_args_to(self, parser: ArgumentParser, *,
-                    exerciser:Exerciser)->None:  # @UnusedVariable
+    def add_args_to(self,
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser, *,
+                    exerciser:Exerciser)->None:  
+        super().add_args_to(group, parser, exerciser=exerciser)
         default_n = 10
         parser.add_argument("n", type=int, metavar="N", default=default_n, nargs="?",
                             help=f"The number of combinations to run.  Default is {default_n}")
-        group = self.arg_group_in(parser)
 
         default_sizes = (WeightedSize(2), WeightedSize(3,2), WeightedSize(4,5), WeightedSize(5))
         group.add_argument("-s", "--sizes", type=weighted_size_arg, nargs="*", default=default_sizes,
@@ -1025,6 +1048,8 @@ class Test(Task):
 
 
 class PCRDriver(Exerciser):
+    default_off_on_delay = Time.ZERO
+    
     def __init__(self) -> None:
         super().__init__(description=f"Mockup of PCR tasks on Joey board")
         self.add_task(Prepare())
@@ -1052,18 +1077,6 @@ class PCRDriver(Exerciser):
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
         super().add_device_specific_common_args(group, parser)
-        default_cycles = 4
-        group.add_argument('--cycles', type=int, metavar='INT', default=default_cycles,
-                           help=f'''
-                           The number of times to repeat each thermocycle.
-                           Default is {default_cycles}.
-                           ''')
-        default_shuttles = 0
-        group.add_argument('--shuttles', type=int, metavar='INT', default=default_shuttles,
-                           help=f'''
-                           The number of extra shuttles to perform during mixing and diluting.
-                           Default is {default_shuttles}.
-                           ''')
         group.add_argument('-ps', '--pipettor-speed', type=float, metavar='MULT',
                            help="A speed-up factor for dummy pipettor operations.")
         group.add_argument("-ip", "--ot-ip", metavar="IP",
@@ -1072,6 +1085,15 @@ class PCRDriver(Exerciser):
                            help="The config file for the the Opentrons robot")
         group.add_argument("-otr", "--ot-reagents", metavar="FILE",
                            help=f"The reagents JSON file for the the Opentrons robot")
+        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
+                           default=self.default_off_on_delay,
+                           help=f'''
+                            The amount of time to wait between turning pads off
+                            and turning pads on in a clock tick.  0ms is no
+                            delay.  Negative values means pads are turned on
+                            before pads are turned off. Default is
+                            {self.fmt_time(self.default_off_on_delay)}.
+                            ''')
 
 
 if __name__ == '__main__':

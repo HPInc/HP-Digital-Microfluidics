@@ -17,7 +17,7 @@ from quantities.temperature import TemperaturePoint
 import logging
 from erk.errors import ErrorHandler, PRINT
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
-from mpam.exerciser import PlatformChoiceExerciser, voltage_arg
+from mpam.exerciser import PlatformChoiceExerciser, voltage_arg, Exerciser
 
 
 logger = logging.getLogger(__name__)
@@ -262,10 +262,12 @@ class PlatformTask(joey.PlatformTask):
                      voltage=voltage,
                      extraction_point_splash_radius=args.extraction_point_splash_radius)
         
-    def add_platform_args_to(self, 
-                             group: _ArgumentGroup, 
-                             parser: ArgumentParser) -> None:
-        super().add_platform_args_to(group, parser)
+    def add_args_to(self, 
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser,
+                    *,
+                    exerciser: Exerciser) -> None:
+        super().add_args_to(group, parser, exerciser=exerciser)
         group.add_argument("--dll-dir",
                            help='''
                            The directory that Wallaby.dll is found in.  Defaults to searching.

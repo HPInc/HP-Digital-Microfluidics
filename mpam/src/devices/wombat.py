@@ -287,10 +287,12 @@ class PlatformTask(joey.PlatformTask):
     def available_wells(self, exerciser: Exerciser) -> Sequence[int]: # @UnusedVariable
         return [2,3,6,7]
 
-    def add_platform_args_to(self, 
-                             group: _ArgumentGroup, 
-                             parser: ArgumentParser) -> None:
-        super().add_platform_args_to(group, parser)
+    def add_args_to(self, 
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser,
+                    *,
+                    exerciser: Exerciser) -> None:
+        super().add_args_to(group, parser, exerciser=exerciser)
         group.add_argument('-p', '--port',
                            help='''
                            The communication port (e.g., COM5) to use to talk to the board.

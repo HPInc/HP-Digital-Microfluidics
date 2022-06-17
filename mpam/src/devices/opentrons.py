@@ -427,20 +427,22 @@ class ProtocolManager(Thread):
              
         
     def extract_messages(self, response) -> None:
-        # events = response["data"]["details"]["events"]
-        events = response["data"]["actions"]
-        # printed_something = False
-        for e in events:
-            # print(e)
-            continue
-            if e["source"] != "protocol":
-                continue
-            
-            if e["event"] == "command.COMMENT.start":
-                self.print_event(e, "Msg")
-            elif self.print_actions:
-                self.print_event(e, "cmd")
-        
+        pass
+        # # events = response["data"]["details"]["events"]
+        # events = response["data"]["actions"]
+        # # printed_something = False
+        # for e in events:
+        #     # print(e)
+        #     continue
+        #     if e["source"] != "protocol":
+        #         continue
+        #
+        #     if e["event"] == "command.COMMENT.start":
+        #         self.print_event(e, "Msg")
+        #     elif self.print_actions:
+        #         self.print_event(e, "cmd")
+        #
+
             
     def wait_until(self, looking_for: str):
         global last_msg

@@ -26,6 +26,7 @@ from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from _collections import defaultdict
 from mpam.pipettor import Pipettor
+from erk.basic import ValOrFn
 
 
 # import logging
@@ -283,11 +284,13 @@ class Task(ABC):
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
         ...
 
-    def add_args_to(self, parser: ArgumentParser, *, exerciser: Exerciser) -> None:  # @UnusedVariable
+    def add_args_to(self, group: _ArgumentGroup, # @UnusedVariable
+                    parser: ArgumentParser, # @UnusedVariable
+                    *, exerciser: Exerciser) -> None:  # @UnusedVariable
         ...
 
     def arg_group_in(self, parser: ArgumentParser,
-                     name: str="task-specific options") -> _ArgumentGroup:
+                     name: str) -> _ArgumentGroup:
         return parser.add_argument_group(name)
 
     def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec, exerciser: Exerciser) -> Any:
@@ -333,8 +336,20 @@ class Exerciser(ABC):
         return None
     
     def setup_task(self, task: Task, *,
-                   parser: ArgumentParser) -> None:
-        task.add_args_to(parser, exerciser=self)
+                   parser: ArgumentParser,
+                   group_name: Optional[str] = None) -> None:
+        if group_name is None:
+            group_name = "task-specific options"
+        group = task.arg_group_in(parser, group_name)
+
+        # We set default units first so that default values for help and errors
+        # will be printed correctly by parse_args()
+        Time.default_units = ms
+        Volume.default_units = uL
+        Temperature.default_units = deg_C
+        Voltage.default_units = volts
+        
+        task.add_args_to(group, parser, exerciser=self)
         self.add_common_args_to(parser)
         parser.set_defaults(task=task)
 
@@ -409,12 +424,6 @@ class Exerciser(ABC):
     def parse_args_and_run(self,
                            args: Optional[Sequence[str]]=None,
                            namespace: Optional[Namespace]=None) -> None:
-        # We set default units first so that default values for help and errors
-        # will be printed correctly by parse_args()
-        Time.default_units = ms
-        Volume.default_units = uL
-        Temperature.default_units = deg_C
-        Voltage.default_units = volts
         task, ns = self.parse_args(args=args, namespace=namespace)
         if ns.trace_blobs:
             Board.trace_blobs = True
@@ -431,8 +440,7 @@ class Exerciser(ABC):
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
         # by default, no args to add.
-        group.add_argument("--trace-blobs", action="store_true",
-                           help=f"Trace blobs.")
+        ...
 
     def add_common_args_to(self, parser: ArgumentParser) -> None:
         group = parser.add_argument_group(title="common options")
@@ -492,6 +500,9 @@ class Exerciser(ABC):
                                """)
         display_group = parser.add_argument_group("display_options")
         BoardMonitor.add_args_to(display_group, parser)
+        debug_group = parser.add_argument_group("debugging options")
+        debug_group.add_argument("--trace-blobs", action="store_true",
+                                 help=f"Trace blobs.")
         log_group = group.add_mutually_exclusive_group()
         # level_choices = ['debug', 'info', 'warning', 'error', 'critical']
         # log_group.add_argument('--log-level', metavar='LEVEL',
@@ -615,9 +626,19 @@ class PlatformChoiceTask(Task):
     def run(self, board: Board, system: System, args: Namespace) -> NoReturn: # @UnusedVariable
         assert False, f"PlatformChoiceTask.run() should never be called: {self}"
         
-    def add_args_to(self, parser:ArgumentParser, *, exerciser:Exerciser)->None: # @UnusedVariable
-        group = parser.add_argument_group(title="platform options")
-        self.add_platform_args_to(group, parser)
+    def add_args_to(self, group: _ArgumentGroup, # @UnusedVariable
+                    parser:ArgumentParser, # @UnusedVariable
+                    *, 
+                    exerciser:Exerciser)->None: # @UnusedVariable
+        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
+                           default=self.default_off_on_delay(),
+                           help=f'''
+                            The amount of time to wait between turning pads off
+                            and turning pads on in a clock tick.  0ms is no
+                            delay.  Negative values means pads are turned on
+                            before pads are turned off. Default is
+                            {self.fmt_time(self.default_off_on_delay())}.
+                            ''')
         
     def default_off_on_delay(self) -> Time:
         return 0*ms
@@ -626,17 +647,6 @@ class PlatformChoiceTask(Task):
     def fmt_time(cls, t: Time) -> str:
         return Exerciser.fmt_time(t)
         
-    def add_platform_args_to(self,
-                             group: _ArgumentGroup,
-                             parser: ArgumentParser) -> None: # @UnusedVariable
-        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
-                           default=self.default_off_on_delay(),
-                           help=f'''
-                           The amount of time to wait between turning pads off
-                           and turning pads on in a clock tick.  0ms is no
-                           delay.  Negative values means pads are turned on before pads are turned off.
-                           Default is {self.fmt_time(self.default_off_on_delay())}.
-                            ''')
         
 class PipettorConfig(ABC):
     name: Final[str]
@@ -667,10 +677,12 @@ class PlatformChoiceExerciser(Exerciser):
     
     def __init__(self, description: Optional[str] = None, *,
                  task: Task,
-                 platforms: Sequence[PlatformChoiceTask],
-                 pipettors: Sequence[PipettorConfig] = (),
-                 default_pipettor: Optional[PipettorConfig] = None,
+                 platforms: Sequence[ValOrFn[PlatformChoiceTask]],
+                 pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
+                 default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
                  ) -> None:
+        if description is None:
+            description = f"Run the {task.name} task"
         super().__init__(description)
         self.task = task
         
@@ -679,8 +691,10 @@ class PlatformChoiceExerciser(Exerciser):
         mp = manual_pipettor.PipettorConfig()
         if default_pipettor is None:
             default_pipettor = dp
+        elif not isinstance(default_pipettor, PipettorConfig):
+            default_pipettor = default_pipettor()
         self.default_pipettor = default_pipettor
-        plist = list(pipettors)
+        plist = [p if isinstance(p, PipettorConfig) else p() for p in pipettors]
         if dp not in plist:
             plist.append(dp)
         if mp not in plist:
@@ -689,15 +703,37 @@ class PlatformChoiceExerciser(Exerciser):
         self.pipettors = tuple(plist)
         
         for platform in platforms:
+            if not isinstance(platform, PlatformChoiceTask):
+                platform = platform()
             self.add_task(platform)
+            
+    @classmethod
+    def for_task(cls, task: Union[Task, Callable[[], Task]], 
+                 description: Optional[str] = None, 
+                 *,
+                 platforms: Sequence[ValOrFn[PlatformChoiceTask]],
+                 pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
+                 default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
+                 ) -> PlatformChoiceExerciser:
+        if not isinstance(task, Task):
+            task = task()
+        return PlatformChoiceExerciser(description, 
+                                       task=task,
+                                       platforms=platforms,
+                                       pipettors=pipettors,
+                                       default_pipettor=default_pipettor)
+        
+        
     
     def _task_metavar(self)->str:
         return "PLATFORM"
 
     def setup_task(self, task: Task, *, 
-                   parser: ArgumentParser)->None:
-        self.task.add_args_to(parser, exerciser=self)
-        super().setup_task(task, parser=parser)
+                   parser: ArgumentParser,
+                   group_name: Optional[str] = None)->None:
+        tgroup = self.task.arg_group_in(parser, "task-specific options")
+        self.task.add_args_to(tgroup, parser, exerciser=self)
+        super().setup_task(task, parser=parser, group_name=f"{task.name} platform options")
         for pipettor in self.pipettors:
             group = parser.add_argument_group(f"{pipettor.name} pipettor options")
             pipettor.add_args_to(group)
@@ -726,11 +762,13 @@ class PlatformChoiceExerciser(Exerciser):
             pipettor_choices.extend(p.aliases)
         choices_desc = conj_str([p.names for p in self.pipettors])
         group.add_argument('--pipettor', default=self.default_pipettor.name,
+                           metavar="PIPETTOR",
                            choices=sorted(pipettor_choices),
                            help=f'''
-                           The pipettor to use if needed.  Vali options are: {choices_desc}.  
+                           The pipettor to use if needed.  Valid options are: {choices_desc}.  
                            The default is "{self.default_pipettor.name}".
                            ''')
+        
 
     def available_wells(self)->NoReturn:
         assert False, f"PlatformChoiceExerciser should get available wells from the platform"

@@ -22,10 +22,11 @@ class DispenseAndWalk(Task):
                          description="""Dispense a drop from a given well and
                                         walk to the well across from it.""")
 
-    def add_args_to(self, parser: ArgumentParser, *,
+    def add_args_to(self,
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser, *, # @UnusedVariable
                     exerciser: Exerciser
                     ) -> None:
-        group = self.arg_group_in(parser)
         group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
                             choices=exerciser.available_wells(),
                             help="The well to dispense from")
@@ -73,7 +74,9 @@ class WombatTest(Task):
                          description = "The original Wombat test.",
                          aliases=["test"])
 
-    def add_args_to(self, parser: ArgumentParser, *,  # @UnusedVariable
+    def add_args_to(self,
+                    group: _ArgumentGroup,  # @UnusedVariable
+                    parser: ArgumentParser, *,  # @UnusedVariable
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
         ...

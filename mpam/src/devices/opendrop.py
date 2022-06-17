@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+from argparse import Namespace, _ArgumentGroup, ArgumentParser
 from typing import Optional, Final, Sequence
 
 from serial import Serial
 
+from mpam import device
 from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
-    WellShape, Pad, WellGate, WellPad, transitions_from,\
+    WellShape, Pad, WellGate, WellPad, transitions_from, \
     TransitionFunc
+from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
+    Exerciser
+from mpam.pipettor import Pipettor
 from mpam.types import OnOff, XYCoord, Orientation, Dir, State
 from quantities.SI import uL, ms
-from mpam import device
+from quantities.dimensions import Time
 
 
 class Electrode(State[OnOff]):
@@ -120,13 +125,15 @@ class Board(device.Board):
                     shape=shape
                     )
     
-    def __init__(self, dev : Optional[str]) -> None:
+    def __init__(self, dev : Optional[str], *,
+                 off_on_delay: Time = Time.ZERO) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         super().__init__(pads=pad_dict, 
                          wells=wells,
                          orientation=Orientation.NORTH_NEG_EAST_POS,
-                         drop_motion_time=500*ms)
+                         drop_motion_time=500*ms,
+                         off_on_delay=off_on_delay)
         self._dev = dev
         self._states = bytearray(128)
         self._port= None
@@ -180,3 +187,33 @@ class Board(device.Board):
     # def electrode(self, i: int) -> Electrode:
     #     return Electrode(i, self._states)
     
+class PlatformTask(PlatformChoiceTask):
+    def __init__(self, name: str = "Opendrop",
+                 description: Optional[str] = None,
+                 *,
+                 aliases: Optional[Sequence[str]] = None) -> None:
+        super().__init__(name, description, aliases=aliases)
+    
+    
+    def make_board(self, args: Namespace, *, 
+                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+                   pipettor: Pipettor) -> Board: # @UnusedVariable
+        off_on_delay: Time = args.off_on_delay
+        port: Optional[str] = args.port
+        return Board(dev=port, off_on_delay=off_on_delay)
+        
+    def add_args_to(self, 
+                     group: _ArgumentGroup, 
+                     parser: ArgumentParser,
+                     *,
+                     exerciser: Exerciser) -> None:
+        super().add_args_to(group, parser, exerciser=exerciser)
+        group.add_argument('-p', '--port',
+                           help='''
+                           The communication port (e.g., COM5) to use to talk to the board.
+                           By default, only the display is run
+                           ''')
+        
+        
+    def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable
+        return [0,1,2,3]

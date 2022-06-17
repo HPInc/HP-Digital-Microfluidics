@@ -405,16 +405,18 @@ class PlatformTask(PlatformChoiceTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
+                   pipettor: Pipettor) -> Board: 
         off_on_delay: Time = args.off_on_delay
         return Board(pipettor=pipettor,
                      off_on_delay=off_on_delay,
                      extraction_point_splash_radius=args.extraction_point_splash_radius)
         
-    def add_platform_args_to(self, 
-                             group: _ArgumentGroup, 
-                             parser: ArgumentParser) -> None:
-        super().add_platform_args_to(group, parser)
+    def add_args_to(self, 
+                     group: _ArgumentGroup, 
+                     parser: ArgumentParser,
+                     *,
+                     exerciser: Exerciser) -> None:
+        super().add_args_to(group, parser, exerciser=exerciser)
         
     def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable
         return [0,1,2,3,4,5,6,7]
