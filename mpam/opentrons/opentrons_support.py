@@ -5,19 +5,21 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 import importlib
 import json
-from typing import Sequence, Optional, NamedTuple, Any, Dict
+from typing import Sequence, Optional, NamedTuple, Any, Dict, List
 
 from opentrons import protocol_api
 from opentrons.protocol_api.instrument_context import InstrumentContext
 from opentrons.protocol_api.labware import Well, Labware
 import requests
 
-from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp
-import schedule_xfers
+if "COMBINED_FILES_KLUDGE" not in globals():
 
-
-# If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
-schedule_xfers = importlib.reload(schedule_xfers)
+    from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp
+    import schedule_xfers
+    
+    
+    # If I don't explicitly reload opentrons_support, changes between runs don't get reflected.
+    schedule_xfers = importlib.reload(schedule_xfers)
 
 
 
@@ -145,7 +147,7 @@ class Pipettor(TransferScheduler[Well]) :
     def __init__(self, 
                  spec, 
                  protocol: protocol_api.ProtocolContext,
-                 tipracks: Sequence[Labware],
+                 tipracks: List[Labware],
                  *,
                  robot: Robot) -> None:
         self.protocol = protocol
@@ -465,12 +467,13 @@ class Robot:
         dirs = {"fill": Direction.FILL, "empty": Direction.EMPTY}
         well_map = self.board.well_map
         while True:
-            # self.message("Making ready call")
+            self.message("Making ready call")
             call_params = self.prepare_call()
             if self.last_product_well is not None:
                 call_params["product_well"] = str(self.last_product_well)
-
+            self.message(f"Calling ready: {call_params}")
             resp = self.http_post("ready", json = call_params)
+            self.message(f"Back from ready: {resp}")
             assert resp is not None, f"No endpoint to call"
             body = resp.json()
             # self.message(f"Body is {body}")
