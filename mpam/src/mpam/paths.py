@@ -11,7 +11,7 @@ from mpam.drop import Drop
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Delayed, \
     DelayType, schedule, Dir, Reagent, Liquid, ComputeOp, XYCoord, Barrier, T, \
-    WaitableType, Callback, Postable
+    WaitableType, Callback, Postable, WaitCondition, NO_WAIT
 from quantities.dimensions import Volume
 
 
@@ -24,16 +24,14 @@ class Path:
     class StartStep:
         op: Final[StaticOperation[Drop]]
 
-        def __init__(self, op: StaticOperation[Drop]):
+        def __init__(self, op: StaticOperation[Drop]) -> None:
             self.op = op
 
     class MiddleStep:
         op: Final[Operation[Drop, Drop]]
-        after: Final[Optional[DelayType]]
 
-        def __init__(self, op: Operation[Drop,Drop], after: Optional[DelayType]) -> None:
+        def __init__(self, op: Operation[Drop, Drop]) -> None:
             self.op = op
-            self.after = after
 
         def _schedule_after(self, future: Delayed[Drop], *,
                             is_last: bool, post_result: bool) -> Delayed[Drop]:
@@ -42,11 +40,9 @@ class Path:
 
     class EndStep:
         op: Final[Operation[Drop, None]]
-        after: Final[Optional[DelayType]]
 
-        def __init__(self, op: Operation[Drop,None], after: Optional[DelayType]) -> None:
+        def __init__(self, op: Operation[Drop, None]) -> None:
             self.op = op
-            self.after = after
 
         def _schedule_after(self, future: Delayed[Drop], *,
                             post_result: bool) -> Delayed[None]:
@@ -57,11 +53,14 @@ class Path:
     class Start(StaticOperation[Drop]):
         first_step: Final[Path.StartStep]
         middle_steps: Final[tuple[Path.MiddleStep, ...]]
+        after: Final[WaitCondition]
 
         def __init__(self, start: Path.StartStep,
-                     middle: tuple[Path.MiddleStep,...]) -> None:
+                     middle: tuple[Path.MiddleStep,...],
+                     after: WaitCondition = NO_WAIT) -> None:
             self.first_step = start
             self.middle_steps = middle
+            self.after = after
 
         @overload
         def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Start: ... # @UnusedVariable
@@ -83,17 +82,17 @@ class Path:
         #     return Path.Start(start=self.first_step, middle = self.middle_steps+(step,))
 
         def _schedule(self, *,
-                      after: Optional[DelayType] = None,
+                      after: WaitCondition = NO_WAIT,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             middle = self.middle_steps
             last = len(middle) - 1
+            # TODO merge after with first_step.after and use in schedule
             future = schedule(self.first_step.op, after=after,
                               post_result = post_result if last == -1 else True)
             for i,step in enumerate(middle):
                 future = step._schedule_after(future, post_result=post_result, is_last = i==last)
             return future
-
 
         def walk(self, direction: Dir, *,
                  steps: int = 1,
@@ -170,6 +169,8 @@ class Path:
         def wait_for(self, waitable: WaitableType) -> Path.Start:
             return self+Path.PauseStep(waitable)
 
+        def wait_condition(after: WaitCondition) -> WaitCondition:
+            return extend_wait_condition(self.after, after)
 
         def extended(self, path: Path.Middle) -> Path.Start:
             return self+path
@@ -363,11 +364,12 @@ class Path:
     def teleport_into(cls, extraction_point: ExtractionPoint, *,
                       liquid: Optional[Liquid] = None,
                       reagent: Optional[Reagent] = None,
-                      after: Optional[DelayType] = None) -> Path.Start:
+                      after: WaitCondition = NO_WAIT) -> Path.Start:
         return Path.Start(
             Path.TeleportInStep(
-                extraction_point, liquid=liquid, reagent=reagent, after=after),
-            ())
+                extraction_point, liquid=liquid, reagent=reagent),
+            (),
+            after=after)
 
     @classmethod
     def appear_at(cls, pad: Union[Pad, XYCoord, tuple[int, int]], *,
@@ -505,12 +507,11 @@ class Path:
     class TeleportInStep(StartStep):
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,
-                     reagent: Optional[Reagent] = None,
-                     after: Optional[DelayType] = None
+                     reagent: Optional[Reagent] = None
                      ) -> None:
             super().__init__(
                 Drop.TeleportInTo(
-                    extraction_point, liquid=liquid, reagent=reagent, after=after))
+                    extraction_point, liquid=liquid, reagent=reagent))
     class AppearStep(StartStep):
         def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *,
                      board: Board,

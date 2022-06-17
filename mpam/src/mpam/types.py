@@ -570,6 +570,15 @@ Args:
     T: the type (if not :attr:`MISSING`)
 """
 
+class NoWait(Enum)
+    SINGLETON = auto()
+    def __repr__(self) -> str:
+        return "NO_WAIT"
+
+NO_WAIT: Final[NoWait] = NoWait.SINGLETON
+
+WaitCondition = Union[NoWait, DelayType]
+
 class Operation(Generic[T, V], ABC):
     '''
     An operation that can be scheduled for an object of type :attr:`T` and returns a delayed value of type :attr:`V`
@@ -596,9 +605,9 @@ class Operation(Generic[T, V], ABC):
     '''
 
     @abstractmethod
-    def _schedule_for(self, obj: T, *,                      # @UnusedVariable
-                      after: Optional[DelayType] = None,    # @UnusedVariable
-                      post_result: bool = True,             # @UnusedVariable
+    def _schedule_for(self, obj: T, *,                # @UnusedVariable
+                      after: WaitCondition = NO_WAIT, # @UnusedVariable
+                      post_result: bool = True,       # @UnusedVariable
                       ) -> Delayed[V]:
         """
         The implementation of :func:`schedule_for`.  There is no default implementation.
@@ -616,7 +625,7 @@ class Operation(Generic[T, V], ABC):
         ...
 
     def schedule_for(self, obj: Union[T, Delayed[T]], *,
-                     after: Optional[DelayType] = None,
+                     after: WaitCondition = NO_WAIT,
                      post_result: bool = True,
                      ) -> Delayed[V]:
         """
@@ -761,7 +770,7 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
-    after: Final[Optional[DelayType]]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
+    after: Final[WaitCondition]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
     def __init__(self, first: Operation[T, V],
                  second: Union[Operation[V,V2], StaticOperation[V2],
@@ -786,7 +795,7 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
 
 
     def _schedule_for(self, obj: T, *,
-                      after: Optional[DelayType] = None,
+                      after: WaitCondition = NO_WAIT,
                       post_result: bool = True,
                       ) -> Delayed[V2]:
         """
@@ -1135,8 +1144,8 @@ class StaticOperation(Generic[V], ABC):
 
     @abstractmethod
     def _schedule(self, *,
-                  after: Optional[DelayType] = None,    # @UnusedVariable
-                  post_result: bool = True,             # @UnusedVariable
+                  after: WaitCondition = NO_WAIT, # @UnusedVariable
+                  post_result: bool = True,       # @UnusedVariable
                   ) -> Delayed[V]:
         """
         The implementation of :func:`schedule`.  There is no default implementation.
@@ -1153,36 +1162,27 @@ class StaticOperation(Generic[V], ABC):
 
 
     def schedule(self, *,
-                 on_future: Optional[Delayed[Any]] = None,
-                 after: Optional[DelayType] = None,
+                 after: WaitCondition = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
         """
         Schedule this operation.
 
-        If ``on_future`` is not ``None``, the actual scheduling will take place
-        after a value has been posted to it.  Note that any delay specified by
-        ``after`` will be applied **after** this value is obtained.
-
         Once an object has been identified, the actual scheduling will be
         delegated through :func:`_schedule_for`.
 
         Keyword Args:
-            on_future: An optional :class:`Delayed` object that will gate this evaluation
             after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        if on_future is not None:
-            future = Postable[V]()
-            def schedule_and_post(_) -> None:
-                f = self._schedule(after=after, post_result=post_result)
-                f.when_value(lambda val: future.post(val))
-            on_future.when_value(schedule_and_post)
-            return future
-        return self._schedule(after=after, post_result=post_result)
+        after = self.wait_condition(after)
+        return after_wait(after, lambda: self._schedule(post_result=post_result))
+
+    def wait_condition(after: WaitCondition) -> WaitCondition:
+        return after
 
     def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
                              Callable[[], Operation[V,V2]],
@@ -4475,7 +4475,7 @@ class State(Generic[T], ABC):
     """
     The :class:`.ChangeCallbackList` monitoring :attr:`current_state`.
     """
-    
+
     has_state: bool = current_state.value_check
     """
     Does :attr:`current_state` have a value?
@@ -4485,7 +4485,7 @@ class State(Generic[T], ABC):
         """
         Initialize the object.  If ``initial_state`` is not :attr:`.MISSING`, it
         becomes the initial value of ``current_state``
-         
+
         Keyword Args:
             initial_state: the initial value
         """
