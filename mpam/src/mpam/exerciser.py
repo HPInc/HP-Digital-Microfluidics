@@ -20,8 +20,8 @@ from mpam.types import PathOrStr
 from quantities import temperature
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs, \
     volts, deg_C
-from quantities.core import Unit, Quantity, Dimensionality
-from quantities.dimensions import Time, Volume, Voltage, Temperature
+from quantities.core import Unit, Quantity, set_default_units
+from quantities.dimensions import Time, Volume, Voltage
 from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from _collections import defaultdict
@@ -98,8 +98,8 @@ class ArgUnits:
         return None
     
     @classmethod
-    def parse_unit_arg(cls, args: str) -> Mapping[Dimensionality, Sequence[Unit]]:
-        found: dict[Dimensionality, list[Unit]] = defaultdict(list)
+    def parse_unit_arg(cls, args: str) -> Sequence[Unit]:
+        units: list[Unit] = []
         for arg in re.split(r'[ ,]\s*', args):
             unit = cls.find_unit(arg)
             if unit is None:
@@ -107,8 +107,8 @@ class ArgUnits:
                             '{arg}' not parsable as a unit.
                             {' '.join(cls.describe(qt) for qt in cls.known)}
                             """)
-            found[unit.dimensionality()].append(unit)
-        return found
+            units.append(unit)
+        return units
         
         
 ArgUnits.register_units(Time,
@@ -172,7 +172,7 @@ def voltage_arg(arg: str) -> Voltage:
     return ArgUnits.parse_arg(Voltage, arg, default="60V")
 
 
-def units_arg(arg: str) -> Mapping[Dimensionality, Sequence[Unit]]:
+def units_arg(arg: str) -> Sequence[Unit]:
     return ArgUnits.parse_unit_arg(arg)
 
 class LoggingLevel:
@@ -344,10 +344,7 @@ class Exerciser(ABC):
 
         # We set default units first so that default values for help and errors
         # will be printed correctly by parse_args()
-        Time.default_units = ms
-        Volume.default_units = uL
-        Temperature.default_units = deg_C
-        Voltage.default_units = volts
+        set_default_units(ms, uL, deg_C, volts)
         
         task.add_args_to(group, parser, exerciser=self)
         self.add_common_args_to(parser)
@@ -409,25 +406,15 @@ class Exerciser(ABC):
         task: Task = ns.task
         return task, ns
     
-    @classmethod
-    def set_default_units(cls, 
-                          unit_maps: Optional[Sequence[Mapping[Dimensionality, Sequence[Unit]]]]) -> None:
-        if unit_maps is None:
-            return
-        combined: dict[Dimensionality, list[Unit]] = defaultdict(list)
-        for m in unit_maps:
-            for d,units in m.items():
-                combined[d].extend(units)
-        for d,units in combined.items():
-            d.default_units = tuple(units)
-
     def parse_args_and_run(self,
                            args: Optional[Sequence[str]]=None,
                            namespace: Optional[Namespace]=None) -> None:
         task, ns = self.parse_args(args=args, namespace=namespace)
         if ns.trace_blobs:
             Board.trace_blobs = True
-        self.set_default_units(ns.units)
+        default_units: Optional[Sequence[Sequence[Unit]]] = ns.units
+        if default_units is not None:
+            set_default_units(*(u for us in default_units for u in us))
         board = self.make_board(ns)
         self.run_task(task, ns, board=board)
 

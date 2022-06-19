@@ -3,10 +3,14 @@ from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
     overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable,\
     Literal, Mapping, Type
 from erk.stringutils import split_camel_case, infer_plural
+import logging
 import math
 from erk.basic import LazyPattern, Lazy
 import re
 from abc import abstractmethod, ABC
+from _collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 ExptFormatter = Callable[[int],str] 
 """
@@ -1414,3 +1418,17 @@ class Scalar(NamedDim):
     #     return super().__mul__(rhs)    
     
 Scalar.dim().quant_class = Scalar
+
+def set_default_units(*units: Unit) -> Mapping[Dimensionality, Sequence[Unit]]:
+    # print(f"Setting default units to {map_str(units)}")
+    seen = set[Unit]()
+    by_dim: dict[Dimensionality, list[Unit]] = defaultdict(list)
+    for unit in units:
+        if unit not in seen:
+            by_dim[unit.dimensionality()].append(unit)
+            seen.add(unit)
+    for dim,defaults in by_dim.items():
+        # print(f"  Defaults for {dim} = {map_str(defaults)}")
+        dim.default_units = tuple(defaults)
+    return by_dim 
+    
