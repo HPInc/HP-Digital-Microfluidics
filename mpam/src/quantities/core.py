@@ -1419,10 +1419,10 @@ class Scalar(NamedDim):
     
 Scalar.dim().quant_class = Scalar
 
-def set_default_units(*units: Unit) -> Mapping[Dimensionality, Sequence[Unit]]:
+def set_default_units(*units: UnitExpr) -> Mapping[Dimensionality, Sequence[UnitExpr]]:
     # print(f"Setting default units to {map_str(units)}")
-    seen = set[Unit]()
-    by_dim: dict[Dimensionality, list[Unit]] = defaultdict(list)
+    seen = set[UnitExpr]()
+    by_dim: dict[Dimensionality, list[UnitExpr]] = defaultdict(list)
     for unit in units:
         if unit not in seen:
             by_dim[unit.dimensionality()].append(unit)
@@ -1431,4 +1431,27 @@ def set_default_units(*units: Unit) -> Mapping[Dimensionality, Sequence[Unit]]:
         # print(f"  Defaults for {dim} = {map_str(defaults)}")
         dim.default_units = tuple(defaults)
     return by_dim 
+
+class default_units:
+    to_set: Final[Sequence[UnitExpr]]
+    to_reset: dict[Dimensionality, Optional[Tuple[UnitExpr, ...]]]
+    
+    def __init__(self, *units: UnitExpr) -> None:
+        self.to_set = units
+        self.to_reset = {}
+        
+    def __enter__(self) -> default_units:
+        units = self.to_set
+        self.to_reset.clear()
+        dims = {unit.dimensionality() for unit in units}
+        for dim in dims:
+            self.to_reset[dim] = dim.default_units
+        set_default_units(*units)
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb) -> Literal[False]: # @UnusedVariable
+        for dim,defaults in self.to_reset.items():
+            dim.default_units = defaults
+        return False
+        
     

@@ -20,7 +20,7 @@ from mpam.types import PathOrStr
 from quantities import temperature
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs, \
     volts, deg_C
-from quantities.core import Unit, Quantity, set_default_units
+from quantities.core import Quantity, set_default_units, UnitExpr
 from quantities.dimensions import Time, Volume, Voltage
 from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
@@ -35,12 +35,12 @@ logger = logging.getLogger(__name__)
 Q_ = TypeVar("Q_", bound = Quantity)
 
 class ArgUnits:
-    known: Final[dict[type[Quantity], dict[str, Unit]]] = defaultdict(dict)
+    known: Final[dict[type[Quantity], dict[str, UnitExpr]]] = defaultdict(dict)
     patterns: Final[dict[type[Quantity], Pattern]] = {}
     all_unit_pattern: Optional[Pattern] = None
     
     @classmethod
-    def register_units(cls, qt: type[Q_], units: Mapping[Unit[Q_], Sequence[str]]) -> None:
+    def register_units(cls, qt: type[Q_], units: Mapping[UnitExpr[Q_], Sequence[str]]) -> None:
         for unit,names in units.items():
             for name in names:
                 cls.known[qt][name] = unit
@@ -60,7 +60,7 @@ class ArgUnits:
         return f"Known units for {tname} are: {conj_str(names, conj=conj)}."
     
     @classmethod
-    def lookup(cls, qt: type[Q_], name: str) -> Unit[Q_]:
+    def lookup(cls, qt: type[Q_], name: str) -> UnitExpr[Q_]:
         units = cls.known[qt]
         unit = units.get(name, None)
         if unit is None:
@@ -91,15 +91,15 @@ class ArgUnits:
     
     
     @classmethod
-    def find_unit(cls, arg: str) -> Optional[Unit]:
+    def find_unit(cls, arg: str) -> Optional[UnitExpr]:
         for units in cls.known.values():
             if (unit := units.get(arg, None)) is not None:
                 return unit
         return None
     
     @classmethod
-    def parse_unit_arg(cls, args: str) -> Sequence[Unit]:
-        units: list[Unit] = []
+    def parse_unit_arg(cls, args: str) -> Sequence[UnitExpr]:
+        units: list[UnitExpr] = []
         for arg in re.split(r'[ ,]\s*', args):
             unit = cls.find_unit(arg)
             if unit is None:
@@ -172,7 +172,7 @@ def voltage_arg(arg: str) -> Voltage:
     return ArgUnits.parse_arg(Voltage, arg, default="60V")
 
 
-def units_arg(arg: str) -> Sequence[Unit]:
+def units_arg(arg: str) -> Sequence[UnitExpr]:
     return ArgUnits.parse_unit_arg(arg)
 
 class LoggingLevel:
@@ -412,7 +412,7 @@ class Exerciser(ABC):
         task, ns = self.parse_args(args=args, namespace=namespace)
         if ns.trace_blobs:
             Board.trace_blobs = True
-        default_units: Optional[Sequence[Sequence[Unit]]] = ns.units
+        default_units: Optional[Sequence[Sequence[UnitExpr]]] = ns.units
         if default_units is not None:
             set_default_units(*(u for us in default_units for u in us))
         board = self.make_board(ns)
@@ -717,7 +717,7 @@ class PlatformChoiceExerciser(Exerciser):
 
     def setup_task(self, task: Task, *, 
                    parser: ArgumentParser,
-                   group_name: Optional[str] = None)->None:
+                   group_name: Optional[str] = None)->None: # @UnusedVariable
         tgroup = self.task.arg_group_in(parser, "task-specific options")
         self.task.add_args_to(tgroup, parser, exerciser=self)
         super().setup_task(task, parser=parser, group_name=f"{task.name} platform options")

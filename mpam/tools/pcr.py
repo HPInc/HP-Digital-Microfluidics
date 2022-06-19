@@ -121,7 +121,7 @@ class PCRTask(Task):
     
     def add_args_to(self,
                     group: _ArgumentGroup, 
-                    parser: ArgumentParser, 
+                    parser: ArgumentParser, # @UnusedVariable
                     *, exerciser:Exerciser)->None: # @UnusedVariable
         default_cycles = 4
         group.add_argument('--cycles', type=int, metavar='INT', default=default_cycles,

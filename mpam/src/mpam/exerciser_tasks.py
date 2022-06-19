@@ -220,7 +220,7 @@ class DisplayOnly(Task):
                          aliases=["display"])
 
     def add_args_to(self, 
-                    group: _ArgumentGroup,
+                    group: _ArgumentGroup, # @UnusedVariable
                     parser: ArgumentParser, *,  # @UnusedVariable
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
