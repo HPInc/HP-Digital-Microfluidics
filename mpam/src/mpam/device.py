@@ -4249,6 +4249,7 @@ class PowerSupply(BinaryComponent['PowerSupply']):
                                                   lambda: "Power supply cannot be turned off"):
             return MISSING
         my_min = self.min_voltage
+        
         if not self.on_low_voltage.expect_true(v >= my_min or v == 0,
                                                 lambda: f"Voltage {v} < minimum ({my_min})"):
             return self.min_voltage

@@ -1,20 +1,24 @@
 from __future__ import annotations
 
-from quantities.SI import volts, m, s, Hz, sec
-from quantities.US import mph
-from quantities.core import default_units, set_default_units
-from quantities.prefixes import milli, kilo
+from devices.dummy_pipettor import DummyPipettor
+from mpam.types import unknown_reagent, Reagent
+from erk.stringutils import map_str
+from mpam.exerciser import Exerciser
 
+Exerciser.setup_logging(levels="info")
 
-v = 20*volts
+p = DummyPipettor()
 
-speed = 20*m/s
-freq = 100*Hz
+s = p.source_named("A2")
+assert s is not None
+s.reagent = unknown_reagent
 
-set_default_units(milli(volts), mph)
+print(s)
 
-print(v, speed, freq)
-with default_units(volts, m/s, kilo(Hz), Hz):
-    print(v, speed, freq, 0/sec)
+reagents = [Reagent.find(f"R{n+1}") for n in range(8)]
+sources = [p.sources_for(r)[0] for r in reagents]
+
+for source in sources:
+    print(source)
     
-print(v, speed, freq)
+print(map_str(p._sources_by_reagent))

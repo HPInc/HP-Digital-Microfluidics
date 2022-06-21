@@ -346,7 +346,11 @@ class Quantity:
     @property
     def is_zero(self) -> bool:
         return self.magnitude == 0
-
+    
+    @property
+    def is_finite(self) -> bool:
+        return self.magnitude < math.inf and self.magnitude > -math.inf
+    
     # def __init__(self, mag: float, dim: Dimensionality[D]) -> None:
     def __init__(self: D, mag: float, dim: Dimensionality[D]) -> None:
         self._dimensionality = dim
@@ -1453,5 +1457,48 @@ class default_units:
         for dim,defaults in self.to_reset.items():
             dim.default_units = defaults
         return False
-        
     
+MaybeBounded = Union[D, "Bounded[D]"]
+        
+class Bounded(Generic[D]):
+    def __init__(self, min_value: D, max_value: D, *,
+                 upper_limit: Optional[D] = None,
+                 lower_limit: Optional[D] = None) -> None:
+        self.min_value: Final[D] = min_value
+        self.max_value: Final[D] = max_value
+        self.upper_limit: Final[Optional[D]] = upper_limit
+        self.lower_limit: Final[Optional[D]] = lower_limit
+        
+    def _clip(self, new_min: D, new_max: D) -> MaybeBounded:
+        upper_limit = self.upper_limit
+        lower_limit = self.lower_limit
+        if lower_limit is not None:
+            new_min = max(new_min, lower_limit)
+        if upper_limit is not None:
+            new_max = min(new_max, upper_limit)
+        if new_min == new_max:
+            return new_min
+        return Bounded[D](new_min, new_max, 
+                          upper_limit=upper_limit, lower_limit=lower_limit)
+        
+        
+    def __add__(self, rhs: MaybeBounded[D]) -> MaybeBounded[D]:
+        my_min = self.min_value
+        my_max = self.max_value
+        if isinstance(rhs, Bounded):
+            their_min = rhs.min_value
+            their_max = rhs.max_value
+        else:
+            their_min = their_max = rhs
+        return self._clip(my_min+their_min, my_max+their_max)
+
+    def __sub__(self, rhs: MaybeBounded[D]) -> MaybeBounded[D]:
+        my_min = self.min_value
+        my_max = self.max_value
+        if isinstance(rhs, Bounded):
+            their_min = rhs.min_value
+            their_max = rhs.max_value
+        else:
+            their_min = their_max = rhs
+        return self._clip(my_min-their_min, my_max-their_max)
+

@@ -6,16 +6,19 @@ from __future__ import annotations
 from _collections import deque
 from _weakref import ReferenceType, ref
 from abc import ABC, abstractmethod
+from argparse import Namespace
 from enum import Enum, auto
 from fractions import Fraction
+import logging
 import math
+import pathlib
+import random
 from threading import Event, Lock, RLock, Thread
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any, \
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence, \
     Generator, Protocol, Iterable
+import typing
 from weakref import WeakKeyDictionary, finalize
-import logging
-import pathlib
 
 from matplotlib._color_data import XKCD_COLORS
 
@@ -25,10 +28,6 @@ from quantities.dimensions import Molarity, MassConcentration, \
     VolumeConcentration, Volume, Time
 from quantities.temperature import TemperaturePoint
 
-from quantities.SI import uL
-import random
-from argparse import Namespace
-import typing
 
 logger = logging.getLogger(__name__)
 
@@ -3692,10 +3691,10 @@ class Liquid:
         self.inexact = inexact
 
     def __repr__(self) -> str:
-        return f"Liquid[{'~' if self.inexact else ''}{self.volume.in_units(uL)}, {self.reagent}]"
+        return f"Liquid[{'~' if self.inexact else ''}{self.volume}, {self.reagent}]"
 
     def __str__(self) -> str:
-        return f"{'~' if self.inexact else ''}{self.volume.in_units(uL):g} of {self.reagent}"
+        return f"{'~' if self.inexact else ''}{self.volume:,g} of {self.reagent}"
 
     def __iadd__(self, rhs: Volume) -> Liquid:
         self.volume = min(self.volume+rhs, Volume.ZERO)

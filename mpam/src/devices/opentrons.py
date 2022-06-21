@@ -17,9 +17,10 @@ from aiohttp.web_runner import GracefulExit
 import requests
 
 from mpam.device import System, Board, PipettingTarget, ProductLocation
-from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget
+from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget,\
+    PipettingSource
 from mpam.types import Reagent, XferDir, AsyncFunctionSerializer
-from quantities.SI import seconds, uL
+from quantities.SI import seconds, uL, ml, ul
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
 
@@ -29,6 +30,7 @@ from argparse import Namespace, _ArgumentGroup
 import fileinput
 from tempfile import NamedTemporaryFile
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -521,10 +523,90 @@ class ReagentSource(NamedTuple):
                 "quantity": self.quantity.as_number(uL),
                 "use": u 
                 }
+        
+class WellPlate:
+    pipettor: Final[OT2]
+    slot: Final[int]
+    well_capacity: Final[Volume]
+    wells: Final[Sequence[WPWell]]
+    
+    def __init__(self, pipettor: OT2, slot: int, *,
+                 rows: int,
+                 columns: int, 
+                 well_capacity: Volume,
+                 n_plates: int) -> None:
+        self.pipettor = pipettor
+        self.slot = slot
+        self.well_capacity = well_capacity
+
+        well_names = pipettor._generate_source_names(rows=rows, columns=columns, 
+                                                     plates=1, start_plate=slot,
+                                                     total_plates = n_plates)
+        self.wells = [WPWell(n, plate=self, capacity=well_capacity) for n in well_names] 
+        
+    @classmethod
+    def from_spec(cls, spec: dict, *,
+                  pipettor: OT2, 
+                  n_plates: int) -> WellPlate:
+        name: str = spec["name"]
+        slot: int = int(spec["slot"])
+        m = re.search("_(\\d+)_.*_(\\d+)([um]l)", name, re.IGNORECASE)
+        assert m is not None, f"Couldn't parse labware name {name}"
+        n_wells = int(m[1])
+        if n_wells == 1:
+            rows,cols = 1,1
+        elif n_wells == 6:
+            rows,cols = 2,3
+        elif n_wells == 24:
+            rows,cols = 4,6
+        elif n_wells == 96:
+            rows,cols = 8,12
+        elif n_wells == 384:
+            rows,cols = 16,24
+        elif n_wells == 1536:
+            rows,cols = 32,48
+        else:
+            assert False, f"Don't know the configuration for a {n_wells}-well plate"
+        u_spec: str = m[3].lower()
+        if u_spec == "ml":
+            unit = ml
+        elif u_spec == "ul":
+            unit = ul
+        else:
+            assert False, f"{u_spec} isn't a known unit for a wall plate capacity"
+        capacity = int(m[2])*unit
+        return WellPlate(pipettor, slot, rows=rows, columns=cols, 
+                         well_capacity=capacity, n_plates=n_plates)
+            
+class WPWell(PipettingSource):
+    plate: Final[WellPlate]
+    
+    def __init__(self, name: str, *,
+                 plate: WellPlate,
+                 capacity: Volume)->None:
+        pipettor = plate.pipettor
+        super().__init__(name, pipettor=pipettor, capacity=capacity)
+        self.plate = plate
+        pipettor._wells_by_name[name] = self
+        def stash_on_reagent(r: Reagent) -> None:
+            pipettor._wells_by_reagent[r].append(self)
+            pipettor.dirty(self)
+        self.assigned_reagent.when_value(stash_on_reagent)
+        self.on_bounds_change(lambda _old,_new: pipettor.dirty(self))
+
 
 class OT2(Pipettor):
     listener: Final[Listener]
     manager: Final[ProtocolManager]
+    plates: Final[Sequence[WellPlate]]
+    
+    _wells_by_name: Final[dict[str, WPWell]]
+    _wells_by_reagent: Final[dict[Reagent, list[WPWell]]]
+
+    _lock: Final[RLock]
+    _receiving_update: bool
+    _dirty_wells: Optional[set[WPWell]] = None
+    
     def __init__(self, *,
                  robot_ip_addr: str,
                  robot_port: Union[str, int] = 31950,
@@ -534,6 +616,9 @@ class OT2(Pipettor):
                  board_def: Optional[str] = None,
                  name: str = "OT-2") -> None:
         super().__init__(name=name)
+        self._lock = RLock()
+        self._receiving_update = False
+        
         if isinstance(listener_port, str):
             listener_port = int(listener_port)
         self.listener = Listener(port=listener_port,
@@ -542,6 +627,40 @@ class OT2(Pipettor):
             robot_port = int(robot_port)
         if isinstance(config, str):
             config = self.load_config(config)
+
+        self._wells_by_name = {}
+        self._wells_by_reagent = defaultdict(list)
+            
+        plate_specs: Sequence = config["input-wellplates"]
+        n_plates = len(plate_specs)
+        self.plates = [WellPlate.from_spec(s, pipettor=self, n_plates=n_plates) for s in plate_specs]
+        
+        rdesc: Sequence[dict]
+        if reagents is None:
+            rdesc = []
+        elif isinstance(reagents, str):
+            reagents_json = self.load_config(reagents)
+            rdesc = reagents_json["reagents"]
+        else:
+            rdesc = [ { "name": r.name, "wells": [ w.as_json() for w in ws]} for r,ws in reagents.items()]
+            
+        config["reagents"] = rdesc
+        
+        for rd in rdesc:
+            reagent = Reagent.find(rd["name"])
+            rwells: Sequence[dict] = rd["wells"]
+            for wd in rwells:
+                well_name: str = wd["well"]
+                quant: float = float(wd["quantity"])
+                volume = quant*uL
+                if len(self.plates) > 1:
+                    plate: int = int(wd["plate"])
+                    well_name += f"/{self.plates[plate].slot}"
+                well = self.source_named(well_name)
+                assert well is not None, f"Reagent spec says {reagent} in non-existent well {well_name}"
+                well.reagent = reagent
+                well.exact_volume = volume
+        
         if not "endpoint" in config:
             host_name = socket.gethostname()
             ip = socket.gethostbyname(host_name)
@@ -549,20 +668,36 @@ class OT2(Pipettor):
                     "ip": ip,
                     "port": listener_port
                 }
-        if reagents is None:
-            config["reagents"] = []
-        elif isinstance(reagents, str):
-            reagents_json = self.load_config(reagents)
-            config["reagents"] = reagents_json["reagents"]
-        else:
-            config["reagents"] = [ { "name": r.name, "wells": [ w.as_json() for w in ws]} for r,ws in reagents.items()]
-        # print(f"Reagents: {config['reagents']}")
+
         if board_def is not None:
             board_json = self.load_config(board_def)
             config["board"]["labware"]["definition"] = board_json
         self.manager = ProtocolManager(config, name = f"{name} protocol manager",
                                        ip = robot_ip_addr, port = robot_port,
                                        run_check = lambda: self.listener.running)
+        
+    def source_named(self, name: str) -> Optional[PipettingSource]:
+        return self._wells_by_name.get(name, None)
+    
+    def sources_for(self, reagent: Reagent) -> Sequence[PipettingSource]:
+        return self._wells_by_reagent[reagent]
+    
+    def describe_source(self, source: PipettingSource) -> str:
+        assert isinstance(source, WPWell)
+        return f"{source.name} (slot {source.plate.slot})"
+    
+    def dirty(self, well: WPWell) -> None:
+        # _dirty_wells contains the wells that need to receive updates. The
+        # logic here is that when we receive, we will lock and set
+        # _receiving_update to True before changing any quantities, so we don't
+        # think we need to tell the robot about changes it already knows about.
+        with self._lock:
+            if not self._receiving_update:
+                dirty_wells = self._dirty_wells
+                if dirty_wells is None:
+                    self._dirty_wells = {well}
+                else:
+                    dirty_wells.add(well)
         
     def load_config(self, file_name: str) -> JSONObj:
         with open(file_name, 'rb') as f:
