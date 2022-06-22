@@ -579,6 +579,11 @@ NO_WAIT: Final[NoWait] = NoWait.SINGLETON
 
 WaitCondition = Union[NoWait, DelayType]
 
+def after_wait(after: WaitCondition, callback: Callback):
+    if isinstance(after, DelayType):
+        board.after_tick(callback, delta=after)
+    # TODO other `after` types
+
 class Operation(Generic[T, V], ABC):
     '''
     An operation that can be scheduled for an object of type :attr:`T` and returns a delayed value of type :attr:`V`
@@ -654,6 +659,7 @@ class Operation(Generic[T, V], ABC):
         # else:
         #     logger.debug(f'{obj}|after:{after}')
 
+        after = self.wait_condition(after)
         if isinstance(obj, Delayed):
             future = Postable[V]()
             def schedule_and_post(x: T) -> None:
@@ -663,10 +669,13 @@ class Operation(Generic[T, V], ABC):
             return future
         return self._schedule_for(obj, after=after, post_result=post_result)
 
+    def wait_condition(after: WaitCondition) -> WaitCondition:
+        return after
+
     def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
                              Callable[[], Operation[V,V2]],
                              Callable[[], StaticOperation[V2]]], *,
-             after: Optional[DelayType] = None,
+             after: WaitCondition = NO_WAIT,
              ) -> Operation[T,V2]:
         """
         Chain this :class:`Operation` and another together to create a single
@@ -776,7 +785,7 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
                  second: Union[Operation[V,V2], StaticOperation[V2],
                                Callable[[], Operation[V,V2]],
                                Callable[[], StaticOperation[V2]]],
-                 after: Optional[DelayType] = None) -> None:
+                 after: WaitCondition = NO_WAIT) -> None:
         """
         Initialize the :class:`CombinedOperation`
 
@@ -868,7 +877,7 @@ class CommunicationScheduler(Protocol):
     :func:`schedule_communication` and :func:`delayed`
     """
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,  # @UnusedVariable
-                               after: Optional[DelayType] = None) -> None:  # @UnusedVariable
+                               after: WaitCondition = NO_WAIT) -> None:  # @UnusedVariable
         """
         Schedule communication of ``cb`` after optional delay ``after``
 
@@ -924,7 +933,7 @@ class OpScheduler(Generic[CS]):
     """
     def schedule(self: CS,
                  op: Union[Operation[CS, V], Callable[[],Operation[CS,V]]],
-                 after: Optional[DelayType] = None,
+                 after: WaitCondition = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
         """
@@ -1187,7 +1196,7 @@ class StaticOperation(Generic[V], ABC):
     def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
                              Callable[[], Operation[V,V2]],
                              Callable[[], StaticOperation[V2]]],
-             after: Optional[DelayType] = None,
+             after: WaitCondition = NO_WAIT,
              ) -> StaticOperation[V2]:
         """
         Chain this :class:`StaticOperation` and follow-on :class:`Operation`
@@ -1294,7 +1303,7 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
                  second: Union[Operation[V,V2], StaticOperation[V2],
                                Callable[[], Operation[V,V2]],
                                Callable[[], StaticOperation[V2]]], *,
-                 after: Optional[DelayType] = None) -> None:
+                 after: WaitCondition = NO_WAIT) -> None:
         """
         Initialize the object
 
@@ -1538,7 +1547,7 @@ class Delayed(Generic[Tco]):
     def then_schedule(self, op: Union[Operation[Tco,V], StaticOperation[V],
                                       Callable[[], Operation[Tco,V]],
                                       Callable[[], StaticOperation[V]]], *,
-                      after: Optional[DelayType] = None,
+                      after: WaitCondition = NO_WAIT,
                       post_result: bool = True) -> Delayed[V]:
         """
         Schedule an :class:`Operation` or :class:`StaticOperation` when a value
@@ -2028,7 +2037,7 @@ class Barrier(Trigger, Generic[T]):
 
 
 def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
-             after: Optional[DelayType] = None,
+             after: WaitCondition = NO_WAIT,
              post_result: bool = True,
              ) -> Delayed[V]:
     """
