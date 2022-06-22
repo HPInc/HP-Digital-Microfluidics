@@ -580,8 +580,10 @@ NO_WAIT: Final[NoWait] = NoWait.SINGLETON
 WaitCondition = Union[NoWait, DelayType]
 
 def after_wait(after: WaitCondition, callback: Callback):
-    if isinstance(after, DelayType):
+    if isinstance(after, Ticks):
         board.after_tick(callback, delta=after)
+    elif isinstance(after, Time):
+        board.call_after(after, callback)
     # TODO other `after` types
 
 class Operation(Generic[T, V], ABC):
