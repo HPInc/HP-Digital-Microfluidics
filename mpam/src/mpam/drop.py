@@ -649,7 +649,6 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
     @abstractmethod
     def dirAndSteps(self, drop: Drop) -> tuple[Dir, int]: ...  # @UnusedVariable
     def _schedule_for(self, drop: Drop, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
         assert isinstance(drop.pad, Pad), f"{drop} not on board.  Can't create MotionOp {self}"
@@ -815,7 +814,6 @@ class Drop(OpScheduler['Drop']):
             self.liquid = liquid
 
         def _schedule(self, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             future = Postable[Drop]()
@@ -852,7 +850,6 @@ class Drop(OpScheduler['Drop']):
             self.mix_result = mix_result
 
         def _schedule(self, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             liquid = self.liquid
@@ -873,7 +870,6 @@ class Drop(OpScheduler['Drop']):
             self.product_loc = product_loc
 
         def _schedule_for(self, drop: Drop, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[None]:
             op = ExtractionPoint.TransferOut(volume=self.volume, product_loc=self.product_loc)
@@ -948,7 +944,6 @@ class Drop(OpScheduler['Drop']):
         empty_wrong_reagent: Final[bool]
 
         def _schedule(self, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             future = Postable[Drop]()
@@ -1029,7 +1024,6 @@ class Drop(OpScheduler['Drop']):
             return f"<Drop.EnterWell: {self.well}>"
 
         def _schedule_for(self, drop: Drop, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[None]:
             future = Postable[None]()

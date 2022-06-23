@@ -65,8 +65,7 @@ class Path:
         middle_steps: Final[tuple[Path.MiddleStep, ...]]
 
         def __init__(self, start: Path.StartStep,
-                     middle: tuple[Path.MiddleStep,...],
-                     after: WaitCondition = NO_WAIT) -> None:
+                     middle: tuple[Path.MiddleStep,...]) -> None:
             self.first_step = start
             self.middle_steps = middle
 

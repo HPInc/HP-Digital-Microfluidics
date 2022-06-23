@@ -612,8 +612,7 @@ class Operation(Generic[T, V], ABC):
     '''
 
     @abstractmethod
-    def _schedule_for(self, obj: T, *,                # @UnusedVariable
-                      after: WaitCondition = NO_WAIT, # @UnusedVariable
+    def _schedule_for(self, obj: CS, *,                # @UnusedVariable
                       post_result: bool = True,       # @UnusedVariable
                       ) -> Delayed[V]:
         """
@@ -806,7 +805,6 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
 
 
     def _schedule_for(self, obj: T, *,
-                      after: WaitCondition = NO_WAIT,
                       post_result: bool = True,
                       ) -> Delayed[V2]:
         """
@@ -816,7 +814,6 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
         Args:
             obj: the :attr:`T` object to schedule the operation for
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
@@ -848,7 +845,6 @@ class ComputeOp(Operation[T,V]):
         return f"ComputeOp({self.function})"
 
     def _schedule_for(self, obj: T, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[V]:
         """
@@ -857,18 +853,16 @@ class ComputeOp(Operation[T,V]):
         :meta public:
 
         Note:
-            ``after`` is asserted to be ``None``, and ``post_result`` is asserted to be ``True``.
+            ``post_result`` is asserted to be ``True``.
 
         Args:
             obj: the :attr:`T` object to schedule the operation for
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``.
         """
-        assert after == None
         assert post_result == True
         return self.function(obj)
 
@@ -974,7 +968,6 @@ class OpScheduler(Generic[CS]):
             self.barrier = barrier
 
         def _schedule_for(self, obj: CS, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
                           ) -> Delayed[CS]:
             """
@@ -986,7 +979,6 @@ class OpScheduler(Generic[CS]):
             Args:
                 obj: the :attr:`CS` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object (unused)
             Returns:
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
@@ -1021,7 +1013,6 @@ class OpScheduler(Generic[CS]):
             self.barrier = barrier
 
         def _schedule_for(self, obj: CS, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
                           ) -> Delayed[CS]:
             """
@@ -1034,7 +1025,6 @@ class OpScheduler(Generic[CS]):
             Args:
                 obj: the :attr:`CS` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object
             Returns:
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
@@ -1074,7 +1064,6 @@ class OpScheduler(Generic[CS]):
         """
         waitable: WaitableType  ; "What to wait for"
         def _schedule_for(self, obj: CS, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
                           ) -> Delayed[CS]:
             """
@@ -1093,7 +1082,6 @@ class OpScheduler(Generic[CS]):
             Args:
                 obj: the :attr:`CS` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object (unused)
             Returns:
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
@@ -1155,7 +1143,6 @@ class StaticOperation(Generic[V], ABC):
 
     @abstractmethod
     def _schedule(self, *,
-                  after: WaitCondition = NO_WAIT, # @UnusedVariable
                   post_result: bool = True,       # @UnusedVariable
                   ) -> Delayed[V]:
         """
@@ -1163,7 +1150,6 @@ class StaticOperation(Generic[V], ABC):
 
         :meta public:
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
@@ -1321,7 +1307,6 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
         self.after = after
 
     def _schedule(self, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[V2]:
         """
@@ -1329,7 +1314,6 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
 
         :meta public:
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V2`] future object to which the resulting
