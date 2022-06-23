@@ -835,11 +835,13 @@ class Drop(OpScheduler['Drop']):
         extraction_point: Final[ExtractionPoint]
         liquid: Final[Liquid]
         mix_result: Final[Optional[Union[Reagent,str]]]
+
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,
                      reagent: Optional[Reagent] = None,
                      mix_result: Optional[Union[Reagent,str]] = None,
                      ) -> None:
+            super().__init__(scheduler=extraction_point)
             self.extraction_point = extraction_point
             board = extraction_point.pad.board
             if liquid is None:
@@ -943,6 +945,18 @@ class Drop(OpScheduler['Drop']):
         reagent: Final[Optional[Reagent]]
         empty_wrong_reagent: Final[bool]
 
+        def __init__(self, well: Well, *,
+                     reagent: Optional[Reagent] = None,
+                     empty_wrong_reagent: bool = False,
+                     after_reservation: Optional[Callback] = None,
+                     before_release: Optional[Callback] = None) -> None:
+            super().__init__(scheduler=well)
+            self.well = well
+            self.reagent = reagent
+            self.empty_wrong_reagent = empty_wrong_reagent
+            self.after_reservation = after_reservation
+            self.before_release = before_release
+
         def _schedule(self, *,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
@@ -1003,18 +1017,6 @@ class Drop(OpScheduler['Drop']):
             # well.ensure_content().then_call(run_group)
             run_group(None)
             return future
-
-
-        def __init__(self, well: Well, *,
-                     reagent: Optional[Reagent] = None,
-                     empty_wrong_reagent: bool = False,
-                     after_reservation: Optional[Callback] = None,
-                     before_release: Optional[Callback] = None) -> None:
-            self.well = well
-            self.reagent = reagent
-            self.empty_wrong_reagent = empty_wrong_reagent
-            self.after_reservation = after_reservation
-            self.before_release = before_release
 
     class EnterWell(Operation['Drop',None]):
         well: Final[Optional[Well]]

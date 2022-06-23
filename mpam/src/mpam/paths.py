@@ -66,6 +66,7 @@ class Path:
 
         def __init__(self, start: Path.StartStep,
                      middle: tuple[Path.MiddleStep,...]) -> None:
+            super().__init__(start.op.scheduler)
             self.first_step = start
             self.middle_steps = middle
 
@@ -337,6 +338,7 @@ class Path:
                      start: Path.StartStep,
                      middle: tuple[Path.MiddleStep,...],
                      end: Path.EndStep) -> None:
+            super().__init__(start.op.scheduler)
             self.first_step = start
             self.middle_steps = middle
             self.last_step = end
@@ -511,7 +513,7 @@ class Path:
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,
                      reagent: Optional[Reagent] = None,
-                     after :WaitCondition = NO_WAIT
+                     after: WaitCondition = NO_WAIT
                      ) -> None:
             super().__init__(
                 Drop.TeleportInTo(
