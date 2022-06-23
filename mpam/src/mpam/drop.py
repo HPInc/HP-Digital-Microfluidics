@@ -840,7 +840,6 @@ class Drop(OpScheduler['Drop']):
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,
                      reagent: Optional[Reagent] = None,
-                     after: Optional[DelayType] = None,
                      mix_result: Optional[Union[Reagent,str]] = None,
                      ) -> None:
             self.extraction_point = extraction_point

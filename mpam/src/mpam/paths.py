@@ -69,7 +69,6 @@ class Path:
                      after: WaitCondition = NO_WAIT) -> None:
             self.first_step = start
             self.middle_steps = middle
-            self.after = after
 
         @overload
         def __add__(self, other: Union[Path.MiddleStep, Path.Middle]) -> Path.Start: ... # @UnusedVariable
