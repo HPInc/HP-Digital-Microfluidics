@@ -704,15 +704,12 @@ class Operation(Generic[CS, V], ABC):
             obj.when_value(schedule_and_post)
             return future
 
-        return obj.delayed(
-            lambda _: self._schedule_for(obj, post_result=post_result),
-            after=after)
+        def cb():
+            return self._schedule_for(obj, post_result=post_result)
+        return obj.delayed(cb, after=after)
 
-    def wait_condition(after: WaitCondition) -> WaitCondition:
-        return after
-
-    def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
-                             Callable[[], Operation[V,V2]],
+    def then(self, op: Union[Operation[V, V2], StaticOperation[V2],
+                             Callable[[], Operation[V, V2]],
                              Callable[[], StaticOperation[V2]]], *,
              after: WaitCondition = NO_WAIT,
              ) -> Operation[CS, V2]:
@@ -797,7 +794,7 @@ class Operation(Generic[CS, V], ABC):
         return self.then_call(fn2)
 
 
-class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
+class CombinedOperation(Generic[CS, V, V2], Operation[CS, V2]):
     """
     An :class:`Operation` representing chaining two :class:`Operation`\s
     together.
@@ -807,23 +804,23 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
     :func:`Operation.then_process`,
 
     Args:
-        T: the type of the object used to schedule the :class:`Operation`
+        CS: the type of the object used to schedule the :class:`Operation`
         V: the type of the value produced by the first operation
         V2: the type of the value produced by the second operation (and the
             :class:`CombinedOperation` overall)
     """
-    first: Operation[T,V]               ; "The first :class:`Operation`"
+    first: Operation[CS, V]               ; "The first :class:`Operation`"
     second: Union[Operation[V,V2], StaticOperation[V2],
-                  Callable[[], Operation[V,V2]],
+                  Callable[[], Operation[V, V2]],
                   Callable[[], StaticOperation[V2]]]
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
     after: Final[WaitCondition]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
-    def __init__(self, first: Operation[T, V],
-                 second: Union[Operation[V,V2], StaticOperation[V2],
-                               Callable[[], Operation[V,V2]],
+    def __init__(self, first: Operation[CS, V],
+                 second: Union[Operation[V, V2], StaticOperation[V2],
+                               Callable[[], Operation[V, V2]],
                                Callable[[], StaticOperation[V2]]],
                  after: WaitCondition = NO_WAIT) -> None:
         """
@@ -843,7 +840,7 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
         return f"<Combined: {self.first} {self.second}>"
 
 
-    def _schedule_for(self, obj: T, *,
+    def _schedule_for(self, obj: CS, *,
                       post_result: bool = True,
                       ) -> Delayed[V2]:
         """
@@ -851,14 +848,14 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
 
         :meta public:
         Args:
-            obj: the :attr:`T` object to schedule the operation for
+            obj: the :attr:`CS` object to schedule the operation for
         Keyword Args:
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``.
         """
-        return self.first._schedule_for(obj, after=after) \
+        return self.first._schedule_for(obj) \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
 
 
@@ -980,12 +977,7 @@ class OpScheduler(Generic[CS]):
                 will be posted
             """
             future = Postable[CS]()
-            if after is None:
-                self.barrier.pause(obj, future)
-            else:
-                def cb() -> None:
-                    self.barrier.pause(obj, future)
-                obj.schedule_communication(cb, after=after)
+            self.barrier.pause(obj, future)
             return future
 
     class Reach(Operation[CS,CS]):
@@ -1026,16 +1018,9 @@ class OpScheduler(Generic[CS]):
                 will be posted unless ``post_result`` is ``False``
             """
             future = Postable[CS]()
-            if after is None:
-                self.barrier.pass_through(obj)
-                if post_result:
-                    future.post(obj)
-            else:
-                def cb() -> None:
-                    self.barrier.pass_through(obj)
-                    if post_result:
-                        future.post(obj)
-                obj.schedule_communication(cb, after=after)
+            self.barrier.pass_through(obj)
+            if post_result:
+                future.post(obj)
             return future
 
 
@@ -1095,10 +1080,7 @@ class OpScheduler(Generic[CS]):
                     assert isinstance(waitable, Time) or isinstance(waitable, Ticks)
                     wait_future = obj.delayed(lambda: obj, after=waitable)
                     wait_future.post_to(future)
-            if after is None:
-                cb()
-            else:
-                obj.schedule_communication(cb, after=after)
+            cb()
             return future
 
         def __init__(self, waitable: WaitableType) -> None:
@@ -1175,12 +1157,12 @@ class StaticOperation(Generic[V], ABC):
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        return self.scheduler.delayed(
-            lambda _: self._schedule(post_result=post_result),
-            after=after)
+        def cb():
+            self._schedule(post_result=post_result)
+        return self.scheduler.delayed(cb, after=after)
 
-    def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
-                             Callable[[], Operation[V,V2]],
+    def then(self, op: Union[Operation[V, V2], StaticOperation[V2],
+                             Callable[[], Operation[V, V2]],
                              Callable[[], StaticOperation[V2]]],
              after: WaitCondition = NO_WAIT,
              ) -> StaticOperation[V2]:
@@ -1206,7 +1188,7 @@ class StaticOperation(Generic[V], ABC):
         Returns:
             the new :class:`StaticOperation`
         """
-        return CombinedStaticOperation[V,V2](self, op, after=after)
+        return CombinedStaticOperation[V, V2](self, op, after=after)
     def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> StaticOperation[V2]:
         """
         Create a new :class:`StaticOperation` that passes the result of this one
@@ -1261,7 +1243,7 @@ class StaticOperation(Generic[V], ABC):
         return self.then_call(fn2)
 
 
-class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
+class CombinedStaticOperation(Generic[V, V2], StaticOperation[V2]):
     """
     A :class:`StaticOperation` representing chaining a :class:`StaticOperation`
     and an :class:`Operation` together.
@@ -1277,17 +1259,17 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
     """
 
     first: StaticOperation[V]               ; "The first :class:`StaticOperation`"
-    second: Union[Operation[V,V2], StaticOperation[V2],
-                  Callable[[], Operation[V,V2]],
+    second: Union[Operation[V, V2], StaticOperation[V2],
+                  Callable[[], Operation[V, V2]],
                   Callable[[], StaticOperation[V2]]]
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
-    after: Final[Optional[DelayType]]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
+    after: Final[WaitCondition]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
     def __init__(self, first: StaticOperation[V],
-                 second: Union[Operation[V,V2], StaticOperation[V2],
-                               Callable[[], Operation[V,V2]],
+                 second: Union[Operation[V, V2], StaticOperation[V2],
+                               Callable[[], Operation[V, V2]],
                                Callable[[], StaticOperation[V2]]], *,
                  after: WaitCondition = NO_WAIT) -> None:
         """
@@ -1317,7 +1299,7 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
             a :class:`Delayed`\[:attr:`V2`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        return self.first._schedule(after=after) \
+        return self.first._schedule() \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
 
 class Delayed(Generic[Tco]):
@@ -1552,7 +1534,7 @@ class Delayed(Generic[Tco]):
             ``op`` when it completed.
         """
         if isinstance(op, StaticOperation):
-            return op.schedule(on_future=self, after=after, post_result=post_result)
+            return op.schedule(after=after, post_result=post_result)
         elif isinstance(op, Operation):
             return op.schedule_for(self, after=after, post_result=post_result)
         else:
