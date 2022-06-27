@@ -4934,8 +4934,8 @@ class System:
             self.call_after(delta, lambda: self.on_tick(req))
 
     def delayed(self, function: Callable[[], T], *,
-                after: Optional[DelayType]) -> Delayed[T]:
-        if after is None:
+                after: WaitCondition = NO_WAIT) -> Delayed[T]:
+        if after is NO_WAIT:
             return Delayed.complete(function())
         future = Postable[T]()
         def run_then_post() -> None:
@@ -4945,7 +4945,7 @@ class System:
                 self.call_after(after, run_then_post)
             else:
                 return Delayed.complete(function())
-        else:
+        elif isinstance(alfter, Ticks):
             if after > Ticks.ZERO:
                 self.before_tick(run_then_post, delta = after)
             else:

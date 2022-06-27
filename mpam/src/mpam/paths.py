@@ -34,7 +34,6 @@ class Path:
             super().__init__(after=after)
             self.op = op
 
-
     class MiddleStep(Step):
         op: Final[Operation[Drop, Drop]]
 
@@ -66,7 +65,7 @@ class Path:
 
         def __init__(self, start: Path.StartStep,
                      middle: tuple[Path.MiddleStep,...]) -> None:
-            super().__init__(start.op.scheduler)
+            super().__init__(scheduler=start.op.scheduler)
             self.first_step = start
             self.middle_steps = middle
 

@@ -570,7 +570,7 @@ Args:
     T: the type (if not :attr:`MISSING`)
 """
 
-class NoWait(Enum)
+class NoWait(Enum):
     SINGLETON = auto()
     def __repr__(self) -> str:
         return "NO_WAIT"
@@ -604,7 +604,7 @@ class CommunicationScheduler(Protocol):
         """
         ...
     def delayed(self, function: Callable[[], T], *, # @UnusedVariable
-                after: Optional[DelayType]) -> Delayed[T]: # @UnusedVariable
+                after: WaitCondition = NO_WAIT) -> Delayed[T]: # @UnusedVariable
         """
         Call a function after n optional delay.
 
@@ -699,16 +699,14 @@ class Operation(Generic[CS, V], ABC):
         if isinstance(obj, Delayed):
             future = Postable[V]()
             def schedule_and_post(x: CS) -> None:
-                f = self._schedule_for(x, post_result=post_result)
-                f.when_value(lambda val: future.post(val))
+                self.schedule_for(
+                    x, after=after, post_result=post_result).post_to(future)
             obj.when_value(schedule_and_post)
             return future
 
-        if after == NO_WAIT:
-            return self._schedule_for(obj, post_result=post_result)
-        else:
-            return obj.delayed(lambda _: self._schedule_for(obj, post_result=post_result)
-                               after=after)
+        return obj.delayed(
+            lambda _: self._schedule_for(obj, post_result=post_result),
+            after=after)
 
     def wait_condition(after: WaitCondition) -> WaitCondition:
         return after
@@ -797,6 +795,7 @@ class Operation(Generic[CS, V], ABC):
             fn(obj)
             return obj
         return self.then_call(fn2)
+
 
 class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
     """
@@ -1176,12 +1175,9 @@ class StaticOperation(Generic[V], ABC):
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        if after == NO_WAIT:
-            return self._schedule(post_result=post_result))
-        else:
-            return self.scheduler.delayed(
-                lambda _: self._schedule(post_result=post_result),
-                after=after)
+        return self.scheduler.delayed(
+            lambda _: self._schedule(post_result=post_result),
+            after=after)
 
     def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
                              Callable[[], Operation[V,V2]],
@@ -1309,8 +1305,8 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
         self.after = after
 
     def _schedule(self, *,
-                      post_result: bool = True,
-                      ) -> Delayed[V2]:
+                  post_result: bool = True,
+                  ) -> Delayed[V2]:
         """
         Implement :func:`Operation.schedule_for` by scheduling :attr:`second` after :attr:`first` is done.
 
