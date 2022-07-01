@@ -10,7 +10,8 @@ from mpam.device import SystemComponent, UserOperation, PipettingTarget, System,
     ProductLocation
 from mpam.types import Reagent, OpScheduler, Callback, DelayType, \
     Liquid, Operation, Delayed, AsyncFunctionSerializer, T, XferDir, \
-    unknown_reagent, MixResult, Postable
+    unknown_reagent, MixResult, Postable, WaitCondition, NO_WAIT, \
+    CSOperation
 from quantities.SI import uL
 from quantities.dimensions import Volume
 from mpam.engine import Worker
@@ -143,11 +144,11 @@ class Transfer:
         self.is_product = is_product
         self.targets = []
         self.pending = True
-        
+
     def __repr__(self) -> str:
         targets = [f"{t.target}: {t.volume}" for t in self.targets]
         return f"Transfer({self.xfer_dir}, {self.reagent}, {map_str(targets)}"
-        
+
     @property
     def total_volume(self) -> Volume:
         return sum((x.volume for x in self.targets), start = Volume.ZERO)
@@ -276,15 +277,15 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         pass
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: Optional[DelayType] = None) -> None:
+                               after: WaitCondition = NO_WAIT) -> None:
         return self.sys_cpt.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: Optional[DelayType]) -> Delayed[T]:
+                after: WaitCondition) -> Delayed[T]:
         return self.sys_cpt.delayed(function, after=after)
 
 
-    class Supply(Operation['Pipettor', Liquid]):
+    class Supply(CSOperation['Pipettor', Liquid]):
         reagent: Final[Reagent]
         volume: Final[Volume]
         target: Final[PipettingTarget]
@@ -293,7 +294,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         on_insufficient: Final[ErrorHandler]
         on_no_source: Final[ErrorHandler]
 
-        def __init__(self, reagent: Reagent, volume: Volume, 
+        def __init__(self, reagent: Reagent, volume: Volume,
                      target: PipettingTarget, *,
                      allow_merge: bool = False,
                      mix_result: Optional[MixResult] = None,
@@ -310,7 +311,6 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             self.on_no_source = on_no_source
 
         def _schedule_for(self, pipettor: Pipettor, *,
-                          after: Optional[DelayType]=None,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
 
@@ -324,7 +324,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             pipettor.delayed(schedule_it, after=after)
             return future
 
-    class Extract(Operation['Pipettor', Liquid]):
+    class Extract(CSOperation['Pipettor', Liquid]):
         volume: Final[Optional[Volume]]
         reagent: Final[Optional[Reagent]]
         target: Final[PipettingTarget]
@@ -355,7 +355,6 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             self.product_loc = product_loc
 
         def _schedule_for(self, pipettor: Pipettor, *,
-                          after: Optional[DelayType]=None,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
 

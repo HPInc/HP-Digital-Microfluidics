@@ -604,7 +604,7 @@ class CommunicationScheduler(Protocol):
         """
         ...
     def delayed(self, function: Callable[[], T], *, # @UnusedVariable
-                after: WaitCondition = NO_WAIT) -> Delayed[T]: # @UnusedVariable
+                after: WaitCondition) -> Delayed[T]: # @UnusedVariable
         """
         Call a function after n optional delay.
 
@@ -699,11 +699,21 @@ class Operation(Generic[T, V], ABC):
         if isinstance(obj, Delayed):
             future = Postable[V]()
             def schedule_and_post(x: T) -> None:
-                self._schedule_for(x, post_result=post_result).post_to(future)
+                self.schedule_for(
+                    x, after=after, post_result=post_result).post_to(future)
             obj.when_value(schedule_and_post)
             return future
 
-        return self._schedule_for(obj, post_result=post_result)
+        def cb():
+            return self._schedule_for(obj, post_result=post_result)
+        return self.after_delay(after, cb, obj=obj)
+
+    @abstractmethod
+    def after_delay(self,
+                    after: WaitCondition,
+                    fn: Callable[[], V],
+                    *, obj: T) -> Delayed[V]:
+        ...
 
     def then(self, op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                              Callable[[], Operation[V, V2]],
@@ -816,47 +826,12 @@ class CSOperation(Operation[CS, V]):
         CS: the type of the object used to schedule the :class:`Operation`
         V: the type of the value produced by the operation
     '''
-    def schedule_for(self, obj: Union[CS, Delayed[CS]], *,
-                     after: WaitCondition = NO_WAIT,
-                     post_result: bool = True,
-                     ) -> Delayed[V]:
-        """
-        Schedule this operation for the given object.
+    def after_delay(self,
+                    after: WaitCondition,
+                    fn: Callable[[], V],
+                    *, obj: CS) -> Delayed[V]:
+        return obj.delayed(fn, after=after)
 
-        If ``obj`` is a :class:`Delayed` object, the actual scheduling will take
-        place after a value has been posted to it, and that value will be used.
-        Note that any delay specified by ``after`` will be applied **after**
-        this value is obtained.
-
-        Once an object has been identified, the actual scheduling will be
-        delegated through :func:`_schedule_for`.
-
-        Args:
-            obj: The :attr:`CS` object for which the operation will be scheduled
-                or a :class:`Delayed`\[:attr:`CS`] object which will produce it.
-        Keyword Args:
-            after: an optional delay to wait before scheduling the operation
-            post_result: whether to post the resulting value to the returned future object
-        Returns:
-            a :class:`Delayed`\[:attr:`V`] future object to which the resulting
-            value will be posted unless ``post_result`` is ``False``
-        """
-        # if after is None:
-        #     logger.debug(f'{obj}')
-        # else:
-        #     logger.debug(f'{obj}|after:{after}')
-
-        if isinstance(obj, Delayed):
-            future = Postable[V]()
-            def schedule_and_post(x: CS) -> None:
-                self.schedule_for(
-                    x, after=after, post_result=post_result).post_to(future)
-            obj.when_value(schedule_and_post)
-            return future
-
-        def cb():
-            return self._schedule_for(obj, post_result=post_result)
-        return obj.delayed(cb, after=after)
 
 class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
     """
@@ -967,7 +942,8 @@ class ComputeOp(Operation[T, V]):
         return self.function(obj)
 
 
-class OpScheduler(Generic[CS]):
+
+class OpScheduler(Generic[T]):
     """
     A mixin base class giving a class the ability to schedule
     :class:`Operation`\[:attr:`CS`, :attr:`V`]s.
@@ -984,7 +960,7 @@ class OpScheduler(Generic[CS]):
         CS: A subclass of :class:`OpScheduler`
     """
     def schedule(self: CS,
-                 op: Union[Operation[CS, V], Callable[[],Operation[CS,V]]],
+                 op: Union[Operation[CS, V], Callable[[],Operation[CS, V]]],
                  after: WaitCondition = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
@@ -1005,7 +981,7 @@ class OpScheduler(Generic[CS]):
             op = op()
         return op.schedule_for(self, after=after, post_result=post_result)
 
-    class WaitAt(Operation[CS,CS]):
+    class WaitAt(CSOperation[CS,CS]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits at a
         :class:`Barrier`.  The operation completes when the appropriate number
@@ -1087,8 +1063,7 @@ class OpScheduler(Generic[CS]):
                 future.post(obj)
             return future
 
-
-    class WaitFor(Operation[CS,CS]):
+    class WaitFor(CSOperation[CS,CS]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits for a
         :class:`WaitableType` to be satisfied.
@@ -1253,6 +1228,7 @@ class StaticOperation(Generic[V], ABC):
             the new :class:`StaticOperation`
         """
         return CombinedStaticOperation[V, V2](self, op, after=after)
+
     def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> StaticOperation[V2]:
         """
         Create a new :class:`StaticOperation` that passes the result of this one
@@ -1268,6 +1244,7 @@ class StaticOperation(Generic[V], ABC):
             the new :class:`StaticOperation`
         """
         return self.then(ComputeOp[V, V2](fn))
+
     def then_call(self, fn: Callable[[V], V2]) -> StaticOperation[V2]:
         """
         Create a new :class:`StaticOperation` that passes the result of this one to a
@@ -1287,6 +1264,7 @@ class StaticOperation(Generic[V], ABC):
             future.post(fn(obj))
             return future
         return self.then_compute(fn2)
+
     def then_process(self, fn: Callable[[V], Any]) -> StaticOperation[V]:
         """
         Create a new :class:`StaticOperation` that passes the result of this one

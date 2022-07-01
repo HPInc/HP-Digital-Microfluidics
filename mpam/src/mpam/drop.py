@@ -16,7 +16,8 @@ from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
 from mpam.exceptions import NoSuchPad, NotAtWell
 from mpam.types import Liquid, Dir, Delayed, DelayType, \
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
-    StaticOperation, Reagent, Callback, T, MixResult, Postable
+    StaticOperation, Reagent, Callback, T, MixResult, Postable, \
+    CSOperation, WaitCondition, NO_WAIT
 from quantities.core import qstr
 from quantities.dimensions import Volume
 
@@ -640,7 +641,7 @@ class DropStatus(Enum):
     OFF_BOARD = auto()
 
 
-class MotionOp(Operation['Drop', 'Drop'], ABC):
+class MotionOp(CSOperation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]
 
     def __init__(self, *, allow_unsafe: bool):
@@ -788,11 +789,11 @@ class Drop(OpScheduler['Drop']):
         return f"Drop[{place}{self.pad}{liquid}]"
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: Optional[DelayType] = None) -> None:
+                               after: WaitCondition = NO_WAIT) -> None:
         self.pad.schedule_communication(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: Optional[DelayType]) -> Delayed[T]:
+                after: WaitCondition) -> Delayed[T]:
         return self.pad.delayed(function, after=after)
 
 
@@ -860,7 +861,7 @@ class Drop(OpScheduler['Drop']):
             return self.extraction_point.schedule(
                 op, after=after, post_result=post_result)
 
-    class TeleportOut(Operation['Drop', None]):
+    class TeleportOut(CSOperation['Drop', None]):
         volume: Final[Optional[Volume]]
         product_loc: Final[Optional[Postable[ProductLocation]]]
 
@@ -1018,7 +1019,7 @@ class Drop(OpScheduler['Drop']):
             run_group(None)
             return future
 
-    class EnterWell(Operation['Drop',None]):
+    class EnterWell(CSOperation['Drop',None]):
         well: Final[Optional[Well]]
         empty_wrong_reagent: Final[bool]
 

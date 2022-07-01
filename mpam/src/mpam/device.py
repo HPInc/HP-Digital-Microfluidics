@@ -27,7 +27,8 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
-    MonitoredProperty, DummyState, MissingOr, MISSING
+    MonitoredProperty, DummyState, MissingOr, MISSING, WaitCondition, \
+    NO_WAIT, CSOperation
 from quantities.SI import sec, ms, volts
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -67,8 +68,9 @@ class BoardComponent:
             board: the containing :class:`Board`
         """
         self.board = board
+
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: Optional[DelayType] = None) -> None:
+                               after: WaitCondition = NO_WAIT) -> None:
         """
         Schedule communication of ``cb`` after optional delay ``after`` by
         delegating to :attr:`board`
@@ -81,7 +83,7 @@ class BoardComponent:
         return self.board.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: Optional[DelayType]) -> Delayed[T]:
+                after: WaitCondition) -> Delayed[T]:
         """
         Call a function after n optional delay by delegating to :attr:`board`
 
@@ -207,7 +209,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             return f"{tname}(--no value--)"
 
 
-    class ModifyState(Operation[BC, OnOff]):
+    class ModifyState(CSOperation[BC, OnOff]):
         """
         An :class:`~.Operation` that modifies the :attr:`~BinaryComponent.state`
         of a :class:`BinaryComponent`.
@@ -222,7 +224,6 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
         :attr:`~BinaryComponent.Toggle`
         """
         def _schedule_for(self, obj: BC, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[OnOff]:
             """
@@ -234,7 +235,6 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             Args:
                 obj: the :class:`BinaryComponent` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object
             Returns:
                 a :class:`Delayed`\[:class:`.OnOff`] future object to which the resulting
@@ -2792,7 +2792,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
         # print(f"Need to empty well ({resulting_volume:g} > {self.max_fill:g}")
         return self.empty_well()
 
-    class TransitionTo(Operation['Well','Well']):
+    class TransitionTo(CSOperation['Well','Well']):
         """
         An :class:`.Operation` that requests that a :class:`Well` transition to
         a new :class:`WellState`.  Typically called from
@@ -2825,7 +2825,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             self.guard = guard
 
         def _schedule_for(self, well: Well, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,
                           )-> Delayed[Well]:
             """
@@ -2840,7 +2839,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             Args:
                 well: the :class:`Well` to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post ``well`` to the returned future
                              object
             Returns:
@@ -3266,7 +3264,7 @@ class Heater(BinaryComponent['Heater']):
         """
         return Delayed.complete(None)
 
-    class SetTemperature(Operation['Heater','Heater']):
+    class SetTemperature(CSOperation['Heater','Heater']):
         """
         A :class:`~.Operation` that modifies the :attr:`~Heater.target` of a
         :class:`Heater`.  The :class:`~.Operation` is considered complete (and
@@ -3292,7 +3290,6 @@ class Heater(BinaryComponent['Heater']):
         """
 
         def _schedule_for(self, heater: Heater, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[Heater]:
             """
@@ -3309,7 +3306,6 @@ class Heater(BinaryComponent['Heater']):
             Args:
                 obj: the :class:`Heater` to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object
             Returns:
                 a :class:`Delayed`\[:class:`Heater`] future object to which the resulting
@@ -3787,7 +3783,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         self._splash_zone = set(p for p in zone if p.exists)
         self._splash_border = [p for p in border if p.exists]
 
-    class TransferIn(Operation['ExtractionPoint', 'Drop']):
+    class TransferIn(CSOperation['ExtractionPoint', 'Drop']):
         """
         A :class:`~.Operation` to transfer in :class:`.Liquid` via an :class:`ExtractionPoint`.
 
@@ -3849,7 +3845,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.on_no_source = on_no_source
 
         def _schedule_for(self, extraction_point: ExtractionPoint, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Drop]:
             """
@@ -3860,7 +3855,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             Args:
                 extraction_point: the :class:`ExtractionPoint` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object
             Returns:
                 a :class:`Delayed`\[:class:`.Drop`] future object to which the resulting
@@ -3879,7 +3873,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             extraction_point.delayed(do_it, after=after)
             return future
 
-    class TransferOut(Operation['ExtractionPoint', 'Liquid']):
+    class TransferOut(CSOperation['ExtractionPoint', 'Liquid']):
         """
         A :class:`~.Operation` to remove :class:`.Liquid` via an :class:`ExtractionPoint`.
 
@@ -3937,7 +3931,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             self.product_loc = product_loc
 
         def _schedule_for(self, extraction_point: ExtractionPoint, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
             """
@@ -3948,7 +3941,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             Args:
                 extraction_point: the :class:`ExtractionPoint` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object
             Returns:
                 a :class:`Delayed`\[:class:`.Luiquid`] future object to which the resulting
@@ -4088,7 +4080,6 @@ class SystemComponent(ABC):
     def system_shutdown(self) -> None:
         pass
 
-
     @abstractmethod
     def update_state(self) -> None:
         self.finish_update()
@@ -4188,13 +4179,11 @@ class SystemComponent(ABC):
         self.system.on_tick(req, delta=delta)
 
     def delayed(self, function: Callable[[], T], *,
-                after: Optional[DelayType]) -> Delayed[T]:
+                after: WaitCondition) -> Delayed[T]:
         return self.system.delayed(function, after=after)
 
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
-                 after: Optional[DelayType] = None) -> None:
-        if after is None:
-            after = self.no_delay
+                 after: WaitCondition = NO_WAIT) -> None:
         if isinstance(after, Ticks):
             self.on_tick(cb, delta=after)
         else:
@@ -4934,7 +4923,7 @@ class System:
             self.call_after(delta, lambda: self.on_tick(req))
 
     def delayed(self, function: Callable[[], T], *,
-                after: WaitCondition = NO_WAIT) -> Delayed[T]:
+                after: WaitCondition) -> Delayed[T]:
         if after is NO_WAIT:
             return Delayed.complete(function())
         future = Postable[T]()
@@ -4945,7 +4934,7 @@ class System:
                 self.call_after(after, run_then_post)
             else:
                 return Delayed.complete(function())
-        elif isinstance(alfter, Ticks):
+        elif isinstance(after, Ticks):
             if after > Ticks.ZERO:
                 self.before_tick(run_then_post, delta = after)
             else:
