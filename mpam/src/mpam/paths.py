@@ -102,15 +102,16 @@ class Path:
                  steps: int = 1,
                  allow_unsafe: bool = False,
                  after: WaitCondition = NO_WAIT) -> Path.Start:
-            return self+Path.WalkStep(direction, steps, allow_unsafe, after)
+            return self+Path.WalkStep(
+                direction, steps=steps, allow_unsafe=allow_unsafe, after=after)
         def to_col(self, col: int, *,
                    allow_unsafe: bool = False,
                    after: WaitCondition = NO_WAIT) -> Path.Start:
-            return self+Path.ToColStep(col, allow_unsafe, after)
+            return self+Path.ToColStep(col, allow_unsafe=allow_unsafe, after=after)
         def to_row(self, row: int, *,
                    allow_unsafe: bool = False,
                    after: WaitCondition = NO_WAIT) -> Path.Start:
-            return self+Path.ToRowStep(row, allow_unsafe, after)
+            return self+Path.ToRowStep(row, allow_unsafe=allow_unsafe, after=after)
 
         def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
                    *,
@@ -169,11 +170,13 @@ class Path:
                          after: WaitCondition = NO_WAIT) -> Path.Full:
             return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
 
-        def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Start:
-            return self+Path.BarrierStep(barrier, wait=wait)
+        def reach(self, barrier: Barrier, *, wait: bool = True,
+                  after: WaitCondition = NO_WAIT) -> Path.Start:
+            return self+Path.BarrierStep(barrier, wait=wait, after=after)
 
-        def wait_for(self, waitable: WaitableType) -> Path.Start:
-            return self+Path.PauseStep(waitable)
+        def wait_for(self, waitable: WaitableType, *,
+                     after: WaitCondition = NO_WAIT) -> Path.Start:
+            return self+Path.PauseStep(waitable, after=after)
 
         def extended(self, path: Path.Middle) -> Path.Start:
             return self+path
@@ -206,14 +209,7 @@ class Path:
         def _schedule_for(self, obj: Drop, *,
                           post_result: bool = True,
                           ) -> Delayed[Drop]:
-            if after is None:
-                future = Delayed.complete(obj)
-            else:
-                postable = Postable[Drop]()
-                assert isinstance(obj.pad, BoardComponent)
-                obj.pad.board.before_tick(lambda: postable.post(obj), delta=after)
-                future = postable
-
+            future = Delayed.complete(obj)
             middle = self.middle_steps
             last = len(middle) - 1
             for i,step in enumerate(middle):
@@ -224,15 +220,16 @@ class Path:
                  steps: int = 1,
                  allow_unsafe: bool = False,
                  after: WaitCondition = NO_WAIT) -> Path.Middle:
-            return self+Path.WalkStep(direction, steps, allow_unsafe, after)
+            return self+Path.WalkStep(
+                direction, steps=steps, allow_unsafe=allow_unsafe, after=after)
         def to_col(self, col: int, *,
                    allow_unsafe: bool = False,
                    after: WaitCondition = NO_WAIT) -> Path.Middle:
-            return self+Path.ToColStep(col, allow_unsafe, after)
+            return self+Path.ToColStep(col, allow_unsafe=allow_unsafe, after=after)
         def to_row(self, row: int, *,
                    allow_unsafe: bool = False,
                    after: WaitCondition = NO_WAIT) -> Path.Middle:
-            return self+Path.ToRowStep(row, allow_unsafe, after)
+            return self+Path.ToRowStep(row, allow_unsafe=allow_unsafe, after=after)
 
         def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
                    *,
@@ -278,8 +275,9 @@ class Path:
                          after: WaitCondition = NO_WAIT) -> Path.Middle:
             return self+Path.CallStep(fn, after=after)
 
-        def then_do(self, fn: Callable[[Drop], Delayed[T]]) -> Path.Middle:
-            return self+Path.CallAndWaitStep(fn)
+        def then_do(self, fn: Callable[[Drop], Delayed[T]],
+                    after: WaitCondition = NO_WAIT) -> Path.Middle:
+            return self+Path.CallAndWaitStep(fn, after=after)
 
         def enter_well(self, *,
                        after: WaitCondition = NO_WAIT) -> Path.End:
@@ -291,11 +289,13 @@ class Path:
                          after: WaitCondition = NO_WAIT) -> Path.End:
             return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
 
-        def reach(self, barrier: Barrier, *, wait: bool = True) -> Path.Middle:
-            return self+Path.BarrierStep(barrier, wait=wait)
+        def reach(self, barrier: Barrier, *,
+                  wait: bool = True, after: WaitCondition = NO_WAIT) -> Path.Middle:
+            return self+Path.BarrierStep(barrier, wait=wait, after=after)
 
-        def wait_for(self, waitable: WaitableType) -> Path.Middle:
-            return self+Path.PauseStep(waitable)
+        def wait_for(self, waitable: WaitableType, *,
+                     after: WaitCondition = NO_WAIT) -> Path.Middle:
+            return self+Path.PauseStep(waitable, after=after)
 
         def extended(self, path: Path.Middle) -> Path.Middle:
             return self+path
@@ -313,14 +313,7 @@ class Path:
         def _schedule_for(self, obj: Drop, *,
                           post_result: bool = True,
                           ) -> Delayed[None]:
-            if after is None:
-                future = Delayed.complete(obj)
-            else:
-                postable = Postable[Drop]()
-                assert isinstance(obj.pad, BoardComponent)
-                obj.pad.board.before_tick(lambda: postable.post(obj), delta=after)
-                future = postable
-
+            future = Delayed.complete(obj)
             middle = self.middle_steps
             for step in middle:
                 future = step._schedule_after(future, post_result=True, is_last = False)
@@ -344,8 +337,7 @@ class Path:
                       post_result: bool = True,
                       ) -> Delayed[None]:
             middle = self.middle_steps
-            future = schedule(self.first_step.op, after=after,
-                              post_result = True)
+            future = schedule(self.first_step.op, post_result = True)
             for step in middle:
                 future = step._schedule_after(future, post_result=True, is_last = False)
             return self.last_step._schedule_after(future, post_result=post_result)
@@ -386,18 +378,21 @@ class Path:
              steps: int = 1,
              allow_unsafe: bool = False,
              after: WaitCondition = NO_WAIT) -> Path.Middle:
-        return Path.Middle((Path.WalkStep(direction, steps, allow_unsafe, after),))
+        return Path.Middle((Path.WalkStep(
+            direction, steps=steps, allow_unsafe=allow_unsafe, after=after),))
 
     @classmethod
     def to_col(cls, col: int, *,
                allow_unsafe: bool = False,
                after: WaitCondition = NO_WAIT) -> Path.Middle:
-        return Path.Middle((Path.ToColStep(col, allow_unsafe, after),))
+        return Path.Middle((Path.ToColStep(
+            col, allow_unsafe=allow_unsafe, after=after),))
     @classmethod
     def to_row(cls, row: int, *,
                allow_unsafe: bool = False,
                after: WaitCondition = NO_WAIT) -> Path.Middle:
-        return Path.Middle((Path.ToRowStep(row, allow_unsafe, after),))
+        return Path.Middle((Path.ToRowStep(
+            row, allow_unsafe=allow_unsafe, after=after),))
 
     @classmethod
     def to_pad(cls, target: Union[Pad, XYCoord, tuple[int, int]],
@@ -541,22 +536,22 @@ class Path:
 
 
     class WalkStep(MiddleStep):
-        def __init__(self, direction: Dir, steps: int, allow_unsafe: bool,
-                     after: WaitCondition) -> None:
+        def __init__(self, direction: Dir, *,
+                     steps: int, allow_unsafe: bool, after: WaitCondition) -> None:
             super().__init__(Drop.Move(direction, steps=steps, allow_unsafe=allow_unsafe), after)
 
     class ToColStep(MiddleStep):
-        def __init__(self, col: int, allow_unsafe: bool,
-                     after: WaitCondition) -> None:
+        def __init__(self, col: int, *,
+                     allow_unsafe: bool, after: WaitCondition) -> None:
             super().__init__(Drop.ToCol(col, allow_unsafe=allow_unsafe), after)
 
     class ToRowStep(MiddleStep):
-        def __init__(self, row: int, allow_unsafe: bool,
-                     after: WaitCondition) -> None:
+        def __init__(self, row: int, *,
+                     allow_unsafe: bool, after: WaitCondition) -> None:
             super().__init__(Drop.ToRow(row, allow_unsafe=allow_unsafe), after)
 
     class StartProcessStep(MiddleStep):
-        def __init__(self, process_type: MultiDropProcessType,
+        def __init__(self, process_type: MultiDropProcessType, *,
                      after: WaitCondition) -> None:
             super().__init__(StartProcess(process_type), after)
     # class MixStep(StartProcessStep):
@@ -572,7 +567,7 @@ class Path:
     #                                     fully_mix=fully_mix),
     #                                     after)
     class JoinProcessStep(MiddleStep):
-        def __init__(self,
+        def __init__(self, *,
                      after: WaitCondition) -> None:
             super().__init__(JoinProcess(), after)
 

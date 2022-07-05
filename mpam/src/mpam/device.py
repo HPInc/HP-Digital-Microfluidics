@@ -258,7 +258,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                 finish: Optional[Callback] = None if not post_result else (lambda : future.post(old))
                 return finish
 
-            obj.board.schedule(cb, after=after)
+            obj.board.schedule(cb)
             return future
 
         def __init__(self, mod: Modifier[OnOff]) -> None:
@@ -2862,7 +2862,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
                     yield one_tick
                 yield None
             iterator = before_tick()
-            board.before_tick(lambda: next(iterator), delta=after)
+            board.before_tick(lambda: next(iterator))
             return motion.initial_future
 
 class Magnet(BinaryComponent['Magnet']):
@@ -3330,7 +3330,7 @@ class Heater(BinaryComponent['Heater']):
                         setattr(heater, attr, key)
                         heater.on_mode_change(check, key=key)
                     heater.target = target
-            heater.board.schedule(do_it, after=after)
+            heater.board.schedule(do_it)
             return future
 
 
@@ -3863,14 +3863,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             from mpam.drop import Drop # @Reimport
             volume = extraction_point.board.drop_size if self.volume is None else self.volume
             future = Postable[Drop]()
-            def do_it() -> None:
-                extraction_point.transfer_in(self.reagent, volume,
-                                             mix_result = self.mix_result,
-                                             on_insufficient = self.on_insufficient,
-                                             on_no_source = self.on_no_source
-                                             ).post_to(future)
-
-            extraction_point.delayed(do_it, after=after)
+            extraction_point.transfer_in(self.reagent, volume,
+                                         mix_result = self.mix_result,
+                                         on_insufficient = self.on_insufficient,
+                                         on_no_source = self.on_no_source
+                                         ).post_to(future)
             return future
 
     class TransferOut(CSOperation['ExtractionPoint', 'Liquid']):
@@ -3949,14 +3946,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             future = Postable[Liquid]()
             def finish(liquid: Liquid) -> None:
                 future.post(liquid)
-            def do_it() -> None:
-                extraction_point.transfer_out(volume = self.volume,
-                                              is_product = self.is_product,
-                                              on_no_sink = self.on_no_sink,
-                                              product_loc = self.product_loc
-                                             ).post_to(future)
-
-            extraction_point.delayed(do_it, after=after)
+            extraction_point.transfer_out(volume = self.volume,
+                                          is_product = self.is_product,
+                                          on_no_sink = self.on_no_sink,
+                                          product_loc = self.product_loc
+                                         ).post_to(future)
             return future
 
 
@@ -4184,8 +4178,12 @@ class SystemComponent(ABC):
 
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
                  after: WaitCondition = NO_WAIT) -> None:
+        # if after == NO_WAIT:
+        #     pass
         if isinstance(after, Ticks):
             self.on_tick(cb, delta=after)
+        # elif isinstance(after, Time):
+        #     self.communicate(cb, delta=after)
         else:
             self.communicate(cb, delta=after)
 

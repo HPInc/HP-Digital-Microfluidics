@@ -861,7 +861,7 @@ class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
                  second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                                Callable[[], Operation[V, V2]],
                                Callable[[], StaticOperation[V2]]],
-                 after: WaitCondition = NO_WAIT) -> None:
+                 after: WaitCondition=NO_WAIT) -> None:
         """
         Initialize the :class:`CombinedOperation`
 
@@ -878,6 +878,11 @@ class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
     def __repr__(self) -> str:
         return f"<Combined: {self.first} {self.second}>"
 
+    # def after_delay(self,
+    #                 after: WaitCondition,
+    #                 fn: Callable[[], V],
+    #                 *, obj: T) -> Delayed[V]:
+    #     return obj.delayed(fn, after=after)
 
     def _schedule_for(self, obj: T, *,
                       post_result: bool = True,
@@ -941,6 +946,11 @@ class ComputeOp(Operation[T, V]):
         assert post_result == True
         return self.function(obj)
 
+    # def after_delay(self,
+    #                 after: WaitCondition,
+    #                 fn: Callable[[], V],
+    #                 *, obj: CS) -> Delayed[V]:
+    #     return obj.delayed(fn, after=after)
 
 
 class OpScheduler(Generic[T]):

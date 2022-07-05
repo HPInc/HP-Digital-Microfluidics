@@ -707,7 +707,7 @@ class MotionOp(CSOperation['Drop', 'Drop'], ABC):
                     yield one_tick
             yield None
         iterator = before_tick()
-        board.before_tick(lambda: next(iterator), delta=after)
+        board.before_tick(lambda: next(iterator))
         return future
 
 
@@ -828,8 +828,7 @@ class Drop(OpScheduler['Drop']):
                     # We're assuming that nobody is going to have turned off the pad, allowing
                     # the liquid to slip somewhere else.
                     future.post(pad.checked_drop)
-            pad.schedule(Pad.TurnOn, after=after) \
-                .then_call(make_drop)
+            pad.schedule(Pad.TurnOn).then_call(make_drop)
             return future
 
     class TeleportInTo(StaticOperation['Drop']):
@@ -858,8 +857,7 @@ class Drop(OpScheduler['Drop']):
             liquid = self.liquid
             op = ExtractionPoint.TransferIn(
                 liquid.reagent, liquid.volume, mix_result=self.mix_result)
-            return self.extraction_point.schedule(
-                op, after=after, post_result=post_result)
+            return self.extraction_point.schedule(op, post_result=post_result)
 
     class TeleportOut(CSOperation['Drop', None]):
         volume: Final[Optional[Volume]]
@@ -877,12 +875,9 @@ class Drop(OpScheduler['Drop']):
                       ) -> Delayed[None]:
             op = ExtractionPoint.TransferOut(volume=self.volume, product_loc=self.product_loc)
             future = Postable[None]()
-
-            def do_it() -> None:
-                ep = cast(Pad, drop.pad).extraction_point
-                assert ep is not None, f"{drop} is not at an extraction point"
-                ep.schedule(op).then_call(lambda _: future.post(None))
-            drop.pad.delayed(do_it, after=after)
+            ep = cast(Pad, drop.pad).extraction_point
+            assert ep is not None, f"{drop} is not at an extraction point"
+            ep.schedule(op).post_val_to(future, None)
             return future
 
     class Move(MotionOp):
@@ -1008,15 +1003,12 @@ class Drop(OpScheduler['Drop']):
                 yield False
 
 
-            def run_group(_) -> None:
-                # Note, we post the drop as soon as we get to the DISPENSED state, even theough
-                # we continue on to READY
-                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()),
-                               after=after) \
-                    .then_call(make_drop) \
-                    .then_schedule(Well.TransitionTo(WellState.READY))
+            # Note, we post the drop as soon as we get to the DISPENSED state, even theough
+            # we continue on to READY
+            well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard())) \
+                .then_call(make_drop) \
+                .then_schedule(Well.TransitionTo(WellState.READY))
             # well.ensure_content().then_call(run_group)
-            run_group(None)
             return future
 
     class EnterWell(CSOperation['Drop',None]):
@@ -1076,7 +1068,7 @@ class Drop(OpScheduler['Drop']):
 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
-            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard()), after=after) \
+            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard())) \
                 .then_call(consume_drop) \
                 .then_schedule(Well.TransitionTo(WellState.READY))
             return future

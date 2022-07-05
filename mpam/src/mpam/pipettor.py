@@ -300,7 +300,6 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                      mix_result: Optional[MixResult] = None,
                      on_insufficient: ErrorHandler=PRINT,
                      on_no_source: ErrorHandler=PRINT
-
                      ) -> None:
             self.reagent = reagent
             self.volume = volume
@@ -313,15 +312,11 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         def _schedule_for(self, pipettor: Pipettor, *,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
-
             future = Postable[Liquid]()
-            def schedule_it() -> None:
-                pipettor.xfer_sched.add(self.target, self.reagent, self.volume,
-                                        future=future, allow_merge=self.allow_merge,
-                                        mix_result=self.mix_result,
-                                        on_unknown=self.on_no_source, on_insufficient=self.on_insufficient)
-
-            pipettor.delayed(schedule_it, after=after)
+            pipettor.xfer_sched.add(self.target, self.reagent, self.volume,
+                                    future=future, allow_merge=self.allow_merge,
+                                    mix_result=self.mix_result,
+                                    on_unknown=self.on_no_source, on_insufficient=self.on_insufficient)
             return future
 
     class Extract(CSOperation['Pipettor', Liquid]):
@@ -357,25 +352,21 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         def _schedule_for(self, pipettor: Pipettor, *,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
-
+            target = self.target
+            contents = target.removable_liquid
+            volume = self.volume
+            if volume is None:
+                if contents is None:
+                    self.on_no_liquid(f"No volume specified on extraction from {target}, which is empty")
+                    return Delayed.complete(Liquid(unknown_reagent, Volume.ZERO))
+                else:
+                    volume = contents.volume
+            reagent = self.reagent
+            if reagent is None:
+                reagent = unknown_reagent if contents is None else contents.reagent
             future = Postable[Liquid]()
-            def schedule_it() -> None:
-                target = self.target
-                contents = target.removable_liquid
-                volume = self.volume
-                if volume is None:
-                    if contents is None:
-                        self.on_no_liquid(f"No volume specified on extraction from {target}, which is empty")
-                        future.post(Liquid(unknown_reagent, Volume.ZERO))
-                        return
-                    else:
-                        volume = contents.volume
-                reagent = self.reagent
-                if reagent is None:
-                    reagent = unknown_reagent if contents is None else contents.reagent
-                pipettor.xfer_sched.remove(target, reagent, volume,
-                                           future=future, allow_merge=self.allow_merge,
-                                           on_unknown=self.on_no_sink, on_insufficient=self.on_insufficient_space,
-                                           is_product = self.is_product, product_loc=self.product_loc)
-            pipettor.delayed(schedule_it, after=after)
+            pipettor.xfer_sched.remove(target, reagent, volume,
+                                       future=future, allow_merge=self.allow_merge,
+                                       on_unknown=self.on_no_sink, on_insufficient=self.on_insufficient_space,
+                                       is_product = self.is_product, product_loc=self.product_loc)
             return future
