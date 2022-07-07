@@ -1,4 +1,4 @@
-quantities.dimensions.Pressure
+﻿quantities.dimensions.Pressure
 ==============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Pressure
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Pressure
    .. autosummary::
    
       ~Pressure.dimensionality
+      ~Pressure.is_finite
       ~Pressure.is_negative
       ~Pressure.is_positive
       ~Pressure.is_zero

@@ -80,6 +80,10 @@ mpam.engine.DevCommThread
            
        
    
+       
+           
+       
+   
 
    
    
@@ -187,6 +191,7 @@ mpam.engine.DevCommThread
       ~DevCommThread.abort_requested
       ~DevCommThread.ensure_running
       ~DevCommThread.getName
+      ~DevCommThread.get_name
       ~DevCommThread.idle
       ~DevCommThread.isDaemon
       ~DevCommThread.is_alive

@@ -1,4 +1,4 @@
-quantities.dimensions.Resistance
+﻿quantities.dimensions.Resistance
 ================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Resistance
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Resistance
    .. autosummary::
    
       ~Resistance.dimensionality
+      ~Resistance.is_finite
       ~Resistance.is_negative
       ~Resistance.is_positive
       ~Resistance.is_zero

@@ -44,13 +44,61 @@ mpam.device.Heater
            
        
    
+
+   
+   
+   
        
            
        
    
-
+       
+           
+       
    
+       
+           
+       
    
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
    
        
            
@@ -88,17 +136,35 @@ mpam.device.Heater
    .. autosummary::
    
       ~Heater.current_temperature
-      ~Heater.target
-      ~Heater.num
-      ~Heater.pads
       ~Heater.mode
+      ~Heater.on_mode_change
+      ~Heater.on_target_change
+      ~Heater.on_temperature_change
+      ~Heater.target
+      ~Heater.number
+      ~Heater.pads
       ~Heater.polling_interval
+      ~Heater.state
+      ~Heater.can_toggle
+      ~Heater.on_illegal_toggle
+      ~Heater.broken
+      ~Heater.live
       ~Heater.board
    
    
 
 
    
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Heater.Toggle
+      ~Heater.TurnOff
+      ~Heater.TurnOn
+      ~Heater.current_state
+      ~Heater.on_state_change
    
    
 
@@ -109,8 +175,6 @@ mpam.device.Heater
    .. autosummary::
    
       ~Heater.__init__
-      ~Heater.on_target_change
-      ~Heater.on_temperature_change
       ~Heater.poll
       ~Heater.start_polling
       ~Heater.stop_polling
@@ -124,6 +188,7 @@ mpam.device.Heater
 
    .. autosummary::
    
+      ~Heater.SetState
       ~Heater.delayed
       ~Heater.schedule
       ~Heater.schedule_communication

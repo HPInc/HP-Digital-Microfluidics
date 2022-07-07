@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -48,6 +45,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.EmptyTarget.html">mpam.pipettor.EmptyTarget</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.FillTarget.html">mpam.pipettor.FillTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.PipettingSource.html">mpam.pipettor.PipettingSource</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.Pipettor.html">mpam.pipettor.Pipettor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.PipettorSysCpt.html">mpam.pipettor.PipettorSysCpt</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.pipettor.Transfer</a></li>
@@ -97,34 +95,37 @@
 <h1>mpam.pipettor.Transfer<a class="headerlink" href="#mpam-pipettor-transfer" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.pipettor.Transfer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">Transfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">xfer_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XferDir.html#mpam.types.XferDir" title="mpam.types.XferDir"><span class="pre">XferDir</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_product</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.Transfer" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">Transfer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">xfer_dir</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.XferDir.html#mpam.types.XferDir" title="mpam.types.XferDir"><span class="pre">mpam.types.XferDir</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_product</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.Transfer" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reagent</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">total_volume</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">xfer_dir</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reagent</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">targets</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">xfer_dir</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_product</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">targets</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pending</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_product</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pending</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -137,7 +138,7 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.pipettor.Transfer.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">xfer_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XferDir.html#mpam.types.XferDir" title="mpam.types.XferDir"><span class="pre">XferDir</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_product</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.pipettor.Transfer.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">xfer_dir</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.XferDir.html#mpam.types.XferDir" title="mpam.types.XferDir"><span class="pre">mpam.types.XferDir</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_product</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.pipettor.Transfer.__init__" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>

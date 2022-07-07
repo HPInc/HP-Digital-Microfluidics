@@ -1,4 +1,4 @@
-quantities.dimensions.ElecPotential
+﻿quantities.dimensions.ElecPotential
 ===================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.ElecPotential
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.ElecPotential
    .. autosummary::
    
       ~ElecPotential.dimensionality
+      ~ElecPotential.is_finite
       ~ElecPotential.is_negative
       ~ElecPotential.is_positive
       ~ElecPotential.is_zero

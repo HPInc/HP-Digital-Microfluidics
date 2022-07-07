@@ -120,6 +120,10 @@ quantities.core.DerivedDim
            
        
    
+       
+           
+       
+   
 
    
    
@@ -139,6 +143,7 @@ quantities.core.DerivedDim
    .. autosummary::
    
       ~DerivedDim.dimensionality
+      ~DerivedDim.is_finite
       ~DerivedDim.is_negative
       ~DerivedDim.is_positive
       ~DerivedDim.is_zero

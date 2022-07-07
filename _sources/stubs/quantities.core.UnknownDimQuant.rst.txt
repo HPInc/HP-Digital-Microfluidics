@@ -104,6 +104,10 @@ quantities.core.UnknownDimQuant
            
        
    
+       
+           
+       
+   
 
    
    
@@ -123,6 +127,7 @@ quantities.core.UnknownDimQuant
    .. autosummary::
    
       ~UnknownDimQuant.dimensionality
+      ~UnknownDimQuant.is_finite
       ~UnknownDimQuant.is_negative
       ~UnknownDimQuant.is_positive
       ~UnknownDimQuant.is_zero

@@ -1,4 +1,4 @@
-quantities.dimensions.Power
+﻿quantities.dimensions.Power
 ===========================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Power
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Power
    .. autosummary::
    
       ~Power.dimensionality
+      ~Power.is_finite
       ~Power.is_negative
       ~Power.is_positive
       ~Power.is_zero

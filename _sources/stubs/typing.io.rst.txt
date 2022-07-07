@@ -1,0 +1,43 @@
+typing.io
+=========
+
+.. currentmodule:: typing
+
+.. autoclass:: io
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~io.__init__
+   
+   
+   

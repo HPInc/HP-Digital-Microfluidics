@@ -72,17 +72,13 @@ mpam.device.SystemComponent
            
        
    
-       
-           
-       
-   
-       
-           
-       
-   
 
    
    
+   
+       
+           
+       
    
        
            
@@ -99,6 +95,7 @@ mpam.device.SystemComponent
 
    .. autosummary::
    
+      ~SystemComponent.joined_system
       ~SystemComponent.no_delay
       ~SystemComponent.system
    
@@ -116,7 +113,6 @@ mpam.device.SystemComponent
    .. autosummary::
    
       ~SystemComponent.__init__
-      ~SystemComponent.add_monitor
       ~SystemComponent.after_tick
       ~SystemComponent.before_tick
       ~SystemComponent.call_after
@@ -124,7 +120,6 @@ mpam.device.SystemComponent
       ~SystemComponent.communicate
       ~SystemComponent.delayed
       ~SystemComponent.finish_update
-      ~SystemComponent.in_system
       ~SystemComponent.join_system
       ~SystemComponent.make_request
       ~SystemComponent.on_condition

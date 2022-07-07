@@ -47,8 +47,8 @@ mpam.device.PipettingTarget
 
    .. autosummary::
    
-      ~PipettingTarget.contents
       ~PipettingTarget.pipettor
+      ~PipettingTarget.removable_liquid
    
    
 

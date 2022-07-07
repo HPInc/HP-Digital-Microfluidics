@@ -1,4 +1,4 @@
-quantities.dimensions.Velocity
+﻿quantities.dimensions.Velocity
 ==============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Velocity
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Velocity
    .. autosummary::
    
       ~Velocity.dimensionality
+      ~Velocity.is_finite
       ~Velocity.is_negative
       ~Velocity.is_positive
       ~Velocity.is_zero

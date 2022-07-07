@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -19,7 +16,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="mpam.device.ProductLocation" href="mpam.device.ProductLocation.html" />
+    <link rel="next" title="mpam.device.PowerMode" href="mpam.device.PowerMode.html" />
     <link rel="prev" title="mpam.device.Pad" href="mpam.device.Pad.html" /> 
 </head>
 
@@ -52,6 +49,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DispenseGroup.html">mpam.device.DispenseGroup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DropLoc.html">mpam.device.DropLoc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ExtractionPoint.html">mpam.device.ExtractionPoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Fan.html">mpam.device.Fan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.FixedPowerSupply.html">mpam.device.FixedPowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.GateStatus.html">mpam.device.GateStatus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Heater.html">mpam.device.Heater</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.HeatingMode.html">mpam.device.HeatingMode</a></li>
@@ -59,6 +58,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Magnet.html">mpam.device.Magnet</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Pad.html">mpam.device.Pad</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.device.PipettingTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerMode.html">mpam.device.PowerMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerSupply.html">mpam.device.PowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ProductLocation.html">mpam.device.ProductLocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.System.html">mpam.device.System</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.SystemComponent.html">mpam.device.SystemComponent</a></li>
@@ -119,8 +120,8 @@
 <h1>mpam.device.PipettingTarget<a class="headerlink" href="#mpam-device-pipettingtarget" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.device.PipettingTarget">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">PipettingTarget</span></span><a class="headerlink" href="#mpam.device.PipettingTarget" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">PipettingTarget</span></span><a class="headerlink" href="#mpam.device.PipettingTarget" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>A place a <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> can add <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to or take it from.</p>
 <p>A <a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> establishes a protocol with respect to to its
 (optional) associated <a class="reference internal" href="#mpam.device.PipettingTarget.pipettor" title="mpam.device.PipettingTarget.pipettor"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pipettor</span></code></a>:</p>
@@ -140,35 +141,35 @@ satisfy the request.</p></li>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> is an abstract class.  Concrete subclasses must
-define <a class="reference internal" href="#mpam.device.PipettingTarget.contents" title="mpam.device.PipettingTarget.contents"><code class="xref py py-attr docutils literal notranslate"><span class="pre">contents</span></code></a>, <a class="reference internal" href="#mpam.device.PipettingTarget.prepare_for_add" title="mpam.device.PipettingTarget.prepare_for_add"><code class="xref py py-func docutils literal notranslate"><span class="pre">prepare_for_add()</span></code></a>,
+define <code class="xref py py-attr docutils literal notranslate"><span class="pre">contents</span></code>, <a class="reference internal" href="#mpam.device.PipettingTarget.prepare_for_add" title="mpam.device.PipettingTarget.prepare_for_add"><code class="xref py py-func docutils literal notranslate"><span class="pre">prepare_for_add()</span></code></a>,
 <a class="reference internal" href="#mpam.device.PipettingTarget.prepare_for_remove" title="mpam.device.PipettingTarget.prepare_for_remove"><code class="xref py py-func docutils literal notranslate"><span class="pre">prepare_for_remove()</span></code></a>, <a class="reference internal" href="#mpam.device.PipettingTarget.pipettor_added" title="mpam.device.PipettingTarget.pipettor_added"><code class="xref py py-func docutils literal notranslate"><span class="pre">pipettor_added()</span></code></a>, and
 <a class="reference internal" href="#mpam.device.PipettingTarget.pipettor_removed" title="mpam.device.PipettingTarget.pipettor_removed"><code class="xref py py-func docutils literal notranslate"><span class="pre">pipettor_removed()</span></code></a>.  If not overridden, <a class="reference internal" href="#mpam.device.PipettingTarget.pipettor" title="mpam.device.PipettingTarget.pipettor"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pipettor</span></code></a> will be
 <code class="docutils literal notranslate"><span class="pre">None</span></code>, which will likely cause things to complain if a transfer is
 requested.</p>
 </div>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.PipettingTarget.contents" title="mpam.device.PipettingTarget.contents"><code class="xref py py-obj docutils literal notranslate"><span class="pre">contents</span></code></a></p></td>
-<td><p>The <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that could be removed via this <a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> if there is no such <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.PipettingTarget.pipettor" title="mpam.device.PipettingTarget.pipettor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pipettor</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.PipettingTarget.pipettor" title="mpam.device.PipettingTarget.pipettor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pipettor</span></code></a></p></td>
 <td><p>The <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> associated with this <a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> if there is no such <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.PipettingTarget.removable_liquid" title="mpam.device.PipettingTarget.removable_liquid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">removable_liquid</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that could be removed via this <a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> if there is no such <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.PipettingTarget.pipettor_added" title="mpam.device.PipettingTarget.pipettor_added"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pipettor_added</span></code></a>(reagent, volume, *, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.PipettingTarget.pipettor_added" title="mpam.device.PipettingTarget.pipettor_added"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pipettor_added</span></code></a>(reagent, volume, *, …)</p></td>
 <td><p>Called when the <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> has finished adding <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.PipettingTarget.pipettor_removed" title="mpam.device.PipettingTarget.pipettor_removed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pipettor_removed</span></code></a>(reagent, volume, *, last)</p></td>
@@ -183,7 +184,7 @@ requested.</p>
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -195,21 +196,8 @@ requested.</p>
 </tbody>
 </table>
 <dl class="py property">
-<dt class="sig sig-object py" id="mpam.device.PipettingTarget.contents">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">contents</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><span class="pre">mpam.types.Liquid</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.PipettingTarget.contents" title="Permalink to this definition"></a></dt>
-<dd><p>The <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that could be removed via this
-<a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> if there is no such
-<a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This is an abstract attribute which must be overridden by concrete
-subclasses.</p>
-</div>
-</dd></dl>
-
-<dl class="py property">
 <dt class="sig sig-object py" id="mpam.device.PipettingTarget.pipettor">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pipettor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><span class="pre">Pipettor</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.PipettingTarget.pipettor" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">pipettor</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional[Pipettor]</span></em><a class="headerlink" href="#mpam.device.PipettingTarget.pipettor" title="Permalink to this definition"></a></dt>
 <dd><p>The <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> associated with this <a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> or
 <code class="docutils literal notranslate"><span class="pre">None</span></code> if there is no such <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a>.</p>
 <p>By default, it will be <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
@@ -217,7 +205,7 @@ subclasses.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.PipettingTarget.pipettor_added">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pipettor_added</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">Volume</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mix_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.pipettor_added" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">pipettor_added</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">quantities.dimensions.Volume</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mix_result</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.pipettor_added" title="Permalink to this definition"></a></dt>
 <dd><p>Called when the <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> has finished adding <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.
 If <code class="docutils literal notranslate"><span class="pre">mix_result</span></code> is not <code class="docutils literal notranslate"><span class="pre">None</span></code>, it should be used as the result of
 mixing the delivered <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> to what is already there.  If
@@ -247,7 +235,7 @@ subclasses.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.PipettingTarget.pipettor_removed">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pipettor_removed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">Volume</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.pipettor_removed" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">pipettor_removed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reagent</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Reagent.html#mpam.types.Reagent" title="mpam.types.Reagent"><span class="pre">mpam.types.Reagent</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><span class="pre">quantities.dimensions.Volume</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.pipettor_removed" title="Permalink to this definition"></a></dt>
 <dd><p>Called when the <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> has finished removing
 <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>. If <code class="docutils literal notranslate"><span class="pre">last</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>, there will be at least one
 more transfer before the overall transfer operation is complete.</p>
@@ -271,7 +259,7 @@ subclasses.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.PipettingTarget.prepare_for_add">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prepare_for_add</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.prepare_for_add" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">prepare_for_add</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.prepare_for_add" title="Permalink to this definition"></a></dt>
 <dd><p>Block until it is safe for a <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> to add <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.
 This method is called when the <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> is in position.</p>
 <div class="admonition note">
@@ -283,10 +271,23 @@ subclasses.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.PipettingTarget.prepare_for_remove">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">prepare_for_remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.prepare_for_remove" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">prepare_for_remove</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.PipettingTarget.prepare_for_remove" title="Permalink to this definition"></a></dt>
 <dd><p>Block until it is safe for a <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> to remove
 <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>. This method is called when the <a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipettor</span></code></a> is
 in position.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is an abstract attribute which must be overridden by concrete
+subclasses.</p>
+</div>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.device.PipettingTarget.removable_liquid">
+<em class="property"><span class="pre">abstract</span> <span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">removable_liquid</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional[mpam.types.Liquid]</span></em><a class="headerlink" href="#mpam.device.PipettingTarget.removable_liquid" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a> that could be removed via this
+<a class="reference internal" href="#mpam.device.PipettingTarget" title="mpam.device.PipettingTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">PipettingTarget</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> if there is no such
+<a class="reference internal" href="mpam.types.Liquid.html#mpam.types.Liquid" title="mpam.types.Liquid"><code class="xref py py-class docutils literal notranslate"><span class="pre">Liquid</span></code></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This is an abstract attribute which must be overridden by concrete
@@ -303,7 +304,7 @@ subclasses.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="mpam.device.Pad.html" class="btn btn-neutral float-left" title="mpam.device.Pad" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="mpam.device.ProductLocation.html" class="btn btn-neutral float-right" title="mpam.device.ProductLocation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="mpam.device.PowerMode.html" class="btn btn-neutral float-right" title="mpam.device.PowerMode" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

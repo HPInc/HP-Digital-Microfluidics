@@ -1,4 +1,4 @@
-quantities.dimensions.Distance
+﻿quantities.dimensions.Distance
 ==============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Distance
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.dimensions.Distance
    .. autosummary::
    
       ~Distance.dimensionality
+      ~Distance.is_finite
       ~Distance.is_negative
       ~Distance.is_positive
       ~Distance.is_zero

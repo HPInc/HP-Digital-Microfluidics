@@ -15,6 +15,7 @@
       :toctree:
    
       qstr
+      set_default_units
    
    
 
@@ -29,6 +30,7 @@
       BaseDim
       BaseDimMeta
       BaseDimension
+      Bounded
       CountDim
       DerivedDim
       DerivedDimMeta
@@ -43,6 +45,7 @@
       Unit
       UnitExpr
       UnknownDimQuant
+      default_units
    
    
 

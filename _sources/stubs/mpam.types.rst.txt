@@ -16,6 +16,7 @@
       V
       V2
       H
+      MISSING
       CS
       unknown_concentration
       waste_reagent
@@ -52,13 +53,16 @@
       CombinedStaticOperation
       CommunicationScheduler
       ComputeOp
+      ConfigParams
       Delayed
       Dir
       DummyState
+      Gettable
       GridRegion
       Liquid
       Missing
       Mixture
+      MonitoredProperty
       OnOff
       OpScheduler
       Operation

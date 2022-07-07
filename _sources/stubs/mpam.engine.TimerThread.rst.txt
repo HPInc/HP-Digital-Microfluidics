@@ -84,6 +84,10 @@ mpam.engine.TimerThread
            
        
    
+       
+           
+       
+   
 
    
    
@@ -197,6 +201,7 @@ mpam.engine.TimerThread
       ~TimerThread.abort_requested
       ~TimerThread.ensure_running
       ~TimerThread.getName
+      ~TimerThread.get_name
       ~TimerThread.idle
       ~TimerThread.isDaemon
       ~TimerThread.is_alive

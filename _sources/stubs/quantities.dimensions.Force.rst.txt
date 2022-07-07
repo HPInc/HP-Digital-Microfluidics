@@ -1,4 +1,4 @@
-quantities.dimensions.Force
+﻿quantities.dimensions.Force
 ===========================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Force
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Force
    .. autosummary::
    
       ~Force.dimensionality
+      ~Force.is_finite
       ~Force.is_negative
       ~Force.is_positive
       ~Force.is_zero

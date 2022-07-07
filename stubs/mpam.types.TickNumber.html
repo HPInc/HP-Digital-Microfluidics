@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,7 +136,7 @@
 <h1>mpam.types.TickNumber<a class="headerlink" href="#mpam-types-ticknumber" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.TickNumber">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">TickNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tick</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.TickNumber" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">TickNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tick</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">mpam.types.Ticks</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.TickNumber" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>An absolute tick number (as opposed to a number of <a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ticks</span></code></a>).</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">tn</span></code> is a <a class="reference internal" href="#mpam.types.TickNumber" title="mpam.types.TickNumber"><code class="xref py py-class docutils literal notranslate"><span class="pre">TickNumber</span></code></a> and <code class="docutils literal notranslate"><span class="pre">t</span></code> is a <a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ticks</span></code></a>, then</p>
@@ -149,7 +150,7 @@
 </div>
 <p>are all valid.</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -164,7 +165,7 @@
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -180,24 +181,24 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.TickNumber.ZERO">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZERO</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.TickNumber" title="mpam.types.TickNumber"><span class="pre">TickNumber</span></a></span></span><a class="headerlink" href="#mpam.types.TickNumber.ZERO" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">ZERO</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.TickNumber" title="mpam.types.TickNumber"><span class="pre">mpam.types.TickNumber</span></a></span></span><a class="headerlink" href="#mpam.types.TickNumber.ZERO" title="Permalink to this definition"></a></dt>
 <dd><p>The base of the <a class="reference internal" href="#mpam.types.TickNumber" title="mpam.types.TickNumber"><code class="xref py py-class docutils literal notranslate"><span class="pre">TickNumber</span></code></a> number line.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.TickNumber.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tick</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.TickNumber.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tick</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">mpam.types.Ticks</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.TickNumber.__init__" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mpam.types.TickNumber.number">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.types.TickNumber.number" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">number</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.types.TickNumber.number" title="Permalink to this definition"></a></dt>
 <dd><p>The tick number as an integer</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.TickNumber.tick">
-<span class="sig-name descname"><span class="pre">tick</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">mpam.types.Ticks</span></a></em><a class="headerlink" href="#mpam.types.TickNumber.tick" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">tick</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">mpam.types.Ticks</span></a></em><a class="headerlink" href="#mpam.types.TickNumber.tick" title="Permalink to this definition"></a></dt>
 <dd><p>The tick number as a <a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><code class="xref py py-class docutils literal notranslate"><span class="pre">Ticks</span></code></a> value</p>
 </dd></dl>
 

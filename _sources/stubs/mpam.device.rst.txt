@@ -43,6 +43,8 @@
       DispenseGroup
       DropLoc
       ExtractionPoint
+      Fan
+      FixedPowerSupply
       GateStatus
       Heater
       HeatingMode
@@ -50,6 +52,8 @@
       Magnet
       Pad
       PipettingTarget
+      PowerMode
+      PowerSupply
       ProductLocation
       System
       SystemComponent

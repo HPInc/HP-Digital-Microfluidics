@@ -124,6 +124,10 @@ quantities.core.BaseDim
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.core.BaseDim
    .. autosummary::
    
       ~BaseDim.dimensionality
+      ~BaseDim.is_finite
       ~BaseDim.is_negative
       ~BaseDim.is_positive
       ~BaseDim.is_zero

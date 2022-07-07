@@ -1,4 +1,4 @@
-quantities.dimensions.MagneticFlux
+﻿quantities.dimensions.MagneticFlux
 ==================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.MagneticFlux
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.MagneticFlux
    .. autosummary::
    
       ~MagneticFlux.dimensionality
+      ~MagneticFlux.is_finite
       ~MagneticFlux.is_negative
       ~MagneticFlux.is_positive
       ~MagneticFlux.is_zero

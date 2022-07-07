@@ -1,4 +1,4 @@
-quantities.dimensions.LumFlux
+﻿quantities.dimensions.LumFlux
 =============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.LumFlux
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.dimensions.LumFlux
    .. autosummary::
    
       ~LumFlux.dimensionality
+      ~LumFlux.is_finite
       ~LumFlux.is_negative
       ~LumFlux.is_positive
       ~LumFlux.is_zero

@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -19,7 +16,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="mpam.types.Delayed" href="mpam.types.Delayed.html" />
+    <link rel="next" title="mpam.types.ConfigParams" href="mpam.types.ConfigParams.html" />
     <link rel="prev" title="mpam.types.CommunicationScheduler" href="mpam.types.CommunicationScheduler.html" /> 
 </head>
 
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,8 +136,8 @@
 <h1>mpam.types.ComputeOp<a class="headerlink" href="#mpam-types-computeop" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.ComputeOp">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ComputeOp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">V</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.ComputeOp" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>, <a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><code class="xref py py-obj docutils literal notranslate"><span class="pre">V</span></code></a>]</p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ComputeOp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><span class="pre">mpam.types.V</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.ComputeOp" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.types.Operation</span></code></a>[<a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mpam.types.T</span></code></a>, <a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mpam.types.V</span></code></a>]</p>
 <p>A <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> that when scheduled, returns the result of passing its
 scheduled-for object to a <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> that returns a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object.</p>
 <dl class="field-list simple">
@@ -148,7 +149,7 @@ scheduled-for object to a <code class="xref py py-class docutils literal notrans
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -160,7 +161,7 @@ scheduled-for object to a <code class="xref py py-class docutils literal notrans
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -172,7 +173,7 @@ scheduled-for object to a <code class="xref py py-class docutils literal notrans
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -197,7 +198,7 @@ scheduled-for object to a <code class="xref py py-class docutils literal notrans
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.ComputeOp.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">V</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ComputeOp.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><span class="pre">mpam.types.V</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ComputeOp.__init__" title="Permalink to this definition"></a></dt>
 <dd><p>Initialize the <a class="reference internal" href="#mpam.types.ComputeOp" title="mpam.types.ComputeOp"><code class="xref py py-class docutils literal notranslate"><span class="pre">ComputeOp</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -208,7 +209,7 @@ scheduled-for object to a <code class="xref py py-class docutils literal notrans
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.ComputeOp._schedule_for">
-<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">V</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.ComputeOp._schedule_for" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">mpam.types.Ticks</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><span class="pre">mpam.types.V</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.ComputeOp._schedule_for" title="Permalink to this definition"></a></dt>
 <dd><p>Implement <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation.schedule_for" title="mpam.types.Operation.schedule_for"><code class="xref py py-func docutils literal notranslate"><span class="pre">Operation.schedule_for()</span></code></a> by passing <cite>obj</cite> to <a class="reference internal" href="#mpam.types.ComputeOp.function" title="mpam.types.ComputeOp.function"><code class="xref py py-attr docutils literal notranslate"><span class="pre">function</span></code></a>.</p>
 <dl class="field-list simple">
 </dl>
@@ -235,7 +236,7 @@ value will be posted unless <code class="docutils literal notranslate"><span cla
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.ComputeOp.function">
-<span class="sig-name descname"><span class="pre">function</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">mpam.types.V</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ComputeOp.function" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">function</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><span class="pre">mpam.types.V</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ComputeOp.function" title="Permalink to this definition"></a></dt>
 <dd><p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code> to call</p>
 </dd></dl>
 
@@ -248,7 +249,7 @@ value will be posted unless <code class="docutils literal notranslate"><span cla
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="mpam.types.CommunicationScheduler.html" class="btn btn-neutral float-left" title="mpam.types.CommunicationScheduler" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="mpam.types.Delayed.html" class="btn btn-neutral float-right" title="mpam.types.Delayed" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="mpam.types.ConfigParams.html" class="btn btn-neutral float-right" title="mpam.types.ConfigParams" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

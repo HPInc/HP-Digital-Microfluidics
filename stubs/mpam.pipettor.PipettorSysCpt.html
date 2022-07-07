@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -48,6 +45,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="mpam.pipettor.html">mpam.pipettor</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.EmptyTarget.html">mpam.pipettor.EmptyTarget</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.FillTarget.html">mpam.pipettor.FillTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.PipettingSource.html">mpam.pipettor.PipettingSource</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.Pipettor.html">mpam.pipettor.Pipettor</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.pipettor.PipettorSysCpt</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.pipettor.Transfer.html">mpam.pipettor.Transfer</a></li>
@@ -97,10 +95,10 @@
 <h1>mpam.pipettor.PipettorSysCpt<a class="headerlink" href="#mpam-pipettor-pipettorsyscpt" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.pipettor.PipettorSysCpt">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">PipettorSysCpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipettor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><span class="pre">Pipettor</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.PipettorSysCpt" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="mpam.device.SystemComponent.html#mpam.device.SystemComponent" title="mpam.device.SystemComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">SystemComponent</span></code></a></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.pipettor.</span></span><span class="sig-name descname"><span class="pre">PipettorSysCpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipettor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><span class="pre">mpam.pipettor.Pipettor</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.pipettor.PipettorSysCpt" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.device.SystemComponent.html#mpam.device.SystemComponent" title="mpam.device.SystemComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.device.SystemComponent</span></code></a></p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -112,29 +110,32 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">no_delay</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">joined_system</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="xref py py-func docutils literal notranslate"><span class="pre">join_system()</span></code> has been called and <code class="xref py py-attr docutils literal notranslate"><span class="pre">system</span></code> is valid.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">no_delay</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">system</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">system</span></code></p></td>
+<td><p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code> that the <code class="xref py py-class docutils literal notranslate"><span class="pre">SystemComponent</span></code> has joined.</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mpam.pipettor.PipettorSysCpt.__init__" title="mpam.pipettor.PipettorSysCpt.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(pipettor)</p></td>
-<td><p></p></td>
+<td><p>Initialize the object</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">system_shutdown</span></code>()</p></td>
 <td><p></p></td>
@@ -148,41 +149,35 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_monitor</span></code>(cb)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">after_tick</span></code>(fn, *[, delta])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">after_tick</span></code>(fn, *[, delta])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">before_tick</span></code>(fn, *[, delta])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">before_tick</span></code>(fn, *[, delta])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_after</span></code>(delta, fn, *[, daemon])</p></td>
+<td><p>Call <code class="xref py py-class docutils literal notranslate"><span class="pre">TimerFunc</span></code> <code class="docutils literal notranslate"><span class="pre">fn</span></code> after a delay of <code class="docutils literal notranslate"><span class="pre">delta</span></code>. This will be delegated to <code class="xref py py-attr docutils literal notranslate"><span class="pre">system</span></code>, possibly batched, and finally passed to <code class="xref py py-attr docutils literal notranslate"><span class="pre">system</span></code>’s <a class="reference internal" href="mpam.engine.Engine.html#mpam.engine.Engine" title="mpam.engine.Engine"><code class="xref py py-class docutils literal notranslate"><span class="pre">Engine</span></code></a>. At this point it will be treated as if it had been ::.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_at</span></code>(t, fn, *[, daemon])</p></td>
+<td><p>Call <code class="xref py py-class docutils literal notranslate"><span class="pre">TimerFunc</span></code> <code class="docutils literal notranslate"><span class="pre">fn</span></code> at <a class="reference internal" href="quantities.timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></a> <code class="docutils literal notranslate"><span class="pre">t</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">communicate</span></code>(cb[, delta])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_after</span></code>(delta, fn, *[, daemon])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_at</span></code>(t, fn, *[, daemon])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">communicate</span></code>(cb[, delta])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">finish_update</span></code>()</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">in_system</span></code>()</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">finish_update</span></code>()</p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">join_system</span></code>(system)</p></td>
-<td><p></p></td>
+<td><p>Join <code class="docutils literal notranslate"><span class="pre">system</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_request</span></code>(cb)</p></td>
 <td><p></p></td>
@@ -200,8 +195,9 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.pipettor.PipettorSysCpt.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipettor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><span class="pre">Pipettor</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.pipettor.PipettorSysCpt.__init__" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pipettor</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.pipettor.Pipettor.html#mpam.pipettor.Pipettor" title="mpam.pipettor.Pipettor"><span class="pre">mpam.pipettor.Pipettor</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.pipettor.PipettorSysCpt.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+</dd></dl>
 
 </dd></dl>
 

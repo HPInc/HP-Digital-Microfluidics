@@ -112,13 +112,17 @@ mpam.device.Well
            
        
    
+
+   
+   
+   
        
            
        
    
-
-   
-   
+       
+           
+       
    
        
            
@@ -237,8 +241,10 @@ mpam.device.Well
       ~Well.gate_reserved
       ~Well.max_fill
       ~Well.min_fill
+      ~Well.on_liquid_change
       ~Well.reagent
       ~Well.remaining_capacity
+      ~Well.removable_liquid
       ~Well.required
       ~Well.volume
       ~Well.number
@@ -283,7 +289,6 @@ mpam.device.Well
       ~Well.empty_well
       ~Well.ensure_content
       ~Well.ensure_space
-      ~Well.on_liquid_change
       ~Well.pipettor_added
       ~Well.pipettor_removed
       ~Well.prepare_for_add

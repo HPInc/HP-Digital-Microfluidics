@@ -1,4 +1,4 @@
-quantities.dimensions.Mass
+﻿quantities.dimensions.Mass
 ==========================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Mass
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.dimensions.Mass
    .. autosummary::
    
       ~Mass.dimensionality
+      ~Mass.is_finite
       ~Mass.is_negative
       ~Mass.is_positive
       ~Mass.is_zero

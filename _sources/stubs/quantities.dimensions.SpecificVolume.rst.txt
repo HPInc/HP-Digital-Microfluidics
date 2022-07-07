@@ -1,4 +1,4 @@
-quantities.dimensions.SpecificVolume
+﻿quantities.dimensions.SpecificVolume
 ====================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.SpecificVolume
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.SpecificVolume
    .. autosummary::
    
       ~SpecificVolume.dimensionality
+      ~SpecificVolume.is_finite
       ~SpecificVolume.is_negative
       ~SpecificVolume.is_positive
       ~SpecificVolume.is_zero

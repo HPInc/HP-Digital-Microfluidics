@@ -1,4 +1,4 @@
-quantities.dimensions.Illuminance
+﻿quantities.dimensions.Illuminance
 =================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Illuminance
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Illuminance
    .. autosummary::
    
       ~Illuminance.dimensionality
+      ~Illuminance.is_finite
       ~Illuminance.is_negative
       ~Illuminance.is_positive
       ~Illuminance.is_zero

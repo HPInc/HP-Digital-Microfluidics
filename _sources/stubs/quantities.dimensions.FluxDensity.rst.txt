@@ -1,4 +1,4 @@
-quantities.dimensions.FluxDensity
+﻿quantities.dimensions.FluxDensity
 =================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.FluxDensity
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.FluxDensity
    .. autosummary::
    
       ~FluxDensity.dimensionality
+      ~FluxDensity.is_finite
       ~FluxDensity.is_negative
       ~FluxDensity.is_positive
       ~FluxDensity.is_zero

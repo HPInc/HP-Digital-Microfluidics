@@ -1,0 +1,48 @@
+mpam.device.PowerMode
+=====================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: PowerMode
+
+   
+   
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PowerMode.DC
+      ~PowerMode.AC
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   
+   

@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -100,10 +97,10 @@
 <h1>mpam.engine.TimerThread<a class="headerlink" href="#mpam-engine-timerthread" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.engine.TimerThread">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.engine.</span></span><span class="sig-name descname"><span class="pre">TimerThread</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.engine.Engine.html#mpam.engine.Engine" title="mpam.engine.Engine"><span class="pre">Engine</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.engine.TimerThread" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="mpam.engine.WorkerThread.html#mpam.engine.WorkerThread" title="mpam.engine.WorkerThread"><code class="xref py py-class docutils literal notranslate"><span class="pre">WorkerThread</span></code></a></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.engine.</span></span><span class="sig-name descname"><span class="pre">TimerThread</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.engine.Engine.html#mpam.engine.Engine" title="mpam.engine.Engine"><span class="pre">mpam.engine.Engine</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.engine.TimerThread" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.engine.html#mpam.engine.WorkerThread" title="mpam.engine.WorkerThread"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.engine.WorkerThread</span></code></a></p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -124,7 +121,7 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -148,13 +145,13 @@
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.engine.TimerThread.__init__" title="mpam.engine.TimerThread.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(engine)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.engine.html#mpam.engine.TimerThread.__init__" title="mpam.engine.TimerThread.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(engine)</p></td>
 <td><p>This constructor should always be called with keyword arguments.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_after</span></code>(reqs)</p></td>
@@ -163,8 +160,8 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_at</span></code>(reqs)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mpam.engine.TimerThread.run" title="mpam.engine.TimerThread.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>()</p></td>
-<td><p>Method representing the thread's activity.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.engine.html#mpam.engine.TimerThread.run" title="mpam.engine.TimerThread.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>()</p></td>
+<td><p>Method representing the thread’s activity.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">wake_up</span></code>()</p></td>
 <td><p></p></td>
@@ -172,7 +169,7 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -187,48 +184,51 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">getName</span></code>()</p></td>
 <td><p>Return a string used for identification purposes only.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">idle</span></code>()</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_name</span></code>()</p></td>
+<td><p>Return a string used for identification purposes only.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">idle</span></code>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">isDaemon</span></code>()</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">isDaemon</span></code>()</p></td>
 <td><p>Return whether this thread is a daemon.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_alive</span></code>()</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_alive</span></code>()</p></td>
 <td><p>Return whether the thread is alive.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">join</span></code>([timeout])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">join</span></code>([timeout])</p></td>
 <td><p>Wait until the thread terminates.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">not_idle</span></code>()</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">not_idle</span></code>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_exception</span></code>(ex)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_exception</span></code>(ex)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_abort</span></code>()</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_abort</span></code>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_stop</span></code>()</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">request_stop</span></code>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">setDaemon</span></code>(daemonic)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">setDaemon</span></code>(daemonic)</p></td>
 <td><p>Set whether this thread is a daemon.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">setName</span></code>(name)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">setName</span></code>(name)</p></td>
 <td><p>Set the name string for this thread.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">start</span></code>()</p></td>
-<td><p>Start the thread's activity.</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">start</span></code>()</p></td>
+<td><p>Start the thread’s activity.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.engine.TimerThread.MyTimer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MyTimer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timer_thread</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mpam.engine.TimerThread" title="mpam.engine.TimerThread"><span class="pre">TimerThread</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.timestamp.Timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">Timestamp</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">delay</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.timestamp.Timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">Timestamp</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.engine.TimerThread.MyTimer" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="threading.Timer.html#threading.Timer" title="threading.Timer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timer</span></code></a></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">MyTimer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timer_thread</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.engine.html#mpam.engine.TimerThread" title="mpam.engine.TimerThread"><span class="pre">mpam.engine.TimerThread</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">quantities.timestamp.Timestamp</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">delay</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="quantities.timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">quantities.timestamp.Timestamp</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.engine.TimerThread.MyTimer" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="threading.Timer.html#threading.Timer" title="threading.Timer"><code class="xref py py-class docutils literal notranslate"><span class="pre">threading.Timer</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.engine.TimerThread.MyTimer.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timer_thread</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mpam.engine.TimerThread" title="mpam.engine.TimerThread"><span class="pre">TimerThread</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.timestamp.Timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">Timestamp</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">delay</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.timestamp.Timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">Timestamp</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.engine.TimerThread.MyTimer.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timer_thread</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.engine.html#mpam.engine.TimerThread" title="mpam.engine.TimerThread"><span class="pre">mpam.engine.TimerThread</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">quantities.timestamp.Timestamp</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">delay</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="quantities.timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><span class="pre">quantities.timestamp.Timestamp</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">daemon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.engine.TimerThread.MyTimer.__init__" title="Permalink to this definition"></a></dt>
 <dd><p>This constructor should always be called with keyword arguments. Arguments are:</p>
 <p><em>group</em> should be None; reserved for future extension when a ThreadGroup
 class is implemented.</p>
@@ -244,11 +244,16 @@ the base class constructor (Thread.__init__()) before doing anything
 else to the thread.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.engine.TimerThread.MyTimer.call_func">
+<span class="sig-name descname"><span class="pre">call_func</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.engine.TimerThread.MyTimer.call_func" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.engine.TimerThread.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.engine.Engine.html#mpam.engine.Engine" title="mpam.engine.Engine"><span class="pre">Engine</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.engine.TimerThread.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.engine.Engine.html#mpam.engine.Engine" title="mpam.engine.Engine"><span class="pre">mpam.engine.Engine</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.engine.TimerThread.__init__" title="Permalink to this definition"></a></dt>
 <dd><p>This constructor should always be called with keyword arguments. Arguments are:</p>
 <p><em>group</em> should be None; reserved for future extension when a ThreadGroup
 class is implemented.</p>

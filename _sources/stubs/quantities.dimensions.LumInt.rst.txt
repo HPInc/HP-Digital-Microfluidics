@@ -1,4 +1,4 @@
-quantities.dimensions.LumInt
+﻿quantities.dimensions.LumInt
 ============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.LumInt
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.dimensions.LumInt
    .. autosummary::
    
       ~LumInt.dimensionality
+      ~LumInt.is_finite
       ~LumInt.is_negative
       ~LumInt.is_positive
       ~LumInt.is_zero

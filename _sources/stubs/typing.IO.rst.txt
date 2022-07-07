@@ -1,12 +1,72 @@
-﻿typing.io
+typing.IO
 =========
 
 .. currentmodule:: typing
 
-.. autoclass:: io
+.. autoclass:: IO
 
    
    
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
    
        
            
@@ -16,17 +76,57 @@
    
    
    
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~IO.closed
+      ~IO.mode
+      ~IO.name
+   
+   
+
 
    
    
    
 
+   
+   
+   .. rubric:: Methods
 
+   .. autosummary::
    
-   
-   
-
-   
+      ~IO.close
+      ~IO.fileno
+      ~IO.flush
+      ~IO.isatty
+      ~IO.read
+      ~IO.readable
+      ~IO.readline
+      ~IO.readlines
+      ~IO.seek
+      ~IO.seekable
+      ~IO.tell
+      ~IO.truncate
+      ~IO.writable
+      ~IO.write
+      ~IO.writelines
    
    
    
@@ -37,7 +137,7 @@
 
    .. autosummary::
    
-      ~io.__init__
+      ~IO.__init__
    
    
    

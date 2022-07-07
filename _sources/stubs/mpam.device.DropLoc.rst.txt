@@ -24,13 +24,13 @@ mpam.device.DropLoc
            
        
    
-       
-           
-       
-   
 
    
    
+   
+       
+           
+       
    
        
            
@@ -59,6 +59,7 @@ mpam.device.DropLoc
       ~DropLoc.checked_drop
       ~DropLoc.drop
       ~DropLoc.neighbors_for_blob
+      ~DropLoc.on_drop_change
    
    
 
@@ -73,9 +74,7 @@ mpam.device.DropLoc
 
    .. autosummary::
    
-      ~DropLoc.__init__
       ~DropLoc.compute_neighbors_for_blob
-      ~DropLoc.on_drop_change
    
    
    
@@ -86,6 +85,7 @@ mpam.device.DropLoc
 
    .. autosummary::
    
+      ~DropLoc.__init__
       ~DropLoc.delayed
       ~DropLoc.schedule_communication
    

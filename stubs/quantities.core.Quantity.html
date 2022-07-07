@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -51,9 +48,11 @@
 <li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="quantities.core.html">quantities.core</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.qstr.html">quantities.core.qstr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.set_default_units.html">quantities.core.set_default_units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDim.html">quantities.core.BaseDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimMeta.html">quantities.core.BaseDimMeta</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimension.html">quantities.core.BaseDimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Bounded.html">quantities.core.Bounded</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.CountDim.html">quantities.core.CountDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDim.html">quantities.core.DerivedDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDimMeta.html">quantities.core.DerivedDimMeta</a></li>
@@ -68,6 +67,7 @@
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.Unit.html">quantities.core.Unit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.UnitExpr.html">quantities.core.UnitExpr</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.UnknownDimQuant.html">quantities.core.UnknownDimQuant</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.default_units.html">quantities.core.default_units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DimMismatchError.html">quantities.core.DimMismatchError</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DimensionalityError.html">quantities.core.DimensionalityError</a></li>
 </ul>
@@ -110,11 +110,11 @@
 <h1>quantities.core.Quantity<a class="headerlink" href="#quantities-core-quantity" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="quantities.core.Quantity">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">Quantity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Quantity" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">Quantity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">quantities.core.Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">quantities.core.D</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.Quantity" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A dimensioned quantity</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -123,22 +123,25 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimensionality</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_negative</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_finite</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_positive</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_negative</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_zero</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_positive</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">magnitude</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_zero</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">magnitude</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -202,7 +205,7 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="quantities.core.Quantity.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">D</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.Quantity.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">quantities.core.Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">quantities.core.D</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.core.Quantity.__init__" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>

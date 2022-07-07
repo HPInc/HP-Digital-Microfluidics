@@ -104,6 +104,10 @@ quantities.core.Quantity
            
        
    
+       
+           
+       
+   
 
    
    
@@ -112,6 +116,7 @@ quantities.core.Quantity
    .. autosummary::
    
       ~Quantity.dimensionality
+      ~Quantity.is_finite
       ~Quantity.is_negative
       ~Quantity.is_positive
       ~Quantity.is_zero

@@ -1,4 +1,4 @@
-quantities.dimensions.Molarity
+﻿quantities.dimensions.Molarity
 ==============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Molarity
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Molarity
    .. autosummary::
    
       ~Molarity.dimensionality
+      ~Molarity.is_finite
       ~Molarity.is_negative
       ~Molarity.is_positive
       ~Molarity.is_zero

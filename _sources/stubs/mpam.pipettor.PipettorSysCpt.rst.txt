@@ -72,17 +72,13 @@ mpam.pipettor.PipettorSysCpt
            
        
    
-       
-           
-       
-   
-       
-           
-       
-   
 
    
    
+   
+       
+           
+       
    
        
            
@@ -114,6 +110,7 @@ mpam.pipettor.PipettorSysCpt
 
    .. autosummary::
    
+      ~PipettorSysCpt.joined_system
       ~PipettorSysCpt.no_delay
       ~PipettorSysCpt.system
    
@@ -139,7 +136,6 @@ mpam.pipettor.PipettorSysCpt
 
    .. autosummary::
    
-      ~PipettorSysCpt.add_monitor
       ~PipettorSysCpt.after_tick
       ~PipettorSysCpt.before_tick
       ~PipettorSysCpt.call_after
@@ -147,7 +143,6 @@ mpam.pipettor.PipettorSysCpt
       ~PipettorSysCpt.communicate
       ~PipettorSysCpt.delayed
       ~PipettorSysCpt.finish_update
-      ~PipettorSysCpt.in_system
       ~PipettorSysCpt.join_system
       ~PipettorSysCpt.make_request
       ~PipettorSysCpt.on_condition

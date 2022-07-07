@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,8 +136,8 @@
 <h1>mpam.types.ChangeCallbackList<a class="headerlink" href="#mpam-types-changecallbacklist" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ChangeCallbackList</span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a>[<a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>]</p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">ChangeCallbackList</span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a>[<a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mpam.types.T</span></code></a>]</p>
 <p>A hook onto which value-change handlers may be added.  When the list is
 processed (via <a class="reference internal" href="#mpam.types.ChangeCallbackList.process" title="mpam.types.ChangeCallbackList.process"><code class="xref py py-func docutils literal notranslate"><span class="pre">process()</span></code></a>), each handler is passed the old and new
 values (which may be the same).</p>
@@ -150,7 +151,7 @@ the handler itself is used as the key and no replacement will take place.</p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -160,12 +161,12 @@ the handler itself is used as the key and no replacement will take place.</p>
 <td><p>A mapping from keys to handlers</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.lock" title="mpam.types.ChangeCallbackList.lock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock</span></code></a></p></td>
-<td><p>The object's lock</p></td>
+<td><p>The object’s lock</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -183,6 +184,12 @@ the handler itself is used as the key and no replacement will take place.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.discard" title="mpam.types.ChangeCallbackList.discard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">discard</span></code></a>(key)</p></td>
 <td><p>Remove the handler with the given key if one exists.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.filtered" title="mpam.types.ChangeCallbackList.filtered"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filtered</span></code></a>(test, *[, key])</p></td>
+<td><p>Create a new <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> whose handlers are invoked only if <code class="docutils literal notranslate"><span class="pre">test</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code> when passed the old and new values (as a pair).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.mapped" title="mpam.types.ChangeCallbackList.mapped"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mapped</span></code></a>(transform, *[, key])</p></td>
+<td><p>Create a new <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> whose handlers receive transformed (and possibly filtered) values.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.ChangeCallbackList.process" title="mpam.types.ChangeCallbackList.process"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process</span></code></a>(old, new)</p></td>
 <td><p>Pass old and new values to all handlers.</p></td>
 </tr>
@@ -192,6 +199,22 @@ the handler itself is used as the key and no replacement will take place.</p>
 </tbody>
 </table>
 <dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.__call__">
+<span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cb</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.__call__" title="Permalink to this definition"></a></dt>
+<dd><p>Add a new handler, replacing any with the specified key.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">cb</span></code> is used as the key.</p>
+<p>An alias for <a class="reference internal" href="#mpam.types.ChangeCallbackList.add" title="mpam.types.ChangeCallbackList.add"><code class="xref py py-func docutils literal notranslate"><span class="pre">add()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cb</strong> – the handler</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>key</strong> – the (optional) key</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.__init__" title="Permalink to this definition"></a></dt>
 <dd><p>Initialize the object.</p>
@@ -199,7 +222,7 @@ the handler itself is used as the key and no replacement will take place.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.add">
-<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.add" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cb</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.add" title="Permalink to this definition"></a></dt>
 <dd><p>Add a new handler, replacing any with the specified key.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is
 <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">cb</span></code> is used as the key</p>
 <dl class="field-list simple">
@@ -214,7 +237,7 @@ the handler itself is used as the key and no replacement will take place.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.callbacks">
-<span class="sig-name descname"><span class="pre">callbacks</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">NoneType</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ChangeCallbackList.callbacks" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">callbacks</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#mpam.types.ChangeCallbackList.callbacks" title="Permalink to this definition"></a></dt>
 <dd><p>A mapping from keys to handlers</p>
 </dd></dl>
 
@@ -226,7 +249,7 @@ the handler itself is used as the key and no replacement will take place.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.discard">
-<span class="sig-name descname"><span class="pre">discard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.discard" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">discard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Hashable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.discard" title="Permalink to this definition"></a></dt>
 <dd><p>Remove the handler with the given key if one exists.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -235,15 +258,88 @@ the handler itself is used as the key and no replacement will take place.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.filtered">
+<span class="sig-name descname"><span class="pre">filtered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">test</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><span class="pre">mpam.types.ChangeCallbackList</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.filtered" title="Permalink to this definition"></a></dt>
+<dd><p>Create a new <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> whose handlers are invoked only
+if <code class="docutils literal notranslate"><span class="pre">test</span></code> returns <code class="docutils literal notranslate"><span class="pre">True</span></code> when passed the old and new values (as a pair).</p>
+<p>For example, after</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">new_ccl</span> <span class="o">=</span> <span class="n">ccl</span><span class="o">.</span><span class="n">filtered</span><span class="p">(</span><span class="k">lambda</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="n">new</span> <span class="o">&gt;</span> <span class="n">old</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">new_ccl</span></code> is a <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> whose handlers are invoked
+only when the change is an increase in value.</p>
+<p><a class="reference internal" href="#mpam.types.ChangeCallbackList.filtered" title="mpam.types.ChangeCallbackList.filtered"><code class="xref py py-func docutils literal notranslate"><span class="pre">filtered()</span></code></a> is implemented using <a class="reference internal" href="#mpam.types.ChangeCallbackList.add" title="mpam.types.ChangeCallbackList.add"><code class="xref py py-func docutils literal notranslate"><span class="pre">add()</span></code></a>.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, the actual key will be something you can’t get your hands on.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <a class="reference internal" href="#mpam.types.ChangeCallbackList.clear" title="mpam.types.ChangeCallbackList.clear"><code class="xref py py-func docutils literal notranslate"><span class="pre">clear()</span></code></a> is called on this (i.e., the existing)
+<a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a>, the link with the new one will be
+severed.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>test</strong> – a function that returns <code class="docutils literal notranslate"><span class="pre">True</span></code> if the values should be
+passed on and <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>key</strong> – the (optional) key</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a new <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.lock">
-<span class="sig-name descname"><span class="pre">lock</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">threading.RLock</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ChangeCallbackList.lock" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lock</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="threading.RLock.html#threading.RLock" title="threading.RLock"><span class="pre">threading.RLock</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.ChangeCallbackList.lock" title="Permalink to this definition"></a></dt>
 <dd><p>The object’s lock</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.mapped">
+<span class="sig-name descname"><span class="pre">mapped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transform</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Hashable</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><span class="pre">mpam.types.ChangeCallbackList</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.V.html#mpam.types.V" title="mpam.types.V"><span class="pre">mpam.types.V</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.mapped" title="Permalink to this definition"></a></dt>
+<dd><p>Create a new <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> whose handlers receive
+transformed (and possibly filtered) values.</p>
+<p><code class="docutils literal notranslate"><span class="pre">transform</span></code> is a function that takes the old and new values and
+returns either a tuple of transformed old and new values (possibly of a
+different type) or <code class="docutils literal notranslate"><span class="pre">None</span></code>.  In the former case, the transformed values
+are <code class="xref py py-func docutils literal notranslate"><span class="pre">process`ed</span> <span class="pre">by</span> <span class="pre">the</span> <span class="pre">new</span> <span class="pre">:class:`ChangeCallbackList()</span></code>.  In the
+latter case, nothing is passed on.</p>
+<p>For example, after</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">new_ccl</span> <span class="o">=</span> <span class="n">ccl</span><span class="o">.</span><span class="n">mapped</span><span class="p">(</span><span class="k">lambda</span> <span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">old</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">new</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">new_ccl</span></code> is a <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a>[<code class="docutils literal notranslate"><span class="pre">str</span></code>] whose handlers
+receive the values of <cite>ccl</cite> transformed into strings.</p>
+<p><a class="reference internal" href="#mpam.types.ChangeCallbackList.mapped" title="mpam.types.ChangeCallbackList.mapped"><code class="xref py py-func docutils literal notranslate"><span class="pre">mapped()</span></code></a> is implemented using <a class="reference internal" href="#mpam.types.ChangeCallbackList.add" title="mpam.types.ChangeCallbackList.add"><code class="xref py py-func docutils literal notranslate"><span class="pre">add()</span></code></a>.  If <code class="docutils literal notranslate"><span class="pre">key</span></code> is
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, the actual key will be something you can’t get your hands on.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <a class="reference internal" href="#mpam.types.ChangeCallbackList.clear" title="mpam.types.ChangeCallbackList.clear"><code class="xref py py-func docutils literal notranslate"><span class="pre">clear()</span></code></a> is called on this (i.e., the existing)
+<a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a>, the link with the new one will be
+severed.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>transform</strong> – a function that transforms old and new values into either
+a pair of old and new values (possibly of a different
+type) or <code class="docutils literal notranslate"><span class="pre">None</span></code> to signal that the values should not be
+passed on.</p>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><p><strong>key</strong> – the (optional) key</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>a new <a class="reference internal" href="#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.process">
-<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.process" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.process" title="Permalink to this definition"></a></dt>
 <dd><p>Pass old and new values to all handlers.</p>
 <p>The list of handlers is copied before calling any handlers, so any
 handlers added while handlers are being invoked will not be invoked
@@ -260,7 +356,7 @@ until the next time <a class="reference internal" href="#mpam.types.ChangeCallba
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.ChangeCallbackList.remove">
-<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Hashable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.remove" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Hashable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.ChangeCallbackList.remove" title="Permalink to this definition"></a></dt>
 <dd><p>Remove the handler with the given key, which must have been added.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>

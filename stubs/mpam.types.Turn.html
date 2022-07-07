@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,12 +136,12 @@
 <h1>mpam.types.Turn<a class="headerlink" href="#mpam-types-turn" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.Turn">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Turn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Turn" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Turn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Turn" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>An enumerations of turns relative to a <a class="reference internal" href="mpam.types.Dir.html#mpam.types.Dir" title="mpam.types.Dir"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dir</span></code></a>.</p>
 <p>Usually used in <cite>dir.turned(turn)</cite>.</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -162,25 +163,25 @@
 </table>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Turn.AROUND">
-<span class="sig-name descname"><span class="pre">AROUND</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#mpam.types.Turn.AROUND" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">AROUND</span></span><em class="property"> <span class="pre">=</span> <span class="pre">4</span></em><a class="headerlink" href="#mpam.types.Turn.AROUND" title="Permalink to this definition"></a></dt>
 <dd><p>Turn 180 degrees.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Turn.LEFT">
-<span class="sig-name descname"><span class="pre">LEFT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#mpam.types.Turn.LEFT" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">LEFT</span></span><em class="property"> <span class="pre">=</span> <span class="pre">2</span></em><a class="headerlink" href="#mpam.types.Turn.LEFT" title="Permalink to this definition"></a></dt>
 <dd><p>Turn left.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Turn.NONE">
-<span class="sig-name descname"><span class="pre">NONE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Turn.NONE" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NONE</span></span><em class="property"> <span class="pre">=</span> <span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Turn.NONE" title="Permalink to this definition"></a></dt>
 <dd><p>No turn.  (Remain in the same direction.)</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Turn.RIGHT">
-<span class="sig-name descname"><span class="pre">RIGHT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Turn.RIGHT" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">RIGHT</span></span><em class="property"> <span class="pre">=</span> <span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Turn.RIGHT" title="Permalink to this definition"></a></dt>
 <dd><p>Turn right.</p>
 </dd></dl>
 

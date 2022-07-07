@@ -8,6 +8,10 @@ mpam.types.Missing
    
    
    
+
+   
+   
+   
        
            
        
@@ -15,29 +19,25 @@ mpam.types.Missing
 
    
    
-   
-
-   
-   
-   
-
-
-   
-   
-   
-
-   
-   
-   
-   
-
-   
-   
-   .. rubric:: Inherited Methods
+   .. rubric:: Attributes
 
    .. autosummary::
    
-      ~Missing.__init__
+      ~Missing.SINGLETON
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   
+   
+
+   
    
    
    

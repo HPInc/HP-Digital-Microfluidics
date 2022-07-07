@@ -1,4 +1,4 @@
-mpam.types.Ticks
+﻿mpam.types.Ticks
 ================
 
 .. currentmodule:: mpam.types
@@ -140,6 +140,10 @@ mpam.types.Ticks
            
        
    
+       
+           
+       
+   
 
    
    
@@ -161,6 +165,7 @@ mpam.types.Ticks
       ~Ticks.checked_count
       ~Ticks.count
       ~Ticks.dimensionality
+      ~Ticks.is_finite
       ~Ticks.is_negative
       ~Ticks.is_positive
       ~Ticks.is_zero

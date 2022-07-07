@@ -48,6 +48,10 @@ threading.Timer
            
        
    
+       
+           
+       
+   
 
    
    
@@ -107,6 +111,7 @@ threading.Timer
    .. autosummary::
    
       ~Timer.getName
+      ~Timer.get_name
       ~Timer.isDaemon
       ~Timer.is_alive
       ~Timer.join

@@ -1,4 +1,4 @@
-quantities.dimensions.Voltage
+﻿quantities.dimensions.Voltage
 =============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Voltage
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Voltage
    .. autosummary::
    
       ~Voltage.dimensionality
+      ~Voltage.is_finite
       ~Voltage.is_negative
       ~Voltage.is_positive
       ~Voltage.is_zero

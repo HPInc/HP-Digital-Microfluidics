@@ -1,4 +1,4 @@
-mpam.monitor.PadMonitor
+﻿mpam.monitor.PadMonitor
 =======================
 
 .. currentmodule:: mpam.monitor
@@ -7,6 +7,10 @@ mpam.monitor.PadMonitor
 
    
    
+   
+       
+           
+       
    
        
            
@@ -170,6 +174,7 @@ mpam.monitor.PadMonitor
       ~PadMonitor.note_drop_change
       ~PadMonitor.note_magnet_state
       ~PadMonitor.note_new_temperature
+      ~PadMonitor.note_reserved
       ~PadMonitor.note_state
       ~PadMonitor.preview_state
    

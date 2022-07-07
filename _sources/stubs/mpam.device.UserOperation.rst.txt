@@ -20,6 +20,14 @@ mpam.device.UserOperation
            
        
    
+       
+           
+       
+   
+       
+           
+       
+   
 
    
    
@@ -61,6 +69,8 @@ mpam.device.UserOperation
    .. autosummary::
    
       ~UserOperation.__init__
+      ~UserOperation.end
+      ~UserOperation.start
    
    
    

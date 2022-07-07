@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -51,9 +48,11 @@
 <li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="quantities.core.html">quantities.core</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.qstr.html">quantities.core.qstr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.set_default_units.html">quantities.core.set_default_units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDim.html">quantities.core.BaseDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimMeta.html">quantities.core.BaseDimMeta</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimension.html">quantities.core.BaseDimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Bounded.html">quantities.core.Bounded</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.CountDim.html">quantities.core.CountDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDim.html">quantities.core.DerivedDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDimMeta.html">quantities.core.DerivedDimMeta</a></li>
@@ -68,6 +67,7 @@
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.Unit.html">quantities.core.Unit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.UnitExpr.html">quantities.core.UnitExpr</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.UnknownDimQuant.html">quantities.core.UnknownDimQuant</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.default_units.html">quantities.core.default_units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DimMismatchError.html">quantities.core.DimMismatchError</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DimensionalityError.html">quantities.core.DimensionalityError</a></li>
 </ul>
@@ -110,10 +110,10 @@
 <h1>quantities.core.DimLike<a class="headerlink" href="#quantities-core-dimlike" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="quantities.core.DimLike">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">DimLike</span></span><a class="headerlink" href="#quantities.core.DimLike" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">DimLike</span></span><a class="headerlink" href="#quantities.core.DimLike" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -125,7 +125,7 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />

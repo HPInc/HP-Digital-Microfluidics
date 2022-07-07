@@ -1,4 +1,4 @@
-quantities.dimensions.Work
+﻿quantities.dimensions.Work
 ==========================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Work
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Work
    .. autosummary::
    
       ~Work.dimensionality
+      ~Work.is_finite
       ~Work.is_negative
       ~Work.is_positive
       ~Work.is_zero

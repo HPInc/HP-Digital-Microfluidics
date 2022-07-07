@@ -1,4 +1,4 @@
-quantities.dimensions.Density
+﻿quantities.dimensions.Density
 =============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Density
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Density
    .. autosummary::
    
       ~Density.dimensionality
+      ~Density.is_finite
       ~Density.is_negative
       ~Density.is_positive
       ~Density.is_zero

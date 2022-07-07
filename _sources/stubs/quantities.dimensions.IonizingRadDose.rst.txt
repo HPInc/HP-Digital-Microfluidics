@@ -1,4 +1,4 @@
-quantities.dimensions.IonizingRadDose
+﻿quantities.dimensions.IonizingRadDose
 =====================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.IonizingRadDose
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.IonizingRadDose
    .. autosummary::
    
       ~IonizingRadDose.dimensionality
+      ~IonizingRadDose.is_finite
       ~IonizingRadDose.is_negative
       ~IonizingRadDose.is_positive
       ~IonizingRadDose.is_zero

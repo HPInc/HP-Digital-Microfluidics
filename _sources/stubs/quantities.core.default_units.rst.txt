@@ -1,0 +1,58 @@
+quantities.core.default\_units
+==============================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: default_units
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~default_units.to_set
+      ~default_units.to_reset
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~default_units.__init__
+   
+   
+   
+
+   
+   
+   
+   

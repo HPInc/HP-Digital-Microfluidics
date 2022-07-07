@@ -1,4 +1,4 @@
-quantities.dimensions.Current
+﻿quantities.dimensions.Current
 =============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Current
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.dimensions.Current
    .. autosummary::
    
       ~Current.dimensionality
+      ~Current.is_finite
       ~Current.is_negative
       ~Current.is_positive
       ~Current.is_zero

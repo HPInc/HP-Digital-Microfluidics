@@ -1,4 +1,4 @@
-quantities.dimensions.Time
+﻿quantities.dimensions.Time
 ==========================
 
 .. currentmodule:: quantities.dimensions
@@ -112,9 +112,17 @@ quantities.dimensions.Time
            
        
    
+       
+           
+       
+   
 
    
    
+   
+       
+           
+       
    
        
            
@@ -155,6 +163,7 @@ quantities.dimensions.Time
    .. autosummary::
    
       ~Time.dimensionality
+      ~Time.is_finite
       ~Time.is_negative
       ~Time.is_positive
       ~Time.is_zero
@@ -171,6 +180,7 @@ quantities.dimensions.Time
       ~Time.in_HM
       ~Time.in_HMS
       ~Time.in_MS
+      ~Time.sleep
    
    
    

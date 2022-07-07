@@ -32,6 +32,14 @@ mpam.types.ChangeCallbackList
            
        
    
+       
+           
+       
+   
+       
+           
+       
+   
 
    
    
@@ -71,6 +79,8 @@ mpam.types.ChangeCallbackList
       ~ChangeCallbackList.add
       ~ChangeCallbackList.clear
       ~ChangeCallbackList.discard
+      ~ChangeCallbackList.filtered
+      ~ChangeCallbackList.mapped
       ~ChangeCallbackList.process
       ~ChangeCallbackList.remove
    

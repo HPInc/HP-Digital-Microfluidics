@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -52,6 +49,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DispenseGroup.html">mpam.device.DispenseGroup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DropLoc.html">mpam.device.DropLoc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ExtractionPoint.html">mpam.device.ExtractionPoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Fan.html">mpam.device.Fan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.FixedPowerSupply.html">mpam.device.FixedPowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.GateStatus.html">mpam.device.GateStatus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Heater.html">mpam.device.Heater</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.HeatingMode.html">mpam.device.HeatingMode</a></li>
@@ -59,6 +58,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Magnet.html">mpam.device.Magnet</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Pad.html">mpam.device.Pad</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.PipettingTarget.html">mpam.device.PipettingTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerMode.html">mpam.device.PowerMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerSupply.html">mpam.device.PowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ProductLocation.html">mpam.device.ProductLocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.System.html">mpam.device.System</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.SystemComponent.html">mpam.device.SystemComponent</a></li>
@@ -119,12 +120,12 @@
 <h1>mpam.device.LocatedPad<a class="headerlink" href="#mpam-device-locatedpad" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.device.LocatedPad">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">LocatedPad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.LocatedPad" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">LocatedPad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.LocatedPad" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>An object with an associated <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a>.  Provides <a class="reference internal" href="#mpam.device.LocatedPad.row" title="mpam.device.LocatedPad.row"><code class="xref py py-attr docutils literal notranslate"><span class="pre">row</span></code></a> and
 <a class="reference internal" href="#mpam.device.LocatedPad.column" title="mpam.device.LocatedPad.column"><code class="xref py py-attr docutils literal notranslate"><span class="pre">column</span></code></a> attributes that extract from the <a class="reference internal" href="#mpam.device.LocatedPad.location" title="mpam.device.LocatedPad.location"><code class="xref py py-attr docutils literal notranslate"><span class="pre">location</span></code></a>.</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -142,7 +143,7 @@
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -155,7 +156,7 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.LocatedPad.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.LocatedPad.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.LocatedPad.__init__" title="Permalink to this definition"></a></dt>
 <dd><p>Initialize the object</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -166,19 +167,19 @@
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mpam.device.LocatedPad.column">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.device.LocatedPad.column" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">column</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.device.LocatedPad.column" title="Permalink to this definition"></a></dt>
 <dd><p>An alias for <a class="reference internal" href="#mpam.device.LocatedPad.location" title="mpam.device.LocatedPad.location"><code class="xref py py-attr docutils literal notranslate"><span class="pre">location</span></code></a> <code class="docutils literal notranslate"><span class="pre">.</span></code><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord.x" title="mpam.types.XYCoord.x"><code class="xref py py-attr docutils literal notranslate"><span class="pre">x</span></code></a></p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.device.LocatedPad.location">
-<span class="sig-name descname"><span class="pre">location</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.LocatedPad.location" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">location</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.LocatedPad.location" title="Permalink to this definition"></a></dt>
 <dd><p>the <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a> of the object</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mpam.device.LocatedPad.row">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">row</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.device.LocatedPad.row" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">row</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.device.LocatedPad.row" title="Permalink to this definition"></a></dt>
 <dd><p>An alias for <a class="reference internal" href="#mpam.device.LocatedPad.location" title="mpam.device.LocatedPad.location"><code class="xref py py-attr docutils literal notranslate"><span class="pre">location</span></code></a> <code class="docutils literal notranslate"><span class="pre">.</span></code><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord.y" title="mpam.types.XYCoord.y"><code class="xref py py-attr docutils literal notranslate"><span class="pre">y</span></code></a></p>
 </dd></dl>
 

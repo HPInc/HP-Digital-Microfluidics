@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -19,7 +16,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="typing.re" href="typing.re.html" />
+    <link rel="next" title="typing.io" href="typing.io.html" />
     <link rel="prev" title="typing.TextIO" href="typing.TextIO.html" /> 
 </head>
 
@@ -73,7 +70,7 @@
 <li class="toctree-l2"><a class="reference internal" href="typing.BinaryIO.html">typing.BinaryIO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.ForwardRef.html">typing.ForwardRef</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.Generic.html">typing.Generic</a></li>
-<li class="toctree-l2"><a class="reference internal" href="typing.IO.html">typing.io</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.IO.html">typing.IO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.NamedTupleMeta.html">typing.NamedTupleMeta</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.NewType.html">typing.NewType</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.ParamSpec.html">typing.ParamSpec</a></li>
@@ -89,6 +86,7 @@
 <li class="toctree-l2"><a class="reference internal" href="typing.SupportsRound.html">typing.SupportsRound</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.TextIO.html">typing.TextIO</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">typing.TypeVar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.io.html">typing.io</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.re.html">typing.re</a></li>
 </ul>
 </li>
@@ -123,7 +121,7 @@
 <h1>typing.TypeVar<a class="headerlink" href="#typing-typevar" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="typing.TypeVar">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">TypeVar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">constraints</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contravariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.TypeVar" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">TypeVar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">constraints</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contravariant</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#typing.TypeVar" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_Final</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_Immutable</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_TypeVarLike</span></code></p>
 <p>Type variable.</p>
 <p>Usage:</p>
@@ -164,13 +162,13 @@ A.__constraints__ == (str, bytes)</p>
 </div></blockquote>
 <p>Note that only type variables defined in global scope can be pickled.</p>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#typing.TypeVar.__init__" title="typing.TypeVar.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(name, *constraints[, bound, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#typing.TypeVar.__init__" title="typing.TypeVar.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(name, *constraints[, bound, …])</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -189,7 +187,7 @@ A.__constraints__ == (str, bytes)</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="typing.TextIO.html" class="btn btn-neutral float-left" title="typing.TextIO" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="typing.re.html" class="btn btn-neutral float-right" title="typing.re" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="typing.io.html" class="btn btn-neutral float-right" title="typing.io" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

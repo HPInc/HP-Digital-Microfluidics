@@ -1,0 +1,43 @@
+quantities.core.Bounded
+=======================
+
+.. currentmodule:: quantities.core
+
+.. autoclass:: Bounded
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Bounded.__init__
+   
+   
+   
+
+   
+   
+   
+   

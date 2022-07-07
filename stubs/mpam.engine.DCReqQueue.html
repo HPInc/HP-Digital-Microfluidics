@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -100,25 +97,25 @@
 <h1>mpam.engine.DCReqQueue<a class="headerlink" href="#mpam-engine-dcreqqueue" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.engine.DCReqQueue">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.engine.</span></span><span class="sig-name descname"><span class="pre">DCReqQueue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">requests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">events</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.engine.DCReqQueue" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.engine.</span></span><span class="sig-name descname"><span class="pre">DCReqQueue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">requests</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">events</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.engine.DCReqQueue" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="typing.NamedTuple.html#typing.NamedTuple" title="typing.NamedTuple"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></a></p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.engine.DCReqQueue.events" title="mpam.engine.DCReqQueue.events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">events</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="mpam.engine.html#mpam.engine.DCReqQueue.events" title="mpam.engine.DCReqQueue.events"><code class="xref py py-obj docutils literal notranslate"><span class="pre">events</span></code></a></p></td>
 <td><p>Alias for field number 1</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#mpam.engine.DCReqQueue.requests" title="mpam.engine.DCReqQueue.requests"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requests</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="mpam.engine.html#mpam.engine.DCReqQueue.requests" title="mpam.engine.DCReqQueue.requests"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requests</span></code></a></p></td>
 <td><p>Alias for field number 0</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -137,13 +134,13 @@
 </table>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.engine.DCReqQueue.events">
-<span class="sig-name descname"><span class="pre">events</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="threading.Event.html#threading.Event" title="threading.Event"><span class="pre">threading.Event</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.engine.DCReqQueue.events" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">events</span></span><em class="property"><span class="pre">:</span> <span class="pre">list</span></em><a class="headerlink" href="#mpam.engine.DCReqQueue.events" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 1</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.engine.DCReqQueue.requests">
-<span class="sig-name descname"><span class="pre">requests</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.engine.Updatable.html#mpam.engine.Updatable" title="mpam.engine.Updatable"><span class="pre">mpam.engine.Updatable</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.engine.DCReqQueue.requests" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">requests</span></span><em class="property"><span class="pre">:</span> <span class="pre">list</span></em><a class="headerlink" href="#mpam.engine.DCReqQueue.requests" title="Permalink to this definition"></a></dt>
 <dd><p>Alias for field number 0</p>
 </dd></dl>
 

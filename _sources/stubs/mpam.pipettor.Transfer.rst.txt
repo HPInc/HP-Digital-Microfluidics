@@ -36,6 +36,10 @@ mpam.pipettor.Transfer
            
        
    
+       
+           
+       
+   
 
    
    
@@ -43,6 +47,7 @@ mpam.pipettor.Transfer
 
    .. autosummary::
    
+      ~Transfer.total_volume
       ~Transfer.reagent
       ~Transfer.xfer_dir
       ~Transfer.targets

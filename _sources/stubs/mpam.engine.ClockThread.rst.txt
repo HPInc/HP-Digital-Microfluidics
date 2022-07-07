@@ -96,6 +96,10 @@ mpam.engine.ClockThread
            
        
    
+       
+           
+       
+   
 
    
    
@@ -242,6 +246,7 @@ mpam.engine.ClockThread
       ~ClockThread.abort_requested
       ~ClockThread.ensure_running
       ~ClockThread.getName
+      ~ClockThread.get_name
       ~ClockThread.idle
       ~ClockThread.isDaemon
       ~ClockThread.is_alive

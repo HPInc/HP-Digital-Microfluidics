@@ -1,0 +1,6 @@
+mpam.types.MISSING
+==================
+
+.. currentmodule:: mpam.types
+
+.. autodata:: MISSING

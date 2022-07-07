@@ -88,6 +88,18 @@ mpam.device.ExtractionPoint
            
        
    
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
 
    
    
@@ -95,9 +107,12 @@ mpam.device.ExtractionPoint
 
    .. autosummary::
    
-      ~ExtractionPoint.contents
-      ~ExtractionPoint.removed
+      ~ExtractionPoint.removable_liquid
+      ~ExtractionPoint.splash_border
+      ~ExtractionPoint.splash_zone
       ~ExtractionPoint.pad
+      ~ExtractionPoint.reserved_pads
+      ~ExtractionPoint.splash_radius
       ~ExtractionPoint.board
    
    
@@ -125,10 +140,10 @@ mpam.device.ExtractionPoint
       ~ExtractionPoint.pipettor_removed
       ~ExtractionPoint.prepare_for_add
       ~ExtractionPoint.prepare_for_remove
-      ~ExtractionPoint.reserve_pad
+      ~ExtractionPoint.reserve_pads
       ~ExtractionPoint.transfer_in
-      ~ExtractionPoint.transfer_in_result
       ~ExtractionPoint.transfer_out
+      ~ExtractionPoint.unreserve_pads
    
    
    

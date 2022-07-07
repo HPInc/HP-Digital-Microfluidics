@@ -1,0 +1,198 @@
+mpam.device.PowerSupply
+=======================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: PowerSupply
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PowerSupply.mode
+      ~PowerSupply.on_mode_change
+      ~PowerSupply.on_voltage_change
+      ~PowerSupply.voltage
+      ~PowerSupply.min_voltage
+      ~PowerSupply.max_voltage
+      ~PowerSupply.allowed_mode
+      ~PowerSupply.on_high_voltage
+      ~PowerSupply.on_low_voltage
+      ~PowerSupply.on_illegal_mode_change
+      ~PowerSupply.state
+      ~PowerSupply.can_toggle
+      ~PowerSupply.on_illegal_toggle
+      ~PowerSupply.broken
+      ~PowerSupply.live
+      ~PowerSupply.board
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~PowerSupply.Toggle
+      ~PowerSupply.TurnOff
+      ~PowerSupply.TurnOn
+      ~PowerSupply.current_state
+      ~PowerSupply.on_state_change
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PowerSupply.__init__
+      ~PowerSupply.high_clip
+      ~PowerSupply.low_clip
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~PowerSupply.SetState
+      ~PowerSupply.delayed
+      ~PowerSupply.schedule
+      ~PowerSupply.schedule_communication
+      ~PowerSupply.user_operation
+   
+   
+   

@@ -1,4 +1,4 @@
-quantities.dimensions.Area
+﻿quantities.dimensions.Area
 ==========================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Area
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Area
    .. autosummary::
    
       ~Area.dimensionality
+      ~Area.is_finite
       ~Area.is_negative
       ~Area.is_positive
       ~Area.is_zero

@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -52,6 +49,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DispenseGroup.html">mpam.device.DispenseGroup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DropLoc.html">mpam.device.DropLoc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ExtractionPoint.html">mpam.device.ExtractionPoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Fan.html">mpam.device.Fan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.FixedPowerSupply.html">mpam.device.FixedPowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.GateStatus.html">mpam.device.GateStatus</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Heater.html">mpam.device.Heater</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.HeatingMode.html">mpam.device.HeatingMode</a></li>
@@ -59,6 +58,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Magnet.html">mpam.device.Magnet</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Pad.html">mpam.device.Pad</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.PipettingTarget.html">mpam.device.PipettingTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerMode.html">mpam.device.PowerMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerSupply.html">mpam.device.PowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ProductLocation.html">mpam.device.ProductLocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.System.html">mpam.device.System</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.SystemComponent.html">mpam.device.SystemComponent</a></li>
@@ -119,15 +120,21 @@
 <h1>mpam.device.Board<a class="headerlink" href="#mpam-device-board" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.device.Board">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Board</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wells</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Magnet.html#mpam.device.Magnet" title="mpam.device.Magnet"><span class="pre">Magnet</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heaters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Heater.html#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">Heater</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.ExtractionPoint.html#mpam.device.ExtractionPoint" title="mpam.device.ExtractionPoint"><span class="pre">ExtractionPoint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">Orientation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_motion_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Board" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="mpam.device.SystemComponent.html#mpam.device.SystemComponent" title="mpam.device.SystemComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">SystemComponent</span></code></a></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Board</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wells</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">mpam.device.Well</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnets</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Magnet.html#mpam.device.Magnet" title="mpam.device.Magnet"><span class="pre">mpam.device.Magnet</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heaters</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Heater.html#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">mpam.device.Heater</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_points</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.ExtractionPoint.html#mpam.device.ExtractionPoint" title="mpam.device.ExtractionPoint"><span class="pre">mpam.device.ExtractionPoint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_point_splash_radius</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power_supply</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.PowerSupply.html#mpam.device.PowerSupply" title="mpam.device.PowerSupply"><span class="pre">mpam.device.PowerSupply</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Fan.html#mpam.device.Fan" title="mpam.device.Fan"><span class="pre">mpam.device.Fan</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">mpam.types.Orientation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_motion_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">off_on_delay</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">Time[0.0]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Board" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.device.SystemComponent.html#mpam.device.SystemComponent" title="mpam.device.SystemComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.device.SystemComponent</span></code></a></p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ambient_temperature</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Board.ambient_threshold" title="mpam.device.Board.ambient_threshold"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ambient_threshold</span></code></a></p></td>
+<td><p>The value used by <code class="xref py py-func docutils literal notranslate"><span class="pre">is_ambient()</span></code> to compute the threshold (based on <code class="xref py py-attr docutils literal notranslate"><span class="pre">ambient_temperature</span></code>) to be used by <code class="xref py py-func docutils literal notranslate"><span class="pre">is_ambient()</span></code>.</p></td>
+</tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">change_journal</span></code></p></td>
 <td><p></p></td>
 </tr>
@@ -173,35 +180,50 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">extraction_points</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">orientation</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">extraction_point_splash_radius</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_motion_time</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">power_supply</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">fan</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">orientation</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_motion_time</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">off_on_delay</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Inherited Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">system</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">joined_system</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if <a class="reference internal" href="#mpam.device.Board.join_system" title="mpam.device.Board.join_system"><code class="xref py py-func docutils literal notranslate"><span class="pre">join_system()</span></code></a> has been called and <code class="xref py py-attr docutils literal notranslate"><span class="pre">system</span></code> is valid.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">system</span></code></p></td>
+<td><p>The <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a> that the <a class="reference internal" href="mpam.device.SystemComponent.html#mpam.device.SystemComponent" title="mpam.device.SystemComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">SystemComponent</span></code></a> has joined.</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Board.__init__" title="mpam.device.Board.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(*, pads, wells[, magnets, heaters, ...])</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Board.__init__" title="mpam.device.Board.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(*, pads, wells[, magnets, heaters, …])</p></td>
+<td><p>Initialize the object</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">abort</span></code>()</p></td>
 <td><p></p></td>
@@ -212,61 +234,70 @@
 <tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">infer_drop_motion</span></code>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">join_system</span></code>(system)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_ambient</span></code>(temp)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">journal_delivery</span></code>(pad, liquid, *[, mix_result])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Board.join_system" title="mpam.device.Board.join_system"><code class="xref py py-obj docutils literal notranslate"><span class="pre">join_system</span></code></a>(system)</p></td>
+<td><p>Join <code class="docutils literal notranslate"><span class="pre">system</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">journal_delivery</span></code>(pad, liquid, *[, mix_result])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">journal_removal</span></code>(pad, volume)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">journal_removal</span></code>(pad, volume)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">journal_state_change</span></code>(pad, new_state)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">journal_state_change</span></code>(pad, new_state)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad_at</span></code>(x, y)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad_at</span></code>(x, y)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_blobs</span></code>()</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_blobs</span></code>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">replace_change_journal</span></code>()</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">replace_change_journal</span></code>()</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop</span></code>()</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_all</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_heaters</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_magnets</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_pads</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop</span></code>()</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_monitor</span></code>(cb)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">after_tick</span></code>(fn, *[, delta])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">after_tick</span></code>(fn, *[, delta])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">before_tick</span></code>(fn, *[, delta])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">before_tick</span></code>(fn, *[, delta])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_after</span></code>(delta, fn, *[, daemon])</p></td>
+<td><p>Call <code class="xref py py-class docutils literal notranslate"><span class="pre">TimerFunc</span></code> <code class="docutils literal notranslate"><span class="pre">fn</span></code> after a delay of <code class="docutils literal notranslate"><span class="pre">delta</span></code>. This will be delegated to <code class="xref py py-attr docutils literal notranslate"><span class="pre">system</span></code>, possibly batched, and finally passed to <code class="xref py py-attr docutils literal notranslate"><span class="pre">system</span></code>’s <a class="reference internal" href="mpam.engine.Engine.html#mpam.engine.Engine" title="mpam.engine.Engine"><code class="xref py py-class docutils literal notranslate"><span class="pre">Engine</span></code></a>. At this point it will be treated as if it had been ::.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_at</span></code>(t, fn, *[, daemon])</p></td>
+<td><p>Call <code class="xref py py-class docutils literal notranslate"><span class="pre">TimerFunc</span></code> <code class="docutils literal notranslate"><span class="pre">fn</span></code> at <a class="reference internal" href="quantities.timestamp.html#quantities.timestamp.Timestamp" title="quantities.timestamp.Timestamp"><code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code></a> <code class="docutils literal notranslate"><span class="pre">t</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">communicate</span></code>(cb[, delta])</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_after</span></code>(delta, fn, *[, daemon])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">call_at</span></code>(t, fn, *[, daemon])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">communicate</span></code>(cb[, delta])</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">in_system</span></code>()</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
 <td><p></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_request</span></code>(cb)</p></td>
@@ -294,8 +325,42 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.Board.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wells</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">Well</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Magnet.html#mpam.device.Magnet" title="mpam.device.Magnet"><span class="pre">Magnet</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heaters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Heater.html#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">Heater</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.ExtractionPoint.html#mpam.device.ExtractionPoint" title="mpam.device.ExtractionPoint"><span class="pre">ExtractionPoint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">Orientation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_motion_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Board.__init__" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wells</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Well.html#mpam.device.Well" title="mpam.device.Well"><span class="pre">mpam.device.Well</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnets</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Magnet.html#mpam.device.Magnet" title="mpam.device.Magnet"><span class="pre">mpam.device.Magnet</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heaters</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Heater.html#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">mpam.device.Heater</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_points</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.ExtractionPoint.html#mpam.device.ExtractionPoint" title="mpam.device.ExtractionPoint"><span class="pre">mpam.device.ExtractionPoint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extraction_point_splash_radius</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power_supply</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.PowerSupply.html#mpam.device.PowerSupply" title="mpam.device.PowerSupply"><span class="pre">mpam.device.PowerSupply</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fan</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Fan.html#mpam.device.Fan" title="mpam.device.Fan"><span class="pre">mpam.device.Fan</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">mpam.types.Orientation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_motion_time</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">off_on_delay</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">Time[0.0]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Board.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Board.ambient_threshold">
+<span class="sig-name descname"><span class="pre">ambient_threshold</span></span><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="quantities.dimensions.Temperature.html#quantities.dimensions.Temperature" title="quantities.dimensions.Temperature"><span class="pre">quantities.dimensions.Temperature</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">Temperature[9.0]</span></em><a class="headerlink" href="#mpam.device.Board.ambient_threshold" title="Permalink to this definition"></a></dt>
+<dd><p>The value used by <code class="xref py py-func docutils literal notranslate"><span class="pre">is_ambient()</span></code> to compute the threshold (based on
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">ambient_temperature</span></code>) to be used by <code class="xref py py-func docutils literal notranslate"><span class="pre">is_ambient()</span></code>. If it is a
+<a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a>, it is used directly as the threshold.  If it is
+a <a class="reference internal" href="quantities.dimensions.Temperature.html#quantities.dimensions.Temperature" title="quantities.dimensions.Temperature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Temperature</span></code></a>, it is added to the ambient temperature.  If it is a
+tuple, the two values are taken to be the lower and upper bounds,
+respectively, with a lower <a class="reference internal" href="quantities.dimensions.Temperature.html#quantities.dimensions.Temperature" title="quantities.dimensions.Temperature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Temperature</span></code></a> subtracted from
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">ambient_temperature</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.Board.join_system">
+<span class="sig-name descname"><span class="pre">join_system</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">system</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><span class="pre">mpam.device.System</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Board.join_system" title="Permalink to this definition"></a></dt>
+<dd><p>Join <code class="docutils literal notranslate"><span class="pre">system</span></code>.  After this call, <code class="xref py py-attr docutils literal notranslate"><span class="pre">system</span></code> will be valid and
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">joined_system</span></code> will return <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>This calls <code class="xref py py-func docutils literal notranslate"><span class="pre">component_joined()</span></code> on <code class="docutils literal notranslate"><span class="pre">system</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#mpam.device.Board.join_system" title="mpam.device.Board.join_system"><code class="xref py py-func docutils literal notranslate"><span class="pre">join_system()</span></code></a> will be called for a <a class="reference internal" href="#mpam.device.Board" title="mpam.device.Board"><code class="xref py py-class docutils literal notranslate"><span class="pre">Board</span></code></a> during the
+initialization of the <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a>.  For other
+<a class="reference internal" href="mpam.device.SystemComponent.html#mpam.device.SystemComponent" title="mpam.device.SystemComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">SystemComponent</span></code></a>s, it must be called explicitly.  If a class
+overrides <a class="reference internal" href="#mpam.device.Board.join_system" title="mpam.device.Board.join_system"><code class="xref py py-func docutils literal notranslate"><span class="pre">join_system()</span></code></a>, it should delegate to the base
+implementation.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>system</strong> – the <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a> to join</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

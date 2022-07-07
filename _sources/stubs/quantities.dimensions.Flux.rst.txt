@@ -1,4 +1,4 @@
-quantities.dimensions.Flux
+﻿quantities.dimensions.Flux
 ==========================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Flux
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Flux
    .. autosummary::
    
       ~Flux.dimensionality
+      ~Flux.is_finite
       ~Flux.is_negative
       ~Flux.is_positive
       ~Flux.is_zero

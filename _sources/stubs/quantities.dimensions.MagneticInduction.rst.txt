@@ -1,4 +1,4 @@
-quantities.dimensions.MagneticInduction
+﻿quantities.dimensions.MagneticInduction
 =======================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.MagneticInduction
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.MagneticInduction
    .. autosummary::
    
       ~MagneticInduction.dimensionality
+      ~MagneticInduction.is_finite
       ~MagneticInduction.is_negative
       ~MagneticInduction.is_positive
       ~MagneticInduction.is_zero

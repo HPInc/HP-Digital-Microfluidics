@@ -60,13 +60,29 @@ mpam.device.Pad
            
        
    
+
+   
+   
+   
        
            
        
    
-
+       
+           
+       
    
+       
+           
+       
    
+       
+           
+       
+   
+       
+           
+       
    
        
            
@@ -196,11 +212,14 @@ mpam.device.Pad
       ~Pad.heater
       ~Pad.magnet
       ~Pad.neighbors
+      ~Pad.on_reserved_change
       ~Pad.reserved
       ~Pad.safe
       ~Pad.well
       ~Pad.exists
       ~Pad.state
+      ~Pad.can_toggle
+      ~Pad.on_illegal_toggle
       ~Pad.broken
       ~Pad.live
       ~Pad.board
@@ -224,6 +243,8 @@ mpam.device.Pad
       ~Pad.current_state
       ~Pad.drop
       ~Pad.neighbors_for_blob
+      ~Pad.on_drop_change
+      ~Pad.on_state_change
       ~Pad.row
    
    
@@ -241,6 +262,7 @@ mpam.device.Pad
       ~Pad.neighbor
       ~Pad.reserve
       ~Pad.safe_except
+      ~Pad.unreserve
    
    
    
@@ -253,8 +275,6 @@ mpam.device.Pad
    
       ~Pad.SetState
       ~Pad.delayed
-      ~Pad.on_drop_change
-      ~Pad.on_state_change
       ~Pad.schedule
       ~Pad.schedule_communication
       ~Pad.user_operation

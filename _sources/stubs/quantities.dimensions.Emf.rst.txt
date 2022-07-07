@@ -1,4 +1,4 @@
-quantities.dimensions.Emf
+﻿quantities.dimensions.Emf
 =========================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Emf
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Emf
    .. autosummary::
    
       ~Emf.dimensionality
+      ~Emf.is_finite
       ~Emf.is_negative
       ~Emf.is_positive
       ~Emf.is_zero

@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -20,7 +17,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="quantities.core.BaseDimMeta" href="quantities.core.BaseDimMeta.html" />
-    <link rel="prev" title="quantities.core.qstr" href="quantities.core.qstr.html" /> 
+    <link rel="prev" title="quantities.core.set_default_units" href="quantities.core.set_default_units.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -51,9 +48,11 @@
 <li class="toctree-l1"><a class="reference internal" href="erk.errors.html">erk.errors</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="quantities.core.html">quantities.core</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.qstr.html">quantities.core.qstr</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.set_default_units.html">quantities.core.set_default_units</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">quantities.core.BaseDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimMeta.html">quantities.core.BaseDimMeta</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.BaseDimension.html">quantities.core.BaseDimension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.Bounded.html">quantities.core.Bounded</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.CountDim.html">quantities.core.CountDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDim.html">quantities.core.DerivedDim</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DerivedDimMeta.html">quantities.core.DerivedDimMeta</a></li>
@@ -68,6 +67,7 @@
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.Unit.html">quantities.core.Unit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.UnitExpr.html">quantities.core.UnitExpr</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.UnknownDimQuant.html">quantities.core.UnknownDimQuant</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quantities.core.default_units.html">quantities.core.default_units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DimMismatchError.html">quantities.core.DimMismatchError</a></li>
 <li class="toctree-l2"><a class="reference internal" href="quantities.core.DimensionalityError.html">quantities.core.DimensionalityError</a></li>
 </ul>
@@ -110,10 +110,10 @@
 <h1>quantities.core.BaseDim<a class="headerlink" href="#quantities-core-basedim" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="quantities.core.BaseDim">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">BaseDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.BaseDim" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="quantities.core.NamedDim.html#quantities.core.NamedDim" title="quantities.core.NamedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">NamedDim</span></code></a></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">quantities.core.</span></span><span class="sig-name descname"><span class="pre">BaseDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">quantities.core.Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">quantities.core.ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.core.BaseDim" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.NamedDim.html#quantities.core.NamedDim" title="quantities.core.NamedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">quantities.core.NamedDim</span></code></a></p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -122,7 +122,7 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -131,19 +131,22 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimensionality</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_negative</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_finite</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_positive</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_negative</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_zero</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_positive</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_zero</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -158,7 +161,7 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -237,7 +240,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="quantities.core.qstr.html" class="btn btn-neutral float-left" title="quantities.core.qstr" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quantities.core.set_default_units.html" class="btn btn-neutral float-left" title="quantities.core.set_default_units" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="quantities.core.BaseDimMeta.html" class="btn btn-neutral float-right" title="quantities.core.BaseDimMeta" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

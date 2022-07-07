@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -131,12 +128,12 @@
 <h1>quantities.dimensions.Density<a class="headerlink" href="#quantities-dimensions-density" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="quantities.dimensions.Density">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.dimensions.</span></span><span class="sig-name descname"><span class="pre">Density</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.dimensions.Density" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="quantities.core.DerivedDim.html#quantities.core.DerivedDim" title="quantities.core.DerivedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">DerivedDim</span></code></a></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">quantities.dimensions.</span></span><span class="sig-name descname"><span class="pre">Density</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.core.Dimensionality.html#quantities.core.Dimensionality" title="quantities.core.Dimensionality"><span class="pre">quantities.core.Dimensionality</span></a><span class="p"><span class="pre">[</span></span><span class="pre">quantities.core.ND</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.dimensions.Density" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="quantities.core.DerivedDim.html#quantities.core.DerivedDim" title="quantities.core.DerivedDim"><code class="xref py py-class docutils literal notranslate"><span class="pre">quantities.core.DerivedDim</span></code></a></p>
 <p>A <a class="reference internal" href="quantities.core.Quantity.html#quantities.core.Quantity" title="quantities.core.Quantity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Quantity</span></code></a> representing density (<a class="reference internal" href="quantities.dimensions.Mass.html#quantities.dimensions.Mass" title="quantities.dimensions.Mass"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mass</span></code></a>    <code class="docutils literal notranslate"><span class="pre">/</span></code><a class="reference internal" href="quantities.dimensions.Volume.html#quantities.dimensions.Volume" title="quantities.dimensions.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a>)</p>
 <p><a class="reference internal" href="quantities.dimensions.MassConcentration.html#quantities.dimensions.MassConcentration" title="quantities.dimensions.MassConcentration"><code class="xref py py-class docutils literal notranslate"><span class="pre">MassConcentration</span></code></a> is an alias.</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -148,7 +145,7 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -157,19 +154,22 @@
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">dimensionality</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_negative</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_finite</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_positive</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_negative</span></code></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_zero</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_positive</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_zero</span></code></p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -181,7 +181,7 @@
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />

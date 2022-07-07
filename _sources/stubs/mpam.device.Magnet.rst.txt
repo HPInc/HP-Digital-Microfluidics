@@ -32,13 +32,25 @@ mpam.device.Magnet
            
        
    
+
+   
+   
+   
        
            
        
    
-
+       
+           
+       
    
+       
+           
+       
    
+       
+           
+       
    
        
            
@@ -83,8 +95,11 @@ mpam.device.Magnet
 
    .. autosummary::
    
+      ~Magnet.number
       ~Magnet.pads
       ~Magnet.state
+      ~Magnet.can_toggle
+      ~Magnet.on_illegal_toggle
       ~Magnet.broken
       ~Magnet.live
       ~Magnet.board
@@ -102,6 +117,7 @@ mpam.device.Magnet
       ~Magnet.TurnOff
       ~Magnet.TurnOn
       ~Magnet.current_state
+      ~Magnet.on_state_change
    
    
 
@@ -124,7 +140,6 @@ mpam.device.Magnet
    
       ~Magnet.SetState
       ~Magnet.delayed
-      ~Magnet.on_state_change
       ~Magnet.schedule
       ~Magnet.schedule_communication
       ~Magnet.user_operation

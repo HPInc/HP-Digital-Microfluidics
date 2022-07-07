@@ -1,4 +1,4 @@
-quantities.dimensions.Amount
+﻿quantities.dimensions.Amount
 ============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Amount
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.dimensions.Amount
    .. autosummary::
    
       ~Amount.dimensionality
+      ~Amount.is_finite
       ~Amount.is_negative
       ~Amount.is_positive
       ~Amount.is_zero

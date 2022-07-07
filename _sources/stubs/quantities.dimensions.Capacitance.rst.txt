@@ -1,4 +1,4 @@
-quantities.dimensions.Capacitance
+﻿quantities.dimensions.Capacitance
 =================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Capacitance
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Capacitance
    .. autosummary::
    
       ~Capacitance.dimensionality
+      ~Capacitance.is_finite
       ~Capacitance.is_negative
       ~Capacitance.is_positive
       ~Capacitance.is_zero

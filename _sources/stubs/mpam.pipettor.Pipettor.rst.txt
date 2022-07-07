@@ -44,6 +44,22 @@ mpam.pipettor.Pipettor
            
        
    
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
 
    
    
@@ -96,11 +112,15 @@ mpam.pipettor.Pipettor
    
       ~Pipettor.__init__
       ~Pipettor.delayed
+      ~Pipettor.describe_source
       ~Pipettor.idle
       ~Pipettor.join_system
       ~Pipettor.not_idle
       ~Pipettor.perform
       ~Pipettor.schedule_communication
+      ~Pipettor.source_for
+      ~Pipettor.source_named
+      ~Pipettor.sources_for
       ~Pipettor.system_shutdown
    
    

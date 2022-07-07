@@ -120,6 +120,10 @@ quantities.core.NamedDim
            
        
    
+       
+           
+       
+   
 
    
    
@@ -139,6 +143,7 @@ quantities.core.NamedDim
    .. autosummary::
    
       ~NamedDim.dimensionality
+      ~NamedDim.is_finite
       ~NamedDim.is_negative
       ~NamedDim.is_positive
       ~NamedDim.is_zero

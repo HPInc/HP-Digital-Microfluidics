@@ -1,4 +1,4 @@
-quantities.dimensions.Acceleration
+﻿quantities.dimensions.Acceleration
 ==================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Acceleration
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Acceleration
    .. autosummary::
    
       ~Acceleration.dimensionality
+      ~Acceleration.is_finite
       ~Acceleration.is_negative
       ~Acceleration.is_positive
       ~Acceleration.is_zero

@@ -1,4 +1,4 @@
-quantities.dimensions.Frequency
+﻿quantities.dimensions.Frequency
 ===============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Frequency
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Frequency
    .. autosummary::
    
       ~Frequency.dimensionality
+      ~Frequency.is_finite
       ~Frequency.is_negative
       ~Frequency.is_positive
       ~Frequency.is_zero

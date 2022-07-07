@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -96,47 +93,47 @@
 <h1>quantities.temperature.Scale<a class="headerlink" href="#quantities-temperature-scale" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="quantities.temperature.Scale">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">quantities.temperature.</span></span><span class="sig-name descname"><span class="pre">Scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abbr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_zero</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative_to_kelvin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.temperature.Scale" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">quantities.temperature.</span></span><span class="sig-name descname"><span class="pre">Scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abbr</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_zero</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative_to_kelvin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#quantities.temperature.Scale" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>A unit to be used to specify a <a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a>.</p>
-<p>To obtain a <a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a>, multiply a float by a <a class="reference internal" href="#quantities.temperature.Scale" title="quantities.temperature.Scale"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scale</span></code></a>,
+<p>A unit to be used to specify a <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a>.</p>
+<p>To obtain a <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a>, multiply a float by a <a class="reference internal" href="quantities.temperature.html#quantities.temperature.Scale" title="quantities.temperature.Scale"><code class="xref py py-class docutils literal notranslate"><span class="pre">Scale</span></code></a>,
 e.g.,</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tp</span> <span class="o">=</span> <span class="mi">25</span><span class="o">*</span><span class="n">abs_C</span>
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#quantities.temperature.Scale.absolute_zero" title="quantities.temperature.Scale.absolute_zero"><code class="xref py py-obj docutils literal notranslate"><span class="pre">absolute_zero</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.temperature.html#quantities.temperature.Scale.absolute_zero" title="quantities.temperature.Scale.absolute_zero"><code class="xref py py-obj docutils literal notranslate"><span class="pre">absolute_zero</span></code></a></p></td>
 <td><p>Absolute zero as a number in this unit</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#quantities.temperature.Scale.relative_to_kelvin" title="quantities.temperature.Scale.relative_to_kelvin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">relative_to_kelvin</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="quantities.temperature.html#quantities.temperature.Scale.relative_to_kelvin" title="quantities.temperature.Scale.relative_to_kelvin"><code class="xref py py-obj docutils literal notranslate"><span class="pre">relative_to_kelvin</span></code></a></p></td>
 <td><p>The size of a degree relative to <code class="xref py py-attr docutils literal notranslate"><span class="pre">deg_K</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#quantities.temperature.Scale.abbr" title="quantities.temperature.Scale.abbr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">abbr</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.temperature.html#quantities.temperature.Scale.abbr" title="quantities.temperature.Scale.abbr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">abbr</span></code></a></p></td>
 <td><p>The unit abbreviation</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#quantities.temperature.Scale.__init__" title="quantities.temperature.Scale.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(abbr, absolute_zero, relative_to_kelvin)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="quantities.temperature.html#quantities.temperature.Scale.__init__" title="quantities.temperature.Scale.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(abbr, absolute_zero, relative_to_kelvin)</p></td>
 <td><p>Initialize the object.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="quantities.temperature.Scale.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abbr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_zero</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative_to_kelvin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.temperature.Scale.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abbr</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute_zero</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative_to_kelvin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#quantities.temperature.Scale.__init__" title="Permalink to this definition"></a></dt>
 <dd><p>Initialize the object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -151,19 +148,19 @@ e.g.,</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="quantities.temperature.Scale.abbr">
-<span class="sig-name descname"><span class="pre">abbr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#quantities.temperature.Scale.abbr" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">abbr</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#quantities.temperature.Scale.abbr" title="Permalink to this definition"></a></dt>
 <dd><p>The unit abbreviation</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="quantities.temperature.Scale.absolute_zero">
-<span class="sig-name descname"><span class="pre">absolute_zero</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#quantities.temperature.Scale.absolute_zero" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">absolute_zero</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#quantities.temperature.Scale.absolute_zero" title="Permalink to this definition"></a></dt>
 <dd><p>Absolute zero as a number in this unit</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="quantities.temperature.Scale.relative_to_kelvin">
-<span class="sig-name descname"><span class="pre">relative_to_kelvin</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#quantities.temperature.Scale.relative_to_kelvin" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">relative_to_kelvin</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#quantities.temperature.Scale.relative_to_kelvin" title="Permalink to this definition"></a></dt>
 <dd><p>The size of a degree relative to <code class="xref py py-attr docutils literal notranslate"><span class="pre">deg_K</span></code></p>
 </dd></dl>
 

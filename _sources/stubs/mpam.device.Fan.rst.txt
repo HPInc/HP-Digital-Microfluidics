@@ -1,0 +1,133 @@
+mpam.device.Fan
+===============
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: Fan
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~Fan.state
+      ~Fan.can_toggle
+      ~Fan.on_illegal_toggle
+      ~Fan.broken
+      ~Fan.live
+      ~Fan.board
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~Fan.Toggle
+      ~Fan.TurnOff
+      ~Fan.TurnOn
+      ~Fan.current_state
+      ~Fan.on_state_change
+   
+   
+
+   
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~Fan.SetState
+      ~Fan.__init__
+      ~Fan.delayed
+      ~Fan.schedule
+      ~Fan.schedule_communication
+      ~Fan.user_operation
+   
+   
+   

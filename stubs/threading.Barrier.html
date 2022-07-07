@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -109,14 +106,14 @@
 <h1>threading.Barrier<a class="headerlink" href="#threading-barrier" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="threading.Barrier">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Barrier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Barrier" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">threading.</span></span><span class="sig-name descname"><span class="pre">Barrier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parties</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#threading.Barrier" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Implements a Barrier.</p>
 <p>Useful for synchronizing a fixed number of threads at known synchronization
 points.  Threads block on ‘wait()’ and are simultaneously awoken once they
 have all made that call.</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -134,17 +131,17 @@ have all made that call.</p>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#threading.Barrier.__init__" title="threading.Barrier.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(parties[, action, timeout])</p></td>
-<td><p>Create a barrier, initialised to 'parties' threads.</p></td>
+<td><p>Create a barrier, initialised to ‘parties’ threads.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#threading.Barrier.abort" title="threading.Barrier.abort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">abort</span></code></a>()</p></td>
-<td><p>Place the barrier into a 'broken' state.</p></td>
+<td><p>Place the barrier into a ‘broken’ state.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#threading.Barrier.reset" title="threading.Barrier.reset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset</span></code></a>()</p></td>
 <td><p>Reset the barrier to the initial state.</p></td>
@@ -174,19 +171,19 @@ attempting to ‘wait()’ will have BrokenBarrierError raised.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="threading.Barrier.broken">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">broken</span></span><a class="headerlink" href="#threading.Barrier.broken" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">broken</span></span><a class="headerlink" href="#threading.Barrier.broken" title="Permalink to this definition"></a></dt>
 <dd><p>Return True if the barrier is in a broken state.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="threading.Barrier.n_waiting">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_waiting</span></span><a class="headerlink" href="#threading.Barrier.n_waiting" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">n_waiting</span></span><a class="headerlink" href="#threading.Barrier.n_waiting" title="Permalink to this definition"></a></dt>
 <dd><p>Return the number of threads currently waiting at the barrier.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="threading.Barrier.parties">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parties</span></span><a class="headerlink" href="#threading.Barrier.parties" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">parties</span></span><a class="headerlink" href="#threading.Barrier.parties" title="Permalink to this definition"></a></dt>
 <dd><p>Return the number of threads required to trip the barrier.</p>
 </dd></dl>
 

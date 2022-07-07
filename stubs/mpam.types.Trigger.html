@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,7 +136,7 @@
 <h1>mpam.types.Trigger<a class="headerlink" href="#mpam-types-trigger" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.Trigger">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Trigger</span></span><a class="headerlink" href="#mpam.types.Trigger" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Trigger</span></span><a class="headerlink" href="#mpam.types.Trigger" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>An object to which actions may be attached that will be executed when the
 object is fired.</p>
@@ -155,7 +156,7 @@ it waits for the next time the object is fired.</p>
 </div>
 <p><a class="reference internal" href="#mpam.types.Trigger" title="mpam.types.Trigger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trigger</span></code></a> objects are thread safe</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -168,12 +169,12 @@ it waits for the next time the object is fired.</p>
 <td><p>The list of actions waiting to be executed</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.Trigger.lock" title="mpam.types.Trigger.lock"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lock</span></code></a></p></td>
-<td><p>The object's lock</p></td>
+<td><p>The object’s lock</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -204,7 +205,7 @@ it waits for the next time the object is fired.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mpam.types.Trigger.count">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#mpam.types.Trigger.count" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">count</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#mpam.types.Trigger.count" title="Permalink to this definition"></a></dt>
 <dd><p>The number of actions waiting to be executed</p>
 </dd></dl>
 
@@ -223,13 +224,13 @@ be processed until the next time the <a class="reference internal" href="#mpam.t
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Trigger.lock">
-<span class="sig-name descname"><span class="pre">lock</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">threading.RLock</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Trigger.lock" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lock</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="threading.RLock.html#threading.RLock" title="threading.RLock"><span class="pre">threading.RLock</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Trigger.lock" title="Permalink to this definition"></a></dt>
 <dd><p>The object’s lock</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.Trigger.on_trigger">
-<span class="sig-name descname"><span class="pre">on_trigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Trigger.on_trigger" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">on_trigger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Trigger.on_trigger" title="Permalink to this definition"></a></dt>
 <dd><p>When the <a class="reference internal" href="#mpam.types.Trigger" title="mpam.types.Trigger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trigger</span></code></a> next fires, call a function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -246,7 +247,7 @@ be processed until the next time the <a class="reference internal" href="#mpam.t
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.Trigger.wait">
-<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Postable.html#mpam.types.Postable" title="mpam.types.Postable"><span class="pre">Postable</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Trigger.wait" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">wait</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Postable.html#mpam.types.Postable" title="mpam.types.Postable"><span class="pre">mpam.types.Postable</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.Trigger.wait" title="Permalink to this definition"></a></dt>
 <dd><p>When the <a class="reference internal" href="#mpam.types.Trigger" title="mpam.types.Trigger"><code class="xref py py-class docutils literal notranslate"><span class="pre">Trigger</span></code></a> next fires, post a value to a future.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -260,7 +261,7 @@ be processed until the next time the <a class="reference internal" href="#mpam.t
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Trigger.waiting">
-<span class="sig-name descname"><span class="pre">waiting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="mpam.types.Postable.html#mpam.types.Postable" title="mpam.types.Postable"><span class="pre">mpam.types.Postable</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.Trigger.waiting" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">waiting</span></span><em class="property"><span class="pre">:</span> <span class="pre">list</span></em><a class="headerlink" href="#mpam.types.Trigger.waiting" title="Permalink to this definition"></a></dt>
 <dd><p>The list of actions waiting to be executed</p>
 <p>Actions registered using <a class="reference internal" href="#mpam.types.Trigger.on_trigger" title="mpam.types.Trigger.on_trigger"><code class="xref py py-func docutils literal notranslate"><span class="pre">on_trigger()</span></code></a> are represented as tuples
 containing <code class="docutils literal notranslate"><span class="pre">None</span></code> and a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object which will execute the

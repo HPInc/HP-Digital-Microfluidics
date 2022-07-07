@@ -1,0 +1,218 @@
+mpam.device.FixedPowerSupply
+============================
+
+.. currentmodule:: mpam.device
+
+.. autoclass:: FixedPowerSupply
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~FixedPowerSupply.current_state
+      ~FixedPowerSupply.on_voltage_change
+      ~FixedPowerSupply.voltage
+      ~FixedPowerSupply.voltage_level
+      ~FixedPowerSupply.expected_state
+      ~FixedPowerSupply.is_toggleable
+      ~FixedPowerSupply.min_voltage
+      ~FixedPowerSupply.max_voltage
+      ~FixedPowerSupply.allowed_mode
+      ~FixedPowerSupply.on_high_voltage
+      ~FixedPowerSupply.on_low_voltage
+      ~FixedPowerSupply.on_illegal_mode_change
+      ~FixedPowerSupply.state
+      ~FixedPowerSupply.can_toggle
+      ~FixedPowerSupply.on_illegal_toggle
+      ~FixedPowerSupply.broken
+      ~FixedPowerSupply.live
+      ~FixedPowerSupply.board
+   
+   
+
+
+   
+   
+   .. rubric:: Inherited Attributes
+
+   .. autosummary::
+   
+      ~FixedPowerSupply.Toggle
+      ~FixedPowerSupply.TurnOff
+      ~FixedPowerSupply.TurnOn
+      ~FixedPowerSupply.mode
+      ~FixedPowerSupply.on_mode_change
+      ~FixedPowerSupply.on_state_change
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~FixedPowerSupply.__init__
+      ~FixedPowerSupply.no_voltage_changes
+   
+   
+   
+
+   
+   
+   .. rubric:: Inherited Methods
+
+   .. autosummary::
+   
+      ~FixedPowerSupply.SetState
+      ~FixedPowerSupply.delayed
+      ~FixedPowerSupply.high_clip
+      ~FixedPowerSupply.low_clip
+      ~FixedPowerSupply.schedule
+      ~FixedPowerSupply.schedule_communication
+      ~FixedPowerSupply.user_operation
+   
+   
+   

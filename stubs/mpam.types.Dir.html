@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.Dir</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,12 +136,12 @@
 <h1>mpam.types.Dir<a class="headerlink" href="#mpam-types-dir" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.Dir">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Dir" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">Dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.Dir" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
 <p>An enumeration of possible directions.</p>
 <p>Used to move around an array of items indexed by <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a>.</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -218,7 +219,7 @@
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -234,151 +235,151 @@
 </table>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.DOWN">
-<span class="sig-name descname"><span class="pre">DOWN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#mpam.types.Dir.DOWN" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">DOWN</span></span><em class="property"> <span class="pre">=</span> <span class="pre">5</span></em><a class="headerlink" href="#mpam.types.Dir.DOWN" title="Permalink to this definition"></a></dt>
 <dd><p>To the south</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.E">
-<span class="sig-name descname"><span class="pre">E</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Dir.E" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">E</span></span><em class="property"> <span class="pre">=</span> <span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Dir.E" title="Permalink to this definition"></a></dt>
 <dd><p>To the east</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.EAST">
-<span class="sig-name descname"><span class="pre">EAST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Dir.EAST" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">EAST</span></span><em class="property"> <span class="pre">=</span> <span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Dir.EAST" title="Permalink to this definition"></a></dt>
 <dd><p>To the east</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.LEFT">
-<span class="sig-name descname"><span class="pre">LEFT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#mpam.types.Dir.LEFT" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">LEFT</span></span><em class="property"> <span class="pre">=</span> <span class="pre">7</span></em><a class="headerlink" href="#mpam.types.Dir.LEFT" title="Permalink to this definition"></a></dt>
 <dd><p>To the west</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.N">
-<span class="sig-name descname"><span class="pre">N</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Dir.N" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">N</span></span><em class="property"> <span class="pre">=</span> <span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Dir.N" title="Permalink to this definition"></a></dt>
 <dd><p>To the north</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.NE">
-<span class="sig-name descname"><span class="pre">NE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#mpam.types.Dir.NE" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NE</span></span><em class="property"> <span class="pre">=</span> <span class="pre">2</span></em><a class="headerlink" href="#mpam.types.Dir.NE" title="Permalink to this definition"></a></dt>
 <dd><p>To the northeast</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.NORTH">
-<span class="sig-name descname"><span class="pre">NORTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Dir.NORTH" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NORTH</span></span><em class="property"> <span class="pre">=</span> <span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Dir.NORTH" title="Permalink to this definition"></a></dt>
 <dd><p>To the north</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.NORTHEAST">
-<span class="sig-name descname"><span class="pre">NORTHEAST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#mpam.types.Dir.NORTHEAST" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NORTHEAST</span></span><em class="property"> <span class="pre">=</span> <span class="pre">2</span></em><a class="headerlink" href="#mpam.types.Dir.NORTHEAST" title="Permalink to this definition"></a></dt>
 <dd><p>To the northeast</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.NORTHWEST">
-<span class="sig-name descname"><span class="pre">NORTHWEST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#mpam.types.Dir.NORTHWEST" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NORTHWEST</span></span><em class="property"> <span class="pre">=</span> <span class="pre">8</span></em><a class="headerlink" href="#mpam.types.Dir.NORTHWEST" title="Permalink to this definition"></a></dt>
 <dd><p>To the northwest</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.NW">
-<span class="sig-name descname"><span class="pre">NW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#mpam.types.Dir.NW" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">NW</span></span><em class="property"> <span class="pre">=</span> <span class="pre">8</span></em><a class="headerlink" href="#mpam.types.Dir.NW" title="Permalink to this definition"></a></dt>
 <dd><p>To the northwest</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.RIGHT">
-<span class="sig-name descname"><span class="pre">RIGHT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Dir.RIGHT" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">RIGHT</span></span><em class="property"> <span class="pre">=</span> <span class="pre">3</span></em><a class="headerlink" href="#mpam.types.Dir.RIGHT" title="Permalink to this definition"></a></dt>
 <dd><p>To the east</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.S">
-<span class="sig-name descname"><span class="pre">S</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#mpam.types.Dir.S" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">S</span></span><em class="property"> <span class="pre">=</span> <span class="pre">5</span></em><a class="headerlink" href="#mpam.types.Dir.S" title="Permalink to this definition"></a></dt>
 <dd><p>To the south</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.SE">
-<span class="sig-name descname"><span class="pre">SE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#mpam.types.Dir.SE" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SE</span></span><em class="property"> <span class="pre">=</span> <span class="pre">4</span></em><a class="headerlink" href="#mpam.types.Dir.SE" title="Permalink to this definition"></a></dt>
 <dd><p>To the southeast</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.SOUTH">
-<span class="sig-name descname"><span class="pre">SOUTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#mpam.types.Dir.SOUTH" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SOUTH</span></span><em class="property"> <span class="pre">=</span> <span class="pre">5</span></em><a class="headerlink" href="#mpam.types.Dir.SOUTH" title="Permalink to this definition"></a></dt>
 <dd><p>To the south</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.SOUTHEAST">
-<span class="sig-name descname"><span class="pre">SOUTHEAST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#mpam.types.Dir.SOUTHEAST" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SOUTHEAST</span></span><em class="property"> <span class="pre">=</span> <span class="pre">4</span></em><a class="headerlink" href="#mpam.types.Dir.SOUTHEAST" title="Permalink to this definition"></a></dt>
 <dd><p>To the southeast</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.SOUTHWEST">
-<span class="sig-name descname"><span class="pre">SOUTHWEST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#mpam.types.Dir.SOUTHWEST" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SOUTHWEST</span></span><em class="property"> <span class="pre">=</span> <span class="pre">6</span></em><a class="headerlink" href="#mpam.types.Dir.SOUTHWEST" title="Permalink to this definition"></a></dt>
 <dd><p>To the southwest</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.SW">
-<span class="sig-name descname"><span class="pre">SW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#mpam.types.Dir.SW" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SW</span></span><em class="property"> <span class="pre">=</span> <span class="pre">6</span></em><a class="headerlink" href="#mpam.types.Dir.SW" title="Permalink to this definition"></a></dt>
 <dd><p>To the southwest</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.UP">
-<span class="sig-name descname"><span class="pre">UP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Dir.UP" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">UP</span></span><em class="property"> <span class="pre">=</span> <span class="pre">1</span></em><a class="headerlink" href="#mpam.types.Dir.UP" title="Permalink to this definition"></a></dt>
 <dd><p>To the north</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.W">
-<span class="sig-name descname"><span class="pre">W</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#mpam.types.Dir.W" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">W</span></span><em class="property"> <span class="pre">=</span> <span class="pre">7</span></em><a class="headerlink" href="#mpam.types.Dir.W" title="Permalink to this definition"></a></dt>
 <dd><p>To the west</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.Dir.WEST">
-<span class="sig-name descname"><span class="pre">WEST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#mpam.types.Dir.WEST" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">WEST</span></span><em class="property"> <span class="pre">=</span> <span class="pre">7</span></em><a class="headerlink" href="#mpam.types.Dir.WEST" title="Permalink to this definition"></a></dt>
 <dd><p>To the west</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.Dir.cardinals">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cardinals</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">Dir</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.Dir.cardinals" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">cardinals</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.types.Dir.cardinals" title="Permalink to this definition"></a></dt>
 <dd><p>The cardinal directions (<cite>NORTH</cite>, <cite>SOUTH</cite>, <cite>EAST</cite>, and <cite>WEST</cite>)</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mpam.types.Dir.clockwise">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clockwise</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></em><a class="headerlink" href="#mpam.types.Dir.clockwise" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">clockwise</span></span><em class="property"><span class="pre">:</span> <span class="pre">mpam.types.Dir</span></em><a class="headerlink" href="#mpam.types.Dir.clockwise" title="Permalink to this definition"></a></dt>
 <dd><p>The direction clockwise of this one (e.g., <cite>EAST</cite> for <cite>NORTH</cite>)</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mpam.types.Dir.counterclockwise">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">counterclockwise</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></em><a class="headerlink" href="#mpam.types.Dir.counterclockwise" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">counterclockwise</span></span><em class="property"><span class="pre">:</span> <span class="pre">mpam.types.Dir</span></em><a class="headerlink" href="#mpam.types.Dir.counterclockwise" title="Permalink to this definition"></a></dt>
 <dd><p>The direction counterclockwise of this one (e.g., <cite>WEST</cite> for <cite>NORTH</cite>)</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="mpam.types.Dir.opposite">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">opposite</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></em><a class="headerlink" href="#mpam.types.Dir.opposite" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">opposite</span></span><em class="property"><span class="pre">:</span> <span class="pre">mpam.types.Dir</span></em><a class="headerlink" href="#mpam.types.Dir.opposite" title="Permalink to this definition"></a></dt>
 <dd><p>The direction opposite of this one (e.g., <cite>SOUTH</cite> for <cite>NORTH</cite>)</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.Dir.turned">
-<span class="sig-name descname"><span class="pre">turned</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">turn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Turn.html#mpam.types.Turn" title="mpam.types.Turn"><span class="pre">Turn</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">Dir</span></a></span></span><a class="headerlink" href="#mpam.types.Dir.turned" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">turned</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">turn</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Turn.html#mpam.types.Turn" title="mpam.types.Turn"><span class="pre">mpam.types.Turn</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#mpam.types.Dir" title="mpam.types.Dir"><span class="pre">mpam.types.Dir</span></a></span></span><a class="headerlink" href="#mpam.types.Dir.turned" title="Permalink to this definition"></a></dt>
 <dd><p>The direction after taking the given turn.</p>
 <p>For example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Dir</span><span class="o">.</span><span class="n">NORTH</span><span class="o">.</span><span class="n">turned</span><span class="p">(</span><span class="n">Turn</span><span class="o">.</span><span class="n">NONE</span><span class="p">)</span> <span class="ow">is</span> <span class="n">Dir</span><span class="o">.</span><span class="n">NORTH</span>

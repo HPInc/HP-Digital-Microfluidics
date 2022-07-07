@@ -1,4 +1,4 @@
-quantities.dimensions.Temperature
+﻿quantities.dimensions.Temperature
 =================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Temperature
            
        
    
+       
+           
+       
+   
 
    
    
@@ -143,6 +147,7 @@ quantities.dimensions.Temperature
    .. autosummary::
    
       ~Temperature.dimensionality
+      ~Temperature.is_finite
       ~Temperature.is_negative
       ~Temperature.is_positive
       ~Temperature.is_zero

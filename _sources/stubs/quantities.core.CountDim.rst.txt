@@ -140,6 +140,10 @@ quantities.core.CountDim
            
        
    
+       
+           
+       
+   
 
    
    
@@ -162,6 +166,7 @@ quantities.core.CountDim
    .. autosummary::
    
       ~CountDim.dimensionality
+      ~CountDim.is_finite
       ~CountDim.is_negative
       ~CountDim.is_positive
       ~CountDim.is_zero

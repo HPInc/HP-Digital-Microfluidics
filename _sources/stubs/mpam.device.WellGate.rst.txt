@@ -40,17 +40,25 @@ mpam.device.WellGate
            
        
    
-       
-           
-       
-   
-       
-           
-       
-   
 
    
    
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
    
        
            
@@ -135,6 +143,8 @@ mpam.device.WellGate
       ~WellGate.well
       ~WellGate.index
       ~WellGate.state
+      ~WellGate.can_toggle
+      ~WellGate.on_illegal_toggle
       ~WellGate.broken
       ~WellGate.live
       ~WellGate.board
@@ -158,6 +168,8 @@ mpam.device.WellGate
       ~WellGate.current_state
       ~WellGate.drop
       ~WellGate.neighbors_for_blob
+      ~WellGate.on_drop_change
+      ~WellGate.on_state_change
       ~WellGate.row
    
    
@@ -182,8 +194,6 @@ mpam.device.WellGate
    
       ~WellGate.SetState
       ~WellGate.delayed
-      ~WellGate.on_drop_change
-      ~WellGate.on_state_change
       ~WellGate.schedule
       ~WellGate.schedule_communication
       ~WellGate.set_location

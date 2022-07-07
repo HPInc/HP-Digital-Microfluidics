@@ -1,4 +1,4 @@
-quantities.dimensions.Inductance
+﻿quantities.dimensions.Inductance
 ================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Inductance
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Inductance
    .. autosummary::
    
       ~Inductance.dimensionality
+      ~Inductance.is_finite
       ~Inductance.is_negative
       ~Inductance.is_positive
       ~Inductance.is_zero

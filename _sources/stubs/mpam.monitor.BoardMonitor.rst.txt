@@ -1,4 +1,4 @@
-mpam.monitor.BoardMonitor
+﻿mpam.monitor.BoardMonitor
 =========================
 
 .. currentmodule:: mpam.monitor
@@ -64,9 +64,21 @@ mpam.monitor.BoardMonitor
            
        
    
+       
+           
+       
+   
 
    
    
+   
+       
+           
+       
+   
+       
+           
+       
    
        
            
@@ -167,6 +179,7 @@ mpam.monitor.BoardMonitor
 
    .. autosummary::
    
+      ~BoardMonitor.default_cmd_line_args
       ~BoardMonitor.interactive_reagent
       ~BoardMonitor.modifiers
       ~BoardMonitor.board
@@ -185,6 +198,7 @@ mpam.monitor.BoardMonitor
       ~BoardMonitor.click_handler
       ~BoardMonitor.macro_file_name
       ~BoardMonitor.interactive_volume
+      ~BoardMonitor.config_params
       ~BoardMonitor.min_x
       ~BoardMonitor.max_x
       ~BoardMonitor.min_y
@@ -205,6 +219,7 @@ mpam.monitor.BoardMonitor
    .. autosummary::
    
       ~BoardMonitor.__init__
+      ~BoardMonitor.add_args_to
       ~BoardMonitor.clock_widgets
       ~BoardMonitor.default_control_widgets
       ~BoardMonitor.dmf_lang_widgets

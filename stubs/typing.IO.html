@@ -4,13 +4,10 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>typing.io &mdash; MPAM  documentation</title>
+  <title>typing.IO &mdash; MPAM  documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -73,7 +70,7 @@
 <li class="toctree-l2"><a class="reference internal" href="typing.BinaryIO.html">typing.BinaryIO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.ForwardRef.html">typing.ForwardRef</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.Generic.html">typing.Generic</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">typing.io</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">typing.IO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.NamedTupleMeta.html">typing.NamedTupleMeta</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.NewType.html">typing.NewType</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.ParamSpec.html">typing.ParamSpec</a></li>
@@ -89,6 +86,7 @@
 <li class="toctree-l2"><a class="reference internal" href="typing.SupportsRound.html">typing.SupportsRound</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.TextIO.html">typing.TextIO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.TypeVar.html">typing.TypeVar</a></li>
+<li class="toctree-l2"><a class="reference internal" href="typing.io.html">typing.io</a></li>
 <li class="toctree-l2"><a class="reference internal" href="typing.re.html">typing.re</a></li>
 </ul>
 </li>
@@ -109,7 +107,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="typing.html">typing</a> &raquo;</li>
-      <li>typing.io</li>
+      <li>typing.IO</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/stubs/typing.IO.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -120,11 +118,103 @@
            <div itemprop="articleBody">
              
   <section id="typing-io">
-<h1>typing.io<a class="headerlink" href="#typing-io" title="Permalink to this headline"></a></h1>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="typing.io">
-<span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">io</span></span><a class="headerlink" href="#typing.io" title="Permalink to this definition"></a></dt>
-<dd><p>alias of <a class="reference internal" href="#typing.io" title="typing.io"><code class="xref py py-class docutils literal notranslate"><span class="pre">io</span></code></a></p>
+<h1>typing.IO<a class="headerlink" href="#typing-io" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="typing.IO">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">typing.</span></span><span class="sig-name descname"><span class="pre">IO</span></span><a class="headerlink" href="#typing.IO" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="typing.Generic.html#typing.Generic" title="typing.Generic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code></a></p>
+<p>Generic base class for TextIO and BinaryIO.</p>
+<p>This is an abstract, generic version of the return of open().</p>
+<p>NOTE: This does not distinguish between the different possible
+classes (text vs. binary, read vs. write vs. read/write,
+append-only, unbuffered).  The TextIO and BinaryIO subclasses
+below capture the distinctions between text vs. binary, which is
+pervasive in the interface; however we currently do not offer a
+way to track the other distinctions in the type system.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">closed</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">mode</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">close</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">fileno</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">flush</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">isatty</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code>([n])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">readable</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">readline</span></code>([limit])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">readlines</span></code>([hint])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">seek</span></code>(offset[, whence])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">seekable</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">tell</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">truncate</span></code>([size])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">writable</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">write</span></code>(s)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">writelines</span></code>(lines)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </section>

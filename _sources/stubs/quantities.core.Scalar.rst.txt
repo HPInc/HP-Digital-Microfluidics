@@ -120,6 +120,10 @@ quantities.core.Scalar
            
        
    
+       
+           
+       
+   
 
    
    
@@ -139,6 +143,7 @@ quantities.core.Scalar
    .. autosummary::
    
       ~Scalar.dimensionality
+      ~Scalar.is_finite
       ~Scalar.is_negative
       ~Scalar.is_positive
       ~Scalar.is_zero

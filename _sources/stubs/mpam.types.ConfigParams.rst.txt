@@ -1,0 +1,68 @@
+mpam.types.ConfigParams
+=======================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: ConfigParams
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~ConfigParams.defaults
+      ~ConfigParams.cmd_line
+      ~ConfigParams.from_code
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~ConfigParams.__init__
+      ~ConfigParams.get
+   
+   
+   
+
+   
+   
+   
+   

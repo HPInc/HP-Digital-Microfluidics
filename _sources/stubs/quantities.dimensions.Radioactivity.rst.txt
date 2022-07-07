@@ -1,4 +1,4 @@
-quantities.dimensions.Radioactivity
+﻿quantities.dimensions.Radioactivity
 ===================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Radioactivity
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Radioactivity
    .. autosummary::
    
       ~Radioactivity.dimensionality
+      ~Radioactivity.is_finite
       ~Radioactivity.is_negative
       ~Radioactivity.is_positive
       ~Radioactivity.is_zero

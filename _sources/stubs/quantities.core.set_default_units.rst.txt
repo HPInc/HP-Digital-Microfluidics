@@ -1,0 +1,6 @@
+quantities.core.set\_default\_units
+===================================
+
+.. currentmodule:: quantities.core
+
+.. autofunction:: set_default_units

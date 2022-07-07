@@ -32,13 +32,21 @@ mpam.device.BinaryComponent
            
        
    
+
+   
+   
+   
        
            
        
    
-
+       
+           
+       
    
-   
+       
+           
+       
    
        
            
@@ -83,7 +91,10 @@ mpam.device.BinaryComponent
       ~BinaryComponent.TurnOff
       ~BinaryComponent.TurnOn
       ~BinaryComponent.current_state
+      ~BinaryComponent.on_state_change
       ~BinaryComponent.state
+      ~BinaryComponent.can_toggle
+      ~BinaryComponent.on_illegal_toggle
       ~BinaryComponent.broken
       ~BinaryComponent.live
       ~BinaryComponent.board
@@ -103,7 +114,6 @@ mpam.device.BinaryComponent
    
       ~BinaryComponent.SetState
       ~BinaryComponent.__init__
-      ~BinaryComponent.on_state_change
    
    
    

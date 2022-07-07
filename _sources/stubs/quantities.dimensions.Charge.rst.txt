@@ -1,4 +1,4 @@
-quantities.dimensions.Charge
+﻿quantities.dimensions.Charge
 ============================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.Charge
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.Charge
    .. autosummary::
    
       ~Charge.dimensionality
+      ~Charge.is_finite
       ~Charge.is_negative
       ~Charge.is_positive
       ~Charge.is_zero

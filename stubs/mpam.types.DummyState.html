@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -19,7 +16,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="mpam.types.GridRegion" href="mpam.types.GridRegion.html" />
+    <link rel="next" title="mpam.types.Gettable" href="mpam.types.Gettable.html" />
     <link rel="prev" title="mpam.types.Dir" href="mpam.types.Dir.html" /> 
 </head>
 
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.GridRegion.html">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,8 +136,8 @@
 <h1>mpam.types.DummyState<a class="headerlink" href="#mpam-types-dummystate" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.DummyState">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">DummyState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.DummyState" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="mpam.types.State.html#mpam.types.State" title="mpam.types.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>[<a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code></a>]</p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">DummyState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Missing.html#mpam.types.Missing" title="mpam.types.Missing"><span class="pre">mpam.types.Missing</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.DummyState" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.State.html#mpam.types.State" title="mpam.types.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.types.State</span></code></a>[<a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mpam.types.T</span></code></a>]</p>
 <p>A concrete subclass of <a class="reference internal" href="mpam.types.State.html#mpam.types.State" title="mpam.types.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a> that implements <a class="reference internal" href="#mpam.types.DummyState.realize_state" title="mpam.types.DummyState.realize_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">realize_state()</span></code></a>
 to do nothing.</p>
 <dl class="field-list simple">
@@ -144,17 +145,8 @@ to do nothing.</p>
 <dd class="field-odd"><p><strong>T</strong> – The value type</p>
 </dd>
 </dl>
-<p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-</tbody>
-</table>
 <p class="rubric">Inherited Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -163,10 +155,16 @@ to do nothing.</p>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_state</span></code></p></td>
 <td><p>The current value.</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_state</span></code></p></td>
+<td><p>Does <code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code> have a value?</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_state_change</span></code></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code>.</p></td>
+</tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -178,28 +176,20 @@ to do nothing.</p>
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code>(*, initial_state)</p></td>
-<td><p><dl class="field-list simple">
-<dt class="field-odd">keyword initial_state</dt>
-<dd class="field-odd"><p>the initial value</p>
-</dd>
-</dl>
-</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_state_change</span></code>(cb, *[, key])</p></td>
-<td><p>Add a new handler, replacing any with the specified key.</p></td>
+<td><p>Initialize the object.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.DummyState.realize_state">
-<span class="sig-name descname"><span class="pre">realize_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.DummyState.realize_state" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">realize_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_state</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.T.html#mpam.types.T" title="mpam.types.T"><span class="pre">mpam.types.T</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.DummyState.realize_state" title="Permalink to this definition"></a></dt>
 <dd><p>Do nothing.  Used when there is nothing to be done to realize the new state.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -217,7 +207,7 @@ to do nothing.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="mpam.types.Dir.html" class="btn btn-neutral float-left" title="mpam.types.Dir" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="mpam.types.GridRegion.html" class="btn btn-neutral float-right" title="mpam.types.GridRegion" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="mpam.types.Gettable.html" class="btn btn-neutral float-right" title="mpam.types.Gettable" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

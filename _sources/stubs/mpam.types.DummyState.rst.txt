@@ -1,4 +1,4 @@
-mpam.types.DummyState
+﻿mpam.types.DummyState
 =====================
 
 .. currentmodule:: mpam.types
@@ -16,10 +16,6 @@ mpam.types.DummyState
            
        
    
-       
-           
-       
-   
 
    
    
@@ -32,14 +28,12 @@ mpam.types.DummyState
            
        
    
+       
+           
+       
+   
 
    
-   
-   .. rubric:: Attributes
-
-   .. autosummary::
-   
-      ~DummyState.state_change_callbacks
    
    
 
@@ -51,6 +45,8 @@ mpam.types.DummyState
    .. autosummary::
    
       ~DummyState.current_state
+      ~DummyState.has_state
+      ~DummyState.on_state_change
    
    
 
@@ -72,7 +68,6 @@ mpam.types.DummyState
    .. autosummary::
    
       ~DummyState.__init__
-      ~DummyState.on_state_change
    
    
    

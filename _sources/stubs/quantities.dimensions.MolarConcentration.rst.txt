@@ -1,4 +1,4 @@
-quantities.dimensions.MolarConcentration
+﻿quantities.dimensions.MolarConcentration
 ========================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.MolarConcentration
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.MolarConcentration
    .. autosummary::
    
       ~MolarConcentration.dimensionality
+      ~MolarConcentration.is_finite
       ~MolarConcentration.is_negative
       ~MolarConcentration.is_positive
       ~MolarConcentration.is_zero

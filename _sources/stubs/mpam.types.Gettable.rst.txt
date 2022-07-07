@@ -1,0 +1,43 @@
+mpam.types.Gettable
+===================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: Gettable
+
+   
+   
+   
+       
+           
+       
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~Gettable.__init__
+   
+   
+   
+
+   
+   
+   
+   

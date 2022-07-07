@@ -36,14 +36,6 @@ mpam.device.Clock
            
        
    
-       
-           
-       
-   
-       
-           
-       
-   
 
    
    
@@ -103,8 +95,8 @@ mpam.device.Clock
       ~Clock.system
       ~Clock.engine
       ~Clock.clock_thread
-      ~Clock.interval_change_callbacks
-      ~Clock.state_change_callbacks
+      ~Clock.on_interval_change
+      ~Clock.on_state_change
    
    
 
@@ -124,8 +116,6 @@ mpam.device.Clock
       ~Clock.after_tick
       ~Clock.await_tick
       ~Clock.before_tick
-      ~Clock.on_interval_change
-      ~Clock.on_state_change
       ~Clock.pause
       ~Clock.start
    

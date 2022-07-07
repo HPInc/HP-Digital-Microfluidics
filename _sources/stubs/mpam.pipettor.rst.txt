@@ -21,6 +21,7 @@
    
       EmptyTarget
       FillTarget
+      PipettingSource
       Pipettor
       PipettorSysCpt
       Transfer

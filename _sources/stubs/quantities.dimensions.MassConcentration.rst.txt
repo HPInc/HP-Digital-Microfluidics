@@ -1,4 +1,4 @@
-quantities.dimensions.MassConcentration
+﻿quantities.dimensions.MassConcentration
 =======================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.MassConcentration
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.MassConcentration
    .. autosummary::
    
       ~MassConcentration.dimensionality
+      ~MassConcentration.is_finite
       ~MassConcentration.is_negative
       ~MassConcentration.is_positive
       ~MassConcentration.is_zero

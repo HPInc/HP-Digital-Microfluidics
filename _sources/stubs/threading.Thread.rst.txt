@@ -44,6 +44,10 @@ threading.Thread
            
        
    
+       
+           
+       
+   
 
    
    
@@ -91,6 +95,7 @@ threading.Thread
    
       ~Thread.__init__
       ~Thread.getName
+      ~Thread.get_name
       ~Thread.isDaemon
       ~Thread.is_alive
       ~Thread.join

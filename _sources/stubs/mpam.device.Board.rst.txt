@@ -116,9 +116,49 @@ mpam.device.Board
            
        
    
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
 
    
    
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
    
        
            
@@ -199,6 +239,8 @@ mpam.device.Board
 
    .. autosummary::
    
+      ~Board.ambient_temperature
+      ~Board.ambient_threshold
       ~Board.change_journal
       ~Board.drop_size
       ~Board.drop_unit
@@ -214,8 +256,12 @@ mpam.device.Board
       ~Board.magnets
       ~Board.heaters
       ~Board.extraction_points
+      ~Board.extraction_point_splash_radius
+      ~Board.power_supply
+      ~Board.fan
       ~Board.orientation
       ~Board.drop_motion_time
+      ~Board.off_on_delay
    
    
 
@@ -226,6 +272,7 @@ mpam.device.Board
 
    .. autosummary::
    
+      ~Board.joined_system
       ~Board.system
    
    
@@ -240,6 +287,7 @@ mpam.device.Board
       ~Board.abort
       ~Board.finish_update
       ~Board.infer_drop_motion
+      ~Board.is_ambient
       ~Board.join_system
       ~Board.journal_delivery
       ~Board.journal_removal
@@ -247,6 +295,10 @@ mpam.device.Board
       ~Board.pad_at
       ~Board.print_blobs
       ~Board.replace_change_journal
+      ~Board.reset_all
+      ~Board.reset_heaters
+      ~Board.reset_magnets
+      ~Board.reset_pads
       ~Board.stop
    
    
@@ -258,14 +310,12 @@ mpam.device.Board
 
    .. autosummary::
    
-      ~Board.add_monitor
       ~Board.after_tick
       ~Board.before_tick
       ~Board.call_after
       ~Board.call_at
       ~Board.communicate
       ~Board.delayed
-      ~Board.in_system
       ~Board.make_request
       ~Board.on_condition
       ~Board.on_tick

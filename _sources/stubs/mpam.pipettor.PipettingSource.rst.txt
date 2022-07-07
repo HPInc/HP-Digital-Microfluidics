@@ -1,0 +1,108 @@
+mpam.pipettor.PipettingSource
+=============================
+
+.. currentmodule:: mpam.pipettor
+
+.. autoclass:: PipettingSource
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~PipettingSource.bounds
+      ~PipettingSource.exact_volume
+      ~PipettingSource.is_assigned
+      ~PipettingSource.max_volume
+      ~PipettingSource.min_volume
+      ~PipettingSource.on_bounds_change
+      ~PipettingSource.reagent
+      ~PipettingSource.name
+      ~PipettingSource.capacity
+      ~PipettingSource.pipettor
+      ~PipettingSource.assigned_reagent
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~PipettingSource.__init__
+      ~PipettingSource.content_desc
+   
+   
+   
+
+   
+   
+   
+   

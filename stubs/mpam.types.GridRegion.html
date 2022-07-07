@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -20,7 +17,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="mpam.types.Liquid" href="mpam.types.Liquid.html" />
-    <link rel="prev" title="mpam.types.DummyState" href="mpam.types.DummyState.html" /> 
+    <link rel="prev" title="mpam.types.Gettable" href="mpam.types.Gettable.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -54,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V.html">mpam.types.V</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.V2.html">mpam.types.V2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.H.html">mpam.types.H</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MISSING.html">mpam.types.MISSING</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CS.html">mpam.types.CS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.unknown_concentration.html">mpam.types.unknown_concentration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.waste_reagent.html">mpam.types.waste_reagent</a></li>
@@ -69,13 +67,16 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CombinedStaticOperation.html">mpam.types.CombinedStaticOperation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.CommunicationScheduler.html">mpam.types.CommunicationScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.ComputeOp.html">mpam.types.ComputeOp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.ConfigParams.html">mpam.types.ConfigParams</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Delayed.html">mpam.types.Delayed</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Dir.html">mpam.types.Dir</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.DummyState.html">mpam.types.DummyState</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.Gettable.html">mpam.types.Gettable</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.types.GridRegion</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Liquid.html">mpam.types.Liquid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Missing.html">mpam.types.Missing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Mixture.html">mpam.types.Mixture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.types.MonitoredProperty.html">mpam.types.MonitoredProperty</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OnOff.html">mpam.types.OnOff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.OpScheduler.html">mpam.types.OpScheduler</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.types.Operation.html">mpam.types.Operation</a></li>
@@ -135,7 +136,7 @@
 <h1>mpam.types.GridRegion<a class="headerlink" href="#mpam-types-gridregion" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.types.GridRegion">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">GridRegion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lower_left</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">Orientation</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Orientation.NORTH_POS_EAST_POS</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.GridRegion" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.types.</span></span><span class="sig-name descname"><span class="pre">GridRegion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lower_left</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">mpam.types.Orientation</span></a></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">Orientation.NORTH_POS_EAST_POS</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.types.GridRegion" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A rectangular region in a coordinate space</p>
 <p>It is mostly used for checking whether an <a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><code class="xref py py-class docutils literal notranslate"><span class="pre">XYCoord</span></code></a> is in the region
@@ -147,7 +148,7 @@ corners of the region (inclusive).</p></li>
 lower left through the upper right in row-major order.</p></li>
 </ul>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -183,20 +184,20 @@ lower left through the upper right in row-major order.</p></li>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.GridRegion.__init__" title="mpam.types.GridRegion.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(lower_left, width, height, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.types.GridRegion.__init__" title="mpam.types.GridRegion.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(lower_left, width, height, *[, …])</p></td>
 <td><p>Create a <a class="reference internal" href="#mpam.types.GridRegion" title="mpam.types.GridRegion"><code class="xref py py-class docutils literal notranslate"><span class="pre">GridRegion</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lower_left</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">XYCoord</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">Orientation</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Orientation.NORTH_POS_EAST_POS</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.GridRegion.__init__" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lower_left</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orientation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">mpam.types.Orientation</span></a></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">Orientation.NORTH_POS_EAST_POS</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.types.GridRegion.__init__" title="Permalink to this definition"></a></dt>
 <dd><p>Create a <a class="reference internal" href="#mpam.types.GridRegion" title="mpam.types.GridRegion"><code class="xref py py-class docutils literal notranslate"><span class="pre">GridRegion</span></code></a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -212,55 +213,55 @@ lower left through the upper right in row-major order.</p></li>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.height">
-<span class="sig-name descname"><span class="pre">height</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.height" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">height</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.height" title="Permalink to this definition"></a></dt>
 <dd><p>The height of the region</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.lower_left">
-<span class="sig-name descname"><span class="pre">lower_left</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.lower_left" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">lower_left</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.lower_left" title="Permalink to this definition"></a></dt>
 <dd><p>The lower left corner of the region</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.max_x">
-<span class="sig-name descname"><span class="pre">max_x</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.max_x" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">max_x</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.max_x" title="Permalink to this definition"></a></dt>
 <dd><p>The maximum x coordinate</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.max_y">
-<span class="sig-name descname"><span class="pre">max_y</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.max_y" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">max_y</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.max_y" title="Permalink to this definition"></a></dt>
 <dd><p>The maximum y coordinate</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.min_x">
-<span class="sig-name descname"><span class="pre">min_x</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.min_x" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">min_x</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.min_x" title="Permalink to this definition"></a></dt>
 <dd><p>The minimum x coordinate</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.min_y">
-<span class="sig-name descname"><span class="pre">min_y</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.min_y" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">min_y</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.min_y" title="Permalink to this definition"></a></dt>
 <dd><p>The minimum y coordinate</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.orientation">
-<span class="sig-name descname"><span class="pre">orientation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">mpam.types.Orientation</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.orientation" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">orientation</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><span class="pre">mpam.types.Orientation</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.orientation" title="Permalink to this definition"></a></dt>
 <dd><p>The <a class="reference internal" href="mpam.types.Orientation.html#mpam.types.Orientation" title="mpam.types.Orientation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Orientation</span></code></a> of the region</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.upper_right">
-<span class="sig-name descname"><span class="pre">upper_right</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.upper_right" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">upper_right</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.XYCoord.html#mpam.types.XYCoord" title="mpam.types.XYCoord"><span class="pre">mpam.types.XYCoord</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.upper_right" title="Permalink to this definition"></a></dt>
 <dd><p>The upper right corner of the region</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="mpam.types.GridRegion.width">
-<span class="sig-name descname"><span class="pre">width</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.width" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">width</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.types.GridRegion.width" title="Permalink to this definition"></a></dt>
 <dd><p>The width of the region</p>
 </dd></dl>
 
@@ -272,7 +273,7 @@ lower left through the upper right in row-major order.</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="mpam.types.DummyState.html" class="btn btn-neutral float-left" title="mpam.types.DummyState" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mpam.types.Gettable.html" class="btn btn-neutral float-left" title="mpam.types.Gettable" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="mpam.types.Liquid.html" class="btn btn-neutral float-right" title="mpam.types.Liquid" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

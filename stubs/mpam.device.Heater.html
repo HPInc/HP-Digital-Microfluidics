@@ -8,9 +8,6 @@
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/theme_overrides.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
@@ -52,6 +49,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DispenseGroup.html">mpam.device.DispenseGroup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.DropLoc.html">mpam.device.DropLoc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ExtractionPoint.html">mpam.device.ExtractionPoint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.Fan.html">mpam.device.Fan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.FixedPowerSupply.html">mpam.device.FixedPowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.GateStatus.html">mpam.device.GateStatus</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">mpam.device.Heater</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.HeatingMode.html">mpam.device.HeatingMode</a></li>
@@ -59,6 +58,8 @@
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Magnet.html">mpam.device.Magnet</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.Pad.html">mpam.device.Pad</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.PipettingTarget.html">mpam.device.PipettingTarget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerMode.html">mpam.device.PowerMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mpam.device.PowerSupply.html">mpam.device.PowerSupply</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.ProductLocation.html">mpam.device.ProductLocation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.System.html">mpam.device.System</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mpam.device.SystemComponent.html">mpam.device.SystemComponent</a></li>
@@ -119,99 +120,221 @@
 <h1>mpam.device.Heater<a class="headerlink" href="#mpam-device-heater" title="Permalink to this headline"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.device.Heater">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Heater</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><span class="pre">Board</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polling_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Heater" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="mpam.types.OpScheduler.html#mpam.types.OpScheduler" title="mpam.types.OpScheduler"><code class="xref py py-class docutils literal notranslate"><span class="pre">OpScheduler</span></code></a>[<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>], <a class="reference internal" href="mpam.device.BoardComponent.html#mpam.device.BoardComponent" title="mpam.device.BoardComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BoardComponent</span></code></a></p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">mpam.device.</span></span><span class="sig-name descname"><span class="pre">Heater</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polling_interval</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_temperature</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Heater" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.device.BinaryComponent</span></code></a>[<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>]</p>
+<p>A <a class="reference internal" href="mpam.device.BoardComponent.html#mpam.device.BoardComponent" title="mpam.device.BoardComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BoardComponent</span></code></a> that can be used to control the temperature of its
+associated <a class="reference internal" href="#mpam.device.Heater.pads" title="mpam.device.Heater.pads"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pads</span></code></a>.</p>
+<p>The <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> is controlled by setting its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> temperature.
+If its <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a> is below its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>, it attempts
+to become hotter until it reaches the <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>, at which point it
+attempts to maintain that temperature.  If its <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>
+is above its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>, it turns off and cools off until it reaches its
+<a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>, at which point it attempts to maintain that temperature.  If
+its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> is <code class="docutils literal notranslate"><span class="pre">None</span></code>, it turns off and cools down to the ambient
+temperature.</p>
+<p>As a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a>, its <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.current_state" title="mpam.device.BinaryComponent.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code></a>
+is <a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff.OFF" title="mpam.types.OnOff.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OFF</span></code></a> whenever its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> is <code class="docutils literal notranslate"><span class="pre">None</span></code> and
+<a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff.ON" title="mpam.types.OnOff.ON"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ON</span></code></a> otherwise.  Setting its
+<a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.current_state" title="mpam.device.BinaryComponent.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code></a> to <a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff.OFF" title="mpam.types.OnOff.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OFF</span></code></a> is equivalent
+to setting its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> to <code class="docutils literal notranslate"><span class="pre">None</span></code>. Setting its
+<a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.current_state" title="mpam.device.BinaryComponent.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code></a> to a <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a> is
+equivalent to setting its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> to its last non-<code class="docutils literal notranslate"><span class="pre">None</span></code> value. (If
+there is no such value, its <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.current_state" title="mpam.device.BinaryComponent.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code></a> will be
+reset to <a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff.OFF" title="mpam.types.OnOff.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OFF</span></code></a>.)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The value of a <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.current_state" title="mpam.device.BinaryComponent.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code></a>
+is based on its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>, not the state of its underlying
+hardware, so it remains <a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff.ON" title="mpam.types.OnOff.ON"><code class="xref py py-attr docutils literal notranslate"><span class="pre">ON</span></code></a> when it is cooling to a
+target temperature or when it turns off briefly while maintaining a
+temperature.  It is also <a class="reference internal" href="mpam.types.OnOff.html#mpam.types.OnOff.OFF" title="mpam.types.OnOff.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OFF</span></code></a> when its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> is
+<code class="docutils literal notranslate"><span class="pre">None</span></code>, even if it has not yet cooled to the ambient temperature.</p>
+</div>
+<p>A <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s public interface is primarily three
+<a class="reference internal" href="mpam.types.MonitoredProperty.html#mpam.types.MonitoredProperty" title="mpam.types.MonitoredProperty"><code class="xref py py-class docutils literal notranslate"><span class="pre">MonitoredProperty</span></code></a>s, in addition to
+<a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.current_state" title="mpam.device.BinaryComponent.current_state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code></a>.  Its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> is the
+temperature it is to get to and maintain, or <code class="docutils literal notranslate"><span class="pre">None</span></code> to indicate that it
+should turn off.  Its read-only <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a> is the last read
+(or modeled) temperature.  And its read-only <a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a> is an indication
+of whether it is <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.MAINTAINING" title="mpam.device.HeatingMode.MAINTAINING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">MAINTAINING</span></code></a> its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>,
+<a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.HEATING" title="mpam.device.HeatingMode.HEATING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">HEATING</span></code></a> to its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a>,
+<a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.COOLING" title="mpam.device.HeatingMode.COOLING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">COOLING</span></code></a> to its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> (or to the ambient
+temperature if its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> is <code class="docutils literal notranslate"><span class="pre">None</span></code>), or <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.OFF" title="mpam.device.HeatingMode.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OFF</span></code></a>
+(and at the ambient temperature).  These each have associated
+<code class="xref py py-class docutils literal notranslate"><span class="pre">CallbackChangeList</span></code>s: <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent.on_state_change" title="mpam.device.BinaryComponent.on_state_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_state_change</span></code></a>,
+<a class="reference internal" href="#mpam.device.Heater.on_target_change" title="mpam.device.Heater.on_target_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_target_change</span></code></a>, <a class="reference internal" href="#mpam.device.Heater.on_temperature_change" title="mpam.device.Heater.on_temperature_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_temperature_change</span></code></a>, and
+<a class="reference internal" href="#mpam.device.Heater.on_mode_change" title="mpam.device.Heater.on_mode_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_mode_change</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a> can be <code class="docutils literal notranslate"><span class="pre">None</span></code>.  This indicates that the
+<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> implementation has no way to read the temperature (or
+has not yet done so).  If this is the case, the implementation will have
+to update <a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a> itself, as the automatic updating is by callbacks
+hung on <a class="reference internal" href="#mpam.device.Heater.on_target_change" title="mpam.device.Heater.on_target_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_target_change</span></code></a> and <a class="reference internal" href="#mpam.device.Heater.on_temperature_change" title="mpam.device.Heater.on_temperature_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_temperature_change</span></code></a>.</p>
+</div>
+<p>The actual control of the hardware is expected to be a consequence of the
+the implementation subclass hanging a callback on <a class="reference internal" href="#mpam.device.Heater.on_target_change" title="mpam.device.Heater.on_target_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_target_change</span></code></a>
+(and perhaps <a class="reference internal" href="#mpam.device.Heater.on_mode_change" title="mpam.device.Heater.on_mode_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_mode_change</span></code></a> or <a class="reference internal" href="#mpam.device.Heater.on_temperature_change" title="mpam.device.Heater.on_temperature_change"><code class="xref py py-attr docutils literal notranslate"><span class="pre">on_temperature_change</span></code></a>).  The
+<a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a> is set to the value posted to the result of
+<a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a>, which is called every <a class="reference internal" href="#mpam.device.Heater.polling_interval" title="mpam.device.Heater.polling_interval"><code class="xref py py-attr docutils literal notranslate"><span class="pre">polling_interval</span></code></a>.  By default,
+it simply returns a future whose value is <code class="docutils literal notranslate"><span class="pre">None</span></code>, but this method  is
+expected to be overridden by implementation subclasses. The polling can be
+stopped by <a class="reference internal" href="#mpam.device.Heater.stop_polling" title="mpam.device.Heater.stop_polling"><code class="xref py py-func docutils literal notranslate"><span class="pre">stop_polling()</span></code></a> and restarted by <a class="reference internal" href="#mpam.device.Heater.start_polling" title="mpam.device.Heater.start_polling"><code class="xref py py-func docutils literal notranslate"><span class="pre">start_polling()</span></code></a>.  It
+is started as soon as the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> joins the <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a>.</p>
+<p>Temperature changes on a <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> take place within a
+<a class="reference internal" href="mpam.device.UserOperation.html#mpam.device.UserOperation" title="mpam.device.UserOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserOperation</span></code></a>, so the <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a> will not be considered to be
+idle (and will not exit a <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">system</span></code> block) when the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s
+<a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a> is <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.HEATING" title="mpam.device.HeatingMode.HEATING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">HEATING</span></code></a> or
+<a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.COOLING" title="mpam.device.HeatingMode.COOLING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">COOLING</span></code></a>.</p>
+<p>To set the <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> using an <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>, the
+<a class="reference internal" href="#mpam.device.Heater.SetTemperature" title="mpam.device.Heater.SetTemperature"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater.SetTemperature</span></code></a> operation is provided.  This
+<a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> completes when the desired temperature has been reached.</p>
 <p class="rubric">Attributes</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_temperature</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_temperature</span></code></a></p></td>
+<td><p>The current <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a> of the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">target</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mode</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s current <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode" title="mpam.device.HeatingMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">HeatingMode</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">num</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater.on_mode_change" title="mpam.device.Heater.on_mode_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_mode_change</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">pads</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Heater.on_target_change" title="mpam.device.Heater.on_target_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_target_change</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">mode</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater.on_temperature_change" title="mpam.device.Heater.on_temperature_change"><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_temperature_change</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">polling_interval</span></code></p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-obj docutils literal notranslate"><span class="pre">target</span></code></a></p></td>
+<td><p>The target <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a> of the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to indicate that the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> should turn off and return to ambient temperature.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater.number" title="mpam.device.Heater.number"><code class="xref py py-obj docutils literal notranslate"><span class="pre">number</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s index in its <a class="reference internal" href="mpam.device.BoardComponent.html#mpam.device.BoardComponent.board" title="mpam.device.BoardComponent.board"><code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></a>’s <code class="xref py py-attr docutils literal notranslate"><span class="pre">heaters</span></code> list</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Heater.pads" title="mpam.device.Heater.pads"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pads</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pad</span></code></a>s affected by this <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater.polling_interval" title="mpam.device.Heater.polling_interval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polling_interval</span></code></a></p></td>
+<td><p>The <a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><code class="xref py py-class docutils literal notranslate"><span class="pre">Time</span></code></a> to wait between calls to <a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a> to get a new value for <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Inherited Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Toggle</span></code></p></td>
+<td><p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> to toggle the state of a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TurnOff</span></code></p></td>
+<td><p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> to turn on a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TurnOn</span></code></p></td>
+<td><p>An <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> to turn on a <a class="reference internal" href="mpam.device.BinaryComponent.html#mpam.device.BinaryComponent" title="mpam.device.BinaryComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryComponent</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">current_state</span></code></p></td>
+<td><p>The current value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_state_change</span></code></p></td>
+<td><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <code class="xref py py-attr docutils literal notranslate"><span class="pre">current_state</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater.__init__" title="mpam.device.Heater.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(num, board, *, pads, polling_interval)</p></td>
-<td><p></p></td>
+<td><p>Initialize the object.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_target_change</span></code>(cb, *[, key])</p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-obj docutils literal notranslate"><span class="pre">poll</span></code></a>()</p></td>
+<td><p>Determine the current temperature.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">on_temperature_change</span></code>(cb, *[, key])</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#mpam.device.Heater.start_polling" title="mpam.device.Heater.start_polling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_polling</span></code></a>()</p></td>
+<td><p>Start (or resume) calling <a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a> to get new values for <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">poll</span></code>()</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_polling</span></code>()</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop_polling</span></code>()</p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#mpam.device.Heater.stop_polling" title="mpam.device.Heater.stop_polling"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stop_polling</span></code></a>()</p></td>
+<td><p>Stop calling <a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a> to get new values for <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>.</p></td>
 </tr>
 </tbody>
 </table>
 <p class="rubric">Inherited Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">SetState</span></code>(val)</p></td>
+<td><p>A <code class="xref py py-attr docutils literal notranslate"><span class="pre">ModifyState</span></code> that sets the state to a specific value.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">delayed</span></code>(function, *, after)</p></td>
 <td><p>Call a function after n optional delay by delegating to <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code>(op[, after, post_result])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule</span></code>(op[, after, post_result])</p></td>
 <td><p>Schedule an operation for this object, which is assumed to be a <code class="xref py py-attr docutils literal notranslate"><span class="pre">CS</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule_communication</span></code>(cb, *[, after])</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">schedule_communication</span></code>(cb, *[, after])</p></td>
 <td><p>Schedule communication of <code class="docutils literal notranslate"><span class="pre">cb</span></code> after optional delay <code class="docutils literal notranslate"><span class="pre">after</span></code> by delegating to <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">user_operation</span></code>()</p></td>
-<td><p>Create a new <a class="reference internal" href="mpam.device.UserOperation.html#mpam.device.UserOperation" title="mpam.device.UserOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserOperation</span></code></a> in the <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code>'s <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">user_operation</span></code>()</p></td>
+<td><p>Create a new <a class="reference internal" href="mpam.device.UserOperation.html#mpam.device.UserOperation" title="mpam.device.UserOperation"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserOperation</span></code></a> in the <code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code>’s <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="mpam.device.Heater.SetTemperature">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SetTemperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Heater.SetTemperature" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a>[<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>, <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>]</p>
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">SetTemperature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#mpam.device.Heater.SetTemperature" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">mpam.types.Operation</span></code></a>[<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>, <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>]</p>
+<p>A <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> that modifies the <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> of a
+<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>.  The <a class="reference internal" href="mpam.types.Operation.html#mpam.types.Operation" title="mpam.types.Operation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Operation</span></code></a> is considered complete (and
+its future receives the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> as its value) when the
+<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a> reaches this
+target temperature.  (More precisely, when its <a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a>
+becomes <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.MAINTAINING" title="mpam.device.HeatingMode.MAINTAINING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">MAINTAINING</span></code></a> or <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.OFF" title="mpam.device.HeatingMode.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OFF</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If another <code class="xref py py-class docutils literal notranslate"><span class="pre">SetTemperature</span></code> operation is scheduled before
+this one completes, this operation is cancelled, and its future will
+never receive a value.</p>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.Heater.SetTemperature.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.TemperaturePoint.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Heater.SetTemperature.__init__" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Heater.SetTemperature.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>target</strong> – the target <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to
+indicate that the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> should turn off.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.Heater.SetTemperature._schedule_for">
-<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">heater</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">Heater</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">Ticks</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">Heater</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.device.Heater.SetTemperature._schedule_for" title="Permalink to this definition"></a></dt>
-<dd><p>The implementation of <code class="xref py py-func docutils literal notranslate"><span class="pre">schedule_for()</span></code>.  There is no default implementation.</p>
+<span class="sig-name descname"><span class="pre">_schedule_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">heater</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">mpam.device.Heater</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.types.Ticks.html#mpam.types.Ticks" title="mpam.types.Ticks"><span class="pre">mpam.types.Ticks</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_result</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><span class="pre">mpam.device.Heater</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.device.Heater.SetTemperature._schedule_for" title="Permalink to this definition"></a></dt>
+<dd><p>The implementation of <code class="xref py py-func docutils literal notranslate"><span class="pre">schedule_for()</span></code>. Sets
+<code class="docutils literal notranslate"><span class="pre">heater</span></code>’s <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> and monitors changes in its
+<a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a>.  When this becomes
+<a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.MAINTAINING" title="mpam.device.HeatingMode.MAINTAINING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">MAINTAINING</span></code></a> or <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.OFF" title="mpam.device.HeatingMode.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">OFF</span></code></a>,
+<code class="docutils literal notranslate"><span class="pre">heater</span></code> is posted to the returned future.</p>
+<p>If another <code class="xref py py-class docutils literal notranslate"><span class="pre">SetTemperature</span></code> is currently in progress, it is
+silently aborted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>obj</strong> – the <a class="reference internal" href="mpam.device.T.html#mpam.device.T" title="mpam.device.T"><code class="xref py py-attr docutils literal notranslate"><span class="pre">T</span></code></a> object to schedule the operation for</p>
+<dd class="field-odd"><p><strong>obj</strong> – the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> to schedule the operation for</p>
 </dd>
 <dt class="field-even">Keyword Arguments</dt>
 <dd class="field-even"><ul class="simple">
@@ -220,18 +343,166 @@
 </ul>
 </dd>
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a <code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code>[<code class="xref py py-attr docutils literal notranslate"><span class="pre">V</span></code>] future object to which the resulting
+<dd class="field-odd"><p>a <code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code>[<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>] future object to which the resulting
 value will be posted unless <code class="docutils literal notranslate"><span class="pre">post_result</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.SetTemperature.key_attr">
+<span class="sig-name descname"><span class="pre">key_attr</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">'__set_temp_monitor_key'</span></em><a class="headerlink" href="#mpam.device.Heater.SetTemperature.key_attr" title="Permalink to this definition"></a></dt>
+<dd><p>The name of the attribute to use to store the key for the callback
+monitoring for <a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a> changes.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.SetTemperature.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.Heater.SetTemperature.target" title="Permalink to this definition"></a></dt>
+<dd><p>The target <code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to indicate that the
+heater should turn off and return to ambient temperature.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="mpam.device.Heater.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><span class="pre">Board</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polling_interval</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">Time</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Heater.__init__" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">board</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><span class="pre">mpam.device.Board</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pads</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">mpam.device.Pad</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polling_interval</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><span class="pre">quantities.dimensions.Time</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_temperature</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Heater.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num</strong> – the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s index in its <a class="reference internal" href="mpam.device.BoardComponent.html#mpam.device.BoardComponent.board" title="mpam.device.BoardComponent.board"><code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></a>’s
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">heaters</span></code> list</p></li>
+<li><p><strong>board</strong> – the containing <a class="reference internal" href="mpam.device.Board.html#mpam.device.Board" title="mpam.device.Board"><code class="xref py py-class docutils literal notranslate"><span class="pre">Board</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Keyword Arguments</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>pads</strong> – the <a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pad</span></code></a>s affected by this <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a></p></li>
+<li><p><strong>polling_interval</strong> – the <a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><code class="xref py py-class docutils literal notranslate"><span class="pre">Time</span></code></a> to wait between calls to
+<a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a></p></li>
+<li><p><strong>initial_temperature</strong> – an optional initial value for
+<a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.device.Heater.current_temperature">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">current_temperature</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional[quantities.temperature.TemperaturePoint]</span></em><a class="headerlink" href="#mpam.device.Heater.current_temperature" title="Permalink to this definition"></a></dt>
+<dd><p>The current <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a> of the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>.  This is
+set to the value (posted to the future) returned by <a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a>.  If
+this value is <code class="docutils literal notranslate"><span class="pre">None</span></code>, it means that no temperature has been
+established yet or the device cannot read its own temperature.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If, for some reason, an implementation needs to set this at some
+other time, the actual <a class="reference internal" href="mpam.types.MonitoredProperty.html#mpam.types.MonitoredProperty" title="mpam.types.MonitoredProperty"><code class="xref py py-class docutils literal notranslate"><span class="pre">MonitoredProperty</span></code></a> is
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">_temperature</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="mpam.device.Heater.mode">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">mode</span></span><em class="property"><span class="pre">:</span> <span class="pre">mpam.device.HeatingMode</span></em><a class="headerlink" href="#mpam.device.Heater.mode" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s current <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode" title="mpam.device.HeatingMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">HeatingMode</span></code></a>.  If this is
+<a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.HEATING" title="mpam.device.HeatingMode.HEATING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">HEATING</span></code></a> or <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.COOLING" title="mpam.device.HeatingMode.COOLING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">COOLING</span></code></a>, the
+<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> is moving toward its <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> (or the ambient
+temperature if the  <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> is <code class="docutils literal notranslate"><span class="pre">None</span></code>).  If it is
+<a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.MAINTAINING" title="mpam.device.HeatingMode.MAINTAINING"><code class="xref py py-attr docutils literal notranslate"><span class="pre">HeatingMode.MAINTAINING</span></code></a>, the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> has reached its
+target and is attempting to maintain the temperature there.  And if it
+is <a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode.OFF" title="mpam.device.HeatingMode.OFF"><code class="xref py py-attr docutils literal notranslate"><span class="pre">HeatingMode.OFF</span></code></a>, the <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a> is <code class="docutils literal notranslate"><span class="pre">None</span></code> and the
+<a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> has cooled down to ambient temperature.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.number">
+<span class="sig-name descname"><span class="pre">number</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.Heater.number" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s index in its <a class="reference internal" href="mpam.device.BoardComponent.html#mpam.device.BoardComponent.board" title="mpam.device.BoardComponent.board"><code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code></a>’s
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">heaters</span></code> list</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.on_mode_change">
+<span class="sig-name descname"><span class="pre">on_mode_change</span></span><em class="property"><span class="pre">:</span> <span class="pre">ChangeCallbackList</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.HeatingMode.html#mpam.device.HeatingMode" title="mpam.device.HeatingMode"><span class="pre">HeatingMode</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.Heater.on_mode_change" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.device.Heater.mode" title="mpam.device.Heater.mode"><code class="xref py py-attr docutils literal notranslate"><span class="pre">mode</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.on_target_change">
+<span class="sig-name descname"><span class="pre">on_target_change</span></span><em class="property"><span class="pre">:</span> <span class="pre">ChangeCallbackList</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">TemperaturePoint</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.Heater.on_target_change" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.device.Heater.target" title="mpam.device.Heater.target"><code class="xref py py-attr docutils literal notranslate"><span class="pre">target</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.on_temperature_change">
+<span class="sig-name descname"><span class="pre">on_temperature_change</span></span><em class="property"><span class="pre">:</span> <span class="pre">ChangeCallbackList</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">TemperaturePoint</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.Heater.on_temperature_change" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.types.ChangeCallbackList.html#mpam.types.ChangeCallbackList" title="mpam.types.ChangeCallbackList"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChangeCallbackList</span></code></a> monitoring <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.pads">
+<span class="sig-name descname"><span class="pre">pads</span></span><em class="property"><span class="pre">:</span> <span class="pre">Final</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><span class="pre">Pad</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.Heater.pads" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="mpam.device.Pad.html#mpam.device.Pad" title="mpam.device.Pad"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pad</span></code></a>s affected by this <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.Heater.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><span class="pre">mpam.types.Delayed</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><span class="pre">quantities.temperature.TemperaturePoint</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#mpam.device.Heater.poll" title="Permalink to this definition"></a></dt>
+<dd><p>Determine the current temperature.  Returns a <a class="reference internal" href="mpam.types.Delayed.html#mpam.types.Delayed" title="mpam.types.Delayed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Delayed</span></code></a> object
+which will receive a <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to indicate
+that the temperature cannot be determined.</p>
+<p>When this is called during polling (i.e., after <a class="reference internal" href="#mpam.device.Heater.start_polling" title="mpam.device.Heater.start_polling"><code class="xref py py-func docutils literal notranslate"><span class="pre">start_polling()</span></code></a>
+has been called), when the future receives a value, it will become the
+new value of <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default implementation always returns a future that contains
+<code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</div>
+<dl class="simple">
+<dt>Returns</dt><dd><p>a future which will get the new value for
+<a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.polling_interval">
+<span class="sig-name descname"><span class="pre">polling_interval</span></span><em class="property"><span class="pre">:</span> <span class="pre">Time</span></em><a class="headerlink" href="#mpam.device.Heater.polling_interval" title="Permalink to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="quantities.dimensions.Time.html#quantities.dimensions.Time" title="quantities.dimensions.Time"><code class="xref py py-class docutils literal notranslate"><span class="pre">Time</span></code></a> to wait between calls to <a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a> to get a new value
+for <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.Heater.start_polling">
+<span class="sig-name descname"><span class="pre">start_polling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Heater.start_polling" title="Permalink to this definition"></a></dt>
+<dd><p>Start (or resume) calling <a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a> to get new values for
+<a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>.  Calls will be repeated with a delay of
+<a class="reference internal" href="#mpam.device.Heater.polling_interval" title="mpam.device.Heater.polling_interval"><code class="xref py py-attr docutils literal notranslate"><span class="pre">polling_interval</span></code></a>.</p>
+<p>Calling <a class="reference internal" href="#mpam.device.Heater.start_polling" title="mpam.device.Heater.start_polling"><code class="xref py py-func docutils literal notranslate"><span class="pre">start_polling()</span></code></a> while polling is running does nothing.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#mpam.device.Heater.start_polling" title="mpam.device.Heater.start_polling"><code class="xref py py-func docutils literal notranslate"><span class="pre">start_polling()</span></code></a> is called when the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a>’s
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">board</span></code> joins a <a class="reference internal" href="mpam.device.System.html#mpam.device.System" title="mpam.device.System"><code class="xref py py-class docutils literal notranslate"><span class="pre">System</span></code></a>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="mpam.device.Heater.stop_polling">
+<span class="sig-name descname"><span class="pre">stop_polling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#mpam.device.Heater.stop_polling" title="Permalink to this definition"></a></dt>
+<dd><p>Stop calling <a class="reference internal" href="#mpam.device.Heater.poll" title="mpam.device.Heater.poll"><code class="xref py py-func docutils literal notranslate"><span class="pre">poll()</span></code></a> to get new values for <a class="reference internal" href="#mpam.device.Heater.current_temperature" title="mpam.device.Heater.current_temperature"><code class="xref py py-attr docutils literal notranslate"><span class="pre">current_temperature</span></code></a>.</p>
+<p>Calling <a class="reference internal" href="#mpam.device.Heater.stop_polling" title="mpam.device.Heater.stop_polling"><code class="xref py py-func docutils literal notranslate"><span class="pre">stop_polling()</span></code></a> while polling is stopped does nothing.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="mpam.device.Heater.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="pre">:</span> <span class="pre">MonitoredProperty</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">TemperaturePoint</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#mpam.device.Heater.target" title="Permalink to this definition"></a></dt>
+<dd><p>The target <a class="reference internal" href="quantities.temperature.html#quantities.temperature.TemperaturePoint" title="quantities.temperature.TemperaturePoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">TemperaturePoint</span></code></a> of the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to
+indicate that the <a class="reference internal" href="#mpam.device.Heater" title="mpam.device.Heater"><code class="xref py py-class docutils literal notranslate"><span class="pre">Heater</span></code></a> should turn off and return to ambient temperature.</p>
+</dd></dl>
 
 </dd></dl>
 

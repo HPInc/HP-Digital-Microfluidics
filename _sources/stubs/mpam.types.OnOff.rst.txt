@@ -1,4 +1,4 @@
-mpam.types.OnOff
+﻿mpam.types.OnOff
 ================
 
 .. currentmodule:: mpam.types
@@ -7,6 +7,10 @@ mpam.types.OnOff
 
    
    
+   
+       
+           
+       
    
 
    
@@ -38,6 +42,12 @@ mpam.types.OnOff
    
 
    
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~OnOff.from_bool
    
    
    

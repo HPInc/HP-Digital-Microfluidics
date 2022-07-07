@@ -1,0 +1,83 @@
+﻿mpam.types.MonitoredProperty
+============================
+
+.. currentmodule:: mpam.types
+
+.. autoclass:: MonitoredProperty
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+       
+           
+       
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~MonitoredProperty.callback_list
+      ~MonitoredProperty.callback_list_attr
+      ~MonitoredProperty.getter
+      ~MonitoredProperty.name
+      ~MonitoredProperty.val_attr
+      ~MonitoredProperty.value_check
+   
+   
+
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~MonitoredProperty.__init__
+      ~MonitoredProperty.transform
+   
+   
+   
+
+   
+   
+   
+   

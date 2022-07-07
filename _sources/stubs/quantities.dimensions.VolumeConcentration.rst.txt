@@ -1,4 +1,4 @@
-quantities.dimensions.VolumeConcentration
+﻿quantities.dimensions.VolumeConcentration
 =========================================
 
 .. currentmodule:: quantities.dimensions
@@ -124,6 +124,10 @@ quantities.dimensions.VolumeConcentration
            
        
    
+       
+           
+       
+   
 
    
    
@@ -144,6 +148,7 @@ quantities.dimensions.VolumeConcentration
    .. autosummary::
    
       ~VolumeConcentration.dimensionality
+      ~VolumeConcentration.is_finite
       ~VolumeConcentration.is_negative
       ~VolumeConcentration.is_positive
       ~VolumeConcentration.is_zero
