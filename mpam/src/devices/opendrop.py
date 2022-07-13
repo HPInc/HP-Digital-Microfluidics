@@ -147,10 +147,10 @@ class Board(device.Board):
         sequences: WellOpSeqDict = {
             (WellState.EXTRACTABLE, WellState.READY): ((2,),(1,2)),
             (WellState.READY, WellState.EXTRACTABLE): ((2,), ()),
-            (WellState.READY, WellState.DISPENSED): ((-1,0,1),(-1,)),
-            (WellState.DISPENSED, WellState.READY): ((1,2),),
-            (WellState.READY, WellState.ABSORBED): ((-1,2),),
-            (WellState.ABSORBED, WellState.READY): ((1,2),)
+            (WellState.READY, WellState.DISPENSED): ((-1,0,1),(-1,),(1,2)),
+            (WellState.DISPENSED, WellState.READY): (),
+            (WellState.READY, WellState.ABSORBED): ((-1,2),(1,2)),
+            (WellState.ABSORBED, WellState.READY): ()
             }
         
         transition = transitions_from(sequences)
