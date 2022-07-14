@@ -659,10 +659,7 @@ class MotionOp(CSOperation['Drop', 'Drop'], ABC):
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
 
-        # if after is None:
-        #     logger.debug(f'direction:{direction}|steps:{steps}')
-        # else:
-        #     logger.debug(f'direction:{direction}|steps:{steps}|after:{after}')
+        # logger.debug(f'direction:{direction}|steps:{steps}|after:{after}')
 
         if drop.status is not DropStatus.ON_BOARD:
             logger.warning(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
