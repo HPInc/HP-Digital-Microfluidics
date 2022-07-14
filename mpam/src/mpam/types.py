@@ -641,7 +641,7 @@ class Operation(Generic[T, V], ABC):
 
     Note:
         :class:`Operation`\[:attr:`T`, :attr:`V`] is an abstract base class.
-        The actual implementation class must implement :func:`_schedule_for`.
+        The actual implementation class must implement :func:`_schedule_for` and :fund:`after_delay`.
 
     Args:
         T: the type of the object used to schedule the :class:`Operation`
@@ -715,9 +715,11 @@ class Operation(Generic[T, V], ABC):
                     *, obj: T) -> Delayed[V]:
         ...
 
-    def then(self, op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
-                             Callable[[], Operation[V, V2]],
-                             Callable[[], StaticOperation[V2]]], *,
+    def then(self,
+             scheduler: CS,
+             op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
+                       Callable[[], Operation[V, V2]],
+                       Callable[[], StaticOperation[V2]]], *,
              after: WaitCondition = NO_WAIT,
              ) -> Operation[T, V2]:
         """
@@ -743,9 +745,9 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        return CombinedOperation[T, V, V2](self, op, after=after)
+        return CombinedOperation[CS, T, V, V2](scheduler, self, op, after=after)
 
-    def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> Operation[T, V2]:
+    def then_compute(self, scheduler: CS, fn: Callable[[V], Delayed[V2]]) -> Operation[T, V2]:
         """
         Create a new :class:`Operation` that passes the result of this one to a :class:`Callable` that returns
         a :class:`Delayed` value.
@@ -759,9 +761,9 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        return self.then(ComputeOp[V, V2](fn))
+        return self.then(scheduler, ComputeOp[CS, V, V2](scheduler, fn))
 
-    def then_call(self, fn: Callable[[V], V2]) -> Operation[T, V2]:
+    def then_call(self, scheduler: CS, fn: Callable[[V], V2]) -> Operation[T, V2]:
         """
         Create a new :class:`Operation` that passes the result of this one to a
         :class:`Callable` and use its value as the overall value.
@@ -779,9 +781,9 @@ class Operation(Generic[T, V], ABC):
             future = Postable[V2]()
             future.post(fn(obj))
             return future
-        return self.then_compute(fn2)
+        return self.then_compute(scheduler, fn2)
 
-    def then_process(self, fn: Callable[[V], Any]) -> Operation[T, V]:
+    def then_process(self, scheduler: CS, fn: Callable[[V], Any]) -> Operation[T, V]:
         """
         Create a new :class:`Operation` that passes the result of this one to a
         :class:`Callable`, but uses this :class:`Operation`\s result as the
@@ -798,8 +800,7 @@ class Operation(Generic[T, V], ABC):
         def fn2(obj: V) -> V:
             fn(obj)
             return obj
-        return self.then_call(fn2)
-
+        return self.then_call(scheduler, fn2)
 
 
 class CSOperation(Operation[CS, V]):
@@ -833,7 +834,7 @@ class CSOperation(Operation[CS, V]):
         return obj.delayed(fn, after=after)
 
 
-class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
+class CombinedOperation(Generic[CS, T, V, V2], Operation[T, V2]):
     """
     An :class:`Operation` representing chaining two :class:`Operation`\s
     together.
@@ -857,7 +858,7 @@ class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
     """
     after: Final[WaitCondition]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
-    def __init__(self, first: Operation[T, V],
+    def __init__(self, scheduler: CS, first: Operation[T, V],
                  second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                                Callable[[], Operation[V, V2]],
                                Callable[[], StaticOperation[V2]]],
@@ -871,18 +872,13 @@ class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
                     that produces one.
             after: an optional delay to use between the two :class:`Operation`\s
         """
+        self.scheduler = scheduler
         self.first = first
         self.second = second
         self.after = after
 
     def __repr__(self) -> str:
         return f"<Combined: {self.first} {self.second}>"
-
-    # def after_delay(self,
-    #                 after: WaitCondition,
-    #                 fn: Callable[[], V],
-    #                 *, obj: T) -> Delayed[V]:
-    #     return obj.delayed(fn, after=after)
 
     def _schedule_for(self, obj: T, *,
                       post_result: bool = True,
@@ -902,23 +898,31 @@ class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
         return self.first._schedule_for(obj) \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
 
+    def after_delay(self,
+                    after: WaitCondition,
+                    fn: Callable[[], V2],
+                    *, obj: T) -> Delayed[V2]:
+        return self.scheduler.delayed(fn, after=after)
 
-class ComputeOp(Operation[T, V]):
+
+class ComputeOp(Generic[CS, T, V], Operation[T, V]):
     """
     A :class:`Operation` that when scheduled, returns the result of passing its
     scheduled-for object to a :class:`Callable` that returns a :class:`Delayed` object.
 
     Args:
-        T: the type of the object used to schedule the :class:`ComputeOp`
+        CS: the type of the object used to schedule the :class:`ComputeOp`
         V: the type of the value produced by the operation
     """
-    def __init__(self, function: Callable[[T],Delayed[V]]) -> None:
+    def __init__(self, scheduler: CS, function: Callable[[T],Delayed[V]]) -> None:
         """
         Initialize the :class:`ComputeOp`
 
         Args:
+            scheduler: The :class:`CommunicationScheduler` used to schedule the :class:`ComputeOp`.
             function: The :class:`Callable` to call.
         """
+        self.scheduler: Final[CS] = scheduler  ; "The :class:`CommunicationScheduler` used to schedule the :class:`ComputeOp`."
         self.function: Final[Callable[[T],Delayed[V]]] = function   ; "The :class:`Callable` to call"
 
     def __repr__(self) -> str:
@@ -946,11 +950,11 @@ class ComputeOp(Operation[T, V]):
         assert post_result == True
         return self.function(obj)
 
-    # def after_delay(self,
-    #                 after: WaitCondition,
-    #                 fn: Callable[[], V],
-    #                 *, obj: CS) -> Delayed[V]:
-    #     return obj.delayed(fn, after=after)
+    def after_delay(self,
+                    after: WaitCondition,
+                    fn: Callable[[], V],
+                    *, obj: T) -> Delayed[V]:
+        return self.scheduler.delayed(fn, after=after)
 
 
 class OpScheduler(Generic[T]):
@@ -1253,7 +1257,7 @@ class StaticOperation(Generic[V], ABC):
         Returns:
             the new :class:`StaticOperation`
         """
-        return self.then(ComputeOp[V, V2](fn))
+        return self.then(ComputeOp[CS, V, V2](self.scheduler, fn))
 
     def then_call(self, fn: Callable[[V], V2]) -> StaticOperation[V2]:
         """
@@ -1353,6 +1357,7 @@ class CombinedStaticOperation(Generic[V, V2], StaticOperation[V2]):
         """
         return self.first._schedule() \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
+
 
 class Delayed(Generic[Tco]):
     """
