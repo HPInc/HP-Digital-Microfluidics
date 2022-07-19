@@ -69,7 +69,7 @@ def run(protocol: protocol_api.ProtocolContext):
             pipette.move_to(well.top())
             protocol.pause("If the position is accurate click 'resume.'")
 
-            for edge_pos, edge_name in all_4_edges:
+            for edge_pos, _edge_name in all_4_edges:
                 set_speeds(RATE)
                 edge_location = types.Location(point=edge_pos, labware=None)
                 pipette.move_to(edge_location)
@@ -84,7 +84,7 @@ def run(protocol: protocol_api.ProtocolContext):
                 [well._from_center_cartesian(x=0, y=-1, z=1), 'front'],
                 [well._from_center_cartesian(x=0, y=1, z=1), 'back']
             ]
-            for edge_pos, edge_name in all_4_edges:
+            for edge_pos, _edge_name in all_4_edges:
                 set_speeds(RATE)
                 edge_location = types.Location(point=edge_pos, labware=None)
                 pipette.move_to(edge_location)
@@ -108,7 +108,7 @@ def run(protocol: protocol_api.ProtocolContext):
             pipette.move_to(well.top())
             protocol.pause("If the position is accurate click 'resume.'")
 
-            for edge_pos, edge_name in all_4_edges:
+            for edge_pos, _edge_name in all_4_edges:
                 set_speeds(RATE)
                 edge_location = types.Location(point=edge_pos, labware=None)
                 pipette.move_to(edge_location)
@@ -134,7 +134,7 @@ def run(protocol: protocol_api.ProtocolContext):
             pipette.move_to(well.top())
             protocol.pause("If the position is accurate click 'resume.'")
 
-            for edge_pos, edge_name in all_4_edges:
+            for edge_pos, _edge_name in all_4_edges:
                 set_speeds(RATE)
                 edge_location = types.Location(point=edge_pos, labware=None)
                 pipette.move_to(edge_location)
@@ -150,7 +150,7 @@ def run(protocol: protocol_api.ProtocolContext):
                     [well._from_center_cartesian(x=0, y=-1, z=1), 'front'],
                     [well._from_center_cartesian(x=0, y=1, z=1), 'back']
                 ]
-                for edge_pos, edge_name in all_4_edges:
+                for edge_pos, _edge_name in all_4_edges:
                     set_speeds(RATE)
                     edge_location = types.Location(point=edge_pos, labware=None)
                     pipette.move_to(edge_location)
@@ -172,7 +172,7 @@ def run(protocol: protocol_api.ProtocolContext):
                     [well._from_center_cartesian(x=0, y=-1, z=1), 'front'],
                     [well._from_center_cartesian(x=0, y=1, z=1), 'back']
                 ]
-                for edge_pos, edge_name in all_4_edges:
+                for edge_pos, _edge_name in all_4_edges:
                     set_speeds(RATE)
                     edge_location = types.Location(point=edge_pos, labware=None)
                     pipette.move_to(edge_location)
@@ -195,7 +195,7 @@ def run(protocol: protocol_api.ProtocolContext):
             pipette.move_to(well.top())
             protocol.pause("If the position is accurate click 'resume.'")
 
-            for edge_pos, edge_name in all_4_edges:
+            for edge_pos, _edge_name in all_4_edges:
                 set_speeds(RATE)
                 edge_location = types.Location(point=edge_pos, labware=None)
                 pipette.move_to(edge_location)
@@ -210,7 +210,7 @@ def run(protocol: protocol_api.ProtocolContext):
             ]
             set_speeds(RATE)
 
-            for edge_pos, edge_name in all_4_edges:
+            for edge_pos, _edge_name in all_4_edges:
                 set_speeds(RATE)
                 edge_location = types.Location(point=edge_pos, labware=None)
                 pipette.move_to(edge_location)
@@ -234,7 +234,7 @@ def run(protocol: protocol_api.ProtocolContext):
             pipette.move_to(well.top())
             protocol.pause("If the position is accurate click 'resume.'")
 
-            for edge_pos, edge_name in all_4_edges:
+            for edge_pos, _edge_name in all_4_edges:
                 set_speeds(RATE)
                 edge_location = types.Location(point=edge_pos, labware=None)
                 pipette.move_to(edge_location)

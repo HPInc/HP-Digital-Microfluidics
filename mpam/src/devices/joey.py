@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 import random
-from typing import Optional, Sequence, Final
+from typing import Optional, Sequence, Final, Union
 
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
@@ -16,12 +16,16 @@ from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State, \
 from quantities.SI import uL, ms, deg_C, sec, volts
 from quantities.core import DerivedDim
 from quantities.dimensions import Temperature, Time, Volume, Voltage
-from quantities.temperature import TemperaturePoint
+from quantities.temperature import TemperaturePoint, abs_C
 from quantities.timestamp import Timestamp, time_now
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser,\
     Exerciser
 from argparse import Namespace, ArgumentParser, _ArgumentGroup
+from erk.stringutils import conj_str
 
+class HeaterType(Enum):
+    TSRs = auto()
+    Paddles = auto()
 
 class HeatingRate(DerivedDim):
     derived = Temperature/Time
@@ -68,14 +72,20 @@ class EmulatedHeater(device.Heater):
 
     def __init__(self, num: int, board: Board, *,
                  regions: Sequence[GridRegion],
+                 wells: Sequence[Well],
+                 max_heat: Optional[TemperaturePoint],
+                 min_chill: Optional[TemperaturePoint],
                  polling_interval: Time = 200*ms) -> None:
-        pads = list[device.Pad]()
+        locs = list[Union[device.Pad,device.Well]]()
         for region in regions:
-            pads += (board.pad_array[xy] for xy in region)
-
+            locs += (board.pad_array[xy] for xy in region)
+        locs += wells
+            
         super().__init__(num, board,
                          polling_interval = polling_interval,
-                         pads = pads,
+                         locations = locs,
+                         max_heat = max_heat,
+                         min_chill = min_chill,
                          initial_temperature = board.ambient_temperature)
         self._last_read_time = time_now()
         self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
@@ -149,8 +159,12 @@ class Board(device.Board):
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
 
-    def _magnet_state(self, x: int, y: int) -> State[OnOff]: # @UnusedVariable
-        return DummyState(initial_state=OnOff.OFF)
+    def _magnets(self, *, first_num: int = 0) -> Sequence[Magnet]: # @UnusedVariable
+        def make_magnet(num: int, *, pads: Sequence[Pad]) -> Magnet:
+            state = DummyState(initial_state=OnOff.OFF)
+            return Magnet(num, self, state=state, pads=pads)
+        pads = (self.pad_at(13, 6), self.pad_at(13, 12))
+        return (make_magnet(0, pads=pads),)
 
     def _rectangle(self, x: float, y: float, outdir: int, width: float, height: float) -> PadBounds:
         return ((x,y), (x+width*outdir,y), (x+width*outdir, y+height), (x, y+height))
@@ -213,11 +227,33 @@ class Board(device.Board):
                     #                      self._side_pad_bounds(exit_pad.location),
                     #                      self._big_pad_bounds(exit_pad.location))
                     )
-    def _heater(self, num: int, *,
-                regions: Sequence[GridRegion],
-                polling_interval: Time=200*ms) -> Heater:
-        return EmulatedHeater(num, board=self, regions=regions, polling_interval=polling_interval)
-
+        
+    def _heaters(self, heater_type: HeaterType, *,
+                 first_num: int = 0,
+                 polling_interval: Time = 200*ms) -> Sequence[Heater]:
+        def make_heater(num: int, *,
+                        regions: Sequence[GridRegion]) -> Heater:
+            return EmulatedHeater(num, board=self, regions=regions, wells=[],
+                                  max_heat = 120*abs_C,
+                                  min_chill = None, 
+                                  polling_interval=polling_interval)
+        regions: Sequence[Sequence[GridRegion]]
+        if heater_type is HeaterType.TSRs:
+    
+            regions = ([GridRegion(XYCoord(0,12),3,7)],
+                       [GridRegion(XYCoord(0,0),3,7)],
+                       [GridRegion(XYCoord(8,12),3,7)],
+                       [GridRegion(XYCoord(8,0),3,7)],
+                       [GridRegion(XYCoord(16,12),3,7)],
+                       [GridRegion(XYCoord(16,0),3,7)])
+        else:
+            assert heater_type is HeaterType.Paddles
+            regions = ([GridRegion(XYCoord(0,0),3,19)],
+                       [GridRegion(XYCoord(8,0),3,19)],
+                       [GridRegion(XYCoord(16,0),3,19)])
+        return [make_heater(i+first_num, regions=r) for i,r in enumerate(regions)]
+            
+    
     def _power_supply(self, *,
                       min_voltage: Voltage,
                       max_voltage: Voltage,
@@ -239,6 +275,7 @@ class Board(device.Board):
         return Fan(self, state=initial_state)
 
     def __init__(self, *,
+                 heater_type: HeaterType,
                  pipettor: Optional[Pipettor] = None,
                  off_on_delay: Time = Time.ZERO,
                  extraction_point_splash_radius: int = 0,
@@ -324,47 +361,50 @@ class Board(device.Board):
             self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor, right_states),
             ))
 
-        magnets.append(Magnet(0, self, state=self._magnet_state(13,6),
-                              pads = (self.pad_at(13, 6), self.pad_at(13, 12),)))
-
-        heaters.append(self._heater(0, regions=[GridRegion(XYCoord(0,12),3,7),
-                                                GridRegion(XYCoord(0,0),3,7)]))
-        heaters.append(self._heater(1, regions=[GridRegion(XYCoord(8,12),3,7),
-                                                GridRegion(XYCoord(8,0),3,7)]))
-        heaters.append(self._heater(2, regions=[GridRegion(XYCoord(16,12),3,7),
-                                                GridRegion(XYCoord(16,0),3,7)]))
-
+        magnets.extend(self._magnets())
+        heaters.extend(self._heaters(heater_type))
+        
 
         for pos in ((13, 15), (13, 9), (13, 3)):
             extraction_points.append(
                 ExtractionPoint(self.pad_at(*pos), pipettor, splash_radius=extraction_point_splash_radius))
 
         def tc_channel(row: int,
-                       heaters: tuple[int,int],
+                       # heaters: tuple[int,int],
                        thresholds: tuple[int,int],
                        in_dir: Dir,
                        adjacent_step: Dir,
                        ) -> Channel:
-            return (ChannelEndpoint(heaters[0],
-                                    self.pad_at(thresholds[0], row),
+            def heater(thresh: Pad, in_dir: Dir) -> Heater:
+                pad = thresh.neighbor(in_dir)
+                assert pad is not None, f"No pad at {thresh}+{in_dir}"
+                heater = pad.heater
+                assert heater is not None, f"No heater at {pad}"
+                return heater 
+            
+            left_thresh = self.pad_at(thresholds[0], row)
+
+            right_thresh = self.pad_at(thresholds[1], row)
+            return (ChannelEndpoint(heater(left_thresh, in_dir).number,
+                                    left_thresh,
                                     in_dir,
                                     adjacent_step,
                                     Path.to_col(thresholds[1])),
-                    ChannelEndpoint(heaters[1],
-                                    self.pad_at(thresholds[1], row),
+                    ChannelEndpoint(heater(right_thresh, in_dir.opposite).number,
+                                    right_thresh,
                                     in_dir.opposite,
                                     adjacent_step,
                                     Path.to_col(thresholds[0])))
-        left_heaters = (1, 0)
-        right_heaters = (1, 2)
+        # left_heaters = (1, 0)
+        # right_heaters = (1, 2)
         left_thresholds = (7, 3)
         right_thresholds = (11, 15)
 
         def left_tc_channel(row: int, step_dir: Dir) -> Channel:
-            return tc_channel(row, left_heaters, left_thresholds,
+            return tc_channel(row, left_thresholds,
                               Dir.RIGHT, step_dir)
         def right_tc_channel(row: int, step_dir: Dir) -> Channel:
-            return tc_channel(row, right_heaters, right_thresholds,
+            return tc_channel(row, right_thresholds,
                               Dir.LEFT, step_dir)
 
 
@@ -394,13 +434,40 @@ class Board(device.Board):
         #     self._port.close()
         #     self._port = None
         super().stop()
+    
+
+heater_type_arg_names = {
+    "tsr": HeaterType.TSRs,
+    "tsrs": HeaterType.TSRs,
+    "TSR": HeaterType.TSRs,
+    "TSRs": HeaterType.TSRs,
+    "paddles": HeaterType.Paddles,
+    "paddle": HeaterType.Paddles,
+    }
+    
+def heater_type_arg(arg: str) -> HeaterType:
+    try:
+        return heater_type_arg_names[arg]
+    except KeyError:
+        choices = conj_str([f'"{s}"' for s in sorted(heater_type_arg_names.keys())])
+        raise ValueError(f"{arg} is not a valid heater type.  Choices are {choices}")
+    
+def heater_type_arg_name_for(t: HeaterType) -> str:
+    for k,v in heater_type_arg_names.items():
+        if v is t:
+            return k
+    assert False, f"Heater type {t} doesn't have an argument representation"
+
         
 class PlatformTask(PlatformChoiceTask):
+    default_heater_type: Final[HeaterType]
     def __init__(self, name: str = "Joey",
                  description: Optional[str] = None,
                  *,
+                 default_heater_type: HeaterType = HeaterType.TSRs,
                  aliases: Optional[Sequence[str]] = None) -> None:
         super().__init__(name, description, aliases=aliases)
+        self.default_heater_type = default_heater_type
     
     
     def make_board(self, args: Namespace, *, 
@@ -408,6 +475,7 @@ class PlatformTask(PlatformChoiceTask):
                    pipettor: Pipettor) -> Board: 
         off_on_delay: Time = args.off_on_delay
         return Board(pipettor=pipettor,
+                     heater_type = heater_type_arg_names[args.heaters],
                      off_on_delay=off_on_delay,
                      extraction_point_splash_radius=args.extraction_point_splash_radius)
         
@@ -417,6 +485,16 @@ class PlatformTask(PlatformChoiceTask):
                      *,
                      exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
+        group.add_argument('--heaters', 
+                           # type=heater_type_arg, 
+                           default=heater_type_arg_name_for(self.default_heater_type),
+                           metavar="TYPE", 
+                           choices=sorted(heater_type_arg_names),
+                           help=f'''
+                           The type of heater to use.  The default is {self.default_heater_type}.
+                           ''')
+        
+
         
     def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable
         return [0,1,2,3,4,5,6,7]

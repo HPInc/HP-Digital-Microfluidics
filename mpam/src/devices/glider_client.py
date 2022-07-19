@@ -9,6 +9,12 @@ from quantities.temperature import TemperaturePoint, abs_C
 from quantities.dimensions import Voltage
 from quantities.SI import volts
 import pathlib
+from functools import cached_property
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
     if isinstance(p, str):
@@ -47,7 +53,7 @@ class BinState(Generic[CT, ST], State[OnOff]):
         # print(f"Setting {self.name} to {new_state} ({s})")
         ec = self.realize(self.remote, s)
         if ec != pyglider.ErrorCode.ErrorSuccess:
-            print(f"Error {ec} returned trying to set electrode {self.name} to {new_state}.")
+            logger.error(f"Error {ec} returned trying to set electrode {self.name} to {new_state}.")
             
 class Electrode(BinState[pyglider.Electrode, pyglider.Electrode.ElectrodeState]):
     def __init__(self, name: str, remote: pyglider.Electrode) -> None:
@@ -78,9 +84,21 @@ class Heater:
     name: Final[str]
     remote: Final[pyglider.Heater]
     
+    @cached_property
+    def is_heater(self) -> bool:
+        t = self.remote.GetType()
+        return t is pyglider.Heater.HeaterType.Paddle or t is pyglider.Heater.HeaterType.TSR
+
+    @cached_property
+    def is_chiller(self) -> bool:
+        t = self.remote.GetType()
+        return t is pyglider.Heater.HeaterType.Peltier
+    
     def __init__(self, name: str, remote: pyglider.Heater) -> None:
         self.name = name
         self.remote = remote
+        # htype = self.remote.GetType()
+        # print(f"{self}'s type is {htype} ({id(htype)})")
         
     def __repr__(self) -> str:
         return f"<Heater {self.name}>"
@@ -93,10 +111,15 @@ class Heater:
         # print(f"  {tp}")
         return tp
     
-    def set_target(self, target: Optional[TemperaturePoint]) -> None:
+    def set_heating_target(self, target: Optional[TemperaturePoint]) -> None:
         temp = 0.0 if target is None else target.as_number(abs_C)
         # print(f"Setting target for {self.name} to {target}")
-        self.remote.SetTargetTemperature(temp)
+        self.remote.SetTargetTemperatureHeating(temp)
+        
+    def set_chilling_target(self, target: Optional[TemperaturePoint]) -> None:
+        temp = 0.0 if target is None else target.as_number(abs_C)
+        # print(f"Setting target for {self.name} to {target}")
+        self.remote.SetTargetTemperatureChilling(temp)
         
 class GliderClient:
     remote: Final[pyglider.Board]
@@ -150,14 +173,14 @@ class GliderClient:
         config_dir is {config_dir}
         """
         self.electrodes = {}
-        self.heaters = {}
-        self.magnets = {}
+        self.heaters = {n: Heater(n, h) for h,n in ((ph, ph.GetName()) for ph in self.remote.GetHeaters()) }
+        self.magnets = {n: Magnet(n, h) for h,n in ((pm, pm.GetName()) for pm in self.remote.GetMagnets()) }
         ec, n = self.remote.GetHighVoltage()
         if ec != pyglider.ErrorCode.ErrorSuccess:
-            print(f"Error {ec} returned trying to read voltage level.")
+            logger.error(f"Error {ec} returned trying to read voltage level.")
             self._voltage_level = None
         else:
-            print(f"The voltage level is {n}")
+            logger.info(f"The voltage level is {n}")
             self._voltage_level = n*volts
         
         # print(f"Local: {self.electrodes}")
@@ -169,7 +192,7 @@ class GliderClient:
     def update_state(self) -> None:
         ec = self.remote.MakeItSo()
         if ec != pyglider.ErrorCode.ErrorSuccess:
-            print(f"Error {ec} returned trying to update board.")
+            logger.error(f"Error {ec} returned trying to update board.")
             
             
     def electrode(self, name: Optional[str]) -> Optional[Electrode]:
@@ -182,7 +205,7 @@ class GliderClient:
         if e is None:
             re = self.remote.ElectrodeNamed(name)
             if re is None:
-                print(f"No electrode named {name}!")
+                logger.error(f"No electrode named {name}!")
             else:
                 e = Electrode(name, re)
                 self.electrodes[name] = e
@@ -195,7 +218,7 @@ class GliderClient:
         if h is None:
             re = self.remote.HeaterNamed(name)
             if re is None:
-                print(f"No heater named {name}!")
+                logger.error(f"No heater named {name}!")
             else:
                 h = Heater(name, re)
                 self.heaters[name] = h
@@ -208,7 +231,7 @@ class GliderClient:
         if m is None:
             re = self.remote.MagnetNamed(name)
             if re is None:
-                print(f"No magnet named {name}")
+                logger.error(f"No magnet named {name}")
             else:
                 m = Magnet(name, re)
                 self.magnets[name] = m

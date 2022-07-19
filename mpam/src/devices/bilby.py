@@ -2,22 +2,22 @@ from __future__ import annotations
 
 from os import PathLike
 import pyglider
-from typing import Mapping, Final, Optional, Union, Sequence
+from typing import Mapping, Final, Optional, Union, Sequence, Callable
 
 from devices import joey, glider_client
 from devices.glider_client import GliderClient
 from mpam.pipettor import Pipettor
-from mpam.types import OnOff, State, DummyState, GridRegion, Delayed
+from mpam.types import OnOff, State, DummyState, Delayed
 from mpam import device
-from mpam.device import Pad, PowerMode
+from mpam.device import Pad, PowerMode, Magnet
 from quantities.dimensions import Time, Voltage
 from quantities.SI import ms, volts
-from erk.stringutils import conj_str, map_str
-from quantities.temperature import TemperaturePoint
+from quantities.temperature import TemperaturePoint, abs_C
 import logging
 from erk.errors import ErrorHandler, PRINT
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
 from mpam.exerciser import PlatformChoiceExerciser, voltage_arg, Exerciser
+from devices.joey import HeaterType, heater_type_arg_names
 
 
 logger = logging.getLogger(__name__)
@@ -41,26 +41,11 @@ _well_gate_cells: Mapping[int, str] = {
 
 class Heater(device.Heater):
     remote: Final[glider_client.Heater]
-    def __init__(self, num: int, board: Board, *,
+    def __init__(self, num: int, remote: glider_client.Heater, board: Board, *,
                  polling_interval: Time,
                  pads: Sequence[Pad]):
-        super().__init__(num, board, polling_interval=polling_interval, pads=pads)
-        names = set[str]()
-        remote: Optional[glider_client.Heater] = None
-        assert len(pads) > 0
-        for pad in pads:
-            s = pad.state
-            assert isinstance(s, glider_client.Electrode)
-            heater_names = s.heater_names()
-            # print(f"Heaters for {pad}: {heater_names}")
-            assert len(heater_names) > 0, f"{pad} has no heaters"
-            assert len(heater_names) < 2, f"{pad} has multiple heaters: {conj_str(heater_names)}."
-            names |= set(heater_names)
-            if remote is None:
-                remote = board._device.heater(heater_names[0])
-                assert remote is not None, f"Heater {heater_names[0]} does not exist"
-        assert len(names) == 1, f"Heater {num} on {conj_str(pads)} has multiple heaters: {conj_str(tuple(names))}."
-        assert remote is not None
+        super().__init__(num, board, polling_interval=polling_interval, locations=pads,
+                         max_heat = 120*abs_C, min_chill = None)
         self.remote = remote 
         def update_target(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]) -> None: # @UnusedVariable
             # We indirect through the board so that MakeItSo will be called.
@@ -68,12 +53,12 @@ class Heater(device.Heater):
             # not sure that's right, but it does allow the clock to be paused.
             # Note that this means that thermocycling needs to be not completely
             # asynchronous.
-            self.board.communicate(lambda: self.remote.set_target(new)) 
+            self.board.communicate(lambda: self.remote.set_heating_target(new)) 
         update_target_key = f"Update Target for {self}"
         self.on_target_change(update_target, key = update_target_key)
         
     def __repr__(self) -> str:
-        return f"<Heater using {self.remote}>"
+        return f"<Heater {self.number} using {self.remote}>"
 
     
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
@@ -110,13 +95,13 @@ class PowerSupply(device.PowerSupply):
         glider = board._device
         def voltage_changed(_old, new: Voltage) -> None:
             if new > 0:
-                print(f"Voltage level is {new}")
+                logger.info(f"Voltage level is {new}")
             glider.voltage_level = None if new == 0 else new
         self.on_voltage_change(voltage_changed)
         
         def state_changed(_old, new: OnOff) -> None:
             which = "on" if new else "off"
-            print(f"High voltage is {which}")
+            logger.info(f"High voltage is {which}")
         self.on_state_change(state_changed)
         
 class Fan(device.Fan):
@@ -127,7 +112,7 @@ class Fan(device.Fan):
             super().__init__(board, state=state, live=live)
             def state_changed(_old, new: OnOff) -> None:
                 which= "on" if new else "off"
-                print(f"Fan is {which}")
+                logger.info(f"Fan is {which}")
                 glider.fan_state = new
             self.on_state_change(state_changed)
 class Board(joey.Board):
@@ -148,36 +133,53 @@ class Board(joey.Board):
         # print(f"({x}, {y}): {cell}")
         return self._device.electrode(cell)
     
-    def _magnet_state(self, x: int, y: int) -> State[OnOff]:
-        e = self._pad_state(x, y)
-        def on_error() -> State[OnOff]:
-            return DummyState(initial_state=OnOff.OFF)
-            
-        if e is None:
-            print(f"No magnet at nonexistent pad ({x}, {y})")
-            return on_error()
-        names = e.magnet_names()
-        if len(names) == 0:
-            print(f"No magnet at ({x}, {y}): {e}")
-            for rm in self._device.remote.GetMagnets():
-                print(f"{rm}: {map_str(rm.GetElectrodeNames())}")
-            return on_error()
-        if len(names) > 1:
-            print(f"Multiple magnets at ({x}, {y}): {e}: {conj_str(names)}.  Using first.")
-        name = names[0]
-        m = self._device.magnet(name)
-        return m or on_error()
+    def _pads_matching(self, name: str, fn: Callable[[glider_client.Electrode], Sequence[str]]) -> list[Pad]:
+        pads: list[Pad] = []
+        for pad in self.pads.values():
+            state = pad.state
+            if state is not None:
+                assert isinstance(state, glider_client.Electrode), f"{state} is not an Electrode"
+                if name in fn(state):
+                    pads.append(pad)
+        return pads
+
+    def _magnets(self, *, first_num: int = 0) -> Sequence[Magnet]:
+        num = first_num
+        def make_magnet(gm: glider_client.Magnet) -> Magnet:
+            nonlocal num
+            pads = self._pads_matching(gm.name, glider_client.Electrode.magnet_names)
+            m = Magnet(num, self, state=gm, pads=pads)
+            num += 1
+            return m
+        return [make_magnet(gm) for gm in self._device.magnets.values()]
     
     def _fan(self, *, initial_state: OnOff) -> Fan:
         return Fan(self, state=initial_state)
     
-    def _heater(self, num:int, *, 
-                polling_interval: Time=200*ms,
-                regions:Sequence[GridRegion])->Heater:
-        pads: list[Pad] = []
-        for region in regions:
-            pads += (self.pad_array[xy] for xy in region)
-        return Heater(num, self, pads=pads, polling_interval=polling_interval)
+    def _heaters(self, heater_type: HeaterType, *,
+                 first_num: int = 0,
+                 polling_interval: Time = 200*ms) -> Sequence[Heater]:
+        if heater_type is HeaterType.TSRs:
+            gt = pyglider.Heater.HeaterType.TSR
+        else:
+            assert heater_type is HeaterType.Paddles, f"Unknown HeaterType {heater_type}"
+            gt = pyglider.Heater.HeaterType.Paddle
+            
+        # print(f"Looking for heaters of type {gt} ({id(gt)})")
+            
+        num = first_num
+        def make_heater(gh: glider_client.Heater) -> Heater:
+            nonlocal num
+            pads = self._pads_matching(gh.name, glider_client.Electrode.heater_names)
+            h =  Heater(num, gh, self, pads=pads, polling_interval=polling_interval)
+            num += 1
+            return h
+        
+        ghs = list(self._device.heaters.values())
+        usable = [h for h in ghs if h.remote.GetType() == gt]
+        heaters = [make_heater(h) for h in usable]
+        # heaters = [make_heater(h) for h in self._device.heaters.values() if h.remote.GetType() is gt]
+        return heaters
     
     def _power_supply(self, *, 
                       min_voltage: Voltage, 
@@ -198,6 +200,7 @@ class Board(joey.Board):
     #     return joey.Board._fan(self)
     
     def __init__(self, *,
+                 heater_type: HeaterType,
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None,
                  pipettor: Optional[Pipettor] = None,
@@ -219,7 +222,8 @@ class Board(joey.Board):
             
         fan_state = self._device.fan_state
         
-        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay,
+        super().__init__(heater_type=heater_type, 
+                         pipettor=pipettor, off_on_delay=off_on_delay,
                          ps_min_voltage=ps_min_voltage,
                          ps_max_voltage=ps_max_voltage,
                          ps_initial_voltage=current_voltage,
@@ -256,7 +260,8 @@ class PlatformTask(joey.PlatformTask):
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return Board(pipettor=pipettor,
+        return Board(heater_type = heater_type_arg_names[args.heaters],
+                     pipettor=pipettor,
                      dll_dir=args.dll_dir, config_dir=args.config_dir,
                      off_on_delay=args.off_on_delay,
                      voltage=voltage,

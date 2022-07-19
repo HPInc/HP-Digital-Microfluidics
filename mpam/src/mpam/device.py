@@ -519,9 +519,30 @@ class LocatedPad:
             loc: the :class:`.XYCoord`
         """
         self.location = loc
+        
+class TempControllable:
+    """
+    An object that can have an associated an associated :class:`Heater`
+    """
+    _heater: Optional[Heater] = None
 
+    @property
+    def heater(self) -> Optional[Heater]:
+        """
+        The :class:`Heater`, if any that affects this :class:`TempControllable`
+        """
+        return self._heater
+    
+    @property
+    def current_temperatures(self) -> Optional[TemperaturePoint]:
+        h = self.heater
+        if h is not None:
+            return h.current_temperature
+        if isinstance(self, BoardComponent):
+            return self.board.ambient_temperature
+        return None
 
-class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
+class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad, TempControllable):
     """
     A pad, typically in the main array of its associated
     :class:`Board` (i.e., not in a :class:`Well`).
@@ -663,7 +684,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
     _between_pads: Optional[Mapping[Pad,Pad]] = None
     _well: Optional[Well] = None
     _magnet: Optional[Magnet] = None
-    _heater: Optional[Heater] = None
+    # _heater: Optional[Heater] = None
     _extraction_point: Optional[ExtractionPoint] = None
 
     # TODO: The name has to be specified, because otherwise it would be
@@ -692,12 +713,12 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad):
         """
         return self._magnet
 
-    @property
-    def heater(self) -> Optional[Heater]:
-        """
-        The :class:`Heater`, if any that affects this :class:`Pad`
-        """
-        return self._heater
+    # @property
+    # def heater(self) -> Optional[Heater]:
+    #     """
+    #     The :class:`Heater`, if any that affects this :class:`Pad`
+    #     """
+    #     return self._heater
 
     @property
     def extraction_point(self) -> Optional[ExtractionPoint]:
@@ -1668,7 +1689,7 @@ class DispenseGroup:
         return f"DispenseGroup({self.key})"
 
 
-class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
+class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllable):
     """
     A well.
 
@@ -1839,6 +1860,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
     Set by :func:`reserve_gate` and eplicitly set to ``False`` under control of
     whoever got ``True` from it.
     """
+    
     # _contents: Optional[Liquid]
     _shape: Final[Optional[WellShape]]
 
@@ -3018,15 +3040,61 @@ class Heater(BinaryComponent['Heater']):
     The :class:`Heater`'s index in its :attr:`~BoardComponent.board`'s
     :attr:`~Board.heaters` list
     """
-    pads: Final[Sequence[Pad]]
+    locations: Final[Sequence[TempControllable]]
     """
-    The :class:`Pad`\s affected by this :class:`Heater`
+    The locations affected by this :class:`Heater`
     """
+    _pads: tuple[Pad, ...]
+    @property
+    def pads(self) -> Sequence[Pad]:
+        """
+        The :class:`Pad`\s affected by this :class:`Heater`
+        """
+        try:
+            return self._pads
+        except AttributeError:
+            self._pads = tuple(c for c in self.locations if isinstance(c, Pad))
+            return self._pads
+    _wells: tuple[Well, ...]
+    @property
+    def wells(self) -> Sequence[Well]:
+        """
+        The :class:`Well`\s affected by this :class:`Heater`
+        """
+        try:
+            return self._wells
+        except AttributeError:
+            self._wells= tuple(c for c in self.locations if isinstance(c, Well))
+            return self._wells
     polling_interval: Time
     """
     The :class:`.Time` to wait between calls to :func:`poll` to get a new value
     for :attr:`current_temperature`.
     """
+    max_heat_temperature: Final[Optional[TemperaturePoint]]
+    """
+    The maximum `.TemperaturePoint` this :class:`Heater` can heat to, or
+    ``None`` if this :class:`Heater` only chills
+    """
+    @property
+    def can_heat(self) -> bool:
+        """
+        Can this :class:`Heater` heat (as opposed to only chilling)?
+        """
+        return self.max_heat_temperature is not None
+
+    min_chill_temperature: Final[Optional[TemperaturePoint]]
+    """
+    The minimum `.TemperaturePoint` this :class:`Heater` can chill to, or
+    ``None`` if this :class:`Heater` only heats
+    """
+    @property
+    def can_chill(self) -> bool:
+        """
+        Can this :class:`Heater` chill (as opposed to only heating)?
+        """
+        return self.min_chill_temperature is not None
+    
     _lock: Final[RLock]
     """
     An internal lock guarding changes
@@ -3101,9 +3169,12 @@ class Heater(BinaryComponent['Heater']):
     """
 
     def __init__(self, num: int, board: Board, *,
-                 pads: Sequence[Pad],
+                 locations: Sequence[TempControllable],
                  polling_interval: Time,
-                 initial_temperature: Optional[TemperaturePoint] = None) -> None:
+                 max_heat: Optional[TemperaturePoint],
+                 min_chill: Optional[TemperaturePoint],
+                 initial_temperature: Optional[TemperaturePoint] = None,
+                 ) -> None:
         """
         Initialize the object.
 
@@ -3122,13 +3193,15 @@ class Heater(BinaryComponent['Heater']):
         """
         super().__init__(board=board, state=DummyState(initial_state=OnOff.OFF))
         self.number = num
-        self.pads = pads
+        self.locations = tuple(locations)
+        self.max_heat_temperature = max_heat
+        self.min_chill_temperature = min_chill
         self._mode = HeatingMode.OFF
         self.polling_interval = polling_interval
         self._lock = RLock()
         # self._current_op_key = None
-        for pad in pads:
-            pad._heater = self
+        for loc in locations:
+            loc._heater = self
 
         self.on_state_change(self._note_state_change)
         self.on_mode_change(self._note_mode_change)

@@ -23,8 +23,11 @@ config = None
             
 
 def run(protocol: protocol_api.ProtocolContext) -> None:
+        # With the COMBINED_FILES_KLUDGE, PyDev complains that the import of
+        # Robot is unused MyPy complains that Robot is undefined.  I'm suppressing both.
     if "COMBINED_FILES_KLUDGE" not in globals():
-        from opentrons_support import Robot, load_config
+        from opentrons_support import load_config
+        from opentrons_support import Robot  # @UnusedImport
     else:
         global Robot
     global config
@@ -41,7 +44,7 @@ def run(protocol: protocol_api.ProtocolContext) -> None:
         
     if not protocol.is_simulating():
         # board = Board(config["board"], protocol)
-        robot = Robot(config, protocol)
+        robot = Robot(config, protocol) # type: ignore [name-defined] 
         board = robot.board
         
         robot.message("Created robot and board")
