@@ -35,9 +35,9 @@ class Path:
             self.op = op
 
     class MiddleStep(Step):
-        op: Final[CSOperation[Drop, Drop]]
+        op: Final[Operation[Drop, Drop]]
 
-        def __init__(self, op: CSOperation[Drop, Drop], after: WaitCondition) -> None:
+        def __init__(self, op: Operation[Drop, Drop], after: WaitCondition) -> None:
             super().__init__(after=after)
             self.op = op
 
@@ -580,7 +580,7 @@ class Path:
                 fn(drop)
                 future.post(drop)
                 return future
-            super().__init__(ComputeOp[CS, Drop, Drop](scheduler, fn2), after)
+            super().__init__(ComputeOp[CS, Drop, Drop](fn2, scheduler=scheduler), after)
 
     class CallAndWaitStep(MiddleStep):
         def __init__(self, scheduler: CS, fn: Callable[[Drop], Delayed[Any]], *,
@@ -589,7 +589,7 @@ class Path:
                 future = Postable[Drop]()
                 fn(drop).then_call(lambda _: future.post(drop))
                 return future
-            super().__init__(ComputeOp[CS, Drop,Drop](scheduler, fn2), after)
+            super().__init__(ComputeOp[CS, Drop,Drop](fn2, scheduler=scheduler), after)
 
     class BarrierStep(MiddleStep):
         def __init__(self, scheduler: CS, barrier: Barrier, *,
@@ -600,7 +600,7 @@ class Path:
                 barrier.pass_through(drop)
                 future.post(drop)
                 return future
-            op: Operation[Drop, Drop] = Drop.WaitAt(barrier) if wait else ComputeOp[CS, Drop, Drop](scheduler, pass_through)
+            op: Operation[Drop, Drop] = Drop.WaitAt(barrier) if wait else ComputeOp[CS, Drop, Drop](pass_through, scheduler=scheduler)
             super().__init__(op, after)
 
     class PauseStep(MiddleStep):

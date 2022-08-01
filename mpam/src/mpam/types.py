@@ -761,7 +761,7 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        return self.then(scheduler, ComputeOp[CS, V, V2](scheduler, fn))
+        return self.then(scheduler, ComputeOp[CS, V, V2](fn, scheduler=scheduler))
 
     def then_call(self, scheduler: CS, fn: Callable[[V], V2]) -> Operation[T, V2]:
         """
@@ -849,6 +849,7 @@ class CombinedOperation(Generic[CS, T, V, V2], Operation[T, V2]):
         V2: the type of the value produced by the second operation (and the
             :class:`CombinedOperation` overall)
     """
+    scheduler: CS
     first: Operation[T, V]               ; "The first :class:`Operation`"
     second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                   Callable[[], Operation[V, V2]],
@@ -914,7 +915,7 @@ class ComputeOp(Generic[CS, T, V], Operation[T, V]):
         CS: the type of the object used to schedule the :class:`ComputeOp`
         V: the type of the value produced by the operation
     """
-    def __init__(self, scheduler: CS, function: Callable[[T],Delayed[V]]) -> None:
+    def __init__(self, function: Callable[[T],Delayed[V]], * scheduler: CS) -> None:
         """
         Initialize the :class:`ComputeOp`
 
@@ -1257,7 +1258,7 @@ class StaticOperation(Generic[V], ABC):
         Returns:
             the new :class:`StaticOperation`
         """
-        return self.then(ComputeOp[CS, V, V2](self.scheduler, fn))
+        return self.then(ComputeOp[CS, V, V2](fn, scheduler=self.scheduler))
 
     def then_call(self, fn: Callable[[V], V2]) -> StaticOperation[V2]:
         """
