@@ -26,7 +26,8 @@ from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from _collections import defaultdict
 from mpam.pipettor import Pipettor
-from erk.basic import ValOrFn
+from erk.basic import ValOrFn, ensure_val
+from importlib import import_module
 
 
 # import logging
@@ -664,7 +665,7 @@ class PlatformChoiceExerciser(Exerciser):
     
     def __init__(self, description: Optional[str] = None, *,
                  task: Task,
-                 platforms: Sequence[ValOrFn[PlatformChoiceTask]],
+                 platforms: Sequence[Union[str,ValOrFn[PlatformChoiceTask]]],
                  pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
                  default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
                  ) -> None:
@@ -689,7 +690,38 @@ class PlatformChoiceExerciser(Exerciser):
         plist.sort(key=lambda p:p.name)
         self.pipettors = tuple(plist)
         
-        for platform in platforms:
+        for p in platforms:
+            platform: ValOrFn[PlatformChoiceTask]
+            if isinstance(p, str):
+                def bad_spec(msg: str) -> None:
+                    logger.warn(f"Platform option '{p}' {msg}, ignoring")
+                cpts = p.split(".")
+                if len(cpts) < 2:
+                    bad_spec("doesn't specify a module")
+                    continue
+                name = cpts[-1]
+                module_name = '.'.join(cpts[0:-1])
+                try:
+                    module = import_module(module_name)
+                    val = getattr(module, name)
+                except ModuleNotFoundError as ex:
+                    bad_spec(f"requires '{ex.name}' module")
+                    continue
+                if isinstance(val, PlatformChoiceTask):
+                    platform = val
+                else:
+                    try:
+                        pp = val()
+                        if isinstance(pp, PlatformChoiceTask):
+                            platform = pp
+                        else:
+                            bad_spec("doesn't return a PlatformChoiceTask")
+                            continue
+                    except TypeError:
+                        bad_spec("neither a PlatformChoiceTask nor callable")
+                        continue
+            else:
+                platform = p
             if not isinstance(platform, PlatformChoiceTask):
                 platform = platform()
             self.add_task(platform)
@@ -698,7 +730,7 @@ class PlatformChoiceExerciser(Exerciser):
     def for_task(cls, task: Union[Task, Callable[[], Task]], 
                  description: Optional[str] = None, 
                  *,
-                 platforms: Sequence[ValOrFn[PlatformChoiceTask]],
+                 platforms: Sequence[Union[str, ValOrFn[PlatformChoiceTask]]],
                  pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
                  default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
                  ) -> PlatformChoiceExerciser:

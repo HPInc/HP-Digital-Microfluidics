@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from os import PathLike
-import pyglider
 from typing import Mapping, Final, Optional, Union, Sequence
 
 from devices import joey, glider_client
@@ -206,6 +205,8 @@ class Board(joey.Board):
                  ps_min_voltage: Voltage = 60*volts,
                  ps_max_voltage: Voltage = 298*volts,
                  voltage: Optional[Voltage]) -> None:
+        import pyglider
+
         self._device = GliderClient(pyglider.BoardId.Wallaby, dll_dir=dll_dir, config_dir=config_dir)
         
         current_mode = PowerMode.DC
