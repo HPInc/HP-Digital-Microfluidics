@@ -4,6 +4,7 @@ from mpam.device import System
 from mpam.paths import Path
 from mpam.types import Reagent
 from quantities.SI import ms, s, minute, uL
+from devices.joey import HeaterType
 
 
 # splash_radius = 2
@@ -89,6 +90,7 @@ Exerciser.setup_logging(levels='debug')
 
 system = System(
     board=joey.Board(
+        heater_type=HeaterType.TSRs,
         pipettor=dummy_pipettor.DummyPipettor(
             name="Dummy",
             dip_time=400 * ms,

@@ -17,7 +17,7 @@ import logging
 from erk.errors import ErrorHandler, PRINT
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
 from mpam.exerciser import PlatformChoiceExerciser, voltage_arg, Exerciser
-from devices.joey import HeaterType, heater_type_arg_names
+from devices.joey import HeaterType
 
 
 logger = logging.getLogger(__name__)
@@ -260,7 +260,7 @@ class PlatformTask(joey.PlatformTask):
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return Board(heater_type = heater_type_arg_names[args.heaters],
+        return Board(heater_type = HeaterType.from_name(args.heaters),
                      pipettor=pipettor,
                      dll_dir=args.dll_dir, config_dir=args.config_dir,
                      off_on_delay=args.off_on_delay,

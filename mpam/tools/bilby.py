@@ -13,6 +13,7 @@ from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
 from quantities.SI import sec, V
 from quantities.dimensions import Volume, Voltage
 from quantities.temperature import TemperaturePoint, abs_C
+from devices.joey import HeaterType
 
 class DispenseAndWalk(Task):
     def __init__(self) -> None:
@@ -153,7 +154,8 @@ class BilbyExerciser(JoeyExerciser):
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return bilby.Board(dll_dir=args.dll_dir, config_dir=args.config_dir,
+        return bilby.Board(heater_type=HeaterType.from_name(args.heater),
+            dll_dir=args.dll_dir, config_dir=args.config_dir,
                            off_on_delay=args.off_on_delay,
                            voltage=voltage,
                            extraction_point_splash_radius=args.extraction_point_splash_radius)

@@ -7,6 +7,7 @@ from mpam.device import System
 from mpam.paths import Path
 from mpam.types import Reagent
 from quantities.SI import ms
+from devices.joey import HeaterType
 
 
 def test_splashzones(system: System) -> None:
@@ -29,6 +30,7 @@ logging.getLogger('PIL').setLevel(logging.INFO)
 
 system = System(
     board=joey.Board(
+        heater_type=HeaterType.TSRs,
         pipettor=dummy_pipettor.DummyPipettor(
             name="Dummy",
             dip_time=200 * ms,

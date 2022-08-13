@@ -14,6 +14,7 @@ from mpam.exerciser import PlatformChoiceExerciser, Exerciser
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
 from mpam.pipettor import Pipettor
+from devices.joey import HeaterType
 
 logger = logging.getLogger(__name__)
 
@@ -212,6 +213,7 @@ class Board(joey.Board):
     
     def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
                  is_yaminon: bool = False,
+                 heater_type: HeaterType,
                  off_on_delay: Time = Time.ZERO,
                  double_write: bool = True,
                  pipettor: Optional[Pipettor] = None) -> None:
@@ -229,7 +231,7 @@ class Board(joey.Board):
         self.is_yaminon = is_yaminon
         logger.info("double_write = %s", double_write)
         self._double_write = double_write
-        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay)
+        super().__init__(heater_type=heater_type, pipettor=pipettor, off_on_delay=off_on_delay)
         self._device = device
         self._port = None
         
@@ -277,6 +279,7 @@ class PlatformTask(joey.PlatformTask):
                    pipettor: Pipettor) -> Board: # @UnusedVariable
         logger.info(f"Version is {args.od_version}")
         return Board(pipettor=pipettor,
+                     heater_type = HeaterType.from_name(args.heaters),
                      device=args.port, od_version=args.od_version, is_yaminon=self.is_yaminon(),
                      off_on_delay=args.off_on_delay,
                      double_write=args.double_write)

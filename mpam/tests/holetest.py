@@ -16,6 +16,7 @@ from quantities.dimensions import Time, Volume
 
 
 from mpam.types import schedule, Reagent
+from devices.joey import HeaterType
         
 
 class Test(Task):
@@ -55,7 +56,7 @@ class Driver(Exerciser):
                            config = args.ot_config,
                            reagents = args.ot_reagents,
                            board_def = args.ot_joey_labware)
-        return joey.Board(pipettor = pipettor)
+        return joey.Board(pipettor = pipettor, heater_type=HeaterType.from_name(args.heaters))
     
     def available_wells(self)->Sequence[int]:
         return range(8)

@@ -6,6 +6,7 @@ from mpam.device import System, Board
 from mpam.exerciser import Task, Exerciser
 from devices import joey
 from typing import Sequence
+from devices.joey import HeaterType
 
 
 class DoIt(Task):
@@ -29,7 +30,7 @@ class Prog(Exerciser):
         super().__init__(task=DoIt())
         
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
-        return joey.Board()
+        return joey.Board(heater_type = HeaterType.TSRs)
 
     def available_wells(self)->Sequence[int]:
         return range(8)

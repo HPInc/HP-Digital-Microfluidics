@@ -26,6 +26,10 @@ from erk.stringutils import conj_str
 class HeaterType(Enum):
     TSRs = auto()
     Paddles = auto()
+    
+    @classmethod
+    def from_name(cls, name: str) -> HeaterType:
+        return heater_type_arg_names[name]
 
 class HeatingRate(DerivedDim):
     derived = Temperature/Time
@@ -475,7 +479,7 @@ class PlatformTask(PlatformChoiceTask):
                    pipettor: Pipettor) -> Board: 
         off_on_delay: Time = args.off_on_delay
         return Board(pipettor=pipettor,
-                     heater_type = heater_type_arg_names[args.heaters],
+                     heater_type = HeaterType.from_name(args.heaters),
                      off_on_delay=off_on_delay,
                      extraction_point_splash_radius=args.extraction_point_splash_radius)
         

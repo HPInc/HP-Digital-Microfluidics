@@ -13,6 +13,7 @@ from mpam.types import ticks, unknown_reagent, Liquid
 from quantities.temperature import TemperaturePoint
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
 from mpam.paths import Path
+from devices.joey import HeaterType
 
 
 class Thermocycle(Task):
@@ -129,6 +130,7 @@ class JoeyExerciser(Exerciser):
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
         off_on_delay: Time = args.off_on_delay
         return joey.Board(off_on_delay=off_on_delay,
+                          heater_type=HeaterType.from_name(args.heaters),
                           extraction_point_splash_radius=args.extraction_point_splash_radius)
 
     def available_wells(self)->Sequence[int]:
