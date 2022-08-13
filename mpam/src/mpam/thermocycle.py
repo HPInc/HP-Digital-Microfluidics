@@ -56,9 +56,9 @@ class Thermocycler:
         
     def __init__(self, *,
                  heaters: Sequence[Heater],
-                 channels: Sequence[Channel]):
+                 channels: Sequence[Optional[Channel]]):
         self.heaters = heaters
-        self.channels = channels
+        self.channels = tuple(c for c in channels if c is not None)
         
     def as_process(self, *,
                    phases: Sequence[ThermocyclePhase],

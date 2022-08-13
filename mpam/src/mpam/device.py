@@ -27,7 +27,7 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
-    MonitoredProperty, DummyState, MissingOr, MISSING
+    MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder
 from quantities.SI import sec, ms, volts
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -1820,7 +1820,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
       when they become full (or close enough to full that the hardware does
       not believe that they can accurately absorb).
     """
-    number: Final[int]
+    number: int = -1
     """The :class:`Well`'s index in its :attr:`~BoardCompoent.board`'s :attr:`~Board.wells` list"""
     group: Final[DispenseGroup]
     """The :class:`Well`'s :class:`DispenseGroup` (of which it may be the only member)"""
@@ -2140,7 +2140,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
 
     def __init__(self, *,
                  board: Board,
-                 number: int,
                  group: Union[DispenseGroup, TransitionFunc],
                  exit_pad: Pad,
                  gate: WellGate,
@@ -2191,7 +2190,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
                    :class:`Well`
         """
         BoardComponent.__init__(self, board)
-        self.number = number
         if not isinstance(group, DispenseGroup):
             group = DispenseGroup(self, group)
         self.group = group
@@ -2906,7 +2904,7 @@ class Magnet(BinaryComponent['Magnet']):
     :class:`.DummyState` may be used.
 
     """
-    number: Final[int]
+    number: int = -1
     """The :class:`Magnet`'s index in its :attr:`board`'s :attr:`~Board.magnets` list"""
     pads: Final[Sequence[Pad]] #: The :class:`Pad`\s affected by this :class:`Magnet`
 
@@ -3035,10 +3033,11 @@ class Heater(BinaryComponent['Heater']):
     :class:`Heater.SetTemperature` operation is provided.  This
     :class:`.Operation` completes when the desired temperature has been reached.
     """
-    number: Final[int]
+    number: int = -1
     """
     The :class:`Heater`'s index in its :attr:`~BoardComponent.board`'s
-    :attr:`~Board.heaters` list
+    :attr:`~Board.heaters` list.  A value of ``-1`` indicates that the heater
+    has not yet been added to the :class:`Board`.
     """
     locations: Final[Sequence[TempControllable]]
     """
@@ -3168,7 +3167,7 @@ class Heater(BinaryComponent['Heater']):
     The :class:`.ChangeCallbackList` monitoring :attr:`mode`
     """
 
-    def __init__(self, num: int, board: Board, *,
+    def __init__(self, board: Board, *,
                  locations: Sequence[TempControllable],
                  polling_interval: Time,
                  max_heat: Optional[TemperaturePoint],
@@ -3192,7 +3191,6 @@ class Heater(BinaryComponent['Heater']):
                                  :attr:`current_temperature`
         """
         super().__init__(board=board, state=DummyState(initial_state=OnOff.OFF))
-        self.number = num
         self.locations = tuple(locations)
         self.max_heat_temperature = max_heat
         self.min_chill_temperature = min_chill
@@ -4443,6 +4441,7 @@ class FixedPowerSupply(PowerSupply):
                          min_voltage=0*volts,
                          max_voltage=voltage_level,
                          initial_voltage=voltage_level,
+                         can_change_mode=changeable_mode,
                          mode=mode)
 
         # def no_voltage_changes(ps: PowerSupply, v: Voltage) -> MissingOr[Voltage]:
@@ -4521,9 +4520,21 @@ of such values (as lower and upper values, respectively).
 
 class Board(SystemComponent):
     pads: Final[PadArray]
-    wells: Final[Sequence[Well]]
-    magnets: Final[Sequence[Magnet]]
-    heaters: Final[Sequence[Heater]]
+    
+    _well_list: Final[list[Well]]
+    @property
+    def wells(self) -> Sequence[Well]:
+        return self._well_list
+    _magnet_list: Final[list[Magnet]]
+
+    @property
+    def magnets(self) -> Sequence[Magnet]:
+        return self._magnet_list
+
+    _heater_list: Final[list[Heater]]
+    @property
+    def heaters(self) -> Sequence[Heater]:
+        return self._heater_list
     extraction_points: Final[Sequence[ExtractionPoint]]
     extraction_point_splash_radius: Final[int]
     power_supply: Final[PowerSupply]
@@ -4540,6 +4551,7 @@ class Board(SystemComponent):
     _change_journal: ChangeJournal
     trace_blobs: ClassVar[bool] = False
     no_delay: DelayType = Ticks.ZERO
+    component_layout: Final[Optional[RCOrder]]
 
     ambient_temperature: TemperaturePoint = 75*abs_F
 
@@ -4562,7 +4574,7 @@ class Board(SystemComponent):
 
     def __init__(self, *,
                  pads: PadArray,
-                 wells: Sequence[Well],
+                 wells: Optional[Sequence[Well]] = None,
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
@@ -4571,13 +4583,21 @@ class Board(SystemComponent):
                  fan: Optional[Fan] = None,
                  orientation: Orientation,
                  drop_motion_time: Time,
-                 off_on_delay: Time = Time.ZERO) -> None:
+                 off_on_delay: Time = Time.ZERO,
+                 cpt_layout: Optional[RCOrder] = None) -> None:
         super().__init__()
         self._change_journal = ChangeJournal()
         self.pads = pads
-        self.wells = wells
-        self.magnets = [] if magnets is None else magnets
-        self.heaters = [] if heaters is None else heaters
+        self.component_layout = cpt_layout
+        self._well_list = []
+        if wells:
+            self._add_wells(wells)
+        self._heater_list = []
+        if heaters:
+            self._add_heaters(heaters)
+        self._magnet_list = [] 
+        if magnets:
+            self._add_magnets(magnets)
         self.extraction_points = [] if extraction_points is None else extraction_points
         self.extraction_point_splash_radius = extraction_point_splash_radius
         self.power_supply = power_supply or FixedPowerSupply(self)
@@ -4591,6 +4611,48 @@ class Board(SystemComponent):
         self._reserved_well_gates = []
         # self._drops = []
         # self._to_appear = []
+        
+    def _add_well(self, well: Well) -> int:
+        wells = self._well_list
+        n = len(wells)
+        well.number = n
+        wells.append(well)
+        return n
+        
+    def _add_wells(self, wells: Sequence[Well], *, order: Optional[RCOrder] = None) -> None:
+        if order is None:
+            order = self.component_layout
+        wells = self.sorted(wells, get_pads = lambda w: (w.exit_pad,), order=order)
+        for w in wells:
+            self._add_well(w)
+
+    def _add_heater(self, heater: Heater) -> int:
+        heaters = self._heater_list
+        n = len(heaters)
+        heater.number = n
+        heaters.append(heater)
+        return n
+        
+    def _add_heaters(self, heaters: Sequence[Heater], *, order: Optional[RCOrder] = None) -> None:
+        if order is None:
+            order = self.component_layout
+        heaters = self.sorted(heaters, get_pads = lambda h: h.pads, order=order)
+        for h in heaters:
+            self._add_heater(h)
+
+    def _add_magnet(self, magnet: Magnet) -> int:
+        magnets = self._magnet_list
+        n = len(magnets)
+        magnet.number = n
+        magnets.append(magnet)
+        return n
+        
+    def _add_magnets(self, magnets: Sequence[Magnet], *, order: Optional[RCOrder] = None) -> None:
+        if order is None:
+            order = self.component_layout
+        magnets = self.sorted(magnets, get_pads = lambda m: m.pads, order=order)
+        for m in magnets:
+            self._add_magnet(m)
 
     def replace_change_journal(self) -> ChangeJournal:
         with self._lock:
@@ -4740,6 +4802,15 @@ class Board(SystemComponent):
         if self.fan is not None:
             self._reset(self.fan)
 
+    def sorted(self, cpts: Sequence[T], *,
+               get_pads: Callable[[T], Sequence[LocatedPad]],
+               order: Optional[RCOrder]) -> Sequence[T]:
+        if order is None: return cpts
+        def get_loc(p: LocatedPad) -> XYCoord:
+            return p.location
+        key = order.key_for(self.orientation, loc=get_loc)
+        min_pad = { c: min(get_pads(c), key=key) for c in cpts }
+        return sorted(cpts, key=lambda c: key(min_pad[c]))
 
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier) -> None:

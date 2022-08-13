@@ -157,7 +157,8 @@ class WombatExerciser(JoeyExerciser):
         print(f"Version is {args.od_version}")
         return wombat.Board(device=args.port, od_version=args.od_version, is_yaminon=args.yaminon,
                             off_on_delay=args.off_on_delay,
-                            double_write=args.double_write)
+                            double_write=args.double_write,
+                            heater_type=args.heaters)
 
     def available_wells(self)->Sequence[int]:
         return [2,3,6,7]

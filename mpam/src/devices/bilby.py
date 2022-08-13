@@ -7,7 +7,7 @@ from typing import Mapping, Final, Optional, Union, Sequence, Callable
 from devices import joey, glider_client
 from devices.glider_client import GliderClient
 from mpam.pipettor import Pipettor
-from mpam.types import OnOff, State, DummyState, Delayed
+from mpam.types import OnOff, State, DummyState, Delayed, XYCoord
 from mpam import device
 from mpam.device import Pad, PowerMode, Magnet
 from quantities.dimensions import Time, Voltage
@@ -32,19 +32,19 @@ _shared_pad_cells: Mapping[tuple[str,int], str] = {
     ('right', 6): 'B03', ('right', 7): 'B02', ('right', 8): 'B01',
     }
 
-_well_gate_cells: Mapping[int, str] = {
-    0: 'T26', 1: 'N26', 2: 'H26', 3: 'B26',
-    4: 'T06', 5: 'N06', 6: 'H06', 7: 'B06'
+_well_gate_cells: Mapping[XYCoord, str] = {
+    XYCoord(0,18): 'T26', XYCoord(0,12): 'N26', XYCoord(0,6): 'H26', XYCoord(0,0): 'B26',
+    XYCoord(18,18): 'T06', XYCoord(18,12): 'N06', XYCoord(18,6): 'H06', XYCoord(18,0): 'B06'
     }
 
     
 
 class Heater(device.Heater):
     remote: Final[glider_client.Heater]
-    def __init__(self, num: int, remote: glider_client.Heater, board: Board, *,
+    def __init__(self, remote: glider_client.Heater, board: Board, *,
                  polling_interval: Time,
                  pads: Sequence[Pad]):
-        super().__init__(num, board, polling_interval=polling_interval, locations=pads,
+        super().__init__(board, polling_interval=polling_interval, locations=pads,
                          max_heat = 120*abs_C, min_chill = None)
         self.remote = remote 
         def update_target(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]) -> None: # @UnusedVariable
@@ -123,8 +123,8 @@ class Board(joey.Board):
         # print(f"-- shared: {group_name} {num} -- {cell}")
         return self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
 
-    def _well_gate_state(self, well: int) -> State[OnOff]:
-        cell = _well_gate_cells.get(well, None)
+    def _well_gate_state(self, exit_pad: Pad) -> State[OnOff]:
+        cell = _well_gate_cells.get(exit_pad.location, None)
         # print(f"-- gate: {well} -- {cell}")
         return self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
@@ -157,7 +157,6 @@ class Board(joey.Board):
         return Fan(self, state=initial_state)
     
     def _heaters(self, heater_type: HeaterType, *,
-                 first_num: int = 0,
                  polling_interval: Time = 200*ms) -> Sequence[Heater]:
         if heater_type is HeaterType.TSRs:
             gt = pyglider.Heater.HeaterType.TSR
@@ -167,12 +166,9 @@ class Board(joey.Board):
             
         # print(f"Looking for heaters of type {gt} ({id(gt)})")
             
-        num = first_num
         def make_heater(gh: glider_client.Heater) -> Heater:
-            nonlocal num
             pads = self._pads_matching(gh.name, glider_client.Electrode.heater_names)
-            h =  Heater(num, gh, self, pads=pads, polling_interval=polling_interval)
-            num += 1
+            h =  Heater(gh, self, pads=pads, polling_interval=polling_interval)
             return h
         
         ghs = list(self._device.heaters.values())

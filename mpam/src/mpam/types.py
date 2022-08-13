@@ -27,6 +27,7 @@ from quantities.core import CountDim
 from quantities.dimensions import Molarity, MassConcentration, \
     VolumeConcentration, Volume, Time
 from quantities.temperature import TemperaturePoint
+from functools import cached_property
 
 
 logger = logging.getLogger(__name__)
@@ -336,21 +337,88 @@ class Orientation(Enum):
         dx,dy = self.up_right_delta
         return XYCoord(coord.x+dx*x, coord.y+dy*y)
 
-    @property
+    @cached_property
     def pos_x(self) -> Dir:
         '''
-        The :class:`Dir` in which `x` coordinates increase
+        The :class:`Dir` in which ``x`` coordinates increase
         '''
         return Dir.E if self.offset[Dir.E][0] > 0 else Dir.W
-    @property
+    @cached_property
     def pos_y(self) -> Dir:
         '''
-        The :class:`Dir` in which `y` coordinates increase
+        The :class:`Dir` in which ``y`` coordinates increase
         '''
         return Dir.N if self.offset[Dir.N][1] > 0 else Dir.S
 
     def __repr__(self):
         return f"Orientation.{self.name}"
+    
+    def is_above(self, c1: XYCoord, c2: XYCoord) -> bool:
+        """
+        Check whether one :class:`XYCoord` is above another
+     
+        Parameters:
+            c1: A first :class:`XYCoord`
+            c2: A second :class:`XYCoord`
+        Returns:
+            ``True`` if ``c1``\'s :attr:`~XYCoord.row` is to the
+            :attr:`~Dir.NORTH` of ``c2``\'s
+        """
+        if self.pos_y is Dir.N:
+            return c1.row > c2.row
+        else:
+            return c1.row < c2.row
+        
+    def is_left(self, c1: XYCoord, c2: XYCoord) -> bool:
+        """
+        Check whether one :class:`XYCoord` is to the left of another
+     
+        Parameters:
+            c1: A first :class:`XYCoord`
+            c2: A second :class:`XYCoord`
+        Returns:
+            ``True`` if ``c1``\'s :attr:`~XYCoord.col` is to the
+            :attr:`~Dir.WEST` of ``c2``\'s
+        """
+        if self.pos_x is Dir.E:
+            return c1.col < c2.col
+        else:
+            return c1.col > c2.col
+        
+class RCOrder(Enum):
+    row_major: Final[bool]
+    col_mult: Final[int]
+    row_mult: Final[int]
+    
+    DOWN_RIGHT = ( False, True,  True )
+    DOWN_LEFT =  ( False, True,  False )
+    UP_RIGHT =   ( False, False, True )
+    UP_LEFT =    ( False, False, False )
+    RIGHT_DOWN = ( True,  True,  True )
+    RIGHT_UP =   ( True,  False, True )
+    LEFT_DOWN =  ( True,  True,  False )
+    LEFT_UP =    ( True,  False, False )
+    
+    def __init__(self, row_major: bool, down_rows: bool, left_to_right: bool) -> None:
+        self.row_major = row_major
+        self.col_mult = 1 if left_to_right else -1
+        self.row_mult = -1 if down_rows else 1
+
+    def key_for(self, o: Orientation, *,
+                loc: Callable[[T], XYCoord]) -> Callable[[T], tuple[int, int]]:
+
+        ne = o.offset[Dir.NE]
+        cmult = self.col_mult * ne[0]
+        rmult = self.row_mult * ne[1]
+        
+        def make_key(obj: T) -> tuple[int, int]:
+            xy = loc(obj)
+            c = cmult*xy.col
+            r = rmult*xy.row
+            return (r,c) if self.row_major else (c,r)
+        return make_key
+
+
 
 class GridRegion:
     '''

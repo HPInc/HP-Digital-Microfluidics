@@ -6,7 +6,7 @@ from typing import Mapping, Final, Optional, Sequence
 from serial import Serial
 
 from devices import joey
-from mpam.types import OnOff, State, DummyState
+from mpam.types import OnOff, State, DummyState, XYCoord
 from erk.basic import ComputedDefaultDict
 from quantities.dimensions import Time
 import logging
@@ -15,6 +15,7 @@ from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
 from mpam.pipettor import Pipettor
 from devices.joey import HeaterType
+from mpam import device
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +127,9 @@ _shared_pad_cells: Mapping[tuple[str,int], str] = {
     ('right', 6): 'B03', ('right', 7): 'B02', ('right', 8): 'B01',
     }
 
-_well_gate_cells: Mapping[int, str] = {
-    0: 'T26', 1: 'N26', 2: 'H26', 3: 'B26',
-    4: 'T06', 5: 'N06', 6: 'H06', 7: 'B06'
+_well_gate_cells: Mapping[XYCoord, str] = {
+    XYCoord(0,18): 'T26', XYCoord(0,12): 'N26', XYCoord(0,6): 'H26', XYCoord(0,0): 'B26',
+    XYCoord(18,18): 'T06', XYCoord(18,12): 'N06', XYCoord(18,6): 'H06', XYCoord(18,0): 'B06'
     }
 
 class OpenDropVersion(Enum):
@@ -196,11 +197,12 @@ class Board(joey.Board):
         # print(f"-- shared: {group_name} {num} -- {cell}")
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
 
-    def _well_gate_state(self, well: int) -> State[OnOff]:
+    def _well_gate_state(self, exit_pad: device.Pad) -> State[OnOff]:
         if self.is_yaminon:
-            mirroring = { 0:2, 1:3, 2:2, 3:3, 4:6, 5:7, 6:6, 7:7}
-            well = mirroring[well]
-        cell = _well_gate_cells.get(well, None)
+            row = exit_pad.row
+            if row > 9:
+                exit_pad = self.pad_at(exit_pad.column, row-12)
+        cell = _well_gate_cells.get(exit_pad.location, None)
         # print(f"-- gate: {well} -- {cell}")
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
