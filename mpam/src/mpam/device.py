@@ -28,7 +28,7 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, WaitCondition, \
-    NO_WAIT, CSOperation
+    NO_WAIT, NoWait, CSOperation
 from quantities.SI import sec, ms, volts
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -4178,13 +4178,11 @@ class SystemComponent(ABC):
 
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
                  after: WaitCondition = NO_WAIT) -> None:
-        # if after == NO_WAIT:
-        #     pass
-        if isinstance(after, Ticks):
+        if isinstance(after, NoWait): # after == NO_WAIT
+            pass
+        elif isinstance(after, Ticks):
             self.on_tick(cb, delta=after)
-        # elif isinstance(after, Time):
-        #     self.communicate(cb, delta=after)
-        else:
+        else:                   # isinstance(after, Time)
             self.communicate(cb, delta=after)
 
     def user_operation(self) -> UserOperation:
