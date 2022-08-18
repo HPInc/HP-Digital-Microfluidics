@@ -1,0 +1,45 @@
+name: mypy
+
+on: [push, pull_request]
+
+jobs:
+  Python:
+    runs-on: rnd-it-ubuntu
+    strategy:
+      matrix:
+        version: ["3.9", "3.10"]
+
+    steps:
+      - name: Clean-up previous container
+        run: docker stop mypy && sleep 3 && docker rm mypy && sleep 3 || true
+      - name: Start Python container
+        run:
+          docker run
+          --detach
+          --rm
+          --name mypy
+          --volume /home/ubuntu/actions-runner/_work/thylacine/thylacine:/_work
+          python:${{ matrix.version }}-slim
+          tail --follow /dev/null
+
+      - name: Setup container
+        run: |
+          docker exec --tty mypy pip install mypy types-requests
+          docker exec --tty mypy pip install -r _work/mpam/requirements.txt
+
+      - name: Run mypy
+        run:
+          docker exec --tty mypy
+          mypy
+          --follow-imports=silent
+          --ignore-missing-imports
+          --show-column-numbers
+          --show-error-codes
+          --strict-equality
+          --warn-redundant-casts
+          --warn-return-any
+          --warn-unreachable
+          _work/mpam/{src,tools}
+
+      - name: Stop container
+        run: docker stop mypy
