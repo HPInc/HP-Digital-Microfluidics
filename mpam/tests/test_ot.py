@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from devices.joey import Board
+from devices.joey import Board, HeaterType
 from devices.opentrons import OT2
 from mpam.device import System
 from quantities.SI import uL
@@ -12,7 +12,7 @@ pipettor = OT2(robot_ip_addr = "192.168.86.32",
                config="../inputs/ot2.json",
                reagents="../inputs/reagents.json")
 
-board = Board(pipettor=pipettor)
+board = Board(pipettor=pipettor, heater_type=HeaterType.Paddles)
 system = System(board=board)
 
 pm_primers = Reagent.find("PM Primers")

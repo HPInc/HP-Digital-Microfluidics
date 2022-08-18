@@ -13,7 +13,8 @@ from mpam.types import ticks, unknown_reagent, Liquid
 from quantities.temperature import TemperaturePoint
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
 from mpam.paths import Path
-from devices.joey import HeaterType
+from devices.joey import HeaterType, heater_type_arg_name_for,\
+    heater_type_arg_names
 
 
 class Thermocycle(Task):
@@ -150,6 +151,15 @@ class JoeyExerciser(Exerciser):
                             before pads are turned off. Default is
                             {self.fmt_time(self.default_off_on_delay)}.
                             ''')
+        default_heater_type = HeaterType.Paddles
+        group.add_argument('--heaters', 
+                           # type=heater_type_arg, 
+                           default=heater_type_arg_name_for(default_heater_type),
+                           metavar="TYPE", 
+                           choices=sorted(heater_type_arg_names),
+                           help=f'''
+                           The type of heater to use.  The default is {default_heater_type}.
+                           ''')
 
 
 if __name__ == '__main__':

@@ -34,6 +34,7 @@ from quantities.temperature import abs_C
 from devices.dummy_pipettor import DummyPipettor
 from devices.opentrons import OT2
 from mpam.pipettor import Pipettor
+from devices.joey import HeaterType
 
 logger = logging.getLogger(__name__)
 
@@ -1066,6 +1067,7 @@ class PCRDriver(Exerciser):
                            reagents = args.ot_reagents)
         off_on_delay: Time = args.off_on_delay
         return joey.Board(pipettor=pipettor,
+                          heater_type=HeaterType.from_name(args.heaters),
                           off_on_delay=off_on_delay,
                           extraction_point_splash_radius=args.extraction_point_splash_radius)
 

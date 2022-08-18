@@ -154,8 +154,8 @@ class BilbyExerciser(JoeyExerciser):
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return bilby.Board(heater_type=HeaterType.from_name(args.heater),
-            dll_dir=args.dll_dir, config_dir=args.config_dir,
+        return bilby.Board(heater_type=HeaterType.from_name(args.heaters),
+                           dll_dir=args.dll_dir, config_dir=args.config_dir,
                            off_on_delay=args.off_on_delay,
                            voltage=voltage,
                            extraction_point_splash_radius=args.extraction_point_splash_radius)

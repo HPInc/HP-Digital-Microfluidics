@@ -9,11 +9,12 @@ from quantities.core import Unit
 from quantities.SI import ms, sec, uL, minutes
 from quantities.temperature import abs_C, TemperaturePoint
 from typing import Sequence
+from devices.joey import HeaterType
 
 Volume.default_units = uL
 Time.default_units = ms
 
-board = joey.Board()
+board = joey.Board(heater_type=HeaterType.TSRs)
 
 system = System(board=board)
 

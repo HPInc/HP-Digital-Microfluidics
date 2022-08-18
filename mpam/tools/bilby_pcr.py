@@ -12,6 +12,7 @@ from pcr import PCRDriver
 
 from quantities.dimensions import Voltage
 from quantities.SI import V
+from devices.joey import HeaterType
 class BilbyPCRDriver(PCRDriver):
     def __init__(self) -> None:
         super().__init__()
@@ -27,7 +28,8 @@ class BilbyPCRDriver(PCRDriver):
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return bilby.Board(dll_dir=args.dll_dir,
+        return bilby.Board(heater_type=HeaterType.from_name(args.heaters),
+                           dll_dir=args.dll_dir,
                            config_dir=args.config_dir,
                            pipettor = pipettor,
                            voltage = voltage,
