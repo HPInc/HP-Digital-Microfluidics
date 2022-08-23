@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, Namespace, _ArgumentGroup
 from contextlib import redirect_stdout
 import os.path
 from typing import Optional, Union, Callable
@@ -25,12 +25,13 @@ class Dispense(Task):
                          description="Dispense a drop from a given well and leave it there.",
                          aliases=["disp"])
 
-    def add_args_to(self, parser: ArgumentParser, *,  
+    def add_args_to(self, 
+                    group: _ArgumentGroup,
+                    parser: ArgumentParser, *, # @UnusedVariable
                     exerciser: Exerciser 
                     ) -> None:
-        group = self.arg_group_in(parser)
         group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
-                            choices=exerciser.available_wells(),
+                            choices=self.available_wells(exerciser),
                             help="The well to dispense from")
         group.add_argument('-v', '--volume', type=volume_arg, metavar='VOLUME',
                             help="The initial volume of the well.  Default is a full well.")
@@ -58,12 +59,13 @@ class Absorb(Task):
                          description="Absorb a drop assumed to be on a well's exit pad.",
                          aliases=["abs"])
 
-    def add_args_to(self, parser: ArgumentParser, *,  
+    def add_args_to(self,
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser, *,  # @UnusedVariable
                     exerciser: Exerciser 
                     ) -> None:
-        group = self.arg_group_in(parser)
         group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
-                            choices=exerciser.available_wells(),
+                            choices=self.available_wells(exerciser),
                             help="The well to dispense from")
         
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
@@ -79,16 +81,17 @@ class WalkPath(Task):
                          description = "Walk a user-provided path from a starting well or pad.")
                          
 
-    def add_args_to(self, parser: ArgumentParser, *,
+    def add_args_to(self,
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser, *,
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
-        group = self.arg_group_in(parser)
         
         starts = group.add_mutually_exclusive_group(required=True)
         starts.add_argument('-sp', '--start-pad', type=int, nargs=2, metavar=('X','Y'), 
                             help="The (x,y) coordinates of the pad to start from.  The drop is assumed to be there")
         starts.add_argument('-sw', '--start-well', type=int, metavar='INT', 
-                            choices=exerciser.available_wells(),
+                            choices=self.available_wells(exerciser),
                             help="The well to dispense from")
         
         group.add_argument('--path', required=True,
@@ -216,7 +219,9 @@ class DisplayOnly(Task):
                          description = "Just bring up the display.",
                          aliases=["display"])
 
-    def add_args_to(self, parser: ArgumentParser, *,  # @UnusedVariable
+    def add_args_to(self, 
+                    group: _ArgumentGroup, # @UnusedVariable
+                    parser: ArgumentParser, *,  # @UnusedVariable
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
         ...
@@ -232,12 +237,13 @@ class Mix(Task):
         super().__init__(name="mix",
                          description="Dispense n drops, walk them out and mix them together")
 
-    def add_args_to(self, parser: ArgumentParser, *,  
+    def add_args_to(self,
+                    group: _ArgumentGroup, 
+                    parser: ArgumentParser, *,  
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
         parser.add_argument('num_drops', type=int, metavar='NUM-DROPS',                              
                            help=f""""The number of drops to mix.""")
-        group = self.arg_group_in(parser)
         default_tolerance = 0.1
         group.add_argument('-t', '--tolerance', type=float, default=default_tolerance, metavar="FLOAT",
                            help=f"""Maximum allowed deviation between max and min proportion (relative to min).
@@ -335,13 +341,14 @@ class Dilute(Task):
         super().__init__(name="dilute",
                          description="Perform an n-fold dilution")
 
-    def add_args_to(self, parser: ArgumentParser, *,  
+    def add_args_to(self, 
+                    group: _ArgumentGroup,
+                    parser: ArgumentParser, *,  
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
         parser.add_argument('fold', type=int, 
                            help=f""""The number of fold of the dilution (e.g., 8 for 8x). 
                                      Does not need to be an integer""")
-        group = self.arg_group_in(parser)
         default_tolerance = 0.1
         group.add_argument('-t', '--tolerance', type=float, default=default_tolerance, metavar="FLOAT",
                            help=f"""Maximum allowed deviation between max and min proportion (relative to min).

@@ -17,12 +17,22 @@ from aiohttp.web_runner import GracefulExit
 import requests
 
 from mpam.device import System, Board, PipettingTarget, ProductLocation
-from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget
+from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget,\
+    PipettingSource
 from mpam.types import Reagent, XferDir, AsyncFunctionSerializer
-from quantities.SI import seconds, uL
+from quantities.SI import seconds, uL, ml, ul
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
 
+from mpam import exerciser
+from argparse import Namespace, _ArgumentGroup
+
+import fileinput
+from tempfile import NamedTemporaryFile
+import logging
+import re
+
+logger = logging.getLogger(__name__)
 
 JSONObj = dict[str, Any]
 
@@ -77,7 +87,7 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         
         msg = body["message"]
@@ -92,7 +102,7 @@ class Listener(Thread):
         #     text = await body.text()
         #     print(f"Request was not json: {text}")
         #     return web.json_response(status=400, data = {"error": "bad-request"})
-        print("Shutting down server")
+        logger.info("Shutting down server")
         self.running = False
         raise GracefulExit()
     
@@ -153,7 +163,7 @@ class Listener(Thread):
     
     
     def enqueue_finished(self, target: XferTarget, reagent: Reagent, volume: Volume) -> None:
-        print(f"/finished: {volume} of {reagent} @ {target.target}")
+        # print(f"/finished: {volume} of {reagent} @ {target.target}")
         self.finish_queue.enqueue(lambda: target.finished(reagent, volume))
         
     def enqueue_completely_finished(self, transfer: Transfer) -> None:
@@ -168,13 +178,13 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         wv = self.well_volume_params(body)
         assert wv is not None, "/waiting called with no well/volume spec"
         xfers,v = wv
         r = self.current_reagent
-        print(f"Waiting above {xfers[0].target}")
+        logger.info(f"Waiting above {xfers[0].target}")
         xfers[0].in_position(r, v)
         return web.json_response()
 
@@ -183,7 +193,7 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         wv = self.well_volume_params(body)
         assert wv is not None, "/finished called with no well/volume spec"
@@ -208,7 +218,7 @@ class Listener(Thread):
             body = await request.json()
         except json.JSONDecodeError:
             text = await body.text()
-            print(f"Request was not json: {text}")
+            logger.warning(f"Request was not json: {text}")
             return web.json_response(status=400, data = {"error": "bad-request"})
         # The only way pending_transfer can be None is if this is the first time.  Otherwise
         # it's the last one we started.  Note that it might be non-None even on the first time
@@ -251,13 +261,13 @@ class Listener(Thread):
         app.router.add_post("/ready", self.ready)
         app.router.add_post("/finished", self.finished)
         app.router.add_post("/waiting", self.waiting)
-        print("Launching listener")
+        logger.info("Launching listener")
         self.running = True
         web.run_app(app,
                     host="0.0.0.0",
                     port=self.port)
         self.running = False
-        print("Shut down listener")
+        logger.info("Shut down listener")
         
 class ShutdownDetected(RuntimeError): ...
         
@@ -337,23 +347,67 @@ class ProtocolManager(Thread):
                 tag = f": ERRORS: {errors}"
         # status_code: int = response.status_code
         # print(f"{msg}: Response code = {status_code}")
-        print(f"{msg}{tag}")
+        logger.info(f"{msg}{tag}")
         return result
         # return status_code == 200
+        
+    def concatenate_files(self, config: JSONObj, files: Sequence[str]) ->str:
+        
+        
+        
+        return "\n".join(["COMBINED_FILES_KLUDGE = True",
+                         "".join([*fileinput.input(files=files)]),
+                         f"config = {json.dumps(config)}\n"])
 
     def run(self) -> None:
         pname = f"protocol-{random.randint(0,1000000)}"
-
-        config = json.dumps(self.config)
-        response = self.post_request("protocols",
-                                     files=[("protocolFile", (pname, open(self.ot_file("looping_protocol.py"), "rb"))),
-                                            ("supportFiles", ("opentrons_support.py", open(self.ot_file("opentrons_support.py"), "rb"))),
-                                            ("supportFiles", ("schedule_xfers.py", open(self.ot_file("schedule_xfers.py"), "rb"))),
-                                            ("supportFiles", ("config.json", config)),
-                                            ]
-                                     )
         
-        # print(f"Create Protocol result: {response}")
+        use_multiple_files = False
+        
+        if use_multiple_files:
+            config = json.dumps(self.config)
+            response = self.post_request("protocols",
+                                         files=[("protocolFile", (pname, open(self.ot_file("looping_protocol.py"), "rb"))),
+                                                ("supportFiles", ("opentrons_support.py", open(self.ot_file("opentrons_support.py"), "rb"))),
+                                                ("supportFiles", ("schedule_xfers.py", open(self.ot_file("schedule_xfers.py"), "rb"))),
+                                                ("supportFiles", ("config.json", config)),
+                                                ]
+                                         )
+        else:
+            # combined = self.concatenate_files(self.config, [self.ot_file("schedule_xfers.py"),
+            #                                                 self.ot_file("opentrons_support.py"),
+            #                                                 self.ot_file("looping_protocol.py")]) 
+            tmp = NamedTemporaryFile(prefix="protocol_", suffix=".py", delete=False, mode="w")
+            logger.info(f"Temp protocol file is {tmp.name}")
+            with tmp:
+                tmp.write("from __future__ import annotations\n")
+                tmp.write("__name__ = '__main__'\n")
+                tmp.write("COMBINED_FILES_KLUDGE = True\n")
+                lines: list[str] = []
+                imports: list[str] = []
+                for file in (self.ot_file("schedule_xfers.py"),
+                              self.ot_file("opentrons_support.py"),
+                              self.ot_file("looping_protocol.py")):
+                    with open(file) as f:
+                        for line in f.readlines():
+                            if not line.startswith("from __future"):
+                                if line.startswith("from ") or line.startswith("import"):
+                                    imports.append(line)
+                                else:
+                                    lines.append(line)
+                        lines.append("\n")
+                for line in imports:
+                    tmp.write(line)
+                tmp.write("\n")
+                for line in lines:
+                    tmp.write(line)
+                tmp.write(f"config = {json.dumps(self.config)}\n")
+            payload = open(tmp.name, "rb")
+            response = self.post_request("protocols", files={"files": payload})
+            payload.close()
+            # os.remove(tmp.name)
+        
+        logger.info(f"Create Protocol result: {response}")
         
         self.protocol_id = response['data']['id']
         self.trace_response(f"Created protocol \"{self.protocol_id}\"", response)
@@ -375,17 +429,22 @@ class ProtocolManager(Thread):
              
         
     def extract_messages(self, response) -> None:
-        events = response["data"]["details"]["events"]
-        # printed_something = False
-        for e in events:
-            if e["source"] != "protocol":
-                continue
-            
-            if e["event"] == "command.COMMENT.start":
-                self.print_event(e, "Msg")
-            elif self.print_actions:
-                self.print_event(e, "cmd")
-        
+        pass
+        # # events = response["data"]["details"]["events"]
+        # events = response["data"]["actions"]
+        # # printed_something = False
+        # for e in events:
+        #     # print(e)
+        #     continue
+        #     if e["source"] != "protocol":
+        #         continue
+        #
+        #     if e["event"] == "command.COMMENT.start":
+        #         self.print_event(e, "Msg")
+        #     elif self.print_actions:
+        #         self.print_event(e, "cmd")
+        #
+
             
     def wait_until(self, looking_for: str):
         global last_msg
@@ -394,9 +453,10 @@ class ProtocolManager(Thread):
             self.delay.sleep()
             if not self.run_check():
                 raise ShutdownDetected()
-            response = self.get_request(f"sessions/{self.session_id}")
+            response = self.get_request(f"runs/{self.session_id}")
             # print(f"Get status result: {response}")
-            current_state = response["data"]["details"]["currentState"]
+            current_state = response["data"]["status"]
+            # print(f"Current state is {current_state}")
             self.extract_messages(response)
             if current_state == looking_for:
                 return response
@@ -411,38 +471,36 @@ class ProtocolManager(Thread):
             
     
     def run_protocol(self) -> None:
-        response = self.post_request("sessions",
-                                     json = {
-                                         "data": {
-                                             "sessionType": "protocol",
-                                             "createParams": {
-                                                 "protocolId": self.protocol_id
-                                                 }
-                                             }
-                                         }
+        response = self.post_request("runs",
+                                    json = {
+                                        "data": {"protocolId": self.protocol_id}
+                                        }
                                      )
+        if "data" not in response:
+            logger.error(f"Couldn't create session: {response}")
         self.session_id = response["data"]["id"]
         self.trace_response(f'Created session "{self.session_id}"', response)
         
         try:
-            self.wait_until("loaded")
-            response = self.post_request(f"sessions/{self.session_id}/commands/execute",
-                                         json={
-                                             "data": {
-                                                 "command": "protocol.startRun",
-                                                 "data": {} 
-                                                 }
-                                             })
+            # self.wait_until("loaded")
+            response = self.post_request(f"runs/{self.session_id}/actions",
+                                         data=json.dumps({"data":{"actionType": "play"}})
+                                         # json={"data": {
+                                         #     "data": {
+                                         #         "actionType": "play",
+                                         #         }
+                                         #     }}
+                                         )
             self.trace_response("Started run", response)
             response = self.wait_until("finished")
-            print("Run is complete")
+            logger.info("Run is complete")
             # print(response)
         except ShutdownDetected:
             ...
         except RuntimeError:
             traceback.print_exc()
         finally:
-            response = self.delete_request(f"sessions/{self.session_id}")
+            response = self.delete_request(f"runs/{self.session_id}")
             self.trace_response("Deleted session", response)
             
 class ReagentUse(Enum):
@@ -465,10 +523,90 @@ class ReagentSource(NamedTuple):
                 "quantity": self.quantity.as_number(uL),
                 "use": u 
                 }
+        
+class WellPlate:
+    pipettor: Final[OT2]
+    slot: Final[int]
+    well_capacity: Final[Volume]
+    wells: Final[Sequence[WPWell]]
+    
+    def __init__(self, pipettor: OT2, slot: int, *,
+                 rows: int,
+                 columns: int, 
+                 well_capacity: Volume,
+                 n_plates: int) -> None:
+        self.pipettor = pipettor
+        self.slot = slot
+        self.well_capacity = well_capacity
+
+        well_names = pipettor._generate_source_names(rows=rows, columns=columns, 
+                                                     plates=1, start_plate=slot,
+                                                     total_plates = n_plates)
+        self.wells = [WPWell(n, plate=self, capacity=well_capacity) for n in well_names] 
+        
+    @classmethod
+    def from_spec(cls, spec: dict, *,
+                  pipettor: OT2, 
+                  n_plates: int) -> WellPlate:
+        name: str = spec["name"]
+        slot: int = int(spec["slot"])
+        m = re.search("_(\\d+)_.*_(\\d+)([um]l)", name, re.IGNORECASE)
+        assert m is not None, f"Couldn't parse labware name {name}"
+        n_wells = int(m[1])
+        if n_wells == 1:
+            rows,cols = 1,1
+        elif n_wells == 6:
+            rows,cols = 2,3
+        elif n_wells == 24:
+            rows,cols = 4,6
+        elif n_wells == 96:
+            rows,cols = 8,12
+        elif n_wells == 384:
+            rows,cols = 16,24
+        elif n_wells == 1536:
+            rows,cols = 32,48
+        else:
+            assert False, f"Don't know the configuration for a {n_wells}-well plate"
+        u_spec: str = m[3].lower()
+        if u_spec == "ml":
+            unit = ml
+        elif u_spec == "ul":
+            unit = ul
+        else:
+            assert False, f"{u_spec} isn't a known unit for a wall plate capacity"
+        capacity = int(m[2])*unit
+        return WellPlate(pipettor, slot, rows=rows, columns=cols, 
+                         well_capacity=capacity, n_plates=n_plates)
+            
+class WPWell(PipettingSource):
+    plate: Final[WellPlate]
+    
+    def __init__(self, name: str, *,
+                 plate: WellPlate,
+                 capacity: Volume)->None:
+        pipettor = plate.pipettor
+        super().__init__(name, pipettor=pipettor, capacity=capacity)
+        self.plate = plate
+        pipettor._wells_by_name[name] = self
+        def stash_on_reagent(r: Reagent) -> None:
+            pipettor._wells_by_reagent[r].append(self)
+            pipettor.dirty(self)
+        self.assigned_reagent.when_value(stash_on_reagent)
+        self.on_bounds_change(lambda _old,_new: pipettor.dirty(self))
+
 
 class OT2(Pipettor):
     listener: Final[Listener]
     manager: Final[ProtocolManager]
+    plates: Final[Sequence[WellPlate]]
+    
+    _wells_by_name: Final[dict[str, WPWell]]
+    _wells_by_reagent: Final[dict[Reagent, list[WPWell]]]
+
+    _lock: Final[RLock]
+    _receiving_update: bool
+    _dirty_wells: Optional[set[WPWell]] = None
+    
     def __init__(self, *,
                  robot_ip_addr: str,
                  robot_port: Union[str, int] = 31950,
@@ -478,6 +616,9 @@ class OT2(Pipettor):
                  board_def: Optional[str] = None,
                  name: str = "OT-2") -> None:
         super().__init__(name=name)
+        self._lock = RLock()
+        self._receiving_update = False
+        
         if isinstance(listener_port, str):
             listener_port = int(listener_port)
         self.listener = Listener(port=listener_port,
@@ -486,6 +627,40 @@ class OT2(Pipettor):
             robot_port = int(robot_port)
         if isinstance(config, str):
             config = self.load_config(config)
+
+        self._wells_by_name = {}
+        self._wells_by_reagent = defaultdict(list)
+            
+        plate_specs: Sequence = config["input-wellplates"]
+        n_plates = len(plate_specs)
+        self.plates = [WellPlate.from_spec(s, pipettor=self, n_plates=n_plates) for s in plate_specs]
+        
+        rdesc: Sequence[dict]
+        if reagents is None:
+            rdesc = []
+        elif isinstance(reagents, str):
+            reagents_json = self.load_config(reagents)
+            rdesc = reagents_json["reagents"]
+        else:
+            rdesc = [ { "name": r.name, "wells": [ w.as_json() for w in ws]} for r,ws in reagents.items()]
+            
+        config["reagents"] = rdesc
+        
+        for rd in rdesc:
+            reagent = Reagent.find(rd["name"])
+            rwells: Sequence[dict] = rd["wells"]
+            for wd in rwells:
+                well_name: str = wd["well"]
+                quant: float = float(wd["quantity"])
+                volume = quant*uL
+                if len(self.plates) > 1:
+                    plate: int = int(wd["plate"])
+                    well_name += f"/{self.plates[plate].slot}"
+                well = self.source_named(well_name)
+                assert well is not None, f"Reagent spec says {reagent} in non-existent well {well_name}"
+                well.reagent = reagent
+                well.exact_volume = volume
+        
         if not "endpoint" in config:
             host_name = socket.gethostname()
             ip = socket.gethostbyname(host_name)
@@ -493,20 +668,36 @@ class OT2(Pipettor):
                     "ip": ip,
                     "port": listener_port
                 }
-        if reagents is None:
-            config["reagents"] = []
-        elif isinstance(reagents, str):
-            reagents_json = self.load_config(reagents)
-            config["reagents"] = reagents_json["reagents"]
-        else:
-            config["reagents"] = [ { "name": r.name, "wells": [ w.as_json() for w in ws]} for r,ws in reagents.items()]
-        # print(f"Reagents: {config['reagents']}")
+
         if board_def is not None:
             board_json = self.load_config(board_def)
             config["board"]["labware"]["definition"] = board_json
         self.manager = ProtocolManager(config, name = f"{name} protocol manager",
                                        ip = robot_ip_addr, port = robot_port,
                                        run_check = lambda: self.listener.running)
+        
+    def source_named(self, name: str) -> Optional[PipettingSource]:
+        return self._wells_by_name.get(name, None)
+    
+    def sources_for(self, reagent: Reagent) -> Sequence[PipettingSource]:
+        return self._wells_by_reagent[reagent]
+    
+    def describe_source(self, source: PipettingSource) -> str:
+        assert isinstance(source, WPWell)
+        return f"{source.name} (slot {source.plate.slot})"
+    
+    def dirty(self, well: WPWell) -> None:
+        # _dirty_wells contains the wells that need to receive updates. The
+        # logic here is that when we receive, we will lock and set
+        # _receiving_update to True before changing any quantities, so we don't
+        # think we need to tell the robot about changes it already knows about.
+        with self._lock:
+            if not self._receiving_update:
+                dirty_wells = self._dirty_wells
+                if dirty_wells is None:
+                    self._dirty_wells = {well}
+                else:
+                    dirty_wells.add(well)
         
     def load_config(self, file_name: str) -> JSONObj:
         with open(file_name, 'rb') as f:
@@ -535,3 +726,31 @@ class OT2(Pipettor):
             while listener.pending_transfer is not None:
                 # print(f"Waiting on ready_for_transfer: {listener.pending_transfer}")
                 listener.ready_for_transfer.wait()
+
+class PipettorConfig(exerciser.PipettorConfig):
+    def __init__(self) -> None:
+        super().__init__("opentrons", aliases=("ot", "ot2"))
+
+    def create(self, args: Namespace) -> Pipettor:
+        ip: Optional[str] = args.ot_ip
+        config: Optional[str] = args.ot_config
+        reagents: Optional[str] = args.ot_reagents
+
+        if ip is None:
+            raise ValueError(f"--ot-ip must be specified to use the Opentrons pipettor")
+        if config is None:
+            raise ValueError(f"--ot-config must be specified to use the Opentrons pipettor")
+        pipettor = OT2(robot_ip_addr = ip,
+                       config = config,
+                       reagents = reagents)
+        return pipettor
+    
+    def add_args_to(self, group:_ArgumentGroup)->None:
+        super().add_args_to(group)
+        
+        group.add_argument("-otip", "--ot-ip", metavar="IP",
+                           help="The IP address of the Opentrons robot")
+        group.add_argument("-otc", "--ot-config", metavar="FILE",
+                           help="The config file for the the Opentrons robot")
+        group.add_argument("-otr", "--ot-reagents", metavar="FILE",
+                           help=f"The reagents JSON file for the the Opentrons robot")

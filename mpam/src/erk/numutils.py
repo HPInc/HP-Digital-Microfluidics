@@ -21,9 +21,12 @@ def farey(n: float, *,
     lo_n, lo_d = 1, hi_d+1
     
     hi_dev = hi_n/hi_d-n
+    if hi_dev == 0:
+        return Fraction(hi_n, hi_d)
     lo_dev = n-lo_n/lo_d
     
     while True:
+        # print(f"bounds: {lo_n}/{lo_d} = {lo_n/lo_d} ({lo_dev}) : {n} : ({hi_dev}) {hi_n/hi_d} = {hi_n}/{hi_d}")
         new_n = lo_n+hi_n
         new_d = lo_d+hi_d
         if new_d > max_denom:

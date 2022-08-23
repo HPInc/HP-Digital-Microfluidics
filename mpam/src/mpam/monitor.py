@@ -44,7 +44,6 @@ import traceback
 from langsup import dmf_lang
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
-import logging
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,17 @@
 from __future__ import annotations
-from pcr import PCRDriver
-from mpam.pipettor import Pipettor
-from typing import Optional
+
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
+from typing import Optional
+
+from devices import bilby
 from devices.bilby import Board
 from devices.opentrons import OT2
-from devices import bilby
-from quantities.dimensions import Time, Volume, Voltage
-from quantities.SI import ms, uL, V
 from mpam.exerciser import voltage_arg
+from mpam.pipettor import Pipettor
+from pcr import PCRDriver
+
+from quantities.dimensions import Voltage
+from quantities.SI import V
 class BilbyPCRDriver(PCRDriver):
     def __init__(self) -> None:
         super().__init__()
@@ -54,8 +57,6 @@ class BilbyPCRDriver(PCRDriver):
     
 
 if __name__ == '__main__':
-    Time.default_units = ms
-    Volume.default_units = uL
     exerciser = BilbyPCRDriver()
     exerciser.parse_args_and_run()
 

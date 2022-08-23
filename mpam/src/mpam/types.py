@@ -6,16 +6,19 @@ from __future__ import annotations
 from _collections import deque
 from _weakref import ReferenceType, ref
 from abc import ABC, abstractmethod
+from argparse import Namespace
 from enum import Enum, auto
 from fractions import Fraction
+import logging
 import math
+import pathlib
+import random
 from threading import Event, Lock, RLock, Thread
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any, \
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence, \
     Generator, Protocol, Iterable
+import typing
 from weakref import WeakKeyDictionary, finalize
-import logging
-import pathlib
 
 from matplotlib._color_data import XKCD_COLORS
 
@@ -25,10 +28,6 @@ from quantities.dimensions import Molarity, MassConcentration, \
     VolumeConcentration, Volume, Time
 from quantities.temperature import TemperaturePoint
 
-from quantities.SI import uL
-import random
-from argparse import Namespace
-import typing
 
 logger = logging.getLogger(__name__)
 
@@ -2327,9 +2326,9 @@ class _CCLProperty(Generic[T]):
         self.tag = tag
         self.creator = creator
     @overload
-    def __get__(self, obj: None, objtype) -> _CCLProperty[T]: ...
+    def __get__(self, obj: None, objtype) -> _CCLProperty[T]: ... # @UnusedVariable
     @overload
-    def __get__(self, obj: Any, objtype) -> ChangeCallbackList[T]: ...
+    def __get__(self, obj: Any, objtype) -> ChangeCallbackList[T]: ... # @UnusedVariable
     def __get__(self, obj, objtype) -> Union[ChangeCallbackList[T], _CCLProperty[T]]: # @UnusedVariable
         if obj is None:
             return self
@@ -3724,10 +3723,10 @@ class Liquid:
         self.inexact = inexact
 
     def __repr__(self) -> str:
-        return f"Liquid[{'~' if self.inexact else ''}{self.volume.in_units(uL)}, {self.reagent}]"
+        return f"Liquid[{'~' if self.inexact else ''}{self.volume}, {self.reagent}]"
 
     def __str__(self) -> str:
-        return f"{'~' if self.inexact else ''}{self.volume.in_units(uL):g} of {self.reagent}"
+        return f"{'~' if self.inexact else ''}{self.volume:,g} of {self.reagent}"
 
     def __iadd__(self, rhs: Volume) -> Liquid:
         self.volume = min(self.volume+rhs, Volume.ZERO)
@@ -4587,13 +4586,13 @@ class ConfigParams:
     _sentinel = (MISSING,)
 
     @overload
-    def get(self, name: str, default: tuple[Missing] = (MISSING,), *, expect: typing.Type[T]) -> T: ...
+    def get(self, name: str, default: tuple[Missing] = (MISSING,), *, expect: typing.Type[T]) -> T: ... # @UnusedVariable
     @overload
-    def get(self, name: str, default: V, *, expect: typing.Type[T]) -> Union[V, T]: ...
+    def get(self, name: str, default: V, *, expect: typing.Type[T]) -> Union[V, T]: ... # @UnusedVariable
     @overload
-    def get(self, name: str, default: V) -> Any: ...
+    def get(self, name: str, default: V) -> Any: ... # @UnusedVariable
     @overload
-    def get(self, name: str) -> Any: ...
+    def get(self, name: str) -> Any: ... # @UnusedVariable
     def get(self, name: str, default = (MISSING,), *, expect: Optional[typing.Type[T]] = None) -> Any:
         try:
             val = self.__getattr__(name)

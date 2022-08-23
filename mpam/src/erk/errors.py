@@ -134,7 +134,7 @@ class DoNothing(ErrorHandler):
 
     def expect_true(self,
                     cond: bool, 
-                    msg_fn: Callable[[], str]) -> bool:
+                    msg_fn: Callable[[], str]) -> bool: # @UnusedVariable
         """
         Do nothing.  
         
@@ -148,7 +148,7 @@ class DoNothing(ErrorHandler):
 
     def expect_false(self,
                      cond: bool, 
-                     msg_fn: Callable[[], str]) -> bool:
+                     msg_fn: Callable[[], str]) -> bool: # @UnusedVariable
         """
         Do nothing.  
         

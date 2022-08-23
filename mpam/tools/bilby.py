@@ -10,8 +10,8 @@ from mpam.exerciser import Task, volume_arg, Exerciser, voltage_arg
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, Reagent
-from quantities.SI import sec, ms, uL, V, deg_C
-from quantities.dimensions import Time, Volume, Voltage, Temperature
+from quantities.SI import sec, V
+from quantities.dimensions import Volume, Voltage
 from quantities.temperature import TemperaturePoint, abs_C
 
 class DispenseAndWalk(Task):
@@ -20,10 +20,11 @@ class DispenseAndWalk(Task):
                          description="""Dispense a drop from a given well and
                                         walk to the well across from it.""")
 
-    def add_args_to(self, parser: ArgumentParser, *,
+    def add_args_to(self,
+                    group: _ArgumentGroup,
+                    parser: ArgumentParser, *, # @UnusedVariable
                     exerciser: Exerciser
                     ) -> None:
-        group = self.arg_group_in(parser)
         group.add_argument('-w', '--well', type=int, required=True, metavar="INT",
                             choices=exerciser.available_wells(),
                             help="The well to dispense from")
@@ -71,11 +72,13 @@ class WombatTest(Task):
                          description = "The original Wombat test.",
                          aliases=["test"])
 
-    def add_args_to(self, parser: ArgumentParser, *,  # @UnusedVariable
-                    exerciser: Exerciser  # @UnusedVariable
+    def add_args_to(self,
+                    group: _ArgumentGroup, # @UnusedVariable
+                    parser: ArgumentParser, *, # @UnusedVariable
+                    exerciser: Exerciser # @UnusedVariable
                     ) -> None:
         ...
-
+        
     def walk_across(self, well: Well, direction: Dir,
                     turn1: Dir,
                     turn2: Dir,
@@ -127,11 +130,11 @@ class BilbyExerciser(JoeyExerciser):
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
         super().add_device_specific_common_args(group, parser)
-        group.add_argument("--dll-dir",
+        group.add_argument("--dll-dir", 
                            help='''
                            The directory that Wallaby.dll is found in.  Defaults to searching.
                            ''')
-        group.add_argument("--config-dir",
+        group.add_argument("--config-dir", 
                            help='''
                            The directory that WallabyElectrodes.csv and WallabyHeaters.csv
                            are found in.  Defaults to the current directory.
@@ -156,9 +159,5 @@ class BilbyExerciser(JoeyExerciser):
                            extraction_point_splash_radius=args.extraction_point_splash_radius)
 
 if __name__ == '__main__':
-    Time.default_units = ms
-    Volume.default_units = uL
-    Voltage.default_units = V
-    Temperature.default_units = deg_C
     exerciser = BilbyExerciser()
     exerciser.parse_args_and_run()

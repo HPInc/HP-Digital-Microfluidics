@@ -3147,7 +3147,7 @@ class Heater(BinaryComponent['Heater']):
                 self.target = self._last_target
 
     def _note_mode_change(self, _old: HeatingMode, new: HeatingMode) -> None:
-        print(f"Mode is now {new}")
+        # print(f"Mode is now {new}")
         with self._lock:
             # The operation ends when we hit ambient (OFF) or the target
             # (MAINTAINING).  If we're heating or cooling, we're still (or
@@ -4234,6 +4234,7 @@ class PowerSupply(BinaryComponent['PowerSupply']):
                                                   lambda: "Power supply cannot be turned off"):
             return MISSING
         my_min = self.min_voltage
+        
         if not self.on_low_voltage.expect_true(v >= my_min or v == 0,
                                                 lambda: f"Voltage {v} < minimum ({my_min})"):
             return self.min_voltage

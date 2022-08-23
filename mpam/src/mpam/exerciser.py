@@ -9,7 +9,7 @@ from re import Pattern
 import re
 from threading import Event
 from typing import Final, Mapping, Union, Optional, Sequence, Any, Callable, \
-    NoReturn, ClassVar
+    NoReturn, ClassVar, TypeVar
 
 from matplotlib.gridspec import SubplotSpec
 
@@ -19,85 +19,128 @@ from mpam.monitor import BoardMonitor
 from mpam.types import PathOrStr
 from quantities import temperature
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs, \
-    volts
-from quantities.core import Unit
+    volts, deg_C
+from quantities.core import Quantity, set_default_units, UnitExpr
 from quantities.dimensions import Time, Volume, Voltage
 from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
+from _collections import defaultdict
+from mpam.pipettor import Pipettor
+from erk.basic import ValOrFn, ensure_val
+from importlib import import_module
 
 
 # import logging
 logger = logging.getLogger(__name__)
 
-time_arg_units: Final[Mapping[str, Unit[Time]]] = {
-    "ns": ns,
-    "nsec": ns,
-    "us": us,
-    "usec": us,
-    "ms": ms,
-    "msec": ms,
-    "s": sec,
-    "sec": sec,
-    "secs": sec,
-    "second": sec,
-    "seconds": sec,
-    "min": minutes,
-    "minute": minutes,
-    "minutes": minutes,
-    "hr": hr,
-    "hour": hr,
-    "hours": hr,
-    "days": days,
-    "day": days
-    }
+Q_ = TypeVar("Q_", bound = Quantity)
 
-time_arg_re: Final[Pattern] = re.compile(f"(-?\\d+(?:.\\d+)?)\\s*({'|'.join(time_arg_units)})")
+class ArgUnits:
+    known: Final[dict[type[Quantity], dict[str, UnitExpr]]] = defaultdict(dict)
+    patterns: Final[dict[type[Quantity], Pattern]] = {}
+    all_unit_pattern: Optional[Pattern] = None
+    
+    @classmethod
+    def register_units(cls, qt: type[Q_], units: Mapping[UnitExpr[Q_], Sequence[str]]) -> None:
+        for unit,names in units.items():
+            for name in names:
+                cls.known[qt][name] = unit
+                
+    @classmethod
+    def disjunction(cls, qt: type[Quantity]) -> str:
+        return "|".join(sorted(cls.known[qt]))
+    
+    
+    @classmethod
+    def describe(cls, qt: type[Quantity], *, conj: str="and") -> str:
+        tname = qt.__name__
+        pairs = [(u,n) for n,u in cls.known[qt].items()]
+        names = [f'"{n}"' for _u,n in sorted(pairs)]
+        if len(names) == 0:
+            return f"No known units for {tname}."
+        return f"Known units for {tname} are: {conj_str(names, conj=conj)}."
+    
+    @classmethod
+    def lookup(cls, qt: type[Q_], name: str) -> UnitExpr[Q_]:
+        units = cls.known[qt]
+        unit = units.get(name, None)
+        if unit is None:
+            raise ValueError(f"{name} is not a known {qt.__name__} unit. {cls.describe(qt)}")
+        return unit
+    
+    
+    @classmethod
+    def parse_arg(cls, qt: type[Q_], arg: str, *, 
+                  default: Optional[str] = None) -> Q_:
+        pat = cls.patterns.get(qt, None)
+        if pat is None:
+            pat = re.compile(f"(-?\\d+(?:.\\d+)?)\\s*({ArgUnits.disjunction(qt)})") 
+            cls.patterns[qt] = pat
+        m = pat.fullmatch(arg)
+        if m is None:
+            if default is None:
+                default = "200ms"
+            raise ArgumentTypeError(f"""
+                        {arg} not parsable as a {qt.__name__} value.
+                        Requires a number followed immediately by units, e.g. '{default}'.
+                        {ArgUnits.describe(qt)}""")
+        n = float(m.group(1))
+        # unit = time_arg_units.get(m.group(2), None)
+        unit = ArgUnits.lookup(qt, m.group(2))
+        val = n*unit
+        return val
+    
+    
+    @classmethod
+    def find_unit(cls, arg: str) -> Optional[UnitExpr]:
+        for units in cls.known.values():
+            if (unit := units.get(arg, None)) is not None:
+                return unit
+        return None
+    
+    @classmethod
+    def parse_unit_arg(cls, args: str) -> Sequence[UnitExpr]:
+        units: list[UnitExpr] = []
+        for arg in re.split(r'[ ,]\s*', args):
+            unit = cls.find_unit(arg)
+            if unit is None:
+                raise ArgumentTypeError(f"""
+                            '{arg}' not parsable as a unit.
+                            {' '.join(cls.describe(qt) for qt in cls.known)}
+                            """)
+            units.append(unit)
+        return units
+        
+        
+ArgUnits.register_units(Time,
+                        {
+                            ns: ("ns", "nsec"),
+                            us: ("us", "usec"),
+                            ms: ("ms", "msec"),
+                            sec: ("s", "sec", "secs", "second", "seconds"),
+                            minutes: ("min", "minute", "minutes"),
+                            hr: ("hr", "hour", "hours"),
+                            days: ("days", "day"),
+                            }                        
+                        )
 
 def time_arg(arg: str) -> Time:
-    m = time_arg_re.fullmatch(arg)
-    if m is None:
-        raise ArgumentTypeError(f"""
-                    {arg} not parsable as a time value.
-                    Requires a number followed immediately by units, e.g. '30ms'""")
-    n = float(m.group(1))
-    unit = time_arg_units.get(m.group(2), None)
-    if unit is None:
-        raise ValueError(f"{m.group(2)} is not a known time unit")
-    val = n*unit
-    return val
+    return ArgUnits.parse_arg(Time, arg, default="30ms")
 
-volume_arg_units: Final[Mapping[str, Unit[Volume]]] = {
-    "ul": uL,
-    "uL": uL,
-    "microliter": uL,
-    "microliters": uL,
-    "microlitre": uL,
-    "microliters": uL,
-    "ml": mL,
-    "mL": mL,
-    "milliliter": mL,
-    "milliiters": mL,
-    "millilitre": mL,
-    "milliliters": mL,
-    }
+ArgUnits.register_units(Volume,
+                        {
+                            uL: ("ul", "uL", "microliter", "microliters", "microlitre", "microliters"),
+                            mL: ("ml", "mL", "milliliter", "milliliters", "millilitre", "milliliters"),
+                            }
+                        )
 
-volume_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(volume_arg_units)}|drops|drop)")
+drops_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)(?:drops|drop)")
 
 def volume_arg(arg: str) -> Union[Volume,float]:
-    m = volume_arg_re.fullmatch(arg)
-    if m is None:
-        raise ArgumentTypeError(f"""
-                    {arg} not parsable as a volume value.
-                    Requires a number followed immediately by units, e.g. '30uL' or '2drops'""")
-    n = float(m.group(1))
-    ustr = m.group(2)
-    if ustr == "drops" or ustr == "drop":
-        return n
-    unit = volume_arg_units.get(ustr, None)
-    if unit is None:
-        raise ValueError(f"{ustr} is not a known volume unit")
-    val = n*unit
-    return val
+    m = drops_arg_re.fullmatch(arg)
+    if m is not None:
+        return float(m.group(1))
+    return ArgUnits.parse_arg(Volume, arg, default = "30uL' or '2drops")
 
 temperature_arg_scales: Final[Mapping[str, temperature.Scale]] = {
     "C": abs_C,
@@ -121,26 +164,17 @@ def temperature_arg(arg: str) -> TemperaturePoint:
     val = n*unit
     return val
 
-voltage_arg_units: Final[Mapping[str, Unit[Voltage]]] = {
-    "V": volts,
-    "v": volts,
-    "kV": kilo(volts),
-    "kv": kilo(volts)
-    }
-voltage_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(voltage_arg_units)})")
-
+ArgUnits.register_units(Voltage,
+                        {
+                            volts: ("V", "v", "volt", "volts"),
+                            kilo(volts): ("kV", "KV", "kv", "kilovolt", "kilovolts"),
+                        })
 def voltage_arg(arg: str) -> Voltage:
-    m = voltage_arg_re.fullmatch(arg)
-    if m is None:
-        raise ArgumentTypeError(f"""
-                    {arg} not parsable as a voltage value.
-                    Requires a number followed immediately by units, e.g. '100V'""")
-    n = float(m.group(1))
-    unit = voltage_arg_units.get(m.group(2), None)
-    if unit is None:
-        raise ValueError(f"{m.group(2)} is not a known time unit")
-    val = n*unit
-    return val
+    return ArgUnits.parse_arg(Voltage, arg, default="60V")
+
+
+def units_arg(arg: str) -> Sequence[UnitExpr]:
+    return ArgUnits.parse_unit_arg(arg)
 
 class LoggingLevel:
     desc: Final[str]
@@ -251,20 +285,24 @@ class Task(ABC):
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
         ...
 
-    def add_args_to(self, parser: ArgumentParser, *, exerciser: Exerciser) -> None:  # @UnusedVariable
+    def add_args_to(self, group: _ArgumentGroup, # @UnusedVariable
+                    parser: ArgumentParser, # @UnusedVariable
+                    *, exerciser: Exerciser) -> None:  # @UnusedVariable
         ...
 
     def arg_group_in(self, parser: ArgumentParser,
-                     name: str="task-specific options") -> _ArgumentGroup:
+                     name: str) -> _ArgumentGroup:
         return parser.add_argument_group(name)
 
     def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec, exerciser: Exerciser) -> Any:
         return exerciser.control_setup(monitor, spec)
-
+    
+    def available_wells(self, exerciser: Exerciser) -> Sequence[int]:
+        return exerciser.available_wells()
 
 class Exerciser(ABC):
     parser: Final[ArgumentParser]
-    subparsers: Final[_SubParsersAction]
+    subparsers: Final[Optional[_SubParsersAction]]
 
     default_initial_delay: Time = 5*secs
     default_min_time: Time = 5*minutes
@@ -272,9 +310,22 @@ class Exerciser(ABC):
     default_off_on_delay: Time = 0*ms
     default_extraction_point_splash_radius: int = 0
 
-    def __init__(self, description: str = "run tasks on a board") -> None:
+    def __init__(self, description: Optional[str] = None, *,
+                 task: Optional[Task] = None) -> None:
+        if description is None:
+            description = "run tasks on a board" if task is None else task.description
         self.parser = ArgumentParser(description=description)
-        self.subparsers = self.parser.add_subparsers(help="Tasks", dest='task_name', required=True, metavar='TASK')
+        subparsers: Optional[_SubParsersAction]
+        if task is not None:
+            self.setup_task(task, parser=self.parser)
+            subparsers = None
+        else:
+            subparsers = self.parser.add_subparsers(help="Tasks", dest='task_name', required=True, 
+                                                    metavar=self._task_metavar())
+        self.subparsers = subparsers
+        
+    def _task_metavar(self) -> str:
+        return "TASK"
 
     @abstractmethod
     def make_board(self, args: Namespace) -> Board: ...  # @UnusedVariable
@@ -284,19 +335,34 @@ class Exerciser(ABC):
 
     def control_setup(self, monitor: BoardMonitor, spec: SubplotSpec) -> Any: # @UnusedVariable
         return None
+    
+    def setup_task(self, task: Task, *,
+                   parser: ArgumentParser,
+                   group_name: Optional[str] = None) -> None:
+        if group_name is None:
+            group_name = "task-specific options"
+        group = task.arg_group_in(parser, group_name)
+
+        # We set default units first so that default values for help and errors
+        # will be printed correctly by parse_args()
+        set_default_units(ms, uL, deg_C, volts)
+        
+        task.add_args_to(group, parser, exerciser=self)
+        self.add_common_args_to(parser)
+        parser.set_defaults(task=task)
 
     def add_task(self, task: Task, *,
                  name: Optional[str] = None,
                  description: Optional[str] = None,
                  aliases: Optional[Sequence[str]] = None) -> Exerciser:
+        subparsers = self.subparsers
+        assert subparsers is not None, f"Cannot add task to single-task Exerciser '{self.parser.description}'"
         name = task.name if name is None else name
         desc = task.description if description is None else description
         aliases = task.aliases if aliases is None else aliases
-        parser = self.subparsers.add_parser(name, help=desc, description=desc, aliases=aliases)
-        task.add_args_to(parser, exerciser=self)
-        self.add_common_args_to(parser)
-        parser.set_defaults(task=task)
-
+        parser = subparsers.add_parser(name, help=desc, description=desc, aliases=aliases)
+        self.setup_task(task, parser=parser)
+        
         return self
 
     def run_task(self, task: Task, args: Namespace, *, board: Board) -> None:
@@ -340,13 +406,16 @@ class Exerciser(ABC):
 
         task: Task = ns.task
         return task, ns
-
+    
     def parse_args_and_run(self,
                            args: Optional[Sequence[str]]=None,
                            namespace: Optional[Namespace]=None) -> None:
         task, ns = self.parse_args(args=args, namespace=namespace)
         if ns.trace_blobs:
             Board.trace_blobs = True
+        default_units: Optional[Sequence[Sequence[UnitExpr]]] = ns.units
+        if default_units is not None:
+            set_default_units(*(u for us in default_units for u in us))
         board = self.make_board(ns)
         self.run_task(task, ns, board=board)
 
@@ -359,8 +428,7 @@ class Exerciser(ABC):
                                         parser: ArgumentParser  # @UnusedVariable
                                         ) -> None:
         # by default, no args to add.
-        group.add_argument("--trace-blobs", action="store_true",
-                           help=f"Trace blobs.")
+        ...
 
     def add_common_args_to(self, parser: ArgumentParser) -> None:
         group = parser.add_argument_group(title="common options")
@@ -375,13 +443,6 @@ class Exerciser(ABC):
                            help='''
                            Don't start the clock automatically. Note that operations that are not gated
                            by the clock may still run.
-                           ''')
-        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', default=self.default_off_on_delay,
-                           help=f'''
-                           The amount of time to wait between turning pads off
-                           and turning pads on in a clock tick.  0ms is no
-                           delay.  Negative values means pads are turned on before pads are turned off.
-                           Default is {self.fmt_time(self.default_initial_delay)}.
                            ''')
         group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=self.default_initial_delay,
                            help=f'''
@@ -409,13 +470,27 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
-        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, default=self.default_extraction_point_splash_radius,
+        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, metavar="PADS",
+                           default=self.default_extraction_point_splash_radius,
                            help=f'''
                            The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
                            Default is {self.default_extraction_point_splash_radius}.
                            ''')
+        group.add_argument('--units', type=units_arg, action='append',
+                           help="""
+                               A comma- or space-separated list of units to use
+                               for printing.  This argument may be specified
+                               multiple times.  If more than one value is
+                               provided for a given dimension, the unit chosen
+                               will be the largest one that's no bigger than the
+                               printed value (or the smallest if none are
+                               smaller).  Default is equivalent to 'uL,ms,V'.
+                               """)
         display_group = parser.add_argument_group("display_options")
         BoardMonitor.add_args_to(display_group, parser)
+        debug_group = parser.add_argument_group("debugging options")
+        debug_group.add_argument("--trace-blobs", action="store_true",
+                                 help=f"Trace blobs.")
         log_group = group.add_mutually_exclusive_group()
         # level_choices = ['debug', 'info', 'warning', 'error', 'critical']
         # log_group.add_argument('--log-level', metavar='LEVEL',
@@ -510,3 +585,215 @@ class Exerciser(ABC):
         
         for name,level in imports.items():
             logging.getLogger(name).setLevel(level.desc)
+            
+class PlatformChoiceTask(Task):
+    
+    def __init__(self, name: str, description: Optional[str] = None, *,
+                 aliases: Optional[Sequence[str]]=None) -> None:
+        if description is None:
+            description = f"Run on the {name} platform"
+        if aliases is None:
+            lc_name = name.lower()
+            if lc_name != name:
+                aliases = (name.lower(),)
+        super().__init__(name, description, aliases=aliases)
+        
+    @abstractmethod
+    def make_board(self, args: Namespace, *, # @UnusedVariable
+                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+                   pipettor: Pipettor) -> Board: # @UnusedVariable
+        ...
+        
+    # available_wells() is implemented in Task, but we override it to make it
+    # abstract here so that subclasses have to give the right answer for their
+    # platform.
+    @abstractmethod
+    def available_wells(self, exerciser: Exerciser) -> Sequence[int]: # @UnusedVariable
+        ...
+        
+    def run(self, board: Board, system: System, args: Namespace) -> NoReturn: # @UnusedVariable
+        assert False, f"PlatformChoiceTask.run() should never be called: {self}"
+        
+    def add_args_to(self, group: _ArgumentGroup, # @UnusedVariable
+                    parser:ArgumentParser, # @UnusedVariable
+                    *, 
+                    exerciser:Exerciser)->None: # @UnusedVariable
+        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
+                           default=self.default_off_on_delay(),
+                           help=f'''
+                            The amount of time to wait between turning pads off
+                            and turning pads on in a clock tick.  0ms is no
+                            delay.  Negative values means pads are turned on
+                            before pads are turned off. Default is
+                            {self.fmt_time(self.default_off_on_delay())}.
+                            ''')
+        
+    def default_off_on_delay(self) -> Time:
+        return 0*ms
+    
+    @classmethod
+    def fmt_time(cls, t: Time) -> str:
+        return Exerciser.fmt_time(t)
+        
+        
+class PipettorConfig(ABC):
+    name: Final[str]
+    aliases: Final[tuple[str, ...]]
+    
+    @property
+    def names(self) -> str:
+        name = f'"{self.name}"'
+        aliases = ", ".join(f'"{a}"' for a in self.aliases)
+        return f"{name} ({aliases})" if aliases else name
+    
+    def __init__(self, name: str, *,
+                 aliases: Sequence[str] = ()) -> None:
+        self.name = name
+        self.aliases = tuple(sorted(aliases))
+        
+    def add_args_to(self, group: _ArgumentGroup) -> None: # @UnusedVariable
+        ...
+    
+    @abstractmethod    
+    def create(self, args: Namespace) -> Pipettor: # @UnusedVariable
+        ...
+        
+class PlatformChoiceExerciser(Exerciser):
+    task: Final[Task]
+    pipettors: Final[tuple[PipettorConfig, ...]]
+    default_pipettor: Final[PipettorConfig]
+    
+    def __init__(self, description: Optional[str] = None, *,
+                 task: Task,
+                 platforms: Sequence[Union[str,ValOrFn[PlatformChoiceTask]]],
+                 pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
+                 default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
+                 ) -> None:
+        if description is None:
+            description = f"Run the {task.name} task"
+        super().__init__(description)
+        self.task = task
+        
+        from devices import dummy_pipettor, manual_pipettor
+        dp = dummy_pipettor.PipettorConfig()
+        mp = manual_pipettor.PipettorConfig()
+        if default_pipettor is None:
+            default_pipettor = dp
+        elif not isinstance(default_pipettor, PipettorConfig):
+            default_pipettor = default_pipettor()
+        self.default_pipettor = default_pipettor
+        plist = [p if isinstance(p, PipettorConfig) else p() for p in pipettors]
+        if dp not in plist:
+            plist.append(dp)
+        if mp not in plist:
+            plist.append(mp)
+        plist.sort(key=lambda p:p.name)
+        self.pipettors = tuple(plist)
+        
+        for p in platforms:
+            platform: ValOrFn[PlatformChoiceTask]
+            if isinstance(p, str):
+                def bad_spec(msg: str) -> None:
+                    logger.warn(f"Platform option '{p}' {msg}, ignoring")
+                cpts = p.split(".")
+                if len(cpts) < 2:
+                    bad_spec("doesn't specify a module")
+                    continue
+                name = cpts[-1]
+                module_name = '.'.join(cpts[0:-1])
+                try:
+                    module = import_module(module_name)
+                    val = getattr(module, name)
+                except ModuleNotFoundError as ex:
+                    bad_spec(f"requires '{ex.name}' module")
+                    continue
+                if isinstance(val, PlatformChoiceTask):
+                    platform = val
+                else:
+                    try:
+                        pp = val()
+                        if isinstance(pp, PlatformChoiceTask):
+                            platform = pp
+                        else:
+                            bad_spec("doesn't return a PlatformChoiceTask")
+                            continue
+                    except TypeError:
+                        bad_spec("neither a PlatformChoiceTask nor callable")
+                        continue
+            else:
+                platform = p
+            if not isinstance(platform, PlatformChoiceTask):
+                platform = platform()
+            self.add_task(platform)
+            
+    @classmethod
+    def for_task(cls, task: Union[Task, Callable[[], Task]], 
+                 description: Optional[str] = None, 
+                 *,
+                 platforms: Sequence[Union[str, ValOrFn[PlatformChoiceTask]]],
+                 pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
+                 default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
+                 ) -> PlatformChoiceExerciser:
+        if not isinstance(task, Task):
+            task = task()
+        return PlatformChoiceExerciser(description, 
+                                       task=task,
+                                       platforms=platforms,
+                                       pipettors=pipettors,
+                                       default_pipettor=default_pipettor)
+        
+        
+    
+    def _task_metavar(self)->str:
+        return "PLATFORM"
+
+    def setup_task(self, task: Task, *, 
+                   parser: ArgumentParser,
+                   group_name: Optional[str] = None)->None: # @UnusedVariable
+        tgroup = self.task.arg_group_in(parser, "task-specific options")
+        self.task.add_args_to(tgroup, parser, exerciser=self)
+        super().setup_task(task, parser=parser, group_name=f"{task.name} platform options")
+        for pipettor in self.pipettors:
+            group = parser.add_argument_group(f"{pipettor.name} pipettor options")
+            pipettor.add_args_to(group)
+        
+    def _find_pipettor(self, name: str, args: Namespace) -> Pipettor:
+        for p in self.pipettors:
+            if name == p.name or name in p.aliases:
+                return p.create(args)
+        choices = conj_str([p.names for p in self.pipettors])
+        raise ValueError(f'"{name}" is not a known pipettor name.  Choices are {choices}.')
+        
+    def make_board(self, args: Namespace) -> Board:
+        platform: Task = args.task
+        assert isinstance(platform, PlatformChoiceTask), f"Task is not a PlatformChoiceTask: {platform}"
+        pipettor = self._find_pipettor(args.pipettor, args)
+
+        return platform.make_board(args, exerciser=self, pipettor=pipettor)
+        
+    def add_device_specific_common_args(self, 
+                                        group:_ArgumentGroup, 
+                                        parser:ArgumentParser)-> None:
+        super().add_device_specific_common_args(group, parser)
+        pipettor_choices = []
+        for p in self.pipettors:
+            pipettor_choices.append(p.name)
+            pipettor_choices.extend(p.aliases)
+        choices_desc = conj_str([p.names for p in self.pipettors])
+        group.add_argument('--pipettor', default=self.default_pipettor.name,
+                           metavar="PIPETTOR",
+                           choices=sorted(pipettor_choices),
+                           help=f'''
+                           The pipettor to use if needed.  Valid options are: {choices_desc}.  
+                           The default is "{self.default_pipettor.name}".
+                           ''')
+        
+
+    def available_wells(self)->NoReturn:
+        assert False, f"PlatformChoiceExerciser should get available wells from the platform"
+        
+    # We've used the provided task (the platform) to set up the board.  What we
+    # really run is the Task we squirreled away.
+    def run_task(self, task: Task, args: Namespace, *, board: Board)->None: # @UnusedVariable
+        super().run_task(self.task, args, board=board)
+        

@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from argparse import Namespace, ArgumentParser
+from argparse import Namespace, ArgumentParser, _ArgumentGroup
 from typing import Sequence
 
 from mpam.exerciser import Exerciser, Task, time_arg, temperature_arg
 from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix,\
     Dilute
-from quantities.SI import ms, uL, deg_C
-from quantities.dimensions import Time, Volume, Temperature
+from quantities.dimensions import Time
 from devices import joey
 from mpam.device import Board, System, Pad, Well
 from mpam.types import ticks, unknown_reagent, Liquid
@@ -21,10 +20,11 @@ class Thermocycle(Task):
         super().__init__(name="thermocycle",
                          description="Run drops through a thermocycle process")
 
-    def add_args_to(self, parser: ArgumentParser, *,
+    def add_args_to(self, 
+                        group: _ArgumentGroup, 
+                        parser: ArgumentParser, *,
                     exerciser: Exerciser  # @UnusedVariable
                     ) -> None:
-        group = self.arg_group_in(parser)
         cg = group.add_mutually_exclusive_group()
         default_drops = 1
         cg.add_argument('-n', '--n-drops', type=int, metavar='INT', default=default_drops,
@@ -134,10 +134,22 @@ class JoeyExerciser(Exerciser):
     def available_wells(self)->Sequence[int]:
         return [0,1,2,3,4,5,6,7]
 
+    def add_device_specific_common_args(self,
+                                        group: _ArgumentGroup,
+                                        parser: ArgumentParser  # @UnusedVariable
+                                        ) -> None:
+        super().add_device_specific_common_args(group, parser)
+        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
+                           default=self.default_off_on_delay,
+                           help=f'''
+                            The amount of time to wait between turning pads off
+                            and turning pads on in a clock tick.  0ms is no
+                            delay.  Negative values means pads are turned on
+                            before pads are turned off. Default is
+                            {self.fmt_time(self.default_off_on_delay)}.
+                            ''')
+
 
 if __name__ == '__main__':
-    Time.default_units = ms
-    Volume.default_units = uL
-    Temperature.default_units = deg_C
     exerciser = JoeyExerciser()
     exerciser.parse_args_and_run()
