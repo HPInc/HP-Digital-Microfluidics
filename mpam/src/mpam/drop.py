@@ -1081,5 +1081,5 @@ class DropComputeOp(ComputeOp[Drop,Drop]):
     def after_delay(self,
                     after: WaitCondition,
                     fn: Callable[[], Drop],
-                    *, obj: Drop) -> Delayed[Drop]:
+                    *, obj: Drop) -> Delayed[Drop]: # type: ignore[override]
         return obj.delayed(fn, after=after)

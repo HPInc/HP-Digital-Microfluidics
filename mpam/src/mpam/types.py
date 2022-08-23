@@ -37,6 +37,7 @@ Tco = TypeVar('Tco', covariant=True) ; "A generic covariant type variable"
 Tcontra = TypeVar('Tcontra', contravariant=True) ; "A generic contravariant type variable"
 V = TypeVar('V')    ; "A generic type variable"
 V2 = TypeVar('V2')  ; "A generic type variable"
+V3 = TypeVar('V3')  ; "A generic type variable"
 H = TypeVar('H', bound=Hashable)    ; "A generic type variable representing a :class:`typing.Hashable` type"
 
 PathOrStr = Union[str, pathlib.Path]
@@ -704,15 +705,18 @@ class Operation(Generic[T, V], ABC):
             obj.when_value(schedule_and_post)
             return future
 
-        def cb():
-            return self._schedule_for(obj, post_result=post_result)
-        return self.after_delay(after, cb, obj=obj)
+        real_obj = obj
+        future = Postable[V]()
+        def cb() -> None:
+            self._schedule_for(real_obj, post_result=post_result).post_to(future)
+        self.after_delay(after, cb, obj=obj)
+        return future
 
     @abstractmethod
     def after_delay(self,
                     after: WaitCondition,
-                    fn: Callable[[], V],
-                    *, obj: T) -> Delayed[V]:
+                    fn: Callable[[], V2],
+                    *, obj: T) -> Delayed[V2]:
         ...
 
     def then(self,
@@ -744,7 +748,7 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        return CombinedOperation[T, V, V2](self, op, after=after)
+        return CombinedOperation[T, V, V3](self, op, after=after)
 
     def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> Operation[T, V2]:
         """
@@ -828,12 +832,12 @@ class CSOperation(Operation[CS, V]):
     '''
     def after_delay(self,
                     after: WaitCondition,
-                    fn: Callable[[], V],
-                    *, obj: CS) -> Delayed[V]:
+                    fn: Callable[[], V2],
+                    *, obj: CS) -> Delayed[V2]:
         return obj.delayed(fn, after=after)
 
 
-class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
+class CombinedOperation(Generic[T, V, V3], Operation[T, V3]):
     """
     An :class:`Operation` representing chaining two :class:`Operation`\s
     together.
@@ -845,22 +849,22 @@ class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
     Args:
         T: the type of the object used to schedule the :class:`Operation`
         V: the type of the value produced by the first operation
-        V2: the type of the value produced by the second operation (and the
+        V3: the type of the value produced by the second operation (and the
             :class:`CombinedOperation` overall)
     """
     first: Operation[T, V]               ; "The first :class:`Operation`"
-    second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
-                  Callable[[], Operation[V, V2]],
-                  Callable[[], StaticOperation[V2]]]
+    second: Union[Operation[V, V3], StaticOperation[V3], # type: ignore [type-var]
+                  Callable[[], Operation[V, V3]],
+                  Callable[[], StaticOperation[V3]]]
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
     after: Final[WaitCondition]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
     def __init__(self, first: Operation[T, V],
-                 second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
-                               Callable[[], Operation[V, V2]],
-                               Callable[[], StaticOperation[V2]]],
+                 second: Union[Operation[V, V3], StaticOperation[V3], # type: ignore [type-var]
+                               Callable[[], Operation[V, V3]],
+                               Callable[[], StaticOperation[V3]]],
                  after: WaitCondition=NO_WAIT) -> None:
         """
         Initialize the :class:`CombinedOperation`
@@ -880,7 +884,7 @@ class CombinedOperation(Generic[T, V, V2], Operation[T, V2]):
 
     def _schedule_for(self, obj: T, *,
                       post_result: bool = True,
-                      ) -> Delayed[V2]:
+                      ) -> Delayed[V3]:
         """
         Implementat :func:`Operation.schedule_for` by scheduling :attr:`second` after :attr:`first` is done.
 
@@ -948,8 +952,8 @@ class ComputeOp(Generic[T, V], Operation[T, V]):
 
     def after_delay(self,
                     after: WaitCondition,
-                    fn: Callable[[], V],
-                    *, obj: T) -> Delayed[V]:
+                    fn: Callable[[], V2],
+                    *, obj: T) -> Delayed[V2]:
         raise NotImplementedError('"after_delay" not supported for "ComuteOp"')
 
 
