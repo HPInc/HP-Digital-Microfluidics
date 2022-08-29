@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast
+from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast,\
+    NoReturn
 from threading import Lock
 from re import Pattern
 import re
+
 
 _T = TypeVar('_T')
 _H = TypeVar('_H', bound=Hashable)
@@ -92,3 +94,18 @@ def ensure_val(val: ValOrFn[_T], as_class: type[_T]) -> _T:
         return val
     fn = cast(Callable[[], _T], val)
     return fn()
+
+
+def assert_never(value: NoReturn) -> NoReturn:
+    # from: https://hakibenita.com/python-mypy-exhaustive-checking
+    #
+    # In a location you should never get to because value should've been handled
+    # (usually by exhausting enum values or union types).  MyPy will complain,
+    # because the type doesn't match NoReturn.  The reported type will be the
+    # remaining options.
+    #
+    # Per the source page, we use a raise rather than an assert so that it gets
+    # reported even when the -o flag is used.
+    raise AssertionError(f"Unhandled value: {value}({type(value)}.__name__")
+    
+    

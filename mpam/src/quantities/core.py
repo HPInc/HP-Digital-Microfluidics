@@ -9,6 +9,7 @@ from erk.basic import LazyPattern, Lazy
 import re
 from abc import abstractmethod, ABC
 from _collections import defaultdict
+from threading import Lock
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +177,7 @@ class Dimensionality(Generic[D], DimLike):
     
     def make_quantity(self, mag: float) -> D:
         return self.quant_class(mag, self) # type: ignore[arg-type]
-
+    
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format
         cd: Optional[str] = getattr(self, "_cached_description", None)
@@ -598,7 +599,6 @@ class Quantity:
             used.append((last, 0))
         return _DecomposedQuantity[D](used, q)
     
-
 class UnknownDimQuant(Quantity):
     def __repr__(self) -> str:
         return f"UnknownDimQuant[{self.magnitude},{self.dimensionality}]"
@@ -1124,15 +1124,32 @@ class Prefix:
     
     def scale(self, prefix: str, mult: float) -> Prefix:
         return Prefix(prefix, self.multiplier*mult)
-    
+   
+_const_lock: Final = Lock()
+
 class NamedDimMeta(type, DimLike):
+    def _unique_val(self, ret_type: Type[T], prop: str, mag: float) -> T:
+        val: Optional[T] = getattr(ret_type, prop, None)
+        if val is None:
+            with _const_lock:
+                val = getattr(ret_type, prop, None)
+                if val is None:
+                    val = self(mag)
+                    setattr(ret_type, prop, val)
+        return val
+        
+    
     @property
     def ZERO(self: Type[T]) -> T:
-        val: T = getattr(self, "_zero")
-        return val
+        return cast(NamedDimMeta, self)._unique_val(self, "_zero", 0.0)
     
+    @property
+    def INFINITE(self: Type[T]) -> T:
+        return cast(NamedDimMeta, self)._unique_val(self, "_inf", math.inf)
+
     def __init__(self, name: str, base, dct) -> None:  # @UnusedVariable 
-        self._zero = self(0.0)
+        # self._zero = self(0.0)
+        # self._infinite = self(math.inf)
         self._restriction_classes: dict[Any, type[BaseDim]] = {}
 
     def as_dimensionality(self: type[ND]) -> Dimensionality[ND]: # type: ignore[misc]

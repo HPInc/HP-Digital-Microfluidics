@@ -18,7 +18,7 @@ import requests
 
 from mpam.device import System, Board, PipettingTarget, ProductLocation
 from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget,\
-    PipettingSource
+    PipettingSource, WellPlateType
 from mpam.types import Reagent, XferDir, AsyncFunctionSerializer
 from quantities.SI import seconds, uL, ml, ul
 from quantities.dimensions import Time, Volume
@@ -531,15 +531,14 @@ class WellPlate:
     wells: Final[Sequence[WPWell]]
     
     def __init__(self, pipettor: OT2, slot: int, *,
-                 rows: int,
-                 columns: int, 
+                 plate_type: WellPlateType,
                  well_capacity: Volume,
                  n_plates: int) -> None:
         self.pipettor = pipettor
         self.slot = slot
         self.well_capacity = well_capacity
 
-        well_names = pipettor._generate_source_names(rows=rows, columns=columns, 
+        well_names = pipettor._generate_source_names(plate_type=plate_type,
                                                      plates=1, start_plate=slot,
                                                      total_plates = n_plates)
         self.wells = [WPWell(n, plate=self, capacity=well_capacity) for n in well_names] 
@@ -553,19 +552,8 @@ class WellPlate:
         m = re.search("_(\\d+)_.*_(\\d+)([um]l)", name, re.IGNORECASE)
         assert m is not None, f"Couldn't parse labware name {name}"
         n_wells = int(m[1])
-        if n_wells == 1:
-            rows,cols = 1,1
-        elif n_wells == 6:
-            rows,cols = 2,3
-        elif n_wells == 24:
-            rows,cols = 4,6
-        elif n_wells == 96:
-            rows,cols = 8,12
-        elif n_wells == 384:
-            rows,cols = 16,24
-        elif n_wells == 1536:
-            rows,cols = 32,48
-        else:
+        plate_type = WellPlateType.for_size(n_wells)
+        if plate_type is None:
             assert False, f"Don't know the configuration for a {n_wells}-well plate"
         u_spec: str = m[3].lower()
         if u_spec == "ml":
@@ -575,7 +563,7 @@ class WellPlate:
         else:
             assert False, f"{u_spec} isn't a known unit for a wall plate capacity"
         capacity = int(m[2])*unit
-        return WellPlate(pipettor, slot, rows=rows, columns=cols, 
+        return WellPlate(pipettor, slot, plate_type=plate_type,
                          well_capacity=capacity, n_plates=n_plates)
             
 class WPWell(PipettingSource):

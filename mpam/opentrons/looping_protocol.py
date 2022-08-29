@@ -24,7 +24,9 @@ config = None
 
 def run(protocol: protocol_api.ProtocolContext) -> None:
     if "COMBINED_FILES_KLUDGE" not in globals():
-        from opentrons_support import Robot, load_config
+        # PyDeV can't figure out that Robot will actually be used
+        from opentrons_support import Robot # @UnusedImport
+        from opentrons_support import load_config
     else:
         global Robot
     global config
@@ -41,7 +43,11 @@ def run(protocol: protocol_api.ProtocolContext) -> None:
         
     if not protocol.is_simulating():
         # board = Board(config["board"], protocol)
-        robot = Robot(config, protocol)
+
+        # BUG: MyPy 0.942 can't figure out that Robot is defined, either as
+        # an import or a global.
+        
+        robot = Robot(config, protocol) # type: ignore [name-defined]
         board = robot.board
         
         robot.message("Created robot and board")

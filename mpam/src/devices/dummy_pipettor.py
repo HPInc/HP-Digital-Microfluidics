@@ -3,7 +3,8 @@ from __future__ import annotations
 from enum import Enum, auto
 import logging
 
-from mpam.pipettor import Pipettor, Transfer, EmptyTarget, PipettingSource
+from mpam.pipettor import Pipettor, Transfer, EmptyTarget, PipettingSource,\
+     WellPlate384, WellPlate96
 from mpam.types import XferDir, waste_reagent, Reagent
 from quantities.SI import seconds, second, uL
 from quantities.core import DerivedDim
@@ -34,13 +35,13 @@ class DummyPipettor(Pipettor):
     drop_tip_time: Time
     get_tip_time: Time
     flow_rate: FlowRate
-    next_product: int
 
     arm_pos: ArmPos
     
     _sources_by_reagent: Final[dict[Reagent, PipettingSource]]
     _sources_by_name: Final[Mapping[str, PipettingSource]]
     _unallocated_sources: Final[list[PipettingSource]]
+    _unallocated_product_wells: Final[list[PipettingSource]]
 
     def __init__(self, *,
                  name: str="Dummy Pipettor",
@@ -50,7 +51,8 @@ class DummyPipettor(Pipettor):
                  get_tip_time: Time = 0.5*seconds,
                  drop_tip_time: Time = 0.5*seconds,
                  flow_rate: FlowRate = (100*uL/second).a(FlowRate),
-                 n_plates: int = 1,
+                 n_source_plates: int = 1,
+                 n_product_plates: int = 1,
                  speed_up: Optional[float] = None,
                  ) -> None:
         super().__init__(name=name)
@@ -61,9 +63,10 @@ class DummyPipettor(Pipettor):
         self.get_tip_time = get_tip_time
         self.drop_tip_time = drop_tip_time
         self.flow_rate = flow_rate
-        self.next_product = 1
         
-        source_names = self._generate_source_names(plates=n_plates)
+        source_names = self._generate_source_names(plates=n_source_plates,
+                                                   plate_type=WellPlate96,
+                                                   prefix="source well ")
         sources = self._generate_sources_named(source_names)
         self._unallocated_sources = sources
         self._sources_by_reagent = {}
@@ -71,12 +74,18 @@ class DummyPipettor(Pipettor):
         for source in sources:
             def remember_source(s: PipettingSource) -> Callable[[Reagent], None]:
                 def doit(r: Reagent) -> None:
-                    logger.info(f"Reagent {r} is in source {s.name}")
+                    logger.info(f"Reagent {r} is in {s.name}")
                     
                     self._sources_by_reagent[r] = s
                 return doit
             source.assigned_reagent.when_value(remember_source(source))
         
+        product_names = self._generate_source_names(plates=n_product_plates,
+                                                    plate_type=WellPlate384,
+                                                    prefix="product well ")
+        products = self._generate_sources_named(product_names)
+        self._unallocated_product_wells = products
+
         if speed_up is not None:
             self.speed_up(speed_up)
         
@@ -84,17 +93,20 @@ class DummyPipettor(Pipettor):
     def source_named(self, name: str) -> Optional[PipettingSource]:
         return self._sources_by_name.get(name, None)
     
-    def _new_source_for(self, reagent: Reagent) -> PipettingSource:
-        unassigned = self._unallocated_sources
+    def _assign_well(self, reagent: Reagent,
+                     unassigned: list[PipettingSource],
+                     kind: str) -> PipettingSource:
         while len(unassigned) > 0:
             source = self._unallocated_sources.pop(0)
             if not source.is_assigned:
                 source.reagent = reagent
-                # source.exact_volume = 0*uL
                 return source
         
-        raise ValueError(f"No unallocated sources available for {reagent}")
-
+        raise ValueError(f"No unallocated {kind} wells available for {reagent}")
+        
+    
+    def _new_source_for(self, reagent: Reagent) -> PipettingSource:
+        return self._assign_well(reagent, self._unallocated_sources, "source")
     
     def sources_for(self, reagent: Reagent) -> tuple[PipettingSource]:
         return (self.source_for(reagent),)
@@ -105,6 +117,9 @@ class DummyPipettor(Pipettor):
             source = self._new_source_for(reagent)
         return source
 
+    def _product_well_for(self, reagent: Reagent) -> PipettingSource:
+        return self._assign_well(reagent, self._unallocated_product_wells, "product")
+        
 
     def speed_up(self, factor: float) -> None:
         self.dip_time /= factor
@@ -188,14 +203,18 @@ class DummyPipettor(Pipettor):
                 self.xfer(total_volume)
                 logging.info(f"Dumping {total_volume} of {reagent} to trash.")
             else:
-                self.move_to(ArmPos.PRODUCTS if transfer.is_product else ArmPos.REAGENTS)
+                if transfer.is_product:
+                    dest = self._product_well_for(reagent)
+                    self.move_to(ArmPos.PRODUCTS)
+                else:
+                    dest = self.source_for(reagent)
+                    self.move_to(ArmPos.REAGENTS)
                 self.down()
                 self.xfer(total_volume)
-                logging.info(f"Dispensing {total_volume} of {reagent} to {self.arm_pos}.")
+                logging.info(f"Dispensing {total_volume} of {reagent} to {dest.name}.")
                 self.up()
                 if transfer.is_product:
-                    loc = ProductLocation(reagent, f"Product well {self.next_product}")
-                    self.next_product += 1
+                    loc = ProductLocation(reagent, dest.name)
                     for x in transfer.targets:
                         assert isinstance(x, EmptyTarget)
                         x.note_product_loc(loc)
@@ -214,8 +233,10 @@ class PipettorConfig(exerciser.PipettorConfig):
 
     def create(self, args: Namespace) -> Pipettor:
         speedup: Optional[float] = args.pipettor_speed
-        n_well_plates: int = args.n_well_plates
-        pipettor = DummyPipettor(n_plates = n_well_plates, 
+        n_source_plates: int = args.n_source_plates
+        n_product_plates: int = args.n_product_plates
+        pipettor = DummyPipettor(n_source_plates = n_source_plates,
+                                 n_product_plates = n_product_plates, 
                                  speed_up = speedup)
         return pipettor
     
@@ -223,7 +244,10 @@ class PipettorConfig(exerciser.PipettorConfig):
         super().add_args_to(group)
         group.add_argument('-ps', '--pipettor-speed', type=float, metavar='MULT',
                            help="A speed-up factor for dummy pipettor operations.")
-        default_n_well_plates = 1
-        group.add_argument('--n-well-plates', type=int, metavar='INT', default=default_n_well_plates,
-                           help=f"The number of well plates to model.  Default is {default_n_well_plates}.")
+        default_n_source_plates = 1
+        default_n_product_plates = 1
+        group.add_argument('--n-source-plates', type=int, metavar='INT', default=default_n_source_plates,
+                           help=f"The number of well plates to model.  Default is {default_n_source_plates}.")
+        group.add_argument('--n-product-plates', type=int, metavar='INT', default=default_n_product_plates,
+                           help=f"The number of well plates to model.  Default is {default_n_product_plates}.")
         

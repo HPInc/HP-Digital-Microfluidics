@@ -27,6 +27,7 @@ from quantities.core import CountDim
 from quantities.dimensions import Molarity, MassConcentration, \
     VolumeConcentration, Volume, Time
 from quantities.temperature import TemperaturePoint
+from erk.basic import assert_never
 
 
 logger = logging.getLogger(__name__)
@@ -1087,10 +1088,11 @@ class OpScheduler(Generic[CS]):
                     waitable.when_value(lambda _: future.post(obj))
                 elif isinstance(waitable, Trigger):
                     waitable.wait(obj, future)
-                else:
-                    assert isinstance(waitable, Time) or isinstance(waitable, Ticks)
+                elif isinstance(waitable, Time) or isinstance(waitable, Ticks):
                     wait_future = obj.delayed(lambda: obj, after=waitable)
                     wait_future.post_to(future)
+                else:
+                    assert_never(waitable)
             if after is None:
                 cb()
             else:
@@ -1533,6 +1535,20 @@ class Delayed(Generic[Tco]):
             A new :class:`Delayed` object with ``val`` as the asserted value.
         """
         return _CompleteDelayed(val)
+
+    @classmethod
+    def complete_unless_none(cls, val: Optional[T]) -> Delayed[T]:
+        if val is None:
+            return Postable[T]()
+        else:
+            return cls.complete(val)
+
+    @classmethod
+    def complete_unless_missing(cls, val: MissingOr[T]) -> Delayed[T]:
+        if val is MISSING:
+            return Postable[T]()
+        else:
+            return cls.complete(val)
 
     def then_schedule(self, op: Union[Operation[Tco,V], StaticOperation[V],
                                       Callable[[], Operation[Tco,V]],

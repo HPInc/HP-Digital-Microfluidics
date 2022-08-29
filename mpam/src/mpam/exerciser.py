@@ -26,7 +26,7 @@ from quantities.prefixes import kilo
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from _collections import defaultdict
 from mpam.pipettor import Pipettor
-from erk.basic import ValOrFn, ensure_val
+from erk.basic import ValOrFn
 from importlib import import_module
 
 

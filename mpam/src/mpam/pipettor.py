@@ -15,7 +15,6 @@ from quantities.SI import uL
 from quantities.dimensions import Volume
 from mpam.engine import Worker
 from erk.stringutils import map_str
-import math
 
 logger = logging.getLogger(__name__)
 
@@ -275,7 +274,9 @@ class PipettingSource:
     @reagent.setter
     def reagent(self, reagent: Reagent) -> None:
         my_reagent = self.reagent
-        if my_reagent is not None and my_reagent is not reagent:
+        if my_reagent is not None:
+            if my_reagent is reagent:
+                return
             raise ValueError(f"Can't assign {reagent} to {self}.  Already assigned {self.reagent}")
         self._reagent = reagent
         postable = self.assigned_reagent
@@ -293,17 +294,12 @@ class PipettingSource:
                  volume: Optional[Volume] = None) -> None:
         self.name = name
         if capacity is None:
-            capacity = math.inf*uL
+            capacity = Volume.INFINITE
         self.capacity = capacity
         self.pipettor = pipettor
         self._reagent = reagent
         
-        future: Delayed[Reagent]
-        if reagent is None:
-            future = Postable()
-        else:
-            future = Delayed.complete(reagent)
-        self.assigned_reagent = future
+        self.assigned_reagent = Delayed.complete_unless_none(reagent)
         
         if volume is None:
             self.bounds = (Volume.ZERO, capacity)
@@ -346,7 +342,35 @@ class PipettingSource:
         self.bounds = (low-v, high-v)
         return self
         
+class WellPlateType:
+    rows: Final[int]
+    columns: Final[int]
+    
+    def __init__(self, *, rows: int, columns: int) -> None:
+        self.rows = rows
+        self.columns = columns
         
+    _known: Final[dict[int, WellPlateType]] = {}
+    
+    @classmethod
+    def for_size(cls, n_wells: int) -> Optional[WellPlateType]:
+        return cls._known.get(n_wells, None)
+    
+    @classmethod
+    def cache_for_size(cls, *, rows: int, columns: int) -> WellPlateType:
+        n_wells = rows*columns
+        wpt = WellPlateType(rows=rows, columns=columns)
+        cls._known[n_wells] = wpt
+        return wpt
+    
+WellPlate1:    Final = WellPlateType.cache_for_size(rows=1,  columns=1)
+WellPlate6:    Final = WellPlateType.cache_for_size(rows=2,  columns=3)
+WellPlate24:   Final = WellPlateType.cache_for_size(rows=4,  columns=6)
+WellPlate96:   Final = WellPlateType.cache_for_size(rows=8,  columns=12)
+WellPlate384:  Final = WellPlateType.cache_for_size(rows=16, columns=24)
+WellPlate1536: Final = WellPlateType.cache_for_size(rows=32, columns=48)
+
+    
 
 class PipettorSysCpt(SystemComponent):
     pipettor: Final[Pipettor]
@@ -414,24 +438,27 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         return source.name
     
     @classmethod
-    def _generate_source_names(cls, *, rows: int = 8, columns: int = 12,
+    def _generate_source_names(cls, *, 
+                               plate_type: WellPlateType = WellPlate96,
                                plates: int = 1,
                                start_plate: int = 1,
-                               total_plates: int = 0) -> list[str]:
+                               total_plates: int = 0,
+                               prefix: str = "",
+                               suffix: str = "") -> list[str]:
         a = ord("A")
         if total_plates == 0:
             total_plates = start_plate+plates-1
         def name(r: int, c: int, p: int) -> str:
             pd = "" if total_plates == 1 else f"/{p}"
-            return f"{chr(a+r)}{c+1}{pd}"
+            return f"{prefix}{chr(a+r)}{c+1}{pd}{suffix}"
         return [name(r,c,p) 
                 for p in range(start_plate, start_plate+plates)
-                for r in range(rows)
-                for c in range(columns)]
+                for r in range(plate_type.rows)
+                for c in range(plate_type.columns)]
 
     def _generate_sources_named(self, names: Sequence[str], *,
                                 factory: Optional[Callable[[str, Pipettor, Volume], PipettingSource]] = None,
-                                capacity: Volume = math.inf*uL,
+                                capacity: Volume = Volume.INFINITE
                                 ) -> list[PipettingSource]:
         if factory is None:
             factory = lambda n,p,c: PipettingSource(n, pipettor=p, capacity=c)
