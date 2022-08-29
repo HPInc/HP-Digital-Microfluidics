@@ -11,7 +11,7 @@ from mpam.drop import Drop, DropComputeOp
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Delayed, \
     DelayType, schedule, Dir, Reagent, Liquid, XYCoord, Barrier, T, \
-    WaitableType, Callback, Postable, WaitCondition, NO_WAIT, CSOperation
+    WaitableType, Callback, Postable, WaitableType, NO_WAIT, CSOperation
 from quantities.dimensions import Volume
 
 
@@ -22,22 +22,22 @@ Schedulable = Union['Path.Start', 'Path.Full',
 
 class Path:
     class Step:
-        after: Final[WaitCondition]
+        after: Final[WaitableType]
 
-        def __init__(self, after: WaitCondition) -> None:
+        def __init__(self, after: WaitableType) -> None:
             self.after = after
 
     class StartStep(Step):
         op: Final[StaticOperation[Drop]]
 
-        def __init__(self, op: StaticOperation[Drop], after: WaitCondition) -> None:
+        def __init__(self, op: StaticOperation[Drop], after: WaitableType) -> None:
             super().__init__(after=after)
             self.op = op
 
     class MiddleStep(Step):
         op: Final[Operation[Drop, Drop]]
 
-        def __init__(self, op: Operation[Drop, Drop], after: WaitCondition) -> None:
+        def __init__(self, op: Operation[Drop, Drop], after: WaitableType) -> None:
             super().__init__(after=after)
             self.op = op
 
@@ -49,7 +49,7 @@ class Path:
     class EndStep(Step):
         op: Final[CSOperation[Drop, None]]
 
-        def __init__(self, op: CSOperation[Drop, None], after: WaitCondition) -> None:
+        def __init__(self, op: CSOperation[Drop, None], after: WaitableType) -> None:
             super().__init__(after=after)
             self.op = op
 
@@ -101,23 +101,23 @@ class Path:
         def walk(self, direction: Dir, *,
                  steps: int = 1,
                  allow_unsafe: bool = False,
-                 after: WaitCondition = NO_WAIT) -> Path.Start:
+                 after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.WalkStep(
                 direction, steps=steps, allow_unsafe=allow_unsafe, after=after)
         def to_col(self, col: int, *,
                    allow_unsafe: bool = False,
-                   after: WaitCondition = NO_WAIT) -> Path.Start:
+                   after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.ToColStep(col, allow_unsafe=allow_unsafe, after=after)
         def to_row(self, row: int, *,
                    allow_unsafe: bool = False,
-                   after: WaitCondition = NO_WAIT) -> Path.Start:
+                   after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.ToRowStep(row, allow_unsafe=allow_unsafe, after=after)
 
         def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
                    *,
                    row_first: bool = True,
                    allow_unsafe: bool = False,
-                   after: WaitCondition = NO_WAIT) -> Path.Start:
+                   after: WaitableType = NO_WAIT) -> Path.Start:
             r: int
             c: int
             if isinstance(target, Pad):
@@ -133,7 +133,7 @@ class Path:
 
 
         def start(self, process_type: MultiDropProcessType, *,
-                  after: WaitCondition = NO_WAIT) -> Path.Start:
+                  after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.StartProcessStep(process_type, after=after)
 
         # def mix(self, mix_type: MixingType, *,
@@ -141,41 +141,41 @@ class Path:
         #         tolerance: float = 0.1,
         #         n_shuttles: int = 0,
         #         fully_mix: Union[bool, Sequence[int]] = False,
-        #         after: WaitCondition = NO_WAIT) -> Path.Start:
+        #         after: WaitableType = NO_WAIT) -> Path.Start:
         #     return self._extend(Path.MixStep(mix_type, result=result,
         #                                      tolerance=tolerance, n_shuttles=n_shuttles,
         #                                      fully_mix=fully_mix,
         #                                      after=after))
         def join(self, *,
-                 after: WaitCondition = NO_WAIT) -> Path.Start:
+                 after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.JoinProcessStep(after=after)
 
         in_mix = join
 
         def then_process(self, fn: Callable[[Drop], Any], *,
-                         after: WaitCondition = NO_WAIT) -> Path.Start:
+                         after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.CallStep(fn, after=after)
 
         def then_do(self, fn: Callable[[Drop], Delayed[T]], *,
-                    after: WaitCondition = NO_WAIT) -> Path.Start:
+                    after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.CallAndWaitStep(fn, after=after)
 
         def enter_well(self, *,
-                       after: WaitCondition = NO_WAIT) -> Path.Full:
+                       after: WaitableType = NO_WAIT) -> Path.Full:
             return self+Path.EnterWellStep(after=after)
 
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
                          product_loc: Optional[Postable[ProductLocation]] = None,
-                         after: WaitCondition = NO_WAIT) -> Path.Full:
+                         after: WaitableType = NO_WAIT) -> Path.Full:
             return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
 
         def reach(self, barrier: Barrier, *, wait: bool = True,
-                  after: WaitCondition = NO_WAIT) -> Path.Start:
+                  after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.BarrierStep(barrier, wait=wait, after=after)
 
         def wait_for(self, waitable: WaitableType, *,
-                     after: WaitCondition = NO_WAIT) -> Path.Start:
+                     after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.PauseStep(waitable, after=after)
 
         def extended(self, path: Path.Middle) -> Path.Start:
@@ -219,23 +219,23 @@ class Path:
         def walk(self, direction: Dir, *,
                  steps: int = 1,
                  allow_unsafe: bool = False,
-                 after: WaitCondition = NO_WAIT) -> Path.Middle:
+                 after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.WalkStep(
                 direction, steps=steps, allow_unsafe=allow_unsafe, after=after)
         def to_col(self, col: int, *,
                    allow_unsafe: bool = False,
-                   after: WaitCondition = NO_WAIT) -> Path.Middle:
+                   after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.ToColStep(col, allow_unsafe=allow_unsafe, after=after)
         def to_row(self, row: int, *,
                    allow_unsafe: bool = False,
-                   after: WaitCondition = NO_WAIT) -> Path.Middle:
+                   after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.ToRowStep(row, allow_unsafe=allow_unsafe, after=after)
 
         def to_pad(self, target: Union[Pad, XYCoord, tuple[int, int]],
                    *,
                    row_first: bool = True,
                    allow_unsafe: bool = False,
-                   after: WaitCondition = NO_WAIT) -> Path.Middle:
+                   after: WaitableType = NO_WAIT) -> Path.Middle:
             r: int
             c: int
             if isinstance(target, Pad):
@@ -250,7 +250,7 @@ class Path:
                 return self.to_col(c, allow_unsafe=allow_unsafe, after=after).to_row(r)
 
         def start(self, process_type: MultiDropProcessType, *,
-                  after: WaitCondition = NO_WAIT) -> Path.Middle:
+                  after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.StartProcessStep(process_type, after=after)
 
         # def mix(self, mix_type: MixingType, *,
@@ -258,7 +258,7 @@ class Path:
         #         tolerance: float = 0.1,
         #         n_shuttles: int = 0,
         #         fully_mix: Union[bool, Sequence[int]] = True,
-        #         after: WaitCondition = NO_WAIT) -> Path.Middle:
+        #         after: WaitableType = NO_WAIT) -> Path.Middle:
         #     return self._extend(Path.MixStep(mix_type, result=result,
         #                                      tolerance=tolerance, n_shuttles=n_shuttles,
         #                                      fully_mix=fully_mix,
@@ -266,35 +266,35 @@ class Path:
         #
 
         def join(self, *,
-                 after: WaitCondition = NO_WAIT) -> Path.Middle:
+                 after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.JoinProcessStep(after=after)
 
         in_mix = join
 
         def then_process(self, fn: Callable[[Drop], Any], *,
-                         after: WaitCondition = NO_WAIT) -> Path.Middle:
+                         after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.CallStep(fn, after=after)
 
         def then_do(self, fn: Callable[[Drop], Delayed[T]],
-                    after: WaitCondition = NO_WAIT) -> Path.Middle:
+                    after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.CallAndWaitStep(fn, after=after)
 
         def enter_well(self, *,
-                       after: WaitCondition = NO_WAIT) -> Path.End:
+                       after: WaitableType = NO_WAIT) -> Path.End:
             return self+Path.EnterWellStep(after=after)
 
         def teleport_out(self, *,
                          volume: Optional[Volume] = None,
                          product_loc: Optional[Postable[ProductLocation]] = None,
-                         after: WaitCondition = NO_WAIT) -> Path.End:
+                         after: WaitableType = NO_WAIT) -> Path.End:
             return self+Path.TeleportOutStep(volume=volume, after=after, product_loc=product_loc)
 
         def reach(self, barrier: Barrier, *,
-                  wait: bool = True, after: WaitCondition = NO_WAIT) -> Path.Middle:
+                  wait: bool = True, after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.BarrierStep(barrier, wait=wait, after=after)
 
         def wait_for(self, waitable: WaitableType, *,
-                     after: WaitCondition = NO_WAIT) -> Path.Middle:
+                     after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.PauseStep(waitable, after=after)
 
         def extended(self, path: Path.Middle) -> Path.Middle:
@@ -351,7 +351,7 @@ class Path:
     def dispense_from(cls, well: Well, *,
                       after_reservation: Optional[Callback] = None,
                       before_release: Optional[Callback] = None,
-                      after: WaitCondition = NO_WAIT) -> Path.Start:
+                      after: WaitableType = NO_WAIT) -> Path.Start:
         return Path.Start(Path.DispenseStep(well, after_reservation=after_reservation,
                                             before_release=before_release,
                                             after=after), ())
@@ -360,7 +360,7 @@ class Path:
     def teleport_into(cls, extraction_point: ExtractionPoint, *,
                       liquid: Optional[Liquid] = None,
                       reagent: Optional[Reagent] = None,
-                      after: WaitCondition = NO_WAIT) -> Path.Start:
+                      after: WaitableType = NO_WAIT) -> Path.Start:
         return Path.Start(
             Path.TeleportInStep(
                 extraction_point, liquid=liquid, reagent=reagent, after=after),
@@ -369,7 +369,7 @@ class Path:
     @classmethod
     def appear_at(cls, pad: Union[Pad, XYCoord, tuple[int, int]], *,
                   board: Board,
-                  after: WaitCondition = NO_WAIT,
+                  after: WaitableType = NO_WAIT,
                   liquid: Optional[Liquid] = None) -> Path.Start:
         return Path.Start(Path.AppearStep(pad, board=board, after=after, liquid=liquid), ())
 
@@ -377,20 +377,20 @@ class Path:
     def walk(cls, direction: Dir, *,
              steps: int = 1,
              allow_unsafe: bool = False,
-             after: WaitCondition = NO_WAIT) -> Path.Middle:
+             after: WaitableType = NO_WAIT) -> Path.Middle:
         return Path.Middle((Path.WalkStep(
             direction, steps=steps, allow_unsafe=allow_unsafe, after=after),))
 
     @classmethod
     def to_col(cls, col: int, *,
                allow_unsafe: bool = False,
-               after: WaitCondition = NO_WAIT) -> Path.Middle:
+               after: WaitableType = NO_WAIT) -> Path.Middle:
         return Path.Middle((Path.ToColStep(
             col, allow_unsafe=allow_unsafe, after=after),))
     @classmethod
     def to_row(cls, row: int, *,
                allow_unsafe: bool = False,
-               after: WaitCondition = NO_WAIT) -> Path.Middle:
+               after: WaitableType = NO_WAIT) -> Path.Middle:
         return Path.Middle((Path.ToRowStep(
             row, allow_unsafe=allow_unsafe, after=after),))
 
@@ -399,7 +399,7 @@ class Path:
                *,
                row_first: bool = True,
                allow_unsafe: bool = False,
-               after: WaitCondition = NO_WAIT) -> Path.Middle:
+               after: WaitableType = NO_WAIT) -> Path.Middle:
         r: int
         c: int
         if isinstance(target, Pad):
@@ -415,30 +415,30 @@ class Path:
 
     @classmethod
     def start(cls, process_type: MultiDropProcessType, *,
-              after: WaitCondition = NO_WAIT) -> Path.Middle:
+              after: WaitableType = NO_WAIT) -> Path.Middle:
         return Path.Middle((Path.StartProcessStep(process_type, after=after),))
 
     @classmethod
     def join(cls, *,
-             after: WaitCondition = NO_WAIT) -> Path.Middle:
+             after: WaitableType = NO_WAIT) -> Path.Middle:
         return Path.Middle((Path.JoinProcessStep(after=after),))
 
     in_mix = join
 
     @classmethod
     def then_process(cls, fn: Callable[[Drop], Any], *,
-                     after: WaitCondition = NO_WAIT) -> Path.Middle:
+                     after: WaitableType = NO_WAIT) -> Path.Middle:
         return Path.Middle((Path.CallStep(fn, after=after),))
 
     @classmethod
     def enter_well(cls, *,
-                   after: WaitCondition = NO_WAIT) -> Path.End:
+                   after: WaitableType = NO_WAIT) -> Path.End:
         return Path.End((), Path.EnterWellStep(after=after))
 
     @classmethod
     def schedule_paths(cls, paths: Iterable[Schedulable], *,
                        system: System,
-                       after: WaitCondition = NO_WAIT,
+                       after: WaitableType = NO_WAIT,
                        ) -> Sequence[Union[Delayed[Drop], Delayed[None]]]:
         def scheduled(path: Schedulable) -> Union[Delayed[Drop], Delayed[None]]:
             if isinstance(path, Path.Start) or isinstance(path, Path.Full):
@@ -451,7 +451,7 @@ class Path:
     @classmethod
     def run_paths(cls, paths: Iterable[Schedulable], *,
                   system: System,
-                  after: WaitCondition = NO_WAIT,
+                  after: WaitableType = NO_WAIT,
                   ) -> Sequence[Drop]:
         values = (f.value for f in cls.schedule_paths(
             paths, system=system, after=after))
@@ -497,7 +497,7 @@ class Path:
 
     class DispenseStep(StartStep):
         def __init__(self, well: Well, *,
-                     after: WaitCondition,
+                     after: WaitableType,
                      after_reservation: Optional[Callback] = None,
                      before_release: Optional[Callback] = None) -> None:
             super().__init__(
@@ -505,7 +505,7 @@ class Path:
                 after=after)
     class TeleportInStep(StartStep):
         def __init__(self, extraction_point: ExtractionPoint, *,
-                     after: WaitCondition,
+                     after: WaitableType,
                      liquid: Optional[Liquid] = None,
                      reagent: Optional[Reagent] = None
                      ) -> None:
@@ -516,7 +516,7 @@ class Path:
     class AppearStep(StartStep):
         def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *,
                      board: Board,
-                     after: WaitCondition,
+                     after: WaitableType,
                      liquid: Optional[Liquid] = None
                      ) -> None:
             super().__init__(Drop.AppearAt(pad, board=board, liquid=liquid),
@@ -524,35 +524,35 @@ class Path:
 
     class TeleportOutStep(EndStep):
         def __init__(self, *,
-                     after: WaitCondition,
+                     after: WaitableType,
                      volume: Optional[Volume] = None,
                      product_loc: Optional[Postable[ProductLocation]] = None,
                      ) -> None:
             super().__init__(Drop.TeleportOut(volume=volume, product_loc=product_loc), after)
     class EnterWellStep(EndStep):
         def __init__(self, *,
-                     after: WaitCondition) -> None:
+                     after: WaitableType) -> None:
             super().__init__(Drop.EnterWell(), after)
 
 
     class WalkStep(MiddleStep):
         def __init__(self, direction: Dir, *,
-                     steps: int, allow_unsafe: bool, after: WaitCondition) -> None:
+                     steps: int, allow_unsafe: bool, after: WaitableType) -> None:
             super().__init__(Drop.Move(direction, steps=steps, allow_unsafe=allow_unsafe), after)
 
     class ToColStep(MiddleStep):
         def __init__(self, col: int, *,
-                     allow_unsafe: bool, after: WaitCondition) -> None:
+                     allow_unsafe: bool, after: WaitableType) -> None:
             super().__init__(Drop.ToCol(col, allow_unsafe=allow_unsafe), after)
 
     class ToRowStep(MiddleStep):
         def __init__(self, row: int, *,
-                     allow_unsafe: bool, after: WaitCondition) -> None:
+                     allow_unsafe: bool, after: WaitableType) -> None:
             super().__init__(Drop.ToRow(row, allow_unsafe=allow_unsafe), after)
 
     class StartProcessStep(MiddleStep):
         def __init__(self, process_type: MultiDropProcessType, *,
-                     after: WaitCondition) -> None:
+                     after: WaitableType) -> None:
             super().__init__(StartProcess(process_type), after)
     # class MixStep(StartProcessStep):
     #     def __init__(self, mix_type: MixingType,
@@ -560,7 +560,7 @@ class Path:
     #                  tolerance: float = 0.1,
     #                  n_shuttles: int = 0,
     #                  fully_mix: Union[bool, Sequence[int]] = False,
-    #                  after: WaitCondition = NO_WAIT) -> None:
+    #                  after: WaitableType = NO_WAIT) -> None:
     #         super().__init__(MixProcess(mix_type, result=result,
     #                                     tolerance=tolerance,
     #                                     n_shuttles=n_shuttles,
@@ -568,13 +568,13 @@ class Path:
     #                                     after)
     class JoinProcessStep(MiddleStep):
         def __init__(self, *,
-                     after: WaitCondition) -> None:
+                     after: WaitableType) -> None:
             super().__init__(JoinProcess(), after)
 
 
     class CallStep(MiddleStep):
         def __init__(self, fn: Callable[[Drop], Any], *,
-                     after: WaitCondition) -> None:
+                     after: WaitableType) -> None:
             def fn2(drop: Drop) -> Delayed[Drop]:
                 future = Postable[Drop]()
                 fn(drop)
@@ -584,7 +584,7 @@ class Path:
 
     class CallAndWaitStep(MiddleStep):
         def __init__(self, fn: Callable[[Drop], Delayed[Any]], *,
-                     after: WaitCondition) -> None:
+                     after: WaitableType) -> None:
             def fn2(drop: Drop) -> Delayed[Drop]:
                 future = Postable[Drop]()
                 fn(drop).then_call(lambda _: future.post(drop))
@@ -594,7 +594,7 @@ class Path:
     class BarrierStep(MiddleStep):
         def __init__(self, barrier: Barrier, *,
                      wait: bool = True,
-                     after: WaitCondition) -> None:
+                     after: WaitableType) -> None:
             def pass_through(drop: Drop) -> Delayed[Drop]:
                 future = Postable[Drop]()
                 barrier.pass_through(drop)
@@ -605,5 +605,5 @@ class Path:
 
     class PauseStep(MiddleStep):
         def __init__(self, waitable: WaitableType, *,
-                     after: WaitCondition) -> None:
+                     after: WaitableType) -> None:
             super().__init__(Drop.WaitFor(waitable), after)

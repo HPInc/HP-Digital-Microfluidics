@@ -27,8 +27,8 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Operation, OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
-    MonitoredProperty, DummyState, MissingOr, MISSING, WaitCondition, \
-    NO_WAIT, NoWait, CSOperation
+    MonitoredProperty, DummyState, MissingOr, MISSING, WaitableType, \
+    NO_WAIT, NoWait, CSOperation, Trigger
 from quantities.SI import sec, ms, volts
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -70,7 +70,7 @@ class BoardComponent:
         self.board = board
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: WaitCondition = NO_WAIT) -> None:
+                               after: WaitableType = NO_WAIT) -> None:
         """
         Schedule communication of ``cb`` after optional delay ``after`` by
         delegating to :attr:`board`
@@ -83,7 +83,7 @@ class BoardComponent:
         return self.board.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: WaitCondition) -> Delayed[T]:
+                after: WaitableType) -> Delayed[T]:
         """
         Call a function after n optional delay by delegating to :attr:`board`
 
@@ -4173,15 +4173,19 @@ class SystemComponent(ABC):
         self.system.on_tick(req, delta=delta)
 
     def delayed(self, function: Callable[[], T], *,
-                after: WaitCondition) -> Delayed[T]:
+                after: WaitableType) -> Delayed[T]:
         return self.system.delayed(function, after=after)
 
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
-                 after: WaitCondition = NO_WAIT) -> None:
+                 after: WaitableType = NO_WAIT) -> None:
         if isinstance(after, NoWait): # after == NO_WAIT
             pass
         elif isinstance(after, Ticks):
             self.on_tick(cb, delta=after)
+        elif isinstance(after, Trigger):
+            after.on_trigger(cb)
+        elif isinstance(after, Delayed):
+            after.when_value(cb)
         else:                   # isinstance(after, Time)
             self.communicate(cb, delta=after)
 
@@ -4234,7 +4238,7 @@ class PowerSupply(BinaryComponent['PowerSupply']):
                                                   lambda: "Power supply cannot be turned off"):
             return MISSING
         my_min = self.min_voltage
-        
+
         if not self.on_low_voltage.expect_true(v >= my_min or v == 0,
                                                 lambda: f"Voltage {v} < minimum ({my_min})"):
             return self.min_voltage
@@ -4920,7 +4924,7 @@ class System:
             self.call_after(delta, lambda: self.on_tick(req))
 
     def delayed(self, function: Callable[[], T], *,
-                after: WaitCondition) -> Delayed[T]:
+                after: WaitableType) -> Delayed[T]:
         if after is NO_WAIT:
             return Delayed.complete(function())
         future = Postable[T]()
@@ -4936,6 +4940,10 @@ class System:
                 self.before_tick(run_then_post, delta = after)
             else:
                 return Delayed.complete(function())
+        elif isinstance(after, Trigger):
+            after.on_trigger(run_then_post)
+        else:                   # isinstance(after, Delayed)
+            after.when_value(run_then_post)
         return future
 
     def batched(self) -> Batch:

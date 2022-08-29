@@ -10,7 +10,7 @@ from mpam.device import SystemComponent, UserOperation, PipettingTarget, System,
     ProductLocation
 from mpam.types import Reagent, OpScheduler, Callback, DelayType, \
     Liquid, Operation, Delayed, AsyncFunctionSerializer, T, XferDir, \
-    unknown_reagent, MixResult, Postable, WaitCondition, NO_WAIT, \
+    unknown_reagent, MixResult, Postable, WaitableType, NO_WAIT, \
     CSOperation, MonitoredProperty, ChangeCallbackList
 from quantities.SI import uL
 from quantities.dimensions import Volume
@@ -446,11 +446,11 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         pass
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: WaitCondition = NO_WAIT) -> None:
+                               after: WaitableType = NO_WAIT) -> None:
         return self.sys_cpt.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: WaitCondition) -> Delayed[T]:
+                after: WaitableType) -> Delayed[T]:
         return self.sys_cpt.delayed(function, after=after)
 
 

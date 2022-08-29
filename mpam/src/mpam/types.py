@@ -449,8 +449,16 @@ results in a :class:`Ticks` object.
 """
 tick = ticks    ; "An alias for :attr:`ticks`, usually used when the magnitude is `1`"
 
+class NoWait(Enum):
+    SINGLETON = auto()
+    def __repr__(self) -> str:
+        return "NO_WAIT"
+
+NO_WAIT: Final[NoWait] = NoWait.SINGLETON
+
 DelayType = Union[Ticks, Time]  ; "A delay amount, either :class:`Ticks` or :class:`.Time`"
-WaitableType = Union[DelayType, 'Trigger', 'Delayed[Any]']
+WaitableType = Union[NoWait, DelayType, 'Trigger', 'Delayed[Any]']
+
 """
 Something that can be waited on.
 
@@ -570,22 +578,13 @@ Args:
     T: the type (if not :attr:`MISSING`)
 """
 
-class NoWait(Enum):
-    SINGLETON = auto()
-    def __repr__(self) -> str:
-        return "NO_WAIT"
-
-NO_WAIT: Final[NoWait] = NoWait.SINGLETON
-
-WaitCondition = Union[NoWait, DelayType]
-
 class CommunicationScheduler(Protocol):
     """
     A :class:`typing.Protocol` that matches classes that define
     :func:`schedule_communication` and :func:`delayed`
     """
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,  # @UnusedVariable
-                               after: WaitCondition = NO_WAIT) -> None:  # @UnusedVariable
+                               after: WaitableType = NO_WAIT) -> None:  # @UnusedVariable
         """
         Schedule communication of ``cb`` after optional delay ``after``
 
@@ -604,7 +603,7 @@ class CommunicationScheduler(Protocol):
         """
         ...
     def delayed(self, function: Callable[[], T], *, # @UnusedVariable
-                after: WaitCondition) -> Delayed[T]: # @UnusedVariable
+                after: WaitableType) -> Delayed[T]: # @UnusedVariable
         """
         Call a function after n optional delay.
 
@@ -667,7 +666,7 @@ class Operation(Generic[T, V], ABC):
         ...
 
     def schedule_for(self, obj: Union[T, Delayed[T]], *,
-                     after: WaitCondition = NO_WAIT,
+                     after: WaitableType = NO_WAIT,
                      post_result: bool = True,
                      ) -> Delayed[V]:
         """
@@ -713,7 +712,7 @@ class Operation(Generic[T, V], ABC):
 
     @abstractmethod
     def after_delay(self,
-                    after: WaitCondition,
+                    after: WaitableType,
                     fn: Callable[[], V2],
                     *, obj: T) -> Delayed[V2]:
         ...
@@ -722,7 +721,7 @@ class Operation(Generic[T, V], ABC):
              op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                        Callable[[], Operation[V, V2]],
                        Callable[[], StaticOperation[V2]]], *,
-             after: WaitCondition = NO_WAIT,
+             after: WaitableType = NO_WAIT,
              ) -> Operation[T, V2]:
         """
         Chain this :class:`Operation` and another together to create a single
@@ -830,7 +829,7 @@ class CSOperation(Operation[CS, V]):
         V: the type of the value produced by the operation
     '''
     def after_delay(self,
-                    after: WaitCondition,
+                    after: WaitableType,
                     fn: Callable[[], V2],
                     *, obj: CS) -> Delayed[V2]:
         return obj.delayed(fn, after=after)
@@ -858,13 +857,13 @@ class CombinedOperation(Generic[T, V, V3], Operation[T, V3]):
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
-    after: Final[WaitCondition]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
+    after: Final[WaitableType]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
     def __init__(self, first: Operation[T, V],
                  second: Union[Operation[V, V3], StaticOperation[V3], # type: ignore [type-var]
                                Callable[[], Operation[V, V3]],
                                Callable[[], StaticOperation[V3]]],
-                 after: WaitCondition=NO_WAIT) -> None:
+                 after: WaitableType=NO_WAIT) -> None:
         """
         Initialize the :class:`CombinedOperation`
 
@@ -900,7 +899,7 @@ class CombinedOperation(Generic[T, V, V3], Operation[T, V3]):
                     .then_schedule(self.second, after=self.after, post_result=post_result)
 
     def after_delay(self,
-                    after: WaitCondition,
+                    after: WaitableType,
                     fn: Callable[[], V2],
                     *, obj: T) -> Delayed[V2]:
         return self.first.after_delay(after, fn, obj=obj)
@@ -950,10 +949,10 @@ class ComputeOp(Generic[T, V], Operation[T, V]):
         return self.function(obj)
 
     def after_delay(self,
-                    after: WaitCondition,
+                    after: WaitableType,
                     fn: Callable[[], V2],
                     *, obj: T) -> Delayed[V2]:
-        raise NotImplementedError('"after_delay" not supported for "ComuteOp"')
+        raise NotImplementedError('"after_delay" not supported for "ComputeOp"')
 
 
 class OpScheduler(Generic[T]):
@@ -974,7 +973,7 @@ class OpScheduler(Generic[T]):
     """
     def schedule(self: CS,
                  op: Union[Operation[CS, V], Callable[[],Operation[CS, V]]],
-                 after: WaitCondition = NO_WAIT,
+                 after: WaitableType = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
         """
@@ -1193,7 +1192,7 @@ class StaticOperation(Generic[V], ABC):
 
 
     def schedule(self, *,
-                 after: WaitCondition = NO_WAIT,
+                 after: WaitableType = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
         """
@@ -1216,7 +1215,7 @@ class StaticOperation(Generic[V], ABC):
     def then(self, op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                              Callable[[], Operation[V, V2]],
                              Callable[[], StaticOperation[V2]]],
-             after: WaitCondition = NO_WAIT,
+             after: WaitableType = NO_WAIT,
              ) -> StaticOperation[V2]:
         """
         Chain this :class:`StaticOperation` and follow-on :class:`Operation`
@@ -1320,13 +1319,13 @@ class CombinedStaticOperation(Generic[V, V2], StaticOperation[V2]):
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
-    after: Final[WaitCondition]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
+    after: Final[WaitableType]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
     def __init__(self, first: StaticOperation[V],
                  second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                                Callable[[], Operation[V, V2]],
                                Callable[[], StaticOperation[V2]]], *,
-                 after: WaitCondition = NO_WAIT) -> None:
+                 after: WaitableType = NO_WAIT) -> None:
         """
         Initialize the object
 
@@ -1569,7 +1568,7 @@ class Delayed(Generic[Tco]):
     def then_schedule(self, op: Union[Operation[Tco, V], StaticOperation[V], # type: ignore [type-var]
                                       Callable[[], Operation[Tco, V]],
                                       Callable[[], StaticOperation[V]]], *,
-                      after: WaitCondition = NO_WAIT,
+                      after: WaitableType = NO_WAIT,
                       post_result: bool = True) -> Delayed[V]:
         """
         Schedule an :class:`Operation` or :class:`StaticOperation` when a value
@@ -1931,8 +1930,31 @@ class Trigger:
             self.waiting.clear()
 
 
+class SingleFireTrigger(Trigger):
+    """
+    A subclass of :class:`Trigger` that keeps track of whether it's been
+    :func:`fire`ed and invokes any callbacks immediately on :func:`wait`
+    if it has.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.fired = False
+
+    def fire(self) -> int:
+        with self.lock:
+            self.fired = True
+        return super().fire()
+
+    def on_trigger(self, fn: Callable[[], Any]) -> None:
+        with self.lock:
+            if self.fired:
+                fn()
+            else:
+                super().on_trigger(fn)
+
 
 class Barrier(Trigger, Generic[T]):
+
     """
     A :class:`Trigger` that fires when a certain number of :attr:`T` objects
     reach it.  Objects reaching the :class:`Barrier` can optionally "pause" there
@@ -2059,7 +2081,7 @@ class Barrier(Trigger, Generic[T]):
 
 
 def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
-             after: WaitCondition = NO_WAIT,
+             after: WaitableType = NO_WAIT,
              post_result: bool = True,
              ) -> Delayed[V]:
     """

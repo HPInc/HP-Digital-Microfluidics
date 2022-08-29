@@ -17,7 +17,7 @@ from mpam.exceptions import NoSuchPad, NotAtWell
 from mpam.types import Liquid, Dir, Delayed, DelayType, \
     Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
     StaticOperation, Reagent, Callback, T, MixResult, Postable, \
-    CSOperation, WaitCondition, NO_WAIT, ComputeOp, V2
+    CSOperation, WaitableType, NO_WAIT, ComputeOp, V2
 from quantities.core import qstr
 from quantities.dimensions import Volume
 
@@ -786,11 +786,11 @@ class Drop(OpScheduler['Drop']):
         return f"Drop[{place}{self.pad}{liquid}]"
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: WaitCondition = NO_WAIT) -> None:
+                               after: WaitableType = NO_WAIT) -> None:
         self.pad.schedule_communication(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: WaitCondition) -> Delayed[T]:
+                after: WaitableType) -> Delayed[T]:
         return self.pad.delayed(function, after=after)
 
 
@@ -1079,7 +1079,7 @@ class Drop(OpScheduler['Drop']):
 
 class DropComputeOp(ComputeOp[Drop,Drop]):
     def after_delay(self,
-                    after: WaitCondition,
+                    after: WaitableType,
                     fn: Callable[[], V2],
                     *, obj: Drop) -> Delayed[V2]:
         return obj.delayed(fn, after=after)
