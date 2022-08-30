@@ -4178,16 +4178,24 @@ class SystemComponent(ABC):
 
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
                  after: WaitableType = NO_WAIT) -> None:
-        if isinstance(after, NoWait): # after == NO_WAIT
-            pass
+        if after is NO_WAIT:
+            cb()
+            return
         elif isinstance(after, Ticks):
             self.on_tick(cb, delta=after)
+            return
         elif isinstance(after, Trigger):
             after.on_trigger(cb)
+            return
         elif isinstance(after, Delayed):
-            after.when_value(cb)
-        else:                   # isinstance(after, Time)
+            after.when_value(lambda _: cb())
+            return
+        elif isinstance(after, Time):
             self.communicate(cb, delta=after)
+            return
+        # All types should be dealt with in elif blocks. This line
+        # should be unreachable.
+        return MISSING          # type: ignore[unreachable]
 
     def user_operation(self) -> UserOperation:
         return UserOperation(self.system.engine.idle_barrier)
@@ -4942,8 +4950,10 @@ class System:
                 return Delayed.complete(function())
         elif isinstance(after, Trigger):
             after.on_trigger(run_then_post)
-        else:                   # isinstance(after, Delayed)
-            after.when_value(run_then_post)
+        elif isinstance(after, Delayed):
+            after.when_value(lambda _: run_then_post())
+        else:
+            return MISSING      # type: ignore[unreachable]
         return future
 
     def batched(self) -> Batch:
