@@ -447,7 +447,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
                                after: WaitableType = NO_WAIT) -> None:
-        return self.sys_cpt.schedule(cb, after=after)
+        self.sys_cpt.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: WaitableType) -> Delayed[T]:

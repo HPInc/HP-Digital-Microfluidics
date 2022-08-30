@@ -13,7 +13,7 @@ from threading import Event, Lock, Thread, RLock
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
-    NamedTuple, Iterable
+    NamedTuple, Iterable, NoReturn
 
 from matplotlib.gridspec import SubplotSpec
 
@@ -50,6 +50,9 @@ PadArray = Mapping[XYCoord, 'Pad']
 T = TypeVar('T')            #: A generic type variable
 Modifier = Callable[[T],T]  #: A :class:`Callable` that returns a value of the same type as its argument
 
+def assert_never(value: NoReturn) -> NoReturn:
+    assert False, f'Unhandled value: {value} ({type(value).__name__})'
+
 class BoardComponent:
     """
     A component of a :class:`Board`.  A :class:`BoardComponent` implements the
@@ -80,7 +83,7 @@ class BoardComponent:
         Keyword Args:
             after: an optional delay before scheduling
         """
-        return self.board.schedule(cb, after=after)
+        self.board.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: WaitableType) -> Delayed[T]:
@@ -4180,22 +4183,16 @@ class SystemComponent(ABC):
                  after: WaitableType = NO_WAIT) -> None:
         if after is NO_WAIT:
             cb()
-            return
         elif isinstance(after, Ticks):
             self.on_tick(cb, delta=after)
-            return
         elif isinstance(after, Trigger):
             after.on_trigger(cb)
-            return
         elif isinstance(after, Delayed):
             after.when_value(lambda _: cb())
-            return
         elif isinstance(after, Time):
             self.communicate(cb, delta=after)
-            return
-        # All types should be dealt with in elif blocks. This line
-        # should be unreachable.
-        return MISSING          # type: ignore[unreachable]
+        else:
+            assert_never(after)
 
     def user_operation(self) -> UserOperation:
         return UserOperation(self.system.engine.idle_barrier)
@@ -4953,7 +4950,7 @@ class System:
         elif isinstance(after, Delayed):
             after.when_value(lambda _: run_then_post())
         else:
-            return MISSING      # type: ignore[unreachable]
+            assert_never(after)
         return future
 
     def batched(self) -> Batch:
