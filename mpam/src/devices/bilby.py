@@ -220,7 +220,7 @@ class Board(joey.Board):
             
         fan_state = self._device.fan_state
         
-        super().__init__(pipettor=pipettor, off_on_delay=off_on_delay,
+        super().__init__(off_on_delay=off_on_delay,
                          ps_min_voltage=ps_min_voltage,
                          ps_max_voltage=ps_max_voltage,
                          ps_initial_voltage=current_voltage,
@@ -251,14 +251,12 @@ class PlatformTask(joey.PlatformTask):
     
     
     def make_board(self, args: Namespace, *, 
-                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
+                   exerciser: PlatformChoiceExerciser) -> Board: # @UnusedVariable
         voltage: Optional[Voltage] = args.voltage
         assert voltage is not None
         if voltage == 0:
             voltage = None
-        return Board(pipettor=pipettor,
-                     dll_dir=args.dll_dir, config_dir=args.config_dir,
+        return Board(dll_dir=args.dll_dir, config_dir=args.config_dir,
                      off_on_delay=args.off_on_delay,
                      voltage=voltage,
                      extraction_point_splash_radius=args.extraction_point_splash_radius)

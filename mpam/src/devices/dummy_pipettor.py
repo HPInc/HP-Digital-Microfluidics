@@ -11,8 +11,9 @@ from quantities.core import DerivedDim
 from quantities.dimensions import Time, Volume
 from mpam.device import ProductLocation
 from mpam import exerciser
-from argparse import Namespace, _ArgumentGroup
-from typing import Optional, Final, Mapping, Callable
+from argparse import Namespace, _ArgumentGroup, BooleanOptionalAction
+from typing import Optional, Final, Mapping, Callable, Union
+from mpam.exceptions import NoReagentSource
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,9 @@ class DummyPipettor(Pipettor):
     drop_tip_time: Time
     get_tip_time: Time
     flow_rate: FlowRate
+    
+    auto_refill_source_wells: Final[bool]
+    auto_source_wells: Final[bool]
 
     arm_pos: ArmPos
     
@@ -54,6 +58,8 @@ class DummyPipettor(Pipettor):
                  n_source_plates: int = 1,
                  n_product_plates: int = 1,
                  speed_up: Optional[float] = None,
+                 auto_source_wells: bool = True,
+                 auto_refill_source_wells: bool = True
                  ) -> None:
         super().__init__(name=name)
         self.arm_pos = ArmPos.WASTE
@@ -63,6 +69,9 @@ class DummyPipettor(Pipettor):
         self.get_tip_time = get_tip_time
         self.drop_tip_time = drop_tip_time
         self.flow_rate = flow_rate
+        
+        self.auto_source_wells = auto_source_wells
+        self.auto_refill_source_wells = auto_refill_source_wells
         
         source_names = self._generate_source_names(plates=n_source_plates,
                                                    plate_type=WellPlate96,
@@ -97,7 +106,7 @@ class DummyPipettor(Pipettor):
                      unassigned: list[PipettingSource],
                      kind: str) -> PipettingSource:
         while len(unassigned) > 0:
-            source = self._unallocated_sources.pop(0)
+            source = unassigned.pop(0)
             if not source.is_assigned:
                 source.reagent = reagent
                 return source
@@ -108,13 +117,19 @@ class DummyPipettor(Pipettor):
     def _new_source_for(self, reagent: Reagent) -> PipettingSource:
         return self._assign_well(reagent, self._unallocated_sources, "source")
     
-    def sources_for(self, reagent: Reagent) -> tuple[PipettingSource]:
-        return (self.source_for(reagent),)
+    def sources_for(self, reagent: Reagent) -> Union[tuple[()], tuple[PipettingSource]]:
+        source = self.source_for(reagent)
+        if source is None:
+            return ()
+        return (source,)
     
-    def source_for(self, reagent: Reagent) -> PipettingSource:
+    def source_for(self, reagent: Reagent) -> Optional[PipettingSource]:
         source = self._sources_by_reagent.get(reagent)
         if source is None:
-            source = self._new_source_for(reagent)
+            if self.auto_source_wells:
+                source = self._new_source_for(reagent)
+            else:
+                return None
         return source
 
     def _product_well_for(self, reagent: Reagent) -> PipettingSource:
@@ -165,23 +180,34 @@ class DummyPipettor(Pipettor):
         self.down()
         self.get_tip()
         self.up()
-        source = self.source_for(reagent)
+        
+        def checked_source() -> PipettingSource:
+            source = self.source_for(reagent)
+            if source is None:
+                raise NoReagentSource(reagent)
+            return source
         if transfer.xfer_dir is XferDir.FILL:
+            source = checked_source()
+            requested = transfer.total_volume
+            transferred = requested
+            if source.max_volume < requested:
+                if self.auto_refill_source_wells:
+                    extra = max(requested-source.max_volume, 100*uL)
+                    logger.info(f"Automatically adding {extra} to {source.name}")
+                    source += extra
+                else:
+                    transferred = source.max_volume
             for x in transfer.targets:
                 x.on_insufficient.expect_true(source.max_volume >= x.volume,
                                               lambda: (f"{source.name} has "
                                                        + f"{'at most ' if source.exact_volume is None else ''}"
                                                        + f"{source.max_volume} of {source.reagent}. "
                                                        + f"{x.volume} needed."))
-                if source.max_volume < x.volume:
-                    extra = 100*uL
-                    logger.info(f"Adding {extra} to {source.name}")
-                    source += extra
-                source -= x.volume
+                source -= min(source.max_volume, x.volume)
             self.move_to(ArmPos.REAGENTS)
             self.down()
-            self.xfer(total_volume)
-            logging.info(f"Aspirating {total_volume} of {reagent} from {source.name}.")
+            self.xfer(transferred)
+            logging.info(f"Aspirating {transferred} of {reagent} from {source.name}.")
             self.up()
         self.move_to(ArmPos.BOARD)
         for x in transfer.targets:
@@ -190,9 +216,15 @@ class DummyPipettor(Pipettor):
             self.xfer(x.volume)
             if transfer.xfer_dir is XferDir.EMPTY:
                 logging.info(f"Aspirating {x.volume} of {reagent} from {x.target}.")
+                x.finished(reagent, x.volume)
             else:
-                logging.info(f"Dispensing {x.volume} of {reagent} to {x.target}.")
-            x.finished(reagent, x.volume)
+                dispensed = min(x.volume, transferred)
+                if dispensed > 0:
+                    logging.info(f"Dispensing {x.volume} of {reagent} to {x.target}.")
+                else:
+                    logging.info(f"No {reagent} to dispense to {x.target}")
+                x.finished(reagent, dispensed)
+                transferred -= dispensed
             self.up()
         # Since we do pretend to do the whole thing each time, this shouldn't do anything.
         for x in transfer.targets:
@@ -207,7 +239,7 @@ class DummyPipettor(Pipettor):
                     dest = self._product_well_for(reagent)
                     self.move_to(ArmPos.PRODUCTS)
                 else:
-                    dest = self.source_for(reagent)
+                    dest = checked_source()
                     self.move_to(ArmPos.REAGENTS)
                 self.down()
                 self.xfer(total_volume)
@@ -235,9 +267,13 @@ class PipettorConfig(exerciser.PipettorConfig):
         speedup: Optional[float] = args.pipettor_speed
         n_source_plates: int = args.n_source_plates
         n_product_plates: int = args.n_product_plates
+        auto_source_wells: bool = args.auto_source_wells
+        auto_refill_source_wells: bool = args.auto_refill_source_wells
         pipettor = DummyPipettor(n_source_plates = n_source_plates,
                                  n_product_plates = n_product_plates, 
-                                 speed_up = speedup)
+                                 speed_up = speedup,
+                                 auto_source_wells = auto_source_wells,
+                                 auto_refill_source_wells = auto_refill_source_wells)
         return pipettor
     
     def add_args_to(self, group:_ArgumentGroup)->None:
@@ -246,8 +282,24 @@ class PipettorConfig(exerciser.PipettorConfig):
                            help="A speed-up factor for dummy pipettor operations.")
         default_n_source_plates = 1
         default_n_product_plates = 1
+        default_asw = True
+        default_arsw = True
         group.add_argument('--n-source-plates', type=int, metavar='INT', default=default_n_source_plates,
                            help=f"The number of well plates to model.  Default is {default_n_source_plates}.")
         group.add_argument('--n-product-plates', type=int, metavar='INT', default=default_n_product_plates,
                            help=f"The number of well plates to model.  Default is {default_n_product_plates}.")
+        group.add_argument('--auto-source-wells', '--asw', 
+                           action=BooleanOptionalAction, 
+                           default=default_asw,
+                           help=f'''
+                            Automatically assign off-board source wells for reagents.  
+                            Default is {default_asw}.
+                           ''')
+        group.add_argument('--auto-refill-source-wells', '--arsw', 
+                           action=BooleanOptionalAction,
+                           default=default_arsw,
+                           help=f'''
+                            Automatically refill off-board source wells for reagents.  
+                            Default is {default_arsw}.
+                           ''')
         

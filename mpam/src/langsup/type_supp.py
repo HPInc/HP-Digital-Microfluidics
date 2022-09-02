@@ -45,6 +45,7 @@ class Type:
     INT: ClassVar[Type]
     FLOAT: ClassVar[Type]
     WELL: ClassVar[Type]
+    EXTRACTION_POINT: ClassVar[Type]
     BINARY_STATE: ClassVar[Type]
     ON: ClassVar[Type]
     OFF: ClassVar[Type]
@@ -212,6 +213,7 @@ Type.NONE = Type("NONE")
 Type.IGNORE = Type("IGNORE")
 Type.ERROR = Type("ERROR")
 Type.WELL = Type("WELL")
+Type.EXTRACTION_POINT = Type("EXTRACTION_POINT")
 Type.NUMBER = Type("NUMBER")
 Type.FLOAT = Type("FLOAT", [Type.NUMBER])
 Type.INT = Type("INT", [Type.FLOAT])
@@ -650,6 +652,7 @@ class NumberedItem(Enum):
     WELL = auto()
     HEATER = auto()
     MAGNET = auto()
+    EXTRACTION_POINT = auto()
 
 if __name__ == '__main__':
     def check(lhs: Type, rhs: Type) -> None:

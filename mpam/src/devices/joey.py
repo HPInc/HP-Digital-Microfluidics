@@ -6,16 +6,16 @@ from typing import Optional, Sequence, Final
 
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
-    transitions_from, WellGate, Heater, PowerSupply, PowerMode, Fan
+    transitions_from, WellGate, Heater, PowerSupply, PowerMode, Fan, Well,\
+    ExtractionPoint
 import mpam.device as device
 from mpam.paths import Path
-from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State, \
     OnOff, DummyState
 from quantities.SI import uL, ms, deg_C, sec, volts
 from quantities.core import DerivedDim
-from quantities.dimensions import Temperature, Time, Volume, Voltage
+from quantities.dimensions import Temperature, Time, Voltage
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser,\
@@ -25,41 +25,6 @@ from argparse import Namespace, ArgumentParser, _ArgumentGroup
 
 class HeatingRate(DerivedDim):
     derived = Temperature/Time
-
-
-class Well(device.Well):
-    _pipettor: Final[Pipettor]
-
-    def __init__(self,
-                 *, board:Board,
-                 number:int,
-                 group:DispenseGroup,
-                 exit_pad:device.Pad,
-                 shared_pads: Sequence[WellPad],
-                 gate:WellGate,
-                 capacity:Volume,
-                 dispensed_volume:Volume,
-                 exit_dir:Dir,
-                 is_voidable:bool=False,
-                 shape:Optional[WellShape]=None,
-                 pipettor: Pipettor)-> None:
-        super().__init__(board=board,
-                         number=number,
-                         group=group,
-                         exit_pad=exit_pad,
-                         gate=gate,
-                         shared_pads=shared_pads,
-                         capacity=capacity,
-                         dispensed_volume=dispensed_volume,
-                         exit_dir=exit_dir,
-                         is_voidable=is_voidable,
-                         shape=shape)
-        self._pipettor = pipettor
-
-    @property
-    def pipettor(self)->Optional[Pipettor]:
-        return self._pipettor
-
 
 class EmulatedHeater(device.Heater):
     _last_read_time: Timestamp
@@ -123,21 +88,8 @@ class ArmPos(Enum):
     BLOCK = auto()
 
 
-class ExtractionPoint(device.ExtractionPoint):
-    _pipettor: Final[Pipettor]
-
-    def __init__(self, pad: device.Pad, pipettor: Pipettor, *, splash_radius: Optional[int] = None) -> None:
-        super().__init__(pad, splash_radius=splash_radius)
-        self._pipettor = pipettor
-
-    @property
-    def pipettor(self) -> Optional[Pipettor]:
-        return self._pipettor
-
-
 class Board(device.Board):
     thermocycler: Final[Thermocycler]
-    pipettor: Final[Pipettor]
 
     def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
@@ -163,7 +115,7 @@ class Board(device.Board):
         y4 = y+4
         return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4))
 
-    def _well(self, num: int, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor,
+    def _well(self, num: int, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, 
               shared_states: Sequence[State[OnOff]]):
         epx = exit_pad.location.x
         epy = exit_pad.location.y
@@ -207,11 +159,6 @@ class Board(device.Board):
                     dispensed_volume=1*uL,
                     exit_dir=exit_dir,
                     shape = shape,
-                    pipettor = pipettor
-                                         # self._rectangle(epx+5*outdir,epy-1.5,outdir,1,4),
-                    # shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
-                    #                      self._side_pad_bounds(exit_pad.location),
-                    #                      self._big_pad_bounds(exit_pad.location))
                     )
     def _heater(self, num: int, *,
                 regions: Sequence[GridRegion],
@@ -239,7 +186,6 @@ class Board(device.Board):
         return Fan(self, state=initial_state)
 
     def __init__(self, *,
-                 pipettor: Optional[Pipettor] = None,
                  off_on_delay: Time = Time.ZERO,
                  extraction_point_splash_radius: int = 0,
                  ps_min_voltage: Voltage = 60*volts,
@@ -308,20 +254,15 @@ class Board(device.Board):
         left_states = tuple(self._well_pad_state('left', n) for n in range(9))
         right_states = tuple(self._well_pad_state('right', n) for n in range(9))
 
-        if pipettor is None:
-            from devices.dummy_pipettor import DummyPipettor
-            pipettor = DummyPipettor()
-        self.pipettor = pipettor
-
         wells.extend((
-            self._well(0, left_group, Dir.RIGHT, self.pad_at(0,18), pipettor, left_states),
-            self._well(1, left_group, Dir.RIGHT, self.pad_at(0,12), pipettor, left_states),
-            self._well(2, left_group, Dir.RIGHT, self.pad_at(0,6), pipettor, left_states),
-            self._well(3, left_group, Dir.RIGHT, self.pad_at(0,0), pipettor, left_states),
-            self._well(4, right_group, Dir.LEFT, self.pad_at(18,18), pipettor, right_states),
-            self._well(5, right_group, Dir.LEFT, self.pad_at(18,12), pipettor, right_states),
-            self._well(6, right_group, Dir.LEFT, self.pad_at(18,6), pipettor, right_states),
-            self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), pipettor, right_states),
+            self._well(0, left_group, Dir.RIGHT, self.pad_at(0,18), left_states),
+            self._well(1, left_group, Dir.RIGHT, self.pad_at(0,12), left_states),
+            self._well(2, left_group, Dir.RIGHT, self.pad_at(0,6), left_states),
+            self._well(3, left_group, Dir.RIGHT, self.pad_at(0,0), left_states),
+            self._well(4, right_group, Dir.LEFT, self.pad_at(18,18), right_states),
+            self._well(5, right_group, Dir.LEFT, self.pad_at(18,12), right_states),
+            self._well(6, right_group, Dir.LEFT, self.pad_at(18,6), right_states),
+            self._well(7, right_group, Dir.LEFT, self.pad_at(18,0), right_states),
             ))
 
         magnets.append(Magnet(0, self, state=self._magnet_state(13,6),
@@ -337,7 +278,7 @@ class Board(device.Board):
 
         for pos in ((13, 15), (13, 9), (13, 3)):
             extraction_points.append(
-                ExtractionPoint(self.pad_at(*pos), pipettor, splash_radius=extraction_point_splash_radius))
+                ExtractionPoint(self.pad_at(*pos), splash_radius=extraction_point_splash_radius))
 
         def tc_channel(row: int,
                        heaters: tuple[int,int],
@@ -384,7 +325,7 @@ class Board(device.Board):
 
     def join_system(self, system: System) -> None:
         super().join_system(system)
-        self.pipettor.join_system(system)
+        # self.pipettor.join_system(system)
 
     def update_state(self):
         super().update_state()
@@ -405,10 +346,9 @@ class PlatformTask(PlatformChoiceTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: 
+                   ) -> Board: 
         off_on_delay: Time = args.off_on_delay
-        return Board(pipettor=pipettor,
-                     off_on_delay=off_on_delay,
+        return Board(off_on_delay=off_on_delay,
                      extraction_point_splash_radius=args.extraction_point_splash_radius)
         
     def add_args_to(self, 

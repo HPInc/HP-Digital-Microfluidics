@@ -36,11 +36,12 @@ from quantities.timestamp import time_now, Timestamp
 from argparse import Namespace
 from erk.stringutils import map_str
 from quantities.US import deg_F
+from functools import cached_property
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
     from mpam.monitor import BoardMonitor
-    from mpam.pipettor import Pipettor
+    from mpam.pipettor import Pipettor, PipettingSource
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,10 @@ class BoardComponent:
     """
 
     board: Final[Board] #: The containing :class:`Board`
+    
+    @cached_property
+    def pipettor(self) -> Pipettor:
+        return self.board.pipettor
 
     def __init__(self, board: Board) -> None:
         """
@@ -336,15 +341,16 @@ class PipettingTarget(ABC):
         """
         ...
 
-    @property
-    def pipettor(self) -> Optional[Pipettor]:
-        """
-        The :class:`.Pipettor` associated with this :class:`PipettingTarget` or
-        ``None`` if there is no such :class:`.Pipettor`.
-
-        By default, it will be ``None``.
-        """
-        return None
+    # @property
+    # @abstractmethod
+    # def pipettor(self) -> Optional[Pipettor]:
+    #     """
+    #     The :class:`.Pipettor` associated with this :class:`PipettingTarget` or
+    #     ``None`` if there is no such :class:`.Pipettor`.
+    #
+    #     By default, it will be ``None``.
+    #     """
+    #     ...
 
     @abstractmethod
     def prepare_for_add(self) -> None:
@@ -416,6 +422,8 @@ class PipettingTarget(ABC):
             last: ``True`` if this is the last transfer in a transfer request.
         """
         ...
+        
+
 
 class DropLoc(ABC, CommunicationScheduler):
     """
@@ -2539,7 +2547,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             :class:`Well` when the :class:`.Liquid` has been added
         """
         pipettor = self.pipettor
-        assert pipettor is not None, f"{self} has no pipettor and add() was not overridden"
 
         p_future = pipettor.schedule(pipettor.Supply(reagent, volume, self,
                                                      mix_result=mix_result,
@@ -2597,7 +2604,6 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget):
             :class:`Well` when the :class:`.Liquid` has been removed
         """
         pipettor = self.pipettor
-        assert pipettor is not None, f"{self} has no pipettor and remove() was not overridden"
 
         p_future = pipettor.schedule(pipettor.Extract(volume, self,
                                                       on_no_sink=on_no_sink))
@@ -3623,7 +3629,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             :class:`.Liquid` actually transfered.
         """
         pipettor = self.pipettor
-        assert pipettor is not None, f"{self} has no pipettor and transfer_out() not overridden"
         if volume is None:
             drop = not_None(self.pad.drop, desc=lambda: f"volume is None and {self.pad} does not have Drop")
             volume = drop.blob_volume
@@ -3679,7 +3684,6 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         """
         from mpam.drop import Drop # @Reimport
         pipettor = self.pipettor
-        assert pipettor is not None, f"{self} has no pipettor and transfer_in() not overridden"
         p_future = pipettor.schedule(pipettor.Supply(reagent, volume, self,
                                                      mix_result = mix_result,
                                                      on_insufficient = on_insufficient,
@@ -4057,6 +4061,10 @@ class SystemComponent(ABC):
         valid.
         """
         return self._system is not None
+    
+    @cached_property
+    def pipettor(self) -> Pipettor:
+        return self.system.pipettor
 
     def __init__(self) -> None:
         """
@@ -4666,6 +4674,8 @@ class Board(SystemComponent):
         self._reset(self.power_supply)
         if self.fan is not None:
             self._reset(self.fan)
+            
+   
 
 
 class UserOperation(Worker):
@@ -4856,7 +4866,8 @@ class Batch:
         return False
 
 class System:
-    board: Board
+    board: Final[Board]
+    pipettor: Final[Pipettor]
     engine: Engine
     clock: Clock
     _batch_lock: Final[Lock]
@@ -4866,7 +4877,7 @@ class System:
     components: Final[list[SystemComponent]]
     running: bool = True
 
-    def __init__(self, *, board: Board):
+    def __init__(self, *, board: Board, pipettor: Pipettor = None):
         self.board = board
         self.engine = Engine(default_clock_interval=board.drop_motion_time)
         self.clock = Clock(self)
@@ -4874,6 +4885,11 @@ class System:
         self._batch_lock = Lock()
         self._cpts_lock = Lock()
         self.components = []
+        if pipettor is None:
+            from devices.manual_pipettor import ManualPipettor
+            pipettor = ManualPipettor()
+        self.pipettor = pipettor
+        pipettor.join_system(self)
         board.join_system(self)
 
     def __enter__(self) -> System:
@@ -5002,3 +5018,14 @@ class System:
                            update_interval = update_interval)
 
         return val
+    
+    def sources_for(self, reagent: Reagent) -> Sequence[PipettingSource]:
+        return self.pipettor.sources_for(reagent)
+    
+    def source_for(self, reagent: Reagent) -> Optional[PipettingSource]:
+        return self.pipettor.source_for(reagent)
+        
+    def source_named(self, name: str) -> Optional[PipettingSource]:
+        return self.pipettor.source_named(name)
+   
+    

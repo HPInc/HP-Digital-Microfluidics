@@ -18,7 +18,8 @@ from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit,\
     NumberedItem
 from mpam.device import Pad, Board, BinaryComponent, Well,\
-    WellGate, WellPad, Heater, PowerSupply, PowerMode
+    WellGate, WellPad, Heater, PowerSupply, PowerMode, ExtractionPoint,\
+    ProductLocation
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -28,7 +29,7 @@ from quantities.dimensions import Time, Volume, Temperature, Voltage
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
-from erk.basic import LazyPattern, not_None
+from erk.basic import LazyPattern, not_None, assert_never
 from re import Match
 from threading import RLock
 import re
@@ -507,6 +508,10 @@ BuiltIns = {
     "mixture": Functions["MIX"],
     "dispense drop": Functions["#dispense drop"],
     "enter well": Functions["#enter well"],
+    "transfer in": Functions["#transfer in"],
+    "transfer out": Functions["#transfer out"],
+    "remove": Functions["#remove liquid"],
+    "fill": Functions["fill"],
     }
 
 class SpecialVariable:
@@ -636,6 +641,7 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.WELL_PAD: WellPad,
         Type.WELL_GATE: WellGate,
         Type.WELL: Well,
+        Type.EXTRACTION_POINT: ExtractionPoint,
         Type.DELTA: DeltaValue,
         Type.MOTION: MotionValue,
         Type.TIME: Time,
@@ -1919,6 +1925,10 @@ class DMFCompiler(DMFVisitor):
             return figure(lambda b: b.heaters, Type.HEATER, "heater")
         elif kind is NumberedItem.MAGNET:
             return figure(lambda b: b.magnets, Type.MAGNET, "magnet")
+        elif kind is NumberedItem.EXTRACTION_POINT:
+            return figure(lambda b: b.extraction_points, Type.EXTRACTION_POINT, "extraction point")
+        else:
+            assert_never(kind)
 
 
 
@@ -2368,7 +2378,58 @@ class DMFCompiler(DMFVisitor):
         def enter_well(d: Drop) -> Delayed[None]:
             path = Path.enter_well()
             return path.schedule_for(d)
-        fn.register((Type.DROP,), Type.NONE, enter_well)             
+        fn.register((Type.DROP,), Type.NONE, enter_well) 
+        
+        fn = Functions["#transfer in"]
+        def add_liquid_to_well(w: Well, liquid: Liquid, *, 
+                               result: Optional[Reagent] = None) -> Delayed[Well]:
+            return w.add(liquid.reagent, liquid.volume, mix_result=result)
+        fn.register((Type.WELL, Type.LIQUID), Type.WELL, add_liquid_to_well)
+        fn.register((Type.WELL, Type.LIQUID, Type.REAGENT), Type.WELL,
+                    lambda w,l,r: add_liquid_to_well(w, l, result=r))
+        def add_volume_to_well(w: Well, v: Volume) -> Delayed[Well]:
+            return w.add(w.reagent, v)
+        fn.register((Type.WELL, Type.VOLUME), Type.WELL, add_volume_to_well)
+        def add_liquid_to_ep(ep: ExtractionPoint, liquid: Liquid) -> Delayed[Drop]:
+            path = Path.teleport_into(ep, liquid=liquid)
+            return path.schedule()
+        fn.register((Type.EXTRACTION_POINT, Type.LIQUID), Type.DROP, add_liquid_to_ep)
+
+        # TODO: To transfer in just based on volume, we need to be able to get
+        # our hands on the interactive reagent, which means we need an Environment.
+        
+        # fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.DROP, 
+                            # lambda ep,v: add_liquid_to_ep(ep, Liquid(ep, ))
+        def add_reagent_to_ep(ep: ExtractionPoint, r: Reagent) -> Delayed[Drop]:
+            return Path.teleport_into(ep, reagent=r).schedule()
+        fn.register((Type.EXTRACTION_POINT, Type.REAGENT), Type.DROP, add_reagent_to_ep)
+
+        fn = Functions["#transfer out"]
+        def remove_volume_from_well(w: Well, v: Volume) -> Delayed[Well]:
+            return w.remove(v)
+        fn.register((Type.WELL, Type.VOLUME), Type.WELL, remove_volume_from_well)
+
+        def remove_liquid_from_ep(ep: ExtractionPoint, v: Optional[Volume] = None) -> Delayed[Liquid]:
+            def trace_loc(loc: ProductLocation) -> None:
+                print(f"Removed product {loc.reagent} to {loc.location}")
+            prod_loc = Postable[ProductLocation]()
+            prod_loc.then_call(trace_loc)
+            return ep.transfer_out(volume=v, is_product=True, product_loc=prod_loc)
+        
+        fn.register((Type.EXTRACTION_POINT,), Type.LIQUID, remove_liquid_from_ep)
+        fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.LIQUID, remove_liquid_from_ep)
+
+        fn = Functions["fill"]
+        def fill_well(w: Well, r: Optional[Reagent] = None) -> Delayed[Well]:
+            return w.refill(reagent=r)
+        fn.register((Type.WELL,), Type.WELL, fill_well)
+        fn.register((Type.WELL, Type.REAGENT), Type.WELL, fill_well)
+        
+        
+        fn = BuiltIns["empty"] = Functions["empty"]
+        def empty_well(w: Well) -> Delayed[Well]:
+            return w.empty_well()
+        fn.register((Type.WELL,), Type.WELL, empty_well)
         
     @classmethod
     def setup_special_vars(cls) -> None:

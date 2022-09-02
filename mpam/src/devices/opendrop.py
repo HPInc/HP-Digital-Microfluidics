@@ -11,7 +11,6 @@ from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
     TransitionFunc
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
-from mpam.pipettor import Pipettor
 from mpam.types import OnOff, XYCoord, Orientation, Dir, State
 from quantities.SI import uL, ms
 from quantities.dimensions import Time
@@ -197,7 +196,7 @@ class PlatformTask(PlatformChoiceTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
+                   ) -> Board:
         off_on_delay: Time = args.off_on_delay
         port: Optional[str] = args.port
         return Board(dev=port, off_on_delay=off_on_delay)

@@ -365,8 +365,9 @@ class Exerciser(ABC):
         
         return self
 
-    def run_task(self, task: Task, args: Namespace, *, board: Board) -> None:
-        system = System(board=board)
+    def run_task(self, task: Task, args: Namespace, *, board: Board, 
+                 pipettor: Optional[Pipettor] = None) -> None:
+        system = System(board=board, pipettor=pipettor)
 
         def prepare_and_run() -> None:
             if args.start_clock:
@@ -601,7 +602,7 @@ class PlatformChoiceTask(Task):
     @abstractmethod
     def make_board(self, args: Namespace, *, # @UnusedVariable
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
+                   ) -> Board: # @UnusedVariable
         ...
         
     # available_wells() is implemented in Task, but we override it to make it
@@ -767,9 +768,7 @@ class PlatformChoiceExerciser(Exerciser):
     def make_board(self, args: Namespace) -> Board:
         platform: Task = args.task
         assert isinstance(platform, PlatformChoiceTask), f"Task is not a PlatformChoiceTask: {platform}"
-        pipettor = self._find_pipettor(args.pipettor, args)
-
-        return platform.make_board(args, exerciser=self, pipettor=pipettor)
+        return platform.make_board(args, exerciser=self)
         
     def add_device_specific_common_args(self, 
                                         group:_ArgumentGroup, 
@@ -794,6 +793,10 @@ class PlatformChoiceExerciser(Exerciser):
         
     # We've used the provided task (the platform) to set up the board.  What we
     # really run is the Task we squirreled away.
-    def run_task(self, task: Task, args: Namespace, *, board: Board)->None: # @UnusedVariable
-        super().run_task(self.task, args, board=board)
+    def run_task(self, task: Task, args: Namespace, *, board: Board,
+                 pipettor: Optional[Pipettor] = None)->None: # @UnusedVariable
+        if pipettor is None:
+            pipettor = self._find_pipettor(args.pipettor, args)
+
+        super().run_task(self.task, args, board=board, pipettor=pipettor)
         

@@ -210,7 +210,9 @@ no_arg_action returns[str which]
 param_type returns[Type type]
   : 'drop' {$ctx.type=Type.DROP}
   | 'pad'  {$ctx.type=Type.PAD}
+  | 'pipetting'? 'target' {$ctx.type=Type.PIPETTING_TARGET}
   | 'well' {$ctx.type=Type.WELL}
+  | (('extraction' ('point' | 'port')) | ('extraction'? 'hole')) {$ctx.type=Type.EXTRACTION_POINT}
   | 'well' 'pad' {$ctx.type=Type.WELL_PAD}
   | 'well'? 'gate' {$ctx.type=Type.WELL_GATE} 
   | 'int'  {$ctx.type=Type.INT}
@@ -252,6 +254,8 @@ numbered_type returns[NumberedItem kind]
   : 'well' {$ctx.kind=NumberedItem.WELL}
   | 'heater' {$ctx.kind=NumberedItem.HEATER}
   | 'magnet' {$ctx.kind=NumberedItem.MAGNET}
+  | (('extraction' ('point' | 'port')) | ('extraction'? 'hole')) 
+    {$ctx.kind=NumberedItem.EXTRACTION_POINT}
   ;
 
 attr returns[str which]
@@ -302,6 +306,8 @@ multi_word_name returns[str val]
   | 'the'? 'index' 'base' {$ctx.val="index base"}
   | 'dispense' 'drop' {$ctx.val="dispense drop"}
   | 'enter' 'well' {$ctx.val="enter well"}
+  | 'transfer' 'in' {$ctx.val="transfer in"}
+  | 'transfer' 'out' {$ctx.val="transfer out"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y'
@@ -310,6 +316,8 @@ kwd_names : 's' | 'ms' | 'x' | 'y'
   | 'diff' | 'difference' | 'delta' | 'point'
   | 'index' | 'base' | 'dispense' | 'enter'
   | 'reset' | 'magnets' | 'pads' | 'heaters' | 'all' 
+  | 'point' | 'port'
+  | 'transfer' | 'in' | 'out'
   ;
 
 string : STRING ;
