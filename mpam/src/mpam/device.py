@@ -4182,15 +4182,15 @@ class SystemComponent(ABC):
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
                  after: WaitableType = NO_WAIT) -> None:
         if after is NO_WAIT:
-            cb()
-        elif isinstance(after, Ticks):
+            after = self.no_delay
+        if isinstance(after, Ticks):
             self.on_tick(cb, delta=after)
+        elif isinstance(after, Time):
+            self.communicate(cb, delta=after)
         elif isinstance(after, Trigger):
             after.on_trigger(cb)
         elif isinstance(after, Delayed):
             after.when_value(lambda _: cb())
-        elif isinstance(after, Time):
-            self.communicate(cb, delta=after)
         else:
             assert_never(after)
 
