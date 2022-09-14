@@ -1208,9 +1208,11 @@ class StaticOperation(Generic[V], ABC):
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        def cb():
-            self._schedule(post_result=post_result)
-        return self.scheduler.delayed(cb, after=after)
+        future = Postable[V]()
+        def cb() -> None:
+            self._schedule(post_result=post_result).post_to(future)
+        self.scheduler.delayed(cb, after=after)
+        return future
 
     def then(self, op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                              Callable[[], Operation[V, V2]],

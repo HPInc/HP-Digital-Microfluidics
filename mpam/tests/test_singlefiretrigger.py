@@ -16,32 +16,38 @@ def test_singlefiretrigger(system: System) -> None:
     path3 = Path.teleport_into(ep, reagent=Reagent('R3')).to_pad((10, 15))
 
     all_paths = [path1,
-                 # path2,
-                 # path3,
+                 path2,
+                 path3,
                  ]
 
     system.clock.start(200 * ms)
     # system.clock.update_interval = 200 * ms # Start paused
+    
+    # path4 = Path.teleport_into(ep, reagent=Reagent("R4")).walk(Dir.W)
+    # path4.schedule()
 
     with system.batched():
         for path in all_paths:
             path.schedule()
+            print("scheduled")
 
     # Path.run_paths(all_paths, system=system)
 
 
 Exerciser.setup_logging(levels='debug')
 
+pipettor = dummy_pipettor.DummyPipettor(
+    name="Dummy", 
+    dip_time=400 * ms, 
+    short_transit_time=1 * ms, 
+    long_transit_time=1 * ms, 
+    get_tip_time=1 * ms, 
+    drop_tip_time=800 * ms, 
+    flow_rate=(1 * uL / s).a(dummy_pipettor.FlowRate))
+
 system = System(
     board=joey.Board(
-        pipettor=dummy_pipettor.DummyPipettor(
-            name="Dummy",
-            dip_time=400 * ms,
-            short_transit_time=1 * ms,
-            long_transit_time=1 * ms,
-            get_tip_time=1 * ms,
-            drop_tip_time=800 * ms,
-            flow_rate=(1*uL/s).a(dummy_pipettor.FlowRate))))
+        pipettor=pipettor))
 system.run_monitored(test_singlefiretrigger,
                      min_time=3 * minute,
                      config_params = {"highlight_reservations": True})
