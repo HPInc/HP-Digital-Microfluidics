@@ -160,7 +160,7 @@ class Engine:
     def after_tick(self, reqs: Sequence[ClockRequest]) -> None:
         self.clock_thread.after_tick(reqs)
 
-    def on_tick(self, reqs: Sequence[ClockCommRequest]):
+    def on_tick(self, reqs: Sequence[ClockCommRequest]) -> None:
         self.clock_thread.on_tick(reqs)
 
 
@@ -487,7 +487,7 @@ class ClockThread(WorkerThread):
     last_tick_time: Timestamp
     outstanding_tick_request: Optional[TickRequest]
 
-    def __init__(self, engine, *, default_clock_interval: Time):
+    def __init__(self, engine: Engine, *, default_clock_interval: Time) -> None:
         super().__init__(engine, "Clock Thread")
         self.running = False
         self.tick_event = Event()

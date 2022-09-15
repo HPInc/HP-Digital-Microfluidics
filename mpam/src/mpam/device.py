@@ -3326,7 +3326,7 @@ class Heater(BinaryComponent['Heater']):
                         heater.on_mode_change.remove(old_key)
                     if post_result:
                         key = (heater, f"Temp->{target}", random.random())
-                        def check(_old, mode: HeatingMode) -> None:
+                        def check(_old: HeatingMode, mode: HeatingMode) -> None:
                             if mode is HeatingMode.OFF or mode is HeatingMode.MAINTAINING:
                                 future.post(heater)
                                 heater.on_mode_change.remove(key)
@@ -3451,16 +3451,16 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         return drop.blob.contents
 
     @property
-    def splash_zone(self) -> Optional[set[Pad]]:
+    def splash_zone(self) -> set[Pad]:
         if self._splash_zone is None:
             self._compute_splash()
-        return self._splash_zone
+        return not_None(self._splash_zone)
 
     @property
-    def splash_border(self) -> Optional[Sequence[Pad]]:
+    def splash_border(self) -> Sequence[Pad]:
         if self._splash_border is None:
             self._compute_splash()
-        return self._splash_border
+        return not_None(self._splash_border)
 
     def __init__(self, pad: Pad, *, splash_radius: Optional[int] = None) -> None:
         """
@@ -3687,7 +3687,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         future = Postable[Drop]()
         # If I use a lambda, Mypy complains about not being able to infer the
         # type of the argument 1 [sic] of post_transformed_to()
-        def xfer_result(_) -> Drop:
+        def xfer_result(_: Any) -> Drop:
             return not_None(self.pad.drop)
 
         p_future.post_transformed_to(future, xfer_result)
@@ -3710,11 +3710,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         """
         # to_reserve stores pads that need to be reserved. Once a pad
         # is reserved, it gets removed from the list
-        to_reserve = self.splash_zone
+        to_reserve = list(self.splash_zone)
         logging.debug(f'{self.pad}|splash zone:{self.splash_zone}')
         logging.debug(f'{self.pad}|splash border:{self.splash_border}')
 
-        def reserve_condition():
+        def reserve_condition() -> bool:
             # Check if the drop expectation is not met
             if expect_drop and self.pad.drop is None:
                 return False
@@ -3751,7 +3751,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
 
         return self.pad.board.on_condition(reserve_condition, lambda: None)
 
-    def unreserve_pads(self):
+    def unreserve_pads(self) -> None:
         """
         Unreserve any reserved pads
         """
@@ -4113,7 +4113,7 @@ class SystemComponent(ABC):
             return (self,)
         return req
 
-    def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO):
+    def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO) -> None:
         req = self.make_request(cb)
         sys = self.system
         if delta > Time.ZERO:
@@ -4606,7 +4606,7 @@ class Board(SystemComponent):
             high = self._amb_threshold(at, True)
             return temp <= high
 
-    def print_blobs(self):
+    def print_blobs(self) -> None:
         from mpam.drop import Blob # @Reimport
         print("--------------")
         print("Blobs on board")
@@ -4641,7 +4641,7 @@ class Board(SystemComponent):
         self.change_journal.note_removal(pad, volume)
 
     def journal_delivery(self, pad: DropLoc, liquid: Liquid, *,
-                         mix_result: Optional[MixResult] = None):
+                         mix_result: Optional[MixResult] = None) -> None:
         self.change_journal.note_delivery(pad, liquid, mix_result=mix_result)
 
     def _reset(self, *cpts: BinaryComponent) -> None:
@@ -4761,7 +4761,7 @@ class Clock:
             delta = Ticks.ZERO
         if delta >= 0:
             e = Event()
-            def cb():
+            def cb() -> None:
                 e.set()
             self.clock_thread.after_tick([(delta, cb)])
             while not e.is_set():
@@ -4773,7 +4773,7 @@ class Clock:
         if min_delay is not None:
             next_allowed = ct.last_tick_time+min_delay
             if next_allowed > time_now():
-                def do_advance():
+                def do_advance() -> None:
                     ct.wake_up()
                 self.system.engine.call_at([(next_allowed, do_advance, False)])
                 return

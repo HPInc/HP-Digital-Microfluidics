@@ -70,7 +70,8 @@ class TemperaturePoint:
     def __sub__(self, rhs: TemperaturePoint) -> dimensions.Temperature: ...  # @UnusedVariable
     @overload
     def __sub__(self, rhs: dimensions.Temperature) -> TemperaturePoint: ...  # @UnusedVariable
-    def __sub__(self, rhs: Union[TemperaturePoint, dimensions.Temperature]):
+    def __sub__(self, rhs: Union[TemperaturePoint, dimensions.Temperature]) -> Union[dimensions.Temperature,
+                                                                                     TemperaturePoint]:
         if isinstance(rhs, TemperaturePoint):
             return self.absolute-rhs.absolute
         else:

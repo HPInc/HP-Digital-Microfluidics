@@ -126,7 +126,7 @@ class EmptyTarget(XferTarget):
     def signal_done(self, reagent: Reagent, volume: Volume, *, last: bool) -> None:
         self.target.pipettor_removed(reagent, volume, last=last)
 
-    def note_product_loc(self, loc: ProductLocation):
+    def note_product_loc(self, loc: ProductLocation) -> None:
         if self.product_loc is not None:
             self.product_loc.post(loc)
 
@@ -182,10 +182,11 @@ class TransferSchedule:
                 xfer = Transfer(reagent, xd, is_product=is_product)
                 if reagent_map is not None:
                     reagent_map[reagent] = xfer
-                def run_it():
+                real_xfer = xfer
+                def run_it() -> None:
                     with self._lock:
-                        xfer.pending = False
-                    self.pipettor.perform(xfer)
+                        real_xfer.pending = False
+                    self.pipettor.perform(real_xfer)
                 self.serializer.enqueue(run_it)
             xfer.targets.append(target)
 

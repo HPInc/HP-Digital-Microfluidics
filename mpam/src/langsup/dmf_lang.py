@@ -69,7 +69,7 @@ class UnknownUnitDimensionError(CompilationError):
         self.dimensionality = dim
         
 def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
-    def check(*args) -> MaybeError[Val_]:
+    def check(*args: Sequence[Any]) -> MaybeError[Val_]:
         first = args[0]
         if isinstance(first, EvaluationError):
             return first
@@ -77,7 +77,7 @@ def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
     return check
 
 def error_check_delayed(fn: Callable[..., Delayed[Val_]]) -> Callable[..., Delayed[MaybeError[Val_]]]:
-    def check(*args) -> Delayed[MaybeError[Val_]]:
+    def check(*args: Sequence[Any]) -> Delayed[MaybeError[Val_]]:
         first = args[0]
         if isinstance(first, EvaluationError):
             return Delayed.complete(first)
@@ -161,7 +161,7 @@ class ScopeStack(Generic[Name_, Val_]):
     def __setitem__(self, name: Name_, val: Val_) -> None:
         self.current[name] = val
         
-    def push(self, initial: Optional[dict[Name_,Val_]] = None):
+    def push(self, initial: Optional[dict[Name_,Val_]] = None) -> StackPush:
         return StackPush(self, initial)
 
 class StackPush(Generic[Name_, Val_]):
@@ -178,7 +178,7 @@ class StackPush(Generic[Name_, Val_]):
         stack.current = self.scope
         return self
     
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None: # @UnusedVariable
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: # @UnusedVariable
         self.stack.current = self.old
 
 class Value(NamedTuple):
@@ -716,7 +716,7 @@ class Executable:
             future = fn(env)
         if required is not None and required is not self.return_type:
             req_type = required
-            def convert(val) -> Any:
+            def convert(val: Any) -> Any:
                 return self.return_type.convert_to(req_type, val=val, rep_types=rep_types)
                 # return Conversions.convert(have=self.return_type, want=req_type, val=val)
             future = future.transformed(convert)
@@ -726,7 +726,7 @@ class Executable:
         #         assert isinstance(val, check), f"Expected {check}, got {val}"
         return future
     
-    def check_and_eval(self, maybe_error: Any, 
+    def check_and_eval(self, maybe_error: MaybeError, 
                        env: Environment, required: Optional[Type] = None) -> Delayed[Any]:
         if isinstance(maybe_error, EvaluationError):
             return Delayed.complete(maybe_error)
@@ -745,7 +745,7 @@ class LazyEval:
 class WithEnv:
     def __init__(self, func: Callable):
         self.func = func
-    def __call__(self, env: Environment, *args) -> Delayed[Any]:
+    def __call__(self, env: Environment, *args: Sequence[Any]) -> Delayed[Any]:
         return Delayed.complete(self.func(env, *args))    
     
 class DMFInterpreter:
@@ -769,7 +769,7 @@ class DMFInterpreter:
                 if isinstance(val, EvaluationError):
                     print(f"Exception caught while loading '{file_name}': {val}")
         
-    def set_global(self, name: str, val: Any, vtype: Type):
+    def set_global(self, name: str, val: Any, vtype: Type) -> None:
         self.namespace[name] = vtype
         self.globals[name] = val
         
@@ -788,7 +788,7 @@ class DMFInterpreter:
         if cache_as is not None and executable.return_type is not Type.IGNORE:
             cvar = cache_as
             future.then_call(lambda val: self.set_global(cvar, val, executable.return_type))
-        def munge_result(val) -> Tuple[Type, Any]:
+        def munge_result(val: Any) -> Tuple[Type, Any]:
             t = Type.ERROR if isinstance(val, EvaluationError) else executable.return_type
             return (t, val)
         return future.transformed(munge_result)
@@ -827,7 +827,7 @@ class DMFCompiler(DMFVisitor):
         return Executable.constant(Type.ERROR, None, is_error=True)
         # assert False, "Undefined visitor method"
         
-    def visitChildren(self, node):
+    def visitChildren(self, node: Any) -> Executable:
         print(f"Unhandled tree: {type(node).__name__}")
         return Executable.constant(Type.ERROR, None, is_error=True)
     
@@ -945,7 +945,7 @@ class DMFCompiler(DMFVisitor):
                 msg = lambda want,have,text: f"Expected {want}, got {have}: {text}"
             msg_fn = msg
             h = have
-            def msg_factory(text) -> str:
+            def msg_factory(text: str) -> str:
                 return msg_fn(wname, h.name, text)
             m = msg_factory
         return self.error(ctx, return_type, m, value=value)
@@ -1019,7 +1019,7 @@ class DMFCompiler(DMFVisitor):
                           else reduce(lambda fut,fn: fut.chain(fn),
                                       lambdas[1:],
                                       lambdas[0](None)))
-                def chain_call(maybe_error) -> Delayed[Any]:
+                def chain_call(maybe_error: MaybeError) -> Delayed[Any]:
                     if isinstance(maybe_error, EvaluationError):
                         return Delayed.complete(maybe_error)
                     else:
@@ -1069,7 +1069,7 @@ class DMFCompiler(DMFVisitor):
         func = UnitStringFuncs[unit]
         return self.use_function(func, ctx, (quant_ctx,))
     
-    def visit(self, tree) -> Executable:
+    def visit(self, tree: Any) -> Executable:
         return cast(Executable, DMFVisitor.visit(self, tree))
 
     def visitMacro_file(self, ctx:DMFParser.Macro_fileContext) -> Executable:
@@ -1079,7 +1079,7 @@ class DMFCompiler(DMFVisitor):
                 return Delayed.complete(None)
             future: Delayed[Any] = stats[0].evaluate(env)
             for stat in stats[1:]:
-                def evaluator(s: Executable):
+                def evaluator(s: Executable) -> Callable[[MaybeError], Delayed[Any]]:
                     return lambda maybe_error: s.check_and_eval(maybe_error, env)
                 future = future.chain(evaluator(stat))
             return future
@@ -1167,7 +1167,7 @@ class DMFCompiler(DMFVisitor):
             else:
                 var_type = vt
                 new_decl = False
-            def do_assignment(env: Environment, val) -> None:
+            def do_assignment(env: Environment, val: Any) -> None:
                 if new_decl:
                     env.define(name, val)
                 else:
@@ -1183,7 +1183,7 @@ class DMFCompiler(DMFVisitor):
         if new_decl and not value.contains_error:
             self.current_types.define(name, returned_type)
         def run(env: Environment) -> Delayed[Any]:
-            def do_assignment(val) -> Any:
+            def do_assignment(val: Any) -> Any:
                 if not isinstance(val, EvaluationError):
                     setter(env, val)
                 return val
@@ -1225,7 +1225,7 @@ class DMFCompiler(DMFVisitor):
         sig, setter = desc 
         ot, vt = sig.param_types
         def run(env: Environment) -> Delayed[Any]:
-            def do_assignment(o,v) -> Any:
+            def do_assignment(o: Any, v: Any) -> Any:
                 if not isinstance(v, EvaluationError):
                     setter(o,v)
                 return v
@@ -1300,7 +1300,7 @@ class DMFCompiler(DMFVisitor):
         
         real_val = value
         def run(env: Environment) -> Delayed[Any]:
-            def do_assignment(val) -> Any:
+            def do_assignment(val: Any) -> Any:
                 if isinstance(val, EvaluationError):
                     return val
                 if just_assign:
@@ -1315,17 +1315,17 @@ class DMFCompiler(DMFVisitor):
         return self.visit(ctx.declaration())
     
     def visitPrinting(self, ctx:DMFParser.PrintingContext) -> Executable:
-        def print_vals(*vals):
+        def print_vals(*vals: Sequence[Any]) -> Delayed[None]:
             print(*vals)
             return Delayed.complete(None)
         vals = tuple(self.visit(c) for c in ctx.vals)
         sig = Signature.of(tuple(v.return_type for v in vals), Type.NONE)
         return self.use_callable(print_vals, vals, sig)
         
-    def visitPrint_stat(self, ctx:DMFParser.Print_statContext):
+    def visitPrint_stat(self, ctx:DMFParser.Print_statContext) -> Executable:
         return self.visit(ctx.printing())
 
-    def visitPrint_interactive(self, ctx:DMFParser.Print_statContext):
+    def visitPrint_interactive(self, ctx:DMFParser.Print_statContext) -> Executable:
         return self.visit(ctx.printing())
 
     def visitPause_stat(self, ctx:DMFParser.Pause_statContext) -> Executable:
@@ -1365,7 +1365,7 @@ class DMFCompiler(DMFVisitor):
             local_env = env.new_child()
             if len(stat_execs) == 1:
                 return stat_execs[0].evaluate(local_env)
-            def execute(maybe_error, i: int) -> Delayed[MaybeError[None]]:
+            def execute(maybe_error: MaybeError, i: int) -> Delayed[MaybeError[None]]:
                 # print(f"***Executing {self.text_of(stat_contexts[i])}")
                 return stat_execs[i].check_and_eval(maybe_error, local_env)
             
@@ -1482,7 +1482,7 @@ class DMFCompiler(DMFVisitor):
     def visitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext) -> Executable:
         return self.not_yet_implemented("Repeat loops", ctx)
 
-    def visitFor_loop(self, ctx:DMFParser.For_loopContext):
+    def visitFor_loop(self, ctx:DMFParser.For_loopContext) -> Executable:
         return self.not_yet_implemented("For loops", ctx)
 
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
@@ -1493,15 +1493,15 @@ class DMFCompiler(DMFVisitor):
         return self.use_function("NEGATE", ctx, (ctx.rhs,))
 
 
-    def visitInt_expr(self, ctx:DMFParser.Int_exprContext):
+    def visitInt_expr(self, ctx:DMFParser.Int_exprContext) -> Executable:
         val: int = int(ctx.INT().getText())
         return Executable.constant(Type.INT, val)
 
-    def visitFloat_expr(self, ctx:DMFParser.Float_exprContext):
+    def visitFloat_expr(self, ctx:DMFParser.Float_exprContext) -> Executable:
         val: float = float(ctx.FLOAT().getText())
         return Executable.constant(Type.FLOAT, val)
 
-    def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
+    def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext) -> Executable:
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
         name = self.type_name_var(ctx.param_type(), n)
         var_type = self.current_types.lookup(name)
@@ -1666,7 +1666,7 @@ class DMFCompiler(DMFVisitor):
                                  return_type = Type.BOOL)):
             return e
         def run(env: Environment) -> Delayed[MaybeError[bool]]:
-            def inject(obj, func) -> Delayed[MaybeError[bool]]:
+            def inject(obj: Any, func: Any) -> Delayed[MaybeError[bool]]:
                 if isinstance(func, EvaluationError):
                     return Delayed.complete(func)
                 assert isinstance(func, CallableValue)
@@ -1674,7 +1674,7 @@ class DMFCompiler(DMFVisitor):
                 if neg:
                     future = future.transformed(lambda v: v if isinstance(v, EvaluationError) else not v)
                 return future
-            def after_obj(obj) -> Delayed[Any]:
+            def after_obj(obj: Any) -> Delayed[Any]:
                 if isinstance(obj, EvaluationError):
                     return Delayed.complete(obj)
                 return pred.evaluate(env, pred_type).chain(lambda func: inject(obj, func))
@@ -1808,13 +1808,13 @@ class DMFCompiler(DMFVisitor):
         return_type = who.return_type if return_first_arg else inj_type.return_type
         if self.compatible(who.return_type, first_arg_type):
             def run(env: Environment) -> Delayed[Any]:
-                def inject(obj, func) -> Delayed[Any]:
+                def inject(obj: Any, func: Any) -> Delayed[Any]:
                     if isinstance(func, EvaluationError):
                         return Delayed.complete(func)
                     assert isinstance(func, CallableValue)
                     future = func.apply((obj,))
                     return future if not return_first_arg else future.transformed(lambda _: obj)
-                def after_who(who) -> Delayed[Any]:
+                def after_who(who: Any) -> Delayed[Any]:
                     if isinstance(who, EvaluationError):
                         return Delayed.complete(who)
                     return what.evaluate(env, inj_type).chain(lambda func: inject(who, func))
@@ -1875,10 +1875,11 @@ class DMFCompiler(DMFVisitor):
         check: Optional[Callable[[Any], Any]] = None
         if isinstance(rt, MaybeType):
             real_extractor = extractor
-            def extractor(obj) -> Delayed[Any]:
-                def check(val):
+            real_attr = attr
+            def extractor(obj: Any) -> Delayed[Any]:
+                def check(val: Any) -> MaybeError:
                     if val is None:
-                        name = attr.func.name
+                        name = real_attr.func.name
                         if (m := re.fullmatch("'(.*)' attribute", name)) is not None:
                             name = m.group(1)
                         ex = MaybeNotSatisfiedError(f"{obj} has no '{name}'")
@@ -1970,7 +1971,7 @@ class DMFCompiler(DMFVisitor):
                 pt = param_types[i]
                 return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
         
-        def dispatch(fn: CallableValue, *args) -> Delayed[Any]:
+        def dispatch(fn: CallableValue, *args: Sequence[Any]) -> Delayed[Any]:
             return fn.apply(args)
         
         # fn_exec = Executable(f_type, lambda env: Delayed.complete(env[f_name]), ())
@@ -2006,12 +2007,12 @@ class DMFCompiler(DMFVisitor):
         func = "MULTIPLY" if mulp else "DIVIDE"
         return self.use_function(func, ctx, (ctx.lhs, ctx.rhs))
 
-    def visitDirection(self, ctx:DMFParser.DirectionContext):
-        return DMFVisitor.visitDirection(self, ctx)
+    def visitDirection(self, ctx:DMFParser.DirectionContext) -> Executable:
+        return DMFVisitor.visitDirection(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitAxis(self, ctx:DMFParser.AxisContext):
-        return DMFVisitor.visitAxis(self, ctx)
+    def visitAxis(self, ctx:DMFParser.AxisContext) -> Executable:
+        return DMFVisitor.visitAxis(self, ctx) # type: ignore [no-any-return]
 
     def param_def(self, ctx: DMFParser.ParamContext) -> tuple[str, Type]:
         param_type: Optional[Type] = cast(Optional[Type], ctx.type)
@@ -2081,7 +2082,7 @@ class DMFCompiler(DMFVisitor):
     def visitUnit_string_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
         return self.unit_string_exec(ctx.dim_unit().unit, ctx, ctx.quant)
     
-    def visitTemperature_expr(self, ctx:DMFParser.Temperature_exprContext):
+    def visitTemperature_expr(self, ctx:DMFParser.Temperature_exprContext) -> Executable:
         return self.use_function("TEMP_C", ctx, (ctx.amount,))
     
     # def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
@@ -2099,24 +2100,24 @@ class DMFCompiler(DMFVisitor):
                     .transformed(error_check(lambda d: PauseValue(d, env.board))))
         return Executable(Type.PAUSE, run, (duration,))
                 
-    def visitMacro_header(self, ctx:DMFParser.Macro_headerContext):
-        return DMFVisitor.visitMacro_header(self, ctx)
+    def visitMacro_header(self, ctx:DMFParser.Macro_headerContext) -> Executable:
+        return DMFVisitor.visitMacro_header(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitParam(self, ctx:DMFParser.ParamContext):
-        return DMFVisitor.visitParam(self, ctx)
+    def visitParam(self, ctx:DMFParser.ParamContext) -> Executable:
+        return DMFVisitor.visitParam(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitParam_type(self, ctx:DMFParser.Param_typeContext):
-        return DMFVisitor.visitParam_type(self, ctx)
+    def visitParam_type(self, ctx:DMFParser.Param_typeContext) -> Executable:
+        return DMFVisitor.visitParam_type(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitName(self, ctx:DMFParser.NameContext):
-        return DMFVisitor.visitName(self, ctx)
+    def visitName(self, ctx:DMFParser.NameContext) -> Executable:
+        return DMFVisitor.visitName(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitKwd_names(self, ctx:DMFParser.Kwd_namesContext):
-        return DMFVisitor.visitKwd_names(self, ctx)
+    def visitKwd_names(self, ctx:DMFParser.Kwd_namesContext) -> Executable:
+        return DMFVisitor.visitKwd_names(self, ctx) # type: ignore [no-any-return]
     
     @classmethod
     def setup_function_table(cls) -> None:
@@ -2306,7 +2307,7 @@ class DMFCompiler(DMFVisitor):
         
         fn = Functions["COORD"]
         fn.format_type_expr_using(2, lambda x,y: f"({x}, {y})")
-        def find_pad(env: Environment, x: int, y: int):
+        def find_pad(env: Environment, x: int, y: int) -> Pad:
             board = env.board
             return board.pad_at(x, y)
         fn.register((Type.INT, Type.INT), Type.PAD, WithEnv(find_pad))
@@ -2375,14 +2376,14 @@ class DMFCompiler(DMFVisitor):
         name = "interactive reagent"
         def get_reagent(monitor: BoardMonitor) -> Reagent:
             return monitor.interactive_reagent
-        def set_reagent(monitor: BoardMonitor, reagent: Reagent):
+        def set_reagent(monitor: BoardMonitor, reagent: Reagent) -> None:
             monitor.interactive_reagent = reagent
         SpecialVars[name] = MonitorVariable(name, Type.REAGENT, getter=get_reagent, setter=set_reagent)
         
         name = "interactive volume"
         def get_volume(monitor: BoardMonitor) -> Volume:
             return monitor.interactive_volume
-        def set_volume(monitor: BoardMonitor, volume: Volume):
+        def set_volume(monitor: BoardMonitor, volume: Volume) -> None:
             monitor.interactive_volume = volume
         SpecialVars[name] = MonitorVariable(name, Type.VOLUME, getter=get_volume, setter=set_volume)
         
@@ -2422,7 +2423,7 @@ class DMFCompiler(DMFVisitor):
         Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
         Attributes["direction"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
         Attributes["duration"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
-        def set_pad(d: Drop, p: Pad):
+        def set_pad(d: Drop, p: Pad) -> None:
             d.pad = p
             d.status = DropStatus.ON_BOARD
         Attributes["pad"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=set_pad)
@@ -2440,28 +2441,28 @@ class DMFCompiler(DMFVisitor):
         
         Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
         Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
-        def set_drop_volume(d: Drop, v: Volume):
+        def set_drop_volume(d: Drop, v: Volume) -> None:
             d.blob_volume = v
         Attributes["volume"].register_setter(Type.DROP, Type.VOLUME, set_drop_volume)
-        def set_well_volume(w: Well, v: Volume):
+        def set_well_volume(w: Well, v: Volume) -> None:
             w.contains(Liquid(w.reagent, v))
         Attributes["volume"].register_setter(Type.WELL, Type.VOLUME, set_well_volume)
         
         Attributes["reagent"].register([Type.DROP, Type.LIQUID, Type.WELL], Type.REAGENT, lambda d: d.reagent)
-        def set_drop_reagent(d: Drop, r: Reagent):
+        def set_drop_reagent(d: Drop, r: Reagent) -> None:
             d.reagent= r
         Attributes["reagent"].register_setter(Type.DROP, Type.REAGENT, set_drop_reagent)
-        def set_well_reagent(w: Well, r: Reagent):
+        def set_well_reagent(w: Well, r: Reagent) -> None:
             w.contains(Liquid(r, w.volume))
         Attributes["reagent"].register_setter(Type.WELL, Type.REAGENT, set_well_reagent)
         
-        def set_drop_liquid(d: Drop, liq: Liquid):
+        def set_drop_liquid(d: Drop, liq: Liquid) -> None:
             d.blob_volume = liq.volume
             d.reagent= liq.reagent
         Attributes["contents"].register(Type.DROP, Type.LIQUID, lambda d: Liquid(d.reagent, d.volume),
                                         setter=set_drop_liquid)
         
-        def set_well_contents(w: Well, liq: Liquid):
+        def set_well_contents(w: Well, liq: Liquid) -> None:
             w.contains(liq)
         Attributes["contents"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w.reagent, w.volume),
                                         setter=set_well_contents)
@@ -2473,19 +2474,19 @@ class DMFCompiler(DMFVisitor):
         Attributes["magnet"].register(Type.PAD, Type.MAGNET.maybe, lambda p: p.magnet)
         
         Attributes["#current_temperature"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.current_temperature)
-        def set_heater_target(h: Heater, t: Optional[TemperaturePoint]):
+        def set_heater_target(h: Heater, t: Optional[TemperaturePoint]) -> None:
             h.target = t
         Attributes["#target_temperature"].register(Type.HEATER, Type.ABS_TEMP.maybe, lambda h: h.target)
         Attributes["#target_temperature"].register_setter(Type.HEATER, Type.ABS_TEMP.maybe, set_heater_target)
         
         Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY, lambda b: b.power_supply)
         
-        def set_ps_voltage(ps: PowerSupply, v: Voltage):
+        def set_ps_voltage(ps: PowerSupply, v: Voltage) -> None:
             ps.voltage = v
         Attributes["voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.voltage)
         Attributes["voltage"].register_setter(Type.POWER_SUPPLY, Type.VOLTAGE, set_ps_voltage)
         
-        def set_ps_mode(ps: PowerSupply, m: PowerMode):
+        def set_ps_mode(ps: PowerSupply, m: PowerMode) -> None:
             ps.mode = m
         Attributes["mode"].register(Type.POWER_SUPPLY, Type.POWER_MODE, lambda ps: ps.mode)
         Attributes["mode"].register_setter(Type.POWER_SUPPLY, Type.POWER_MODE, set_ps_mode)

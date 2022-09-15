@@ -39,6 +39,8 @@ jobs:
           --warn-redundant-casts
           --warn-return-any
           --warn-unreachable
+          --disallow-incomplete-defs
+          --disallow-untyped-defs
           _work/mpam/{src,tools}
 
       - name: Stop container

@@ -71,7 +71,7 @@ class Path:
         def __add__(self, other: Union[Path.MiddleStep,
                                        Path.EndStep,
                                        Path.Middle,
-                                       Path.End]):
+                                       Path.End]) -> Union[Path.Start, Path.Full]:
             if isinstance(other, Path.MiddleStep):
                 return Path.Start(self.first_step, self.middle_steps+(other,))
             if isinstance(other, Path.Middle):
@@ -191,7 +191,7 @@ class Path:
         def __add__(self, other: Union[Path.MiddleStep,
                                        Path.EndStep,
                                        Path.Middle,
-                                       Path.End]):
+                                       Path.End]) -> Union[Path.Middle, Path.End]:
             if isinstance(other, Path.MiddleStep):
                 return Path.Middle(self.middle_steps+(other,))
             if isinstance(other, Path.Middle):

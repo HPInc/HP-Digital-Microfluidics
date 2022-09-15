@@ -39,7 +39,7 @@ def test_splashzones(system: System) -> None:
     max_y = min(loc.y + splash_radius, max_board)
     loop = ((min_x, max_y), (min_x, min_y), (max_x, min_y), (max_x, max_y))
     for _i in range(loop_drops):
-        path = Path.teleport_into(ep_1, reagent=Reagent('L'))
+        path = Path.teleport_into(ep_1, reagent=Reagent.find('L'))
         for pos in loop * 6:
             path = path.to_pad(pos, after=400 * ms)
         full_path = path.to_pad(well_1).enter_well()
@@ -61,7 +61,7 @@ def test_splashzones(system: System) -> None:
     loops.append(((min_x, loc.y), (max_x, loc.y)))
 
     for loop2 in loops:
-        path = Path.teleport_into(ep_1, reagent=Reagent('IO'))
+        path = Path.teleport_into(ep_1, reagent=Reagent.find('IO'))
         for pos in loop2 * loop_io:
             path = path.to_pad(pos, after=200 * ms)
         full_path = path.to_pad(well_1).enter_well()
@@ -74,8 +74,8 @@ def test_splashzones(system: System) -> None:
     # ---
     paths_waste = []
     for _i in range(3): 
-        paths_waste.append(Path.teleport_into(ep_1, reagent=Reagent('W1')).to_pad(well_1).enter_well())
-        # paths_waste.append(Path.teleport_into(ep_2, reagent=Reagent('W2')).to_pad(well_2).enter_well())
+        paths_waste.append(Path.teleport_into(ep_1, reagent=Reagent.find('W1')).to_pad(well_1).enter_well())
+        # paths_waste.append(Path.teleport_into(ep_2, reagent=Reagent.find('W2')).to_pad(well_2).enter_well())
     all_paths.extend(paths_waste)
 
     system.clock.start(200 * ms)

@@ -99,7 +99,7 @@ class Timestamp:
     def __sub__(self, rhs: Timestamp) -> dimensions.Time: ...  # @UnusedVariable
     @overload
     def __sub__(self, rhs: dimensions.Time) -> Timestamp: ...  # @UnusedVariable
-    def __sub__(self, rhs: Union[Timestamp, dimensions.Time]):
+    def __sub__(self, rhs: Union[Timestamp, dimensions.Time]) -> Union[dimensions.Time, Timestamp]:
         if isinstance(rhs, Timestamp):
             return self.time-rhs.time
         else:
