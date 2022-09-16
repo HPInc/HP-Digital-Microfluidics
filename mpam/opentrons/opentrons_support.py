@@ -24,11 +24,11 @@ if "COMBINED_FILES_KLUDGE" not in globals():
 
 
 
-def load_config(name: str):
+def load_config(name: str) -> Any:
     with open(name, 'rb') as f:
         return json.load(f)
         
-def labware_from_config(spec, protocol: protocol_api.ProtocolContext) -> Labware:
+def labware_from_config(spec: Any, protocol: protocol_api.ProtocolContext) -> Labware:
     defn_json = spec.get("definition", None)
     if defn_json is not None:
         labware: Labware = protocol.load_labware_from_definition(defn_json, spec["slot"])
@@ -48,7 +48,7 @@ class Board:
     well_names: dict[Well, str]
     
     def __init__(self,
-                 spec, 
+                 spec: Any, 
                  protocol: protocol_api.ProtocolContext,
                  *,
                  robot: Robot) -> None:
@@ -145,7 +145,7 @@ class Pipettor(TransferScheduler[Well]) :
     _trash_tip: bool
     
     def __init__(self, 
-                 spec, 
+                 spec: Any, 
                  protocol: protocol_api.ProtocolContext,
                  tipracks: List[Labware],
                  *,
@@ -262,7 +262,7 @@ class Robot:
     input_plates: Sequence[Labware] 
     output_plates: Sequence[Labware]
     output_wells: list[Well]
-    large_pipettor: Pipettor
+    large_pipettor: Optional[Pipettor] = None
     small_pipettor: Pipettor
     threshold: float
     # reagent_small_tip: dict[str, Well]
@@ -283,7 +283,7 @@ class Robot:
         #     return
         # self.protocol.comment(msg)
     
-    def __init__(self, config, protocol: protocol_api.ProtocolContext):
+    def __init__(self, config: Any, protocol: protocol_api.ProtocolContext)-> None:
         self.protocol = protocol
         ep_config = config.get("endpoint", None)   
         if ep_config:
@@ -306,7 +306,8 @@ class Robot:
         for p in self.output_plates:
             self.output_wells += p.wells()
         
-        self.large_pipettor = Pipettor(config["pipettes"]["large"], protocol, self.large_tipracks, robot=self)
+        if "large" in config["pipettes"]:
+            self.large_pipettor = Pipettor(config["pipettes"]["large"], protocol, self.large_tipracks, robot=self)
         self.small_pipettor = Pipettor(config["pipettes"]["small"], protocol, self.small_tipracks, robot=self)
         self.threshold: float = self.small_pipettor.max_volume
         # self.reagent_small_tip = defaultdict(lambda: self.small_tips.pop(0))
@@ -372,9 +373,14 @@ class Robot:
             else:
                 small += either
         prefer_partial = direction is Direction.FILL
-
-        large_trips = self.large_pipettor.partition(large, prefer_partial=prefer_partial)
+        if self.large_pipettor is not None:
+            large_trips = self.large_pipettor.partition(large, prefer_partial=prefer_partial)
+        else:
+            large_trips = ()
+            small = list(on_board)
+            # self.message(f"Small transfers: {small}")
         small_trips = self.small_pipettor.partition(small, prefer_partial=prefer_partial)
+        # self.message(f"Small trips: {small_trips}")
         
         if direction is Direction.EMPTY and reagent == "product":
             r = ReagentSource(reagent)
@@ -386,13 +392,14 @@ class Robot:
             r = self.reagent_source[reagent]
         xfers: list[Transfer] = []
         trash = self.trash_well
-        for trip in large_trips:
-            error, xfer = self.large_pipettor.make_transfer(direction, trip, r, trash=trash)
-            if xfer is not None:
-                xfers.append(xfer)
-            if error > 0:
-                # TODO: Do something with error (e.g., send a message back)
-                ...
+        if self.large_pipettor is not None:
+            for trip in large_trips:
+                error, xfer = self.large_pipettor.make_transfer(direction, trip, r, trash=trash)
+                if xfer is not None:
+                    xfers.append(xfer)
+                if error > 0:
+                    # TODO: Do something with error (e.g., send a message back)
+                    ...
         for trip in small_trips:
             error, xfer = self.small_pipettor.make_transfer(direction, trip, r, trash=trash)
             if xfer is not None:
@@ -407,7 +414,7 @@ class Robot:
 
         
     def pipette_and_tip(self, reagent: str, volume: float) -> tuple[InstrumentContext, Well]:
-        if volume > self.threshold:
+        if self.large_pipettor is not None and volume > self.threshold:
             p = self.large_pipettor
         else:
             p = self.small_pipettor
