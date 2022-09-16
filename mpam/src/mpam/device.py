@@ -254,10 +254,10 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             def cb() -> Optional[Callback]:
                 old = obj.current_state
                 new = mod(old)
-                # print(f"Setting {obj} to {new}")
+                # logging.info(f"Setting {obj} to {new}")
                 obj.state.realize_state(new)
                 obj.current_state = new
-                # print(f"Back from setting {obj} val = {obj.state}")
+                # logging.info(f"Back from setting {obj} val = {obj.state}")
                 finish: Optional[Callback] = None if not post_result else (lambda : future.post(old))
                 return finish
 
