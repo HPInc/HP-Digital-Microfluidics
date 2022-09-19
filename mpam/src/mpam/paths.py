@@ -160,6 +160,10 @@ class Path:
                     after: WaitableType = NO_WAIT) -> Path.Start:
             return self+Path.CallAndWaitStep(fn, after=after)
 
+        def then_fire(self, trigger: Trigger, *,
+                      after: WaitableType = NO_WAIT) -> Path.Start:
+            return self+Path.FireStep(trigger, after=after)
+
         def enter_well(self, *,
                        after: WaitableType = NO_WAIT) -> Path.Full:
             return self+Path.EnterWellStep(after=after)
@@ -607,3 +611,13 @@ class Path:
         def __init__(self, waitable: WaitableType, *,
                      after: WaitableType) -> None:
             super().__init__(Drop.WaitFor(waitable), after)
+
+    class FireStep(MiddleStep):
+        def __init__(self, trigger: Trigger, *,
+                     after: WaitableType) -> None:
+            def pass_through(drop: Drop) -> Delayed[Drop]:
+                future = Postable[Drop]()
+                future.then_trigger(trigger)
+                future.post(drop)
+                return future
+            super().__init__(DropComputeOp(pass_through), after)
