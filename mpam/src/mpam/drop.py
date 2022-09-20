@@ -1002,8 +1002,7 @@ class Drop(OpScheduler['Drop']):
             def run_group(_: Any) -> None:
                 # Note, we post the drop as soon as we get to the DISPENSED state, even theough
                 # we continue on to READY
-                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()),
-                               after=after) \
+                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard())) \
                     .then_call(make_drop) \
                     .then_schedule(Well.TransitionTo(WellState.READY))
 
