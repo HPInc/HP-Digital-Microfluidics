@@ -6,8 +6,8 @@ from math import floor, isclose
 
 def farey(n: float, *,
           max_denom: int = 10000,
-          rel_tol=1e-09,
-          abs_tol=0.0,
+          rel_tol: float = 1e-09,
+          abs_tol: float = 0.0,
           ) -> Fraction:
     if n < 0:
         return -farey(-n)

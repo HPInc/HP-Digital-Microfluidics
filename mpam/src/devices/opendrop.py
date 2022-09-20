@@ -99,7 +99,7 @@ class Board(device.Board):
         return (epx+5*outdir, epy-0.5)
     
     def _well(self, num: int, transition: TransitionFunc, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
-              inner_locs: Sequence[tuple[int,int]]):
+              inner_locs: Sequence[tuple[int,int]]) -> Well:
         shape = WellShape(
                     gate_pad_bounds= self._gate_bounds(exit_pad.location),
                     shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),

@@ -117,7 +117,7 @@ class DummyPipettor(Pipettor):
     def _sleep_for(self, time: Time) -> None:
         time.sleep()
 
-    def move_to(self, pos = ArmPos) -> None:
+    def move_to(self, pos: ArmPos) -> None:
         if pos is self.arm_pos:
             self._sleep_for(self.short_transit_time)
         else:

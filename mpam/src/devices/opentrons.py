@@ -318,21 +318,21 @@ class ProtocolManager(Thread):
     def make_url(self, cmd: str) -> str:
         return f"http://{self.ip}:{self.port}/{cmd}"
     
-    def post_request(self, cmd: str, **kwd_args): 
+    def post_request(self, cmd: str, **kwd_args: Any) -> Any: 
         url = self.make_url(cmd)
         return requests.post(url=url, headers=self.headers,
                              **kwd_args).json()
                              
-    def get_request(self, cmd: str, **kwd_args): 
+    def get_request(self, cmd: str, **kwd_args: Any) -> Any: 
         url = self.make_url(cmd)
         return requests.get(url=url, headers=self.headers,
                              **kwd_args).json()
                              
-    def delete_request(self, cmd: str): 
+    def delete_request(self, cmd: str) -> requests.Response: 
         url = self.make_url(cmd)
         return requests.delete(url=url, headers=self.headers)
                              
-    def trace_response(self, msg: str, response) -> bool:
+    def trace_response(self, msg: str, response: Any) -> bool:
         if hasattr(response, "status_code"):
             status_code: int = response.status_code
             tag = f": status code = {status_code}"
@@ -419,7 +419,7 @@ class ProtocolManager(Thread):
             response = self.delete_request(f"protocols/{self.protocol_id}")
             self.trace_response("Deleted protocol", response)
         
-    def print_event(self, e, prefix: str) -> None:
+    def print_event(self, e: Any, prefix: str) -> None:
         global last_msg
         num = int(e["commandId"])
         if num > self.last_msg:
@@ -428,7 +428,7 @@ class ProtocolManager(Thread):
             self.last_msg = num
              
         
-    def extract_messages(self, response) -> None:
+    def extract_messages(self, response: Any) -> None:
         pass
         # # events = response["data"]["details"]["events"]
         # events = response["data"]["actions"]
@@ -446,7 +446,7 @@ class ProtocolManager(Thread):
         #
 
             
-    def wait_until(self, looking_for: str):
+    def wait_until(self, looking_for: str) -> Any:
         global last_msg
         # last_state = ""
         while True:

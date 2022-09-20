@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 import random
-from typing import Optional, Sequence, Final
+from typing import Optional, Sequence, Final, Literal
 
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
@@ -155,7 +155,7 @@ class Board(device.Board):
     def _rectangle(self, x: float, y: float, outdir: int, width: float, height: float) -> PadBounds:
         return ((x,y), (x+width*outdir,y), (x+width*outdir, y+height), (x, y+height))
 
-    def _big_well_pad(self, x: float, y: float, outdir) -> PadBounds:
+    def _big_well_pad(self, x: float, y: float, outdir: Literal[-1,1]) -> PadBounds:
         x2 = x+0.8*outdir
         x3 = x+2*outdir
         y2 = y+1.75
@@ -164,10 +164,10 @@ class Board(device.Board):
         return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4))
 
     def _well(self, num: int, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor,
-              shared_states: Sequence[State[OnOff]]):
+              shared_states: Sequence[State[OnOff]]) -> Well:
         epx = exit_pad.location.x
         epy = exit_pad.location.y
-        outdir = -1 if epx == 0 else 1
+        outdir: Literal[-1,1] = -1 if epx == 0 else 1
         if outdir == 1:
             epx += 1
         # gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
@@ -386,7 +386,7 @@ class Board(device.Board):
         super().join_system(system)
         self.pipettor.join_system(system)
 
-    def update_state(self):
+    def update_state(self) -> None:
         super().update_state()
 
     def stop(self)->None:

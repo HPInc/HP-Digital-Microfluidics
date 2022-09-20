@@ -107,13 +107,13 @@ class PowerSupply(device.PowerSupply):
                          on_illegal_mode_change=on_illegal_mode_change
                          )
         glider = board._device
-        def voltage_changed(_old, new: Voltage) -> None:
+        def voltage_changed(_old: Voltage, new: Voltage) -> None:
             if new > 0:
                 print(f"Voltage level is {new}")
             glider.voltage_level = None if new == 0 else new
         self.on_voltage_change(voltage_changed)
         
-        def state_changed(_old, new: OnOff) -> None:
+        def state_changed(_old: OnOff, new: OnOff) -> None:
             which = "on" if new else "off"
             print(f"High voltage is {which}")
         self.on_state_change(state_changed)
@@ -124,7 +124,7 @@ class Fan(device.Fan):
                      live: bool = True) -> None:
             glider = board._device
             super().__init__(board, state=state, live=live)
-            def state_changed(_old, new: OnOff) -> None:
+            def state_changed(_old: OnOff, new: OnOff) -> None:
                 which= "on" if new else "off"
                 print(f"Fan is {which}")
                 glider.fan_state = new

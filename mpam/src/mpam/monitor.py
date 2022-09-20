@@ -36,7 +36,7 @@ from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
-from quantities.temperature import abs_C
+from quantities.temperature import abs_C, TemperaturePoint
 from quantities.timestamp import time_now
 from weakref import WeakKeyDictionary
 from erk.stringutils import match_width
@@ -170,7 +170,8 @@ class PadMonitor(ClickableMonitor):
                                   color='darkred',
                                   fontsize='xx-small')
                 key = (pad.heater, f"monitor({pad.location.x},{pad.location.y})", random.random())
-                def cb(old,new) -> None:  # @UnusedVariable
+                def cb(old: Optional[TemperaturePoint], 
+                       new: Optional[TemperaturePoint]) -> None:  # @UnusedVariable
                     board_monitor.in_display_thread(lambda : self.note_new_temperature())
                 pad.heater.on_temperature_change(cb, key=key)
                 pad.heater.on_target_change(cb, key=key)
@@ -342,17 +343,17 @@ class ReagentLegend:
                                                        )
 
     class HandlerCircle(HandlerPatch):
-        def create_artists(self, legend, orig_handle,
+        def create_artists(self, legend: Any, orig_handle: Any,
                            xdescent: float, ydescent: float,
                            width: float, height: float,
-                           fontsize, trans):  # @UnusedVariable
+                           fontsize: float, trans: Any) -> Sequence[Circle]:  # @UnusedVariable
             center = 0.5*width-0.5*xdescent, 0.5*height-0.5*ydescent
             p = Circle(xy=center, radius=min(width+xdescent, height+ydescent))
             self.update_prop(p, orig_handle, legend)
             p.set_transform(trans)
             return [p]
 
-    def changed_reagent(self, old: Optional[Reagent], new: Optional[Reagent]):
+    def changed_reagent(self, old: Optional[Reagent], new: Optional[Reagent]) -> None:
         need_redraw: bool = False
         mc = self.mixtures_count
         cc = self.contents_count
@@ -780,8 +781,8 @@ class InputBox(TextBox):
     history: Final[list[str]]
     history_pos: int
 
-    def __init__(self, ax, label, initial='',
-                 color='.95', hovercolor='1', label_pad=.01):
+    def __init__(self, ax: Axes, label: str, initial: str='',
+                 color: Any ='.95', hovercolor: Any ='1', label_pad: float =.01) -> None:
         super().__init__(ax, label, initial=initial, color=color, hovercolor=hovercolor, label_pad=label_pad)
         self.history = []
         self.history_pos = 0
@@ -797,7 +798,7 @@ class InputBox(TextBox):
         self.cursor_index = len(text)
         self.eventson = e
 
-    def _keypress(self, event: KeyEvent):
+    def _keypress(self, event: KeyEvent) -> None:
         if self.ignore(event):
             return
         key: str = event.key
@@ -846,7 +847,7 @@ class InputBox(TextBox):
                 self._reset_val(new)
                 self.cursor_index += len(t)
             return
-        return TextBox._keypress(self, event)
+        TextBox._keypress(self, event)
 
 class BoardMonitor:
     board: Final[Board]
@@ -959,7 +960,7 @@ class BoardMonitor:
         # for heater in board.heaters:
         #     self.setup_heater_poll(heater)
 
-        def on_pick(event: PickEvent):
+        def on_pick(event: PickEvent) -> None:
             artist = event.artist
             target = self.click_id[artist]
             if target.live:
@@ -1006,9 +1007,9 @@ class BoardMonitor:
               fontsize: Optional[Any] = None,
               xy: tuple[float, float] = (0,0.5),
               frameon: bool = False,
-              xycoords = "axes fraction",
-              va="center",
-              **kwds) -> Annotation:
+              xycoords: str = "axes fraction",
+              va: str ="center",
+              **kwds: Mapping[str, Any]) -> Annotation:
 
         ax = self.figure.add_subplot(spec, frameon=frameon, **kwds)
         ax.axis('off')
@@ -1053,7 +1054,7 @@ class BoardMonitor:
             return "Pause" if clock.running else "Run"
         pause_run = Button(fig.add_subplot(grid[0,0]), pr_label())
         pause_run.label.set_fontsize("small")
-        def toggle_running(event) -> None: # @UnusedVariable
+        def toggle_running(event: Any) -> None: # @UnusedVariable
             if clock.running:
                 clock.pause()
             else:
@@ -1074,7 +1075,7 @@ class BoardMonitor:
         def step_cb(old: bool, new: bool) -> None: # @UnusedVariable
             self.in_display_thread(lambda: update_step_active())
         clock.on_state_change(step_cb)
-        def do_step(event) -> None: # @UnusedVariable
+        def do_step(event: Any) -> None: # @UnusedVariable
             assert not clock.running
             self.board.after_tick(lambda: clock.pause())
             clock.start()
@@ -1241,7 +1242,7 @@ class BoardMonitor:
                    min_time: Time = 0*sec,
                    max_time: Optional[Time] = None,
                    sentinel: Optional[Callable[[], bool]] = None,
-                   update_interval: Time = 20*ms):
+                   update_interval: Time = 20*ms) -> None:
         now = time_now()
         kill_at = None if max_time is None else now+max_time
         live_through = now+min_time

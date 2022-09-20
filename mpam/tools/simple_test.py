@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import sys
-from typing import Sequence, Final, Optional, cast, Union
+from typing import Sequence, Final, Optional, cast, Union, Any
 
 from antlr4 import FileStream, CommonTokenStream, ParserRuleContext, InputStream
 
@@ -87,7 +87,7 @@ class TypeAnnotator(simpleListener):
     def note_type(self, ctx: ParserRuleContext, ctx_type: Type) -> None:
         self.types[ctx] = ctx_type
 
-    def exitNeg_expr(self, ctx:simpleParser.Neg_exprContext):
+    def exitNeg_expr(self, ctx:simpleParser.Neg_exprContext) -> Any:
         return simpleListener.exitNeg_expr(self, ctx)
     
     def lookup_name(self, name: str) -> ParserRuleContext:
@@ -103,31 +103,31 @@ class TypeAnnotator(simpleListener):
         return " ".join(self.text_of(child) for child in ctx_or_token.getChildren())
 
 
-    def exitInt_expr(self, ctx:simpleParser.Int_exprContext):
+    def exitInt_expr(self, ctx:simpleParser.Int_exprContext) -> None:
         self.note_type(ctx, Type.INT)
 
-    def exitType_name_expr(self, ctx:simpleParser.Type_name_exprContext):
+    def exitType_name_expr(self, ctx:simpleParser.Type_name_exprContext) -> None:
         pass
 
 
-    def exitIndex_expr(self, ctx:simpleParser.Index_exprContext):
+    def exitIndex_expr(self, ctx:simpleParser.Index_exprContext) -> Any:
         return simpleListener.exitIndex_expr(self, ctx)
     
-    def exitInjection_expr(self, ctx:simpleParser.Injection_exprContext):
+    def exitInjection_expr(self, ctx:simpleParser.Injection_exprContext) -> None:
         # what_t = self.type_of(ctx.what, Type.CALLABLE)
         ...
         
-    def exitMacro_expr(self, ctx:simpleParser.Macro_exprContext):
+    def exitMacro_expr(self, ctx:simpleParser.Macro_exprContext) -> Any:
         return simpleListener.exitMacro_expr(self, ctx)
 
 
-    def exitName_expr(self, ctx:simpleParser.Name_exprContext):
+    def exitName_expr(self, ctx:simpleParser.Name_exprContext) -> None:
         name: str = ctx.getText()
         t = self.type_of(self.lookup_name(name))
         self.note_type(ctx, t)
 
 
-    def exitAddsub_expr(self, ctx:simpleParser.Addsub_exprContext):
+    def exitAddsub_expr(self, ctx:simpleParser.Addsub_exprContext) -> None:
         lhs_t = self.type_of(ctx.lhs, (Type.INT, Type.PAD))
         if lhs_t <= Type.INT:
             rhs_t = self.type_of(ctx.rhs, Type.INT) # @UnusedVariable
@@ -137,40 +137,40 @@ class TypeAnnotator(simpleListener):
             self.note_type(ctx, Type.PAD)
 
 
-    def exitDelta_expr(self, ctx:simpleParser.Delta_exprContext):
+    def exitDelta_expr(self, ctx:simpleParser.Delta_exprContext) -> None:
         dist_t = self.type_of(ctx.dist, Type.INT) # @UnusedVariable
         dir_t = self.type_of(ctx.direction(), Type.DIR) # @UnusedVariable
         self.note_type(ctx, Type.DELTA)
 
 
-    def exitCoord_expr(self, ctx:simpleParser.Coord_exprContext):
+    def exitCoord_expr(self, ctx:simpleParser.Coord_exprContext) -> None:
         xt = self.type_of(ctx.x, Type.INT) # @UnusedVariable
         yt = self.type_of(ctx.y, Type.INT) # @UnusedVariable
         self.note_type(ctx, Type.PAD)
 
 
-    def exitGate_expr(self, ctx:simpleParser.Gate_exprContext):
+    def exitGate_expr(self, ctx:simpleParser.Gate_exprContext) -> Any:
         return simpleListener.exitGate_expr(self, ctx)
 
 
-    def exitWell_expr(self, ctx:simpleParser.Well_exprContext):
+    def exitWell_expr(self, ctx:simpleParser.Well_exprContext) -> Any:
         return simpleListener.exitWell_expr(self, ctx)
 
 
-    def exitDrop_expr(self, ctx:simpleParser.Drop_exprContext):
+    def exitDrop_expr(self, ctx:simpleParser.Drop_exprContext) -> None:
         dt = self.type_of(ctx.loc, Type.PAD) # @UnusedVariable
         self.note_type(ctx, Type.DROP)
 
 
-    def exitFunction_expr(self, ctx:simpleParser.Function_exprContext):
+    def exitFunction_expr(self, ctx:simpleParser.Function_exprContext) -> Any:
         return simpleListener.exitFunction_expr(self, ctx)
 
 
-    def exitTo_expr(self, ctx:simpleParser.To_exprContext):
+    def exitTo_expr(self, ctx:simpleParser.To_exprContext) -> Any:
         return simpleListener.exitTo_expr(self, ctx)
 
 
-    def exitMuldiv_expr(self, ctx:simpleParser.Muldiv_exprContext):
+    def exitMuldiv_expr(self, ctx:simpleParser.Muldiv_exprContext) -> Any:
         return simpleListener.exitMuldiv_expr(self, ctx)
 
         
@@ -179,21 +179,21 @@ class TypeAnnotator(simpleListener):
         t = self.types[ctx]
         print(f"{t.name}: {self.text_of(ctx)}")
     
-    def exitParen_expr(self, ctx:simpleParser.Paren_exprContext):
+    def exitParen_expr(self, ctx:simpleParser.Paren_exprContext) -> None:
         self.types[ctx] = self.types[ctx.expr()]
         
-    def exitEveryRule(self, ctx:ParserRuleContext):
+    def exitEveryRule(self, ctx:ParserRuleContext) -> None:
         if isinstance(ctx, simpleParser.ExprContext):
             self.trace(ctx)
             
-    def exitAssign_stat(self, ctx:simpleParser.Assign_statContext):
+    def exitAssign_stat(self, ctx:simpleParser.Assign_statContext) -> None:
         name = cast(simpleParser.NameContext, ctx.which).getText()
         val = cast(simpleParser.ExprContext, ctx.what)
         val_type = self.type_of(val)
         print(f"Assignment: {name} = {val_type}: {self.text_of(val)}")
         self.define(name, val)
         
-    def exitDirection(self, ctx:simpleParser.DirectionContext):
+    def exitDirection(self, ctx:simpleParser.DirectionContext) -> None:
         self.note_type(ctx, Type.DIR)
         
 

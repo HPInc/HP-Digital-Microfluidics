@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argparse import Namespace, ArgumentParser
+from argparse import Namespace, ArgumentParser, _ArgumentGroup
 
 from mpam.device import System, Board
 from mpam.exerciser import Task, Exerciser
@@ -13,8 +13,8 @@ class DoIt(Task):
         super().__init__(name="doit",
                          description="Do the thing")
         
-    def add_args_to(self, parser:ArgumentParser, *, exerciser:Exerciser)->None: # @UnusedVariable
-        group = self.arg_group_in(parser)
+    def add_args_to(self, group: _ArgumentGroup,
+                    parser:ArgumentParser, *, exerciser:Exerciser)->None: # @UnusedVariable
         group.add_argument("name", help="Your name")
         group.add_argument("--year", type=int, metavar="INT", help="Your birth year")
         

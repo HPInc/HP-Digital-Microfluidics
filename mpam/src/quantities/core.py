@@ -84,7 +84,7 @@ D_ca = TypeVar('D_ca', bound='Quantity', contravariant=True)
 # def _restriction_name(obj) -> str:
 #     return 
         
-def _restriction_name(restriction):
+def _restriction_name(restriction: Any) -> str:
     return restriction.__name__ if isinstance(restriction, type) else str(restriction)
 
 class DimLike(ABC):
@@ -321,7 +321,7 @@ class DimensionalityError(Exception):
         super().__init__(f"Expected {expected} ({expected.description()}) got {got}")
 
 class DimMismatchError(Exception):
-    def __init__(self, lhs, op, rhs) -> None:
+    def __init__(self, lhs: Dimensionality, op: str, rhs: Union[Dimensionality, str]) -> None:
         super().__init__(f"{lhs} {op} {rhs}")
 
 class Quantity:
@@ -615,7 +615,7 @@ class _DecomposedQuantity(Generic[D]):
         
     def __repr__(self) -> str:
         last = self.tuples[-1][0]
-        def fmt(u: UnitExpr[D], mag: int):
+        def fmt(u: UnitExpr[D], mag: int) -> str:
             f: float = mag+self.remainder.as_number(u) if u is last else mag
             return (f*u).in_units(u).__str__()
         return ", ".join(fmt(u, mag) for u,mag in self.tuples)
@@ -1131,7 +1131,7 @@ class NamedDimMeta(type, DimLike):
         val: T = getattr(self, "_zero")
         return val
     
-    def __init__(self, name: str, base, dct) -> None:  # @UnusedVariable 
+    def __init__(self, name: str, base: tuple[Type, ...], dct: Mapping) -> None:  # @UnusedVariable 
         self._zero = self(0.0)
         self._restriction_classes: dict[Any, type[BaseDim]] = {}
 
@@ -1216,7 +1216,7 @@ class NamedDim(Quantity, metaclass=NamedDimMeta):
         pname = f"{cls.dim().name}[{restr_pname}]"
         rname = f"{cls.__name__}_{restr_pname}"
         # immediate_base = CountDim if issubclass(self.quant_class, CountDim) else BaseDim
-        immediate_base = cls if issubclass(cls, BaseDim) else BaseDim
+        immediate_base: Union[Type[NamedDim], Type[BaseDim]] = cls if issubclass(cls, BaseDim) else BaseDim
         new_dim_class = cast(type[BaseDim], BaseDimMeta(rname,(immediate_base,), {"_dim_name": pname}))
         new_dim: BaseDimension = new_dim_class.dim()
         cls._restriction_classes[restriction] = new_dim_class
@@ -1230,10 +1230,10 @@ class NamedDim(Quantity, metaclass=NamedDimMeta):
     
 class DerivedDimMeta(NamedDimMeta):
     
-    def __new__(cls, name, base, dct):
+    def __new__(cls, name: str, base: tuple[Type,...], dct: dict[str, Any]) -> DerivedDimMeta:
         return super().__new__(cls, name, base, dct)
     
-    def __init__(cls, name: str, base, dct) -> None:  # @UnusedVariable @NoSelf
+    def __init__(cls, name: str, base: tuple[Type,...], dct: dict[str, Any]) -> None:  # @UnusedVariable @NoSelf
         if name == "DerivedDim":
             return
         # cls._this_class = cls
@@ -1262,10 +1262,10 @@ class DerivedDim(NamedDim, metaclass=DerivedDimMeta):
 
 class BaseDimMeta(NamedDimMeta):
     
-    def __new__(cls, name, base, dct):
+    def __new__(cls, name: str, base: tuple[Type,...], dct: dict[str, Any]) -> BaseDimMeta:
         return super().__new__(cls, name, base, dct)
     
-    def __init__(self, name: str, base, dct) -> None:  # @UnusedVariable
+    def __init__(self, name: str, base: tuple[Type,...], dct: dict[str, Any]) -> None:  # @UnusedVariable
         if name == "BaseDim":
             return
         # cls._this_class = cls
@@ -1453,7 +1453,7 @@ class default_units:
         set_default_units(*units)
         return self
     
-    def __exit__(self, exc_type, exc_val, exc_tb) -> Literal[False]: # @UnusedVariable
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]: # @UnusedVariable
         for dim,defaults in self.to_reset.items():
             dim.default_units = defaults
         return False

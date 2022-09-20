@@ -357,7 +357,7 @@ Type.DELTA = DeltaType()
 
 
 class TwiddleOpType(CallableType):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.NONE)
         
 Type.TWIDDLE_OP = TwiddleOpType()
@@ -365,7 +365,7 @@ Type.ON = Type("ON", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 Type.OFF = Type("OFF", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 
 class PauseType(CallableType):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("PAUSE", (Type.ANY,), Type.NONE)
         
 Type.PAUSE = PauseType()
@@ -454,7 +454,7 @@ class Func:
         return self
         
     def register_immediate(self, param_types: Sequence[Type], return_type: Type, definition: Callable[..., Any]) -> Func:
-        def fn(*args) -> Delayed:
+        def fn(*args: Sequence[Any]) -> Delayed:
             return Delayed.complete(definition(*args))
         return self.register(param_types, return_type, fn)
         
@@ -573,7 +573,7 @@ class Attr:
     def returns(self) -> Sequence[Type]:
         return [sig.return_type for sig in self.func.known_sigs if len(sig.param_types) == 1]
     
-    def register_setter(self, otype: Union[Type, Sequence[Type]], vtype, 
+    def register_setter(self, otype: Union[Type, Sequence[Type]], vtype: Type, 
                         setter: Callable[[Any,Any], Any]) -> None:
         if isinstance(otype, Type):
             self.func.register_immediate((otype, vtype), Type.NONE, setter)
@@ -626,7 +626,7 @@ class Rel(Enum):
     GT = auto()
     GE = auto()
     
-    def test(self, x, y) -> bool:
+    def test(self, x: Any, y: Any) -> bool:
         fn = self._known[self]
         res = fn(x, y)
         assert isinstance(res, bool)

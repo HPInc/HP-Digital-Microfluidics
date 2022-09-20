@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 import math
 from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
-    Sequence, Mapping, NamedTuple, cast
+    Sequence, Mapping, NamedTuple, cast, Any
 import logging
 
 from erk.basic import not_None, ComputedDefaultDict, Count
@@ -567,7 +567,7 @@ class Blob:
         has_volume = self.total_volume.is_positive
         well = self.well
 
-        def expand(pad: DropLoc, blob: Blob, ps: bool):
+        def expand(pad: DropLoc, blob: Blob, ps: bool) -> None:
             for n in pad.neighbors_for_blob:
                 if n.blob is self:
                     # When we partition, we still have a buffer between this blob and others,
@@ -816,7 +816,7 @@ class Drop(OpScheduler['Drop']):
                       ) -> Delayed[Drop]:
             future = Postable[Drop]()
             pad = self.pad
-            def make_drop(_) -> None:
+            def make_drop(_: Any) -> None:
                 # We want it to happen immediately, so we use our own journal.
                 journal = ChangeJournal()
                 journal.note_delivery(pad, self.liquid)
@@ -957,7 +957,7 @@ class Drop(OpScheduler['Drop']):
             well = self.well
             pad = well.exit_pad
             volume = well.dispensed_volume
-            def make_drop(_) -> None:
+            def make_drop(_: Any) -> None:
                 # Now that motion is infered, all we have to do is unreserve the pads and post the result
                 # liquid = well.transfer_out(volume)
                 board = pad.board
@@ -999,13 +999,16 @@ class Drop(OpScheduler['Drop']):
                     yield True
                 yield False
 
+            def run_group(_: Any) -> None:
+                # Note, we post the drop as soon as we get to the DISPENSED state, even theough
+                # we continue on to READY
+                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()),
+                               after=after) \
+                    .then_call(make_drop) \
+                    .then_schedule(Well.TransitionTo(WellState.READY))
 
-            # Note, we post the drop as soon as we get to the DISPENSED state, even theough
-            # we continue on to READY
-            well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard())) \
-                .then_call(make_drop) \
-                .then_schedule(Well.TransitionTo(WellState.READY))
             # well.ensure_content().then_call(run_group)
+            run_group(None)
             return future
 
     class EnterWell(CSOperation['Drop',None]):
@@ -1029,7 +1032,7 @@ class Drop(OpScheduler['Drop']):
             # With inferred motion, we shouldn't have to do anything anymore
             # except possibly post to the future.
 
-            def consume_drop(_) -> None:
+            def consume_drop(_: Any) -> None:
                 # blob = drop.blob
                 # well.transfer_in(blob.contents)
                 # pad = cast(Pad, drop.pad)

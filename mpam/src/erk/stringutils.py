@@ -49,7 +49,7 @@ def infer_plural(singular: str) -> str:
         return found_plural(singular, "s")
 
 def noun(n: float, singular: str, plural: Optional[str] = None,
-         *, tolerance: float = 0):
+         *, tolerance: float = 0) -> str:
     if tolerance == 0:
         if n == 1:
             return singular
