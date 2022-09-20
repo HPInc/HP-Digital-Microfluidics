@@ -5,46 +5,82 @@ from mpam.paths import Path
 from mpam.types import Dir, Reagent, SingleFireTrigger
 from quantities.SI import ms, s, minute, uL
 
+# Graphical representation of the relevant parts of the board and how
+# they should look throughout the run.
+#
+# Legend   P: Pipettor, 1: Reagent 1, etc.
+#
+# Phase 1  _______
+#          _______
+#          __1_2_P
+#          _______
+#          _______
+#
+# Phase 2  __1____
+#          _______
+#          ______P
+#          _______
+#          ____2__
+#
+# Phase 3  __1____
+#          _______
+#          3_____P
+#          _______
+#          ____2__
+#
+# Phase 4  _______
+#          _______
+#          3_1_2_P
+#          _______
+#          _______
 
 def test_singlefiretrigger(system: System) -> None:
     ep = system.board.extraction_points[0]
 
+    gate1 = SingleFireTrigger()
     gate2 = SingleFireTrigger()
     gate3 = SingleFireTrigger()
-    path1 = Path.teleport_into(
-        ep, reagent=Reagent('R1')).walk(Dir.W).then_fire(gate2).to_pad((6, 15))
-    path2 = Path.teleport_into(
-        ep, reagent=Reagent('R2'), after=gate2).walk(Dir.W).to_pad((8, 15))
-    path3 = Path.teleport_into(
-        ep, reagent=Reagent('R3')).to_pad((10, 15))
+    gate4 = SingleFireTrigger()
+    gate5 = SingleFireTrigger()
 
-    all_paths = [path1,
+    home1 = (9, 15)
+    home2 = (11, 15)
+    home3 = (7, 15)
+
+    path1 = Path.teleport_into(
+        ep, reagent=Reagent.find('R1')).to_pad(
+            home1).then_fire(gate1).to_pad(
+                (home1[0], home1[1] + 2), after=gate2).then_fire(gate4).to_pad(
+                    home1, after=gate5)
+    path2 = Path.teleport_into(
+        ep, reagent=Reagent.find('R2'), after=gate1).to_pad(
+            home2).then_fire(gate2).to_pad(
+                (home2[0], home2[1] - 2)).then_fire(gate3).to_pad(
+                    home2, after=gate5)
+    path3 = Path.teleport_into(
+        ep, reagent=Reagent.find('R3'), after=gate2).to_pad(
+            home2, after=gate3).to_pad(
+                home3, after=gate4).then_fire(gate5)
+
+    all_paths = [path3,
                  path2,
-                 path3,
+                 path1,
                  ]
 
     system.clock.start(200 * ms)
-    # system.clock.update_interval = 200 * ms # Start paused
 
-    # path4 = Path.teleport_into(ep, reagent=Reagent("R4")).walk(Dir.W)
-    # path4.schedule()
-
-    with system.batched():
-        for path in all_paths:
-            path.schedule()
-
-    # Path.run_paths(all_paths, system=system)
+    Path.run_paths(all_paths, system=system)
 
 
 Exerciser.setup_logging(levels='debug')
 
 pipettor = dummy_pipettor.DummyPipettor(
     name="Dummy",
-    dip_time=400 * ms,
+    dip_time=100 * ms,
     short_transit_time=1 * ms,
     long_transit_time=1 * ms,
     get_tip_time=1 * ms,
-    drop_tip_time=800 * ms,
+    drop_tip_time=100 * ms,
     flow_rate=(1 * uL / s).a(dummy_pipettor.FlowRate))
 
 system = System(

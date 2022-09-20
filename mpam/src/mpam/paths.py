@@ -11,7 +11,8 @@ from mpam.drop import Drop, DropComputeOp
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Delayed, \
     DelayType, schedule, Dir, Reagent, Liquid, XYCoord, Barrier, T, \
-    WaitableType, Callback, Postable, WaitableType, NO_WAIT, CSOperation
+    WaitableType, Callback, Postable, WaitableType, NO_WAIT, CSOperation, \
+    Trigger
 from quantities.dimensions import Volume
 
 
@@ -282,6 +283,10 @@ class Path:
         def then_do(self, fn: Callable[[Drop], Delayed[T]],
                     after: WaitableType = NO_WAIT) -> Path.Middle:
             return self+Path.CallAndWaitStep(fn, after=after)
+
+        def then_fire(self, trigger: Trigger, *,
+                      after: WaitableType = NO_WAIT) -> Path.Middle:
+            return self+Path.FireStep(trigger, after=after)
 
         def enter_well(self, *,
                        after: WaitableType = NO_WAIT) -> Path.End:
@@ -616,8 +621,6 @@ class Path:
         def __init__(self, trigger: Trigger, *,
                      after: WaitableType) -> None:
             def pass_through(drop: Drop) -> Delayed[Drop]:
-                future = Postable[Drop]()
-                future.then_trigger(trigger)
-                future.post(drop)
-                return future
+                trigger.fire()
+                return Delayed.complete(drop)
             super().__init__(DropComputeOp(pass_through), after)
