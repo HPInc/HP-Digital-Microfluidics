@@ -2,7 +2,7 @@ from devices import joey, dummy_pipettor
 from mpam.exerciser import Exerciser
 from mpam.device import System
 from mpam.paths import Path
-from mpam.types import Dir, Reagent, SingleFireTrigger
+from mpam.types import Dir, Reagent, SingleFireTrigger, Postable
 from quantities.SI import ms, s, minute, uL
 
 # Graphical representation of the relevant parts of the board and how
@@ -38,7 +38,7 @@ def test_singlefiretrigger(system: System) -> None:
     ep = system.board.extraction_points[0]
 
     gate1 = SingleFireTrigger()
-    gate2 = SingleFireTrigger()
+    gate2 = Postable[bool]()
     gate3 = SingleFireTrigger()
     gate4 = SingleFireTrigger()
     gate5 = SingleFireTrigger()
@@ -54,7 +54,7 @@ def test_singlefiretrigger(system: System) -> None:
                     home1, after=gate5)
     path2 = Path.teleport_into(
         ep, reagent=Reagent.find('R2'), after=gate1).to_pad(
-            home2).then_fire(gate2).to_pad(
+            home2).then_process(lambda _: gate2.post(True)).to_pad(
                 (home2[0], home2[1] - 2)).then_fire(gate3).to_pad(
                     home2, after=gate5)
     path3 = Path.teleport_into(

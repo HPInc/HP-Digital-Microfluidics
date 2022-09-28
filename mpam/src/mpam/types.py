@@ -1947,12 +1947,19 @@ class SingleFireTrigger(Trigger):
             self.fired = True
         return super().fire()
 
-    def on_trigger(self, fn: Callable[[], Any]) -> None:
+    def wait(self, val: Any, future: Postable) -> None:
+        """
+        When the :class:`Trigger` next fires, post a value to a future.
+
+        Args:
+            val: the value to post
+            future: the :class:`Delayed` object to post to
+        """
         with self.lock:
             if self.fired:
-                fn()
+                future.post(val)
             else:
-                super().on_trigger(fn)
+                super().wait(val, future)
 
 
 class Barrier(Trigger, Generic[T]):
