@@ -283,7 +283,7 @@ class ProtocolManager(Thread):
     delay: Final[Time]
     last_msg: int = 0
     print_actions: Final[bool]
-    
+    no_ip: bool = False
 
     def __init__(self, config: JSONObj, *, 
                  name: str,
@@ -311,6 +311,19 @@ class ProtocolManager(Thread):
             self.run_check = run_check 
         self.delay = delay
         self.print_actions = print_actions
+        
+    def ensure_config_endpoint(self, system: System, listener_port: Union[str, int]) -> None:
+        config = self.config
+        if not "endpoint" in config:
+            ip = system.local_ip_addr
+            if ip is None:
+                self.no_ip = True
+                return
+            config["endpoint"] = {
+                    "ip": ip,
+                    "port": listener_port
+                }
+        logger.info(f"Listening for OT-2 on {config['endpoint']['ip']}:{config['endpoint']['port']}")
         
     def ot_file(self, path: str) -> str:
         return f"{self.ot_dir}/{path}"
@@ -360,6 +373,9 @@ class ProtocolManager(Thread):
                          f"config = {json.dumps(config)}\n"])
 
     def run(self) -> None:
+        if self.no_ip:
+            logger.error("There are no IP addresses for local machine.  Not uploading protocol to OT-2")
+            return
         pname = f"protocol-{random.randint(0,1000000)}"
         
         use_multiple_files = False
@@ -607,6 +623,8 @@ class OT2(Pipettor):
     _receiving_update: bool
     _dirty_wells: Optional[set[WPWell]] = None
     
+    _listener_port: Final[Union[str,int]]
+    
     def __init__(self, *,
                  robot_ip_addr: str,
                  robot_port: Union[str, int] = 31950,
@@ -618,6 +636,8 @@ class OT2(Pipettor):
         super().__init__(name=name)
         self._lock = RLock()
         self._receiving_update = False
+        
+        self._listener_port = listener_port
         
         if isinstance(listener_port, str):
             listener_port = int(listener_port)
@@ -661,13 +681,13 @@ class OT2(Pipettor):
                 well.reagent = reagent
                 well.exact_volume = volume
         
-        if not "endpoint" in config:
-            host_name = socket.gethostname()
-            ip = socket.gethostbyname(host_name)
-            config["endpoint"] = {
-                    "ip": ip,
-                    "port": listener_port
-                }
+        # if not "endpoint" in config:
+        #     host_name = socket.gethostname()
+        #     ip = socket.gethostbyname(host_name)
+        #     config["endpoint"] = {
+        #             "ip": ip,
+        #             "port": listener_port
+        #         }
 
         if board_def is not None:
             board_json = self.load_config(board_def)
@@ -707,6 +727,7 @@ class OT2(Pipettor):
         super().join_system(system)
         self.listener.attach_to(system.board)
         self.listener.start()
+        self.manager.ensure_config_endpoint(system, self._listener_port)
         self.manager.start()
         
 
@@ -735,6 +756,7 @@ class PipettorConfig(exerciser.PipettorConfig):
         ip: Optional[str] = args.ot_ip
         config: Optional[str] = args.ot_config
         reagents: Optional[str] = args.ot_reagents
+        port: int = args.ot_listener_port
 
         if ip is None:
             raise ValueError(f"--ot-ip must be specified to use the Opentrons pipettor")
@@ -742,7 +764,8 @@ class PipettorConfig(exerciser.PipettorConfig):
             raise ValueError(f"--ot-config must be specified to use the Opentrons pipettor")
         pipettor = OT2(robot_ip_addr = ip,
                        config = config,
-                       reagents = reagents)
+                       reagents = reagents,
+                       listener_port = port)
         return pipettor
     
     def add_args_to(self, group:_ArgumentGroup)->None:
@@ -754,3 +777,7 @@ class PipettorConfig(exerciser.PipettorConfig):
                            help="The config file for the the Opentrons robot")
         group.add_argument("-otr", "--ot-reagents", metavar="FILE",
                            help=f"The reagents JSON file for the the Opentrons robot")
+        default_local_port = 8087
+        group.add_argument("-otlp", "--ot-listener-port", metavar="PORT",
+                           type=int, default=default_local_port,
+                           help=f"The port for the local listener for the Opentrons robot")

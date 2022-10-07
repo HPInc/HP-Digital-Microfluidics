@@ -36,6 +36,7 @@ from quantities.timestamp import time_now, Timestamp
 from argparse import Namespace
 from erk.stringutils import map_str
 from quantities.US import deg_F
+from erk.network import local_ipv4_addr
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
@@ -4865,8 +4866,27 @@ class System:
     _cpts_lock: Final[Lock]
     components: Final[list[SystemComponent]]
     running: bool = True
+    _local_ip_addr: MissingOr[Optional[str]] = MISSING
+    _requested_ip: Optional[str]
+    _subnet: Optional[str]
+    _subnet_mask: Optional[str]
+    
+    @property
+    def local_ip_addr(self) -> Optional[str]:
+        ip = self._local_ip_addr
+        if ip is MISSING:
+            ip = local_ipv4_addr(addr = self._requested_ip,
+                                 subnet = self._subnet,
+                                 subnet_mask = self._subnet_mask)
+            self._local_ip_addr = ip
+        return ip
+    
 
-    def __init__(self, *, board: Board):
+    def __init__(self, *, board: Board,
+                 local_ip: Optional[str] = None,
+                 subnet: Optional[str] = None,
+                 subnet_mask: Optional[str] = None
+                 ):
         self.board = board
         self.engine = Engine(default_clock_interval=board.drop_motion_time)
         self.clock = Clock(self)
@@ -4874,6 +4894,9 @@ class System:
         self._batch_lock = Lock()
         self._cpts_lock = Lock()
         self.components = []
+        self._requested_ip = local_ip
+        self._subnet = subnet
+        self._subnet_mask = subnet_mask
         board.join_system(self)
 
     def __enter__(self) -> System:
