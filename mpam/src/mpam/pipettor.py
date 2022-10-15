@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod, ABC
 from threading import Lock
-from typing import Final, Callable, Optional, Sequence
+from typing import Final, Callable, Optional, Sequence, Any
 import logging
 
 from erk.errors import ErrorHandler, PRINT
@@ -48,6 +48,9 @@ class XferTarget(ABC):
     @property
     @abstractmethod
     def insufficient_msg(self) -> str: ...
+    
+    def __str__(self) -> str:
+        return f"{type(self).__name__}[{self.volume} ({self.got}) @ {self.target}]"
 
     @abstractmethod
     def in_position(self, reagent: Reagent, volume: Volume) -> None: # @UnusedVariable
@@ -358,8 +361,10 @@ class PipettorSysCpt(SystemComponent):
     def update_state(self)->None:
         pass
 
-    def user_operation(self) -> UserOperation:
-        return UserOperation(self.system.engine.idle_barrier)
+    def user_operation(self, *, desc: Optional[Any] = None) -> UserOperation:
+        if desc is None:
+            desc = self.pipettor
+        return UserOperation(self.system.engine.idle_barrier, desc=desc)
 
     def system_shutdown(self) -> None:
         self.pipettor.system_shutdown()
@@ -437,10 +442,11 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         if factory is None:
             factory = lambda n,p,c: PipettingSource(n, pipettor=p, capacity=c)
         return [factory(n,self,capacity) for n in names]
+    
         
     def join_system(self, system: System) -> None:
         self.sys_cpt.join_system(system)
-        self.worker = Worker(system.engine.idle_barrier)
+        self.worker = Worker(system.engine.idle_barrier, desc = self)
 
     def system_shutdown(self) -> None:
         pass

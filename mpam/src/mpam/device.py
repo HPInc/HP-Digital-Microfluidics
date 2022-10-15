@@ -95,7 +95,7 @@ class BoardComponent:
         """
         return self.board.delayed(function, after=after)
 
-    def user_operation(self) -> UserOperation:
+    def user_operation(self, *, desc: Optional[Any] = None) -> UserOperation:
         """
         Create a new :class:`UserOperation` in the :attr:`board`'s
         :class:`System`
@@ -103,7 +103,9 @@ class BoardComponent:
         Returns:
             the created :class:`UserOperation`
         """
-        return UserOperation(self.board.system.engine.idle_barrier)
+        if desc is None:
+            desc = self
+        return UserOperation(self.board.system.engine.idle_barrier, desc=desc)
 
 BC = TypeVar('BC', bound='BinaryComponent') #: A type variable ranging over :class:`BinaryComponent`\s
 
@@ -3158,10 +3160,11 @@ class Heater(BinaryComponent['Heater']):
             op = self._user_op
             if op is None:
                 op = self.user_operation()
+                self._user_op = op
             if new is HeatingMode.OFF or new is HeatingMode.MAINTAINING:
-                op.start()
-            else:
                 op.end()
+            else:
+                op.start()
             # print(f"{self}.mode now {new} (target: {self.target}, current: {self.current_temperature})")
 
 
@@ -3712,8 +3715,8 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         # to_reserve stores pads that need to be reserved. Once a pad
         # is reserved, it gets removed from the list
         to_reserve = list(self.splash_zone)
-        logging.debug(f'{self.pad}|splash zone:{self.splash_zone}')
-        logging.debug(f'{self.pad}|splash border:{self.splash_border}')
+        # logging.debug(f'{self.pad}|splash zone:{self.splash_zone}')
+        # logging.debug(f'{self.pad}|splash border:{self.splash_border}')
 
         def reserve_condition() -> bool:
             # Check if the drop expectation is not met
@@ -3727,7 +3730,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             for pad in to_reserve:
                 if pad.reserve():
                     self.reserved_pads.add(pad)
-                    logging.debug(f'{self.pad}|splash|reserved:{pad}')
+                    # logging.debug(f'{self.pad}|splash|reserved:{pad}')
                 else:
                     not_reserved.append(pad)
             to_reserve = not_reserved
@@ -3741,12 +3744,12 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                         if neighbor not in self.splash_zone and neighbor not in self.reserved_pads:
                             if neighbor.reserve():
                                 self.reserved_pads.add(neighbor)
-                                logging.debug(f'{self.pad}|splash|reserved for border:{pad}')
+                                # logging.debug(f'{self.pad}|splash|reserved for border:{pad}')
                             else:
                                 is_extra_reserved=False
 
             if len(to_reserve) == 0 and is_extra_reserved:
-                logging.debug(f'{self.pad}|splash|reserved all:{self.reserved_pads}')
+                # logging.debug(f'{self.pad}|splash|reserved all:{self.reserved_pads}')
                 return True
             return False
 
@@ -3756,7 +3759,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         """
         Unreserve any reserved pads
         """
-        logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
+        # logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
         while self.reserved_pads:
             self.reserved_pads.pop().unreserve()
 
@@ -4201,8 +4204,10 @@ class SystemComponent(ABC):
         else:
             self.communicate(cb, delta=after)
 
-    def user_operation(self) -> UserOperation:
-        return UserOperation(self.system.engine.idle_barrier)
+    def user_operation(self, *, desc: Optional[Any] = None) -> UserOperation:
+        if desc is None:
+            desc = self
+        return UserOperation(self.system.engine.idle_barrier, desc=desc)
 
     def on_condition(self, pred: Callable[[], bool],
                      val_fn: Callable[[], T]) -> Delayed[T]:
@@ -4670,8 +4675,8 @@ class Board(SystemComponent):
 
 
 class UserOperation(Worker):
-    def __init__(self, idle_barrier: IdleBarrier) -> None:
-        super().__init__(idle_barrier)
+    def __init__(self, idle_barrier: IdleBarrier, desc: Optional[Any] = None) -> None:
+        super().__init__(idle_barrier, desc=desc)
 
     def __enter__(self) -> UserOperation:
         self.not_idle()
@@ -4906,7 +4911,7 @@ class System:
     def __exit__(self,
                  exc_type: Optional[type[BaseException]],
                  exc_val: Optional[BaseException],
-                 exc_tb: Optional[TracebackType]) -> bool:
+                 exc_tb: Optional[TracebackType]) -> Literal[False]:
         return self.engine.__exit__(exc_type, exc_val, exc_tb)
 
     def component_joined(self, component: SystemComponent) -> None:
@@ -5002,6 +5007,8 @@ class System:
             nonlocal val
             with self:
                 val = fn(self)  # @UnusedVariable
+                logger.info("Monitored function returned (in with)")
+            logger.info("Monitored function returned")
             done.set()
             self.shutdown()
 

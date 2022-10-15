@@ -1024,6 +1024,7 @@ class CombSynth(PCRTask):
             self.phase_barrier.reset(len(paths))
             Path.run_paths(paths, system=system)
         if self.waste_well.volume.is_positive:
+            logger.info("Emptying waste well")
             self.waste_well.empty_well()
 
 

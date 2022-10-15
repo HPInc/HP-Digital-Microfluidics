@@ -353,7 +353,7 @@ class Exerciser(ABC):
             else:
                 imports[spec.name] = spec.level
                 
-        default_imports = ("matplotlib", "PIL", "aiohttp")
+        default_imports = ("matplotlib", "PIL", "aiohttp", "urllib3.connectionpool")
         for i in default_imports:
             if i not in imports:
                 imports[i] = default_import_level         
@@ -367,8 +367,10 @@ class Exerciser(ABC):
             else:
                 fmt = "compact"
         logging.basicConfig(level=base_level.desc, format=logging_formats[fmt])
+        logger.info(f"Default logging level: {base_level.desc}")
         
         for name,level in imports.items():
+            logger.info(f"Setting logging level for {name} to {level.desc}")
             logging.getLogger(name).setLevel(level.desc)
             
 class PlatformChoiceTask(Task):

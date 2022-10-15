@@ -4,7 +4,6 @@ from _collections import defaultdict, deque
 from enum import Enum, auto
 import json
 import random
-import socket
 from threading import Thread, Event, Condition, RLock
 import traceback
 from typing import Union, Final, Any, cast, Optional, Callable, NamedTuple, \
@@ -72,7 +71,9 @@ class Listener(Thread):
         self.finish_queue = AsyncFunctionSerializer(thread_name="OT-2 Finisher thread")
         
     def shutdown(self) -> None:
+        logger.debug("Outside shutdown lock")
         with self.lock:
+            logger.debug("Inside shutdown lock")
             self.system_running = False
             self.have_transfer.notify()
             
@@ -102,7 +103,7 @@ class Listener(Thread):
         #     text = await body.text()
         #     print(f"Request was not json: {text}")
         #     return web.json_response(status=400, data = {"error": "bad-request"})
-        logger.info("Shutting down server")
+        logger.info("Shutting down OT2 listener")
         self.running = False
         raise GracefulExit()
     
@@ -174,6 +175,7 @@ class Listener(Thread):
     
     
     async def waiting(self, request: Request) -> Response:
+        logger.debug("Received waiting()")
         try:
             body = await request.json()
         except json.JSONDecodeError:
@@ -184,11 +186,12 @@ class Listener(Thread):
         assert wv is not None, "/waiting called with no well/volume spec"
         xfers,v = wv
         r = self.current_reagent
-        logger.info(f"Waiting above {xfers[0].target}")
+        logger.debug(f"Waiting above {xfers[0].target}")
         xfers[0].in_position(r, v)
         return web.json_response()
 
     async def finished(self, request: Request) -> Response:
+        logger.debug("Received finished()")
         try:
             body = await request.json()
         except json.JSONDecodeError:
@@ -199,21 +202,27 @@ class Listener(Thread):
         assert wv is not None, "/finished called with no well/volume spec"
         xfers,v = wv
         r = self.current_reagent 
-        while v > Volume.ZERO:
+        logger.debug(f"-- v: {v}, xfers: {xfers}")
+        while v > 0:
             assert xfers, f"Finished transfer at {body['well']} with {v} unaccounted for."
             first = xfers[0]
-            if v < first.volume:
-                self.enqueue_finished(first, r, v)
-                # first.finished(r, v)
-                break
-            else:
-                self.enqueue_finished(first, r, first.volume)
-                # first.finished(r, first.volume)
+            logger.debug(f"-- v: {v}, first: {first}")
+            want = first.volume
+            if want.is_close_to(v, abs_tol=0.01*uL):
                 xfers.popleft()
-                v -= first.volume
+                self.enqueue_finished(first, r, want)
+                break
+            elif v > want:
+                xfers.popleft()
+                self.enqueue_finished(first, r, want)
+                v -= want
+            else:
+                self.enqueue_finished(first, r, v)
+                break
         return web.json_response()
     
     async def ready(self, request: Request) -> Response:
+        logger.debug("Received ready()")
         try:
             body = await request.json()
         except json.JSONDecodeError:
@@ -238,12 +247,16 @@ class Listener(Thread):
 
             # Now we clear the pending transfer and signal that it's okay to add a new one.  
             # This will allow the pipettor's perform() to know that it is done.
+            logger.debug("Outside first ready() lock")
             with self.lock:
+                logger.debug("Inside first ready() lock")
                 self.pending_transfer = None
                 # print(f"Signalling ready_for_transfer: {self.pending_transfer}")
                 self.ready_for_transfer.notify()
         # Now we wait until we have one
+        logger.debug("Outside main ready() lock")
         with self.lock:
+            logger.debug("Inside main ready() lock")
             while self.system_running and self.pending_transfer is None:
                 self.have_transfer.wait()
             if self.system_running:
@@ -252,6 +265,7 @@ class Listener(Thread):
                 response = self.package_transfer(self.pending_transfer)
             else:
                 response = web.json_response({"command": "exit"})
+        logger.debug(f"ready() response: {response}")
         return response
     
     def run(self) -> None:
@@ -732,6 +746,7 @@ class OT2(Pipettor):
         
 
     def system_shutdown(self) -> None:
+        logger.info("Pipettor shutdown requested")
         self.listener.shutdown()
         
         

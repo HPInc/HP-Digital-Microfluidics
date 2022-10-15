@@ -82,7 +82,9 @@ D_ca = TypeVar('D_ca', bound='Quantity', contravariant=True)
 # QuantOrUnit = Union[D, 'UnitExpr[D]']
 
 # def _restriction_name(obj) -> str:
-#     return 
+#     return
+
+ZeroOr = Union[Literal[0], D] 
         
 def _restriction_name(restriction: Any) -> str:
     return restriction.__name__ if isinstance(restriction, type) else str(restriction)
@@ -421,47 +423,31 @@ class Quantity:
     def __hash__(self) -> int:
         return hash((self.magnitude, self.dimensionality))
     
-    def __lt__(self: D, rhs: Union[D, Literal[0]]) -> bool:
-        if isinstance(rhs, int):
-            assert rhs == 0
-            return self.magnitude < 0
-        self._ensure_dim_match(rhs, "<")
-        return self.magnitude < rhs.magnitude
+    def _magnitude_of(self, other: ZeroOr[D], op: str) -> float:
+        if other == 0:
+            return 0
+        self._ensure_dim_match(other, op)
+        return other.magnitude
     
-    def __le__(self:D , rhs: Union[D, Literal[0]]) -> bool:
-        if isinstance(rhs, int):
-            assert rhs == 0
-            return self.magnitude <= 0
-        self._ensure_dim_match(rhs, "<=")
-        return self.magnitude <= rhs.magnitude
+    def __lt__(self: D, rhs: ZeroOr[D]) -> bool:
+        return self.magnitude < self._magnitude_of(rhs, "<")
     
-    def __gt__(self: D, rhs: Union[D, Literal[0]]) -> bool:
-        if isinstance(rhs, int):
-            assert rhs == 0
-            return self.magnitude > 0
-        self._ensure_dim_match(rhs, ">")
-        return self.magnitude > rhs.magnitude
+    def __le__(self:D , rhs: ZeroOr[D]) -> bool:
+        return self.magnitude <= self._magnitude_of(rhs, "<=")
     
-    def __ge__(self:D , rhs: Union[D, Literal[0]]) -> bool:
-        if isinstance(rhs, int):
-            assert rhs == 0
-            return self.magnitude >= 0
-        self._ensure_dim_match(rhs, ">=")
-        return self.magnitude >= rhs.magnitude
+    def __gt__(self: D, rhs: ZeroOr[D]) -> bool:
+        return self.magnitude > self._magnitude_of(rhs, ">")
     
-    def is_close_to(self, other: Union[D, Literal[0]], *, 
+    def __ge__(self:D , rhs: ZeroOr[D]) -> bool:
+        return self.magnitude >= self._magnitude_of(rhs, ">=")
+    
+    def is_close_to(self, other: ZeroOr[D], *, 
                     rel_tol: float = 1e-09, 
-                    abs_tol: Optional[D] = None,
+                    abs_tol: Optional[ZeroOr[D]] = None,
                     ) -> bool:
         my_mag = self.magnitude
-        if isinstance(other, int):
-            their_mag = 0.0
-        else:
-            self._ensure_dim_match(other, "is_close_to")
-            their_mag = other.magnitude
-        if abs_tol is not None:
-            self._ensure_dim_match(abs_tol, "is_close_to.abs_tol")
-        tol = abs_tol.magnitude if abs_tol is not None else 1e-9 if their_mag==0 else 0
+        their_mag = self._magnitude_of(other, "is_close_to")
+        tol = self._magnitude_of(abs_tol, "is_close_to.abs_tol") if abs_tol is not None else 1e-9 if their_mag==0 else 0
         if abs(my_mag-their_mag) < tol:
             return True
         return math.isclose(self.magnitude, their_mag, rel_tol=rel_tol)
