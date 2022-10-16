@@ -30,6 +30,7 @@ import fileinput
 from tempfile import NamedTemporaryFile
 import logging
 import re
+from erk.stringutils import map_str
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +72,7 @@ class Listener(Thread):
         self.finish_queue = AsyncFunctionSerializer(thread_name="OT-2 Finisher thread")
         
     def shutdown(self) -> None:
-        logger.debug("Outside shutdown lock")
         with self.lock:
-            logger.debug("Inside shutdown lock")
             self.system_running = False
             self.have_transfer.notify()
             
@@ -202,11 +201,11 @@ class Listener(Thread):
         assert wv is not None, "/finished called with no well/volume spec"
         xfers,v = wv
         r = self.current_reagent 
-        logger.debug(f"-- v: {v}, xfers: {xfers}")
+        # logger.debug(f"-- v: {v}, xfers: {map_str(xfers)}")
         while v > 0:
             assert xfers, f"Finished transfer at {body['well']} with {v} unaccounted for."
             first = xfers[0]
-            logger.debug(f"-- v: {v}, first: {first}")
+            # logger.debug(f"-- v: {v}, first: {first}")
             want = first.volume
             if want.is_close_to(v, abs_tol=0.01*uL):
                 xfers.popleft()
@@ -247,16 +246,12 @@ class Listener(Thread):
 
             # Now we clear the pending transfer and signal that it's okay to add a new one.  
             # This will allow the pipettor's perform() to know that it is done.
-            logger.debug("Outside first ready() lock")
             with self.lock:
-                logger.debug("Inside first ready() lock")
                 self.pending_transfer = None
                 # print(f"Signalling ready_for_transfer: {self.pending_transfer}")
                 self.ready_for_transfer.notify()
         # Now we wait until we have one
-        logger.debug("Outside main ready() lock")
         with self.lock:
-            logger.debug("Inside main ready() lock")
             while self.system_running and self.pending_transfer is None:
                 self.have_transfer.wait()
             if self.system_running:
@@ -265,7 +260,7 @@ class Listener(Thread):
                 response = self.package_transfer(self.pending_transfer)
             else:
                 response = web.json_response({"command": "exit"})
-        logger.debug(f"ready() response: {response}")
+        # logger.debug(f"ready() response: {response}")
         return response
     
     def run(self) -> None:

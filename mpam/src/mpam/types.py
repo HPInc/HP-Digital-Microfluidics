@@ -4314,13 +4314,13 @@ class _AFS_Thread(Thread):
         queue = self.queue
         before_task = self.before_task
         after_task = self.after_task
-        logger.debug(f'queue len:{len(queue)}|before_task:{before_task}|after_task:{after_task}')
+        # logger.debug(f'queue len:{len(queue)}|before_task:{before_task}|after_task:{after_task}')
         with self.serializer.lock:
             func: Callback = queue.popleft()
         while True:
             if before_task is not None:
                 before_task()
-            logger.debug(f'func:{func.__qualname__}')
+            # logger.debug(f'func:{func.__qualname__}')
             func()
             if after_task is not None:
                 after_task()

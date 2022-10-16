@@ -14,7 +14,7 @@ import requests
 
 if "COMBINED_FILES_KLUDGE" not in globals():
 
-    from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp
+    from schedule_xfers import TransferScheduler, XferOp, RWell, AspirateOp, map_str
     import schedule_xfers
     
     
@@ -37,6 +37,7 @@ def labware_from_config(spec: Any, protocol: protocol_api.ProtocolContext) -> La
                                         namespace=spec.get('namespace', None),
                                         version=spec.get('version', None))
     return labware
+
 
 class Board:
     plate: Labware
@@ -125,6 +126,9 @@ class ReagentSource:
         # self.has = {}
         # self.space = {}
         
+    def __str__(self) -> str:
+        return f"ReagentSource[{self.reagent}, in: {map_str(self.input_wells)}, out: {map_str(self.output_wells)}]"
+        
     def add_well(self, well: Well, volume: float, use: ReagentWellUse) -> None:
         w = RWell(well, volume, capacity = well.max_volume)
         if use is ReagentWellUse.INPUT or use is ReagentWellUse.BIDI:
@@ -163,6 +167,9 @@ class Pipettor(TransferScheduler[Well]) :
             self._tips += tr.wells()
         self.tip = defaultdict(lambda: self._tips.pop(0))
         self._current_tip = None
+        
+    def __str__(self) -> str:
+        return str(self.pipette)
         
     def message(self, msg: str) -> None:
         self.robot.message(msg)
@@ -229,6 +236,7 @@ class Pipettor(TransferScheduler[Well]) :
     def make_empty(self, on_board: Sequence[tuple[Well, float]],
                   off_board: Sequence[RWell[Well]],
                   *, trash: Well) -> tuple[float, Transfer]:
+        # self.message(f"make_empty({map_str(on_board)}, {map_str(off_board)})")
         extra, ops = self.empty_ops(on_board, off_board, trash=trash)
         return (extra, Transfer(self, ops))
         
@@ -238,6 +246,7 @@ class Pipettor(TransferScheduler[Well]) :
                       on_board: Sequence[tuple[Well, float]],
                       reagent_source: ReagentSource, *,
                       trash: Well) -> tuple[float, Optional[Transfer]]:
+        # self.message(f"dir: {direction}, source: {reagent_source}, on_board: {map_str(on_board)}, trash: {trash}")
         if direction is Direction.FILL:
             return self.make_fill(on_board, reagent_source.input_wells)
         else:
@@ -251,6 +260,9 @@ class Transfer(NamedTuple):
     
     def is_last(self) -> None:
         self.ops[-1].is_last = True
+        
+    def __str__(self) -> str:
+        return f"Transfer[{self.pipettor}: {map_str(self.ops)}]"
         
 class Robot:
     protocol: protocol_api.ProtocolContext
@@ -363,6 +375,7 @@ class Robot:
             p.release_tip()
             
     def plan(self, direction: Direction, reagent: str, on_board: Sequence[tuple[Well, float]]) -> Sequence[Transfer]:
+        # self.message("Planning")
         threshold = self.threshold
         large = [ (w,v) for w,v in on_board if v > threshold ]
         small = [ (w,v) for w,v in on_board if v < threshold ]
@@ -381,10 +394,14 @@ class Robot:
             # self.message(f"Small transfers: {small}")
         small_trips = self.small_pipettor.partition(small, prefer_partial=prefer_partial)
         # self.message(f"Small trips: {small_trips}")
+        # self.message(f"Partitioned: {len(large_trips)} large, {len(small_trips)} small")
         
         if direction is Direction.EMPTY and reagent == "product":
             r = ReagentSource(reagent)
+            # self.message(f"Getting product well from {map_str(self.output_wells)}")
             w = self.output_wells.pop(0)
+            # self.message(f"Output well is {w}")
+            # self.message(f"  Output wells now {map_str(self.output_wells)}")
             r.add_well(w, 0, ReagentWellUse.OUTPUT)
             self.last_product_well = w
         else:
@@ -401,7 +418,9 @@ class Robot:
                     # TODO: Do something with error (e.g., send a message back)
                     ...
         for trip in small_trips:
+            # self.message(f"Making transfer: {trip}")
             error, xfer = self.small_pipettor.make_transfer(direction, trip, r, trash=trash)
+            # self.message(f"error: {error}, xfer: {xfer}")
             if xfer is not None:
                 xfers.append(xfer)
             if error > 0:
@@ -422,7 +441,7 @@ class Robot:
     
             
     def fill(self, reagent: str, target: Well, volume: float) -> None:
-        self.message(f"Moving {volume}uL of {reagent} to {target}")
+        # self.message(f"Moving {volume}uL of {reagent} to {target}")
         
         transfers  = self.plan(Direction.FILL, reagent, [(target,volume)])
         self.do_transfers(transfers, reagent, on_board={target})
@@ -474,13 +493,13 @@ class Robot:
         dirs = {"fill": Direction.FILL, "empty": Direction.EMPTY}
         well_map = self.board.well_map
         while True:
-            self.message("Making ready call")
+            # self.message("Making ready call")
             call_params = self.prepare_call()
             if self.last_product_well is not None:
                 call_params["product_well"] = str(self.last_product_well)
-            self.message(f"Calling ready: {call_params}")
+            # self.message(f"Calling ready: {call_params}")
             resp = self.http_post("ready", json = call_params)
-            self.message(f"Back from ready: {resp}")
+            # self.message(f"Back from ready: {resp}")
             assert resp is not None, f"No endpoint to call"
             body = resp.json()
             # self.message(f"Body is {body}")
@@ -499,6 +518,7 @@ class Robot:
             
             wells = [(well_map[ws["well"]], ws["volume"]) for ws in well_specs]
             transfers = self.plan(d, r, wells)
+            # self.message(f"Transfer plan: {map_str(transfers)}")
             on_board = {ws[0] for ws in wells}
             self.do_transfers(transfers, r, on_board=on_board)
             

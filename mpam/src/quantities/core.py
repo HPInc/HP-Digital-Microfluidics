@@ -423,7 +423,7 @@ class Quantity:
     def __hash__(self) -> int:
         return hash((self.magnitude, self.dimensionality))
     
-    def _magnitude_of(self, other: ZeroOr[D], op: str) -> float:
+    def _magnitude_of(self: D, other: ZeroOr[D], op: str) -> float:
         if other == 0:
             return 0
         self._ensure_dim_match(other, op)

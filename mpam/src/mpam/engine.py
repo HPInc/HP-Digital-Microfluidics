@@ -14,7 +14,7 @@ from quantities.SI import sec, ms
 from quantities.dimensions import Time
 from quantities.timestamp import time_now, time_in, Timestamp
 import traceback
-from erk.stringutils import match_width, map_str
+from erk.stringutils import match_width
 
 logger = logging.getLogger(__name__)
 
@@ -87,9 +87,9 @@ class IdleBarrier:
                 self.event.set()
 
     def wait(self, timeout: float = None) -> None:
-        logger.debug(f"wait(): {map_str(self.running_components)}")
+        # logger.debug(f"wait(): {map_str(self.running_components)}")
         self.event.wait(timeout)
-        logger.debug(f"back from wait(): {map_str(self.running_components)}")
+        # logger.debug(f"back from wait(): {map_str(self.running_components)}")
 
 class Updatable(Protocol):
     def update_state(self) -> Any: ...

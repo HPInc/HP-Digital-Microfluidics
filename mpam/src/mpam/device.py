@@ -5007,8 +5007,6 @@ class System:
             nonlocal val
             with self:
                 val = fn(self)  # @UnusedVariable
-                logger.info("Monitored function returned (in with)")
-            logger.info("Monitored function returned")
             done.set()
             self.shutdown()
 
