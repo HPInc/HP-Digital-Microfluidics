@@ -1,5 +1,3 @@
-
-
 from __future__ import annotations
 
 from argparse import Namespace, _ArgumentGroup, ArgumentParser, \
@@ -19,7 +17,7 @@ from mpam.device import Board, System, Pad, Well, ExtractionPoint,\
     ProductLocation
 from mpam.dilution import dilution_sequences
 from mpam.drop import Drop
-from mpam.exerciser import Exerciser, Task, time_arg
+from mpam.exerciser import Exerciser, Task
 from mpam.mixing import mixing_sequences
 from mpam.monitor import BoardMonitor
 from mpam.paths import Path, Schedulable
@@ -35,6 +33,7 @@ from devices.dummy_pipettor import DummyPipettor
 from devices.opentrons import OT2
 from mpam.pipettor import Pipettor
 from devices.joey import HeaterType
+from mpam.cmd_line import time_arg
 
 logger = logging.getLogger(__name__)
 
@@ -1024,6 +1023,7 @@ class CombSynth(PCRTask):
             self.phase_barrier.reset(len(paths))
             Path.run_paths(paths, system=system)
         if self.waste_well.volume.is_positive:
+            logger.info("Emptying waste well")
             self.waste_well.empty_well()
 
 

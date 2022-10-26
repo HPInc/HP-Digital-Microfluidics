@@ -95,7 +95,7 @@ class HeaterState:
         self.target = target
         self.ready = False
         needed = len(self.heaters)
-        def update(_) -> None:
+        def update(_: Any) -> None:
             nonlocal needed
             with self.lock:
                 if needed == 1:
@@ -320,7 +320,7 @@ class ThermocycleProcessType(MultiDropProcessType):
                             # pads = (drops[0].pad, drops[1].pad)
                             # local_drops = drops
                             # We reach the rendezvous once for each drop
-                            def mix_and_split(d1: Drop, d2: Drop):
+                            def mix_and_split(d1: Drop, d2: Drop) -> None:
                                 my_pads = (d1.on_board_pad, d2.on_board_pad)
                                 # print(f"m&s: {my_pads}, {my_drops}")
                                 pmix.merge(my_pads) \

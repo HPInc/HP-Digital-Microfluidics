@@ -6,13 +6,13 @@ from typing import Optional
 from devices import bilby
 from devices.bilby import Board
 from devices.opentrons import OT2
-from mpam.exerciser import voltage_arg
 from mpam.pipettor import Pipettor
 from pcr import PCRDriver
 
 from quantities.dimensions import Voltage
 from quantities.SI import V
 from devices.joey import HeaterType
+from mpam.cmd_line import voltage_arg
 class BilbyPCRDriver(PCRDriver):
     def __init__(self) -> None:
         super().__init__()

@@ -6,13 +6,14 @@ from typing import Union, Optional, Sequence
 from devices import bilby
 from joey import JoeyExerciser
 from mpam.device import System, Well, Heater, Magnet, Board
-from mpam.exerciser import Task, volume_arg, Exerciser, voltage_arg
+from mpam.exerciser import Task, Exerciser
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, Reagent
 from quantities.SI import sec, V
 from quantities.dimensions import Volume, Voltage
 from quantities.temperature import TemperaturePoint, abs_C
+from mpam.cmd_line import volume_arg, voltage_arg
 from devices.joey import HeaterType
 
 class DispenseAndWalk(Task):

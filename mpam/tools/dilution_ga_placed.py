@@ -79,7 +79,7 @@ class DilutionRegression(Regression[DilutionCandidate]):
                          candidate_type=DilutionCandidate,
                          description="Find optimal dilution sequences")
         
-    def add_args_to(self, parser: ArgumentParser):
+    def add_args_to(self, parser: ArgumentParser) -> None:
         parser.add_argument("folds", type=float, 
                             help="""The number of times to dilute (e.g., 8 for an 8x dilution).  
                                     Does not need to be an integer""")

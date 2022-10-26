@@ -3,7 +3,7 @@ from __future__ import annotations
 from argparse import Namespace, ArgumentParser, _ArgumentGroup
 from typing import Sequence
 
-from mpam.exerciser import Exerciser, Task, time_arg, temperature_arg
+from mpam.exerciser import Exerciser, Task
 from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix,\
     Dilute
 from quantities.dimensions import Time
@@ -15,6 +15,7 @@ from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType
 from mpam.paths import Path
 from devices.joey import HeaterType, heater_type_arg_name_for,\
     heater_type_arg_names
+from mpam.cmd_line import temperature_arg, time_arg
 
 
 class Thermocycle(Task):

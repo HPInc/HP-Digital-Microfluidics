@@ -98,8 +98,8 @@ class Board(device.Board):
             epx += 1
         return (epx+5*outdir, epy-0.5)
     
-    def _well(self, num: int, transition: TransitionFunc, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
-              inner_locs: Sequence[tuple[int,int]]):
+    def _well(self, transition: TransitionFunc, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
+              inner_locs: Sequence[tuple[int,int]]) -> Well:
         shape = WellShape(
                     gate_pad_bounds= self._gate_bounds(exit_pad.location),
                     shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
@@ -113,8 +113,7 @@ class Board(device.Board):
         pad_neighbors = [[-1,1,2], [0,2], [0, 1]]
         inner_electrodes = tuple(Electrode(x, y, self._states) for x,y in inner_locs)
         shared = tuple(WellPad(self, state=s, neighbors=ns) for s,ns in zip(inner_electrodes, pad_neighbors))
-        return Well(number=num,
-                    board=self,
+        return Well(board=self,
                     group=transition,
                     exit_dir=exit_dir,
                     exit_pad=exit_pad,
@@ -158,11 +157,11 @@ class Board(device.Board):
         def inner_locs(col: int, rows: Sequence[int]) -> Sequence[tuple[int,int]]:
             return [(col, r) for r in rows]
         
-        upper_left = self._well(0, transition, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)))
-        upper_right = self._well(1, transition, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)))
-        lower_left = self._well(2, transition, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)))
-        lower_right = self._well(3, transition, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)))
-        wells.extend((upper_left, upper_right, lower_left, lower_right))
+        upper_left = self._well(transition, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)))
+        upper_right = self._well(transition, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)))
+        lower_left = self._well(transition, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)))
+        lower_right = self._well(transition, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)))
+        self._add_wells((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:
         if self._port is None:

@@ -4,11 +4,11 @@ from argparse import ArgumentParser, Namespace
 from typing import Sequence, NamedTuple
 
 from erk.stringutils import map_str
-from mpam.exerciser import time_arg
 from quantities.SI import ms
 from quantities.dimensions import Time
 from random import shuffle
 import subprocess
+from mpam.cmd_line import time_arg
 
 
 def arg_parser() -> ArgumentParser:

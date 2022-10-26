@@ -16,7 +16,8 @@ from quantities.temperature import TemperaturePoint, abs_C
 import logging
 from erk.errors import ErrorHandler, PRINT
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
-from mpam.exerciser import PlatformChoiceExerciser, voltage_arg, Exerciser
+from mpam.exerciser import PlatformChoiceExerciser, Exerciser
+from mpam.cmd_line import voltage_arg
 from devices.joey import HeaterType
 
 
@@ -93,13 +94,13 @@ class PowerSupply(device.PowerSupply):
                          on_illegal_mode_change=on_illegal_mode_change
                          )
         glider = board._device
-        def voltage_changed(_old, new: Voltage) -> None:
+        def voltage_changed(_old: Voltage, new: Voltage) -> None:
             if new > 0:
                 logger.info(f"Voltage level is {new}")
             glider.voltage_level = None if new == 0 else new
         self.on_voltage_change(voltage_changed)
         
-        def state_changed(_old, new: OnOff) -> None:
+        def state_changed(_old: OnOff, new: OnOff) -> None:
             which = "on" if new else "off"
             logger.info(f"High voltage is {which}")
         self.on_state_change(state_changed)
@@ -110,7 +111,7 @@ class Fan(device.Fan):
                      live: bool = True) -> None:
             glider = board._device
             super().__init__(board, state=state, live=live)
-            def state_changed(_old, new: OnOff) -> None:
+            def state_changed(_old: OnOff, new: OnOff) -> None:
                 which= "on" if new else "off"
                 logger.info(f"Fan is {which}")
                 glider.fan_state = new

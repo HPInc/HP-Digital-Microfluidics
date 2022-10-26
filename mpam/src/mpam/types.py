@@ -253,14 +253,14 @@ class XYCoord:
         '''
         return (self.x, self.y)
 
-    def __eq__(self, other: object):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, XYCoord): return False
         return self.x == other.x and self.y == other.y
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.x, self.y))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"XYCoord({self.x},{self.y})"
 
     def __add__(self, offset: tuple[int, int]) -> XYCoord:
@@ -350,7 +350,7 @@ class Orientation(Enum):
         '''
         return Dir.N if self.offset[Dir.N][1] > 0 else Dir.S
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Orientation.{self.name}"
     
     def is_above(self, c1: XYCoord, c2: XYCoord) -> bool:
@@ -578,7 +578,7 @@ class TickNumber:
     def __sub__(self, rhs: TickNumber) -> Ticks: ...  # @UnusedVariable
     @overload
     def __sub__(self, rhs: Ticks) -> TickNumber: ...  # @UnusedVariable
-    def __sub__(self, rhs: Union[TickNumber, Ticks]):
+    def __sub__(self, rhs: Union[TickNumber, Ticks]) -> Union[Ticks, TickNumber]:
         if isinstance(rhs, TickNumber):
             return self.tick-rhs.tick
         else:
@@ -594,9 +594,9 @@ class TickNumber:
     def __hash__(self) -> int:
         return hash(self.tick)
 
-    def __lt__(self, rhs: TickNumber):
+    def __lt__(self, rhs: TickNumber) -> bool:
         return self.tick < rhs.tick
-    def __le__(self, rhs: TickNumber):
+    def __le__(self, rhs: TickNumber) -> bool:
         return self.tick <= rhs.tick
 
 TickNumber._zero = TickNumber(Ticks.ZERO)
@@ -1244,7 +1244,7 @@ class StaticOperation(Generic[V], ABC):
         """
         if on_future is not None:
             future = Postable[V]()
-            def schedule_and_post(_) -> None:
+            def schedule_and_post(_: Any) -> None:
                 f = self._schedule(after=after, post_result=post_result)
                 f.when_value(lambda val: future.post(val))
             on_future.when_value(schedule_and_post)
@@ -1502,7 +1502,7 @@ class Delayed(Generic[Tco]):
     This object can only be referenced while :attr:`_lock` is locked.
     """
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Delayed({self._val})'
 
     @property
@@ -1570,7 +1570,7 @@ class Delayed(Generic[Tco]):
         """
         if not self.has_value:
             e = Event()
-            def do_set(_) -> None:
+            def do_set(_: Any) -> None:
                 e.set()
             self.when_value(do_set)
             # self.when_value(lambda _: e.set())
@@ -1655,7 +1655,7 @@ class Delayed(Generic[Tco]):
             ``fn``
         """
         future = Postable[V]()
-        def fn2(val) -> None:
+        def fn2(val: Any) -> None:
             fn(val).post_to(future)
         self.when_value(fn2)
         # self.when_value(lambda val: fn(val).post_to(future))
@@ -1675,7 +1675,7 @@ class Delayed(Generic[Tco]):
             A :class:`Delayed` object that will receive the transformed value.
         """
         future = Postable[V]()
-        def post_transformed(val) -> None:
+        def post_transformed(val: Any) -> None:
             future.post(fn(val))
         self.when_value(post_transformed)
         # self.when_value(lambda val: future.post(fn(val)))
@@ -1690,7 +1690,7 @@ class Delayed(Generic[Tco]):
         Returns
             this :class:`Delayed` object
         """
-        def do_trigger(_) -> None:
+        def do_trigger(_: Any) -> None:
             trigger.fire()
         self.when_value(do_trigger)
         # self.when_value(lambda _: trigger.fire())
@@ -1705,7 +1705,7 @@ class Delayed(Generic[Tco]):
         Returns
             this :class:`Delayed` object
         """
-        def do_post(val) -> None:
+        def do_post(val: Any) -> None:
             other.post(val)
         self.when_value(do_post)
         # self.when_value(lambda val: other.post(val))
@@ -1722,7 +1722,7 @@ class Delayed(Generic[Tco]):
         Returns
             this :class:`Delayed` object
         """
-        def do_post(_) -> None:
+        def do_post(_: Any) -> None:
             other.post(value)
         self.when_value(do_post)
         # self.when_value(lambda _: other.post(value))
@@ -1741,7 +1741,7 @@ class Delayed(Generic[Tco]):
         Returns
             this :class:`Delayed` object
         """
-        def do_post(val) -> None:
+        def do_post(val: Any) -> None:
             other.post(transform(val))
         self.when_value(do_post)
         # self.when_value(lambda val: other.post(transform(cast(T, val))))
@@ -2362,10 +2362,10 @@ class _CCLProperty(Generic[T]):
         self.tag = tag
         self.creator = creator
     @overload
-    def __get__(self, obj: None, objtype) -> _CCLProperty[T]: ... # @UnusedVariable
+    def __get__(self, obj: None, objtype: Any) -> _CCLProperty[T]: ... # @UnusedVariable
     @overload
-    def __get__(self, obj: Any, objtype) -> ChangeCallbackList[T]: ... # @UnusedVariable
-    def __get__(self, obj, objtype) -> Union[ChangeCallbackList[T], _CCLProperty[T]]: # @UnusedVariable
+    def __get__(self, obj: Any, objtype: Any) -> ChangeCallbackList[T]: ... # @UnusedVariable
+    def __get__(self, obj: Any, objtype: Any) -> Union[ChangeCallbackList[T], _CCLProperty[T]]: # @UnusedVariable
         if obj is None:
             return self
         attr = self.attr
@@ -2383,7 +2383,7 @@ class _CCLProperty(Generic[T]):
                key: Optional[Hashable] = None
                ) -> Gettable[object, ChangeCallbackList[V]]:
         me = self
-        def creator(obj) -> ChangeCallbackList[V]:
+        def creator(obj: Any) -> ChangeCallbackList[V]:
             ccl: ChangeCallbackList[T] = me.__get__(obj, None)
             return ccl.mapped(transform, key=key)
         return _CCLProperty(self.prop, self.new_tag(), creator)
@@ -2392,7 +2392,7 @@ class _CCLProperty(Generic[T]):
                  key: Optional[Hashable] = None
                  ) -> Gettable[object, ChangeCallbackList[T]]:
         me = self
-        def creator(obj) -> ChangeCallbackList[T]:
+        def creator(obj: Any) -> ChangeCallbackList[T]:
             ccl: ChangeCallbackList[T] = me.__get__(obj, None)
             return ccl.filtered(test, key=key)
         return _CCLProperty(self.prop, self.new_tag(), creator)
@@ -2633,7 +2633,7 @@ class MonitoredProperty(Generic[T]):
         self._process_duplicates = process_duplicates
         self._transform: Callable[[Any, T], MissingOr[T]] = lambda _obj, v: v
 
-    def __set_name__(self, _owner, name: str) -> None:
+    def __set_name__(self, _owner: Any, name: str) -> None:
         if self._name is None:
             # print(f"Setting name for {_owner}.{name}")
             if name.startswith("_") and not name.startswith("__"):
@@ -2641,7 +2641,7 @@ class MonitoredProperty(Generic[T]):
                 # print(f"  Name now {name}")
             self._name = name
 
-    def _default_value(self, obj) -> MissingOr[T]:
+    def _default_value(self, obj: Any) -> MissingOr[T]:
         dfn = self._default_fn
         if dfn is not None:
             val = dfn(obj)
@@ -2650,7 +2650,7 @@ class MonitoredProperty(Generic[T]):
         return self._default_val
 
 
-    def _lookup(self, obj) -> MissingOr[T]:
+    def _lookup(self, obj: Any) -> MissingOr[T]:
         key = self.val_attr
         val: MissingOr[T] = getattr(obj, key, MISSING)
         if val is MISSING:
@@ -2659,16 +2659,16 @@ class MonitoredProperty(Generic[T]):
                 setattr(obj, key, val)
         return val
 
-    def _callback_list(self, obj) -> Optional[ChangeCallbackList[T]]:
+    def _callback_list(self, obj: Any) -> Optional[ChangeCallbackList[T]]:
         key = self.callback_list_attr
         ccl = getattr(obj, key, None)
         return ccl
 
     @overload
-    def __get__(self, obj: None, objtype) -> MonitoredProperty[T]: ... # @UnusedVariable
+    def __get__(self, obj: None, objtype: Any) -> MonitoredProperty[T]: ... # @UnusedVariable
     @overload
-    def __get__(self, obj: Any, objtype) -> T: ... # @UnusedVariable
-    def __get__(self, obj, objtype) -> Union[T, MonitoredProperty[T]]: # @UnusedVariable
+    def __get__(self, obj: Any, objtype: Any) -> T: ... # @UnusedVariable
+    def __get__(self, obj: Any, objtype: Any) -> Union[T, MonitoredProperty[T]]: # @UnusedVariable
         """
         Get the current value of the property for ``obj``, if ``obj`` is not
         ``None``, otherwise return the property itself.  (This last is used to
@@ -2701,7 +2701,7 @@ class MonitoredProperty(Generic[T]):
             raise AttributeError(f"Attribute '{self.name}' not set in {obj}")
         return val
 
-    def __set__(self, obj, value: T) -> None:
+    def __set__(self, obj: Any, value: T) -> None:
         """
         Set the value of the property for ``obj``.
 
@@ -2738,7 +2738,7 @@ class MonitoredProperty(Generic[T]):
             if ccl is not None:
                 ccl.process(old, value)
 
-    def __delete__(self, obj) -> None:
+    def __delete__(self, obj: Any) -> None:
         """
         Remove any value of the property for ``obj``.  If it is subsequently
         read (using :func:`__get__`) before it is explicitly set, a new default
@@ -2823,7 +2823,7 @@ class MonitoredProperty(Generic[T]):
         """
         me = self
         class VC:
-            def __get__(self, obj, objtype) -> bool: # @UnusedVariable
+            def __get__(self, obj: Any, objtype: Any) -> bool: # @UnusedVariable
                 val = me._lookup(obj)
                 return val is not MISSING
         return VC()
@@ -2847,7 +2847,7 @@ class MonitoredProperty(Generic[T]):
         """
         me = self
         class VC:
-            def __get__(self, obj, objtype) -> T: # @UnusedVariable
+            def __get__(self, obj: Any, objtype: Any) -> T: # @UnusedVariable
                 val = me._lookup(obj)
                 if val is MISSING:
                     raise AttributeError(f"Attribute '{me.name}' not set in {obj}")
@@ -2930,7 +2930,7 @@ class MonitoredProperty(Generic[T]):
             if chain:
                 prior = self._transform
                 this_func = func # Need a separate name to avoid infinite recursion.
-                def chained_func(obj, val: T) -> MissingOr[T]:
+                def chained_func(obj: Any, val: T) -> MissingOr[T]:
                     pval = prior(obj, val)
                     return MISSING if pval is MISSING else this_func(obj, pval)
                 func = chained_func
@@ -4382,13 +4382,13 @@ class _AFS_Thread(Thread):
         queue = self.queue
         before_task = self.before_task
         after_task = self.after_task
-        logger.debug(f'queue len:{len(queue)}|before_task:{before_task}|after_task:{after_task}')
+        # logger.debug(f'queue len:{len(queue)}|before_task:{before_task}|after_task:{after_task}')
         with self.serializer.lock:
             func: Callback = queue.popleft()
         while True:
             if before_task is not None:
                 before_task()
-            logger.debug(f'func:{func.__qualname__}')
+            # logger.debug(f'func:{func.__qualname__}')
             func()
             if after_task is not None:
                 after_task()
@@ -4629,7 +4629,7 @@ class ConfigParams:
     def get(self, name: str, default: V) -> Any: ... # @UnusedVariable
     @overload
     def get(self, name: str) -> Any: ... # @UnusedVariable
-    def get(self, name: str, default = (MISSING,), *, expect: Optional[typing.Type[T]] = None) -> Any:
+    def get(self, name: str, default: Union[V, tuple[Missing]] = (MISSING,), *, expect: Optional[typing.Type[T]] = None) -> Any:
         try:
             val = self.__getattr__(name)
             if expect is None or isinstance(val, expect):
@@ -4641,3 +4641,72 @@ class ConfigParams:
             raise
 
         ...
+
+class LoggingLevel:
+    desc: Final[str]
+    level: Final[int]
+    
+    built_in: ClassVar[Mapping[str, LoggingLevel]]
+    
+    @classmethod
+    def options(cls) -> Sequence[str]:
+        levels = list(cls.built_in.values())
+        levels.sort(key=lambda x: x.level)
+        return [level.desc for level in levels]
+
+    def __init__(self, desc: str, level: int) -> None:
+        self.desc = desc
+        self.level = level
+        
+    def __repr__(self) ->str:
+        return f"{type(self).__name__}('{self.desc}', {self.level})"
+        
+    @classmethod
+    def find(cls, level: Union[str, int]) -> LoggingLevel:
+        if isinstance(level, int):
+            return LoggingLevel(str(level), level)
+        val = cls.built_in.get(level.upper(), None)
+        if val is not None:
+            return val
+        try:
+            return cls.find(int(level))
+        except ValueError:
+            raise ValueError(f"Couldn't find logging level for '{level}'")
+    
+        
+LoggingLevel.built_in = {
+    "DEBUG": LoggingLevel("DEBUG", logging.DEBUG),
+    "INFO": LoggingLevel("INFO", logging.INFO),
+    "WARN": LoggingLevel("WARN", logging.WARNING),
+    "WARNING": LoggingLevel("WARNING", logging.WARNING),
+    "ERROR": LoggingLevel("ERROR", logging.ERROR),
+    "CRITICAL": LoggingLevel("CRITICAL", logging.CRITICAL)
+    }
+        
+
+class LoggingSpec:
+    level: LoggingLevel
+    name: Optional[str]
+    fmt_name: Optional[str]
+    
+    def __init__(self, level: Union[LoggingLevel, str, int], *,
+                 name: Optional[str] = None,
+                 fmt_name: Optional[str] = None) -> None:
+        if not isinstance(level, LoggingLevel):
+            level = LoggingLevel.find(level)
+        self.level = level
+        self.name = name
+        self.fmt_name = fmt_name
+        
+    def __repr__(self) -> str:
+        name = "" if self.name is None else f", name='{self.name}'"
+        fmt_name = "" if self.fmt_name is None else f", name='{self.fmt_name}'"
+        return f"{type(self).__name__}({self.level}{name}{fmt_name})"
+        
+    
+    
+logging_levels = LoggingLevel.options()
+logging_formats = {
+    'compact': '%(levelname)7s|%(module)s|%(message)s',
+    'detailed': '%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s', 
+    }

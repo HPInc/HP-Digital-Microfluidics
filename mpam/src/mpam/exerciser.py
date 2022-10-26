@@ -1,274 +1,36 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from argparse import ArgumentTypeError, Namespace, ArgumentParser, \
+from argparse import Namespace, ArgumentParser, \
     _SubParsersAction, _ArgumentGroup
 import logging.config
 import pathlib
-from re import Pattern
-import re
 from threading import Event
-from typing import Final, Mapping, Union, Optional, Sequence, Any, Callable, \
-    NoReturn, ClassVar, TypeVar
+from typing import Final, Union, Optional, Sequence, Any, Callable, \
+    NoReturn
 
 from matplotlib.gridspec import SubplotSpec
 
 from erk.stringutils import conj_str
 from mpam.device import Board, System
 from mpam.monitor import BoardMonitor
-from mpam.types import PathOrStr
-from quantities import temperature
-from quantities.SI import ns, us, ms, sec, minutes, hr, days, uL, mL, secs, \
+from mpam.types import PathOrStr, logging_levels, logging_formats, LoggingSpec,\
+    LoggingLevel
+from quantities.SI import ms, minutes, hr, days, uL, secs, \
     volts, deg_C
-from quantities.core import Quantity, set_default_units, UnitExpr
-from quantities.dimensions import Time, Volume, Voltage
-from quantities.prefixes import kilo
-from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
-from _collections import defaultdict
+from quantities.core import set_default_units, UnitExpr
+from quantities.dimensions import Time
 from mpam.pipettor import Pipettor
-from importlib import import_module
 from erk.basic import ValOrFn
+from importlib import import_module
+from mpam.cmd_line import time_arg, units_arg, logging_spec_arg, ip_addr_arg,\
+    ip_subnet_arg
 
 
 # import logging
 logger = logging.getLogger(__name__)
 
-Q_ = TypeVar("Q_", bound = Quantity)
-
-class ArgUnits:
-    known: Final[dict[type[Quantity], dict[str, UnitExpr]]] = defaultdict(dict)
-    patterns: Final[dict[type[Quantity], Pattern]] = {}
-    all_unit_pattern: Optional[Pattern] = None
     
-    @classmethod
-    def register_units(cls, qt: type[Q_], units: Mapping[UnitExpr[Q_], Sequence[str]]) -> None:
-        for unit,names in units.items():
-            for name in names:
-                cls.known[qt][name] = unit
-                
-    @classmethod
-    def disjunction(cls, qt: type[Quantity]) -> str:
-        return "|".join(sorted(cls.known[qt]))
-    
-    
-    @classmethod
-    def describe(cls, qt: type[Quantity], *, conj: str="and") -> str:
-        tname = qt.__name__
-        pairs = [(u,n) for n,u in cls.known[qt].items()]
-        names = [f'"{n}"' for _u,n in sorted(pairs)]
-        if len(names) == 0:
-            return f"No known units for {tname}."
-        return f"Known units for {tname} are: {conj_str(names, conj=conj)}."
-    
-    @classmethod
-    def lookup(cls, qt: type[Q_], name: str) -> UnitExpr[Q_]:
-        units = cls.known[qt]
-        unit = units.get(name, None)
-        if unit is None:
-            raise ValueError(f"{name} is not a known {qt.__name__} unit. {cls.describe(qt)}")
-        return unit
-    
-    
-    @classmethod
-    def parse_arg(cls, qt: type[Q_], arg: str, *, 
-                  default: Optional[str] = None) -> Q_:
-        pat = cls.patterns.get(qt, None)
-        if pat is None:
-            pat = re.compile(f"(-?\\d+(?:.\\d+)?)\\s*({ArgUnits.disjunction(qt)})") 
-            cls.patterns[qt] = pat
-        m = pat.fullmatch(arg)
-        if m is None:
-            if default is None:
-                default = "200ms"
-            raise ArgumentTypeError(f"""
-                        {arg} not parsable as a {qt.__name__} value.
-                        Requires a number followed immediately by units, e.g. '{default}'.
-                        {ArgUnits.describe(qt)}""")
-        n = float(m.group(1))
-        # unit = time_arg_units.get(m.group(2), None)
-        unit = ArgUnits.lookup(qt, m.group(2))
-        val = n*unit
-        return val
-    
-    
-    @classmethod
-    def find_unit(cls, arg: str) -> Optional[UnitExpr]:
-        for units in cls.known.values():
-            if (unit := units.get(arg, None)) is not None:
-                return unit
-        return None
-    
-    @classmethod
-    def parse_unit_arg(cls, args: str) -> Sequence[UnitExpr]:
-        units: list[UnitExpr] = []
-        for arg in re.split(r'[ ,]\s*', args):
-            unit = cls.find_unit(arg)
-            if unit is None:
-                raise ArgumentTypeError(f"""
-                            '{arg}' not parsable as a unit.
-                            {' '.join(cls.describe(qt) for qt in cls.known)}
-                            """)
-            units.append(unit)
-        return units
-        
-        
-ArgUnits.register_units(Time,
-                        {
-                            ns: ("ns", "nsec"),
-                            us: ("us", "usec"),
-                            ms: ("ms", "msec"),
-                            sec: ("s", "sec", "secs", "second", "seconds"),
-                            minutes: ("min", "minute", "minutes"),
-                            hr: ("hr", "hour", "hours"),
-                            days: ("days", "day"),
-                            }                        
-                        )
-
-def time_arg(arg: str) -> Time:
-    return ArgUnits.parse_arg(Time, arg, default="30ms")
-
-ArgUnits.register_units(Volume,
-                        {
-                            uL: ("ul", "uL", "microliter", "microliters", "microlitre", "microliters"),
-                            mL: ("ml", "mL", "milliliter", "milliliters", "millilitre", "milliliters"),
-                            }
-                        )
-
-drops_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)(?:drops|drop)")
-
-def volume_arg(arg: str) -> Union[Volume,float]:
-    m = drops_arg_re.fullmatch(arg)
-    if m is not None:
-        return float(m.group(1))
-    return ArgUnits.parse_arg(Volume, arg, default = "30uL' or '2drops")
-
-temperature_arg_scales: Final[Mapping[str, temperature.Scale]] = {
-    "C": abs_C,
-    "K": abs_K,
-    "F": abs_F,
-    }
-
-temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(temperature_arg_scales)})")
-
-def temperature_arg(arg: str) -> TemperaturePoint:
-    m = temperature_arg_re.fullmatch(arg)
-    if m is None:
-        raise ArgumentTypeError(f"""
-                    {arg} not parsable as a temperature value.
-                    Requires a number followed immediately by units, e.g. '40C' or '200F'""")
-    n = float(m.group(1))
-    ustr = m.group(2)
-    unit = temperature_arg_scales.get(ustr, None)
-    if unit is None:
-        raise ValueError(f"{ustr} is not a known temperature unit")
-    val = n*unit
-    return val
-
-ArgUnits.register_units(Voltage,
-                        {
-                            volts: ("V", "v", "volt", "volts"),
-                            kilo(volts): ("kV", "KV", "kv", "kilovolt", "kilovolts"),
-                        })
-def voltage_arg(arg: str) -> Voltage:
-    return ArgUnits.parse_arg(Voltage, arg, default="60V")
-
-
-def units_arg(arg: str) -> Sequence[UnitExpr]:
-    return ArgUnits.parse_unit_arg(arg)
-
-class LoggingLevel:
-    desc: Final[str]
-    level: Final[int]
-    
-    built_in: ClassVar[Mapping[str, LoggingLevel]]
-    
-    @classmethod
-    def options(cls) -> Sequence[str]:
-        levels = list(cls.built_in.values())
-        levels.sort(key=lambda x: x.level)
-        return [level.desc for level in levels]
-
-    def __init__(self, desc: str, level: int) -> None:
-        self.desc = desc
-        self.level = level
-        
-    def __repr__(self) ->str:
-        return f"{type(self).__name__}('{self.desc}', {self.level})"
-        
-    @classmethod
-    def find(cls, level: Union[str, int]) -> LoggingLevel:
-        if isinstance(level, int):
-            return LoggingLevel(str(level), level)
-        val = cls.built_in.get(level.upper(), None)
-        if val is not None:
-            return val
-        try:
-            return cls.find(int(level))
-        except ValueError:
-            raise ValueError(f"Couldn't find logging level for '{level}'")
-    
-        
-LoggingLevel.built_in = {
-    "DEBUG": LoggingLevel("DEBUG", logging.DEBUG),
-    "INFO": LoggingLevel("INFO", logging.INFO),
-    "WARN": LoggingLevel("WARN", logging.WARNING),
-    "WARNING": LoggingLevel("WARNING", logging.WARNING),
-    "ERROR": LoggingLevel("ERROR", logging.ERROR),
-    "CRITICAL": LoggingLevel("CRITICAL", logging.CRITICAL)
-    }
-        
-
-class LoggingSpec:
-    level: LoggingLevel
-    name: Optional[str]
-    fmt_name: Optional[str]
-    
-    def __init__(self, level: Union[LoggingLevel, str, int], *,
-                 name: Optional[str] = None,
-                 fmt_name: Optional[str] = None) -> None:
-        if not isinstance(level, LoggingLevel):
-            level = LoggingLevel.find(level)
-        self.level = level
-        self.name = name
-        self.fmt_name = fmt_name
-        
-    def __repr__(self) -> str:
-        name = "" if self.name is None else f", name='{self.name}'"
-        fmt_name = "" if self.fmt_name is None else f", name='{self.fmt_name}'"
-        return f"{type(self).__name__}({self.level}{name}{fmt_name})"
-        
-    
-    
-logging_levels = LoggingLevel.options()
-logging_formats = {
-    'compact': '%(levelname)7s|%(module)s|%(message)s',
-    'detailed': '%(relativeCreated)6d|%(levelname)7s|%(threadName)s|%(filename)s:%(lineno)s:%(funcName)s|%(message)s', 
-    }
-    
-logging_spec_arg_re: Final[Pattern] = re.compile(f"""(?:(.*?):)?
-                                                   ({'|'.join(logging_levels)}|[0-9]+)
-                                                   (?::({'|'.join(logging_formats.keys())}))?""",
-                                                 re.VERBOSE | re.IGNORECASE)
-def logging_spec_arg(arg: str) -> LoggingSpec:
-    def raise_error() -> NoReturn:
-        raise ArgumentTypeError(f"""
-                "{arg}" not parsable as a logging spec.  The format is [<name>:]<level>[:<format>],
-                where <level> is an integer or one of {conj_str(logging_levels)}
-                and <format> is one of {conj_str([k.upper() for k in
-                logging_formats.keys()])}.
-                """)
-    m = logging_spec_arg_re.fullmatch(arg)
-    if m is None:
-        raise_error()
-        
-    name: Optional[str] = m.group(1)
-    level = LoggingLevel.find(m.group(2).upper())
-    fmt: Optional[str] = m.group(3)
-    if not fmt is None:
-        fmt = fmt.lower()
-    val = LoggingSpec(level, name=name, fmt_name=fmt)
-    # print(f"log spec: {val}")
-    return val
 
 class Task(ABC):
     name: Final[str]
@@ -366,7 +128,11 @@ class Exerciser(ABC):
         return self
 
     def run_task(self, task: Task, args: Namespace, *, board: Board) -> None:
-        system = System(board=board)
+        system = System(board=board, 
+                        local_ip = args.local_ip,
+                        subnet = args.local_subnet,
+                        subnet_mask = args.local_subnet_mask
+                        )
 
         def prepare_and_run() -> None:
             if args.start_clock:
@@ -476,6 +242,25 @@ class Exerciser(ABC):
                            The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
                            Default is {self.default_extraction_point_splash_radius}.
                            ''')
+        group.add_argument('--local-ip', metavar="IP-ADDR", type=ip_addr_arg,
+                           help=f'''
+                           The IP address to use as the local IP address for listeners as a dotted
+                           quad ("x.x.x.x").  
+                           ''') 
+        group.add_argument('--local-subnet', metavar="IP-ADDR", type=ip_subnet_arg,
+                           help=f'''
+                           The local subnet to match IP addresses against to select an IP address
+                           for listeners on machines with more than one IP address.  The selected
+                           address must match based on --local-subnet-mask.  If fewer than four components
+                           are provided, trailing zeroes are assumed.
+                           ''') 
+        group.add_argument('--local-subnet-mask', metavar="IP-ADDR", type=ip_addr_arg,
+                           help=f'''
+                           The subnet mask to use for the local subnet for --local-subnet as a dotted
+                           quad ("x.x.x.x").  If not provided, is the same length as --subnet.  (I.e.,
+                           if --subnet is "192.168", the default will be "255.255.0.0", while if --subnet
+                           is "192.168.0", the default will be "255.255.255.0".)
+                           ''') 
         group.add_argument('--units', type=units_arg, action='append',
                            help="""
                                A comma- or space-separated list of units to use
@@ -568,7 +353,7 @@ class Exerciser(ABC):
             else:
                 imports[spec.name] = spec.level
                 
-        default_imports = ("matplotlib", "PIL", "aiohttp")
+        default_imports = ("matplotlib", "PIL", "aiohttp", "urllib3.connectionpool")
         for i in default_imports:
             if i not in imports:
                 imports[i] = default_import_level         
@@ -582,8 +367,10 @@ class Exerciser(ABC):
             else:
                 fmt = "compact"
         logging.basicConfig(level=base_level.desc, format=logging_formats[fmt])
+        logger.info(f"Default logging level: {base_level.desc}")
         
         for name,level in imports.items():
+            logger.info(f"Setting logging level for {name} to {level.desc}")
             logging.getLogger(name).setLevel(level.desc)
             
 class PlatformChoiceTask(Task):

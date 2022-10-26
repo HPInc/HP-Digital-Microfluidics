@@ -1,7 +1,7 @@
 from __future__ import annotations
 from argparse import ArgumentParser, Namespace, ArgumentTypeError
 from typing import Final, Sequence, NamedTuple, Optional, TextIO, TypeVar,\
-    Generic, Type, Mapping
+    Generic, Type, Mapping, Any
 import math
 from random import randint, choice
 from erk.stringutils import map_str
@@ -307,7 +307,7 @@ class Monitor(Generic[C]):
     def __enter__(self) -> Monitor:
         return self
     
-    def __exit__(self, exc_type, exc_val, exc_tb) -> Optional[bool]:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Optional[bool]:
         if self.log_file is not None:
             return self.log_file.__exit__(exc_type, exc_val, exc_tb)
         return False

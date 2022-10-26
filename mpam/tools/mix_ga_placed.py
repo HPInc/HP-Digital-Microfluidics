@@ -90,7 +90,7 @@ class MixRegression(Regression[MixCandidate]):
                          candidate_type=MixCandidate,
                          description="Find optimal mixing sequences")
         
-    def add_args_to(self, parser: ArgumentParser):
+    def add_args_to(self, parser: ArgumentParser) -> None:
         parser.add_argument("n_drops", type=int, 
                             help="""The number of drops to mix""")
         super().add_args_to(parser)

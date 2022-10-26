@@ -36,6 +36,7 @@ from quantities.timestamp import time_now, Timestamp
 from argparse import Namespace
 from erk.stringutils import map_str
 from quantities.US import deg_F
+from erk.network import local_ipv4_addr
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
@@ -94,7 +95,7 @@ class BoardComponent:
         """
         return self.board.delayed(function, after=after)
 
-    def user_operation(self) -> UserOperation:
+    def user_operation(self, *, desc: Optional[Any] = None) -> UserOperation:
         """
         Create a new :class:`UserOperation` in the :attr:`board`'s
         :class:`System`
@@ -102,7 +103,9 @@ class BoardComponent:
         Returns:
             the created :class:`UserOperation`
         """
-        return UserOperation(self.board.system.engine.idle_barrier)
+        if desc is None:
+            desc = self
+        return UserOperation(self.board.system.engine.idle_barrier, desc=desc)
 
 BC = TypeVar('BC', bound='BinaryComponent') #: A type variable ranging over :class:`BinaryComponent`\s
 
@@ -3228,10 +3231,11 @@ class Heater(BinaryComponent['Heater']):
             op = self._user_op
             if op is None:
                 op = self.user_operation()
+                self._user_op = op
             if new is HeatingMode.OFF or new is HeatingMode.MAINTAINING:
-                op.start()
-            else:
                 op.end()
+            else:
+                op.start()
             # print(f"{self}.mode now {new} (target: {self.target}, current: {self.current_temperature})")
 
 
@@ -3397,7 +3401,7 @@ class Heater(BinaryComponent['Heater']):
                         heater.on_mode_change.remove(old_key)
                     if post_result:
                         key = (heater, f"Temp->{target}", random.random())
-                        def check(_old, mode: HeatingMode) -> None:
+                        def check(_old: HeatingMode, mode: HeatingMode) -> None:
                             if mode is HeatingMode.OFF or mode is HeatingMode.MAINTAINING:
                                 future.post(heater)
                                 heater.on_mode_change.remove(key)
@@ -3522,16 +3526,16 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         return drop.blob.contents
 
     @property
-    def splash_zone(self) -> Optional[set[Pad]]:
+    def splash_zone(self) -> set[Pad]:
         if self._splash_zone is None:
             self._compute_splash()
-        return self._splash_zone
+        return not_None(self._splash_zone)
 
     @property
-    def splash_border(self) -> Optional[Sequence[Pad]]:
+    def splash_border(self) -> Sequence[Pad]:
         if self._splash_border is None:
             self._compute_splash()
-        return self._splash_border
+        return not_None(self._splash_border)
 
     def __init__(self, pad: Pad, *, splash_radius: Optional[int] = None) -> None:
         """
@@ -3758,7 +3762,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         future = Postable[Drop]()
         # If I use a lambda, Mypy complains about not being able to infer the
         # type of the argument 1 [sic] of post_transformed_to()
-        def xfer_result(_) -> Drop:
+        def xfer_result(_: Any) -> Drop:
             return not_None(self.pad.drop)
 
         p_future.post_transformed_to(future, xfer_result)
@@ -3781,11 +3785,11 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         """
         # to_reserve stores pads that need to be reserved. Once a pad
         # is reserved, it gets removed from the list
-        to_reserve = self.splash_zone
-        logging.debug(f'{self.pad}|splash zone:{self.splash_zone}')
-        logging.debug(f'{self.pad}|splash border:{self.splash_border}')
+        to_reserve = list(self.splash_zone)
+        # logging.debug(f'{self.pad}|splash zone:{self.splash_zone}')
+        # logging.debug(f'{self.pad}|splash border:{self.splash_border}')
 
-        def reserve_condition():
+        def reserve_condition() -> bool:
             # Check if the drop expectation is not met
             if expect_drop and self.pad.drop is None:
                 return False
@@ -3797,7 +3801,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             for pad in to_reserve:
                 if pad.reserve():
                     self.reserved_pads.add(pad)
-                    logging.debug(f'{self.pad}|splash|reserved:{pad}')
+                    # logging.debug(f'{self.pad}|splash|reserved:{pad}')
                 else:
                     not_reserved.append(pad)
             to_reserve = not_reserved
@@ -3811,22 +3815,22 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                         if neighbor not in self.splash_zone and neighbor not in self.reserved_pads:
                             if neighbor.reserve():
                                 self.reserved_pads.add(neighbor)
-                                logging.debug(f'{self.pad}|splash|reserved for border:{pad}')
+                                # logging.debug(f'{self.pad}|splash|reserved for border:{pad}')
                             else:
                                 is_extra_reserved=False
 
             if len(to_reserve) == 0 and is_extra_reserved:
-                logging.debug(f'{self.pad}|splash|reserved all:{self.reserved_pads}')
+                # logging.debug(f'{self.pad}|splash|reserved all:{self.reserved_pads}')
                 return True
             return False
 
         return self.pad.board.on_condition(reserve_condition, lambda: None)
 
-    def unreserve_pads(self):
+    def unreserve_pads(self) -> None:
         """
         Unreserve any reserved pads
         """
-        logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
+        # logging.debug(f'{self.pad}|splash|unreserve:{self.reserved_pads}')
         while self.reserved_pads:
             self.reserved_pads.pop().unreserve()
 
@@ -4184,7 +4188,7 @@ class SystemComponent(ABC):
             return (self,)
         return req
 
-    def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO):
+    def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO) -> None:
         req = self.make_request(cb)
         sys = self.system
         if delta > Time.ZERO:
@@ -4271,8 +4275,10 @@ class SystemComponent(ABC):
         else:
             self.communicate(cb, delta=after)
 
-    def user_operation(self) -> UserOperation:
-        return UserOperation(self.system.engine.idle_barrier)
+    def user_operation(self, *, desc: Optional[Any] = None) -> UserOperation:
+        if desc is None:
+            desc = self
+        return UserOperation(self.system.engine.idle_barrier, desc=desc)
 
     def on_condition(self, pred: Callable[[], bool],
                      val_fn: Callable[[], T]) -> Delayed[T]:
@@ -4741,7 +4747,7 @@ class Board(SystemComponent):
             high = self._amb_threshold(at, True)
             return temp <= high
 
-    def print_blobs(self):
+    def print_blobs(self) -> None:
         from mpam.drop import Blob # @Reimport
         print("--------------")
         print("Blobs on board")
@@ -4776,7 +4782,7 @@ class Board(SystemComponent):
         self.change_journal.note_removal(pad, volume)
 
     def journal_delivery(self, pad: DropLoc, liquid: Liquid, *,
-                         mix_result: Optional[MixResult] = None):
+                         mix_result: Optional[MixResult] = None) -> None:
         self.change_journal.note_delivery(pad, liquid, mix_result=mix_result)
 
     def _reset(self, *cpts: BinaryComponent) -> None:
@@ -4813,8 +4819,8 @@ class Board(SystemComponent):
         return sorted(cpts, key=lambda c: key(min_pad[c]))
 
 class UserOperation(Worker):
-    def __init__(self, idle_barrier: IdleBarrier) -> None:
-        super().__init__(idle_barrier)
+    def __init__(self, idle_barrier: IdleBarrier, desc: Optional[Any] = None) -> None:
+        super().__init__(idle_barrier, desc=desc)
 
     def __enter__(self) -> UserOperation:
         self.not_idle()
@@ -4905,7 +4911,7 @@ class Clock:
             delta = Ticks.ZERO
         if delta >= 0:
             e = Event()
-            def cb():
+            def cb() -> None:
                 e.set()
             self.clock_thread.after_tick([(delta, cb)])
             while not e.is_set():
@@ -4917,7 +4923,7 @@ class Clock:
         if min_delay is not None:
             next_allowed = ct.last_tick_time+min_delay
             if next_allowed > time_now():
-                def do_advance():
+                def do_advance() -> None:
                     ct.wake_up()
                 self.system.engine.call_at([(next_allowed, do_advance, False)])
                 return
@@ -5009,8 +5015,27 @@ class System:
     _cpts_lock: Final[Lock]
     components: Final[list[SystemComponent]]
     running: bool = True
+    _local_ip_addr: MissingOr[Optional[str]] = MISSING
+    _requested_ip: Optional[str]
+    _subnet: Optional[str]
+    _subnet_mask: Optional[str]
+    
+    @property
+    def local_ip_addr(self) -> Optional[str]:
+        ip = self._local_ip_addr
+        if ip is MISSING:
+            ip = local_ipv4_addr(addr = self._requested_ip,
+                                 subnet = self._subnet,
+                                 subnet_mask = self._subnet_mask)
+            self._local_ip_addr = ip
+        return ip
+    
 
-    def __init__(self, *, board: Board):
+    def __init__(self, *, board: Board,
+                 local_ip: Optional[str] = None,
+                 subnet: Optional[str] = None,
+                 subnet_mask: Optional[str] = None
+                 ):
         self.board = board
         self.engine = Engine(default_clock_interval=board.drop_motion_time)
         self.clock = Clock(self)
@@ -5018,6 +5043,9 @@ class System:
         self._batch_lock = Lock()
         self._cpts_lock = Lock()
         self.components = []
+        self._requested_ip = local_ip
+        self._subnet = subnet
+        self._subnet_mask = subnet_mask
         board.join_system(self)
 
     def __enter__(self) -> System:
@@ -5027,7 +5055,7 @@ class System:
     def __exit__(self,
                  exc_type: Optional[type[BaseException]],
                  exc_val: Optional[BaseException],
-                 exc_tb: Optional[TracebackType]) -> bool:
+                 exc_tb: Optional[TracebackType]) -> Literal[False]:
         return self.engine.__exit__(exc_type, exc_val, exc_tb)
 
     def component_joined(self, component: SystemComponent) -> None:

@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from typing import TypeVar, Generic, Sequence, Mapping
+from abc import abstractmethod, ABC
+from math import isclose
 
+def map_str(d: Sequence) -> str:
+    return f"[{', '.join(f'{v}' for v in d)}]"
 
 T = TypeVar('T')
 
@@ -15,11 +19,11 @@ class XferOp(Generic[T]):
         self.volume = volume
     
 class AspirateOp(XferOp[T]):
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Aspirate {self.volume} from {self.target}"
     
 class DispenseOp(XferOp[T]):
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Dispense {self.volume} to {self.target}"
     
 class RWell(Generic[T]):
@@ -39,7 +43,7 @@ class RWell(Generic[T]):
     def __repr__(self) -> str:
         return f"RWell({self.well}, {self.has}/{self.capacity})"
     
-class TransferScheduler(Generic[T]):
+class TransferScheduler(Generic[T], ABC):
     max_volume: float
     min_volume: float
     
@@ -47,14 +51,19 @@ class TransferScheduler(Generic[T]):
         self.min_volume = min_volume
         self.max_volume = max_volume
         
-        
+    @abstractmethod
+    def message(self, msg: str) -> None: ... # @UnusedVariable
         
     def partition(self, targets: Sequence[tuple[T, float]], *,
                   prefer_partial: bool) -> Sequence[Sequence[tuple[T, float]]]:
         max_v = self.max_volume
         min_v = self.min_volume
+        
+        # self.message(f"targets: {targets}")
+        # self.message(f"min/max: {min_v}/{max_v}")
 
         amount = { i: t[1] for i,t in enumerate(targets)}
+        # self.message(f"amount: {amount}")
         
         need = sum(amount.values())
         transfers: list[Sequence[tuple[T, float]]] = []
@@ -64,6 +73,7 @@ class TransferScheduler(Generic[T]):
             return seq
         
         while need > max_v:
+            # self.message(f"{need} > {max_v}")
             this_transfer: dict[int, float] = {}
             room = max_v
             for w,v in amount.items():
@@ -72,6 +82,9 @@ class TransferScheduler(Generic[T]):
                         v = min_v
                     this_transfer[w] = v
                     room -= v
+            # self.message(f"this_transfer: {this_transfer}")
+            # self.message(f"room: {room}")
+
             # if we can't fit all of them even minimally, we take out the largest
             if room < 0:
                 in_transfer = [(w,v) for w,v in this_transfer.items()]
@@ -95,19 +108,36 @@ class TransferScheduler(Generic[T]):
                 if amount[w] == 0:
                     del amount[w]
                 need -= v
+            # self.message(f"amount: {amount}")
+            # self.message(f"need: {need}")
             # But we may have room to expand them.
             if room > 0:
-                available = {w: v-min_v for w,v in amount.items() if v > min_v and w in this_transfer}
+                available = {w: v for w,v in amount.items() if v > 0 and w in this_transfer}
+                # self.message(f"available: {available}")
                 total_available = sum(available.values())
+                # self.message(f"total_available: {total_available}")
                 if total_available > 0:
                     ratio = min(1, room/total_available)
+                    # self.message(f"ratio: {ratio}")
                     for w,v in available.items():
+                        # self.message(f"w,v: {w}, {v}")
                         v *= ratio
+                        # self.message(f"v: {v}")
                         this_transfer[w] += v
+                        # self.message(f"this_transfer[{w}]: {this_transfer[w]}")
                         amount[w] -= v
+                        # self.message(f"amount[{w}]: {amount[w]}")
+                        if amount[w] == 0:
+                            del amount[w]
+                        need -= v
+                        # self.message(f"need: {need}")
+                # self.message(f"amount: {amount}")
             transfers.append(to_transfer(this_transfer))
+            # self.message(f"transfers: {transfers}")
         if need > 0:
+            # self.message(f"remaining amount: {amount}")
             transfers.append(to_transfer(amount))
+            # self.message(f"transfers: {transfers}")
         return transfers
     
     def fill_tip(self, volume: float, *,
@@ -115,7 +145,10 @@ class TransferScheduler(Generic[T]):
         max_v = self.max_volume
         min_v = self.min_volume
         assert volume <= max_v
-        assert volume >= min_v
+        if volume < min_v and not isclose(volume, min_v, rel_tol=0.01):
+            self.message(f"WARNING: Requested volume ({volume}) is less than (and not close to) minimumum transfer volume ({min_v}).  Trying anyway with minimum.")
+            volume = min_v
+        # assert volume >= min_v
         decreasing = [w for w in sources if w.has > 0]
         # if there's nothing, there's nothing we can do.
         if len(decreasing) == 0:
@@ -209,7 +242,10 @@ class TransferScheduler(Generic[T]):
         max_v = self.max_volume
         min_v = self.min_volume
         assert volume <= max_v
-        assert volume >= min_v
+        if volume < min_v and not isclose(volume, min_v, rel_tol=0.01):
+            self.message(f"WARNING: Requested volume ({volume}) is less than (and not close to) minimumum transfer volume ({min_v}).  Trying anyway with minimum.")
+            volume = min_v
+        # assert volume >= min_v
         
         decreasing = [w for w in sinks if w.space > 0]
         # if there's nothing, there's nothing we can do.
@@ -297,9 +333,13 @@ class TransferScheduler(Generic[T]):
     def empty_ops(self, on_board: Sequence[tuple[T, float]],
                   off_board: Sequence[RWell[T]],
                   *, trash: T) -> tuple[float, Sequence[XferOp[T]]]:
+        # self.message(f"empty_ops({map_str(on_board)}, {map_str(off_board)})")
         have = sum(t[1] for t in on_board)
+        # self.message(f"have: {have}")
         gets = [AspirateOp(w, v) for w,v in on_board]
+        # self.message(f"gets: {map_str(gets)}")
         extra, puts = self.empty_tip(have, sinks=off_board)
+        # self.message(f"extra: {extra}, puts: {puts}")
         ops: list[XferOp[T]] = list(gets)
         for op in puts:
             ops.append(op)

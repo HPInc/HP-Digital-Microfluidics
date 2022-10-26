@@ -348,7 +348,7 @@ class Transform(Enum):
         self.swap = swap
         # print(f"{self}(1,2) = {self(1,2)}")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Transform.{self.name}"
 
     def __call__(self, x: int, y: int) -> tuple[int,int]:

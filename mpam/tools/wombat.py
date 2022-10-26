@@ -7,7 +7,7 @@ from typing import Union, Optional, Sequence
 from devices import wombat
 from joey import JoeyExerciser
 from mpam.device import System, Well, Heater, Magnet, Board
-from mpam.exerciser import Task, volume_arg, Exerciser
+from mpam.exerciser import Task, Exerciser
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
     Operation, StaticOperation, Reagent
@@ -15,6 +15,7 @@ from quantities.SI import sec
 from quantities.dimensions import Volume
 from quantities.temperature import TemperaturePoint, abs_C
 from devices.wombat import OpenDropVersion
+from mpam.cmd_line import volume_arg
 
 class DispenseAndWalk(Task):
     def __init__(self) -> None:
