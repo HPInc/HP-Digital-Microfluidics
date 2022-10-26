@@ -16,7 +16,8 @@ from quantities.temperature import TemperaturePoint
 import logging
 from erk.errors import ErrorHandler, PRINT
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
-from mpam.exerciser import PlatformChoiceExerciser, voltage_arg, Exerciser
+from mpam.exerciser import PlatformChoiceExerciser, Exerciser
+from mpam.cmd_line import voltage_arg
 
 
 logger = logging.getLogger(__name__)

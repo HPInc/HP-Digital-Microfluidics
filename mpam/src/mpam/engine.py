@@ -38,13 +38,20 @@ class State(Enum):
 
 class Worker:
     idle_barrier: IdleBarrier
+    desc: Any
 
     @property
     def is_idle(self) -> bool:
         return self not in self.idle_barrier.running_components
 
-    def __init__(self, idle_barrier: IdleBarrier) -> None:
+    def __init__(self, idle_barrier: IdleBarrier, desc: Optional[Any] = None) -> None:
         self.idle_barrier = idle_barrier
+        if desc is None:
+            desc = f"@{id(self)}"
+        self.desc = desc
+        
+    def __str__(self) -> str:
+        return f"{type(self).__name__}[{self.desc}]"
 
     def not_idle(self) -> None:
         self.idle_barrier.running(self)
@@ -67,18 +74,22 @@ class IdleBarrier:
         with self.lock:
             self.event.clear()
             self.running_components.add(component)
+            # logger.debug(f"Running {component} [{map_str(self.running_components)}]")
             # print(f"{component} not idle [{len(self.running_components)}]")
 
     def idle(self, component: Worker) -> None:
         with self.lock:
             self.running_components.discard(component)
+            # logger.debug(f"Idle {component} [{map_str(self.running_components)}]")
             # print(f"{component} idle [{len(self.running_components)}]")
             if len(self.running_components) == 0:
                 # print("System is idle")
                 self.event.set()
 
     def wait(self, timeout: float = None) -> None:
+        # logger.debug(f"wait(): {map_str(self.running_components)}")
         self.event.wait(timeout)
+        # logger.debug(f"back from wait(): {map_str(self.running_components)}")
 
 class Updatable(Protocol):
     def update_state(self) -> Any: ...

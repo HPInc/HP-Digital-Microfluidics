@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import TypeVar, Generic, Sequence, Mapping
 from abc import abstractmethod, ABC
+from math import isclose
 
+def map_str(d: Sequence) -> str:
+    return f"[{', '.join(f'{v}' for v in d)}]"
 
 T = TypeVar('T')
 
@@ -142,7 +145,10 @@ class TransferScheduler(Generic[T], ABC):
         max_v = self.max_volume
         min_v = self.min_volume
         assert volume <= max_v
-        assert volume >= min_v
+        if volume < min_v and not isclose(volume, min_v, rel_tol=0.01):
+            self.message(f"WARNING: Requested volume ({volume}) is less than (and not close to) minimumum transfer volume ({min_v}).  Trying anyway with minimum.")
+            volume = min_v
+        # assert volume >= min_v
         decreasing = [w for w in sources if w.has > 0]
         # if there's nothing, there's nothing we can do.
         if len(decreasing) == 0:
@@ -236,7 +242,10 @@ class TransferScheduler(Generic[T], ABC):
         max_v = self.max_volume
         min_v = self.min_volume
         assert volume <= max_v
-        assert volume >= min_v
+        if volume < min_v and not isclose(volume, min_v, rel_tol=0.01):
+            self.message(f"WARNING: Requested volume ({volume}) is less than (and not close to) minimumum transfer volume ({min_v}).  Trying anyway with minimum.")
+            volume = min_v
+        # assert volume >= min_v
         
         decreasing = [w for w in sinks if w.space > 0]
         # if there's nothing, there's nothing we can do.
@@ -324,9 +333,13 @@ class TransferScheduler(Generic[T], ABC):
     def empty_ops(self, on_board: Sequence[tuple[T, float]],
                   off_board: Sequence[RWell[T]],
                   *, trash: T) -> tuple[float, Sequence[XferOp[T]]]:
+        # self.message(f"empty_ops({map_str(on_board)}, {map_str(off_board)})")
         have = sum(t[1] for t in on_board)
+        # self.message(f"have: {have}")
         gets = [AspirateOp(w, v) for w,v in on_board]
+        # self.message(f"gets: {map_str(gets)}")
         extra, puts = self.empty_tip(have, sinks=off_board)
+        # self.message(f"extra: {extra}, puts: {puts}")
         ops: list[XferOp[T]] = list(gets)
         for op in puts:
             ops.append(op)

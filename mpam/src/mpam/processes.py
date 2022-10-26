@@ -7,7 +7,7 @@ from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
 
 from mpam.device import Pad, Board
 from mpam.drop import Drop
-from mpam.types import Delayed, Callback, Ticks, tick, Operation, \
+from mpam.types import Delayed, Callback, Ticks, tick, \
     DelayType, Reagent, waste_reagent, OnOff, Postable, CSOperation
 from enum import Enum
 from _collections import defaultdict

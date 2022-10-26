@@ -6,12 +6,12 @@ from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence, \
     overload
 
 from mpam.device import Well, ExtractionPoint, Pad, System, Board, \
-    ProductLocation, BoardComponent
+    ProductLocation
 from mpam.drop import Drop, DropComputeOp
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Delayed, \
-    DelayType, schedule, Dir, Reagent, Liquid, XYCoord, Barrier, T, \
-    WaitableType, Callback, Postable, WaitableType, NO_WAIT, CSOperation, \
+    schedule, Dir, Reagent, Liquid, XYCoord, Barrier, T, \
+    WaitableType, Callback, Postable, NO_WAIT, CSOperation, \
     Trigger
 from quantities.dimensions import Volume
 

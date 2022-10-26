@@ -56,6 +56,15 @@ def noun(n: float, singular: str, plural: Optional[str] = None,
     elif n >= 1-tolerance and n <= 1+tolerance:
         return singular
     return plural if plural is not None else infer_plural(singular)
+
+def is_are(n: float, *, tolerance: float = 0) -> str:
+    if tolerance == 0:
+        if n == 1:
+            return "is"
+    elif n >= 1-tolerance and n <= 1+tolerance:
+        return "is"
+    return "are"
+        
     
     
 def map_str(d: Union[Mapping, set, tuple, Sequence]) -> str:

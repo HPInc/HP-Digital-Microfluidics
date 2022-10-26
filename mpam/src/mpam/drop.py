@@ -14,8 +14,8 @@ from erk.stringutils import map_str
 from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
     ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad
 from mpam.exceptions import NoSuchPad, NotAtWell
-from mpam.types import Liquid, Dir, Delayed, DelayType, \
-    Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
+from mpam.types import Liquid, Dir, Delayed, \
+    OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
     StaticOperation, Reagent, Callback, T, MixResult, Postable, \
     CSOperation, WaitableType, NO_WAIT, ComputeOp, V2
 from quantities.core import qstr
