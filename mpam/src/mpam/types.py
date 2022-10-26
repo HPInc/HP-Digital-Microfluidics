@@ -1938,14 +1938,20 @@ class SingleFireTrigger(Trigger):
     :func:`fire`ed and invokes any callbacks immediately on :func:`wait`
     if it has.
     """
+    fired: bool
+    
     def __init__(self) -> None:
         super().__init__()
         self.fired = False
 
     def fire(self) -> int:
         with self.lock:
-            self.fired = True
-        return super().fire()
+            if not self.fired:
+                self.fired = True
+                return super().fire()
+            else:
+                assert self.count == 0, f"Single fire trigger already fired but has callbacks waiting."
+                return 0
 
     def wait(self, val: Any, future: Postable) -> None:
         """
