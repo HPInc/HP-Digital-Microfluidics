@@ -7,8 +7,8 @@ from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping
 
 from mpam.device import Pad, Board
 from mpam.drop import Drop
-from mpam.types import Delayed, Callback, Ticks, tick, Operation, \
-    DelayType, Reagent, waste_reagent, OnOff, Postable
+from mpam.types import Delayed, Callback, Ticks, tick, \
+    DelayType, Reagent, waste_reagent, OnOff, Postable, CSOperation
 from enum import Enum
 from _collections import defaultdict
 import sys
@@ -158,7 +158,7 @@ class MultiDropProcess:
             board.before_tick(lambda: next(iterator))
 
 
-class StartProcess(Operation[Drop,Drop]):
+class StartProcess(CSOperation[Drop,Drop]):
     process_type: Final[MultiDropProcessType]
 
     def __repr__(self) -> str:
@@ -183,7 +183,7 @@ class StartProcess(Operation[Drop,Drop]):
         board.before_tick(before_tick, delta=after)
         return future
 
-class JoinProcess(Operation[Drop,Drop]):
+class JoinProcess(CSOperation[Drop,Drop]):
 
     def __repr__(self) -> str:
         return f"<Drop.Join>"

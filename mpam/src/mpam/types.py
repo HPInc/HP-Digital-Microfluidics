@@ -37,6 +37,7 @@ Tco = TypeVar('Tco', covariant=True) ; "A generic covariant type variable"
 Tcontra = TypeVar('Tcontra', contravariant=True) ; "A generic contravariant type variable"
 V = TypeVar('V')    ; "A generic type variable"
 V2 = TypeVar('V2')  ; "A generic type variable"
+V3 = TypeVar('V3')  ; "A generic type variable"
 H = TypeVar('H', bound=Hashable)    ; "A generic type variable representing a :class:`typing.Hashable` type"
 
 PathOrStr = Union[str, pathlib.Path]
@@ -516,8 +517,16 @@ results in a :class:`Ticks` object.
 """
 tick = ticks    ; "An alias for :attr:`ticks`, usually used when the magnitude is `1`"
 
+class NoWait(Enum):
+    SINGLETON = auto()
+    def __repr__(self) -> str:
+        return "NO_WAIT"
+
+NO_WAIT: Final[NoWait] = NoWait.SINGLETON
+
 DelayType = Union[Ticks, Time]  ; "A delay amount, either :class:`Ticks` or :class:`.Time`"
-WaitableType = Union[DelayType, 'Trigger', 'Delayed[Any]']
+WaitableType = Union[NoWait, DelayType, 'Trigger', 'Delayed[Any]']
+
 """
 Something that can be waited on.
 
@@ -637,6 +646,50 @@ Args:
     T: the type (if not :attr:`MISSING`)
 """
 
+class CommunicationScheduler(Protocol):
+    """
+    A :class:`typing.Protocol` that matches classes that define
+    :func:`schedule_communication` and :func:`delayed`
+    """
+    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,  # @UnusedVariable
+                               after: WaitableType = NO_WAIT) -> None:  # @UnusedVariable
+        """
+        Schedule communication of ``cb`` after optional delay ``after``
+
+        This is typically implemented by delegating and will result in calling
+        :func:`SystemComponent.schedule`, which will call
+        :func:`System.on_tick` if ``after`` is a :class:`Ticks` value and
+        :func:`System.communicate` if ``after`` is a :class:`.Time` value.  If
+        ``after`` is ``None``, it is up to the :class:`SystemComponent` to
+        determine whether it should be interpreted as zero ticks or zero
+        seconds.
+
+        Args:
+            cb: the callback function to schedule.
+        Keyword Args:
+            after: An optional delay before scheduling.
+        """
+        ...
+    def delayed(self, function: Callable[[], T], *, # @UnusedVariable
+                after: WaitableType) -> Delayed[T]: # @UnusedVariable
+        """
+        Call a function after n optional delay.
+
+        This is typically implemented by delegating and will result in a call to
+        :func:`System.delayed`.
+
+        Args:
+            function: the function to call
+        Keyword Args:
+            after: an optional delay before calling
+        Returns:
+            A :class:`Delayed` object to which the value returned by the function will be posted.
+        """
+        ...
+
+
+CS = TypeVar('CS', bound=CommunicationScheduler)    ; "A generic type variable representing a :class:`CommunicationScheduler`"
+
 class Operation(Generic[T, V], ABC):
     '''
     An operation that can be scheduled for an object of type :attr:`T` and returns a delayed value of type :attr:`V`
@@ -655,7 +708,7 @@ class Operation(Generic[T, V], ABC):
 
     Note:
         :class:`Operation`\[:attr:`T`, :attr:`V`] is an abstract base class.
-        The actual implementation class must implement :func:`_schedule_for`.
+        The actual implementation class must implement :func:`_schedule_for` and :fund:`after_delay`.
 
     Args:
         T: the type of the object used to schedule the :class:`Operation`
@@ -663,9 +716,8 @@ class Operation(Generic[T, V], ABC):
     '''
 
     @abstractmethod
-    def _schedule_for(self, obj: T, *,                      # @UnusedVariable
-                      after: Optional[DelayType] = None,    # @UnusedVariable
-                      post_result: bool = True,             # @UnusedVariable
+    def _schedule_for(self, obj: T, *,                # @UnusedVariable
+                      post_result: bool = True,       # @UnusedVariable
                       ) -> Delayed[V]:
         """
         The implementation of :func:`schedule_for`.  There is no default implementation.
@@ -674,7 +726,6 @@ class Operation(Generic[T, V], ABC):
         Args:
             obj: the :attr:`T` object to schedule the operation for
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
@@ -683,7 +734,7 @@ class Operation(Generic[T, V], ABC):
         ...
 
     def schedule_for(self, obj: Union[T, Delayed[T]], *,
-                     after: Optional[DelayType] = None,
+                     after: WaitableType = NO_WAIT,
                      post_result: bool = True,
                      ) -> Delayed[V]:
         """
@@ -715,17 +766,31 @@ class Operation(Generic[T, V], ABC):
         if isinstance(obj, Delayed):
             future = Postable[V]()
             def schedule_and_post(x: T) -> None:
-                f = self._schedule_for(x, after=after, post_result=post_result)
-                f.when_value(lambda val: future.post(val))
+                self.schedule_for(
+                    x, after=after, post_result=post_result).post_to(future)
             obj.when_value(schedule_and_post)
             return future
-        return self._schedule_for(obj, after=after, post_result=post_result)
 
-    def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
-                             Callable[[], Operation[V,V2]],
-                             Callable[[], StaticOperation[V2]]], *,
-             after: Optional[DelayType] = None,
-             ) -> Operation[T,V2]:
+        real_obj = obj
+        future = Postable[V]()
+        def cb() -> None:
+            self._schedule_for(real_obj, post_result=post_result).post_to(future)
+        self.after_delay(after, cb, obj=obj)
+        return future
+
+    @abstractmethod
+    def after_delay(self,
+                    after: WaitableType,
+                    fn: Callable[[], V2],
+                    *, obj: T) -> Delayed[V2]:
+        ...
+
+    def then(self,
+             op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
+                       Callable[[], Operation[V, V2]],
+                       Callable[[], StaticOperation[V2]]], *,
+             after: WaitableType = NO_WAIT,
+             ) -> Operation[T, V2]:
         """
         Chain this :class:`Operation` and another together to create a single
         new :class:`Operation`
@@ -749,9 +814,9 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        return CombinedOperation[T,V,V2](self, op, after=after)
+        return CombinedOperation[T, V, V3](self, op, after=after)
 
-    def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> Operation[T,V2]:
+    def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> Operation[T, V2]:
         """
         Create a new :class:`Operation` that passes the result of this one to a :class:`Callable` that returns
         a :class:`Delayed` value.
@@ -765,9 +830,9 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        return self.then(ComputeOp[V,V2](fn))
+        return self.then(ComputeOp[V, V2](fn))
 
-    def then_call(self, fn: Callable[[V], V2]) -> Operation[T,V2]:
+    def then_call(self, fn: Callable[[V], V2]) -> Operation[T, V2]:
         """
         Create a new :class:`Operation` that passes the result of this one to a
         :class:`Callable` and use its value as the overall value.
@@ -787,7 +852,7 @@ class Operation(Generic[T, V], ABC):
             return future
         return self.then_compute(fn2)
 
-    def then_process(self, fn: Callable[[V], Any]) -> Operation[T,V]:
+    def then_process(self, fn: Callable[[V], Any]) -> Operation[T, V]:
         """
         Create a new :class:`Operation` that passes the result of this one to a
         :class:`Callable`, but uses this :class:`Operation`\s result as the
@@ -806,7 +871,39 @@ class Operation(Generic[T, V], ABC):
             return obj
         return self.then_call(fn2)
 
-class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
+
+class CSOperation(Operation[CS, V]):
+    '''
+    An operation that can be scheduled for an object of type :attr:`CS` and returns a delayed value of type :attr:`V`
+
+    The basic notion is that if `op` is an :class:`Operation`\[:attr:`CS`, :attr:`V`] and `t` is a :attr:`CS`, in ::
+
+        dv: Delayed[V] = op.schedule_for(t)
+
+    the call will return immediately, and `dv` will obtain a value of type :attr:`V` at some point
+    in the future, when the operation has completed.
+
+    If :attr:`CS` is a subclass of :class:`OpScheduler`, the same effect can be
+    obtained by calling its :func:`~OpScheduler.schedule` method::
+
+        dv: Delayed[V] = t.schedule(op)
+
+    Note:
+        :class:`Operation`\[:attr:`CS`, :attr:`V`] is an abstract base class.
+        The actual implementation class must implement :func:`_schedule_for`.
+
+    Args:
+        CS: the type of the object used to schedule the :class:`Operation`
+        V: the type of the value produced by the operation
+    '''
+    def after_delay(self,
+                    after: WaitableType,
+                    fn: Callable[[], V2],
+                    *, obj: CS) -> Delayed[V2]:
+        return obj.delayed(fn, after=after)
+
+
+class CombinedOperation(Generic[T, V, V3], Operation[T, V3]):
     """
     An :class:`Operation` representing chaining two :class:`Operation`\s
     together.
@@ -818,23 +915,23 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
     Args:
         T: the type of the object used to schedule the :class:`Operation`
         V: the type of the value produced by the first operation
-        V2: the type of the value produced by the second operation (and the
+        V3: the type of the value produced by the second operation (and the
             :class:`CombinedOperation` overall)
     """
-    first: Operation[T,V]               ; "The first :class:`Operation`"
-    second: Union[Operation[V,V2], StaticOperation[V2],
-                  Callable[[], Operation[V,V2]],
-                  Callable[[], StaticOperation[V2]]]
+    first: Operation[T, V]               ; "The first :class:`Operation`"
+    second: Union[Operation[V, V3], StaticOperation[V3], # type: ignore [type-var]
+                  Callable[[], Operation[V, V3]],
+                  Callable[[], StaticOperation[V3]]]
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
-    after: Final[Optional[DelayType]]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
+    after: Final[WaitableType]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
     def __init__(self, first: Operation[T, V],
-                 second: Union[Operation[V,V2], StaticOperation[V2],
-                               Callable[[], Operation[V,V2]],
-                               Callable[[], StaticOperation[V2]]],
-                 after: Optional[DelayType] = None) -> None:
+                 second: Union[Operation[V, V3], StaticOperation[V3], # type: ignore [type-var]
+                               Callable[[], Operation[V, V3]],
+                               Callable[[], StaticOperation[V3]]],
+                 after: WaitableType=NO_WAIT) -> None:
         """
         Initialize the :class:`CombinedOperation`
 
@@ -851,11 +948,9 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
     def __repr__(self) -> str:
         return f"<Combined: {self.first} {self.second}>"
 
-
     def _schedule_for(self, obj: T, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
-                      ) -> Delayed[V2]:
+                      ) -> Delayed[V3]:
         """
         Implementat :func:`Operation.schedule_for` by scheduling :attr:`second` after :attr:`first` is done.
 
@@ -863,26 +958,31 @@ class CombinedOperation(Generic[T,V,V2], Operation[T,V2]):
         Args:
             obj: the :attr:`T` object to schedule the operation for
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``.
         """
-        return self.first._schedule_for(obj, after=after) \
+        return self.first._schedule_for(obj) \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
 
+    def after_delay(self,
+                    after: WaitableType,
+                    fn: Callable[[], V2],
+                    *, obj: T) -> Delayed[V2]:
+        return self.first.after_delay(after, fn, obj=obj)
 
-class ComputeOp(Operation[T,V]):
+
+class ComputeOp(Generic[T, V], Operation[T, V]):
     """
     A :class:`Operation` that when scheduled, returns the result of passing its
     scheduled-for object to a :class:`Callable` that returns a :class:`Delayed` object.
 
     Args:
-        T: the type of the object used to schedule the :class:`ComputeOp`
+        T: the type of the object used to schedule the :class:`Operation`
         V: the type of the value produced by the operation
     """
-    def __init__(self, function: Callable[[T],Delayed[V]]) -> None:
+    def __init__(self, function: Callable[[T],Delayed[V]], * scheduler: CommunicationScheduler) -> None:
         """
         Initialize the :class:`ComputeOp`
 
@@ -895,7 +995,6 @@ class ComputeOp(Operation[T,V]):
         return f"ComputeOp({self.function})"
 
     def _schedule_for(self, obj: T, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[V]:
         """
@@ -904,67 +1003,27 @@ class ComputeOp(Operation[T,V]):
         :meta public:
 
         Note:
-            ``after`` is asserted to be ``None``, and ``post_result`` is asserted to be ``True``.
+            ``post_result`` is asserted to be ``True``.
 
         Args:
             obj: the :attr:`T` object to schedule the operation for
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``.
         """
-        assert after == None
         assert post_result == True
         return self.function(obj)
 
-
-class CommunicationScheduler(Protocol):
-    """
-    A :class:`typing.Protocol` that matches classes that define
-    :func:`schedule_communication` and :func:`delayed`
-    """
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,  # @UnusedVariable
-                               after: Optional[DelayType] = None) -> None:  # @UnusedVariable
-        """
-        Schedule communication of ``cb`` after optional delay ``after``
-
-        This is typically implemented by delegating and will result in calling
-        :func:`SystemComponent.schedule`, which will call
-        :func:`System.on_tick` if ``after`` is a :class:`Ticks` value and
-        :func:`System.communicate` if ``after`` is a :class:`.Time` value.  If
-        ``after`` is ``None``, it is up to the :class:`SystemComponent` to
-        determine whether it should be interpreted as zero ticks or zero
-        seconds.
-
-        Args:
-            cb: the callback function to schedule.
-        Keyword Args:
-            after: An optional delay before scheduling.
-        """
-        ...
-    def delayed(self, function: Callable[[], T], *, # @UnusedVariable
-                after: Optional[DelayType]) -> Delayed[T]: # @UnusedVariable
-        """
-        Call a function after n optional delay.
-
-        This is typically implemented by delegating and will result in a call to
-        :func:`System.delayed`.
-
-        Args:
-            function: the function to call
-        Keyword Args:
-            after: an optional delay before calling
-        Returns:
-            A :class:`Delayed` object to which the value returned by the function will be posted.
-        """
-        ...
+    def after_delay(self,
+                    after: WaitableType,
+                    fn: Callable[[], V2],
+                    *, obj: T) -> Delayed[V2]:
+        raise NotImplementedError('"after_delay" not supported for "ComputeOp"')
 
 
-CS = TypeVar('CS', bound=CommunicationScheduler)    ; "A generic type variable representing a :class:`CommunicationScheduler`"
-
-class OpScheduler(Generic[CS]):
+class OpScheduler(Generic[T]):
     """
     A mixin base class giving a class the ability to schedule
     :class:`Operation`\[:attr:`CS`, :attr:`V`]s.
@@ -981,8 +1040,8 @@ class OpScheduler(Generic[CS]):
         CS: A subclass of :class:`OpScheduler`
     """
     def schedule(self: CS,
-                 op: Union[Operation[CS, V], Callable[[],Operation[CS,V]]],
-                 after: Optional[DelayType] = None,
+                 op: Union[Operation[CS, V], Callable[[],Operation[CS, V]]],
+                 after: WaitableType = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
         """
@@ -1002,7 +1061,7 @@ class OpScheduler(Generic[CS]):
             op = op()
         return op.schedule_for(self, after=after, post_result=post_result)
 
-    class WaitAt(Operation[CS,CS]):
+    class WaitAt(CSOperation[CS,CS]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits at a
         :class:`Barrier`.  The operation completes when the appropriate number
@@ -1021,7 +1080,6 @@ class OpScheduler(Generic[CS]):
             self.barrier = barrier
 
         def _schedule_for(self, obj: CS, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
                           ) -> Delayed[CS]:
             """
@@ -1033,19 +1091,13 @@ class OpScheduler(Generic[CS]):
             Args:
                 obj: the :attr:`CS` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object (unused)
             Returns:
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted
             """
             future = Postable[CS]()
-            if after is None:
-                self.barrier.pause(obj, future)
-            else:
-                def cb() -> None:
-                    self.barrier.pause(obj, future)
-                obj.schedule_communication(cb, after=after)
+            self.barrier.pause(obj, future)
             return future
 
     class Reach(Operation[CS,CS]):
@@ -1068,7 +1120,6 @@ class OpScheduler(Generic[CS]):
             self.barrier = barrier
 
         def _schedule_for(self, obj: CS, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
                           ) -> Delayed[CS]:
             """
@@ -1081,27 +1132,18 @@ class OpScheduler(Generic[CS]):
             Args:
                 obj: the :attr:`CS` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object
             Returns:
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted unless ``post_result`` is ``False``
             """
             future = Postable[CS]()
-            if after is None:
-                self.barrier.pass_through(obj)
-                if post_result:
-                    future.post(obj)
-            else:
-                def cb() -> None:
-                    self.barrier.pass_through(obj)
-                    if post_result:
-                        future.post(obj)
-                obj.schedule_communication(cb, after=after)
+            self.barrier.pass_through(obj)
+            if post_result:
+                future.post(obj)
             return future
 
-
-    class WaitFor(Operation[CS,CS]):
+    class WaitFor(CSOperation[CS,CS]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits for a
         :class:`WaitableType` to be satisfied.
@@ -1121,7 +1163,6 @@ class OpScheduler(Generic[CS]):
         """
         waitable: WaitableType  ; "What to wait for"
         def _schedule_for(self, obj: CS, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,  # @UnusedVariable
                           ) -> Delayed[CS]:
             """
@@ -1140,7 +1181,6 @@ class OpScheduler(Generic[CS]):
             Args:
                 obj: the :attr:`CS` object to schedule the operation for
             Keyword Args:
-                after: an optional delay to wait before scheduling the operation
                 post_result: whether to post the resulting value to the returned future object (unused)
             Returns:
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
@@ -1159,10 +1199,7 @@ class OpScheduler(Generic[CS]):
                     assert isinstance(waitable, Time) or isinstance(waitable, Ticks)
                     wait_future = obj.delayed(lambda: obj, after=waitable)
                     wait_future.post_to(future)
-            if after is None:
-                cb()
-            else:
-                obj.schedule_communication(cb, after=after)
+            cb()
             return future
 
         def __init__(self, waitable: WaitableType) -> None:
@@ -1200,17 +1237,20 @@ class StaticOperation(Generic[V], ABC):
         V: The type of the value that is the result of the :class:`StaticOperation`
     '''
 
+    scheduler: Final[CommunicationScheduler]
+
+    def __init__(self, *, scheduler: CommunicationScheduler) -> None:
+        self.scheduler = scheduler
+
     @abstractmethod
     def _schedule(self, *,
-                  after: Optional[DelayType] = None,    # @UnusedVariable
-                  post_result: bool = True,             # @UnusedVariable
+                  post_result: bool = True,       # @UnusedVariable
                   ) -> Delayed[V]:
         """
         The implementation of :func:`schedule`.  There is no default implementation.
 
         :meta public:
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
@@ -1220,41 +1260,32 @@ class StaticOperation(Generic[V], ABC):
 
 
     def schedule(self, *,
-                 on_future: Optional[Delayed[Any]] = None,
-                 after: Optional[DelayType] = None,
+                 after: WaitableType = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
         """
         Schedule this operation.
 
-        If ``on_future`` is not ``None``, the actual scheduling will take place
-        after a value has been posted to it.  Note that any delay specified by
-        ``after`` will be applied **after** this value is obtained.
-
         Once an object has been identified, the actual scheduling will be
         delegated through :func:`_schedule_for`.
 
         Keyword Args:
-            on_future: An optional :class:`Delayed` object that will gate this evaluation
             after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        if on_future is not None:
-            future = Postable[V]()
-            def schedule_and_post(_: Any) -> None:
-                f = self._schedule(after=after, post_result=post_result)
-                f.when_value(lambda val: future.post(val))
-            on_future.when_value(schedule_and_post)
-            return future
-        return self._schedule(after=after, post_result=post_result)
+        future = Postable[V]()
+        def cb() -> None:
+            self._schedule(post_result=post_result).post_to(future)
+        self.scheduler.delayed(cb, after=after)
+        return future
 
-    def then(self, op: Union[Operation[V,V2], StaticOperation[V2],
-                             Callable[[], Operation[V,V2]],
+    def then(self, op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
+                             Callable[[], Operation[V, V2]],
                              Callable[[], StaticOperation[V2]]],
-             after: Optional[DelayType] = None,
+             after: WaitableType = NO_WAIT,
              ) -> StaticOperation[V2]:
         """
         Chain this :class:`StaticOperation` and follow-on :class:`Operation`
@@ -1278,7 +1309,8 @@ class StaticOperation(Generic[V], ABC):
         Returns:
             the new :class:`StaticOperation`
         """
-        return CombinedStaticOperation[V,V2](self, op, after=after)
+        return CombinedStaticOperation[V, V2](self, op, after=after)
+
     def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> StaticOperation[V2]:
         """
         Create a new :class:`StaticOperation` that passes the result of this one
@@ -1293,7 +1325,8 @@ class StaticOperation(Generic[V], ABC):
         Returns:
             the new :class:`StaticOperation`
         """
-        return self.then(ComputeOp[V,V2](fn))
+        return self.then(ComputeOp[V, V2](fn))
+
     def then_call(self, fn: Callable[[V], V2]) -> StaticOperation[V2]:
         """
         Create a new :class:`StaticOperation` that passes the result of this one to a
@@ -1313,6 +1346,7 @@ class StaticOperation(Generic[V], ABC):
             future.post(fn(obj))
             return future
         return self.then_compute(fn2)
+
     def then_process(self, fn: Callable[[V], Any]) -> StaticOperation[V]:
         """
         Create a new :class:`StaticOperation` that passes the result of this one
@@ -1333,7 +1367,7 @@ class StaticOperation(Generic[V], ABC):
         return self.then_call(fn2)
 
 
-class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
+class CombinedStaticOperation(Generic[V, V2], StaticOperation[V2]):
     """
     A :class:`StaticOperation` representing chaining a :class:`StaticOperation`
     and an :class:`Operation` together.
@@ -1349,19 +1383,19 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
     """
 
     first: StaticOperation[V]               ; "The first :class:`StaticOperation`"
-    second: Union[Operation[V,V2], StaticOperation[V2],
-                  Callable[[], Operation[V,V2]],
+    second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
+                  Callable[[], Operation[V, V2]],
                   Callable[[], StaticOperation[V2]]]
     """
     The second :class:`Operation` (or :class:`StaticOperation`) or a :class:`Callable` that produces one.
     """
-    after: Final[Optional[DelayType]]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
+    after: Final[WaitableType]   ; "An optional delay to use between :attr:`first` and :attr:`second`"
 
     def __init__(self, first: StaticOperation[V],
-                 second: Union[Operation[V,V2], StaticOperation[V2],
-                               Callable[[], Operation[V,V2]],
+                 second: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
+                               Callable[[], Operation[V, V2]],
                                Callable[[], StaticOperation[V2]]], *,
-                 after: Optional[DelayType] = None) -> None:
+                 after: WaitableType = NO_WAIT) -> None:
         """
         Initialize the object
 
@@ -1377,22 +1411,21 @@ class CombinedStaticOperation(Generic[V,V2], StaticOperation[V2]):
         self.after = after
 
     def _schedule(self, *,
-                      after: Optional[DelayType] = None,
-                      post_result: bool = True,
-                      ) -> Delayed[V2]:
+                  post_result: bool = True,
+                  ) -> Delayed[V2]:
         """
         Implement :func:`Operation.schedule_for` by scheduling :attr:`second` after :attr:`first` is done.
 
         :meta public:
         Keyword Args:
-            after: an optional delay to wait before scheduling the operation
             post_result: whether to post the resulting value to the returned future object
         Returns:
             a :class:`Delayed`\[:attr:`V2`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        return self.first._schedule(after=after) \
+        return self.first._schedule() \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
+
 
 class Delayed(Generic[Tco]):
     """
@@ -1602,10 +1635,10 @@ class Delayed(Generic[Tco]):
         """
         return _CompleteDelayed(val)
 
-    def then_schedule(self, op: Union[Operation[Tco,V], StaticOperation[V],
-                                      Callable[[], Operation[Tco,V]],
+    def then_schedule(self, op: Union[Operation[Tco, V], StaticOperation[V], # type: ignore [type-var]
+                                      Callable[[], Operation[Tco, V]],
                                       Callable[[], StaticOperation[V]]], *,
-                      after: Optional[DelayType] = None,
+                      after: WaitableType = NO_WAIT,
                       post_result: bool = True) -> Delayed[V]:
         """
         Schedule an :class:`Operation` or :class:`StaticOperation` when a value
@@ -1626,7 +1659,7 @@ class Delayed(Generic[Tco]):
             ``op`` when it completed.
         """
         if isinstance(op, StaticOperation):
-            return op.schedule(on_future=self, after=after, post_result=post_result)
+            return op.schedule(after=after, post_result=post_result)
         elif isinstance(op, Operation):
             return op.schedule_for(self, after=after, post_result=post_result)
         else:
@@ -1967,8 +2000,44 @@ class Trigger:
             self.waiting.clear()
 
 
+class SingleFireTrigger(Trigger):
+    """
+    A subclass of :class:`Trigger` that keeps track of whether it's been
+    :func:`fire`ed and invokes any callbacks immediately on :func:`wait`
+    if it has.
+    """
+    fired: bool
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self.fired = False
+
+    def fire(self) -> int:
+        with self.lock:
+            if not self.fired:
+                self.fired = True
+                return super().fire()
+            else:
+                assert self.count == 0, f"Single fire trigger already fired but has callbacks waiting."
+                return 0
+
+    def wait(self, val: Any, future: Postable) -> None:
+        """
+        When the :class:`Trigger` next fires, post a value to a future.
+
+        Args:
+            val: the value to post
+            future: the :class:`Delayed` object to post to
+        """
+        with self.lock:
+            if self.fired:
+                future.post(val)
+            else:
+                super().wait(val, future)
+
 
 class Barrier(Trigger, Generic[T]):
+
     """
     A :class:`Trigger` that fires when a certain number of :attr:`T` objects
     reach it.  Objects reaching the :class:`Barrier` can optionally "pause" there
@@ -2095,7 +2164,7 @@ class Barrier(Trigger, Generic[T]):
 
 
 def schedule(op: Union[StaticOperation[V], Callable[[], StaticOperation[V]]], *,
-             after: Optional[DelayType] = None,
+             after: WaitableType = NO_WAIT,
              post_result: bool = True,
              ) -> Delayed[V]:
     """
@@ -4542,7 +4611,7 @@ class State(Generic[T], ABC):
     """
     The :class:`.ChangeCallbackList` monitoring :attr:`current_state`.
     """
-    
+
     has_state: bool = current_state.value_check
     """
     Does :attr:`current_state` have a value?
@@ -4552,7 +4621,7 @@ class State(Generic[T], ABC):
         """
         Initialize the object.  If ``initial_state`` is not :attr:`.MISSING`, it
         becomes the initial value of ``current_state``
-         
+
         Keyword Args:
             initial_state: the initial value
         """

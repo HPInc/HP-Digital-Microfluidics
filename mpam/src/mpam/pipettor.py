@@ -8,9 +8,10 @@ import logging
 from erk.errors import ErrorHandler, PRINT
 from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
     ProductLocation
-from mpam.types import Reagent, OpScheduler, Callback, DelayType, \
-    Liquid, Operation, Delayed, AsyncFunctionSerializer, T, XferDir, \
-    unknown_reagent, MixResult, Postable, MonitoredProperty, ChangeCallbackList
+from mpam.types import Reagent, OpScheduler, Callback, \
+    Liquid, Delayed, AsyncFunctionSerializer, T, XferDir, \
+    unknown_reagent, MixResult, Postable, WaitableType, NO_WAIT, \
+    CSOperation, MonitoredProperty, ChangeCallbackList
 from quantities.SI import uL
 from quantities.dimensions import Volume
 from mpam.engine import Worker
@@ -147,11 +148,11 @@ class Transfer:
         self.is_product = is_product
         self.targets = []
         self.pending = True
-        
+
     def __repr__(self) -> str:
         targets = [f"{t.target}: {t.volume}" for t in self.targets]
         return f"Transfer({self.xfer_dir}, {self.reagent}, {map_str(targets)}"
-        
+
     @property
     def total_volume(self) -> Volume:
         return sum((x.volume for x in self.targets), start = Volume.ZERO)
@@ -234,15 +235,15 @@ class PipettingSource:
     name: Final[str]
     capacity: Final[Volume]
     pipettor: Final[Pipettor]
-    
+
     _desc: Optional[str] = None
-    
+
     _reagent: Optional[Reagent] = None
     assigned_reagent: Final[Delayed[Reagent]]
 
     bounds: MonitoredProperty[VolumeRange] = MonitoredProperty()
     on_bounds_change: ChangeCallbackList[VolumeRange] = bounds.callback_list
-    
+
     @bounds.transform
     def _clip_bounds(self, volume_range: VolumeRange) -> VolumeRange:
         low,high = volume_range
@@ -250,32 +251,32 @@ class PipettingSource:
         low = self._clip(low)
         high = self._clip(high)
         return low,high
-    
+
     @property
     def min_volume(self) -> Volume:
         return self.bounds[0]
-         
+
     @property
     def max_volume(self) -> Volume:
         return self.bounds[1]
-    
+
     def _clip(self, v: Volume) -> Volume:
         return min(max(v, Volume.ZERO), self.capacity)
-    
-    
+
+
     @property
     def exact_volume(self) -> Optional[Volume]:
         low,high = self.bounds
         return low if low == high else None
-    
+
     @exact_volume.setter
     def exact_volume(self, volume: Volume) -> None:
         self.bounds = (volume,volume)
-    
+
     @property
     def reagent(self) -> Optional[Reagent]:
         return self._reagent
-    
+
     @reagent.setter
     def reagent(self, reagent: Reagent) -> None:
         my_reagent = self.reagent
@@ -285,11 +286,11 @@ class PipettingSource:
         postable = self.assigned_reagent
         assert isinstance(postable, Postable)
         postable.post(reagent)
-    
+
     @property
     def is_assigned(self) -> bool:
         return self.reagent is not None
-    
+
     def __init__(self, name: str, *,
                  pipettor: Pipettor,
                  capacity: Optional[Volume] = None,
@@ -301,20 +302,20 @@ class PipettingSource:
         self.capacity = capacity
         self.pipettor = pipettor
         self._reagent = reagent
-        
+
         future: Delayed[Reagent]
         if reagent is None:
             future = Postable()
         else:
             future = Delayed.complete(reagent)
         self.assigned_reagent = future
-        
+
         if volume is None:
             self.bounds = (Volume.ZERO, capacity)
         else:
             self.bounds = (volume, volume)
-            
-            
+
+
     def __repr__(self) -> str:
         desc = self._desc
         if desc is None:
@@ -324,7 +325,7 @@ class PipettingSource:
         if contents != "":
             contents = ", "+contents
         return f'{type(self).__name__}("{desc}"{contents})'
-    
+
     def content_desc(self) -> str:
         reagent = self.reagent
         low,high = self.bounds
@@ -339,18 +340,18 @@ class PipettingSource:
             if high.is_finite:
                 contents += f", max={high:,g}"
             return contents
-            
+
     def __iadd__(self, v: Volume) -> PipettingSource:
         low, high = self.bounds
         self.bounds = (low+v, high+v)
         return self
-        
+
     def __isub__(self, v: Volume) -> PipettingSource:
         low, high = self.bounds
         self.bounds = (low-v, high-v)
         return self
-        
-        
+
+
 
 class PipettorSysCpt(SystemComponent):
     pipettor: Final[Pipettor]
@@ -395,11 +396,11 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
 
     @abstractmethod
     def perform(self, transfer: Transfer) -> None: ... # @UnusedVariable
-    
+
     @abstractmethod
     def sources_for(self, reagent: Reagent) -> Sequence[PipettingSource]: # @UnusedVariable
         ...
-        
+
     def source_for(self, reagent: Reagent) -> Optional[PipettingSource]:
         sources = self.sources_for(reagent)
         if len(sources) == 0:
@@ -411,14 +412,14 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                     return source
         # If everybody is empty, just return the first
         return sources[0]
-        
+
     @abstractmethod
     def source_named(self, name: str) -> Optional[PipettingSource]: # @UnusedVariable
         ...
-        
+
     def describe_source(self, source: PipettingSource) -> str:
         return source.name
-    
+
     @classmethod
     def _generate_source_names(cls, *, rows: int = 8, columns: int = 12,
                                plates: int = 1,
@@ -430,7 +431,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         def name(r: int, c: int, p: int) -> str:
             pd = "" if total_plates == 1 else f"/{p}"
             return f"{chr(a+r)}{c+1}{pd}"
-        return [name(r,c,p) 
+        return [name(r,c,p)
                 for p in range(start_plate, start_plate+plates)
                 for r in range(rows)
                 for c in range(columns)]
@@ -442,8 +443,7 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         if factory is None:
             factory = lambda n,p,c: PipettingSource(n, pipettor=p, capacity=c)
         return [factory(n,self,capacity) for n in names]
-    
-        
+
     def join_system(self, system: System) -> None:
         self.sys_cpt.join_system(system)
         self.worker = Worker(system.engine.idle_barrier, desc = self)
@@ -452,15 +452,15 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         pass
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: Optional[DelayType] = None) -> None:
-        return self.sys_cpt.schedule(cb, after=after)
+                               after: WaitableType = NO_WAIT) -> None:
+        self.sys_cpt.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: Optional[DelayType]) -> Delayed[T]:
+                after: WaitableType) -> Delayed[T]:
         return self.sys_cpt.delayed(function, after=after)
 
 
-    class Supply(Operation['Pipettor', Liquid]):
+    class Supply(CSOperation['Pipettor', Liquid]):
         reagent: Final[Reagent]
         volume: Final[Volume]
         target: Final[PipettingTarget]
@@ -469,13 +469,12 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
         on_insufficient: Final[ErrorHandler]
         on_no_source: Final[ErrorHandler]
 
-        def __init__(self, reagent: Reagent, volume: Volume, 
+        def __init__(self, reagent: Reagent, volume: Volume,
                      target: PipettingTarget, *,
                      allow_merge: bool = False,
                      mix_result: Optional[MixResult] = None,
                      on_insufficient: ErrorHandler=PRINT,
                      on_no_source: ErrorHandler=PRINT
-
                      ) -> None:
             self.reagent = reagent
             self.volume = volume
@@ -486,21 +485,16 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             self.on_no_source = on_no_source
 
         def _schedule_for(self, pipettor: Pipettor, *,
-                          after: Optional[DelayType]=None,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
-
             future = Postable[Liquid]()
-            def schedule_it() -> None:
-                pipettor.xfer_sched.add(self.target, self.reagent, self.volume,
-                                        future=future, allow_merge=self.allow_merge,
-                                        mix_result=self.mix_result,
-                                        on_unknown=self.on_no_source, on_insufficient=self.on_insufficient)
-
-            pipettor.delayed(schedule_it, after=after)
+            pipettor.xfer_sched.add(self.target, self.reagent, self.volume,
+                                    future=future, allow_merge=self.allow_merge,
+                                    mix_result=self.mix_result,
+                                    on_unknown=self.on_no_source, on_insufficient=self.on_insufficient)
             return future
 
-    class Extract(Operation['Pipettor', Liquid]):
+    class Extract(CSOperation['Pipettor', Liquid]):
         volume: Final[Optional[Volume]]
         reagent: Final[Optional[Reagent]]
         target: Final[PipettingTarget]
@@ -531,28 +525,23 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
             self.product_loc = product_loc
 
         def _schedule_for(self, pipettor: Pipettor, *,
-                          after: Optional[DelayType]=None,
                           post_result: bool=True, # @UnusedVariable
                           ) -> Delayed[Liquid]:
-
+            target = self.target
+            contents = target.removable_liquid
+            volume = self.volume
+            if volume is None:
+                if contents is None:
+                    self.on_no_liquid(f"No volume specified on extraction from {target}, which is empty")
+                    return Delayed.complete(Liquid(unknown_reagent, Volume.ZERO))
+                else:
+                    volume = contents.volume
+            reagent = self.reagent
+            if reagent is None:
+                reagent = unknown_reagent if contents is None else contents.reagent
             future = Postable[Liquid]()
-            def schedule_it() -> None:
-                target = self.target
-                contents = target.removable_liquid
-                volume = self.volume
-                if volume is None:
-                    if contents is None:
-                        self.on_no_liquid(f"No volume specified on extraction from {target}, which is empty")
-                        future.post(Liquid(unknown_reagent, Volume.ZERO))
-                        return
-                    else:
-                        volume = contents.volume
-                reagent = self.reagent
-                if reagent is None:
-                    reagent = unknown_reagent if contents is None else contents.reagent
-                pipettor.xfer_sched.remove(target, reagent, volume,
-                                           future=future, allow_merge=self.allow_merge,
-                                           on_unknown=self.on_no_sink, on_insufficient=self.on_insufficient_space,
-                                           is_product = self.is_product, product_loc=self.product_loc)
-            pipettor.delayed(schedule_it, after=after)
+            pipettor.xfer_sched.remove(target, reagent, volume,
+                                       future=future, allow_merge=self.allow_merge,
+                                       on_unknown=self.on_no_sink, on_insufficient=self.on_insufficient_space,
+                                       is_product = self.is_product, product_loc=self.product_loc)
             return future

@@ -14,9 +14,10 @@ from erk.stringutils import map_str
 from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
     ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad
 from mpam.exceptions import NoSuchPad, NotAtWell
-from mpam.types import Liquid, Dir, Delayed, DelayType, \
-    Operation, OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
-    StaticOperation, Reagent, Callback, T, MixResult, Postable
+from mpam.types import Liquid, Dir, Delayed, \
+    OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
+    StaticOperation, Reagent, Callback, T, MixResult, Postable, \
+    CSOperation, WaitableType, NO_WAIT, ComputeOp, V2
 from quantities.core import qstr
 from quantities.dimensions import Volume
 
@@ -640,7 +641,7 @@ class DropStatus(Enum):
     OFF_BOARD = auto()
 
 
-class MotionOp(Operation['Drop', 'Drop'], ABC):
+class MotionOp(CSOperation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]
 
     def __init__(self, *, allow_unsafe: bool):
@@ -649,7 +650,6 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
     @abstractmethod
     def dirAndSteps(self, drop: Drop) -> tuple[Dir, int]: ...  # @UnusedVariable
     def _schedule_for(self, drop: Drop, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
         assert isinstance(drop.pad, Pad), f"{drop} not on board.  Can't create MotionOp {self}"
@@ -659,10 +659,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
         direction, steps = self.dirAndSteps(drop)
         # allow_unsafe_motion = self.allow_unsafe_motion
 
-        # if after is None:
-        #     logger.debug(f'direction:{direction}|steps:{steps}')
-        # else:
-        #     logger.debug(f'direction:{direction}|steps:{steps}|after:{after}')
+        # logger.debug(f'direction:{direction}|steps:{steps}|after:{after}')
 
         if drop.status is not DropStatus.ON_BOARD:
             logger.warning(f"Drop {drop} is not on board, cannot move {qstr(steps,'step')} {direction.name}")
@@ -707,7 +704,7 @@ class MotionOp(Operation['Drop', 'Drop'], ABC):
                     yield one_tick
             yield None
         iterator = before_tick()
-        board.before_tick(lambda: next(iterator), delta=after)
+        board.before_tick(lambda: next(iterator))
         return future
 
 
@@ -789,11 +786,11 @@ class Drop(OpScheduler['Drop']):
         return f"Drop[{place}{self.pad}{liquid}]"
 
     def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: Optional[DelayType] = None) -> None:
+                               after: WaitableType = NO_WAIT) -> None:
         self.pad.schedule_communication(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
-                after: Optional[DelayType]) -> Delayed[T]:
+                after: WaitableType) -> Delayed[T]:
         return self.pad.delayed(function, after=after)
 
 
@@ -815,7 +812,6 @@ class Drop(OpScheduler['Drop']):
             self.liquid = liquid
 
         def _schedule(self, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             future = Postable[Drop]()
@@ -829,19 +825,20 @@ class Drop(OpScheduler['Drop']):
                     # We're assuming that nobody is going to have turned off the pad, allowing
                     # the liquid to slip somewhere else.
                     future.post(pad.checked_drop)
-            pad.schedule(Pad.TurnOn, after=after) \
-                .then_call(make_drop)
+            pad.schedule(Pad.TurnOn).then_call(make_drop)
             return future
 
     class TeleportInTo(StaticOperation['Drop']):
         extraction_point: Final[ExtractionPoint]
         liquid: Final[Liquid]
         mix_result: Final[Optional[Union[Reagent,str]]]
+
         def __init__(self, extraction_point: ExtractionPoint, *,
                      liquid: Optional[Liquid] = None,
                      reagent: Optional[Reagent] = None,
                      mix_result: Optional[Union[Reagent,str]] = None,
                      ) -> None:
+            super().__init__(scheduler=extraction_point)
             self.extraction_point = extraction_point
             board = extraction_point.pad.board
             if liquid is None:
@@ -852,14 +849,14 @@ class Drop(OpScheduler['Drop']):
             self.mix_result = mix_result
 
         def _schedule(self, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             liquid = self.liquid
-            op = ExtractionPoint.TransferIn(liquid.reagent, liquid.volume, mix_result=self.mix_result)
-            return self.extraction_point.schedule(op, after=after, post_result=post_result)
+            op = ExtractionPoint.TransferIn(
+                liquid.reagent, liquid.volume, mix_result=self.mix_result)
+            return self.extraction_point.schedule(op, post_result=post_result)
 
-    class TeleportOut(Operation['Drop', None]):
+    class TeleportOut(CSOperation['Drop', None]):
         volume: Final[Optional[Volume]]
         product_loc: Final[Optional[Postable[ProductLocation]]]
 
@@ -871,17 +868,13 @@ class Drop(OpScheduler['Drop']):
             self.product_loc = product_loc
 
         def _schedule_for(self, drop: Drop, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,  # @UnusedVariable
                       ) -> Delayed[None]:
             op = ExtractionPoint.TransferOut(volume=self.volume, product_loc=self.product_loc)
             future = Postable[None]()
-
-            def do_it() -> None:
-                ep = cast(Pad, drop.pad).extraction_point
-                assert ep is not None, f"{drop} is not at an extraction point"
-                ep.schedule(op).then_call(lambda _: future.post(None))
-            drop.pad.delayed(do_it, after=after)
+            ep = cast(Pad, drop.pad).extraction_point
+            assert ep is not None, f"{drop} is not at an extraction point"
+            ep.schedule(op).post_val_to(future, None)
             return future
 
     class Move(MotionOp):
@@ -945,8 +938,19 @@ class Drop(OpScheduler['Drop']):
         reagent: Final[Optional[Reagent]]
         empty_wrong_reagent: Final[bool]
 
+        def __init__(self, well: Well, *,
+                     reagent: Optional[Reagent] = None,
+                     empty_wrong_reagent: bool = False,
+                     after_reservation: Optional[Callback] = None,
+                     before_release: Optional[Callback] = None) -> None:
+            super().__init__(scheduler=well)
+            self.well = well
+            self.reagent = reagent
+            self.empty_wrong_reagent = empty_wrong_reagent
+            self.after_reservation = after_reservation
+            self.before_release = before_release
+
         def _schedule(self, *,
-                      after: Optional[DelayType] = None,
                       post_result: bool = True,
                       ) -> Delayed[Drop]:
             future = Postable[Drop]()
@@ -995,31 +999,18 @@ class Drop(OpScheduler['Drop']):
                     yield True
                 yield False
 
-
             def run_group(_: Any) -> None:
                 # Note, we post the drop as soon as we get to the DISPENSED state, even theough
                 # we continue on to READY
-                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()),
-                               after=after) \
+                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard())) \
                     .then_call(make_drop) \
                     .then_schedule(Well.TransitionTo(WellState.READY))
+
             # well.ensure_content().then_call(run_group)
             run_group(None)
             return future
 
-
-        def __init__(self, well: Well, *,
-                     reagent: Optional[Reagent] = None,
-                     empty_wrong_reagent: bool = False,
-                     after_reservation: Optional[Callback] = None,
-                     before_release: Optional[Callback] = None) -> None:
-            self.well = well
-            self.reagent = reagent
-            self.empty_wrong_reagent = empty_wrong_reagent
-            self.after_reservation = after_reservation
-            self.before_release = before_release
-
-    class EnterWell(Operation['Drop',None]):
+    class EnterWell(CSOperation['Drop',None]):
         well: Final[Optional[Well]]
         empty_wrong_reagent: Final[bool]
 
@@ -1027,7 +1018,6 @@ class Drop(OpScheduler['Drop']):
             return f"<Drop.EnterWell: {self.well}>"
 
         def _schedule_for(self, drop: Drop, *,
-                          after: Optional[DelayType] = None,
                           post_result: bool = True,
                           ) -> Delayed[None]:
             future = Postable[None]()
@@ -1077,7 +1067,7 @@ class Drop(OpScheduler['Drop']):
 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
-            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard()), after=after) \
+            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard())) \
                 .then_call(consume_drop) \
                 .then_schedule(Well.TransitionTo(WellState.READY))
             return future
@@ -1087,3 +1077,11 @@ class Drop(OpScheduler['Drop']):
                      empty_wrong_reagent: bool = False) -> None:
             self.well = well
             self.empty_wrong_reagent = empty_wrong_reagent
+
+
+class DropComputeOp(ComputeOp[Drop,Drop]):
+    def after_delay(self,
+                    after: WaitableType,
+                    fn: Callable[[], V2],
+                    *, obj: Drop) -> Delayed[V2]:
+        return obj.delayed(fn, after=after)

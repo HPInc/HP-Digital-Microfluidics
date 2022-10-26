@@ -30,7 +30,6 @@ import fileinput
 from tempfile import NamedTemporaryFile
 import logging
 import re
-from erk.stringutils import map_str
 
 logger = logging.getLogger(__name__)
 
