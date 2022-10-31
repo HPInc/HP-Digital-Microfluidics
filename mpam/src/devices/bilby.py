@@ -9,7 +9,7 @@ from devices.glider_client import GliderClient
 from mpam.pipettor import Pipettor
 from mpam.types import OnOff, State, DummyState, Delayed, XYCoord
 from mpam import device
-from mpam.device import Pad, PowerMode, Magnet
+from mpam.device import Pad, PowerMode, Magnet, Well
 from quantities.dimensions import Time, Voltage
 from quantities.SI import ms, volts
 from quantities.temperature import TemperaturePoint, abs_C
@@ -45,9 +45,10 @@ class Heater(device.Heater):
     remote: Final[glider_client.Heater]
     def __init__(self, remote: glider_client.Heater, board: Board, *,
                  polling_interval: Time,
-                 pads: Sequence[Pad]):
-        super().__init__(board, polling_interval=polling_interval, locations=pads,
-                         max_heat = 120*abs_C, min_chill = None)
+                 pads: Sequence[Pad],
+                 wells: Sequence[Well]):
+        super().__init__(board, polling_interval=polling_interval, locations=(*pads, *wells),
+                         limit = 120*abs_C)
         self.remote = remote 
         def update_target(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]) -> None: # @UnusedVariable
             # We indirect through the board so that MakeItSo will be called.
@@ -61,6 +62,33 @@ class Heater(device.Heater):
         
     def __repr__(self) -> str:
         return f"<Heater {self.number} using {self.remote}>"
+
+    
+    def poll(self) -> Delayed[Optional[TemperaturePoint]]:
+        temp = self.remote.read_temperature()
+        return Delayed.complete(temp)
+    
+class Chiller(device.Chiller):
+    remote: Final[glider_client.Heater]
+    def __init__(self, remote: glider_client.Heater, board: Board, *,
+                 polling_interval: Time,
+                 pads: Sequence[Pad],
+                 wells: Sequence[Well]):
+        super().__init__(board, polling_interval=polling_interval, locations=(*pads, *wells),
+                         limit = 5*abs_C)
+        self.remote = remote 
+        def update_target(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]) -> None: # @UnusedVariable
+            # We indirect through the board so that MakeItSo will be called.
+            # This puts heater target changes synchronous with the clock.  I'm
+            # not sure that's right, but it does allow the clock to be paused.
+            # Note that this means that thermocycling needs to be not completely
+            # asynchronous.
+            self.board.communicate(lambda: self.remote.set_chilling_target(new)) 
+        update_target_key = f"Update Target for {self}"
+        self.on_target_change(update_target, key = update_target_key)
+        
+    def __repr__(self) -> str:
+        return f"<Chiller {self.number} using {self.remote}>"
 
     
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
@@ -145,6 +173,19 @@ class Board(joey.Board):
                     pads.append(pad)
         return pads
 
+    def _wells_matching(self, name: str, fn: Callable[[glider_client.Electrode], Sequence[str]]) -> list[Well]:
+        wells: list[Well] = []
+        for well in self.wells:
+            for pad in well.shared_pads:
+                state = pad.state
+                if state is not None:
+                    assert isinstance(state, glider_client.Electrode), f"{state} is not an Electrode"
+                    heater_names = fn(state)
+                    if name in heater_names:
+                        wells.append(well)
+                        break
+        return wells
+
     def _magnets(self, *, first_num: int = 0) -> Sequence[Magnet]:
         num = first_num
         def make_magnet(gm: glider_client.Magnet) -> Magnet:
@@ -164,8 +205,6 @@ class Board(joey.Board):
             gt = pyglider.Heater.HeaterType.TSR
         elif heater_type is HeaterType.Paddles:
             gt = pyglider.Heater.HeaterType.Paddle
-        elif heater_type is HeaterType.Peltier:
-            gt = pyglider.Heater.HeaterType.Peltier
         else:
             assert_never(heater_type)
             
@@ -173,7 +212,8 @@ class Board(joey.Board):
             
         def make_heater(gh: glider_client.Heater) -> Heater:
             pads = self._pads_matching(gh.name, glider_client.Electrode.heater_names)
-            h =  Heater(gh, self, pads=pads, polling_interval=polling_interval)
+            wells = self._wells_matching(gh.name, glider_client.Electrode.heater_names)
+            h =  Heater(gh, self, pads=pads, wells=wells, polling_interval=polling_interval)
             return h
         
         ghs = list(self._device.heaters.values())
@@ -181,6 +221,21 @@ class Board(joey.Board):
         heaters = [make_heater(h) for h in usable]
         # heaters = [make_heater(h) for h in self._device.heaters.values() if h.remote.GetType() is gt]
         return heaters
+    
+    def _chillers(self, *, polling_interval: Time = 200*ms) -> Sequence[Chiller]:
+        gt = pyglider.Heater.HeaterType.Peltier
+            
+        def make_chiller(gh: glider_client.Heater) -> Chiller:
+            pads = self._pads_matching(gh.name, glider_client.Electrode.heater_names)
+            wells = self._wells_matching(gh.name, glider_client.Electrode.heater_names)
+            c =  Chiller(gh, self, pads=pads, wells=wells, polling_interval=polling_interval)
+            return c
+        
+        ghs = list(self._device.heaters.values())
+        usable = [h for h in ghs if h.remote.GetType() == gt]
+        chillers = [make_chiller(h) for h in usable]
+        # heaters = [make_heater(h) for h in self._device.heaters.values() if h.remote.GetType() is gt]
+        return chillers
     
     def _power_supply(self, *, 
                       min_voltage: Voltage, 
@@ -268,7 +323,7 @@ class PlatformTask(joey.PlatformTask):
                      voltage=voltage,
                      extraction_point_splash_radius=args.extraction_point_splash_radius)
         
-    def add_args_to(self, 
+    def add_args_to(self,
                     group: _ArgumentGroup, 
                     parser: ArgumentParser,
                     *,

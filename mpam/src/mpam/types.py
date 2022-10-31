@@ -23,7 +23,7 @@ from weakref import WeakKeyDictionary, finalize
 from matplotlib._color_data import XKCD_COLORS
 
 from erk.numutils import farey
-from quantities.core import CountDim, DerivedDim, Quantity, UnitExpr
+from quantities.core import CountDim, DerivedDim
 from quantities.dimensions import Molarity, MassConcentration, \
     VolumeConcentration, Volume, Time, Temperature
 from quantities.temperature import TemperaturePoint

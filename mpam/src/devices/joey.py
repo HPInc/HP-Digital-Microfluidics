@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from argparse import Namespace, ArgumentParser, _ArgumentGroup
 from enum import Enum, auto
-from typing import Optional, Sequence, Final, Literal, cast
+from typing import Optional, Sequence, Final, Literal
 
-from devices.emulated_heater import EmulatedHeater
+from devices.emulated_heater import EmulatedHeater, EmulatedChiller
 from erk.basic import assert_never
 from erk.stringutils import conj_str
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
-    transitions_from, WellGate, Heater, PowerSupply, PowerMode, Fan
+    transitions_from, WellGate, TemperatureControl, PowerSupply, PowerMode, Fan,\
+    Heater, Chiller
 import mpam.device as device
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
@@ -17,8 +18,8 @@ from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import XYCoord, Orientation, GridRegion, Dir, State, \
-    OnOff, DummyState, RCOrder
-from quantities.SI import uL, ms, volts
+    OnOff, DummyState, RCOrder, deg_C_per_sec
+from quantities.SI import uL, ms, volts, deg_C
 
 
 from quantities.dimensions import Time, Volume, Voltage
@@ -27,7 +28,6 @@ from quantities.temperature import abs_C
 class HeaterType(Enum):
     TSRs = auto()
     Paddles = auto()
-    Peltier = auto()
     
     @classmethod
     def from_name(cls, name: str) -> HeaterType:
@@ -170,12 +170,13 @@ class Board(device.Board):
                  polling_interval: Time = 200*ms) -> Sequence[Heater]:
         def make_heater(*, regions: Sequence[GridRegion]) -> Heater:
             return EmulatedHeater(board=self, regions=regions, wells=[],
-                                  max_heat = 120*abs_C,
-                                  min_chill = None, 
-                                  polling_interval=polling_interval)
+                                  limit = 120*abs_C,
+                                  polling_interval=polling_interval,
+                                  driving_rate = 100*deg_C_per_sec,
+                                  return_rate = 10*deg_C_per_sec,
+                                  noise_sd = 0.05*deg_C)
         regions: Sequence[Sequence[GridRegion]]
         if heater_type is HeaterType.TSRs:
-    
             regions = ([GridRegion(XYCoord(0,12),3,7)],
                        [GridRegion(XYCoord(0,0),3,7)],
                        [GridRegion(XYCoord(8,12),3,7)],
@@ -186,20 +187,23 @@ class Board(device.Board):
             regions = ([GridRegion(XYCoord(0,0),3,19)],
                        [GridRegion(XYCoord(8,0),3,19)],
                        [GridRegion(XYCoord(16,0),3,19)])
-        elif heater_type is HeaterType.Peltier:
-            def make_chiller(*, wells: Sequence[device.Well]) -> Heater:
-                ws = [cast(Well, w) for w in wells]
-                return EmulatedHeater(board=self, regions=[], wells=ws,
-                                      max_heat = None,
-                                      min_chill = 5*abs_C, 
-                                      polling_interval=polling_interval)
-            well_sets = ([w for w in self.wells if w.exit_dir is Dir.EAST],
-                         [w for w in self.wells if w.exit_dir is Dir.WEST])
-            return [make_chiller(wells=w) for w in well_sets]
         else:
             assert_never(heater_type)
         return [make_heater(regions=r) for r in regions]
             
+    def _chillers(self, *, polling_interval: Time = 200*ms) -> Sequence[Chiller]:
+        def make_chiller(*, wells: Sequence[device.Well]) -> Chiller:
+            return EmulatedChiller(board=self, regions=[], wells=wells,
+                                   limit = 5*abs_C,
+                                   polling_interval=polling_interval,
+                                   driving_rate = 100*deg_C_per_sec,
+                                   return_rate = 10*deg_C_per_sec,
+                                   noise_sd = 0.1*deg_C)
+        well_sets = ([w for w in self.wells if w.exit_dir is Dir.EAST],
+                     [w for w in self.wells if w.exit_dir is Dir.WEST])
+        return [make_chiller(wells=w) for w in well_sets]
+            
+    
     
     def _power_supply(self, *,
                       min_voltage: Voltage,
@@ -309,6 +313,7 @@ class Board(device.Board):
 
         self._add_magnets(self._magnets())
         self._add_heaters(self._heaters(heater_type))
+        self._add_chillers(self._chillers())
         # self._add_heaters(self._heaters(HeaterType.Peltier))
         
 
@@ -322,13 +327,13 @@ class Board(device.Board):
                        in_dir: Dir,
                        adjacent_step: Dir,
                        ) -> Optional[Channel]:
-            def heater(thresh: Pad, in_dir: Dir) -> Optional[Heater]:
+            def heater(thresh: Pad, in_dir: Dir) -> Optional[TemperatureControl]:
                 # We allow that this pad might not actually exist in order to handle Wombat
                 pad = thresh.neighbor(in_dir, only_existing=False)
                 assert pad is not None, f"No pad at {thresh}+{in_dir}"
                 if not pad.exists:
                     return None
-                heater = pad.heater
+                heater = pad.temperature_control
                 assert heater is not None, f"No heater at {pad}"
                 return heater 
             
@@ -376,7 +381,7 @@ class Board(device.Board):
                 right_tc_channel(2, Dir.DOWN), right_tc_channel(0, Dir.UP),
             )
         self.thermocycler = Thermocycler(
-            heaters = self.heaters,
+            heaters = self.temperature_controls,
             channels = tc_channels)
 
     def join_system(self, system: System) -> None:
@@ -413,7 +418,7 @@ def heater_type_arg_name_for(t: HeaterType) -> str:
     for k,v in heater_type_arg_names.items():
         if v is t:
             return k
-    assert False, f"Heater type {t} doesn't have an argument representation"
+    assert False, f"TemperatureControl type {t} doesn't have an argument representation"
 
         
 class PlatformTask(PlatformChoiceTask):

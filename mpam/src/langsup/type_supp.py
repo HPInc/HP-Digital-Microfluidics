@@ -77,7 +77,9 @@ class Type:
     ABS_TEMP: ClassVar[Type]
     REL_TEMP: ClassVar[Type]
     AMBIG_TEMP: ClassVar[Type]
+    TEMP_CONTROL: ClassVar[Type]
     HEATER: ClassVar[Type]
+    CHILLER: ClassVar[Type]
     MAGNET: ClassVar[Type]
     BOARD: ClassVar[Type]
     POWER_SUPPLY: ClassVar[Type]
@@ -240,7 +242,9 @@ Type.BUILT_IN = Type("BUILT_IN")
 Type.ABS_TEMP = Type("ABS_TEMP")
 Type.REL_TEMP = Type("REL_TEMP")
 Type.AMBIG_TEMP = Type("AMBIG_TEMP", [Type.ABS_TEMP, Type.REL_TEMP])
-Type.HEATER = Type("HEATER", [Type.BINARY_CPT])
+Type.TEMP_CONTROL = Type("TEMP_CONTROL", [Type.BINARY_CPT])
+Type.HEATER = Type("HEATER", [Type.TEMP_CONTROL])
+Type.CHILLER = Type("CHILLER", [Type.TEMP_CONTROL])
 Type.MAGNET = Type("MAGNET", [Type.BINARY_CPT])
 Type.BOARD = Type("BOARD")
 Type.POWER_SUPPLY = Type("POWER_SUPPLY", [Type.BINARY_CPT])
@@ -649,6 +653,8 @@ PhysUnit = Union[Unit,EnvRelativeUnit]
 class NumberedItem(Enum):
     WELL = auto()
     HEATER = auto()
+    CHILLER = auto()
+    TEMP_CONTROL = auto()
     MAGNET = auto()
 
 if __name__ == '__main__':

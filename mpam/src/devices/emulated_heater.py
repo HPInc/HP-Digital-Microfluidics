@@ -1,80 +1,142 @@
 from __future__ import annotations
 
 import random
-from typing import Sequence, Optional, Union
+from typing import Sequence, Optional, Union, Final
 
-from mpam.device import Heater, Board, Well, Pad, HeatingMode
+from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode,\
+    Heater, Chiller
 from mpam.types import HeatingRate, GridRegion, Delayed
 from quantities.SI import ms, deg_C, sec
 from quantities.dimensions import Time, Temperature
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
+from random import Random
 
+class TemperatureControlEmulator:
+    last_read_time: Timestamp
+    driving_rate: Final[HeatingRate]
+    return_rate: Final[HeatingRate]
+    temp_control: Final[TemperatureControl]
+    noise_sd: Final[Temperature]
+    rng: Final[Random]
+
+    def __init__(self, temp_control: TemperatureControl, *,
+                 driving_rate: HeatingRate,
+                 return_rate: HeatingRate,
+                 noise_sd: Temperature = Temperature.ZERO) -> None:
+        self.temp_control = temp_control
+        self.last_read_time = time_now()
+        self.driving_rate = driving_rate
+        self.return_rate = return_rate
+        self.noise_sd = noise_sd
+        self.rng = Random()
+        # It really seems as though we should be able to just override the target setter, but I
+        # can't get the compiler (and MyPy) to accept it
+        key=(self, "target changed", random.random())
+
+        def set_lrt() -> None:
+            self.last_read_time = time_now()
+        temp_control.on_target_change(lambda _old,_new: set_lrt(), key=key)
+
+    def new_temp(self) -> Optional[TemperaturePoint]:
+        now = time_now()
+        elapsed = now-self.last_read_time
+        self.last_read_time = now
+        tc = self.temp_control
+
+        mode = tc.mode
+        if mode.is_maintaining:
+            return tc.target
+        # if mode is TemperatureMode.AMBIENT or mode.is_maintaining:
+        #     return tc.current_temperature
+        current = tc.current_temperature
+        assert current is not None
+
+        target = tc.target
+        if target is None:
+            target = tc.board.ambient_temperature
+        if mode.is_active:
+            heating = mode is TemperatureMode.HEATING
+            sign = 1 if heating else -1
+            rate = self.driving_rate 
+            clip = min if heating else max
+        else:
+            cooling = current >= target
+            sign = -1 if cooling else 1
+            rate = self.return_rate
+            clip = max if cooling else min
+            
+        delta = sign*(rate*elapsed).a(Temperature)
+        new_temp = current + delta
+        new_temp = clip(new_temp, target)
+        return new_temp
+    
+    def poll(self) -> Delayed[Optional[TemperaturePoint]]:
+        t = self.new_temp()
+        if t is not None:
+            t += Temperature.noise(self.noise_sd, rng = self.rng)
+        return Delayed.complete(t)
 
 class EmulatedHeater(Heater):
-    _last_read_time: Timestamp
-    _heating_rate: HeatingRate
-    _cooling_rate: HeatingRate
-
-    def __init__(self, board: Board, *,
+    emulator: Final[TemperatureControlEmulator]
+    
+    def __init__(self, board: Board,*,
                  regions: Sequence[GridRegion],
                  wells: Sequence[Well],
-                 max_heat: Optional[TemperaturePoint],
-                 min_chill: Optional[TemperaturePoint],
+                 limit: Optional[TemperaturePoint],
                  initial_temperature: Optional[TemperaturePoint] = None,
                  polling_interval: Time = 200*ms,
                  driving_rate: HeatingRate = 100*(deg_C/sec),
                  return_rate: HeatingRate = 10*(deg_C/sec),
-                 noise_sd: Optional[Temperature] = None) -> None:
+                 noise_sd: Temperature = Temperature.ZERO) -> None:
+        
         locs = list[Union[Pad, Well]]()
+
         for region in regions:
             locs += (board.pad_array[xy] for xy in region)
         locs += wells
         
         if initial_temperature is None:
             initial_temperature = board.ambient_temperature
-            
-        super().__init__(board,
-                         polling_interval = polling_interval,
-                         locations = locs,
-                         max_heat = max_heat,
-                         min_chill = min_chill,
-                         initial_temperature = initial_temperature)
-        self._last_read_time = time_now()
-        self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
-        self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
-        # It really seems as though we should be able to just override the target setter, but I
-        # can't get the compiler (and MyPy) to accept it
-        key=(self, "target changed", random.random())
 
-        def set_lrt() -> None:
-            self._last_read_time = time_now()
-        self.on_target_change(lambda _old,_new: set_lrt(), key=key)
+        super().__init__(board, locations=locs, limit=limit, 
+                         initial_temperature=initial_temperature, polling_interval=polling_interval)
+        self.emulator = TemperatureControlEmulator(self, 
+                                                   driving_rate=driving_rate, return_rate=return_rate,
+                                                   noise_sd=noise_sd)
+    
+    def poll(self)->Delayed[Optional[TemperaturePoint]]:
+        return self.emulator.poll()
+    
+class EmulatedChiller(Chiller):
+    emulator: Final[TemperatureControlEmulator]
+    
+    def __init__(self, board: Board,*,
+                 regions: Sequence[GridRegion],
+                 wells: Sequence[Well],
+                 limit: Optional[TemperaturePoint],
+                 initial_temperature: Optional[TemperaturePoint] = None,
+                 polling_interval: Time = 200*ms,
+                 driving_rate: HeatingRate = 100*(deg_C/sec),
+                 return_rate: HeatingRate = 10*(deg_C/sec),
+                 noise_sd: Temperature = Temperature.ZERO) -> None:
+        
+        locs = list[Union[Pad, Well]]()
 
-    def new_temp(self, target: Optional[TemperaturePoint]) -> Optional[TemperaturePoint]:
-        now = time_now()
-        elapsed = now-self._last_read_time
-        self._last_read_time = now
-        mode = self.mode
-        if mode is HeatingMode.MAINTAINING:
-            return self.current_temperature
-        assert self.current_temperature is not None
-        if mode is HeatingMode.OFF and self.current_temperature <= self.board.ambient_temperature:
-            return self.current_temperature
-        delta: Temperature
-        if mode is HeatingMode.HEATING:
-            delta = (self._heating_rate*elapsed).a(Temperature)
-            new_temp = self.current_temperature + delta
-            if target is not None:
-                new_temp = min(new_temp, target)
-        else:
-            delta = (self._cooling_rate*elapsed).a(Temperature)
-            new_temp = self.current_temperature - delta
-            if target is None:
-                new_temp = max(new_temp, self.board.ambient_temperature)
-            else:
-                new_temp = max(new_temp, target)
-        return new_temp
+        for region in regions:
+            locs += (board.pad_array[xy] for xy in region)
+        locs += wells
+        
+        if initial_temperature is None:
+            initial_temperature = board.ambient_temperature
 
-    def poll(self) -> Delayed[Optional[TemperaturePoint]]:
-        return Delayed.complete(self.new_temp(self.target))
+        super().__init__(board, locations=locs, limit=limit, 
+                         initial_temperature=initial_temperature, polling_interval=polling_interval)
+        self.emulator = TemperatureControlEmulator(self, 
+                                                   driving_rate=driving_rate, return_rate=return_rate,
+                                                   noise_sd=noise_sd)
+    
+    def poll(self)->Delayed[Optional[TemperaturePoint]]:
+        return self.emulator.poll()
+    
+    

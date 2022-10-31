@@ -18,7 +18,8 @@ from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit,\
     NumberedItem
 from mpam.device import Pad, Board, BinaryComponent, Well,\
-    WellGate, WellPad, Heater, PowerSupply, PowerMode
+    WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
+    Heater
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -28,7 +29,7 @@ from quantities.dimensions import Time, Volume, Temperature, Voltage
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
-from erk.basic import LazyPattern, not_None
+from erk.basic import LazyPattern, not_None, assert_never
 from re import Match
 from threading import RLock
 import re
@@ -653,7 +654,9 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.ABS_TEMP: TemperaturePoint,
         Type.REL_TEMP: Temperature,
         Type.AMBIG_TEMP: AmbiguousTemp,
+        Type.TEMP_CONTROL: TemperatureControl,
         Type.HEATER: Heater,
+        Type.CHILLER: Chiller,
         Type.BOARD: Board,
         Type.POWER_SUPPLY: PowerSupply,
         Type.VOLTAGE: Voltage,
@@ -1916,10 +1919,16 @@ class DMFCompiler(DMFVisitor):
         
         if kind is NumberedItem.WELL:
             return figure(lambda b: b.wells, Type.WELL, "well")
+        elif kind is NumberedItem.TEMP_CONTROL:
+            return figure(lambda b: b.temperature_controls, Type.HEATER, "temperature control")
         elif kind is NumberedItem.HEATER:
             return figure(lambda b: b.heaters, Type.HEATER, "heater")
+        elif kind is NumberedItem.CHILLER:
+            return figure(lambda b: b.chillers, Type.CHILLER, "chiller")
         elif kind is NumberedItem.MAGNET:
             return figure(lambda b: b.magnets, Type.MAGNET, "magnet")
+        else:
+            assert_never(kind)
 
 
 
@@ -2470,14 +2479,18 @@ class DMFCompiler(DMFVisitor):
         Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
         Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
         
-        Attributes["heater"].register(Type.PAD, Type.HEATER.maybe, lambda p: p.heater)
+        Attributes["heater"].register((Type.PAD, Type.WELL), Type.HEATER.maybe, lambda p: p.heater)
+        Attributes["chiller"].register((Type.PAD, Type.WELL), Type.CHILLER.maybe, lambda p: p.chiller)
         Attributes["magnet"].register(Type.PAD, Type.MAGNET.maybe, lambda p: p.magnet)
         
-        Attributes["#current_temperature"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.current_temperature)
-        def set_heater_target(h: Heater, t: Optional[TemperaturePoint]) -> None:
+        Attributes["#current_temperature"].register(Type.TEMP_CONTROL, Type.ABS_TEMP, lambda h: h.current_temperature)
+        def set_tc_target(h: TemperatureControl, t: Optional[TemperaturePoint]) -> None:
             h.target = t
-        Attributes["#target_temperature"].register(Type.HEATER, Type.ABS_TEMP.maybe, lambda h: h.target)
-        Attributes["#target_temperature"].register_setter(Type.HEATER, Type.ABS_TEMP.maybe, set_heater_target)
+        Attributes["#target_temperature"].register(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, lambda h: h.target)
+        Attributes["#target_temperature"].register_setter(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, set_tc_target)
+        
+        Attributes["#max_target"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.max_target)
+        Attributes["#min_target"].register(Type.CHILLER, Type.ABS_TEMP, lambda c: c.min_target)
         
         Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY, lambda b: b.power_supply)
         

@@ -2,7 +2,7 @@ from devices import joey, dummy_pipettor
 from mpam.exerciser import Exerciser
 from mpam.device import System
 from mpam.paths import Path
-from mpam.types import Dir, Reagent, SingleFireTrigger, Postable
+from mpam.types import Reagent, SingleFireTrigger, Postable
 from quantities.SI import ms, s, minute, uL
 
 # Graphical representation of the relevant parts of the board and how
@@ -85,7 +85,8 @@ pipettor = dummy_pipettor.DummyPipettor(
 
 system = System(
     board=joey.Board(
-        pipettor=pipettor))
+        pipettor=pipettor,
+        heater_type = joey.HeaterType.TSRs))
 system.run_monitored(test_singlefiretrigger,
                      min_time=3 * minute,
                      config_params = {"highlight_reservations": True})

@@ -5,7 +5,7 @@ from threading import Lock
 from typing import Final, NamedTuple, Sequence, Literal, Union, Optional, \
     Iterator, Any, Callable
 
-from mpam.device import Heater, Pad
+from mpam.device import TemperatureControl, Pad
 from mpam.drop import Drop
 from mpam.paths import Path
 from mpam.processes import MultiDropProcessType, FinishFunction, PairwiseMix
@@ -51,11 +51,11 @@ class ShuttleDir(Enum):
     COL_ONLY = auto()
 
 class Thermocycler:
-    heaters: Final[Sequence[Heater]]
+    heaters: Final[Sequence[TemperatureControl]]
     channels: Final[Sequence[Channel]]
         
     def __init__(self, *,
-                 heaters: Sequence[Heater],
+                 heaters: Sequence[TemperatureControl],
                  channels: Sequence[Optional[Channel]]):
         self.heaters = heaters
         self.channels = tuple(c for c in channels if c is not None)
@@ -78,13 +78,13 @@ class ThermocyclePhase(NamedTuple):
         return f"ThermocyclePhase({self.name}, {self.temperature}, {self.duration})"
     
 class HeaterState:
-    heaters: Final[Sequence[Heater]]
+    heaters: Final[Sequence[TemperatureControl]]
     target: Optional[TemperaturePoint] = None
     ready: bool
     ready_time: Timestamp
     lock: Final[Lock]
     
-    def __init__(self, heater: Sequence[Heater]) -> None:
+    def __init__(self, heater: Sequence[TemperatureControl]) -> None:
         self.heaters = heater
         self.lock = Lock()
         
@@ -105,7 +105,7 @@ class HeaterState:
                 else:
                     needed -= 1
         for heater in self.heaters:
-            future = heater.schedule(Heater.SetTemperature(target))
+            future = heater.schedule(TemperatureControl.SetTemperature(target))
             future.then_call(update)
         return val_future
      

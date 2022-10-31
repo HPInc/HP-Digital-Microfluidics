@@ -29,7 +29,7 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
     NO_WAIT, CSOperation, Trigger
-from quantities.SI import sec, ms, volts
+from quantities.SI import sec, ms, volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
 from quantities.temperature import TemperaturePoint, abs_F
@@ -525,25 +525,42 @@ class LocatedPad:
         
 class TempControllable:
     """
-    An object that can have an associated an associated :class:`Heater`
+    An object that can have an associated an associated :class:`TemperatureControl`
     """
-    _heater: Optional[Heater] = None
+    _temperature_control: Optional[TemperatureControl] = None
 
     @property
-    def heater(self) -> Optional[Heater]:
+    def temperature_control(self) -> Optional[TemperatureControl]:
         """
-        The :class:`Heater`, if any that affects this :class:`TempControllable`
+        The :class:`TemperatureControl`, if any that affects this :class:`TempControllable`
         """
-        return self._heater
+        return self._temperature_control
     
     @property
     def current_temperatures(self) -> Optional[TemperaturePoint]:
-        h = self.heater
+        h = self.temperature_control
         if h is not None:
             return h.current_temperature
         if isinstance(self, BoardComponent):
             return self.board.ambient_temperature
         return None
+    
+    @property
+    def heater(self) -> Optional[Heater]:
+        tc = self.temperature_control
+        if tc is None or not isinstance(tc, Heater):
+            return None
+        return tc
+    
+    @property
+    def chiller(self) -> Optional[Chiller]:
+        tc = self.temperature_control
+        if tc is None or not isinstance(tc, Chiller):
+            return None
+        return tc
+    
+    
+    
 
 class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad, TempControllable):
     """
@@ -574,8 +591,8 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad, TempControllable):
 
     In addition, a :class:`Pad` may be associated with a :class:`Magnet`
     (:attr:`magnet`), a :class:`Well` (:attr:`well`, i.e., as the
-    :class:`Well`'s :attr:`~Well.exit_pad`), a :class:`Heater`
-    (:attr:`heater`), an :class:`ExtractionPoint` (:attr:`extraction_point`),
+    :class:`Well`'s :attr:`~Well.exit_pad`), a :class:`TemperatureControl`
+    (:attr:`TemperatureControl`), an :class:`ExtractionPoint` (:attr:`extraction_point`),
     and a dried :class:`.Liquid` (:attr:`dried_liquid`).
 
     Whenever the :attr:`~BinaryState.current_state` changes,
@@ -687,7 +704,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad, TempControllable):
     _between_pads: Optional[Mapping[Pad,Pad]] = None
     _well: Optional[Well] = None
     _magnet: Optional[Magnet] = None
-    # _heater: Optional[Heater] = None
+    # _temperature_control: Optional[TemperatureControl] = None
     _extraction_point: Optional[ExtractionPoint] = None
 
     # TODO: The name has to be specified, because otherwise it would be
@@ -717,11 +734,11 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad, TempControllable):
         return self._magnet
 
     # @property
-    # def heater(self) -> Optional[Heater]:
+    # def TemperatureControl(self) -> Optional[TemperatureControl]:
     #     """
-    #     The :class:`Heater`, if any that affects this :class:`Pad`
+    #     The :class:`TemperatureControl`, if any that affects this :class:`Pad`
     #     """
-    #     return self._heater
+    #     return self._temperature_control
 
     @property
     def extraction_point(self) -> Optional[ExtractionPoint]:
@@ -2930,41 +2947,81 @@ class Magnet(BinaryComponent['Magnet']):
         return f"Magnet({map_str(self.pads)})"
 
 
-class HeatingMode(Enum):
+class TemperatureMode(Enum):
     """
-    An enumeration that tells whether a :class:`Heater` is :attr:`HEATING` or
-    :attr:`COOLING` to its :attr:`~Heater.target` temperature,
-    :attr:`MAINTAINING` its :attr:`~Heater.target` temperature or :attr:`OFF`
-    and at ambient temperature
+    An enumeration that tells whether a :class:`TemperatureControl` is
+    :attr:`HEATING` or :attr:`CHILLING` to its
+    :attr:`~TemperatureControl.target` temperature, maintaining at its
+    :attr:`HOT` or :attr:`COLD` target, :attr:`COOLING` or :attr:`WARMING` to
+    the ambient temperature, or off and at the :attr:`AMBIENT` temperature.
     """
-    OFF = auto()
+    AMBIENT = auto()
     """
-    The :class:`Heater`'s :attr:`~Heater.target` is ``None``, and its
-    :attr:~Heater.current_temperature` is the ambient temperature.
+    The :class:`TemperatureControl`'s :attr:`~TemperatureControl.target` is ``None``, and its
+    :attr:~TemperatureControl.current_temperature` is the ambient temperature.
     """
-    MAINTAINING = auto()
+    HOT = auto()
     """
-    The :class:`Heater` has reached its :attr:`~Heater.target` and is now
+    The :class:`TemperatureControl` has reached its
+    :attr:`~TemperatureControl.target` above the ambient temperature and is now
+    maintaining that temperature.
+    """
+    COLD = auto()
+    """
+    The :class:`TemperatureControl` has reached its
+    :attr:`~TemperatureControl.target` below the ambient temperature and is now
     maintaining that temperature.
     """
     HEATING = auto()
     """
-    The :class:`Heater` is heating to its :attr:`~Heater.target`.
+    The :class:`TemperatureControl` is actively heating to its
+    :attr:`~TemperatureControl.target` above the ambient temperature.
+    """
+    CHILLING = auto()
+    """
+    The :class:`TemperatureControl` is actively chilling to its
+    :attr:`~TemperatureControl.target` below the ambient temperature.
     """
     COOLING = auto()
     """
-    The :class:`Heater` is cooling to its :attr:`~Heater.target`.  If the
-    :attr:`~Heater.target` is ``None``, it has not yet reached ambient
-    temperature.
+    The :class:`TemperatureControl` is passively cooling to its
+    :attr:`~TemperatureControl.target` or the ambient temperature if the
+    :attr:`~TemperatureControl.target` is ``None``.
     """
+    WARMING = auto()
+    """
+    The :class:`TemperatureControl` is passively warming to its
+    :attr:`~TemperatureControl.target` or the ambient temperature if the
+    :attr:`~TemperatureControl.target` is ``None``.
+    """
+    
+    @property
+    def is_active(self) -> bool:
+        return self in (TemperatureMode.HEATING, TemperatureMode.CHILLING, TemperatureMode.HOT, TemperatureMode.COLD)
+    
+    @property
+    def is_passive(self) -> bool:
+        return not self.is_active
+    
+    @property
+    def is_maintaining(self) -> bool:
+        return self is TemperatureMode.HOT or self is TemperatureMode.COLD
+    
+    @property
+    def going_up(self) -> bool:
+        return self is TemperatureMode.HEATING or self is TemperatureMode.WARMING
+
+    @property
+    def going_down(self) -> bool:
+        return self is TemperatureMode.CHILLING or self is TemperatureMode.COOLING
 
 
-class Heater(BinaryComponent['Heater']):
+class TemperatureControl(ABC, BinaryComponent['TemperatureControl']):
     """
     A :class:`BoardComponent` that can be used to control the temperature of its
     associated :attr:`pads`.
 
-    The :class:`Heater` is controlled by setting its :attr:`target` temperature.
+    The :class:`TemperatureControl` is controlled by setting its :attr:`target` temperature.
     If its :attr:`current_temperature` is below its :attr:`target`, it attempts
     to become hotter until it reaches the :attr:`target`, at which point it
     attempts to maintain that temperature.  If its :attr:`current_temperature`
@@ -2984,23 +3041,23 @@ class Heater(BinaryComponent['Heater']):
     reset to :attr:`~.OnOff.OFF`.)
 
     Note:
-        The value of a :class:`Heater`'s :attr:`~.BinaryComponent.current_state`
+        The value of a :class:`TemperatureControl`'s :attr:`~.BinaryComponent.current_state`
         is based on its :attr:`target`, not the state of its underlying
         hardware, so it remains :attr:`~.OnOff.ON` when it is cooling to a
         target temperature or when it turns off briefly while maintaining a
         temperature.  It is also :attr:`~.OnOff.OFF` when its :attr:`target` is
         ``None``, even if it has not yet cooled to the ambient temperature.
 
-    A :class:`Heater`'s public interface is primarily three
+    A :class:`TemperatureControl`'s public interface is primarily three
     :class:`.MonitoredProperty`\s, in addition to
     :attr:`~.BinaryComponent.current_state`.  Its :attr:`target` is the
     temperature it is to get to and maintain, or ``None`` to indicate that it
     should turn off.  Its read-only :attr:`current_temperature` is the last read
     (or modeled) temperature.  And its read-only :attr:`mode` is an indication
-    of whether it is :attr:`~HeatingMode.MAINTAINING` its :attr:`target`,
-    :attr:`~HeatingMode.HEATING` to its :attr:`target`,
-    :attr:`~HeatingMode.COOLING` to its :attr:`target` (or to the ambient
-    temperature if its :attr:`target` is ``None``), or :attr:`~HeatingMode.OFF`
+    of whether it is :attr:`~TemperatureMode.MAINTAINING` its :attr:`target`,
+    :attr:`~TemperatureMode.HEATING` to its :attr:`target`,
+    :attr:`~TemperatureMode.COOLING` to its :attr:`target` (or to the ambient
+    temperature if its :attr:`target` is ``None``), or :attr:`~TemperatureMode.AMBIENT`
     (and at the ambient temperature).  These each have associated
     :class:`.CallbackChangeList`\s: :attr:`~BinaryComponent.on_state_change`,
     :attr:`on_target_change`, :attr:`on_temperature_change`, and
@@ -3008,7 +3065,7 @@ class Heater(BinaryComponent['Heater']):
 
     Note:
         :attr:`current_temperature` can be ``None``.  This indicates that the
-        :class:`Heater` implementation has no way to read the temperature (or
+        :class:`TemperatureControl` implementation has no way to read the temperature (or
         has not yet done so).  If this is the case, the implementation will have
         to update :attr:`mode` itself, as the automatic updating is by callbacks
         hung on :attr:`on_target_change` and :attr:`on_temperature_change`.
@@ -3022,33 +3079,34 @@ class Heater(BinaryComponent['Heater']):
     it simply returns a future whose value is ``None``, but this method  is
     expected to be overridden by implementation subclasses. The polling can be
     stopped by :func:`stop_polling` and restarted by :func:`start_polling`.  It
-    is started as soon as the :class:`Heater` joins the :class:`System`.
+    is started as soon as the :class:`TemperatureControl` joins the :class:`System`.
 
-    Temperature changes on a :class:`Heater` take place within a
+    Temperature changes on a :class:`TemperatureControl` take place within a
     :class:`UserOperation`, so the :class:`System` will not be considered to be
-    idle (and will not exit a ``with system`` block) when the :class:`Heater`'s
-    :attr:`mode` is :attr:`~HeatingMode.HEATING` or
-    :attr:`~HeatingMode.COOLING`.
+    idle (and will not exit a ``with system`` block) when the :class:`TemperatureControl`'s
+    :attr:`mode` is :attr:`~TemperatureMode.HEATING` or
+    :attr:`~TemperatureMode.COOLING`.
 
     To set the :attr:`target` using an :class:`.Operation`, the
-    :class:`Heater.SetTemperature` operation is provided.  This
+    :class:`TemperatureControl.SetTemperature` operation is provided.  This
     :class:`.Operation` completes when the desired temperature has been reached.
     """
     number: int = -1
     """
-    The :class:`Heater`'s index in its :attr:`~BoardComponent.board`'s
-    :attr:`~Board.heaters` list.  A value of ``-1`` indicates that the heater
-    has not yet been added to the :class:`Board`.
+    The :class:`TemperatureControl`'s index in its
+    :attr:`~BoardComponent.board`'s :attr:`~Board.heaters` or
+    :attr:`~Board.chillers` list.  A value of ``-1`` indicates that the
+    TemperatureControl has not yet been added to the :class:`Board`.
     """
     locations: Final[Sequence[TempControllable]]
     """
-    The locations affected by this :class:`Heater`
+    The locations affected by this :class:`TemperatureControl`
     """
     _pads: tuple[Pad, ...]
     @property
     def pads(self) -> Sequence[Pad]:
         """
-        The :class:`Pad`\s affected by this :class:`Heater`
+        The :class:`Pad`\s affected by this :class:`TemperatureControl`
         """
         try:
             return self._pads
@@ -3059,41 +3117,53 @@ class Heater(BinaryComponent['Heater']):
     @property
     def wells(self) -> Sequence[Well]:
         """
-        The :class:`Well`\s affected by this :class:`Heater`
+        The :class:`Well`\s affected by this :class:`TemperatureControl`
         """
         try:
             return self._wells
         except AttributeError:
             self._wells= tuple(c for c in self.locations if isinstance(c, Well))
             return self._wells
+        
+        
+    @property
+    def pads_for_sort(self) -> Sequence[Pad]:
+        return (*self.pads, *(w.exit_pad for w in self.wells))
+    
     polling_interval: Time
     """
     The :class:`.Time` to wait between calls to :func:`poll` to get a new value
     for :attr:`current_temperature`.
     """
-    max_heat_temperature: Final[Optional[TemperaturePoint]]
+    limit: Final[Optional[TemperaturePoint]]
     """
-    The maximum `.TemperaturePoint` this :class:`Heater` can heat to, or
-    ``None`` if this :class:`Heater` only chills
+    The maximum `.TemperaturePoint` this :class:`TemperatureControl` can heat to
+    or the minimum `.TemperaturePoint` this :class:`TemperatureControl` can chill to, if known
     """
-    @property
-    def can_heat(self) -> bool:
-        """
-        Can this :class:`Heater` heat (as opposed to only chilling)?
-        """
-        return self.max_heat_temperature is not None
-
-    min_chill_temperature: Final[Optional[TemperaturePoint]]
-    """
-    The minimum `.TemperaturePoint` this :class:`Heater` can chill to, or
-    ``None`` if this :class:`Heater` only heats
-    """
-    @property
-    def can_chill(self) -> bool:
-        """
-        Can this :class:`Heater` chill (as opposed to only heating)?
-        """
-        return self.min_chill_temperature is not None
+    
+    # max_heat_temperature: Final[Optional[TemperaturePoint]]
+    # """
+    # The maximum `.TemperaturePoint` this :class:`TemperatureControl` can heat to, or
+    # ``None`` if this :class:`TemperatureControl` only chills
+    # """
+    # @property
+    # def can_heat(self) -> bool:
+    #     """
+    #     Can this :class:`TemperatureControl` heat (as opposed to only chilling)?
+    #     """
+    #     return self.max_heat_temperature is not None
+    #
+    # min_chill_temperature: Final[Optional[TemperaturePoint]]
+    # """
+    # The minimum `.TemperaturePoint` this :class:`TemperatureControl` can chill to, or
+    # ``None`` if this :class:`TemperatureControl` only heats
+    # """
+    # @property
+    # def can_chill(self) -> bool:
+    #     """
+    #     Can this :class:`TemperatureControl` chill (as opposed to only heating)?
+    #     """
+    #     return self.min_chill_temperature is not None
     
     _lock: Final[RLock]
     """
@@ -3105,13 +3175,13 @@ class Heater(BinaryComponent['Heater']):
     """
     _user_op: Optional[UserOperation] = None
     """
-    The :class:`UserOperation` associated with this :class:`Heater`.  This
-    starts out ``None``, because it cannot be created until the :class:`Heater`
+    The :class:`UserOperation` associated with this :class:`TemperatureControl`.  This
+    starts out ``None``, because it cannot be created until the :class:`TemperatureControl`
     joins a :class:`System`.
     """
     _last_target: Optional[TemperaturePoint] = None
     """
-    The last non-``None`` :attr:`target` for this :class:`Heater`.  This is the
+    The last non-``None`` :attr:`target` for this :class:`TemperatureControl`.  This is the
     value used when :attr:`~BinaryComponent.current_state` is set to
     :attr:`.OnOff.ON`.
     """
@@ -3123,7 +3193,7 @@ class Heater(BinaryComponent['Heater']):
     @property
     def current_temperature(self) -> Optional[TemperaturePoint]:
         """
-        The current :class:`.TemperaturePoint` of the :class:`Heater`.  This is
+        The current :class:`.TemperaturePoint` of the :class:`TemperatureControl`.  This is
         set to the value (posted to the future) returned by :func:`poll`.  If
         this value is ``None``, it means that no temperature has been
         established yet or the device cannot read its own temperature.
@@ -3141,49 +3211,60 @@ class Heater(BinaryComponent['Heater']):
 
     target: MonitoredProperty[Optional[TemperaturePoint]] = MonitoredProperty(default=None)
     """
-    The target :class:`.TemperaturePoint` of the :class:`Heater` or ``None`` to
-    indicate that the :class:`Heater` should turn off and return to ambient temperature.
+    The target :class:`.TemperaturePoint` of the :class:`TemperatureControl` or ``None`` to
+    indicate that the :class:`TemperatureControl` should turn off and return to ambient temperature.
     """
     on_target_change: ChangeCallbackList[Optional[TemperaturePoint]] = target.callback_list
     """
     The :class:`.ChangeCallbackList` monitoring :attr:`target`
     """
+    
+    @abstractmethod
+    def _check_target(self, target: Optional[TemperaturePoint]) -> MissingOr[Optional[TemperaturePoint]]: # @UnusedVariable
+        ...
+    
+    @target.transform
+    def clip_target(self, target: Optional[TemperaturePoint]) -> MissingOr[Optional[TemperaturePoint]]:
+        return self._check_target(target)
 
-    _mode: MonitoredProperty[HeatingMode] = MonitoredProperty(default=HeatingMode.OFF)
+    _mode: MonitoredProperty[TemperatureMode] = MonitoredProperty(default=TemperatureMode.AMBIENT)
     @property
-    def mode(self) -> HeatingMode:
+    def mode(self) -> TemperatureMode:
         """
-        The :class:`Heater`'s current :class:`HeatingMode`.  If this is
-        :attr:`~HeatingMode.HEATING` or :attr:`~HeatingMode.COOLING`, the
-        :class:`Heater` is moving toward its :attr:`target` (or the ambient
+        The :class:`TemperatureControl`'s current :class:`TemperatureMode`.  If this is
+        :attr:`~TemperatureMode.HEATING` or :attr:`~TemperatureMode.COOLING`, the
+        :class:`TemperatureControl` is moving toward its :attr:`target` (or the ambient
         temperature if the  :attr:`target` is ``None``).  If it is
-        :attr:`HeatingMode.MAINTAINING`, the :class:`Heater` has reached its
+        :attr:`TemperatureMode.MAINTAINING`, the :class:`TemperatureControl` has reached its
         target and is attempting to maintain the temperature there.  And if it
-        is :attr:`HeatingMode.OFF`, the :attr:`target` is ``None`` and the
-        :class:`Heater` has cooled down to ambient temperature.
+        is :attr:`TemperatureMode.AMBIENT`, the :attr:`target` is ``None`` and the
+        :class:`TemperatureControl` has cooled down to ambient temperature.
         """
         return self._mode
-    on_mode_change: ChangeCallbackList[HeatingMode] = _mode.callback_list
+    on_mode_change: ChangeCallbackList[TemperatureMode] = _mode.callback_list
     """
     The :class:`.ChangeCallbackList` monitoring :attr:`mode`
     """
+    
+    tolerance: Temperature = 0.1*deg_C
 
     def __init__(self, board: Board, *,
                  locations: Sequence[TempControllable],
                  polling_interval: Time,
-                 max_heat: Optional[TemperaturePoint],
-                 min_chill: Optional[TemperaturePoint],
+                 limit: Optional[TemperaturePoint],
+                 # max_heat: Optional[TemperaturePoint],
+                 # min_chill: Optional[TemperaturePoint],
                  initial_temperature: Optional[TemperaturePoint] = None,
                  ) -> None:
         """
         Initialize the object.
 
         Args:
-            num: the :class:`Heater`'s index in its :attr:`~BoardComponent.board`'s
-                 :attr:`~Board.heaters` list
+            num: the :class:`TemperatureControl`'s index in its :attr:`~BoardComponent.board`'s
+                 :attr:`~Board.temperature_controls` list
             board: the containing :class:`Board`
         Keyword Args:
-            pads: the :class:`Pad`\s affected by this :class:`Heater`
+            pads: the :class:`Pad`\s affected by this :class:`TemperatureControl`
 
             polling_interval: the :class:`.Time` to wait between calls to
                               :func:`poll`
@@ -3193,14 +3274,15 @@ class Heater(BinaryComponent['Heater']):
         """
         super().__init__(board=board, state=DummyState(initial_state=OnOff.OFF))
         self.locations = tuple(locations)
-        self.max_heat_temperature = max_heat
-        self.min_chill_temperature = min_chill
-        self._mode = HeatingMode.OFF
+        self.limit = limit
+        # self.max_heat_temperature = max_heat
+        # self.min_chill_temperature = min_chill
+        self._mode = TemperatureMode.AMBIENT
         self.polling_interval = polling_interval
         self._lock = RLock()
         # self._current_op_key = None
         for loc in locations:
-            loc._heater = self
+            loc._temperature_control = self
 
         self.on_state_change(self._note_state_change)
         self.on_mode_change(self._note_mode_change)
@@ -3220,7 +3302,7 @@ class Heater(BinaryComponent['Heater']):
             else:
                 self.target = self._last_target
 
-    def _note_mode_change(self, _old: HeatingMode, new: HeatingMode) -> None:
+    def _note_mode_change(self, _old: TemperatureMode, new: TemperatureMode) -> None:
         # print(f"Mode is now {new}")
         with self._lock:
             # The operation ends when we hit ambient (OFF) or the target
@@ -3230,26 +3312,40 @@ class Heater(BinaryComponent['Heater']):
             if op is None:
                 op = self.user_operation()
                 self._user_op = op
-            if new is HeatingMode.OFF or new is HeatingMode.MAINTAINING:
+            if new is TemperatureMode.AMBIENT or new.is_maintaining:
                 op.end()
             else:
                 op.start()
             # print(f"{self}.mode now {new} (target: {self.target}, current: {self.current_temperature})")
 
+    @property
+    @abstractmethod
+    def driving_mode(self) -> TemperatureMode: ...
+    
+    @property
+    @abstractmethod
+    def returning_mode(self) -> TemperatureMode: ...
 
+    @property
+    @abstractmethod
+    def maintaining_mode(self) -> TemperatureMode: ...
+        
+    @abstractmethod
+    def is_driving(self, current: TemperaturePoint, target: TemperaturePoint) -> bool: ... # @UnusedVariable
+    
     def _new_mode(self, target: Optional[TemperaturePoint],
-                  current: Optional[TemperaturePoint]) -> HeatingMode:
+                  current: Optional[TemperaturePoint]) -> TemperatureMode:
         if current is None:
             # If we don't have a reading, there isn't a whole lot we can do.
-            return HeatingMode.OFF if target is None else HeatingMode.HEATING
-        elif current == target:
-            return HeatingMode.MAINTAINING
+            return TemperatureMode.AMBIENT if target is None else self.driving_mode
+        elif target is not None and current.is_close_to(target, abs_tol = self.tolerance):
+            return self.maintaining_mode
         elif target is None and self.board.is_ambient(current):
-            return HeatingMode.OFF
-        elif target is None or current > target:
-            return HeatingMode.COOLING
+            return TemperatureMode.AMBIENT
+        elif target is not None and self.is_driving(current, target):
+            return self.driving_mode
         else:
-            return HeatingMode.HEATING
+            return self.returning_mode
 
     def _note_target_change(self,  _old: Optional[TemperaturePoint],
                             new: Optional[TemperaturePoint]) -> None:
@@ -3269,21 +3365,21 @@ class Heater(BinaryComponent['Heater']):
         with self._lock:
             target = self.target
             mode = self.mode
-            if mode is HeatingMode.OFF or mode is HeatingMode.MAINTAINING:
+            if mode is TemperatureMode.AMBIENT or mode.is_maintaining:
                 # If we're already off or maintaining, we assume that
                 # temperature fluctuations don't change our mode.
                 return
-            # self._mode = self._new_mode(target, new)
-            if mode is HeatingMode.HEATING:
-                assert target is not None
-                if new >= target:
-                    self._mode = HeatingMode.MAINTAINING
-            else:
-                if target is None:
-                    if self.board.is_ambient(new):
-                        self._mode = HeatingMode.OFF
-                elif new <= target:
-                    self._mode = HeatingMode.MAINTAINING
+            self._mode = self._new_mode(target, new)
+            # if mode is TemperatureMode.HEATING:
+            #     assert target is not None
+            #     if new >= target:
+            #         self._mode = TemperatureMode.HOT
+            # else:
+            #     if target is None:
+            #         if self.board.is_ambient(new):
+            #             self._mode = TemperatureMode.AMBIENT
+            #     elif new <= target:
+            #         self._mode = TemperatureMode.HOT
 
     def start_polling(self) -> None:
         """
@@ -3294,7 +3390,7 @@ class Heater(BinaryComponent['Heater']):
         Calling :func:`start_polling` while polling is running does nothing.
 
         Note:
-            :func:`start_polling` is called when the :class:`Heater`'s
+            :func:`start_polling` is called when the :class:`TemperatureControl`'s
             :attr:`board` joins a :class:`System`.
         """
         if self._polling:
@@ -3316,7 +3412,7 @@ class Heater(BinaryComponent['Heater']):
         self._polling = False
 
     def __repr__(self) -> str:
-        return f"Heater({self.number})"
+        return f"TemperatureControl({self.number})"
 
     # If the implementation doesn't override, then we always get back None (immediately)
     def poll(self) -> Delayed[Optional[TemperaturePoint]]:
@@ -3339,14 +3435,14 @@ class Heater(BinaryComponent['Heater']):
         """
         return Delayed.complete(None)
 
-    class SetTemperature(CSOperation['Heater','Heater']):
+    class SetTemperature(CSOperation['TemperatureControl','TemperatureControl']):
         """
-        A :class:`~.Operation` that modifies the :attr:`~Heater.target` of a
-        :class:`Heater`.  The :class:`~.Operation` is considered complete (and
-        its future receives the :class:`Heater` as its value) when the
-        :class:`Heater`'s :attr:`~Heater.current_temperature` reaches this
-        target temperature.  (More precisely, when its :attr:`~Heater.mode`
-        becomes :attr:`~HeatingMode.MAINTAINING` or :attr:`~HeatingMode.OFF`.
+        A :class:`~.Operation` that modifies the :attr:`~TemperatureControl.target` of a
+        :class:`TemperatureControl`.  The :class:`~.Operation` is considered complete (and
+        its future receives the :class:`TemperatureControl` as its value) when the
+        :class:`TemperatureControl`'s :attr:`~TemperatureControl.current_temperature` reaches this
+        target temperature.  (More precisely, when its :attr:`~TemperatureControl.mode`
+        becomes :attr:`~TemperatureMode.MAINTAINING` or :attr:`~TemperatureMode.AMBIENT`.
 
         Note:
             If another :class:`SetTemperature` operation is scheduled before
@@ -3356,56 +3452,56 @@ class Heater(BinaryComponent['Heater']):
         target: Final[Optional[TemperaturePoint]]
         """
         The target :class:`TemperaturePoint` or ``None`` to indicate that the
-        heater should turn off and return to ambient temperature.
+        TemperatureControl should turn off and return to ambient temperature.
         """
         key_attr: Final[str] = "__set_temp_monitor_key"
         """
         The name of the attribute to use to store the key for the callback
-        monitoring for :attr:`~Heater.mode` changes.
+        monitoring for :attr:`~TemperatureControl.mode` changes.
         """
 
-        def _schedule_for(self, heater: Heater, *,
+        def _schedule_for(self, temperature_control: TemperatureControl, *,
                           post_result: bool = True,
-                          ) -> Delayed[Heater]:
+                          ) -> Delayed[TemperatureControl]:
             """
             The implementation of :func:`~.Operation.schedule_for`. Sets
-            ``heater``'s :attr:`~Heater.target` and monitors changes in its
-            :attr:`~Heater.mode`.  When this becomes
-            :attr:`~HeatingMode.MAINTAINING` or :attr:`~HeatingMode.OFF`,
-            ``heater`` is posted to the returned future.
+            ``temperature_control``'s :attr:`~TemperatureControl.target` and monitors changes in its
+            :attr:`~TemperatureControl.mode`.  When this becomes
+            :attr:`~TemperatureMode.MAINTAINING` or :attr:`~TemperatureMode.AMBIENT`,
+            ``TemperatureControl`` is posted to the returned future.
 
             If another :class:`SetTemperature` is currently in progress, it is
             silently aborted.
 
             :meta public:
             Args:
-                obj: the :class:`Heater` to schedule the operation for
+                obj: the :class:`TemperatureControl` to schedule the operation for
             Keyword Args:
                 post_result: whether to post the resulting value to the returned future object
             Returns:
-                a :class:`Delayed`\[:class:`Heater`] future object to which the resulting
+                a :class:`Delayed`\[:class:`TemperatureControl`] future object to which the resulting
                 value will be posted unless ``post_result`` is ``False``
             """
-            future = Postable[Heater]()
+            future: Postable[TemperatureControl] = Postable()
             target = self.target
 
             def do_it() -> None:
-                with heater._lock:
+                with temperature_control._lock:
                     attr = self.key_attr
-                    old_key = getattr(heater, attr, None)
+                    old_key = getattr(temperature_control, attr, None)
                     if old_key is not None:
-                        heater.on_mode_change.remove(old_key)
+                        temperature_control.on_mode_change.remove(old_key)
                     if post_result:
-                        key = (heater, f"Temp->{target}", random.random())
-                        def check(_old: HeatingMode, mode: HeatingMode) -> None:
-                            if mode is HeatingMode.OFF or mode is HeatingMode.MAINTAINING:
-                                future.post(heater)
-                                heater.on_mode_change.remove(key)
-                                setattr(heater, attr, None)
-                        setattr(heater, attr, key)
-                        heater.on_mode_change(check, key=key)
-                    heater.target = target
-            heater.board.schedule(do_it)
+                        key = (temperature_control, f"Temp->{target}", random.random())
+                        def check(_old: TemperatureMode, mode: TemperatureMode) -> None:
+                            if mode is TemperatureMode.AMBIENT or mode.is_maintaining:
+                                future.post(temperature_control)
+                                temperature_control.on_mode_change.remove(key)
+                                setattr(temperature_control, attr, None)
+                        setattr(temperature_control, attr, key)
+                        temperature_control.on_mode_change(check, key=key)
+                    temperature_control.target = target
+            temperature_control.board.schedule(do_it)
             return future
 
 
@@ -3415,10 +3511,88 @@ class Heater(BinaryComponent['Heater']):
 
             Args:
                 target: the target :class:`.TemperaturePoint` or ``None`` to
-                        indicate that the :class:`Heater` should turn off.
+                        indicate that the :class:`TemperatureControl` should turn off.
             """
             self.target = target
+            
+            
+class Heater(TemperatureControl):
+    @property
+    def max_target(self) -> Optional[TemperaturePoint]:
+        return self.limit
+    
+    @property
+    def driving_mode(self) -> TemperatureMode:
+        return TemperatureMode.HEATING
+    
+    @property
+    def returning_mode(self) -> TemperatureMode:
+        return TemperatureMode.COOLING
+    
+    @property
+    def maintaining_mode(self) -> TemperatureMode:
+        return TemperatureMode.HOT
+    
+    def __repr__(self) -> str:
+        return f"Heater({self.number})"
+    
+    
+    def is_driving(self, current: TemperaturePoint, target: TemperaturePoint)->bool:
+        return current < target
+    
+    def _check_target(self, target: Optional[TemperaturePoint])->Optional[TemperaturePoint]:
+        if target is not None:
+            max_temp = self.max_target
+            if max_temp is not None and target > max_temp:
+                logger.warn(f"{self}: target ({target}) > maximum ({max_temp}), clipping")
+                return max_temp
+            ambient = self.board.ambient_temperature
+            if target <= ambient:
+                logger.warn(f"{self}: target ({target}) <= ambient ({ambient}), turning off")
+                return None
+        return target
 
+class Chiller(TemperatureControl):
+    @property
+    def min_target(self) -> Optional[TemperaturePoint]:
+        return self.limit
+    
+    @property
+    def max_target(self) -> Optional[TemperaturePoint]:
+        return self.limit
+    
+    @property
+    def driving_mode(self) -> TemperatureMode:
+        return TemperatureMode.CHILLING
+    
+    @property
+    def returning_mode(self) -> TemperatureMode:
+        return TemperatureMode.WARMING
+    
+    @property
+    def maintaining_mode(self) -> TemperatureMode:
+        return TemperatureMode.COLD
+    
+    def __repr__(self) -> str:
+        return f"Chiller({self.number})"
+
+    def is_driving(self, current: TemperaturePoint, target: TemperaturePoint)->bool:
+        return current > target
+    
+    def _check_target(self, target: Optional[TemperaturePoint])->Optional[TemperaturePoint]:
+        if target is not None:
+            min_temp = self.min_target
+            if min_temp is not None and target < min_temp:
+                logger.warn(f"{self}: target ({target}) < maximum ({min_temp}), clipping")
+                return min_temp
+            ambient = self.board.ambient_temperature
+            if target >= ambient:
+                logger.warn(f"{self}: target ({target}) >= ambient ({ambient}), turning off")
+                return None
+        return target
+
+
+            
 class ProductLocation(NamedTuple):
     """
     The final disposition of the :class:`.Liquid` transfered by
@@ -4528,10 +4702,11 @@ class Board(SystemComponent):
     def magnets(self) -> Sequence[Magnet]:
         return self._magnet_list
 
-    _heater_list: Final[list[Heater]]
+    heaters: Final[list[Heater]]
+    chillers: Final[list[Chiller]]
     @property
-    def heaters(self) -> Sequence[Heater]:
-        return self._heater_list
+    def temperature_controls(self) -> Sequence[TemperatureControl]:
+        return (*self.heaters, *self.chillers)
     extraction_points: Final[Sequence[ExtractionPoint]]
     extraction_point_splash_radius: Final[int]
     power_supply: Final[PowerSupply]
@@ -4574,6 +4749,7 @@ class Board(SystemComponent):
                  wells: Optional[Sequence[Well]] = None,
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
+                 chillers: Optional[Sequence[Chiller]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
                  extraction_point_splash_radius: int = 0,
                  power_supply: Optional[PowerSupply] = None,
@@ -4589,9 +4765,12 @@ class Board(SystemComponent):
         self._well_list = []
         if wells:
             self._add_wells(wells)
-        self._heater_list = []
+        self.heaters = []
         if heaters:
             self._add_heaters(heaters)
+        self.chillers = []
+        if chillers:
+            self._add_chillers(chillers)
         self._magnet_list = [] 
         if magnets:
             self._add_magnets(magnets)
@@ -4622,9 +4801,9 @@ class Board(SystemComponent):
         wells = self.sorted(wells, get_pads = lambda w: (w.exit_pad,), order=order)
         for w in wells:
             self._add_well(w)
-
+            
     def _add_heater(self, heater: Heater) -> int:
-        heaters = self._heater_list
+        heaters = self.heaters
         n = len(heaters)
         heater.number = n
         heaters.append(heater)
@@ -4633,9 +4812,38 @@ class Board(SystemComponent):
     def _add_heaters(self, heaters: Sequence[Heater], *, order: Optional[RCOrder] = None) -> None:
         if order is None:
             order = self.component_layout
-        heaters = self.sorted(heaters, get_pads = lambda h: (*h.pads, *(w.exit_pad for w in h.wells)), order=order)
+        heaters = self.sorted(heaters, get_pads=lambda h: h.pads_for_sort, order=order)
         for h in heaters:
             self._add_heater(h)
+
+    def _add_chiller(self, chiller: Chiller) -> int:
+        chillers = self.chillers
+        n = len(chillers)
+        chiller.number = n
+        chillers.append(chiller)
+        return n
+
+    def _add_chillers(self, chillers: Sequence[Chiller], *, order: Optional[RCOrder] = None) -> None:
+        if order is None:
+            order = self.component_layout
+        chillers = self.sorted(chillers, get_pads=lambda c: c.pads_for_sort, order=order)
+        for c in chillers:
+            self._add_chiller(c)
+
+    # def _add_temperature_control(self, temperature_control: Union[Heater,Chiller]) -> int:
+    #     if isinstance(temperature_control, Heater):
+    #         return self._add_heater(temperature_control)
+    #     elif isinstance(temperature_control, Chiller):
+    #         return self._add_chiller(temperature_control)
+    #     else:
+    #         assert_never(temperature_control)
+    #
+    # def _add_temperature_controls(self, temperature_controls: Sequence[Union[Heater,Chiller]], *, order: Optional[RCOrder] = None) -> None:
+    #     if order is None:
+    #         order = self.component_layout
+    #     temperature_controls = self.sorted(temperature_controls, get_pads=TemperatureControl.pads_for_sort, order=order)
+    #     for tc in temperature_controls:
+    #         self._add_temperature_control(tc)
 
     def _add_magnet(self, magnet: Magnet) -> int:
         magnets = self._magnet_list
@@ -4716,7 +4924,7 @@ class Board(SystemComponent):
 
     def join_system(self, system: System)->None:
         super().join_system(system)
-        for h in self.heaters:
+        for h in self.temperature_controls:
             h.start_polling()
 
     def _amb_threshold(self, t: TempOrTP, upper: bool) -> TemperaturePoint:
@@ -4785,15 +4993,15 @@ class Board(SystemComponent):
         for well in self.wells:
             self._reset(well.gate, *well.shared_pads)
 
-    def reset_heaters(self) -> None:
-        self._reset(*self.heaters)
+    def reset_temperature_controls(self) -> None:
+        self._reset(*self.temperature_controls)
 
     def reset_magnets(self) -> None:
         self._reset(*self.magnets)
 
     def reset_all(self) -> None:
         self.reset_pads()
-        self.reset_heaters()
+        self.reset_temperature_controls()
         self.reset_magnets()
         self._reset(self.power_supply)
         if self.fan is not None:

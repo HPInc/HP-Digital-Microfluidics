@@ -251,6 +251,7 @@ dim_unit returns[PhysUnit unit]
 numbered_type returns[NumberedItem kind]
   : 'well' {$ctx.kind=NumberedItem.WELL}
   | 'heater' {$ctx.kind=NumberedItem.HEATER}
+  | 'chiller' {$ctx.kind=NumberedItem.CHILLER}
   | 'magnet' {$ctx.kind=NumberedItem.MAGNET}
   ;
 
@@ -267,6 +268,8 @@ attr returns[str which]
   | 'power' 'supply' {$ctx.which="#power_supply"}
   | ('min' | 'minimum') 'voltage' {$ctx.which="#min_voltage"}
   | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
+  | ('min' | 'minimum') ('target' | 'temperature' | 'temp') {$ctx.which="#min_target"}
+  | ('max' | 'maximum') ('target' | 'temperature' | 'temp') {$ctx.which="#max_target"}
   | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'magnet' | 'state'
   	   | 'fan' 
   	   | ID

@@ -29,7 +29,8 @@ from erk.basic import Count
 from langsup.dmf_lang import DMFInterpreter
 from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
-    HeatingMode, BinaryComponent, ChangeJournal, DropLoc, WellGate
+    TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate,\
+    TempControllable, TemperatureControl
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent, ConfigParams
@@ -101,6 +102,68 @@ class ClickableMonitor(ABC):
         self.draw(5, "green" if state else "black")
 
 
+class TCMonitor:
+    annotation: Final[Annotation]
+    tc: Final[TemperatureControl]
+    
+    heating_mode_colors: Final[Mapping[TemperatureMode, str]] = {
+            TemperatureMode.AMBIENT: 'darkred',
+            TemperatureMode.HOT: 'red',
+            TemperatureMode.HEATING: 'darkorange',
+            TemperatureMode.WARMING: 'darkorange',
+            TemperatureMode.CHILLING: 'cornflowerblue',
+            TemperatureMode.COOLING: 'cornflowerblue',
+            TemperatureMode.COLD: 'blue'
+            }
+    
+    
+    def __init__(self, tc: TemperatureControl, 
+                 *, where: TempControllable,
+                 patch: Patch,
+                 board_monitor: BoardMonitor) -> None:
+        plot = board_monitor.plot
+        self.tc = tc
+        self.annotation = plot.annotate(text='Off', xy=(0,0),
+                                        xytext=(0.05, 0.05),
+                                        xycoords=patch,
+                                        horizontalalignment='left',
+                                        color='darkred',
+                                        fontsize='xx-small')
+        key = (tc, f"monitor({where})", random.random())
+        def cb(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]) -> None:  # @UnusedVariable
+            board_monitor.in_display_thread(lambda : self.note_new_temperature())
+        tc.on_temperature_change(cb, key=key)
+        tc.on_target_change(cb, key=key)
+        self.note_new_temperature()
+        
+    @classmethod
+    def for_loc(cls, where: TempControllable, *,
+                patch: Patch,
+                board_monitor: BoardMonitor) -> Optional[TCMonitor]:
+        tc = where.temperature_control
+        if tc is None:
+            return None
+        return TCMonitor(tc, where=where, patch=patch, board_monitor=board_monitor)
+
+    def note_new_temperature(self) -> None:
+        tc = self.tc
+        temp = tc.current_temperature
+
+        mode = tc.mode
+        weight = 'normal' if mode is TemperatureMode.AMBIENT else 'bold'
+        if temp is None:
+            text = 'Off' if mode.is_passive else 'On'
+        else:
+            text = f"{temp.as_number(abs_C):.0f}C"
+        color = self.heating_mode_colors[mode]
+
+        annotation = self.annotation
+        annotation.set_weight(weight)
+        annotation.set_text(text)
+        annotation.set_color(color)
+
+
+
 PadOrGate = Union[Pad, WellGate]
 
 
@@ -111,7 +174,7 @@ class PadMonitor(ClickableMonitor):
     board_monitor: Final[BoardMonitor]
     square: Final[Rectangle]
     magnet: Final[Optional[Annotation]]
-    heater: Final[Optional[Annotation]]
+    tc_monitor: Final[Optional[TCMonitor]]
     port: Final[Optional[Patch]]
     origin: Final[tuple[float, float]]
     width: Final[float]
@@ -160,24 +223,7 @@ class PadMonitor(ClickableMonitor):
             if pad.magnet is not None:
                 self.note_magnet_state(OnOff.OFF)
 
-            if pad.heater is None:
-                h = None
-            else:
-                h = plot.annotate(text='Off', xy=(0,0),
-                                  xytext=(0.05, 0.05),
-                                  xycoords=square,
-                                  horizontalalignment='left',
-                                  color='darkred',
-                                  fontsize='xx-small')
-                key = (pad.heater, f"monitor({pad.location.x},{pad.location.y})", random.random())
-                def cb(old: Optional[TemperaturePoint], 
-                       new: Optional[TemperaturePoint]) -> None:  # @UnusedVariable
-                    board_monitor.in_display_thread(lambda : self.note_new_temperature())
-                pad.heater.on_temperature_change(cb, key=key)
-                pad.heater.on_target_change(cb, key=key)
-            self.heater = h
-            if pad.heater is not None:
-                self.note_new_temperature()
+            self.tc_monitor = TCMonitor.for_loc(pad, patch=square, board_monitor=board_monitor)
 
             if pad.extraction_point is not None:
                 ep = Circle((ox+0.5*w, oy+0.7*w), radius=0.1*w,
@@ -262,33 +308,6 @@ class PadMonitor(ClickableMonitor):
             magnet.set_weight('normal')
             magnet.set_bbox(None)
 
-    heating_mode_colors: Final[Mapping[HeatingMode, str]] = {
-            HeatingMode.OFF: 'darkred',
-            HeatingMode.MAINTAINING: 'red',
-            HeatingMode.HEATING: 'darkorange',
-            HeatingMode.COOLING: 'blue'
-            }
-
-    def note_new_temperature(self) -> None:
-        assert isinstance(self.pad, Pad)
-        heater = self.pad.heater
-        assert heater is not None
-        annotation = self.heater
-        assert annotation is not None
-
-        temp = heater.current_temperature
-
-        mode = heater.mode
-        weight = 'normal' if mode is HeatingMode.OFF else 'bold'
-        if temp is None:
-            text = 'Off' if mode is HeatingMode.OFF or mode is HeatingMode.COOLING else 'On'
-        else:
-            text = f"{temp.as_number(abs_C):.0f}C"
-        color = self.heating_mode_colors[mode]
-
-        annotation.set_weight(weight)
-        annotation.set_text(text)
-        annotation.set_color(color)
 
     def drop_radius(self, drop: Drop) -> float:
         square_width: int = self.square.get_width()
@@ -523,6 +542,7 @@ class WellPadMonitor(ClickableMonitor):
     board_monitor: Final[BoardMonitor]
     shapes: Final[Sequence[PathPatch]]
     pad: Final[WellPad]
+    tc_monitor: Final[Optional[TCMonitor]]
 
     def __init__(self, pad: WellPad, board_monitor: BoardMonitor,
                  bounds: Union[PadBounds, Sequence[PadBounds]],
@@ -540,6 +560,7 @@ class WellPadMonitor(ClickableMonitor):
             bounds = cast(Sequence[PadBounds], bounds)
         self.shapes = [ self._make_shape(b, pad, well=well, is_gate=is_gate) for b in bounds ]
         self.patches.extend(self.shapes)
+        self.tc_monitor = TCMonitor.for_loc(pad.well, patch=self.shapes[0], board_monitor=self.board_monitor)
 
 
     def _make_shape(self, bounds: PadBounds, pad: WellPad, *, well: Well, is_gate:bool) -> PathPatch:  # @UnusedVariable
@@ -957,7 +978,7 @@ class BoardMonitor:
         self.color_allocator = ColorAllocator[Reagent](initial_reservations=reserved_colors)
         self.legend = ReagentLegend(self)
 
-        # for heater in board.heaters:
+        # for heater in board.temperature_controls:
         #     self.setup_heater_poll(heater)
 
         def on_pick(event: PickEvent) -> None:

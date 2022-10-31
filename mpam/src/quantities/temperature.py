@@ -2,6 +2,7 @@ from __future__ import annotations
 from quantities import dimensions
 from typing import overload, Union, Final, ClassVar, Optional
 from quantities.SI import deg_K
+from quantities.core import ZeroOr
 
 class TemperaturePoint:
     """
@@ -85,6 +86,10 @@ class TemperaturePoint:
 
     def __le__(self, rhs: TemperaturePoint) -> bool:
         return self.absolute <= rhs.absolute
+    
+    def is_close_to(self, other: TemperaturePoint, *,
+                    abs_tol: Optional[ZeroOr[dimensions.Temperature]] = None) -> bool:
+        return self.absolute.is_close_to(other.absolute, abs_tol=abs_tol)
     
     def as_number(self, scale: Scale) -> float:
         """

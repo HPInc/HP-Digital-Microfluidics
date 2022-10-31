@@ -5,7 +5,7 @@ from typing import Union, Optional, Sequence
 
 from devices import bilby
 from joey import JoeyExerciser
-from mpam.device import System, Well, Heater, Magnet, Board
+from mpam.device import System, Well, TemperatureControl, Magnet, Board
 from mpam.exerciser import Task, Exerciser
 from mpam.paths import Path
 from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
@@ -93,11 +93,11 @@ class WombatTest(Task):
                 .walk(direction) \
                 .enter_well()
 
-    def ramp_heater(self, temps: Sequence[TemperaturePoint]) -> Operation[Heater, Heater]:
-        op: Operation[Heater,Heater] = Heater.SetTemperature(temps[0])
+    def ramp_heater(self, temps: Sequence[TemperaturePoint]) -> Operation[TemperatureControl, TemperatureControl]:
+        op: Operation[TemperatureControl,TemperatureControl] = TemperatureControl.SetTemperature(temps[0])
         for i in range(1, len(temps)):
-            op = op.then(Heater.SetTemperature(temps[i]), after=5*sec)
-        return op.then(Heater.SetTemperature(None), after=5*sec)
+            op = op.then(TemperatureControl.SetTemperature(temps[i]), after=5*sec)
+        return op.then(TemperatureControl.SetTemperature(None), after=5*sec)
 
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
 
@@ -116,7 +116,7 @@ class WombatTest(Task):
                 s1.schedule(after=delay)
                 s2.schedule(after=delay)
             self.ramp_heater([80*abs_C, 60*abs_C, 90*abs_C, 40*abs_C, 120*abs_C]) \
-                .schedule_for(board.heaters[3])
+                .schedule_for(board.temperature_controls[3])
             Magnet.TurnOn.schedule_for(board.pad_at(13,3).magnet, after=20*ticks)
 
 

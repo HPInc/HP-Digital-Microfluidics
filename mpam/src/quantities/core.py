@@ -9,6 +9,8 @@ from erk.basic import LazyPattern, Lazy
 import re
 from abc import abstractmethod, ABC
 from _collections import defaultdict
+import random
+from random import Random
 
 logger = logging.getLogger(__name__)
 
@@ -447,10 +449,24 @@ class Quantity:
                     ) -> bool:
         my_mag = self.magnitude
         their_mag = self._magnitude_of(other, "is_close_to")
+        if my_mag == their_mag:
+            return True
         tol = self._magnitude_of(abs_tol, "is_close_to.abs_tol") if abs_tol is not None else 1e-9 if their_mag==0 else 0
         if abs(my_mag-their_mag) < tol:
             return True
         return math.isclose(self.magnitude, their_mag, rel_tol=rel_tol)
+    
+    @classmethod
+    def noise(cls: Type[D], sd: D, *, rng: Optional[Random] = None) -> D:
+        if sd.is_zero:
+            return sd
+        if rng is None:
+            mag = random.normalvariate(mu = 0.0, sigma = sd.magnitude)
+        else:
+            mag = rng.gauss(mu = 0.0, sigma = sd.magnitude)
+        q = sd.dimensionality.make_quantity(mag)
+        return q
+
     
     def multiply_by(self, rhs: Quantity) -> Quantity:
         if not isinstance(rhs, Quantity):
