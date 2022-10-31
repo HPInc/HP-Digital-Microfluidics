@@ -367,10 +367,10 @@ class Exerciser(ABC):
             else:
                 fmt = "compact"
         logging.basicConfig(level=base_level.desc, format=logging_formats[fmt])
-        logger.info(f"Default logging level: {base_level.desc}")
+        # logger.info(f"Default logging level: {base_level.desc}")
         
         for name,level in imports.items():
-            logger.info(f"Setting logging level for {name} to {level.desc}")
+            # logger.info(f"Setting logging level for {name} to {level.desc}")
             logging.getLogger(name).setLevel(level.desc)
             
 class PlatformChoiceTask(Task):

@@ -7,7 +7,7 @@ from serial import Serial
 
 from devices import joey
 from mpam.types import OnOff, State, DummyState, XYCoord
-from erk.basic import ComputedDefaultDict
+from erk.basic import ComputedDefaultDict, assert_never
 from quantities.dimensions import Time
 import logging
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser
@@ -224,7 +224,7 @@ class Board(joey.Board):
         elif od_version is OpenDropVersion.V41:
             n_state_bytes = 32
         else:
-            assert False, f"Unknown OpenDrop version: {od_version}"
+            assert_never(od_version)
         self._states = bytearray(n_state_bytes)
         self._last_states = bytearray(n_state_bytes)
         self._od_version = od_version

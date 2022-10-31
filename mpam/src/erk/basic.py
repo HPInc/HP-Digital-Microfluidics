@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast
+from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast,\
+    NoReturn
 from threading import Lock
 from re import Pattern
 import re
@@ -92,3 +93,8 @@ def ensure_val(val: ValOrFn[_T], as_class: type[_T]) -> _T:
         return val
     fn = cast(Callable[[], _T], val)
     return fn()
+
+def assert_never(value: NoReturn) -> NoReturn:
+    assert False, f'Unhandled value: {value} ({type(value).__name__})'
+
+

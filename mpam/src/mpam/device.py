@@ -13,11 +13,11 @@ from threading import Event, Lock, Thread, RLock
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
-    NamedTuple, Iterable, NoReturn
+    NamedTuple, Iterable
 
 from matplotlib.gridspec import SubplotSpec
 
-from erk.basic import not_None
+from erk.basic import not_None, assert_never
 from erk.errors import ErrorHandler, PRINT
 from mpam.engine import DevCommRequest, TimerFunc, ClockCallback, \
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest, \
@@ -50,9 +50,6 @@ PadArray = Mapping[XYCoord, 'Pad']
 
 T = TypeVar('T')            #: A generic type variable
 Modifier = Callable[[T],T]  #: A :class:`Callable` that returns a value of the same type as its argument
-
-def assert_never(value: NoReturn) -> NoReturn:
-    assert False, f'Unhandled value: {value} ({type(value).__name__})'
 
 class BoardComponent:
     """
@@ -4636,7 +4633,7 @@ class Board(SystemComponent):
     def _add_heaters(self, heaters: Sequence[Heater], *, order: Optional[RCOrder] = None) -> None:
         if order is None:
             order = self.component_layout
-        heaters = self.sorted(heaters, get_pads = lambda h: h.pads, order=order)
+        heaters = self.sorted(heaters, get_pads = lambda h: (*h.pads, *(w.exit_pad for w in h.wells)), order=order)
         for h in heaters:
             self._add_heater(h)
 

@@ -1,12 +1,12 @@
 from __future__ import annotations
-from erk.network import local_ipv4_addrs, local_ipv4_addr
 
-print(local_ipv4_addrs())
-print(local_ipv4_addr())
-print(local_ipv4_addrs(subnet="192.168"))
-print(local_ipv4_addr(subnet="192.168"))
-print(local_ipv4_addrs(subnet="192.168.86"))
-print(local_ipv4_addr(subnet="192.168.86"))
-print(local_ipv4_addrs(subnet="15"))
-print(local_ipv4_addr(subnet="15"))
-        
+from mpam.types import deg_C_per_sec
+from quantities.SI import sec, deg_C
+from quantities.temperature import abs_C
+from quantities.dimensions import Temperature
+
+Temperature.default_units = deg_C
+hr = 10*deg_C_per_sec
+print(hr)
+print(hr.for_time(10*sec))
+print(20*abs_C+hr.for_time(2*sec))

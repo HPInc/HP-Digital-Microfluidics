@@ -1,39 +1,37 @@
 from __future__ import annotations
 
+from argparse import Namespace, ArgumentParser, _ArgumentGroup
 from enum import Enum, auto
-import random
-from typing import Optional, Sequence, Final, Literal, Union
+from typing import Optional, Sequence, Final, Literal, cast
 
+from devices.emulated_heater import EmulatedHeater
+from erk.basic import assert_never
+from erk.stringutils import conj_str
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
-    HeatingMode, WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
+    WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
     transitions_from, WellGate, Heater, PowerSupply, PowerMode, Fan
 import mpam.device as device
+from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
+    Exerciser
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Delayed, Dir, State, \
+from mpam.types import XYCoord, Orientation, GridRegion, Dir, State, \
     OnOff, DummyState, RCOrder
-from quantities.SI import uL, ms, deg_C, sec, volts
-from quantities.core import DerivedDim
-from quantities.dimensions import Temperature, Time, Volume, Voltage
-from quantities.temperature import TemperaturePoint, abs_C
-from quantities.timestamp import Timestamp, time_now
-from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser,\
-    Exerciser
-from argparse import Namespace, ArgumentParser, _ArgumentGroup
-from erk.stringutils import conj_str
+from quantities.SI import uL, ms, volts
+
+
+from quantities.dimensions import Time, Volume, Voltage
+from quantities.temperature import abs_C
 
 class HeaterType(Enum):
     TSRs = auto()
     Paddles = auto()
+    Peltier = auto()
     
     @classmethod
     def from_name(cls, name: str) -> HeaterType:
         return heater_type_arg_names[name]
-
-class HeatingRate(DerivedDim):
-    derived = Temperature/Time
-
 
 class Well(device.Well):
     _pipettor: Final[Pipettor]
@@ -66,67 +64,6 @@ class Well(device.Well):
     def pipettor(self)->Optional[Pipettor]:
         return self._pipettor
 
-
-class EmulatedHeater(device.Heater):
-    _last_read_time: Timestamp
-    _heating_rate: HeatingRate
-    _cooling_rate: HeatingRate
-
-    def __init__(self, board: Board, *,
-                 regions: Sequence[GridRegion],
-                 wells: Sequence[Well],
-                 max_heat: Optional[TemperaturePoint],
-                 min_chill: Optional[TemperaturePoint],
-                 polling_interval: Time = 200*ms) -> None:
-        locs = list[Union[device.Pad,device.Well]]()
-        for region in regions:
-            locs += (board.pad_array[xy] for xy in region)
-        locs += wells
-            
-        super().__init__(board,
-                         polling_interval = polling_interval,
-                         locations = locs,
-                         max_heat = max_heat,
-                         min_chill = min_chill,
-                         initial_temperature = board.ambient_temperature)
-        self._last_read_time = time_now()
-        self._heating_rate = 100*(deg_C/sec).a(HeatingRate)
-        self._cooling_rate = 10*(deg_C/sec).a(HeatingRate)
-        # It really seems as though we should be able to just override the target setter, but I
-        # can't get the compiler (and MyPy) to accept it
-        key=(self, "target changed", random.random())
-
-        def set_lrt() -> None:
-            self._last_read_time = time_now()
-        self.on_target_change(lambda _old,_new: set_lrt(), key=key)
-
-    def new_temp(self, target: Optional[TemperaturePoint]) -> Optional[TemperaturePoint]:
-        now = time_now()
-        elapsed = now-self._last_read_time
-        self._last_read_time = now
-        mode = self.mode
-        if mode is HeatingMode.MAINTAINING:
-            return self.current_temperature
-        assert self.current_temperature is not None
-        if mode is HeatingMode.OFF and self.current_temperature <= self.board.ambient_temperature:
-            return self.current_temperature
-        delta: Temperature
-        if mode is HeatingMode.HEATING:
-            delta = (self._heating_rate*elapsed).a(Temperature)
-            new_temp = self.current_temperature + delta
-            if target is not None:
-                new_temp = min(new_temp, target)
-        else:
-            delta = (self._cooling_rate*elapsed).a(Temperature)
-            new_temp = self.current_temperature - delta
-            if target is None:
-                new_temp = max(new_temp, self.board.ambient_temperature)
-            else:
-                new_temp = max(new_temp, target)
-        return new_temp
-
-    def poll(self) -> Delayed[Optional[TemperaturePoint]]:
-        return Delayed.complete(self.new_temp(self.target))
 
 
 class ArmPos(Enum):
@@ -245,11 +182,22 @@ class Board(device.Board):
                        [GridRegion(XYCoord(8,0),3,7)],
                        [GridRegion(XYCoord(16,12),3,7)],
                        [GridRegion(XYCoord(16,0),3,7)])
-        else:
-            assert heater_type is HeaterType.Paddles
+        elif heater_type is HeaterType.Paddles:
             regions = ([GridRegion(XYCoord(0,0),3,19)],
                        [GridRegion(XYCoord(8,0),3,19)],
                        [GridRegion(XYCoord(16,0),3,19)])
+        elif heater_type is HeaterType.Peltier:
+            def make_chiller(*, wells: Sequence[device.Well]) -> Heater:
+                ws = [cast(Well, w) for w in wells]
+                return EmulatedHeater(board=self, regions=[], wells=ws,
+                                      max_heat = None,
+                                      min_chill = 5*abs_C, 
+                                      polling_interval=polling_interval)
+            well_sets = ([w for w in self.wells if w.exit_dir is Dir.EAST],
+                         [w for w in self.wells if w.exit_dir is Dir.WEST])
+            return [make_chiller(wells=w) for w in well_sets]
+        else:
+            assert_never(heater_type)
         return [make_heater(regions=r) for r in regions]
             
     
@@ -361,6 +309,7 @@ class Board(device.Board):
 
         self._add_magnets(self._magnets())
         self._add_heaters(self._heaters(heater_type))
+        # self._add_heaters(self._heaters(HeaterType.Peltier))
         
 
         for pos in ((13, 15), (13, 9), (13, 3)):

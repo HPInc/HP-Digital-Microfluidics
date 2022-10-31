@@ -19,6 +19,7 @@ from argparse import Namespace, _ArgumentGroup, ArgumentParser
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser
 from mpam.cmd_line import voltage_arg
 from devices.joey import HeaterType
+from erk.basic import assert_never
 
 
 logger = logging.getLogger(__name__)
@@ -161,9 +162,12 @@ class Board(joey.Board):
                  polling_interval: Time = 200*ms) -> Sequence[Heater]:
         if heater_type is HeaterType.TSRs:
             gt = pyglider.Heater.HeaterType.TSR
-        else:
-            assert heater_type is HeaterType.Paddles, f"Unknown HeaterType {heater_type}"
+        elif heater_type is HeaterType.Paddles:
             gt = pyglider.Heater.HeaterType.Paddle
+        elif heater_type is HeaterType.Peltier:
+            gt = pyglider.Heater.HeaterType.Peltier
+        else:
+            assert_never(heater_type)
             
         # print(f"Looking for heaters of type {gt} ({id(gt)})")
             
