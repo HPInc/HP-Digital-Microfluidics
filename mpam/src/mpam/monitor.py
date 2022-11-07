@@ -542,7 +542,6 @@ class WellPadMonitor(ClickableMonitor):
     board_monitor: Final[BoardMonitor]
     shapes: Final[Sequence[PathPatch]]
     pad: Final[WellPad]
-    tc_monitor: Final[Optional[TCMonitor]]
 
     def __init__(self, pad: WellPad, board_monitor: BoardMonitor,
                  bounds: Union[PadBounds, Sequence[PadBounds]],
@@ -560,7 +559,6 @@ class WellPadMonitor(ClickableMonitor):
             bounds = cast(Sequence[PadBounds], bounds)
         self.shapes = [ self._make_shape(b, pad, well=well, is_gate=is_gate) for b in bounds ]
         self.patches.extend(self.shapes)
-        self.tc_monitor = TCMonitor.for_loc(pad.well, patch=self.shapes[0], board_monitor=self.board_monitor)
 
 
     def _make_shape(self, bounds: PadBounds, pad: WellPad, *, well: Well, is_gate:bool) -> PathPatch:  # @UnusedVariable
@@ -635,6 +633,10 @@ class WellMonitor:
     # volume_rectangle: Final[Rectangle]
     volume_description: Final[Annotation]
     reagent_description: Final[Annotation]
+    _tc_monitor_box: Final[Rectangle]
+    tc_monitor: Final[Optional[TCMonitor]]
+    
+    
 
 
 
@@ -684,6 +686,16 @@ class WellMonitor:
                                          visible=False)
         self.reagent_description = rd
         self.volume_description = vd
+        tc_monitor_side = 1.4*shape.reagent_id_circle_radius
+        self._tc_monitor_box = Rectangle(xy=(rc_center[0]-tc_monitor_side/2, rc_center[1]-tc_monitor_side/2),
+                                         width=tc_monitor_side,
+                                         height=tc_monitor_side,
+                                         facecolor="white",
+                                         edgecolor=None,
+                                         visible=True)
+        board_monitor.plot.add_patch(self._tc_monitor_box)
+        self.tc_monitor = TCMonitor.for_loc(well, patch=self._tc_monitor_box, board_monitor=board_monitor)
+        
 
 
     def note_liquid(self, liquid: Optional[Liquid]) -> None:
