@@ -4996,6 +4996,12 @@ class Board(SystemComponent):
     def reset_temperature_controls(self) -> None:
         self._reset(*self.temperature_controls)
 
+    def reset_heaters(self) -> None:
+        self._reset(*self.heaters)
+
+    def reset_chillers(self) -> None:
+        self._reset(*self.chillers)
+
     def reset_magnets(self) -> None:
         self._reset(*self.magnets)
 

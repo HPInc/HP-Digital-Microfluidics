@@ -2344,6 +2344,8 @@ class DMFCompiler(DMFVisitor):
         fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_magnets()))
         fn = Functions["RESET HEATERS"]
         fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_heaters()))
+        fn = Functions["RESET CHILLERS"]
+        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_chillers()))
         fn = Functions["RESET ALL"]
         fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_all()))
         
@@ -2446,7 +2448,7 @@ class DMFCompiler(DMFVisitor):
         Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
         Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
         Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
-        Attributes["number"].register(Type.HEATER, Type.INT, lambda h : h.number)
+        Attributes["number"].register((Type.HEATER, Type.CHILLER), Type.INT, lambda h : h.number)
         
         Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
         Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)

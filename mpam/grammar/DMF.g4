@@ -204,6 +204,7 @@ no_arg_action returns[str which]
   | 'reset' 'pads' {$ctx.which="RESET PADS"}
   | 'reset' 'magnets' {$ctx.which="RESET MAGNETS"}
   | 'reset' 'heaters' {$ctx.which="RESET HEATERS"}
+  | 'reset' 'chillers' {$ctx.which="RESET CHILLERS"}
   | 'reset' 'all' {$ctx.which="RESET ALL"}
   ;
   
@@ -231,6 +232,7 @@ param_type returns[Type type]
   | ('temp' | 'temperature') ('diff' | 'difference' | 'delta') {$ctx.type=Type.REL_TEMP}
   | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
   | 'heater' {$ctx.type=Type.HEATER}
+  | 'chiller' {$ctx.type=Type.CHILLER}
   | 'magnet' {$ctx.type=Type.MAGNET}
 //  | 'board' {$ctx.Type=Type.BOARD}
   | 'power' 'supply' {$ctx.type=Type.POWER_SUPPLY}
@@ -270,7 +272,7 @@ attr returns[str which]
   | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
   | ('min' | 'minimum') ('target' | 'temperature' | 'temp') {$ctx.which="#min_target"}
   | ('max' | 'maximum') ('target' | 'temperature' | 'temp') {$ctx.which="#max_target"}
-  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'magnet' | 'state'
+  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
   	   | 'fan' 
   	   | ID
   )
@@ -312,7 +314,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y'
   | 'min' | 'max' | 'minimum' | 'maximum'
   | 'diff' | 'difference' | 'delta' | 'point'
   | 'index' | 'base' | 'dispense' | 'enter'
-  | 'reset' | 'magnets' | 'pads' | 'heaters' | 'all' 
+  | 'reset' | 'magnets' | 'pads' | 'heaters' | 'chillers' | 'all' 
   ;
 
 string : STRING ;
