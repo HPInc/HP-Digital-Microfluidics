@@ -308,7 +308,7 @@ class BaseDimension(Dimensionality[BD]):
     def __lt__(self, other: BaseDimension) -> bool:
         return self._sort_name < other._sort_name
     
-    def description(self, *, exponent_fmt: ExptFormatter = None) -> str:  # @UnusedVariable
+    def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:  # @UnusedVariable
         return self._sort_name
 
     def base_unit(self, abbr: str, *, singular: Optional[str]=None) -> Unit[BD]:
@@ -1037,7 +1037,7 @@ class UnitExpr(Generic[D]):
         return cast(UnitExpr[ND], self)
     an = a
     
-    def as_unit(self, abbr: str, check: type[D] = None, singular: Optional[str]=None) -> Unit[D]:  # @UnusedVariable
+    def as_unit(self, abbr: str, check: Optional[type[D]] = None, singular: Optional[str]=None) -> Unit[D]:  # @UnusedVariable
         return Unit[D](abbr, self, singular=singular)
     
     def __eq__(self, other: object) -> bool:

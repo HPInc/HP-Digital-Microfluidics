@@ -305,7 +305,7 @@ class Exerciser(ABC):
     @staticmethod
     def setup_logging(*, levels: Optional[Union[str, LoggingSpec, 
                                                 Sequence[Union[str, LoggingSpec]]]] = None,
-                      file: PathOrStr = None,
+                      file: Optional[PathOrStr] = None,
                       default_file: Optional[
                           Union[PathOrStr, Callable[[], PathOrStr]]] = None) -> None:
         

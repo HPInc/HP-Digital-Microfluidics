@@ -86,7 +86,7 @@ class IdleBarrier:
                 # print("System is idle")
                 self.event.set()
 
-    def wait(self, timeout: float = None) -> None:
+    def wait(self, timeout: Optional[float] = None) -> None:
         # logger.debug(f"wait(): {map_str(self.running_components)}")
         self.event.wait(timeout)
         # logger.debug(f"back from wait(): {map_str(self.running_components)}")
