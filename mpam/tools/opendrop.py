@@ -8,6 +8,9 @@ from mpam.device import Board
 from mpam.exerciser import Exerciser
 from mpam.exerciser_tasks import Dispense, Absorb, DisplayOnly, WalkPath, Mix, \
     Dilute
+import logging
+    
+logger = logging.getLogger(__name__)
 
 class OpenDropExerciser(Exerciser):
     def __init__(self, name: str = "OpenDrop") -> None:
@@ -31,6 +34,7 @@ class OpenDropExerciser(Exerciser):
         
         
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
+        logger.warning("This tool is deprecated.  Please use 'interactive.py opendrop' instead.")
         return opendrop.Board(dev=args.port)
     
     def available_wells(self)->Sequence[int]:

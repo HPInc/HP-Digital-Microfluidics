@@ -16,6 +16,10 @@ from quantities.dimensions import Volume
 from quantities.temperature import TemperaturePoint, abs_C
 from devices.wombat import OpenDropVersion
 from mpam.cmd_line import volume_arg
+from devices.joey import HeaterType
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DispenseAndWalk(Task):
     def __init__(self) -> None:
@@ -155,11 +159,13 @@ class WombatExerciser(JoeyExerciser):
 
 
     def make_board(self, args:Namespace)->Board:
+        logger.warning("This tool is deprecated.  Please use 'interactive.py wombat' instead.")
+        logger.warning("If you were using the --yaminon argument, use 'interactive.py yaminon' instead.")
         print(f"Version is {args.od_version}")
         return wombat.Board(device=args.port, od_version=args.od_version, is_yaminon=args.yaminon,
                             off_on_delay=args.off_on_delay,
                             double_write=args.double_write,
-                            heater_type=args.heaters)
+                            heater_type=HeaterType.from_name(args.heaters))
 
     def available_wells(self)->Sequence[int]:
         return [2,3,6,7]

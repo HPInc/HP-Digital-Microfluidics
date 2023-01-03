@@ -16,7 +16,9 @@ from mpam.paths import Path
 from devices.joey import HeaterType, heater_type_arg_name_for,\
     heater_type_arg_names
 from mpam.cmd_line import temperature_arg, time_arg
+import logging
 
+logger = logging.getLogger(__name__)
 
 class Thermocycle(Task):
     def __init__(self) -> None:
@@ -130,6 +132,7 @@ class JoeyExerciser(Exerciser):
         self.add_task(Thermocycle())
 
     def make_board(self, args:Namespace)->Board:  # @UnusedVariable
+        logger.warning("This tool is deprecated.  Please use 'interactive.py joey' instead.")
         off_on_delay: Time = args.off_on_delay
         return joey.Board(off_on_delay=off_on_delay,
                           heater_type=HeaterType.from_name(args.heaters),

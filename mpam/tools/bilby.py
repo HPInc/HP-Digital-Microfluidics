@@ -15,6 +15,9 @@ from quantities.dimensions import Volume, Voltage
 from quantities.temperature import TemperaturePoint, abs_C
 from mpam.cmd_line import volume_arg, voltage_arg
 from devices.joey import HeaterType
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DispenseAndWalk(Task):
     def __init__(self) -> None:
@@ -151,6 +154,7 @@ class BilbyExerciser(JoeyExerciser):
         
 
     def make_board(self, args:Namespace)->Board:
+        logger.warning("This tool is deprecated.  Please use 'interactive.py bilby' instead.")
         voltage: Optional[Voltage] = args.voltage
         assert voltage is not None
         if voltage == 0:
