@@ -898,7 +898,7 @@ class BoardMonitor:
     close_event: Final[Event]
     legend: Final[ReagentLegend]
     click_handler: Final[ClickHandler]
-    macro_file_name: Final[Optional[str]]
+    macro_file_names: Final[Sequence[str]]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
     default_cmd_line_args = Namespace(highlight_reservations=False)
@@ -941,7 +941,7 @@ class BoardMonitor:
                  from_code: Optional[Mapping[str, Any]] = None,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                  control_fraction: Optional[float] = None,
-                 macro_file_name: Optional[str] = None) -> None:
+                 macro_file_names: Optional[list[str]] = None) -> None:
         self.board = board
         self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
                                           cmd_line = cmd_line_args,
@@ -953,7 +953,7 @@ class BoardMonitor:
         self.click_id = {}
         self.close_event = Event()
         self.click_handler = ClickHandler(self)
-        self.macro_file_name = macro_file_name
+        self.macro_file_names = macro_file_names or []
 
         self.no_bounds = True
 
@@ -1176,8 +1176,8 @@ class BoardMonitor:
 
         apply = Button(fig.add_subplot(grid[0,1]), "Do it")
 
-        macro_file: Optional[str] = self.macro_file_name
-        interp = DMFInterpreter(macro_file, board=self.board)
+        macro_files: Sequence[str] = self.macro_file_names
+        interp = DMFInterpreter(macro_files, board=self.board)
         def on_press(event: KeyEvent) -> None: # @UnusedVariable
             expr = text.text.strip()
             def print_result(pair: tuple[dmf_lang.Type, Any]) -> None:

@@ -155,12 +155,13 @@ class Exerciser(ABC):
                 do_run()
             system.shutdown()
         else:
+            macro_files: Optional[list[str]] = args.macro_file
             system.run_monitored(lambda _: do_run(),
                                  min_time=args.min_time,
                                  max_time=args.max_time,
                                  update_interval=args.update_interval,
                                  control_setup = make_controls,
-                                 macro_file_name = args.macro_file,
+                                 macro_file_names = macro_files,
                                  thread_name = f"Monitored {task.name}",
                                  cmd_line_args = args)
 
@@ -232,7 +233,7 @@ class Exerciser(ABC):
                            The maximum amount of time between display updates.
                            Default is {self.default_update_interval}.
                            ''')
-        group.add_argument('--macro-file',
+        group.add_argument('--macro-file', action='append',
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')

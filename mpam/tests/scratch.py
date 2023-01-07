@@ -1,11 +1,8 @@
 from __future__ import annotations
+from argparse import ArgumentParser, Namespace
 
+parser = ArgumentParser()
+parser.add_argument("--foo", action='append', type=int, default=[])
+args: Namespace = parser.parse_args()
 
-from quantities.SI import uL
-from quantities.dimensions import Volume
-
-Volume.default_units = uL
-
-for _ in range(5):
-    v = Volume.noise(10 *uL)
-    print(v)
+print(args)

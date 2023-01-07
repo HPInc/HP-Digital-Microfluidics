@@ -5349,7 +5349,7 @@ class System:
                       update_interval: Time = 20*ms,
                       control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                       control_fraction: Optional[float] = None,
-                      macro_file_name: Optional[str] = None,
+                      macro_file_names: Optional[list[str]] = None,
                       thread_name: Optional[str] = None,
                       cmd_line_args: Optional[Namespace] = None,
                       config_params: Optional[Mapping[str, Any]] = None,
@@ -5373,7 +5373,7 @@ class System:
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
                                control_fraction=control_fraction,
-                               macro_file_name=macro_file_name,
+                               macro_file_names=macro_file_names,
                                cmd_line_args=cmd_line_args,
                                from_code=config_params
                                )

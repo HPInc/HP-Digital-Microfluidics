@@ -755,10 +755,10 @@ class DMFInterpreter:
     globals: Final[Environment]
     namespace: Final[TypeMap]
     
-    def __init__(self, file_name: Optional[str], *, board: Board, encoding: str='ascii', errors: str='strict') -> None:
+    def __init__(self, file_names: Sequence[str], *, board: Board, encoding: str='ascii', errors: str='strict') -> None:
         self.globals = Environment(None, board=board)
         self.namespace = TypeMap(None)
-        if file_name is not None:
+        for file_name in file_names:
             parser = self.get_parser(FileStream(file_name, encoding, errors))
             tree = parser.macro_file()
             assert isinstance(tree, DMFParser.Macro_fileContext)

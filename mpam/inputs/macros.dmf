@@ -73,3 +73,49 @@ d8d = macro(well w) {
   w : dispense : 3 in dir safe : 2 in dir fwd; 
   w : dispense : 3 in dir safe : 0 in dir fwd; 
 };
+
+mix = macro(pad center, dir to_d1, dir to_d2) {
+  [[
+     (center + to_d1)'s drop : unsafe_walk(to_d1 turned around);
+     (center + to_d2)'s drop : unsafe_walk(to_d2 turned around);
+  ]]
+  center's drop;
+};
+
+collide = macro(well 1, well 2, pad dest, dir to_d1) {
+  dir to_d2 = to_d1 turned around;
+  [[
+      well 1 : dispense drop : to dest + to_d1;
+      well 2 : dispense drop : to dest + to_d2;
+  ]]
+  mix(dest, to_d1, to_d2);
+};
+
+
+
+test = macro() {
+  well #3's reagent = reagent "A";
+  well #3's volume = 10 drops;
+  well #7's reagent = reagent "B";
+  well #7's volume = 10 drops; 
+  collide(well #3, well #7, (3,3), west);
+};
+
+remove_after = macro(time t) {
+  macro(drop d) {
+    wait t;
+    d: remove from the board;
+  };
+};
+
+walk_across = macro(well source, well dest) {
+  pad ep = dest's exit pad;
+  source : dispense drop
+         : to row 4
+         : to col ep's column
+         : to ep
+         : enter well;
+};
+
+
+
