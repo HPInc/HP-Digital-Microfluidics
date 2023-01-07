@@ -77,12 +77,12 @@ class final_cached_property(Generic[Obj_, T_]):
                         raise TypeError(msg) from None
         return val
 
-@overload
-def locally_cached(arg: str) -> Callable[[Callable[[Obj_], T_]], Callable[[Obj_], T_]] : ...
-@overload
-def locally_cached(arg: Callable[[Obj_], T_]) -> Callable[[Obj_], T_] : ...
-def locally_cached(arg: Union[str, Callable[[Obj_], T_]]
-                              ) -> Union[Callable[[Obj_], T_],
-                                         Callable[[Callable[[Obj_], T_]], Callable[[Obj_], T_]]]:
-    ...  
+# @overload
+# def locally_cached(arg: str) -> Callable[[Callable[[Obj_], T_]], Callable[[Obj_], T_]] : ...
+# @overload
+# def locally_cached(arg: Callable[[Obj_], T_]) -> Callable[[Obj_], T_] : ...
+# def locally_cached(arg: Union[str, Callable[[Obj_], T_]]
+#                               ) -> Union[Callable[[Obj_], T_],
+#                                          Callable[[Callable[[Obj_], T_]], Callable[[Obj_], T_]]]:
+#     ...  
             

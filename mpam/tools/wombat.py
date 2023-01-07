@@ -14,7 +14,7 @@ from mpam.types import Dir, Liquid, unknown_reagent, ticks, \
 from quantities.SI import sec
 from quantities.dimensions import Volume
 from quantities.temperature import TemperaturePoint, abs_C
-from devices.wombat import OpenDropVersion
+from devices.wombat import OpenDropVersion, WombatLayout
 from mpam.cmd_line import volume_arg
 from devices.joey import HeaterType
 import logging
@@ -163,6 +163,7 @@ class WombatExerciser(JoeyExerciser):
         logger.warning("If you were using the --yaminon argument, use 'interactive.py yaminon' instead.")
         print(f"Version is {args.od_version}")
         return wombat.Board(device=args.port, od_version=args.od_version, is_yaminon=args.yaminon,
+                            layout=WombatLayout.V1,
                             off_on_delay=args.off_on_delay,
                             double_write=args.double_write,
                             heater_type=HeaterType.from_name(args.heaters))

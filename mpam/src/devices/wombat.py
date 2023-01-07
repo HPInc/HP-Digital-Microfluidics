@@ -19,8 +19,11 @@ from mpam import device
 
 logger = logging.getLogger(__name__)
 
+class WombatLayout(Enum):
+    V1 = auto()
+    V2 = auto()
 
-_pins: Mapping[str, int] = {
+v1pins = {
     "B01": 244, "H06": 243, "B02": 242, "B03": 241, "C04": 240,
     "B04": 239, "A04": 238, "BC05": 237, "B05": 236, "AB05": 235,
     "B06": 234, "F07": 233, "E07": 232, "D07": 231, "C07": 230,
@@ -47,7 +50,19 @@ _pins: Mapping[str, int] = {
     "B26": 129, "F25": 128, "E25": 127, "A28": 126, "BC27": 125,
     "B27": 124, "AB27": 123, "B30": 65, "B29": 64, "C28": 63,
     "B28": 62, "B31": 61, "H26": 60
-}
+} 
+
+v2pins = v1pins.copy()
+v2pins["H09"] = v2pins["H23"]
+for pad in ("E24", "F24", "E16", "F16", "E08", "F08", "H23"):
+    del v2pins[pad]
+
+_pins : Mapping[WombatLayout, Mapping[str, int]] = {
+    WombatLayout.V1: v1pins,
+    WombatLayout.V2: v2pins
+} 
+
+
 
 _opendrop: Mapping[int, tuple[int,int]] = {
     123: (1, 1), 124: (1, 2), 125: (1, 3), 126: (1, 4),
@@ -83,40 +98,6 @@ _opendrop: Mapping[int, tuple[int,int]] = {
     237: (16, 1), 238: (16, 2), 239: (16, 3), 240: (16, 4),
     241: (16, 5), 242: (16, 6), 243: (16, 7), 244: (16, 8),
 }
-# _opendrop: Mapping[int, tuple[int,int]] = {
-#     244: (1,1), 243: (1,2), 242: (1,3), 241: (1,4), 
-#     240: (1,5), 239: (1,6), 238: (1,7), 237: (1,8),
-#     236: (2,1), 235: (2,2), 234: (2,3), 233: (2,4),
-#     232: (2,5), 231: (2,6), 230: (2,7), 229: (2,8),
-#     228: (3,1), 227: (3,2), 226: (3,3), 225: (3,4),
-#     224: (3,5), 223: (3,6), 222: (3,7), 221: (3,8),
-#     220: (4,1), 219: (4,2), 218: (4,3), 217: (4,4),
-#     216: (4,5), 215: (4,6), 214: (4,7), 213: (4,8),
-#     212: (5,1), 211: (5,2), 210: (5,3), 209: (5,4),
-#     208: (5,5), 207: (5,6), 206: (5,7), 205: (5,8),
-#     204: (6,1), 203: (6,2), 202: (6,3), 201: (6,4),
-#     200: (6,5), 199: (6,6), 198: (6,7), 197: (6,8),
-#     196: (7,1), 195: (7,2), 194: (7,3), 193: (7,4),
-#     192: (7,5), 191: (7,6), 190: (7,7), 189: (7,8),
-#     188: (8,1), 187: (8,2), 186: (8,3), 185: (8,4),
-#     184: (8,5), 63: (8,6), 64: (8,7), 65: (8,8),
-#     60: (9,1), 61: (9,2), 62: (9,3), 183: (9,4),
-#     182: (9,5), 181: (9,6), 180: (9,7), 179: (9,8),
-#     178: (10,1), 177: (10,2), 176: (10,3), 175: (10,4),
-#     174: (10,5), 173: (10,6), 172: (10,7), 171: (10,8),
-#     170: (11,1), 169: (11,2), 168: (11,3), 167: (11,4),
-#     166: (11,5), 165: (11,6), 164: (11,7), 163: (11,8),
-#     162: (12,1), 161: (12,2), 160: (12,3), 159: (12,4),
-#     158: (12,5), 157: (12,6), 156: (12,7), 155: (12,8),
-#     154: (13,1), 153: (13,2), 152: (13,3), 151: (13,4),
-#     150: (13,5), 149: (13,6), 148: (13,7), 147: (13,8),
-#     146: (14,1), 145: (14,2), 144: (14,3), 143: (14,4),
-#     142: (14,5), 141: (14,6), 140: (14,7), 139: (14,8),
-#     138: (15,1), 137: (15,2), 136: (15,3), 135: (15,4),
-#     134: (15,5), 133: (15,6), 132: (15,7), 131: (15,8),
-#     130: (16,1), 129: (16,2), 128: (16,3), 127: (16,4),
-#     126: (16,5), 125: (16,6), 124: (16,7), 123: (16,8),
-# }
 
 _shared_pad_cells: Mapping[tuple[str,int], str] = {
     ('left', 0): 'BC27', ('left', 1): 'B27', ('left', 2): 'AB27', 
@@ -135,6 +116,7 @@ _well_gate_cells: Mapping[XYCoord, str] = {
 class OpenDropVersion(Enum):
     V40 = auto()
     V41 = auto()
+    
 
 class Electrode(State[OnOff]):
     byte_index: Final[int]
@@ -163,6 +145,7 @@ class Electrode(State[OnOff]):
 
 
 class Board(joey.Board):
+    _layout: Final[WombatLayout]
     _device: Final[Optional[str]]
     _states: Final[bytearray]
     _last_states: bytearray
@@ -187,7 +170,7 @@ class Board(joey.Board):
     def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
         if cell is None:
             return None
-        pin = _pins.get(cell, None)
+        pin = _pins[self._layout].get(cell, None)
         if pin is None:
             return None
         return self._electrodes[pin]
@@ -215,10 +198,12 @@ class Board(joey.Board):
     
     def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
                  is_yaminon: bool = False,
+                 layout: WombatLayout,
                  heater_type: HeaterType,
                  off_on_delay: Time = Time.ZERO,
                  double_write: bool = True,
                  pipettor: Optional[Pipettor] = None) -> None:
+        self._layout = layout
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -279,10 +264,12 @@ class PlatformTask(joey.PlatformTask):
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
                    pipettor: Pipettor) -> Board: # @UnusedVariable
+        logger.info(f"Wombat layout is {args.layout_version}")
         logger.info(f"Version is {args.od_version}")
         return Board(pipettor=pipettor,
                      heater_type = HeaterType.from_name(args.heaters),
                      device=args.port, od_version=args.od_version, is_yaminon=self.is_yaminon(),
+                     layout = args.layout_version,
                      off_on_delay=args.off_on_delay,
                      double_write=args.double_write)
         
@@ -298,6 +285,11 @@ class PlatformTask(joey.PlatformTask):
                     *,
                     exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
+        lg = group.add_mutually_exclusive_group()
+        lg.add_argument('-v1', action='store_const', const=WombatLayout.V1, dest='layout_version',
+                        help="Version 1 of the Wombat layout")
+        lg.add_argument('-v2', action='store_const', const=WombatLayout.V2, dest='layout_version',
+                        help="Version 2 of the Wombat layout")
         group.add_argument('-p', '--port',
                            help='''
                            The communication port (e.g., COM5) to use to talk to the board.
@@ -317,6 +309,7 @@ class PlatformTask(joey.PlatformTask):
                            Default is {double_write_default}
                            ''')
         parser.set_defaults(od_version=OpenDropVersion.V40)
+        parser.set_defaults(layout_version=WombatLayout.V1)
         
 class YaminonPlatformTask(PlatformTask):
     def __init__(self, name: str = "Yaminon",
