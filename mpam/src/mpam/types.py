@@ -1859,7 +1859,9 @@ class _CompleteDelayed(Delayed[T]):
     def __init__(self, val: T) -> None:
         self._val = (True, val)
 
-class Postable(Delayed[Tcontra]):
+# MyPy complains about the variance mismatch between Postable and Delayed,
+# although only with Python 3.10.
+class Postable(Delayed[Tcontra]): # type: ignore [type-var]
     """
     A concrete subclass of :class:`Delayed` that provides a :func:`post` method
     to assert a value, which will be passed to any waiting callbacks.
