@@ -27,6 +27,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#loop_interactive.
+    def visitLoop_interactive(self, ctx:DMFParser.Loop_interactiveContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#decl_interactive.
     def visitDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext):
         return self.visitChildren(ctx)
@@ -102,13 +107,38 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#repeat_loop.
-    def visitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext):
+    # Visit a parse tree produced by DMFParser#n_times_loop_header.
+    def visitN_times_loop_header(self, ctx:DMFParser.N_times_loop_headerContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#for_loop.
-    def visitFor_loop(self, ctx:DMFParser.For_loopContext):
+    # Visit a parse tree produced by DMFParser#duration_loop_header.
+    def visitDuration_loop_header(self, ctx:DMFParser.Duration_loop_headerContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#while_loop_header.
+    def visitWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#until_loop_header.
+    def visitUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#seq_iter_loop_header.
+    def visitSeq_iter_loop_header(self, ctx:DMFParser.Seq_iter_loop_headerContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#step_iter_loop_header.
+    def visitStep_iter_loop_header(self, ctx:DMFParser.Step_iter_loop_headerContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#loop.
+    def visitLoop(self, ctx:DMFParser.LoopContext):
         return self.visitChildren(ctx)
 
 

@@ -4,7 +4,7 @@ from _collections import defaultdict
 from abc import ABC, abstractmethod
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
     Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple,\
-    TYPE_CHECKING, overload
+    TYPE_CHECKING, overload, Iterator, NoReturn
 import typing
 
 from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext, \
@@ -35,6 +35,7 @@ from threading import RLock
 import re
 from quantities.temperature import TemperaturePoint, abs_C
 from quantities.SI import deg_C
+from quantities.timestamp import Timestamp, time_in, time_now
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -68,6 +69,12 @@ class UnknownUnitDimensionError(CompilationError):
         super().__init__(f"Unit {unit} has unknown dimensionality {dim}.")
         self.unit = unit
         self.dimensionality = dim
+        
+class ErrorToPropagate(CompilationError):
+    error: Final[Executable]
+    
+    def __init__(self, error: Executable) -> None:
+        self.error = error
         
 def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
     def check(*args: Sequence[Any]) -> MaybeError[Val_]:
@@ -750,6 +757,138 @@ class WithEnv:
         self.func = func
     def __call__(self, env: Environment, *args: Sequence[Any]) -> Delayed[Any]:
         return Delayed.complete(self.func(env, *args))    
+
+class LoopType(ABC):
+    compiler: Final[DMFCompiler]
+    
+    def __init__(self, compiler: DMFCompiler) -> None:
+        self.compiler = compiler
+    
+    @classmethod
+    def for_context(cls, header: DMFParser.Loop_headerContext, *, compiler: DMFCompiler) -> LoopType:
+        def not_implemented(kind: str) -> NoReturn:
+            error = compiler.not_yet_implemented(kind, header)
+            raise ErrorToPropagate(error)
+
+        if isinstance(header, DMFParser.N_times_loop_headerContext):
+            return NTimesLoopType(header, compiler=compiler)
+        if isinstance(header, DMFParser.Duration_loop_headerContext):
+            return ForDurationLoopType(header, compiler=compiler)
+        if isinstance(header, DMFParser.While_loop_headerContext):
+            return BoolTestLoopType(header, compiler=compiler)
+        if isinstance(header, DMFParser.Until_loop_headerContext):
+            return BoolTestLoopType(header, compiler=compiler)
+        if isinstance(header, DMFParser.Seq_iter_loop_headerContext):
+            not_implemented("'With var in' loops")
+        if isinstance(header, DMFParser.Step_iter_loop_headerContext):
+            not_implemented("'With var from to' loops")
+        
+        assert_never(header)
+        
+    # Override to push variables into the subcontext
+    def compile_body(self, body: DMFParser.CompoundContext) -> Executable:
+        return self.compiler.visit(body)
+    
+    @abstractmethod
+    def based_on(self) -> Sequence[Executable]: ...
+    
+    @abstractmethod
+    def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]: # @UnusedVariable
+        ...
+
+class NTimesLoopType(LoopType):
+    n_exec: Final[Executable]
+    
+    def __init__(self, header: DMFParser.N_times_loop_headerContext, *, compiler: DMFCompiler) -> None:
+        super().__init__(compiler)
+        n_exec = self.compiler.visit(header.n)
+        if e := compiler.type_check(Type.INT, n_exec, header,
+                                    lambda want,have,text:
+                                      f"Counted loop expression must be of type {want}, was {have}: {text}"
+                                      ):
+            n_exec = e
+        self.n_exec = n_exec
+        
+    def based_on(self)->Sequence[Executable]:
+        return (self.n_exec,)
+    
+    def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
+        n_remaining: int
+        def set_limit(n: MaybeError[int]) -> MaybeError[bool]:
+            if isinstance(n, EvaluationError):
+                return n
+            if n < 1:
+                return False
+            nonlocal n_remaining
+            n_remaining = n-1 # @UnusedVariable
+            return True
+        yield self.n_exec.evaluate(env, Type.INT).transformed(set_limit)
+        while n_remaining > 0:
+            n_remaining -= 1
+            yield Delayed.complete(True)
+        yield Delayed.complete(False)
+        
+class BoolTestLoopType(LoopType):
+    continue_on: Final[bool]
+    cond_exec: Final[Executable]
+    
+    def __init__(self, header: Union[DMFParser.While_loop_headerContext,
+                                     DMFParser.Until_loop_headerContext],
+                                     *, compiler: DMFCompiler) -> None:
+        super().__init__(compiler)
+        self.continue_on = isinstance(header, DMFParser.While_loop_headerContext)
+        cond_ctx = cast(DMFParser.ExprContext, header.cond)
+        cond_exec = self.compiler.visit(cond_ctx)
+        if e := compiler.type_check(Type.BOOL, cond_exec, header,
+                                    lambda want,have,text:
+                                      f"While/until loop condition must be of type {want}, was {have}: {text}"
+                                      ):
+            cond_exec = e
+        self.cond_exec = cond_exec
+        
+    def based_on(self)->Sequence[Executable]:
+        return (self.cond_exec,)
+    
+    def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
+        def check(b: MaybeError[bool]) -> MaybeError[bool]:
+            if isinstance(b, EvaluationError):
+                return b
+            return b == self.continue_on
+        while True:
+            yield self.cond_exec.evaluate(env, Type.BOOL).transformed(check)
+        
+class ForDurationLoopType(LoopType):
+    duration_exec: Final[Executable]
+    
+    def __init__(self, header: DMFParser.Duration_loop_headerContext, *, compiler: DMFCompiler) -> None:
+        super().__init__(compiler)
+        duration_exec = self.compiler.visit(header.duration)
+        if e := compiler.type_check(Type.TIME, duration_exec, header,
+                                    lambda want,have,text:
+                                      f"Timed loop expression must be of type {want}, was {have}: {text}"
+                                      ):
+            duration_exec = e
+        self.duration_exec = duration_exec
+        
+    def based_on(self)->Sequence[Executable]:
+        return (self.duration_exec,)
+    
+    def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
+        stop_at: Timestamp
+        def set_limit(t: MaybeError[Time]) -> MaybeError[bool]:
+            if isinstance(t, EvaluationError):
+                return t
+            if t <= 0:
+                return False
+            nonlocal stop_at
+            stop_at = time_in(t) # @UnusedVariable
+            return True
+        yield self.duration_exec.evaluate(env, Type.TIME).transformed(set_limit)
+        while time_now() < stop_at:
+            yield Delayed.complete(True)
+        yield Delayed.complete(False)
+        
+
     
 class DMFInterpreter:
     globals: Final[Environment]
@@ -1091,6 +1230,9 @@ class DMFCompiler(DMFVisitor):
 
     def visitCompound_interactive(self, ctx:DMFParser.Compound_interactiveContext) -> Executable:
         return self.visit(ctx.compound())
+    
+    def visitLoop_interactive(self, ctx:DMFParser.LoopContext) -> Executable:
+        return self.visit(ctx.loop())
 
 
     # def visitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext) -> Executable:
@@ -1479,14 +1621,54 @@ class DMFCompiler(DMFVisitor):
         
         return Executable(result_type, run, children)
     
+    
+    # def visitN_times_loop_header(self, ctx:DMFParser.N_times_loop_headerContext) -> Executable:
+    #     return self.not_yet_implemented("n-times loop", ctx)
+    #
+    # def visitDuration_loop_header(self, ctx:DMFParser.Duration_loop_headerContext) -> Executable:
+    #     return self.not_yet_implemented("duration loop", ctx)
+    #
+    # def visitWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext) -> Executable:
+    #     return self.not_yet_implemented("while loop", ctx)
+    #
+    # def visitUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext) -> Executable:
+    #     return self.not_yet_implemented("until loop", ctx)
+    #
+    # def visitSeq_iter_loop_header(self, ctx:DMFParser.Seq_iter_loop_headerContext) -> Executable:
+    #     return self.not_yet_implemented("sequence iteration loop", ctx)
+    #
+    # def visitStep_iter_loop_header(self, ctx:DMFParser.Step_iter_loop_headerContext) -> Executable:
+    #     return self.not_yet_implemented("step iteration loop", ctx)
+    
     def visitLoop_stat(self, ctx:DMFParser.Loop_statContext) -> Executable:
         return self.visit(ctx.loop())
-    
-    def visitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext) -> Executable:
-        return self.not_yet_implemented("Repeat loops", ctx)
 
-    def visitFor_loop(self, ctx:DMFParser.For_loopContext) -> Executable:
-        return self.not_yet_implemented("For loops", ctx)
+    def visitLoop(self, ctx:DMFParser.LoopContext) -> Executable:
+        header = cast(DMFParser.Loop_headerContext, ctx.header)
+        body = cast(DMFParser.CompoundContext, ctx.body)
+        try:
+            loop_type = LoopType.for_context(header, compiler=self)
+        except ErrorToPropagate as ex:
+            return ex.error
+        body_exec = loop_type.compile_body(body)
+        def run(env: Environment) -> Delayed[MaybeError[None]]:
+            test_iter = loop_type.test(env)
+            
+            def do_pass(prev: MaybeError[None]) -> Delayed[MaybeError[None]]:
+                if isinstance(prev, EvaluationError):
+                    return Delayed.complete(prev)
+                test_val = next(test_iter)
+                def check(b: MaybeError[bool]) -> Delayed[MaybeError[None]]:
+                    if isinstance(b, EvaluationError):
+                        return Delayed.complete(b)
+                    if not b:
+                        return Delayed.complete(None)
+                    return body_exec.evaluate(env).chain(do_pass)
+                return test_val.chain(check)
+            return do_pass(None)
+            
+        return Executable(Type.NONE, run, (*loop_type.based_on(), body_exec))
+    
 
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())

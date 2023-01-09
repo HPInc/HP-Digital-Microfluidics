@@ -1,8 +1,22 @@
 from __future__ import annotations
-from argparse import ArgumentParser, Namespace
+from typing import Callable
 
-parser = ArgumentParser()
-parser.add_argument("--foo", action='append', type=int, default=[])
-args: Namespace = parser.parse_args()
+def test() -> tuple[Callable[[int], None], Callable[[], int]]:
+    x: int
+    def foo(i: int) -> None:
+        nonlocal x
+        x = i
+        print(f"Setting to {x}")
+        
+    def bar() -> int:
+        return x
+    
+    return (foo, bar)
 
-print(args)
+
+setter, getter = test()
+setter(5)
+print(f"got {getter()}")
+    
+
+                    

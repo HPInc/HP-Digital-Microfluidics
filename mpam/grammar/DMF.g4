@@ -19,6 +19,7 @@ macro_file
   
 interactive
   : compound EOF  # compound_interactive
+  | loop EOF # loop_interactive
   | declaration TERMINATOR? EOF # decl_interactive
 //  | assignment TERMINATOR? EOF # assignment_interactive
   | printing TERMINATOR? EOF # print_interactive
@@ -80,10 +81,18 @@ compound
   : '{' stat* '}'         # block
   | '[[' stat* ']]'       # par_block
   ;
+
+loop_header
+  : n=expr 'times' # n_times_loop_header
+  | 'for' duration=expr # duration_loop_header
+  | 'while' cond=expr # while_loop_header
+  | 'until' cond=expr # until_loop_header
+  | 'with' var=name 'in' seq=expr # seq_iter_loop_header
+  | 'with' var=name 'from' start=expr 'to' stop=expr ('by' step=expr)? # step_iter_loop_header
+  ;
   
 loop
-  : 'repeat' n=expr 'times' body=stat   # repeat_loop
-  | 'for' var=name 'in' '[' start=expr ',' stop=expr term_punct ('by' step=expr) body=stat # for_loop
+  : 'repeat' header=loop_header body=compound
   ;
   
 term_punct returns [bool is_closed]

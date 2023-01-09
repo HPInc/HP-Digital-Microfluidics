@@ -34,6 +34,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#loop_interactive.
+    def enterLoop_interactive(self, ctx:DMFParser.Loop_interactiveContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#loop_interactive.
+    def exitLoop_interactive(self, ctx:DMFParser.Loop_interactiveContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#decl_interactive.
     def enterDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext):
         pass
@@ -169,21 +178,66 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#repeat_loop.
-    def enterRepeat_loop(self, ctx:DMFParser.Repeat_loopContext):
+    # Enter a parse tree produced by DMFParser#n_times_loop_header.
+    def enterN_times_loop_header(self, ctx:DMFParser.N_times_loop_headerContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#repeat_loop.
-    def exitRepeat_loop(self, ctx:DMFParser.Repeat_loopContext):
+    # Exit a parse tree produced by DMFParser#n_times_loop_header.
+    def exitN_times_loop_header(self, ctx:DMFParser.N_times_loop_headerContext):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#for_loop.
-    def enterFor_loop(self, ctx:DMFParser.For_loopContext):
+    # Enter a parse tree produced by DMFParser#duration_loop_header.
+    def enterDuration_loop_header(self, ctx:DMFParser.Duration_loop_headerContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#for_loop.
-    def exitFor_loop(self, ctx:DMFParser.For_loopContext):
+    # Exit a parse tree produced by DMFParser#duration_loop_header.
+    def exitDuration_loop_header(self, ctx:DMFParser.Duration_loop_headerContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#while_loop_header.
+    def enterWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#while_loop_header.
+    def exitWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#until_loop_header.
+    def enterUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#until_loop_header.
+    def exitUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#seq_iter_loop_header.
+    def enterSeq_iter_loop_header(self, ctx:DMFParser.Seq_iter_loop_headerContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#seq_iter_loop_header.
+    def exitSeq_iter_loop_header(self, ctx:DMFParser.Seq_iter_loop_headerContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#step_iter_loop_header.
+    def enterStep_iter_loop_header(self, ctx:DMFParser.Step_iter_loop_headerContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#step_iter_loop_header.
+    def exitStep_iter_loop_header(self, ctx:DMFParser.Step_iter_loop_headerContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#loop.
+    def enterLoop(self, ctx:DMFParser.LoopContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#loop.
+    def exitLoop(self, ctx:DMFParser.LoopContext):
         pass
 
 
