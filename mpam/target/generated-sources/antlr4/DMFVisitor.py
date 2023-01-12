@@ -117,13 +117,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#while_loop_header.
-    def visitWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#until_loop_header.
-    def visitUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext):
+    # Visit a parse tree produced by DMFParser#test_loop_header.
+    def visitTest_loop_header(self, ctx:DMFParser.Test_loop_headerContext):
         return self.visitChildren(ctx)
 
 
@@ -134,6 +129,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#step_iter_loop_header.
     def visitStep_iter_loop_header(self, ctx:DMFParser.Step_iter_loop_headerContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#step_first_and_dir.
+    def visitStep_first_and_dir(self, ctx:DMFParser.Step_first_and_dirContext):
         return self.visitChildren(ctx)
 
 

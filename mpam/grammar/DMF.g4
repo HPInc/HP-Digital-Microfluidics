@@ -85,10 +85,17 @@ compound
 loop_header
   : n=expr 'times' # n_times_loop_header
   | 'for' duration=expr # duration_loop_header
-  | 'while' cond=expr # while_loop_header
-  | 'until' cond=expr # until_loop_header
+  | (WHILE | UNTIL) cond=expr # test_loop_header
   | 'with' var=name 'in' seq=expr # seq_iter_loop_header
-  | 'with' var=name 'from' start=expr 'to' stop=expr ('by' step=expr)? # step_iter_loop_header
+  | 'with' var=name first=step_first_and_dir 'to' bound=expr ('by' step=expr)? # step_iter_loop_header
+  | 'with' var=param first=step_first_and_dir 'to' bound=expr ('by' step=expr)? # step_iter_loop_header
+//  | 'with' var=name first=step_first_and_dir 'to' bound=expr ('by' step=expr)? # step_iter_loop_header
+  ;
+  
+step_first_and_dir returns [bool is_down]
+  : ASSIGN expr 'down' {$ctx.is_down=True}
+  | ASSIGN expr {$ctx.is_down=False}
+  | 'down' {$ctx.is_down=True}
   ;
   
 loop
@@ -343,5 +350,7 @@ ON: 'on';
 SUB: '-';
 TERMINATOR: ';';
 TOGGLE: 'toggle';
+UNTIL: 'until';
+WHILE: 'while';
 CLOSE_BRACKET: ']';
 CLOSE_PAREN: ')';

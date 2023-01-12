@@ -636,6 +636,21 @@ class Rel(Enum):
         assert isinstance(res, bool)
         return res
     
+    def comparable_type(self, lhs: Type, rhs: Type) -> Optional[Type]:
+        candidates = Type.upper_bounds(lhs, rhs)
+        if len(candidates) < 1:
+            return None
+        if self is Rel.EQ or self is Rel.NE:
+            return candidates[0]
+        ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME, 
+                    Type.ABS_TEMP, Type.REL_TEMP, Type.VOLTAGE)
+        for t in candidates:
+            for ok in ok_types:
+                if t <= ok:
+                    return ok
+        return None
+        
+    
 Rel._known = {
     Rel.EQ: lambda x,y: x == y,
     Rel.NE: lambda x,y: x != y,

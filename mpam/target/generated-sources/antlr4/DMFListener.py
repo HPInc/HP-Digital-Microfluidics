@@ -196,21 +196,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#while_loop_header.
-    def enterWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext):
+    # Enter a parse tree produced by DMFParser#test_loop_header.
+    def enterTest_loop_header(self, ctx:DMFParser.Test_loop_headerContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#while_loop_header.
-    def exitWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#until_loop_header.
-    def enterUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#until_loop_header.
-    def exitUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext):
+    # Exit a parse tree produced by DMFParser#test_loop_header.
+    def exitTest_loop_header(self, ctx:DMFParser.Test_loop_headerContext):
         pass
 
 
@@ -229,6 +220,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#step_iter_loop_header.
     def exitStep_iter_loop_header(self, ctx:DMFParser.Step_iter_loop_headerContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#step_first_and_dir.
+    def enterStep_first_and_dir(self, ctx:DMFParser.Step_first_and_dirContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#step_first_and_dir.
+    def exitStep_first_and_dir(self, ctx:DMFParser.Step_first_and_dirContext):
         pass
 
 

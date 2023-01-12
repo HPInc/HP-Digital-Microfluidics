@@ -774,20 +774,22 @@ class LoopType(ABC):
             return NTimesLoopType(header, compiler=compiler)
         if isinstance(header, DMFParser.Duration_loop_headerContext):
             return ForDurationLoopType(header, compiler=compiler)
-        if isinstance(header, DMFParser.While_loop_headerContext):
-            return BoolTestLoopType(header, compiler=compiler)
-        if isinstance(header, DMFParser.Until_loop_headerContext):
+        if isinstance(header, DMFParser.Test_loop_headerContext):
             return BoolTestLoopType(header, compiler=compiler)
         if isinstance(header, DMFParser.Seq_iter_loop_headerContext):
             not_implemented("'With var in' loops")
         if isinstance(header, DMFParser.Step_iter_loop_headerContext):
-            not_implemented("'With var from to' loops")
+            return StepIterLoopType(header, compiler=compiler)
         
         assert_never(header)
         
     # Override to push variables into the subcontext
     def compile_body(self, body: DMFParser.CompoundContext) -> Executable:
         return self.compiler.visit(body)
+    
+    # Override to add a new environment for control variables
+    def header_env(self, env: Environment) -> Environment:
+        return env
     
     @abstractmethod
     def based_on(self) -> Sequence[Executable]: ...
@@ -801,13 +803,12 @@ class NTimesLoopType(LoopType):
     
     def __init__(self, header: DMFParser.N_times_loop_headerContext, *, compiler: DMFCompiler) -> None:
         super().__init__(compiler)
-        n_exec = self.compiler.visit(header.n)
-        if e := compiler.type_check(Type.INT, n_exec, header,
+        self.n_exec = self.compiler.visit(header.n)
+        if e := compiler.type_check(Type.INT, self.n_exec, header,
                                     lambda want,have,text:
                                       f"Counted loop expression must be of type {want}, was {have}: {text}"
                                       ):
-            n_exec = e
-        self.n_exec = n_exec
+            raise(ErrorToPropagate(e))
         
     def based_on(self)->Sequence[Executable]:
         return (self.n_exec,)
@@ -832,11 +833,9 @@ class BoolTestLoopType(LoopType):
     continue_on: Final[bool]
     cond_exec: Final[Executable]
     
-    def __init__(self, header: Union[DMFParser.While_loop_headerContext,
-                                     DMFParser.Until_loop_headerContext],
-                                     *, compiler: DMFCompiler) -> None:
+    def __init__(self, header: DMFParser.Test_loop_headerContext, *, compiler: DMFCompiler) -> None:
         super().__init__(compiler)
-        self.continue_on = isinstance(header, DMFParser.While_loop_headerContext)
+        self.continue_on = header.WHILE() is not None
         cond_ctx = cast(DMFParser.ExprContext, header.cond)
         cond_exec = self.compiler.visit(cond_ctx)
         if e := compiler.type_check(Type.BOOL, cond_exec, header,
@@ -888,6 +887,168 @@ class ForDurationLoopType(LoopType):
             yield Delayed.complete(True)
         yield Delayed.complete(False)
         
+class StepIterLoopType(LoopType):
+    start_exec: Final[Optional[Executable]]
+    stop_exec: Final[Executable]
+    step_exec: Final[Executable]
+    var_name: Final[str]
+    var_type: Final[Type]
+    new_var: Final[bool]
+    downp: Final[bool]
+    rel: Final[Rel]
+    cmp_type: Final[Type]
+    inc_sig: Final[Signature]
+    
+    def __init__(self, header: DMFParser.Step_iter_loop_headerContext, *, compiler: DMFCompiler) -> None:
+        super().__init__(compiler)
+        
+        def raise_error(msg: str, ret_type: Type = Type.NONE) -> NoReturn:
+            raise ErrorToPropagate(compiler.error(header, ret_type, f"{msg}: {compiler.text_of(header)}"))
+        
+        sfd = cast(DMFParser.Step_first_and_dirContext, header.first)
+        self.downp = cast(bool, sfd.is_down)
+        start_ctx: Optional[ParserRuleContext] = sfd.expr()
+        self.start_exec = None if start_ctx is None else compiler.visit(start_ctx) 
+        self.stop_exec = compiler.visit(header.bound)
+        step: Optional[Executable] = None
+        step_ctx: Optional[DMFParser.ExprContext] = header.step
+        if (step_ctx):
+            step = compiler.visit(step_ctx)
+        else:
+            # Needs to be done right
+            step = Executable.constant(Type.INT, 1)
+        self.step_exec = step
+        
+        # No idea why one of the mypy tests on GitHub (only on 3.9) is complaining about "Redundant cast to Union[Any,Any]"
+        var_ctx = cast(Union[DMFParser.ParamContext, DMFParser.NameContext], header.var) # type: ignore [redundant-cast] 
+        
+        if isinstance(var_ctx, DMFParser.ParamContext):
+            var_name, var_type = compiler.param_def(var_ctx)
+            new_var = True
+            if cast(bool, var_ctx.deprecated):
+                compiler.decl_deprecated(var_ctx)
+        elif isinstance(var_ctx, DMFParser.NameContext):
+            var_name = cast(str, var_ctx.val)
+            vt = compiler.current_types.lookup(var_name)
+            if vt is not None:
+                var_type = vt
+                new_var = False
+            else: 
+                if self.start_exec is None:
+                    raise_error(f"'{var_name} not declared in loop header and not in surrounding context, and no start value was provided")
+                var_type = self.start_exec.return_type
+                new_var = True
+                compiler.error(header, var_type, 
+                               (f"'{var_name} not declared in loop header and not in surrounding context."
+                                + f"  Assuming type {var_type} based on initial value of '{compiler.text_of(header.first)}'"))
+        else:
+            assert_never(var_ctx)
+        self.var_name = var_name
+        self.var_type = var_type
+        self.new_var = new_var
+        
+        if self.start_exec is not None:
+            start_type = self.start_exec.return_type
+            if not start_type.can_convert_to(var_type):
+                raise_error(f"Can't convert initial value ({start_type}) to {var_type}")
+        self.rel = Rel.GE if self.downp else Rel.LE
+        stop_type = self.stop_exec.return_type 
+        cmp_type = self.rel.comparable_type(var_type, stop_type)
+        if cmp_type is None:
+            raise_error(f"Can't compare {var_name} ({var_type}) and stop value ({stop_type})")
+        self.cmp_type = cmp_type
+        fn = Functions["SUBTRACT" if self.downp else "ADD"]
+        step_type = self.step_exec.return_type
+        maybe_sig_inc = fn[(var_type, step_type)]
+        if maybe_sig_inc is None:
+            verb = "decrement" if self.downp else "increment"
+            raise_error(f"Can't {verb} {var_name} ({var_type}) by {step_type}")
+            
+        sig, inc = maybe_sig_inc
+        inc_type = sig.return_type
+        if not inc_type.can_convert_to(var_type):
+            verbing = "decrementing" if self.downp else "incrementing"
+            raise_error(f"Result of {verbing} {var_name} ({var_type}) by {step_type} ({inc_type}) not assignable to variable")
+        
+        self.inc: Final[Callable[[Any,Any], Delayed[Any]]] = inc
+        self.inc_sig = sig
+         
+    def based_on(self)->Sequence[Executable]:
+        if self.start_exec is None:
+            return (self.stop_exec, self.step_exec)
+        else:
+            return (self.start_exec, self.stop_exec, self.step_exec)
+    
+    def compile_body(self, body:DMFParser.CompoundContext)->Executable:
+        if self.new_var:
+            with self.compiler.current_types.push({self.var_name: self.var_type}):
+                return self.compiler.visit(body)
+        return self.compiler.visit(body)
+    
+    def header_env(self, env:Environment)->Environment:
+        return env.new_child()
+    
+    def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
+        stop_val: Any
+        step_val: Any
+        var_name = self.var_name
+        var_type = self.var_type
+        cmp_type = self.cmp_type
+        inc_sig = self.inc_sig
+        inc_var_type = inc_sig.param_types[0]
+        inc_ret_type = inc_sig.return_type
+        inc = self.inc
+        running = True
+        var_scope = env if self.new_var else not_None(env.find_scope(var_name))
+        
+        
+        def set_current(val: MaybeError[Any], val_type: Type) -> MaybeError[None]:
+            if isinstance(val, EvaluationError):
+                return val
+            var_scope.define(var_name, val_type.convert_to(var_type, val))
+            return None
+
+        def set_stop(val: MaybeError[Any]) -> MaybeError[None]:
+            if isinstance(val, EvaluationError):
+                return val
+            nonlocal stop_val
+            stop_val = val # @UnusedVariable
+            return None
+
+        def set_step(val: MaybeError[Any]) -> MaybeError[None]:
+            if isinstance(val, EvaluationError):
+                return val
+            nonlocal step_val
+            step_val = val # @UnusedVariable
+            return None
+
+        def test(maybe_error: MaybeError[Any]) -> MaybeError[bool]:
+            if isinstance(maybe_error, EvaluationError):
+                return maybe_error
+            v = self.rel.test(var_type.convert_to(cmp_type, env[var_name]), stop_val)
+            if not v:
+                nonlocal running
+                running = False
+            return v
+            
+        def increment() -> Delayed[MaybeError[None]]:
+            return (inc(var_type.convert_to(inc_var_type, var_scope[var_name]), step_val)
+                    .transformed(lambda v: set_current(v, inc_ret_type))
+                    )
+
+        initialize: Delayed[MaybeError[None]]
+        if self.start_exec is None:        
+            initialize = Delayed.complete(None)
+        else:
+            initialize = self.start_exec.evaluate(env, var_type).transformed(lambda v:set_current(v, var_type))
+        yield (initialize
+               .chain(lambda v: self.stop_exec.check_and_eval(v, env, cmp_type)).transformed(set_stop)
+               .chain(lambda v: self.step_exec.check_and_eval(v, env, inc_sig.param_types[1])).transformed(set_step)
+               .transformed(test)
+               )
+        
+        while running:
+            yield (increment().transformed(test))
 
     
 class DMFInterpreter:
@@ -1021,7 +1182,10 @@ class DMFCompiler(DMFVisitor):
         if not isinstance(msg, str):
             msg = msg(arg_types, [self.text_of(a) for a in arg_ctxts], self.text_of(whole))
         return self.error(whole, return_type, msg, value=value)
-    
+
+    def decl_deprecated(self, pc: DMFParser.ParamContext) -> Executable:
+        return self.error(pc, cast(Type,pc.type), 
+                          lambda text: f"'NAME: TYPE' declarations are deprecated.  Use 'TYPE NAME': {text}")
 
 
         
@@ -1439,7 +1603,7 @@ class DMFCompiler(DMFVisitor):
             
         if e := self.type_check(var_type, value.return_type, ctx, 
                                 lambda want,have,text: 
-                                    f"variable '{name}' has type {have}.  Expression has type {want}: {text}",
+                                    f"variable '{name}' has type {want}.  Expression has type {have}: {text}",
                                 return_type=var_type):
             return e
         
@@ -1652,7 +1816,9 @@ class DMFCompiler(DMFVisitor):
             return ex.error
         body_exec = loop_type.compile_body(body)
         def run(env: Environment) -> Delayed[MaybeError[None]]:
+            env = loop_type.header_env(env)
             test_iter = loop_type.test(env)
+            
             
             def do_pass(prev: MaybeError[None]) -> Delayed[MaybeError[None]]:
                 if isinstance(prev, EvaluationError):
@@ -1758,30 +1924,8 @@ class DMFCompiler(DMFVisitor):
         rel: Rel = ctx.rel().which
         lhs_t = lhs.return_type
         rhs_t = rhs.return_type
-        upper_bounds = Type.upper_bounds(lhs_t, rhs_t)
-        works = len(upper_bounds) > 0
-        if works:
-            if rel is Rel.EQ or rel is Rel.NE:
-                ub_t = upper_bounds[0]
-            else:
-                ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME, 
-                            Type.ABS_TEMP, Type.REL_TEMP, Type.VOLTAGE)
-                def first_matching() -> Optional[Type]:
-                    for t in upper_bounds:
-                        for ok in ok_types:
-                            if t <= ok:
-                                return ok
-                    return None
-                match_t = first_matching()
-                if match_t is None:
-                    works = False
-                else:
-                    ub_t = match_t
-        # if rel is not Rel.EQ and rel is not Rel.NE:
-        #     if e:=self.type_check(ok_types, lhs_t, ctx.lhs, return_type=Type.BOOL):
-        #         return e
-        # if lhs_t is not rhs_t:
-        if not works:
+        ub_t = rel.comparable_type(lhs_t, rhs_t)
+        if ub_t is None:
             return self.error(ctx, Type.BOOL,
                               f"Can't compare {lhs_t.name} and {rhs_t.name}: {self.text_of(ctx)}")
         def run(env: Environment) -> Delayed[MaybeError[bool]]:
@@ -2240,8 +2384,7 @@ class DMFCompiler(DMFVisitor):
         
         for pc in param_contexts:
             if cast(bool, pc.deprecated):
-                self.error(pc, cast(Type,pc.type), 
-                           lambda text: f"'NAME: TYPE' declarations are deprecated.  Use 'TYPE NAME': {text}")
+                self.decl_deprecated(pc)
         
         param_defs = tuple(self.param_def(pc) for pc in param_contexts)
         param_names = tuple(pdef[0] for pdef in param_defs)
