@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from devices import joey, opendrop, wombat, opentrons, manual_pipettor
+from devices import joey, opendrop, wombat, opentrons, manual_pipettor,\
+    bilby_task
 from mpam.exerciser import PlatformChoiceExerciser
 from mpam.exerciser_tasks import DisplayOnly
 
 
 if __name__ == '__main__':
     platforms = (
-                "devices.bilby.PlatformTask",
+                bilby_task.PlatformTask,
                 joey.PlatformTask,
                 opendrop.PlatformTask,
                 wombat.PlatformTask,
