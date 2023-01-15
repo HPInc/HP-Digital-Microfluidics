@@ -151,6 +151,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#exit_stat.
+    def enterExit_stat(self, ctx:DMFParser.Exit_statContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#exit_stat.
+    def exitExit_stat(self, ctx:DMFParser.Exit_statContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#compound_stat.
     def enterCompound_stat(self, ctx:DMFParser.Compound_statContext):
         pass
@@ -238,6 +247,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#loop.
     def exitLoop(self, ctx:DMFParser.LoopContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#exit.
+    def enterExit(self, ctx:DMFParser.ExitContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#exit.
+    def exitExit(self, ctx:DMFParser.ExitContext):
         pass
 
 

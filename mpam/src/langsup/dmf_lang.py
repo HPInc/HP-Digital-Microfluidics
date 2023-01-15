@@ -24,7 +24,7 @@ from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr,\
-    not_Missing, Missing
+    not_Missing
 from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume, Temperature, Voltage
 from erk.stringutils import map_str, conj_str
@@ -93,6 +93,14 @@ def error_check_delayed(fn: Callable[..., Delayed[Val_]]) -> Callable[..., Delay
         # Well, *that's* a kludge
         return fn(*args).transformed(lambda x: x)
     return check
+
+class ControlTransfer(EvaluationError): ...
+
+class LoopExit(ControlTransfer):
+    name: Final[Optional[str]]
+    
+    def __init__(self, name: Optional[str] = None) -> None:
+        self.name = name
 
 class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
@@ -882,15 +890,13 @@ class NTimesLoopType(LoopType):
     
     def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
         n_remaining: int
-        def set_limit(n: MaybeError[int]) -> MaybeError[bool]:
-            if isinstance(n, EvaluationError):
-                return n
+        def set_limit(n: int) -> bool:
             if n < 1:
                 return False
             nonlocal n_remaining
             n_remaining = n-1 # @UnusedVariable
             return True
-        yield self.n_exec.evaluate(env, Type.INT).transformed(set_limit)
+        yield self.n_exec.evaluate(env, Type.INT).transformed(error_check(set_limit))
         while n_remaining > 0:
             n_remaining -= 1
             yield Delayed.complete(True)
@@ -916,12 +922,15 @@ class BoolTestLoopType(LoopType):
         return (self.cond_exec,)
     
     def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
-        def check(b: MaybeError[bool]) -> MaybeError[bool]:
-            if isinstance(b, EvaluationError):
-                return b
-            return b == self.continue_on
-        while True:
-            yield self.cond_exec.evaluate(env, Type.BOOL).transformed(check)
+        running = True
+        
+        def check(b: bool) -> bool:
+            nonlocal running
+            running = b == self.continue_on
+            return running
+        
+        while running:
+            yield self.cond_exec.evaluate(env, Type.BOOL).transformed(error_check(check))
         
 class ForDurationLoopType(LoopType):
     duration_exec: Final[Executable]
@@ -941,15 +950,13 @@ class ForDurationLoopType(LoopType):
     
     def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
         stop_at: Timestamp
-        def set_limit(t: MaybeError[Time]) -> MaybeError[bool]:
-            if isinstance(t, EvaluationError):
-                return t
+        def set_limit(t: Time) -> bool:
             if t <= 0:
                 return False
             nonlocal stop_at
             stop_at = time_in(t) # @UnusedVariable
             return True
-        yield self.duration_exec.evaluate(env, Type.TIME).transformed(set_limit)
+        yield self.duration_exec.evaluate(env, Type.TIME).transformed(error_check(set_limit))
         while time_now() < stop_at:
             yield Delayed.complete(True)
         yield Delayed.complete(False)
@@ -1070,30 +1077,19 @@ class StepIterLoopType(LoopType):
         var_scope = env if self.new_var else not_None(env.find_scope(var_name))
         
         
-        def note_next(val: MaybeError[Any], val_type: Type) -> MaybeError[None]:
-            if isinstance(val, EvaluationError):
-                return val
+        def note_next(val: Any, val_type: Type) -> None:
             nonlocal next_val
             next_val = val_type.convert_to(var_type, val) # @UnusedVariable
-            return None
 
-        def set_stop(val: MaybeError[Any]) -> MaybeError[None]:
-            if isinstance(val, EvaluationError):
-                return val
+        def set_stop(val: Any) -> None:
             nonlocal stop_val
             stop_val = val # @UnusedVariable
-            return None
 
-        def set_step(val: MaybeError[Any]) -> MaybeError[None]:
-            if isinstance(val, EvaluationError):
-                return val
+        def set_step(val: Any) -> None:
             nonlocal step_val
             step_val = val # @UnusedVariable
-            return None
 
-        def test(maybe_error: MaybeError[Any]) -> MaybeError[bool]:
-            if isinstance(maybe_error, EvaluationError):
-                return maybe_error
+        def test(ignored: None) -> bool:
             nonlocal running
             if not running:
                 return False
@@ -1104,7 +1100,7 @@ class StepIterLoopType(LoopType):
             
         def increment() -> Delayed[MaybeError[None]]:
             return (inc(var_type.convert_to(inc_var_type, var_scope[var_name]), step_val)
-                    .transformed(lambda v: note_next(v, inc_ret_type))
+                    .transformed(error_check(lambda v: note_next(v, inc_ret_type)))
                     )
 
         initialize: Delayed[MaybeError[None]]
@@ -1114,15 +1110,15 @@ class StepIterLoopType(LoopType):
                 yield(Delayed.complete(EvaluationError(f"'repeat with' loop has no initial value, and loop variable {var_name} has not yet been assigned.")))
             initialize = Delayed.complete(None)
         else:
-            initialize = self.start_exec.evaluate(env, var_type).transformed(lambda v: note_next(v, var_type))
+            initialize = self.start_exec.evaluate(env, var_type).transformed(error_check(lambda v: note_next(v, var_type)))
         yield (initialize
-               .chain(lambda v: self.stop_exec.check_and_eval(v, env, cmp_type)).transformed(set_stop)
-               .chain(lambda v: self.step_exec.check_and_eval(v, env, inc_sig.param_types[1])).transformed(set_step)
-               .transformed(test)
+               .chain(lambda v: self.stop_exec.check_and_eval(v, env, cmp_type)).transformed(error_check(set_stop))
+               .chain(lambda v: self.step_exec.check_and_eval(v, env, inc_sig.param_types[1])).transformed(error_check(set_step))
+               .transformed(error_check(test))
                )
         
         while running:
-            yield (increment().transformed(test))
+            yield (increment().transformed(error_check(test)))
 
     
 class DMFInterpreter:
@@ -1900,6 +1896,12 @@ class DMFCompiler(DMFVisitor):
             
             
             def do_pass(prev: MaybeError[None]) -> Delayed[MaybeError[None]]:
+                if isinstance(prev, LoopExit):
+                    exited_loop_name = prev.name
+                    # print(f"Exiting loop named '{exited_loop_name}'.  Our name is '{name}'")
+                    if exited_loop_name is None or exited_loop_name == name:
+                        return Delayed.complete(None)
+                # Note: This will catch loop exits for enclosing loops.
                 if isinstance(prev, EvaluationError):
                     return Delayed.complete(prev)
                 test_val = next(test_iter)
@@ -1915,6 +1917,19 @@ class DMFCompiler(DMFVisitor):
         return Executable(Type.NONE, run, (*loop_type.based_on(), body_exec))
     
 
+    def visitExit_stat(self, ctx:DMFParser.Exit_statContext) -> Executable:
+        return self.visit(ctx.exit())
+    
+    def visitExit(self, ctx:DMFParser.ExitContext) -> Executable:
+        name_ctx: Optional[DMFParser.NameContext] = ctx.loop_name
+        name = None if name_ctx is None else cast(str, name_ctx.val)
+        if not self.control_stack.in_loop:
+            return self.error(ctx, Type.NONE, "Loop exit statement not within loop")
+        if name is not None and not self.control_stack.in_named_loop(name):
+            return self.error(ctx, Type.NONE, f"Not within loop named '{name}'")
+        return Executable.constant(Type.NONE, LoopExit(name))
+        
+        
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
 

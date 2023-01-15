@@ -74,6 +74,7 @@ stat
      ('else' else_body=compound)?              # if_stat
   | expr TERMINATOR      # expr_stat
   | loop                 # loop_stat
+  | exit TERMINATOR      # exit_stat 
   | compound             # compound_stat
   ;
   
@@ -101,6 +102,10 @@ step_first_and_dir returns [bool is_down]
 loop
   : ('[' loop_name=name ']')? 'repeat' header=loop_header body=compound
 //  : 'repeat' header=loop_header body=compound
+  ;
+  
+exit
+  : 'exit' (loop_name=name)? 'loop'
   ;
   
 term_punct returns [bool is_closed]

@@ -92,6 +92,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#exit_stat.
+    def visitExit_stat(self, ctx:DMFParser.Exit_statContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#compound_stat.
     def visitCompound_stat(self, ctx:DMFParser.Compound_statContext):
         return self.visitChildren(ctx)
@@ -139,6 +144,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#loop.
     def visitLoop(self, ctx:DMFParser.LoopContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#exit.
+    def visitExit(self, ctx:DMFParser.ExitContext):
         return self.visitChildren(ctx)
 
 
