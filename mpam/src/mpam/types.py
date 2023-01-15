@@ -655,6 +655,11 @@ class Missing(Enum):
     SINGLETON = auto()
     def __repr__(self) -> str:
         return "MISSING"
+    
+    # All Missing values (i.e., MISSING) are considered False
+    def __bool__(self) -> bool:
+        return False
+    
 
 MISSING: Final[Missing] = Missing.SINGLETON
 """
@@ -668,6 +673,19 @@ constant :attr:`MISSING`, MyPy will deduce it to be ``T``.
 Args:
     T: the type (if not :attr:`MISSING`)
 """
+
+def not_Missing(x: MissingOr[T], *, 
+                desc: Optional[Union[str, Callable[[], str]]] = None) -> T:
+    def error_msg() -> str:
+        nonlocal desc
+        if desc is None:
+            desc = "argument to not_MISSING"
+        elif not isinstance(desc, str):
+            desc = desc()
+        return f"{desc} is None"
+    assert x is not MISSING, error_msg()
+    return x
+
 
 class CommunicationScheduler(Protocol):
     """

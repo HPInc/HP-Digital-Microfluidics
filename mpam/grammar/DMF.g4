@@ -99,7 +99,8 @@ step_first_and_dir returns [bool is_down]
   ;
   
 loop
-  : 'repeat' header=loop_header body=compound
+  : ('[' loop_name=name ']')? 'repeat' header=loop_header body=compound
+//  : 'repeat' header=loop_header body=compound
   ;
   
 term_punct returns [bool is_closed]

@@ -23,7 +23,8 @@ from mpam.device import Pad, Board, BinaryComponent, Well,\
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr
+    Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr,\
+    not_Missing, Missing
 from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume, Temperature, Voltage
 from erk.stringutils import map_str, conj_str
@@ -116,9 +117,9 @@ class Scope(Generic[Name_, Val_]):
         parent = self.parent
         return None if parent is None else parent.find_scope(name)
     
-    def lookup(self, name: Name_) -> Optional[Val_]:
+    def lookup(self, name: Name_) -> MissingOr[Val_]:
         scope = self.find_scope(name)
-        return None if scope is None else scope.mapping[name]
+        return MISSING if scope is None else scope.mapping[name]
     
     def define(self, name: Name_, val: Val_) -> None:
         self.mapping[name] = val
@@ -128,12 +129,13 @@ class Scope(Generic[Name_, Val_]):
     
     def __getitem__(self, name: Name_) -> Val_:
         val = self.lookup(name)
-        if val is None:
+        if val is MISSING:
             scope: Optional[Scope[Name_, Val_]] = self
-            defined: List[Sequence[Name_]] = []
+            defined: List[Name_] = []
             while scope is not None:
-                defined.append(tuple(scope.mapping.keys()))
+                defined.extend(scope.mapping.keys())
                 scope = scope.parent
+            defined.sort()
             raise KeyError(f"'{name}' is undefined.  Defined: {defined}")
         return val
     
@@ -154,7 +156,7 @@ class ScopeStack(Generic[Name_, Val_]):
                  initial: Optional[Scope[Name_,Val_]] = None):
         self.current = Scope(None) if initial is None else initial
         
-    def lookup(self, name: Name_) -> Optional[Val_]:
+    def lookup(self, name: Name_) -> MissingOr[Val_]:
         return self.current.lookup(name)
     
     def define(self, name: Name_, val: Val_) -> None:
@@ -216,6 +218,71 @@ class Environment(Scope[str, Any]):
     
     
 TypeMap = Scope[str, Type]
+
+class ControlScope:
+    parent: Final[Optional[ControlScope]]
+    return_ok: Final[bool]
+    visible_loops: Final[Sequence[str]]
+    
+    @property
+    def in_loop(self) -> bool:
+        return len(self.visible_loops) > 0
+    
+    def __init__(self, *,
+                 parent: Optional[ControlScope] = None,
+                 is_macro: bool = False,
+                 loop_name: Optional[str] = None) -> None:
+        self.parent = parent
+        self.return_ok = is_macro or (parent is not None and parent.return_ok)
+        parent_loops = () if parent is None else parent.visible_loops
+        self.visible_loops = () if is_macro else parent_loops if loop_name is None else (loop_name, *parent_loops)
+        
+    def in_named_loop(self, name: str) -> bool:
+        return name in self.visible_loops
+        
+    
+class ControlScopeStack:
+    top: ControlScope
+    
+    @property
+    def return_ok(self) -> bool:
+        return self.top.return_ok
+    
+    @property
+    def in_loop(self) -> bool:
+        return self.top.in_loop
+    
+    def __init__(self) -> None:
+        self.top = ControlScope()
+        
+    def in_named_loop(self, name: str) -> bool:
+        return self.top.in_named_loop(name)
+    
+    def enter_macro(self) -> CSPush:
+        return CSPush(self, is_macro=True)
+    
+    def enter_loop(self, *, name: Optional[str] = None) -> CSPush:
+        if name is None:
+            name = ""
+        return CSPush(self, loop_name=name)
+    
+class CSPush:
+    stack: Final[ControlScopeStack]
+    scope: Final[ControlScope]
+    old: Final[ControlScope]
+    
+    def __init__(self, stack: ControlScopeStack, *, 
+                 is_macro: bool = False, loop_name: Optional[str] = None) -> None:
+        self.stack = stack
+        self.old = stack.top 
+        self.scope = ControlScope(parent=stack.top, is_macro=is_macro, loop_name=loop_name)
+        
+    def __enter__(self) -> CSPush:
+        self.stack.top = self.scope
+        return self
+        
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: # @UnusedVariable
+        self.stack.top = self.old
 
 class CallableValue(ABC):
     sig: Final[Signature]
@@ -930,7 +997,7 @@ class StepIterLoopType(LoopType):
         elif isinstance(var_ctx, DMFParser.NameContext):
             var_name = cast(str, var_ctx.val)
             vt = compiler.current_types.lookup(var_name)
-            if vt is not None:
+            if vt is not MISSING:
                 var_type = vt
                 new_var = False
             else: 
@@ -991,6 +1058,7 @@ class StepIterLoopType(LoopType):
     def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
         stop_val: Any
         step_val: Any
+        next_val: Any
         var_name = self.var_name
         var_type = self.var_type
         cmp_type = self.cmp_type
@@ -1002,10 +1070,11 @@ class StepIterLoopType(LoopType):
         var_scope = env if self.new_var else not_None(env.find_scope(var_name))
         
         
-        def set_current(val: MaybeError[Any], val_type: Type) -> MaybeError[None]:
+        def note_next(val: MaybeError[Any], val_type: Type) -> MaybeError[None]:
             if isinstance(val, EvaluationError):
                 return val
-            var_scope.define(var_name, val_type.convert_to(var_type, val))
+            nonlocal next_val
+            next_val = val_type.convert_to(var_type, val) # @UnusedVariable
             return None
 
         def set_stop(val: MaybeError[Any]) -> MaybeError[None]:
@@ -1025,22 +1094,27 @@ class StepIterLoopType(LoopType):
         def test(maybe_error: MaybeError[Any]) -> MaybeError[bool]:
             if isinstance(maybe_error, EvaluationError):
                 return maybe_error
-            v = self.rel.test(var_type.convert_to(cmp_type, env[var_name]), stop_val)
-            if not v:
-                nonlocal running
-                running = False
-            return v
+            nonlocal running
+            if not running:
+                return False
+            running = self.rel.test(var_type.convert_to(cmp_type, next_val), stop_val)
+            if running:
+                var_scope.define(var_name, next_val)
+            return running
             
         def increment() -> Delayed[MaybeError[None]]:
             return (inc(var_type.convert_to(inc_var_type, var_scope[var_name]), step_val)
-                    .transformed(lambda v: set_current(v, inc_ret_type))
+                    .transformed(lambda v: note_next(v, inc_ret_type))
                     )
 
         initialize: Delayed[MaybeError[None]]
         if self.start_exec is None:        
+            next_val = var_scope.lookup(var_name)
+            if next_val is MISSING:
+                yield(Delayed.complete(EvaluationError(f"'repeat with' loop has no initial value, and loop variable {var_name} has not yet been assigned.")))
             initialize = Delayed.complete(None)
         else:
-            initialize = self.start_exec.evaluate(env, var_type).transformed(lambda v:set_current(v, var_type))
+            initialize = self.start_exec.evaluate(env, var_type).transformed(lambda v: note_next(v, var_type))
         yield (initialize
                .chain(lambda v: self.stop_exec.check_and_eval(v, env, cmp_type)).transformed(set_stop)
                .chain(lambda v: self.step_exec.check_and_eval(v, env, inc_sig.param_types[1])).transformed(set_step)
@@ -1105,7 +1179,8 @@ class DMFInterpreter:
 
 class DMFCompiler(DMFVisitor):
     global_types: Final[TypeMap]
-    current_types: ScopeStack[str, Type]
+    current_types: Final[ScopeStack[str, Type]]
+    control_stack: Final[ControlScopeStack]
     interactive: Final[bool]
     
     default_creators = defaultdict[Type,Callable[[Environment],Any]](lambda: (lambda _: None),
@@ -1124,6 +1199,7 @@ class DMFCompiler(DMFVisitor):
         self.interactive = interactive
         self.global_types = global_types if global_types is not None else TypeMap(None)
         self.current_types = ScopeStack(self.global_types)
+        self.control_stack = ControlScopeStack()
         
     def defaultResult(self) -> Executable:
         print("Unhandled tree")
@@ -1464,7 +1540,7 @@ class DMFCompiler(DMFVisitor):
             new_decl = False
         else:
             vt = self.current_types.lookup(name)
-            if vt is None:
+            if vt is MISSING:
                 new_decl = True
                 var_type = value.return_type
                 if var_type < Type.BINARY_STATE:
@@ -1568,7 +1644,7 @@ class DMFCompiler(DMFVisitor):
             
         # if we have a "type n = init" form and "type n" already defined, we just assign rather than
         # shadowing
-        just_assign = not has_local_kwd and value is not None and self.current_types.lookup(name) is not None
+        just_assign = not has_local_kwd and value is not None and self.current_types.lookup(name) is not MISSING
 
         if var_type is None:
             assert value is not None
@@ -1583,7 +1659,7 @@ class DMFCompiler(DMFVisitor):
             return self.error(ctx, var_type, 
                               lambda text: f"Can't declare variable shadowing special variable '{name}': {text}")
         if not just_assign and self.current_types.defined_locally(name):
-            old_type = not_None(self.current_types.lookup(name)).name
+            old_type = not_Missing(self.current_types.lookup(name)).name
             new_type = var_type.name
             if old_type is not new_type:
                 return self.error(ctx, var_type, 
@@ -1597,7 +1673,7 @@ class DMFCompiler(DMFVisitor):
         if value is None:
             # Declaration only
             def do_decl(env: Environment) -> Delayed[None]:
-                env.define(name, None)
+                env.define(name, MISSING)
                 return Delayed.complete(None)
             return Executable(Type.NONE, do_decl)
             
@@ -1814,7 +1890,10 @@ class DMFCompiler(DMFVisitor):
             loop_type = LoopType.for_context(header, compiler=self)
         except ErrorToPropagate as ex:
             return ex.error
-        body_exec = loop_type.compile_body(body)
+        name_ctx: Optional[DMFParser.NameContext] = ctx.loop_name
+        name = None if name_ctx is None else cast(str, name_ctx.val)
+        with self.control_stack.enter_loop(name=name):
+            body_exec = loop_type.compile_body(body)
         def run(env: Environment) -> Delayed[MaybeError[None]]:
             env = loop_type.header_env(env)
             test_iter = loop_type.test(env)
@@ -1856,7 +1935,7 @@ class DMFCompiler(DMFVisitor):
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
         name = self.type_name_var(ctx.param_type(), n)
         var_type = self.current_types.lookup(name)
-        if var_type is None:
+        if var_type is MISSING:
             return self.error(ctx.param_type(), Type.NONE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
             val = env.lookup(name)
@@ -1887,11 +1966,11 @@ class DMFCompiler(DMFVisitor):
             real_special = special
             return Executable(special.var_type, lambda env: Delayed.complete(real_special.get(env)))
         var_type = self.current_types.lookup(name)
-        if var_type is None:
+        if var_type is MISSING:
             return self.error(ctx.name(), Type.NONE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
             val = env.lookup(name)
-            if val is None:
+            if val is MISSING:
                 return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
             return Delayed.complete(val)
         return Executable(var_type, run)
@@ -2393,7 +2472,10 @@ class DMFCompiler(DMFVisitor):
         if e := self.check_macro_params(param_names, param_types, param_contexts):
             return e
         
-        with self.current_types.push(dict(param_defs)): 
+        # Unfortunately, you can't put parens around multiple with clauses until
+        # Python 3.10.
+        with self.current_types.push(dict(param_defs)), \
+             self.control_stack.enter_macro(): 
             body: Executable
             if ctx.compound() is not None:
                 body = self.visit(ctx.compound())
