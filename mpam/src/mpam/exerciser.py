@@ -374,6 +374,17 @@ class Exerciser(ABC):
             # logger.info(f"Setting logging level for {name} to {level.desc}")
             logging.getLogger(name).setLevel(level.desc)
             
+PCTaskDesc = Union[str,ValOrFn['PlatformChoiceTask']]
+
+class BadPlatformDescError(RuntimeError):
+    desc: Final[str]
+    error: Final[str]
+
+    def __init__(self, desc: str, error: str) -> None:
+        super(f"Platform description '{desc}' {error}") 
+        self.desc = desc
+        self.error = error
+
 class PlatformChoiceTask(Task):
     
     def __init__(self, name: str, description: Optional[str] = None, *,
@@ -422,6 +433,38 @@ class PlatformChoiceTask(Task):
     @classmethod
     def fmt_time(cls, t: Time) -> str:
         return Exerciser.fmt_time(t)
+    
+    @classmethod
+    def from_desc(cls, desc: PCTaskDesc) -> PlatformChoiceTask:
+        if isinstance(desc, str):
+            def bad_spec(msg: str) -> NoReturn:
+                assert isinstance(desc, str)
+                raise BadPlatformDescError(desc, msg)
+            
+            cpts = desc.split(".")
+            if len(cpts) < 2:
+                bad_spec("doesn't specify a module")
+            name = cpts[-1]
+            module_name = '.'.join(cpts[0:-1])
+            try:
+                module = import_module(module_name)
+                val = getattr(module, name)
+            except ModuleNotFoundError as ex:
+                bad_spec(f"requires '{ex.name}' module")
+            if isinstance(val, PlatformChoiceTask):
+                desc = val
+            else:
+                try:
+                    pp = val()
+                    if isinstance(pp, PlatformChoiceTask):
+                        desc = pp
+                    else:
+                        bad_spec("doesn't return a PlatformChoiceTask")
+                except TypeError:
+                    bad_spec("neither a PlatformChoiceTask nor callable")
+        if not isinstance(desc, PlatformChoiceTask):
+            desc = desc()
+        return desc
         
         
 class PipettorConfig(ABC):
@@ -453,7 +496,7 @@ class PlatformChoiceExerciser(Exerciser):
     
     def __init__(self, description: Optional[str] = None, *,
                  task: Task,
-                 platforms: Sequence[Union[str,ValOrFn[PlatformChoiceTask]]],
+                 platforms: Sequence[PCTaskDesc],
                  pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
                  default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
                  ) -> None:
@@ -479,46 +522,19 @@ class PlatformChoiceExerciser(Exerciser):
         self.pipettors = tuple(plist)
         
         for p in platforms:
-            platform: ValOrFn[PlatformChoiceTask]
-            if isinstance(p, str):
-                def bad_spec(msg: str) -> None:
-                    logger.warn(f"Platform option '{p}' {msg}, ignoring")
-                cpts = p.split(".")
-                if len(cpts) < 2:
-                    bad_spec("doesn't specify a module")
-                    continue
-                name = cpts[-1]
-                module_name = '.'.join(cpts[0:-1])
-                try:
-                    module = import_module(module_name)
-                    val = getattr(module, name)
-                except ModuleNotFoundError as ex:
-                    bad_spec(f"requires '{ex.name}' module")
-                    continue
-                if isinstance(val, PlatformChoiceTask):
-                    platform = val
-                else:
-                    try:
-                        pp = val()
-                        if isinstance(pp, PlatformChoiceTask):
-                            platform = pp
-                        else:
-                            bad_spec("doesn't return a PlatformChoiceTask")
-                            continue
-                    except TypeError:
-                        bad_spec("neither a PlatformChoiceTask nor callable")
-                        continue
-            else:
-                platform = p
-            if not isinstance(platform, PlatformChoiceTask):
-                platform = platform()
+            try:
+                platform = PlatformChoiceTask.from_desc(p)
+            except BadPlatformDescError as ex:
+                logger.warn(f"Platform option '{ex.desc}' '{ex.error}, ignoring")
+                continue
+
             self.add_task(platform)
             
     @classmethod
     def for_task(cls, task: Union[Task, Callable[[], Task]], 
                  description: Optional[str] = None, 
                  *,
-                 platforms: Sequence[Union[str, ValOrFn[PlatformChoiceTask]]],
+                 platforms: Sequence[PCTaskDesc],
                  pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
                  default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
                  ) -> PlatformChoiceExerciser:
