@@ -1296,3 +1296,4 @@ class BoardMonitor:
             self.process_display_updates()
             self.figure.canvas.draw_idle()
             pyplot.pause(pause)
+            

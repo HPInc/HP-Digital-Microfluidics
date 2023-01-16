@@ -67,11 +67,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#pause_stat.
-    def visitPause_stat(self, ctx:DMFParser.Pause_statContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#print_stat.
     def visitPrint_stat(self, ctx:DMFParser.Print_statContext):
         return self.visitChildren(ctx)
@@ -244,6 +239,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#magnitude_expr.
     def visitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#prompt_expr.
+    def visitPrompt_expr(self, ctx:DMFParser.Prompt_exprContext):
         return self.visitChildren(ctx)
 
 

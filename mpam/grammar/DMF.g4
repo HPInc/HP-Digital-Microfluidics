@@ -67,7 +67,7 @@ stat
 //  | assignment TERMINATOR  # assign_stat
 //  | which=name ASSIGN macro_header body=compound # macro_def_stat
 //  | pad_op TERMINATOR    # pad_op_stat
-  | ('pause' | 'wait') duration=expr TERMINATOR           # pause_stat
+//  | ('pause' | 'wait') 'for'? duration=expr TERMINATOR           # pause_stat
   | printing TERMINATOR                           # print_stat
   | 'if' tests+=expr bodies+=compound 
      ('else' 'if' tests+=expr bodies+=compound)*
@@ -145,7 +145,8 @@ expr
   | direction dist=expr              # delta_expr
   | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
-  | ('pause' | 'wait') duration=expr            # pause_expr
+  | ('pause' | 'wait') 'for'? duration=expr            # pause_expr
+  | (('pause' | 'wait') 'for' 'user' | 'prompt') ('(' vals+= expr (',' vals+=expr)* ')')? # prompt_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr

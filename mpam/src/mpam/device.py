@@ -28,7 +28,7 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
-    NO_WAIT, CSOperation, Trigger
+    NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer
 from quantities.SI import sec, ms, volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -5224,6 +5224,8 @@ class System:
     _requested_ip: Optional[str]
     _subnet: Optional[str]
     _subnet_mask: Optional[str]
+    terminal_interaction: Final[AsyncFunctionSerializer]
+    
     
     @property
     def local_ip_addr(self) -> Optional[str]:
@@ -5251,6 +5253,8 @@ class System:
         self._requested_ip = local_ip
         self._subnet = subnet
         self._subnet_mask = subnet_mask
+        self.terminal_interaction = AsyncFunctionSerializer(thread_name="Terminal interaction thread")
+        
         board.join_system(self)
 
     def __enter__(self) -> System:
@@ -5385,3 +5389,13 @@ class System:
                            update_interval = update_interval)
 
         return val
+    
+    def prompt_and_wait(self, future: Postable[None], *, prompt: Optional[str] = None) -> None:
+        def doit() -> None:
+            if prompt is not None:
+                print(prompt)
+            print("Hit <RETURN> to continue.")
+            input()
+            future.post(None)
+        self.terminal_interaction.enqueue(doit)
+    

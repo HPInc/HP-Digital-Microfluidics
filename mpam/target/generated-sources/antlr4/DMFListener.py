@@ -106,15 +106,6 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#pause_stat.
-    def enterPause_stat(self, ctx:DMFParser.Pause_statContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#pause_stat.
-    def exitPause_stat(self, ctx:DMFParser.Pause_statContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#print_stat.
     def enterPrint_stat(self, ctx:DMFParser.Print_statContext):
         pass
@@ -427,6 +418,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#magnitude_expr.
     def exitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#prompt_expr.
+    def enterPrompt_expr(self, ctx:DMFParser.Prompt_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#prompt_expr.
+    def exitPrompt_expr(self, ctx:DMFParser.Prompt_exprContext):
         pass
 
 

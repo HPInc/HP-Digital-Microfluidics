@@ -60,6 +60,7 @@ class Type:
     DELTA: ClassVar[Type]
     TWIDDLE_OP: ClassVar[TwiddleOpType]
     PAUSE: ClassVar[PauseType]
+    PROMPT: ClassVar[PromptType]
     ROW: ClassVar[Type]
     COLUMN: ClassVar[Type]
     BARRIER: ClassVar[Type]
@@ -368,11 +369,21 @@ Type.TWIDDLE_OP = TwiddleOpType()
 Type.ON = Type("ON", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 Type.OFF = Type("OFF", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 
-class PauseType(CallableType):
+class InjectableStatementType(CallableType):
+    def __init__(self, name: str) -> None:
+        super().__init__(name, (Type.ANY,), Type.NONE)
+        
+class PauseType(InjectableStatementType):
     def __init__(self) -> None:
-        super().__init__("PAUSE", (Type.ANY,), Type.NONE)
+        super().__init__("PAUSE")
         
 Type.PAUSE = PauseType()
+
+class PromptType(InjectableStatementType):
+    def __init__(self) -> None:
+        super().__init__("PROMPT")
+        
+Type.PROMPT = PromptType()
 
 class CompositionType(CallableType):
     instances = dict[Signature, 'CompositionType']()

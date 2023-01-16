@@ -16,10 +16,10 @@ from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
     Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit,\
-    NumberedItem
+    NumberedItem, InjectableStatementType
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
-    Heater
+    Heater, System
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -37,10 +37,13 @@ import re
 from quantities.temperature import TemperaturePoint, abs_C
 from quantities.SI import deg_C
 from quantities.timestamp import Timestamp, time_in, time_now
+import io
+import logging
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
 
+logger = logging.getLogger(__name__)
 
 Name_ = TypeVar("Name_", bound=Hashable)
 Val_ = TypeVar("Val_")
@@ -456,8 +459,16 @@ class TwiddleBinaryValue(CallableValue):
 TwiddleBinaryValue.ON = TwiddleBinaryValue(BinaryComponent.TurnOn)
 TwiddleBinaryValue.OFF= TwiddleBinaryValue(BinaryComponent.TurnOff)
 TwiddleBinaryValue.TOGGLE = TwiddleBinaryValue(BinaryComponent.Toggle)
+
+class InjectableStatementValue(CallableValue):
+    @abstractmethod
+    def invoke(self) -> Delayed[MaybeError[None]]: ...
+
+    def apply(self, args: Sequence[Any])->Delayed[MaybeError[None]]:
+        assert len(args) == 1
+        return self.invoke()
     
-class PauseValue(CallableValue):
+class PauseValue(InjectableStatementValue):
     duration: Final[DelayType]
     board: Final[Board]
     
@@ -471,9 +482,33 @@ class PauseValue(CallableValue):
     def __str__(self) -> str:
         return f"Pause({self.duration})"
         
-    def apply(self, args: Sequence[Any])->Delayed[None]:
-        assert len(args) == 1
+    def invoke(self)->Delayed[None]:
         return self.board.delayed(lambda : None, after=self.duration)
+    
+class PromptValue(InjectableStatementValue):
+    prompt: Final[Optional[str]]
+    system: Final[System]
+    
+    _sig: ClassVar[Signature] = Signature.of((Type.DELAY,), Type.NONE)
+    
+    def __init__(self, vals: Sequence[Any], board: Board) -> None:
+        super().__init__(self._sig)
+        self.system = board.system
+        prompt: Optional[str] = None
+        if len(vals) > 0:
+            output = io.StringIO()
+            print(*vals, file=output, end="")
+            prompt = output.getvalue()
+            output.close()
+        self.prompt = prompt
+        
+    def __str__(self) -> str:
+        return f"Prompt({self.prompt})"
+        
+    def invoke(self)->Delayed[None]:
+        future = Postable[None]()
+        self.system.prompt_and_wait(future, prompt=self.prompt)
+        return future
     
     
 
@@ -725,6 +760,7 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.TICKS: Ticks,
         Type.DELAY: (Time, Ticks),
         Type.PAUSE: PauseValue,
+        Type.PROMPT: PromptValue,
         Type.DIR: Dir,
         Type.BOOL: bool,
         Type.BUILT_IN: Func,
@@ -832,6 +868,12 @@ class WithEnv:
         self.func = func
     def __call__(self, env: Environment, *args: Sequence[Any]) -> Delayed[Any]:
         return Delayed.complete(self.func(env, *args))    
+
+class WithEnvDelayed:
+    def __init__(self, func: Callable[..., Delayed[Any]]):
+        self.func = func
+    def __call__(self, env: Environment, *args: Sequence[Any]) -> Delayed[Any]:
+        return self.func(env, *args)    
 
 class LoopType(ABC):
     compiler: Final[DMFCompiler]
@@ -1402,7 +1444,7 @@ class DMFCompiler(DMFVisitor):
                         return Delayed.complete(maybe_error)
                     else:
                         try:
-                            if isinstance(fn, WithEnv):
+                            if isinstance(fn, (WithEnv, WithEnvDelayed)):
                                 return fn(env, *args, *extra_args)
                             else:
                                 return fn(*args, *extra_args)
@@ -1478,8 +1520,21 @@ class DMFCompiler(DMFVisitor):
         return self.visit(ctx.declaration())
 
 
+    def exprAsStatement(self, ctx: DMFParser.ExprContext) -> Executable:
+        ex = self.visit(ctx)
+        if isinstance(ex.return_type, InjectableStatementType):
+            def doit(fn: InjectableStatementValue) -> Delayed[MaybeError[None]]:
+                logger.info(f"Invoking {ex.return_type}: {fn}")
+                return fn.apply((None,))
+                                                              
+            def run(env: Environment) -> Delayed[MaybeError[None]]:
+                return (ex.evaluate(env)
+                        .chain(error_check_delayed(doit)))
+            return Executable(Type.NONE, run, (ex,))
+        return ex
+
     def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext) -> Executable:
-        return self.visit(ctx.expr())
+        return self.exprAsStatement(ctx.expr())
     
     def visitEmpty_interactive(self, ctx:DMFParser.Empty_interactiveContext) -> Executable: # @UnusedVariable
         return Executable.constant(Type.IGNORE, None)
@@ -1709,25 +1764,24 @@ class DMFCompiler(DMFVisitor):
     def visitPrint_interactive(self, ctx:DMFParser.Print_statContext) -> Executable:
         return self.visit(ctx.printing())
 
-    def visitPause_stat(self, ctx:DMFParser.Pause_statContext) -> Executable:
-        duration = self.visit(ctx.duration)
-        if e:=self.type_check(Type.DELAY, duration, ctx.duration,
-                              lambda want,have,text: # @UnusedVariable
-                                f"Delay ({have} must be time or ticks: {text}",
-                              return_type=Type.PAUSE):
-            return e
-        def run(env: Environment) -> Delayed[MaybeError[None]]:
-            def pause(d: DelayType, env: Environment) -> Delayed[None]:
-                print(f"Delaying for {d}")
-                return env.board.delayed(lambda: None, after=d)
-            return (duration.evaluate(env, Type.DELAY)
-                    .chain(lambda d: error_check_delayed(pause)(d, env)))
-        return Executable(Type.PAUSE, run, (duration,))
+    # def visitPause_stat(self, ctx:DMFParser.Pause_statContext) -> Executable:
+    #     duration = self.visit(ctx.duration)
+    #     if e:=self.type_check(Type.DELAY, duration, ctx.duration,
+    #                           lambda want,have,text: # @UnusedVariable
+    #                             f"Delay ({have} must be time or ticks: {text}",
+    #                           return_type=Type.PAUSE):
+    #         return e
+    #     def run(env: Environment) -> Delayed[MaybeError[None]]:
+    #         def pause(d: DelayType, env: Environment) -> Delayed[None]:
+    #             print(f"Delaying for {d}")
+    #             return env.board.delayed(lambda: None, after=d)
+    #         return (duration.evaluate(env, Type.DELAY)
+    #                 .chain(lambda d: error_check_delayed(pause)(d, env)))
+    #     return Executable(Type.PAUSE, run, (duration,))
+    
 
     def visitExpr_stat(self, ctx:DMFParser.Expr_statContext) -> Executable:
-        return self.visit(ctx.expr())
-
-    
+        return self.exprAsStatement(ctx.expr())
 
     def visitCompound_stat(self, ctx:DMFParser.Compound_statContext) -> Executable:
         return self.visit(ctx.compound())
@@ -2530,6 +2584,15 @@ class DMFCompiler(DMFVisitor):
             return (duration.evaluate(env, Type.DELAY)
                     .transformed(error_check(lambda d: PauseValue(d, env.board))))
         return Executable(Type.PAUSE, run, (duration,))
+    
+    def visitPrompt_expr(self, ctx:DMFParser.Prompt_exprContext) -> Executable:
+        def run(env: Environment, *vals: Sequence[Any]) -> Delayed[PromptValue]:
+            return Delayed.complete(PromptValue(vals, board=env.board))
+        vals = tuple(self.visit(c) for c in ctx.vals)
+        sig = Signature.of(tuple(v.return_type for v in vals), Type.PROMPT)
+        return self.use_callable(WithEnvDelayed(run), vals, sig)
+            
+            
                 
     def visitMacro_header(self, ctx:DMFParser.Macro_headerContext) -> Executable:
         return DMFVisitor.visitMacro_header(self, ctx) # type: ignore [no-any-return]
