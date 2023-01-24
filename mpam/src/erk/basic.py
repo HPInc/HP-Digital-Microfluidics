@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast,\
-    NoReturn
+    NoReturn, Any
 from threading import Lock
 from re import Pattern
 import re
@@ -74,6 +74,9 @@ def not_None(x: Optional[_T], *,
 
 def always(val: _T) -> Callable[[], _T]:
     return lambda: val
+
+def to_const(val: _T) -> Callable[[Any], _T]:
+    return lambda _: val
         
 class ComputedDefaultDict(dict[_H,_T]):
     def __init__(self, factory: Callable[[_H], _T]):

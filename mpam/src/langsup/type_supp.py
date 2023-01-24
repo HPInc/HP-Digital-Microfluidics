@@ -10,6 +10,12 @@ from _collections import defaultdict
 from quantities.core import Unit
 import typing
 from functools import cached_property
+from threading import RLock
+import logging
+from erk.stringutils import conj_str
+from abc import ABC, abstractmethod
+
+logger = logging.getLogger(__name__)
 
 class TypeMismatchError(RuntimeError):
     have: Final[Type]
@@ -19,6 +25,20 @@ class TypeMismatchError(RuntimeError):
         super().__init__(f"Cannot convert from {have} to {want}")
         self.have = have
         self.want = want
+        
+ValueConverter = Callable[[Any], Any]
+
+class SpecialValueConverter(Enum):
+    NO_CONVERSION = auto()
+    IDENTITY = auto()
+    
+_Converter = Union[ValueConverter, SpecialValueConverter]
+
+_RepTypes = tuple[typing.Type,...]
+TypeRepSpec = Union[typing.Type, _RepTypes]
+
+def _trs_to_tuple(trs: TypeRepSpec) -> _RepTypes:
+    return trs if isinstance(trs, tuple) else (trs,)
 
 class Type:
     name: Final[str]
@@ -26,7 +46,13 @@ class Type:
     all_supers: Final[Sequence[Type]]
     direct_subs: Final[list[Type]]
     all_subs: Final[list[Type]]
+    rep_types: _RepTypes
+    as_func_type: Final[Optional[CallableType]]
+    
+    _conversions: Final[dict[Type, _Converter]]
     _maybe: Optional[MaybeType] = None
+    
+    _class_lock: Final = RLock()
     
     conversions: ClassVar[dict[tuple[Type,Type], Callable[[Any],Any]]] = {}
     compatible: ClassVar[set[tuple[Type,Type]]] = set()
@@ -88,13 +114,15 @@ class Type:
     POWER_MODE: ClassVar[Type]
     FAN: ClassVar[Type]
     
-    @cached_property
-    def as_callable_type(self) -> Optional[CallableType]:
-        candidates = filter(lambda t: isinstance(t, CallableType), self.all_supers)
-        funcs = self.upper_bounds(*candidates)
+    # @cached_property
+    # def as_callable_type(self) -> Optional[CallableType]:
+    #     candidates = filter(lambda t: isinstance(t, CallableType), self.all_supers)
+    #     funcs = self.upper_bounds(*candidates)
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
-                 is_root: bool = False):
+                 is_root: bool = False,
+                 as_func_type: Optional[CallableType] = None,
+                 rep_types: TypeRepSpec = ()):
         self.name = name
         if supers is None:
             supers = [] if is_root else  [Type.ANY]
@@ -102,6 +130,17 @@ class Type:
         self.direct_supers = supers
         self.direct_subs = []
         self.all_subs = []
+        self.rep_types = _trs_to_tuple(rep_types)
+        self._conversions = {}
+        
+        if as_func_type is None:
+            super_func_types = set(s.as_func_type for s in supers if s.as_func_type is not None)
+            if len(super_func_types) > 0:
+                sfts = list(super_func_types)
+                as_func_type = sfts[0]
+                if len(super_func_types) > 1:
+                    logger.warning(f"Multiple function supers for {self}: {conj_str(sfts)}.  Using {as_func_type}.")
+        self.as_func_type = as_func_type
         
         ancestors = set[Type](supers) 
         
@@ -123,22 +162,164 @@ class Type:
     def __eq__(self, rhs: object) -> bool:
         return self is rhs
     def __lt__(self, rhs: Type) -> bool:
-        if self is rhs:
-            return False
-        if rhs is Type.ANY:
-            return self is not Type.ANY
-        if isinstance(rhs, MaybeType):
-            if self is Type.NONE:
-                return True
-            elif isinstance(self, MaybeType):
-                return self.if_there_type < rhs.if_there_type
-            else:
-                return self < rhs.if_there_type
-        if self in rhs.all_subs:
-            return True
-        return self.can_convert_to(rhs)
+        return self is not rhs and self.can_convert_to(rhs)
+        
+        # if self is rhs:
+        #     return False
+        # if rhs is Type.ANY:
+        #     return self is not Type.ANY
+        # if isinstance(rhs, MaybeType):
+        #     if self is Type.NONE:
+        #         return True
+        #     elif isinstance(self, MaybeType):
+        #         return self.if_there_type < rhs.if_there_type
+        #     else:
+        #         return self < rhs.if_there_type
+        # if self in rhs.all_subs:
+        #     return True
+        # return self.can_convert_to(rhs)
     def __le__(self, rhs: Type) -> bool:
         return self is rhs or self < rhs
+    
+    def set_rep_type(self, rep_types: TypeRepSpec) -> None:
+        with self._class_lock:
+            self.rep_types = _trs_to_tuple(rep_types)
+            
+
+    # _warned_multiple_conversions: Final = set[tuple[Type, Type]]()ll      # _warned_no_conversion_to_super: Final = set[tuple[Type, Type]]()
+    
+    def _rep_compatible(self, other: Type) -> bool:
+        # By default, we are implicitly compatible if all of our possible rep
+        # types are subclasses of any of their rep types.
+        
+        other_reps = other.rep_types
+        return all(issubclass(r, other_reps) for r in self.rep_types)
+    
+    def _find_conversion_to(self, other: Type) -> _Converter:
+        # Called with _class_lock locked
+        if other is Type.ANY:
+            return SpecialValueConverter.IDENTITY
+        # if other is Type.NONE:
+        #     return to_const(None)
+        if isinstance(other, MaybeType):
+            if self is Type.NONE:
+                return SpecialValueConverter.IDENTITY
+            if not isinstance(self, MaybeType):
+                return self._conversion_to(other.if_there_type)
+            # Both sides are maybes
+            conv = self.if_there_type._conversion_to(other.if_there_type)
+            if conv is SpecialValueConverter.NO_CONVERSION or conv is SpecialValueConverter.IDENTITY:
+                return conv
+            fn = conv
+            return lambda v: None if v is None else fn(v)
+        if other in self.direct_supers:
+            # There's no explicit conversion and no prohibited conversion,
+            # so if it's a direct super, it's okay if the reps are compatible
+            rep_compatible = self._rep_compatible(other)
+            return SpecialValueConverter.IDENTITY if rep_compatible else SpecialValueConverter.NO_CONVERSION        
+        # It isn't a direct super, but maybe we can go through a direct
+        # super or somebody we know how to convert to.
+            
+
+        def compose(first: _Converter, second: _Converter) -> _Converter:
+            if first is SpecialValueConverter.NO_CONVERSION or second is SpecialValueConverter.NO_CONVERSION:
+                return SpecialValueConverter.NO_CONVERSION
+            if first is SpecialValueConverter.IDENTITY:
+                return second
+            if second is SpecialValueConverter.IDENTITY:
+                return first
+            f = first
+            s = second
+            return lambda v: s(f(v))
+        
+        middles = dict[Type, _Converter]()
+        def check_and_add(middle: Type) -> None:
+            if middle is Type.ANY:
+                return
+            
+            # First, we check to see whether we can do the conversion through this type.
+            
+            to_middle = self._conversion_to(middle)
+            if to_middle is SpecialValueConverter.NO_CONVERSION:
+                return
+            c = compose(to_middle, middle._conversion_to(other))
+            if c is SpecialValueConverter.NO_CONVERSION:
+                return
+            # It's possible.  Now we iterate through the current middles
+            # to see if we're below any of them or any of them are below us.
+            
+            to_delete: list[Type] = []
+            
+            for m in middles:
+                if middle._conversion_to(m) is not SpecialValueConverter.NO_CONVERSION:
+                    # We already know how to get past this middle, so we can ignore it.
+                    return
+                if m._conversion_to(middle) is not SpecialValueConverter.NO_CONVERSION:
+                    # We can use this middle to go past the other, so we
+                    # flag the other to be deleted.  We can't actually
+                    # delete while we're iterating.
+                    to_delete.append(m)
+                    
+            for m in to_delete:
+                del middles[m]
+                
+            middles[middle] = c
+            
+        candidates = {*self._conversions.keys(), *self.direct_supers}
+        for c in candidates:
+            check_and_add(c)
+            
+        if middles:
+            # At this point, middles contains all of the best ways to get to
+            # the target type.  If there's more than one path, we warn, but
+            # only once per pair.
+            
+            pairs = [*middles.items()]
+            logger.info(f"Converting {self} to {other} through {pairs[0][0]}")
+
+            if len(pairs) > 1:
+                # This warning will only happen once, because we cache the result.
+                options = [p[0] for p in pairs]
+                logger.warning(f"Can convert from {self} to {other} through {conj_str(options)}.  Using {options[0]}.")
+                
+            return pairs[0][1]
+
+        if other in self.all_supers:
+        
+            # There's no way to get there.  But it's a supertype, so there should
+            # be.  We print out a warning and assume that we can just pass the
+            # value.
+            logger.warning(f"No conversion from {self} to super-type {other}.  Assuming value is compatible.")
+            return SpecialValueConverter.IDENTITY
+        
+        
+        # There's no way to get there, and that's okay.
+        return SpecialValueConverter.NO_CONVERSION
+          
+    
+    def _conversion_to(self, other: Type) -> _Converter:
+        # Called with _class_lock locked
+        vc = self._conversions.get(other, None)
+
+        if vc is None:
+            # logger.info(f"--> Looking for conversion from {self} to {other}")
+            vc = self._find_conversion_to(other)
+            # desc = ("ident" if vc is SpecialValueConverter.IDENTITY
+            #         else "none" if vc is SpecialValueConverter.NO_CONVERSION
+            #         else "complex")
+            # logger.info(f"<-- Conversion from {self} to {other}: {desc}")
+            self._conversions[other] = vc
+        return vc
+            
+    def converter_to(self, other: Type) -> Optional[ValueConverter]:
+        # Nobody gets to change add converters or reps while we're looking
+        with self._class_lock:
+            vc = self._conversion_to(other)
+            if vc is SpecialValueConverter.IDENTITY:
+                return lambda v: v
+            if vc is SpecialValueConverter.NO_CONVERSION:
+                return None
+            return vc
     
     @classmethod
     def upper_bounds(cls, *types: Type) -> Sequence[Type]:
@@ -147,6 +328,11 @@ class Type:
             types = tuple(t.if_there_type if isinstance(t, MaybeType) else t for t in types)
         if len(types) == 0:
             return ()
+        
+        first = types[0]
+        if all(t is first for t in types):
+            return (first,)
+        
         candidates = {types[0], *types[0].all_supers}
         candidates.intersection_update(*({t, *t.all_supers} for t in types[1:]))
         
@@ -166,67 +352,40 @@ class Type:
         return Type.NONE if len(bounds) == 0 else bounds[0]
     
     @classmethod
-    def register_conversion(cls, have: Type, want: Type, converter: Callable[[Any], Any]) -> None:
-        cls.conversions[(have, want)] = converter
+    def register_conversion(cls, have: Type, want: Type, converter: Optional[ValueConverter]) -> None:
+        with cls._class_lock:
+            have._conversions[want] = SpecialValueConverter.NO_CONVERSION if converter is None else converter 
         
-    @classmethod
-    def value_compatible(cls, have: Union[Type, Sequence[Type]], want: Union[Type, Sequence[Type]]) -> None:
-        if isinstance(have, Type):
-            have = (have,)
-        if isinstance(want, Type):
-            want = (want,)
-        cls.compatible |= {(h,w) for h in have for w in want}
+    # @classmethod
+    # def value_compatible(cls, have: Union[Type, Sequence[Type]], want: Union[Type, Sequence[Type]]) -> None:
+    #     if isinstance(have, Type):
+    #         have = (have,)
+    #     if isinstance(want, Type):
+    #         want = (want,)
+    #     cls.compatible |= {(h,w) for h in have for w in want}
         
-    def convert_to(self, want: Type, val: Any, *,
-                   rep_types: Optional[Mapping[Type, Union[typing.Type, tuple[typing.Type,...]]]] = None
-                   ) -> Any:
-        if self is want:
+    def convert_to(self, want: Type, val: Any) -> Any:
+        if self is want or self is Type.ANY:
             return val
-        if want is Type.ANY:
-            return val
-        if want is Type.NONE:
-            return None
-        if isinstance(want, MaybeType):
-            if val is None:
-                return val
-            elif isinstance(self, MaybeType):
-                return self.if_there_type.convert_to(want.if_there_type, val)
-            else:
-                return self.convert_to(want.if_there_type, val)
-        if (self, want) in self.compatible:
-            return val
-        converter = self.conversions.get((self, want), None)
-        if converter is not None:
-            return converter(val)
-        if rep_types is not None:
-            rep = rep_types.get(want, None)
-            if rep is not None and isinstance(val, rep):
-                return val
-        raise TypeMismatchError(self, want)
+        converter = self.converter_to(want)
+        if converter is None:
+            raise TypeMismatchError(self, want)
+        return converter(val)
     
     def can_convert_to(self, want: Type) -> bool:
-        # I had anything convertable to Type.NONE.  I don't know why.
         if self is want or want is Type.ANY:
             return True
-        if self is Type.NONE and not isinstance(want, MaybeType):
-            return False
-        key = (self, want)
-        if key in self.compatible or key in self.conversions:
-            return True
-        if isinstance(want, MaybeType):
-            if isinstance(self, MaybeType):
-                return self.if_there_type.can_convert_to(want.if_there_type)
-            else:
-                return self.can_convert_to(want.if_there_type)
-        return False
+        return self._conversion_to(want) is not SpecialValueConverter.NO_CONVERSION
     
+
+Type.ANY = Type("ANY", is_root = True)
 Type.NONE = Type("NONE")
 Type.IGNORE = Type("IGNORE")
 Type.ERROR = Type("ERROR")
 Type.WELL = Type("WELL")
 Type.NUMBER = Type("NUMBER")
 Type.FLOAT = Type("FLOAT", [Type.NUMBER])
-Type.INT = Type("INT", [Type.FLOAT])
+Type.INT = Type("INT", [Type.FLOAT, Type.NUMBER])
 Type.BINARY_CPT = Type("BINARY_CPT")
 Type.BINARY_STATE = Type("BINARY_STATE")
 Type.PAD = Type("PAD", [Type.BINARY_CPT])
@@ -234,8 +393,6 @@ Type.WELL_PAD = Type("WELL_PAD", [Type.BINARY_CPT])
 Type.WELL_GATE = Type("WELL_GATE", [Type.WELL_PAD])
 Type.DROP = Type("DROP", [Type.PAD])
 Type.ORIENTED_DROP = Type("ORIENTED_DROP", [Type.DROP])
-Type.DIR = Type("DIR")
-Type.ORIENTED_DIR = Type("ORIENTED_DIR", [Type.DIR])
 Type.ROW = Type("ROW")
 Type.COLUMN = Type("COLUMN")
 Type.BARRIER = Type("BARRIER")
@@ -276,20 +433,23 @@ class MaybeType(Type):
     def __repr__(self) -> str:
         return f"Maybe({self.if_there_type})"
     
-    def __lt__(self, rhs: Type) -> bool:
-        if isinstance(rhs, MaybeType):
-            return self.if_there_type < rhs.if_there_type
-        return super().__lt__(rhs)
+    # def __lt__(self, rhs: Type) -> bool:
+    #     if isinstance(rhs, MaybeType):
+    #         return self.if_there_type < rhs.if_there_type
+    #     return super().__lt__(rhs)
     
 
 class Signature:
     param_types: Final[tuple[Type,...]]
     return_type: Final[Type]
+    arity: Final[int]
     _known: ClassVar[dict[tuple[tuple[Type,...], Type], Signature]] = {}
+    
     
     def __init__(self, param_types: tuple[Type, ...], return_type: Type) -> None:
         self.param_types = param_types
         self.return_type = return_type
+        self.arity = len(param_types)
     
     @classmethod
     def of(cls, param_types: Sequence[Type], return_type: Type) -> Signature:
@@ -306,7 +466,9 @@ class Signature:
         return f"Signature({self.param_types}, {self.return_type})"
     
     def __str__(self) -> str:
-        return f"{' x '.join(t.name for t in self.param_types)} -> {self.return_type}"
+        ptypes = self.param_types
+        pdesc = "()" if self.arity == 0 else ' x '.join(t.name for t in ptypes)
+        return f"{pdesc} -> {self.return_type}"
     
     def __hash__(self) -> int:
         return id(self)
@@ -315,19 +477,62 @@ class Signature:
         return self is rhs
     
     def callable_using(self, arg_types: Sequence[Type]) -> bool:
-        return (len(arg_types) == len(self.param_types)
+        return (len(arg_types) == self.arity
                 and all(theirs <= mine 
                         for mine,theirs in zip(self.param_types, arg_types)))
+        
+    def covariant_to(self, other: Signature) -> bool:
+        params_ok = self.callable_using(other.param_types)
+        their_return = other.return_type
+        return_ok = their_return is Type.NONE or self.return_type <= their_return
+        return params_ok and return_ok
     
     def narrower_than(self, other: Signature) -> bool:
+        if self.arity != other.arity:
+            return False
         val = False
         for mine,theirs in zip(self.param_types, other.param_types):
             if theirs < mine:
+                # They have a narrower parameter, so we're not narrower.
                 return False
             if mine < theirs:
+                # We have a narrower parameter, so we might be 
                 val = True
-        # I'm going covariant on both sides deliberately, but I'm not sure that's right.
+            elif mine is not theirs:
+                # If neither one is narrower and they're not the same, they're
+                # incompatible, so we're not narrower.
+                return False
+        # if val is False, the params are identical.  In that case, I'm narrower
+        # if I return something narrower.  In the case where I take narrower
+        # params, I treat myself as narrower regardless of the return type.
         return val or self.return_type < other.return_type
+            
+        
+    
+    def _converter_to(self, other: Signature) -> _Converter:
+        if self is other:
+            return SpecialValueConverter.IDENTITY
+        if self.arity != other.arity:
+            return SpecialValueConverter.NO_CONVERSION
+        cv_return = self.return_type._conversion_to(other.return_type)
+        if cv_return is SpecialValueConverter.NO_CONVERSION:
+            return SpecialValueConverter.NO_CONVERSION
+        cv_params = tuple(theirs._conversion_to(mine)
+                          for mine,theirs in zip(self.param_types, other.param_types))
+        if SpecialValueConverter.NO_CONVERSION in cv_params:
+            return SpecialValueConverter.NO_CONVERSION
+        if (cv_return is SpecialValueConverter.IDENTITY
+            and all(cv is SpecialValueConverter.IDENTITY for cv in cv_params)):
+            return SpecialValueConverter.IDENTITY
+        # At least something has to convert.
+        def converter(cv: _Converter) -> ValueConverter:
+            assert cv is not SpecialValueConverter.NO_CONVERSION
+            return (lambda v: v) if cv is SpecialValueConverter.IDENTITY else cv
+        param_converters = tuple(converter(cv) for cv in cv_params)
+        result_converter = converter(cv_return)
+        def convert(fn: CallableValue) -> ConvertedCallableValue:
+            return ConvertedCallableValue(fn, other, param_converters, result_converter)
+        return convert
 
 
 class CallableTypeKind(Enum):
@@ -338,13 +543,40 @@ class CallableTypeKind(Enum):
     
     @classmethod
     def for_sig(cls, sig: Signature) -> CallableTypeKind:
-        n_args = len(sig.param_types)
+        n_args = sig.arity
         if sig.return_type is Type.NONE:
             if n_args == 0:
                 return CallableTypeKind.ACTION
             elif n_args == 1:
                 return CallableTypeKind.MONITOR
         return CallableTypeKind.TRANSFORM if n_args == 1 else CallableTypeKind.GENERAL
+    
+class CallableValue(ABC):
+    sig: Final[Signature]
+    
+    def __init__(self, sig: Signature) -> None:
+        self.sig = sig
+    
+    @abstractmethod
+    def apply(self, args: Sequence[Any]) -> Delayed[Any]: ... # @UnusedVariable
+    
+class ConvertedCallableValue(CallableValue):
+    cv: Final[CallableValue]
+    param_converters: Final[Sequence[ValueConverter]]
+    result_converter: Final[ValueConverter]
+    
+    def __init__(self, cv: CallableValue, sig: Signature,
+                 param_converters: Sequence[ValueConverter],
+                 result_converter: ValueConverter) -> None:
+        super().__init__(sig)
+        self.cv = cv
+        self.param_converters = param_converters
+        self.result_converter = result_converter
+        
+    def apply(self, args: Sequence[Any]) -> Delayed[Any]:
+        converted_args = [fn(a) for fn,a in zip(self.param_converters, args)]
+        future = self.cv.apply(converted_args)
+        return future.transformed(self.result_converter)
 
 class CallableType(Type):
     instances = dict[Signature, 'CallableType']()
@@ -369,10 +601,31 @@ class CallableType(Type):
                  param_types: Sequence[Type],
                  return_type: Type,
                  *,
-                 supers: Optional[Sequence[Type]] = None):
-        super().__init__(name, supers)
+                 supers: Optional[Sequence[Type]] = None,
+                 rep_types: TypeRepSpec=(CallableValue,)):
+        super().__init__(name, supers, as_func_type = self, rep_types = rep_types)
         self.sig = Signature.of(param_types, return_type)
         self.with_self_sig = Signature.of((self, *param_types), return_type)
+        
+    def set_rep_type(self, rep_types:TypeRepSpec)->None:
+        rep_types = _trs_to_tuple(rep_types)
+        non_cv_types = [t for t in rep_types if not issubclass(t, CallableValue)]
+        if non_cv_types:
+            logger.error(f"set_rep_type({self}, ...) has types not derived from CallableValue, ignoring {conj_str(non_cv_types)}.")
+            rep_types = tuple(t for t in rep_types if issubclass(t, CallableValue))
+        if len(rep_types) == 0:
+            rep_types = (CallableValue,)
+        super().set_rep_type(rep_types)
+        
+    def _rep_compatible(self, other: Type) -> bool:
+        # For CallableTypes, not only do the rep types have to be type-
+        # compatible for Python, but if the other is a CallableType, the
+        # signatures need to match.
+        if not super()._rep_compatible(other):
+            return False
+        if isinstance(other, CallableType):
+            return self.sig is other.sig
+        return True
         
     @classmethod
     def find(cls, param_types: Sequence[Type], return_type: Type, *, name: Optional[str] = None) -> CallableType:
@@ -385,12 +638,22 @@ class CallableType(Type):
             cls.instances[sig] = ct
         return ct
     
-    # I'm not sure if it's really correct to put this here, but
-    # it will probably do the right thing.
-    def __lt__(self, rhs:Type)->bool:
-        if isinstance(rhs, CallableType):
-            return self.sig.narrower_than(rhs.sig)
-        return Type.__lt__(self, rhs)
+    def _find_conversion_to(self, other: Type) -> _Converter:
+        # If we can find a conversion by normal means, we use it
+        cv = super()._find_conversion_to(other)
+        if cv is SpecialValueConverter.NO_CONVERSION:
+            # If not and the the other is a CallableType that can use a (straight)
+            # CallableValue, we try to create a converter.
+            if isinstance(other, CallableType) and CallableValue in other.rep_types:
+                cv = self.sig._converter_to(other.sig)
+        return cv
+    
+    # # I'm not sure if it's really correct to put this here, but
+    # # it will probably do the right thing.
+    # def __lt__(self, rhs:Type)->bool:
+    #     if isinstance(rhs, CallableType):
+    #         return self.sig.narrower_than(rhs.sig)
+    #     return Type.__lt__(self, rhs)
     
     # def __eq__(self, rhs:object)->bool:
     #     if isinstance(rhs, MacroType):
@@ -401,7 +664,7 @@ class CallableType(Type):
         return hash(self.sig)
     
 Type.ACTION = CallableType.find((), Type.NONE, name="Action")        
-        
+
 
 class MotionType(CallableType):
     def __init__(self, name: str = "MOTION", *,
@@ -410,12 +673,14 @@ class MotionType(CallableType):
         
 Type.MOTION = MotionType()
 
+
 class DeltaType(MotionType):
     def __init__(self) -> None:
         super().__init__("DELTA", supers=(Type.MOTION,))
 
 Type.DELTA = DeltaType()
-
+Type.DIR = Type("DIR", [Type.DELTA])
+Type.ORIENTED_DIR = Type("ORIENTED_DIR", [Type.DIR])
 
 class TwiddleOpType(CallableType):
     def __init__(self) -> None:
@@ -624,11 +889,11 @@ class Attr:
     
     @property
     def applies_to(self) -> Sequence[Type]:
-        return [sig.param_types[0] for sig in self.func.known_sigs if len(sig.param_types) == 1]
+        return [sig.param_types[0] for sig in self.func.known_sigs if sig.arity == 1]
     
     @property
     def returns(self) -> Sequence[Type]:
-        return [sig.return_type for sig in self.func.known_sigs if len(sig.param_types) == 1]
+        return [sig.return_type for sig in self.func.known_sigs if sig.arity == 1]
     
     def register_setter(self, otype: Union[Type, Sequence[Type]], vtype: Type, 
                         setter: Callable[[Any,Any], Any]) -> None:
@@ -661,7 +926,7 @@ class Attr:
     
     def accepts_for(self, otype: Type) -> Sequence[Type]:
         return [sig.param_types[1] for sig in self.func.known_sigs 
-                    if len(sig.param_types) == 2 and sig.param_types[0] is otype]
+                    if sig.arity == 2 and sig.param_types[0] is otype]
         
     @classmethod
     def new_instances(cls, names: Iterable[str]) -> None:
@@ -742,3 +1007,8 @@ if __name__ == '__main__':
     check(Type.INT, Type.NUMBER)
     check(Type.WELL, Type.WELL)
     check(Type.WELL, Type.ANY)
+    
+    
+
+
+

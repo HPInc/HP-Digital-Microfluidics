@@ -16,7 +16,7 @@ from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
-    NumberedItem, CallableTypeKind
+    NumberedItem, CallableTypeKind, CallableValue
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System
@@ -30,7 +30,7 @@ from quantities.dimensions import Time, Volume, Temperature, Voltage
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
-from erk.basic import LazyPattern, not_None, assert_never
+from erk.basic import LazyPattern, not_None, assert_never, to_const
 from re import Match
 from threading import RLock
 import re
@@ -295,15 +295,6 @@ class CSPush:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: # @UnusedVariable
         self.stack.top = self.old
 
-class CallableValue(ABC):
-    sig: Final[Signature]
-    
-    def __init__(self, sig: Signature) -> None:
-        self.sig = sig
-    
-    @abstractmethod
-    def apply(self, args: Sequence[Any]) -> Delayed[Any]: ... # @UnusedVariable
-    
     
 class ComposedCallable(CallableValue):
     first: Final[CallableValue]
@@ -333,12 +324,12 @@ class ComposedCallable(CallableValue):
         if first_kind is CallableTypeKind.ACTION:
             def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
                 val = None if provided_type is Type.NONE else args[0]
-                return first.apply(()).transformed(error_check(lambda _: val))
+                return first.apply(()).transformed(error_check(to_const(val)))
         elif first_kind is CallableTypeKind.MONITOR:
             def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
                 assert(len(args) == 1)
                 val = args[0]
-                return first.apply((val,)).transformed(error_check(lambda _: val))
+                return first.apply((val,)).transformed(error_check(to_const(val)))
         else:
             def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
                 return first.apply(args)
@@ -347,11 +338,11 @@ class ComposedCallable(CallableValue):
         
         if second_kind is CallableTypeKind.ACTION:
             def inject(v: Any) -> Delayed[MaybeError[Any]]:
-                return second.apply(()).transformed(error_check(lambda _: v))
+                return second.apply(()).transformed(error_check(to_const(v)))
         elif second_kind is CallableTypeKind.MONITOR:
             def inject(v: Any) -> Delayed[MaybeError[Any]]:
                 injected = provided_type.convert_to(required_type, v)
-                return second.apply((injected,)).transformed(error_check(lambda _: v))
+                return second.apply((injected,)).transformed(error_check(to_const(v)))
         elif second_kind is CallableTypeKind.TRANSFORM:
             def inject(v: Any) -> Delayed[MaybeError[Any]]:
                 injected = provided_type.convert_to(required_type, v)
@@ -400,6 +391,7 @@ class DeltaValue(MotionValue):
     direction: Final[Dir]
     
     def __init__(self, dist: int, direction: Dir) -> None:
+        super().__init__()
         self.dist = dist
         self.direction = direction
         
@@ -492,7 +484,7 @@ class TwiddleBinaryValue(CallableValue):
         assert len(args) == 1
         bc = args[0]
         assert isinstance(bc, BinaryComponent)
-        return self.op.schedule_for(bc).transformed(lambda _: None)
+        return self.op.schedule_for(bc).transformed(to_const(None))
     
     def __str__(self) -> str:
         if self is TwiddleBinaryValue.ON:
@@ -707,7 +699,7 @@ class SpecialVariable:
 class Constant(SpecialVariable):
     val: Final[Any]
     def __init__(self, var_type: Type, val: Any) -> None:
-        super().__init__(var_type, getter = lambda _env: val)
+        super().__init__(var_type, getter = to_const(val))
         self.val = val
         
 class MonitorVariable(SpecialVariable):
@@ -831,20 +823,23 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.NONE: type(None),
     }
 
+for t,reps in rep_types.items():
+    t.set_rep_type(reps)
+
     
-Type.value_compatible((Type.TIME, Type.TICKS), Type.DELAY)
-Type.value_compatible((Type.INT, Type.FLOAT), Type.NUMBER)
+# Type.value_compatible((Type.TIME, Type.TICKS), Type.DELAY)
+# Type.value_compatible((Type.INT, Type.FLOAT), Type.NUMBER)
 
 Type.register_conversion(Type.DROP, Type.PAD, lambda drop: drop.pad)
-Type.register_conversion(Type.DROP, Type.BINARY_CPT, lambda drop: drop.pad)
+# Type.register_conversion(Type.DROP, Type.BINARY_CPT, lambda drop: drop.pad)
 Type.register_conversion(Type.INT, Type.FLOAT, float)
 Type.register_conversion(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))
 Type.register_conversion(Type.DIR, Type.DELTA, lambda d: DeltaValue(1, d))
-Type.register_conversion(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
+# Type.register_conversion(Type.DIR, Type.MOTION, lambda d: DeltaValue(1, d))
 Type.register_conversion(Type.AMBIG_TEMP, Type.ABS_TEMP, lambda t: t.absolute)
 Type.register_conversion(Type.AMBIG_TEMP, Type.REL_TEMP, lambda t: t.relative)
-Type.register_conversion(Type.ON, Type.TWIDDLE_OP, lambda _: TwiddleBinaryValue.ON)
-Type.register_conversion(Type.OFF, Type.TWIDDLE_OP, lambda _: TwiddleBinaryValue.OFF)
+Type.register_conversion(Type.ON, Type.TWIDDLE_OP, to_const(TwiddleBinaryValue.ON))
+Type.register_conversion(Type.OFF, Type.TWIDDLE_OP, to_const(TwiddleBinaryValue.OFF))
 
 
 class Executable:
@@ -866,7 +861,7 @@ class Executable:
     @classmethod
     def constant(cls, return_type: Type, val: Any, based_on: Sequence[Executable] = (), *,
                  is_error: bool = False) -> Executable:
-        return Executable(return_type, lambda _: Delayed.complete(val), 
+        return Executable(return_type, to_const(Delayed.complete(val)), 
                           based_on, is_error=is_error, const_val=val)
         
     def __str__(self) -> str:
@@ -887,7 +882,7 @@ class Executable:
         if required is not None and required is not self.return_type:
             req_type = required
             def convert(val: Any) -> Any:
-                return self.return_type.convert_to(req_type, val=val, rep_types=rep_types)
+                return self.return_type.convert_to(req_type, val=val)
                 # return Conversions.convert(have=self.return_type, want=req_type, val=val)
             future = future.transformed(convert)
         # if required is not None: 
@@ -1270,14 +1265,14 @@ class DMFCompiler(DMFVisitor):
     control_stack: Final[ControlScopeStack]
     interactive: Final[bool]
     
-    default_creators = defaultdict[Type,Callable[[Environment],Any]](lambda: (lambda _: None),
-                                                          {Type.INT: lambda _: 0,
-                                                           Type.FLOAT: lambda _: 0.0,
+    default_creators = defaultdict[Type,Callable[[Environment],Any]](lambda: to_const(None),
+                                                          {Type.INT: to_const(0),
+                                                           Type.FLOAT: to_const(0.0),
                                                            Type.PAD: lambda env: env.board.pad_at(0,0),
-                                                           Type.TIME: lambda _: Time.ZERO,
-                                                           Type.VOLUME: lambda _: Volume.ZERO,
-                                                           Type.TICKS: lambda _: Ticks.ZERO,
-                                                           Type.VOLTAGE: lambda _: Voltage.ZERO,
+                                                           Type.TIME: to_const(Time.ZERO),
+                                                           Type.VOLUME: to_const(Volume.ZERO),
+                                                           Type.TICKS: to_const(Ticks.ZERO),
+                                                           Type.VOLTAGE: to_const(Voltage.ZERO),
                                                           })
     
     def __init__(self, *,
@@ -1885,7 +1880,7 @@ class DMFCompiler(DMFVisitor):
                 return stat_execs[0].evaluate(local_env)
             barrier = Barrier[Any](required = len(stat_execs))
             error: MaybeError[None] = None
-            trigger_future = Postable[None]()
+            trigger_future = Postable[MaybeError[None]]()
             barrier.wait(None, trigger_future)
             future = trigger_future.transformed(lambda _: error)
             def note_error(ex: EvaluationError) -> None: 
@@ -1924,25 +1919,29 @@ class DMFCompiler(DMFVisitor):
             if e := self.type_check(Type.BOOL, t, c):
                 return e
 
-        result_type: Optional[Type] = None
-        def check_result_type(t: Type) -> bool:
-            nonlocal result_type
-            if result_type is None or self.compatible(result_type, t):
-                result_type = t
-                return False
-            result_type = Type.NONE
-            return True
+        # result_type: Optional[Type] = None
+        # def check_result_type(t: Type) -> bool:
+        #     nonlocal result_type
+        #     if result_type is None or self.compatible(result_type, t):
+        #         result_type = t
+        #         return False
+        #     result_type = Type.NONE
+        #     return True
         
         if else_body is None:
-            result_type = Type.NONE
+            # result_type = Type.NONE
+            else_type = Type.NONE
             children = (*tests, *bodies)
         else:
-            result_type = else_body.return_type
+            # result_type = else_body.return_type
+            else_type = else_body.return_type
             children = (*tests, *bodies, else_body)
             
-            for b in bodies:
-                if check_result_type(b.return_type):
-                    break
+            # for b in bodies:
+            #     if check_result_type(b.return_type):
+            #         break
+                
+        result_type = Type.upper_bound(else_type, *(b.return_type for b in bodies))
         
         def run(env: Environment) -> Delayed:
             n_tests = len(tests)
@@ -2155,7 +2154,7 @@ class DMFCompiler(DMFVisitor):
         if not isinstance(rt, MaybeType):
             self.error(ctx.attr(), Type.BOOL,
                        lambda txt:  f"{txt} is not a 'maybe' attribute. 'has' will always return True.")
-            return Executable(Type.BOOL, (lambda _: Delayed.complete(True)), (obj,))
+            return Executable(Type.BOOL, (to_const(Delayed.complete(True))), (obj,))
         def run(env: Environment) -> Delayed[MaybeError[bool]]:
             def check(v: Any) -> MaybeError[bool]:
                 if isinstance(v, EvaluationError):
@@ -2315,42 +2314,39 @@ class DMFCompiler(DMFVisitor):
     def visitInjection_expr(self, ctx:DMFParser.Injection_exprContext) -> Executable:
         who = self.visit(ctx.who)
         what = self.visit(ctx.what)
-        logger.info(f"Injecting {self.text_of(ctx.who)} into {self.text_of(ctx.what)}")
-        target_type = what.return_type
-        if target_type is Type.DIR or target_type <= Type.MOTION:
-            target_type = Type.MOTION
-        if target_type <= Type.TWIDDLE_OP:
-            target_type = Type.TWIDDLE_OP
-        injected_type = who.return_type
-        if injected_type <= Type.MOTION:
-            injected_type = Type.MOTION
-        if injected_type <= Type.TWIDDLE_OP:
-            injected_type = Type.TWIDDLE_OP
-        if target_type is Type.BUILT_IN:
+        # logger.info(f"Injecting {self.text_of(ctx.who)} into {self.text_of(ctx.what)}")
+        if what.return_type is Type.BUILT_IN:
             func: MissingOr[Func] = what.const_val
             if func is MISSING:
                 return self.error(ctx.what, Type.NONE, f"Internal error: {self.text_of(ctx.what)} is a built-in, but no Func value")
             return self.use_function(func, ctx, (ctx.who,))
-        if (not isinstance(target_type, CallableType)
+        target_type = what.return_type.as_func_type
+        if (target_type is None
             or (target_kind := target_type.kind) is CallableTypeKind.GENERAL):
             return self.error(ctx.what, Type.NONE, 
-                              f"Not an injection target ({target_type.name}): {self.text_of(ctx.what)}")
+                              f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
+        injected_type = who.return_type
+        # if injected_type <= Type.MOTION:
+        #     injected_type = Type.MOTION
+        # if injected_type <= Type.TWIDDLE_OP:
+        #     injected_type = Type.TWIDDLE_OP
+
         do_injection: Callable[[Any, CallableValue, Type], Delayed[Any]]
         if target_kind is CallableTypeKind.TRANSFORM:
             required_type = target_type.param_types[0]
             do_injection = lambda v, fn, t: fn.apply((t.convert_to(required_type, v),))
         elif target_kind is CallableTypeKind.MONITOR:
             required_type = target_type.param_types[0]
-            do_injection = lambda v, fn, t: fn.apply((t.convert_to(required_type, v),)).transformed(lambda _: v)
+            do_injection = lambda v, fn, t: fn.apply((t.convert_to(required_type, v),)).transformed(to_const(v))
         elif target_kind is CallableTypeKind.ACTION:
             required_type = Type.ANY
-            do_injection = lambda v, fn, _: fn.apply(()).transformed(lambda _: v) 
+            do_injection = lambda v, fn, _: fn.apply(()).transformed(to_const(v)) 
         else:
             assert_never(target_kind)
         
         can_pass = self.compatible(injected_type, required_type)
-        lhs_type = Type.MOTION if injected_type is Type.DIR else injected_type
-        can_chain = (isinstance(lhs_type, CallableType)
+        lhs_type = injected_type.as_func_type
+        can_chain = (lhs_type is not None
                      and self.compatible(lhs_type.return_type, required_type))
         
         if can_pass and not can_chain:
@@ -2362,7 +2358,7 @@ class DMFCompiler(DMFVisitor):
             # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
             return Executable(return_type, run, (who, what))
         elif can_chain:
-            assert isinstance(lhs_type, CallableType)
+            assert lhs_type is not None
             chain_type = ComposedCallable.composed_type(lhs_type, target_type)
             
             def chain(env: Environment) -> Delayed[Any]:
@@ -2373,7 +2369,7 @@ class DMFCompiler(DMFVisitor):
                     return what.evaluate(env, target_type).transformed(error_check(lambda second: combine(first, second)))
                 return who.evaluate(env, injected_type).chain(error_check_delayed(after_first))
             return Executable(chain_type, chain, (who, what))
-        elif isinstance(lhs_type, CallableType):
+        elif lhs_type is not None:
             return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else lhs_type.return_type
             e = self.type_check(required_type, lhs_type.return_type, ctx.who,
                                 (lambda want,have,text:
