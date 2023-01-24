@@ -9,6 +9,7 @@ from mpam.types import Delayed
 from _collections import defaultdict
 from quantities.core import Unit
 import typing
+from functools import cached_property
 
 class TypeMismatchError(RuntimeError):
     have: Final[Type]
@@ -45,6 +46,7 @@ class Type:
     INT: ClassVar[Type]
     FLOAT: ClassVar[Type]
     WELL: ClassVar[Type]
+    ACTION: ClassVar[CallableType]
     BINARY_STATE: ClassVar[Type]
     ON: ClassVar[Type]
     OFF: ClassVar[Type]
@@ -59,8 +61,6 @@ class Type:
     MOTION: ClassVar[MotionType]
     DELTA: ClassVar[Type]
     TWIDDLE_OP: ClassVar[TwiddleOpType]
-    PAUSE: ClassVar[PauseType]
-    PROMPT: ClassVar[PromptType]
     ROW: ClassVar[Type]
     COLUMN: ClassVar[Type]
     BARRIER: ClassVar[Type]
@@ -87,6 +87,11 @@ class Type:
     VOLTAGE: ClassVar[Type]
     POWER_MODE: ClassVar[Type]
     FAN: ClassVar[Type]
+    
+    @cached_property
+    def as_callable_type(self) -> Optional[CallableType]:
+        candidates = filter(lambda t: isinstance(t, CallableType), self.all_supers)
+        funcs = self.upper_bounds(*candidates)
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  is_root: bool = False):
@@ -120,6 +125,8 @@ class Type:
     def __lt__(self, rhs: Type) -> bool:
         if self is rhs:
             return False
+        if rhs is Type.ANY:
+            return self is not Type.ANY
         if isinstance(rhs, MaybeType):
             if self is Type.NONE:
                 return True
@@ -198,8 +205,11 @@ class Type:
         raise TypeMismatchError(self, want)
     
     def can_convert_to(self, want: Type) -> bool:
-        if self is want or want is Type.ANY or want is Type.NONE:
+        # I had anything convertable to Type.NONE.  I don't know why.
+        if self is want or want is Type.ANY:
             return True
+        if self is Type.NONE and not isinstance(want, MaybeType):
+            return False
         key = (self, want)
         if key in self.compatible or key in self.conversions:
             return True
@@ -210,7 +220,6 @@ class Type:
                 return self.can_convert_to(want.if_there_type)
         return False
     
-Type.ANY = Type("ANY", is_root=True)
 Type.NONE = Type("NONE")
 Type.IGNORE = Type("IGNORE")
 Type.ERROR = Type("ERROR")
@@ -321,7 +330,25 @@ class Signature:
         return val or self.return_type < other.return_type
 
 
+class CallableTypeKind(Enum):
+    GENERAL = auto()
+    ACTION = auto()
+    MONITOR = auto()
+    TRANSFORM = auto()
+    
+    @classmethod
+    def for_sig(cls, sig: Signature) -> CallableTypeKind:
+        n_args = len(sig.param_types)
+        if sig.return_type is Type.NONE:
+            if n_args == 0:
+                return CallableTypeKind.ACTION
+            elif n_args == 1:
+                return CallableTypeKind.MONITOR
+        return CallableTypeKind.TRANSFORM if n_args == 1 else CallableTypeKind.GENERAL
+
 class CallableType(Type):
+    instances = dict[Signature, 'CallableType']()
+    
     sig: Final[Signature]
     with_self_sig: Final[Signature]
     
@@ -333,8 +360,9 @@ class CallableType(Type):
     def return_type(self) -> Type:
         return self.sig.return_type
     
-    # param_types: Final[Sequence[Type]]
-    # return_type: Final[Type]
+    @cached_property
+    def kind(self) -> CallableTypeKind:
+        return CallableTypeKind.for_sig(self.sig)
     
     def __init__(self,
                  name: str,  
@@ -345,6 +373,34 @@ class CallableType(Type):
         super().__init__(name, supers)
         self.sig = Signature.of(param_types, return_type)
         self.with_self_sig = Signature.of((self, *param_types), return_type)
+        
+    @classmethod
+    def find(cls, param_types: Sequence[Type], return_type: Type, *, name: Optional[str] = None) -> CallableType:
+        sig = Signature.of(param_types, return_type)
+        ct = cls.instances.get(sig, None)
+        if ct is None:
+            if name is None:
+                name = f"Macro[({','.join(t.name for t in param_types)}),{return_type.name}]"
+            ct = CallableType(name, param_types, return_type)
+            cls.instances[sig] = ct
+        return ct
+    
+    # I'm not sure if it's really correct to put this here, but
+    # it will probably do the right thing.
+    def __lt__(self, rhs:Type)->bool:
+        if isinstance(rhs, CallableType):
+            return self.sig.narrower_than(rhs.sig)
+        return Type.__lt__(self, rhs)
+    
+    # def __eq__(self, rhs:object)->bool:
+    #     if isinstance(rhs, MacroType):
+    #         return self.sig == rhs.sig
+    #     return CallableType.__eq__(self, rhs)
+    
+    def __hash__(self)->int:
+        return hash(self.sig)
+    
+Type.ACTION = CallableType.find((), Type.NONE, name="Action")        
         
 
 class MotionType(CallableType):
@@ -369,72 +425,58 @@ Type.TWIDDLE_OP = TwiddleOpType()
 Type.ON = Type("ON", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 Type.OFF = Type("OFF", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 
-class InjectableStatementType(CallableType):
-    def __init__(self, name: str) -> None:
-        super().__init__(name, (Type.ANY,), Type.NONE)
-        
-class PauseType(InjectableStatementType):
-    def __init__(self) -> None:
-        super().__init__("PAUSE")
-        
-Type.PAUSE = PauseType()
 
-class PromptType(InjectableStatementType):
-    def __init__(self) -> None:
-        super().__init__("PROMPT")
-        
-Type.PROMPT = PromptType()
+# class CompositionType(CallableType):
+#     instances = dict[tuple[bool, Signature], 'CompositionType']()
+#
+#     def __init__(self, 
+#                  param_types: Sequence[Type],
+#                  return_type: Type):
+#         kind = "ComposedAction" if is_action else "Composition"
+#         super().__init__(f"{kind}[({','.join(t.name for t in param_types)}),{return_type.name}]", 
+#                          param_types, return_type)
+#
+#     @classmethod
+#     def find(cls, param_types: Sequence[Type], return_type: Type, *, is_action: bool) -> CompositionType:
+#         sig = Signature.of(param_types, return_type)
+#         mt = cls.instances.get((is_action, sig), None)
+#         if mt is None:
+#             mt = CompositionType(param_types, return_type, is_action=is_action)
+#             cls.instances[(is_action, sig)] = mt
+#         return mt
 
-class CompositionType(CallableType):
-    instances = dict[Signature, 'CompositionType']()
-    
-    def __init__(self, 
-                 param_types: Sequence[Type],
-                 return_type: Type):
-        super().__init__(f"Composition[({','.join(t.name for t in param_types)}),{return_type.name}]", 
-                         param_types, return_type)
-        
-    @classmethod
-    def find(cls, param_types: Sequence[Type], return_type: Type) -> CompositionType:
-        sig = Signature.of(param_types, return_type)
-        mt = cls.instances.get(sig, None)
-        if mt is None:
-            mt = CompositionType(param_types, return_type)
-            cls.instances[sig] = mt
-        return mt
-
-class MacroType(CallableType):
-    instances = dict[Signature, 'MacroType']()
-    
-    def __init__(self, 
-                 param_types: Sequence[Type],
-                 return_type: Type):
-        super().__init__(f"Macro[({','.join(t.name for t in param_types)}),{return_type.name}]", 
-                         param_types, return_type)
-        
-    @classmethod
-    def find(cls, param_types: Sequence[Type], return_type: Type) -> MacroType:
-        sig = Signature.of(param_types, return_type)
-        mt = cls.instances.get(sig, None)
-        if mt is None:
-            mt = MacroType(param_types, return_type)
-            cls.instances[sig] = mt
-        return mt
-    
-    # I'm not sure if it's really correct to put this here, but
-    # it will probably do the right thing.
-    def __lt__(self, rhs:Type)->bool:
-        if isinstance(rhs, MacroType):
-            return self.sig.narrower_than(rhs.sig)
-        return Type.__lt__(self, rhs)
-    
-    # def __eq__(self, rhs:object)->bool:
-    #     if isinstance(rhs, MacroType):
-    #         return self.sig == rhs.sig
-    #     return CallableType.__eq__(self, rhs)
-    
-    def __hash__(self)->int:
-        return hash(self.sig)
+# class MacroType(CallableType):
+#     instances = dict[Signature, 'MacroType']()
+#
+#     def __init__(self, 
+#                  param_types: Sequence[Type],
+#                  return_type: Type):
+#         super().__init__(f"Macro[({','.join(t.name for t in param_types)}),{return_type.name}]", 
+#                          param_types, return_type)
+#
+#     @classmethod
+#     def find(cls, param_types: Sequence[Type], return_type: Type) -> MacroType:
+#         sig = Signature.of(param_types, return_type)
+#         mt = cls.instances.get(sig, None)
+#         if mt is None:
+#             mt = MacroType(param_types, return_type)
+#             cls.instances[sig] = mt
+#         return mt
+#
+#     # I'm not sure if it's really correct to put this here, but
+#     # it will probably do the right thing.
+#     def __lt__(self, rhs:Type)->bool:
+#         if isinstance(rhs, MacroType):
+#             return self.sig.narrower_than(rhs.sig)
+#         return Type.__lt__(self, rhs)
+#
+#     # def __eq__(self, rhs:object)->bool:
+#     #     if isinstance(rhs, MacroType):
+#     #         return self.sig == rhs.sig
+#     #     return CallableType.__eq__(self, rhs)
+#
+#     def __hash__(self)->int:
+#         return hash(self.sig)
     
 
 class Func:

@@ -14,9 +14,9 @@ from antlr4.tree.Tree import TerminalNode
 from DMFLexer import DMFLexer
 from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
-from langsup.type_supp import Type, CallableType, MacroType, Signature, Attr,\
-    Rel, MaybeType, Func, CompositionType, PhysUnit, EnvRelativeUnit,\
-    NumberedItem, InjectableStatementType
+from langsup.type_supp import Type, CallableType, Signature, Attr,\
+    Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
+    NumberedItem, CallableTypeKind
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System
@@ -308,27 +308,76 @@ class CallableValue(ABC):
 class ComposedCallable(CallableValue):
     first: Final[CallableValue]
     second: Final[CallableValue]
-    pass_first_arg: Final[bool]
     
     def __init__(self, 
-                 ct: CompositionType,
                  first: CallableValue, 
-                 second: CallableValue, 
-                 pass_first_arg: bool) -> None:
-        super().__init__(ct.sig)
-        self.first=first
-        self.second=second
-        self.pass_first_arg = pass_first_arg
+                 second: CallableValue, *,
+                 sig: Optional[Signature] = None) -> None:
+        first_sig = first.sig
+        second_sig = second.sig
+        first_kind = CallableTypeKind.for_sig(first_sig)
+        second_kind = CallableTypeKind.for_sig(second_sig)
+        if sig is None:
+            param_types = second_sig.param_types if first_kind is CallableTypeKind.ACTION else first_sig.param_types
+            return_type = second_sig.return_type if second_kind is CallableTypeKind.TRANSFORM else first_sig.return_type
+            sig = Signature.of(param_types, return_type)
+        super().__init__(sig)
+        self.first = first
+        self.second = second
+        assert second_kind is not CallableTypeKind.GENERAL, f"Injection target cannot be of GENERAL kind: {second}"
+        required_type = Type.ANY if second_kind is CallableTypeKind.ACTION else second_sig.param_types[0]
+        provided_type = (sig.param_types[0] if (len(sig.param_types) > 0
+                                                and first_kind in (CallableTypeKind.ACTION, CallableTypeKind.MONITOR))
+                         else first_sig.return_type)
+        
+        if first_kind is CallableTypeKind.ACTION:
+            def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
+                val = None if provided_type is Type.NONE else args[0]
+                return first.apply(()).transformed(error_check(lambda _: val))
+        elif first_kind is CallableTypeKind.MONITOR:
+            def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
+                assert(len(args) == 1)
+                val = args[0]
+                return first.apply((val,)).transformed(error_check(lambda _: val))
+        else:
+            def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
+                return first.apply(args)
+        self.provide: Callable[[Sequence[Any]], Delayed[MaybeError[Any]]] = provide
+
+        
+        if second_kind is CallableTypeKind.ACTION:
+            def inject(v: Any) -> Delayed[MaybeError[Any]]:
+                return second.apply(()).transformed(error_check(lambda _: v))
+        elif second_kind is CallableTypeKind.MONITOR:
+            def inject(v: Any) -> Delayed[MaybeError[Any]]:
+                injected = provided_type.convert_to(required_type, v)
+                return second.apply((injected,)).transformed(error_check(lambda _: v))
+        elif second_kind is CallableTypeKind.TRANSFORM:
+            def inject(v: Any) -> Delayed[MaybeError[Any]]:
+                injected = provided_type.convert_to(required_type, v)
+                return second.apply((injected,))
+        else:
+            assert_never(second_kind)
+        self.inject: Callable[[Any], Delayed[MaybeError[Any]]] = inject
         
     
-    def apply(self, args:Sequence[Any])->Delayed[Any]:
-        return (self.first.apply(args)
-                    .chain(lambda v: self.second.apply((args[0] if self.pass_first_arg else v,))))
-    
-    
+    def apply(self, args:Sequence[Any])->Delayed[MaybeError[Any]]:
+        return self.provide(args).chain(error_check_delayed(self.inject))
         
     def __str__(self) -> str:
         return f"({self.first} : {self.second})"
+    
+    @classmethod
+    def composed_type(cls, first: CallableType, second: CallableType) -> CallableType:
+        first_kind = first.kind
+        if first_kind is CallableTypeKind.ACTION:
+            return second 
+        second_kind = second.kind
+        assert second_kind is not CallableTypeKind.GENERAL
+        param_types = first.param_types
+        return_type = second.return_type if second_kind is CallableTypeKind.TRANSFORM else first.return_type
+        return CallableType.find(param_types, return_type)
+
     
 class MotionValue(CallableValue):
     @abstractmethod
@@ -461,6 +510,11 @@ TwiddleBinaryValue.OFF= TwiddleBinaryValue(BinaryComponent.TurnOff)
 TwiddleBinaryValue.TOGGLE = TwiddleBinaryValue(BinaryComponent.Toggle)
 
 class InjectableStatementValue(CallableValue):
+    _default_sig: ClassVar[Signature] = Signature.of((Type.ANY,), Type.NONE)
+    
+    def __init__(self, sig: Optional[Signature] = None) -> None:
+        super().__init__(sig or self._default_sig)
+    
     @abstractmethod
     def invoke(self) -> Delayed[MaybeError[None]]: ...
 
@@ -472,10 +526,8 @@ class PauseValue(InjectableStatementValue):
     duration: Final[DelayType]
     board: Final[Board]
     
-    _sig: ClassVar[Signature] = Signature.of((Type.DELAY,), Type.NONE)
-    
     def __init__(self, duration: DelayType, board: Board) -> None:
-        super().__init__(self._sig)
+        super().__init__()
         self.duration = duration
         self.board = board
         
@@ -483,16 +535,15 @@ class PauseValue(InjectableStatementValue):
         return f"Pause({self.duration})"
         
     def invoke(self)->Delayed[None]:
+        print(f"Pausing for {self.duration}")
         return self.board.delayed(lambda : None, after=self.duration)
     
 class PromptValue(InjectableStatementValue):
     prompt: Final[Optional[str]]
     system: Final[System]
     
-    _sig: ClassVar[Signature] = Signature.of((Type.DELAY,), Type.NONE)
-    
     def __init__(self, vals: Sequence[Any], board: Board) -> None:
-        super().__init__(self._sig)
+        super().__init__()
         self.system = board.system
         prompt: Optional[str] = None
         if len(vals) > 0:
@@ -517,7 +568,7 @@ class MacroValue(CallableValue):
     body: Final[Executable]
     static_env: Final[Environment]
     
-    def __init__(self, mt: MacroType, env: Environment, param_names: Sequence[str], body: Executable) -> None:
+    def __init__(self, mt: CallableType, env: Environment, param_names: Sequence[str], body: Executable) -> None:
         super().__init__(mt.sig)
         self.static_env = env
         self.param_names = param_names
@@ -759,8 +810,6 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.TIME: Time,
         Type.TICKS: Ticks,
         Type.DELAY: (Time, Ticks),
-        Type.PAUSE: PauseValue,
-        Type.PROMPT: PromptValue,
         Type.DIR: Dir,
         Type.BOOL: bool,
         Type.BUILT_IN: Func,
@@ -1522,10 +1571,14 @@ class DMFCompiler(DMFVisitor):
 
     def exprAsStatement(self, ctx: DMFParser.ExprContext) -> Executable:
         ex = self.visit(ctx)
-        if isinstance(ex.return_type, InjectableStatementType):
+        rt = ex.return_type
+        if (isinstance(rt, CallableType) 
+            and rt.kind is CallableTypeKind.ACTION 
+            and not isinstance(ctx, (DMFParser.Name_assign_exprContext,
+                                     DMFParser.Attr_assign_exprContext))):
             def doit(fn: InjectableStatementValue) -> Delayed[MaybeError[None]]:
                 logger.info(f"Invoking {ex.return_type}: {fn}")
-                return fn.apply((None,))
+                return fn.apply(())
                                                               
             def run(env: Environment) -> Delayed[MaybeError[None]]:
                 return (ex.evaluate(env)
@@ -2262,75 +2315,80 @@ class DMFCompiler(DMFVisitor):
     def visitInjection_expr(self, ctx:DMFParser.Injection_exprContext) -> Executable:
         who = self.visit(ctx.who)
         what = self.visit(ctx.what)
-        inj_type = what.return_type
-        if inj_type is Type.DIR or inj_type <= Type.MOTION:
-            inj_type = Type.MOTION
-        if inj_type <= Type.TWIDDLE_OP:
-            inj_type = Type.TWIDDLE_OP
+        logger.info(f"Injecting {self.text_of(ctx.who)} into {self.text_of(ctx.what)}")
+        target_type = what.return_type
+        if target_type is Type.DIR or target_type <= Type.MOTION:
+            target_type = Type.MOTION
+        if target_type <= Type.TWIDDLE_OP:
+            target_type = Type.TWIDDLE_OP
         injected_type = who.return_type
         if injected_type <= Type.MOTION:
             injected_type = Type.MOTION
         if injected_type <= Type.TWIDDLE_OP:
             injected_type = Type.TWIDDLE_OP
-        if inj_type is Type.BUILT_IN:
+        if target_type is Type.BUILT_IN:
             func: MissingOr[Func] = what.const_val
             if func is MISSING:
                 return self.error(ctx.what, Type.NONE, f"Internal error: {self.text_of(ctx.what)} is a built-in, but no Func value")
             return self.use_function(func, ctx, (ctx.who,))
-        if not isinstance(inj_type, CallableType) or len(inj_type.param_types) != 1:
+        if (not isinstance(target_type, CallableType)
+            or (target_kind := target_type.kind) is CallableTypeKind.GENERAL):
             return self.error(ctx.what, Type.NONE, 
-                              f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
-        first_arg_type = inj_type.param_types[0]
-        return_first_arg = inj_type.return_type is Type.NONE
-        return_type = who.return_type if return_first_arg else inj_type.return_type
-        if self.compatible(who.return_type, first_arg_type):
+                              f"Not an injection target ({target_type.name}): {self.text_of(ctx.what)}")
+        do_injection: Callable[[Any, CallableValue, Type], Delayed[Any]]
+        if target_kind is CallableTypeKind.TRANSFORM:
+            required_type = target_type.param_types[0]
+            do_injection = lambda v, fn, t: fn.apply((t.convert_to(required_type, v),))
+        elif target_kind is CallableTypeKind.MONITOR:
+            required_type = target_type.param_types[0]
+            do_injection = lambda v, fn, t: fn.apply((t.convert_to(required_type, v),)).transformed(lambda _: v)
+        elif target_kind is CallableTypeKind.ACTION:
+            required_type = Type.ANY
+            do_injection = lambda v, fn, _: fn.apply(()).transformed(lambda _: v) 
+        else:
+            assert_never(target_kind)
+        
+        can_pass = self.compatible(injected_type, required_type)
+        lhs_type = Type.MOTION if injected_type is Type.DIR else injected_type
+        can_chain = (isinstance(lhs_type, CallableType)
+                     and self.compatible(lhs_type.return_type, required_type))
+        
+        if can_pass and not can_chain:
+            return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else injected_type 
             def run(env: Environment) -> Delayed[Any]:
-                def inject(obj: Any, func: Any) -> Delayed[Any]:
-                    if isinstance(func, EvaluationError):
-                        return Delayed.complete(func)
-                    assert isinstance(func, CallableValue)
-                    future = func.apply((obj,))
-                    return future if not return_first_arg else future.transformed(lambda _: obj)
                 def after_who(who: Any) -> Delayed[Any]:
-                    if isinstance(who, EvaluationError):
-                        return Delayed.complete(who)
-                    return what.evaluate(env, inj_type).chain(lambda func: inject(who, func))
-                return who.evaluate(env, first_arg_type).chain(after_who)
+                    return what.evaluate(env, target_type).chain(error_check_delayed(lambda func: do_injection(who, func, required_type)))
+                return who.evaluate(env).chain(error_check_delayed(after_who))
             # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
             return Executable(return_type, run, (who, what))
-        elif injected_type is Type.DIR or isinstance(injected_type, CallableType):
-            if injected_type is Type.DIR:
-                injected_type = Type.MOTION
-            assert isinstance(injected_type, CallableType)
-            pass_first_arg = len(injected_type.param_types) == 1 and injected_type.return_type is Type.NONE
-            pass_arg_type = injected_type.param_types[0] if pass_first_arg else injected_type.return_type
-            if e:=self.type_check(first_arg_type, pass_arg_type, ctx.who,
-                                  lambda want,have,text:
-                                    f"Injecting form '{text}' returns {have}, not compatible with "
-                                    +f"{want}: {self.text_of(ctx.what)}"):
-                return e
-            chain_return_type = pass_arg_type if return_first_arg else inj_type.return_type
-            chain_type = CompositionType.find(injected_type.param_types, chain_return_type)
+        elif can_chain:
+            assert isinstance(lhs_type, CallableType)
+            chain_type = ComposedCallable.composed_type(lhs_type, target_type)
             
             def chain(env: Environment) -> Delayed[Any]:
-                def combine(first: CallableValue, second: MaybeError[CallableValue]) -> Delayed[Any]:
-                    if isinstance(second, EvaluationError):
-                        return Delayed.complete(second)
-                    comp = ComposedCallable(chain_type, first, second, pass_first_arg)
-                    return Delayed.complete(comp)
-                def after_first(first: MaybeError[CallableValue]) -> Delayed[Any]:
-                    if isinstance(first, EvaluationError):
-                        return Delayed.complete(first)
-                    real_first=first
-                    return what.evaluate(env, inj_type).chain(lambda second: combine(real_first, second))
-                return who.evaluate(env, injected_type).chain(after_first)
+                def combine(first: CallableValue, second: CallableValue) -> CallableValue:
+                    comp = ComposedCallable(first, second)
+                    return comp
+                def after_first(first: CallableValue) -> Delayed[MaybeError[CallableValue]]:
+                    return what.evaluate(env, target_type).transformed(error_check(lambda second: combine(first, second)))
+                return who.evaluate(env, injected_type).chain(error_check_delayed(after_first))
             return Executable(chain_type, chain, (who, what))
-        e = self.type_check(first_arg_type, who, ctx.who,
-                            (lambda want,have,text:
-                                f"Injected value ({have}) '{text}' not compatible with "
-                                +f"{want}: {self.text_of(ctx.what)}"),
-                            return_type=return_type)
-        return not_None(e)
+        elif isinstance(lhs_type, CallableType):
+            return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else lhs_type.return_type
+            e = self.type_check(required_type, lhs_type.return_type, ctx.who,
+                                (lambda want,have,text:
+                                 f"Injecting form '{text}' returns {have}, not compatible with "
+                                 +f"{want}: {self.text_of(ctx.what)}"),
+                                return_type=return_type)
+            return not_None(e)
+        else:
+            return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else injected_type 
+            e = self.type_check(required_type, injected_type, ctx.who,
+                                (lambda want,have,text:
+                                 f"Injected value ({have}) '{text}' not compatible with "
+                                 +f"{want}: {self.text_of(ctx.what)}"),
+                                return_type=return_type)
+            return not_None(e)
         
             
     
@@ -2523,7 +2581,7 @@ class DMFCompiler(DMFVisitor):
                 seen.add(n)
         if not saw_duplicate and not saw_untyped:
             return None
-        macro_type = MacroType.find(types, Type.NONE)
+        macro_type = CallableType.find(types, Type.NONE)
         return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
 
     def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
@@ -2550,7 +2608,7 @@ class DMFCompiler(DMFVisitor):
                 body = self.visit(ctx.compound())
             else:
                 body = self.visit(ctx.expr())
-            macro_type = MacroType.find(param_types, body.return_type)
+            macro_type = CallableType.find(param_types, body.return_type)
         
         def run(env: Environment) -> Delayed[MacroValue]: # @UnusedVariable
             return Delayed.complete(MacroValue(macro_type, env, param_names, body))
@@ -2578,18 +2636,18 @@ class DMFCompiler(DMFVisitor):
         if e:=self.type_check(Type.DELAY, duration, ctx.duration,
                               lambda want,have,text: # @UnusedVariable
                                 f"Delay ({have} must be time or ticks: {text}",
-                              return_type=Type.PAUSE):
+                              return_type=Type.ACTION):
             return e
         def run(env: Environment) -> Delayed[MaybeError[PauseValue]]:
             return (duration.evaluate(env, Type.DELAY)
                     .transformed(error_check(lambda d: PauseValue(d, env.board))))
-        return Executable(Type.PAUSE, run, (duration,))
+        return Executable(Type.ACTION, run, (duration,))
     
     def visitPrompt_expr(self, ctx:DMFParser.Prompt_exprContext) -> Executable:
         def run(env: Environment, *vals: Sequence[Any]) -> Delayed[PromptValue]:
             return Delayed.complete(PromptValue(vals, board=env.board))
         vals = tuple(self.visit(c) for c in ctx.vals)
-        sig = Signature.of(tuple(v.return_type for v in vals), Type.PROMPT)
+        sig = Signature.of(tuple(v.return_type for v in vals), Type.ACTION)
         return self.use_callable(WithEnvDelayed(run), vals, sig)
             
             
@@ -2918,7 +2976,7 @@ class DMFCompiler(DMFVisitor):
         Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
         Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
         Attributes["direction"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
-        Attributes["duration"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
+        # Attributes["duration"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
         def set_pad(d: Drop, p: Pad) -> None:
             d.pad = p
             d.status = DropStatus.ON_BOARD

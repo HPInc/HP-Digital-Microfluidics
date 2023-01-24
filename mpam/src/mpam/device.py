@@ -5144,7 +5144,7 @@ class Clock:
         self.clock_thread.start_clock(interval)
 
     def pause(self) -> None:
-        assert self.running, "Clock.pause() called while clock is running"
+        assert self.running, "Clock.pause() called while clock is not running"
         self.on_state_change.process(True, False)
         self.clock_thread.pause_clock()
 

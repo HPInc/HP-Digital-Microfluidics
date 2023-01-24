@@ -1754,6 +1754,11 @@ class Delayed(Generic[Tco]):
         self.when_value(post_transformed)
         # self.when_value(lambda val: future.post(fn(val)))
         return future
+    
+    def to_const(self, val: V) -> Delayed[V]:
+        def ignore_arg(v: Any) -> V:
+            return val
+        return self.transformed(ignore_arg)
 
     def then_trigger(self, trigger: Trigger) -> Delayed[Tco]:
         """
