@@ -52,15 +52,6 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#print_interactive.
-    def enterPrint_interactive(self, ctx:DMFParser.Print_interactiveContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#print_interactive.
-    def exitPrint_interactive(self, ctx:DMFParser.Print_interactiveContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#expr_interactive.
     def enterExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext):
         pass
@@ -88,30 +79,12 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#printing.
-    def enterPrinting(self, ctx:DMFParser.PrintingContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#printing.
-    def exitPrinting(self, ctx:DMFParser.PrintingContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#decl_stat.
     def enterDecl_stat(self, ctx:DMFParser.Decl_statContext):
         pass
 
     # Exit a parse tree produced by DMFParser#decl_stat.
     def exitDecl_stat(self, ctx:DMFParser.Decl_statContext):
-        pass
-
-
-    # Enter a parse tree produced by DMFParser#print_stat.
-    def enterPrint_stat(self, ctx:DMFParser.Print_statContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#print_stat.
-    def exitPrint_stat(self, ctx:DMFParser.Print_statContext):
         pass
 
 
@@ -346,6 +319,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#index_expr.
     def exitIndex_expr(self, ctx:DMFParser.Index_exprContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#print_expr.
+    def enterPrint_expr(self, ctx:DMFParser.Print_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#print_expr.
+    def exitPrint_expr(self, ctx:DMFParser.Print_exprContext):
         pass
 
 

@@ -380,7 +380,7 @@ class MotionValue(CallableValue):
         super().__init__(self._sig)
     
     def apply(self, args:Sequence[Any])->Delayed[Drop]:
-        assert len(args) == 1
+        self.check_arity(args)
         drop = args[0]
         assert isinstance(drop, Drop)
         return self.move(drop)
@@ -481,7 +481,7 @@ class TwiddleBinaryValue(CallableValue):
         self.op = op
         
     def apply(self, args:Sequence[Any])->Delayed[None]: 
-        assert len(args) == 1
+        self.check_arity(args)
         bc = args[0]
         assert isinstance(bc, BinaryComponent)
         return self.op.schedule_for(bc).transformed(to_const(None))
@@ -502,7 +502,7 @@ TwiddleBinaryValue.OFF= TwiddleBinaryValue(BinaryComponent.TurnOff)
 TwiddleBinaryValue.TOGGLE = TwiddleBinaryValue(BinaryComponent.Toggle)
 
 class InjectableStatementValue(CallableValue):
-    _default_sig: ClassVar[Signature] = Signature.of((Type.ANY,), Type.NONE)
+    _default_sig: ClassVar[Signature] = Signature.of((), Type.NONE)
     
     def __init__(self, sig: Optional[Signature] = None) -> None:
         super().__init__(sig or self._default_sig)
@@ -511,9 +511,32 @@ class InjectableStatementValue(CallableValue):
     def invoke(self) -> Delayed[MaybeError[None]]: ...
 
     def apply(self, args: Sequence[Any])->Delayed[MaybeError[None]]:
-        assert len(args) == 1
+        self.check_arity(args)
         return self.invoke()
     
+class BoundDelayedAction(InjectableStatementValue):
+    name: Final[str]
+    def __init__(self, fn: Callable[[], Delayed[MaybeError[Any]]], *, 
+                 name: Optional[str] = None) -> None:
+        super().__init__()
+        self.fn = fn
+        if name is None:
+            name = f"BoundDelayedAction[{fn}]"
+        self.name = name
+        
+    def invoke(self)->Delayed[MaybeError[None]]:
+        return self.fn().transformed(error_check(to_const(None)))
+    
+    def __str__(self) -> str:
+        return self.name
+    
+class BoundImmediateAction(BoundDelayedAction):
+    def __init__(self, fn: Callable[[], Any], *,
+                 name: Optional[str] = None):
+        if name is None:
+            name = f"BoundImmediateAction[{fn}]"
+        super().__init__(lambda: Delayed.complete(fn()), name=name)
+        
 class PauseValue(InjectableStatementValue):
     duration: Final[DelayType]
     board: Final[Board]
@@ -1798,19 +1821,22 @@ class DMFCompiler(DMFVisitor):
     def visitDecl_stat(self, ctx:DMFParser.Decl_statContext) -> Executable:
         return self.visit(ctx.declaration())
     
-    def visitPrinting(self, ctx:DMFParser.PrintingContext) -> Executable:
-        def print_vals(*vals: Sequence[Any]) -> Delayed[None]:
-            print(*vals)
-            return Delayed.complete(None)
+    def visitPrint_expr(self, ctx:DMFParser.Print_exprContext) -> Executable:
+        arg_text = (self.text_of(c) for c in ctx.vals)
+        def print_vals(*vals: Sequence[Any]) -> Delayed[BoundImmediateAction]:
+            def do_print() -> None:
+                print(*vals)
+            name = f"print({', '.join(arg_text)})"
+            return Delayed.complete(BoundImmediateAction(do_print, name = name))
         vals = tuple(self.visit(c) for c in ctx.vals)
-        sig = Signature.of(tuple(v.return_type for v in vals), Type.NONE)
+        sig = Signature.of(tuple(v.return_type for v in vals), Type.ACTION)
         return self.use_callable(print_vals, vals, sig)
         
-    def visitPrint_stat(self, ctx:DMFParser.Print_statContext) -> Executable:
-        return self.visit(ctx.printing())
-
-    def visitPrint_interactive(self, ctx:DMFParser.Print_statContext) -> Executable:
-        return self.visit(ctx.printing())
+    # def visitPrint_stat(self, ctx:DMFParser.Print_statContext) -> Executable:
+    #     return self.visit(ctx.printing())
+    #
+    # def visitPrint_interactive(self, ctx:DMFParser.Print_statContext) -> Executable:
+    #     return self.visit(ctx.printing())
 
     # def visitPause_stat(self, ctx:DMFParser.Pause_statContext) -> Executable:
     #     duration = self.visit(ctx.duration)

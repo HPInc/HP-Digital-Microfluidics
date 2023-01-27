@@ -22,7 +22,7 @@ interactive
   | loop EOF # loop_interactive
   | declaration TERMINATOR? EOF # decl_interactive
 //  | assignment TERMINATOR? EOF # assignment_interactive
-  | printing TERMINATOR? EOF # print_interactive
+//  | printing TERMINATOR? EOF # print_interactive
   | expr TERMINATOR? EOF # expr_interactive
   | EOF # empty_interactive
 //  | pad_op EOF # pad_op_interactive 
@@ -54,7 +54,7 @@ declaration returns [Optional[Type] type, str pname, int n]
   	{$ctx.pname=$name.text}
   ;
   
-printing : 'print' vals+=expr (',' vals+=expr)* ;
+//printing : 'print' vals+=expr (',' vals+=expr)* ;
   
 //pad_op
 //  : 'turn'? which=expr (ON | OFF)
@@ -68,7 +68,7 @@ stat
 //  | which=name ASSIGN macro_header body=compound # macro_def_stat
 //  | pad_op TERMINATOR    # pad_op_stat
 //  | ('pause' | 'wait') 'for'? duration=expr TERMINATOR           # pause_stat
-  | printing TERMINATOR                           # print_stat
+//  | printing TERMINATOR                           # print_stat
   | 'if' tests+=expr bodies+=compound 
      ('else' 'if' tests+=expr bodies+=compound)*
      ('else' else_body=compound)?              # if_stat
@@ -146,7 +146,8 @@ expr
   | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
   | ('pause' | 'wait') 'for'? duration=expr            # pause_expr
-  | (('pause' | 'wait') 'for' 'user' | 'prompt') ('(' vals+= expr (',' vals+=expr)* ')')? # prompt_expr
+  | (('pause' | 'wait') 'for' 'user' | 'prompt') ( vals+= expr (',' vals+=expr)* )? # prompt_expr
+  | 'print' vals+=expr (',' vals+=expr)* # print_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr
@@ -332,7 +333,7 @@ multi_word_name returns[str val]
   | 'enter' 'well' {$ctx.val="enter well"}
   ;
 
-kwd_names : 's' | 'ms' | 'x' | 'y'
+kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
   | 'on' | 'off'
   | 'min' | 'max' | 'minimum' | 'maximum'
   | 'diff' | 'difference' | 'delta' | 'point'

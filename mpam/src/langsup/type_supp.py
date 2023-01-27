@@ -7,7 +7,7 @@ from typing import Final, Optional, Sequence, ClassVar, Callable, \
 
 from mpam.types import Delayed
 from _collections import defaultdict
-from quantities.core import Unit
+from quantities.core import Unit, qstr
 import typing
 from functools import cached_property
 from threading import RLock
@@ -569,6 +569,11 @@ class CallableValue(ABC):
     
     @abstractmethod
     def apply(self, args: Sequence[Any]) -> Delayed[Any]: ... # @UnusedVariable
+    
+    def check_arity(self, args: Sequence[Any]) -> None:
+        want = self.sig.arity
+        got = len(args)
+        assert want == got, f"Functional object expected {qstr(want, 'argument')}, got {got}., "
     
 class ConvertedCallableValue(CallableValue):
     cv: Final[CallableValue]

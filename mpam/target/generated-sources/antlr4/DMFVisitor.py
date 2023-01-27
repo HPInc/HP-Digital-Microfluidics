@@ -37,11 +37,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#print_interactive.
-    def visitPrint_interactive(self, ctx:DMFParser.Print_interactiveContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#expr_interactive.
     def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext):
         return self.visitChildren(ctx)
@@ -57,18 +52,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#printing.
-    def visitPrinting(self, ctx:DMFParser.PrintingContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#decl_stat.
     def visitDecl_stat(self, ctx:DMFParser.Decl_statContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#print_stat.
-    def visitPrint_stat(self, ctx:DMFParser.Print_statContext):
         return self.visitChildren(ctx)
 
 
@@ -199,6 +184,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#index_expr.
     def visitIndex_expr(self, ctx:DMFParser.Index_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#print_expr.
+    def visitPrint_expr(self, ctx:DMFParser.Print_exprContext):
         return self.visitChildren(ctx)
 
 
