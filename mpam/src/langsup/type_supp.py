@@ -320,31 +320,41 @@ class Type:
             if vc is SpecialValueConverter.NO_CONVERSION:
                 return None
             return vc
-    
+
+    _known_bounds: Final = dict[tuple['Type',...], Sequence['Type']]()
+        
     @classmethod
     def upper_bounds(cls, *types: Type) -> Sequence[Type]:
         maybe = any(isinstance(t, MaybeType) for t in types)
         if maybe:
-            types = tuple(t.if_there_type if isinstance(t, MaybeType) else t for t in types)
-        if len(types) == 0:
+            type_set = set(t.if_there_type if isinstance(t, MaybeType) else t for t in types)
+        else:
+            type_set = set(types)
+        if len(type_set) == 1:
+            return (types[0].maybe,) if maybe else (types[0],)
+        if len(type_set) == 0:
             return ()
+
+        key = tuple(type_set)
+        bounds = cls._known_bounds.get(key, None)
         
-        first = types[0]
-        if all(t is first for t in types):
-            return (first,)
-        
-        candidates = {types[0], *types[0].all_supers}
-        candidates.intersection_update(*({t, *t.all_supers} for t in types[1:]))
-        
-        remove = set[Type]()
-        for c1 in candidates:
-            for c2 in candidates:
-                if c1 < c2:
-                    remove.add(c2)
-        candidates -= remove
-        if maybe:
-            return tuple(c.maybe for c in candidates)
-        return tuple(candidates)
+        if bounds is None:
+            with cls._class_lock:
+                candidates = {key[0], *key[0].all_supers}
+                candidates.intersection_update(*({t, *t.all_supers} for t in key[1:]))            
+                
+                remove = set[Type]()
+                for c1 in candidates:
+                    for c2 in candidates:
+                        if c1 < c2:
+                            remove.add(c2)
+                candidates -= remove
+                if maybe:
+                    bounds = tuple(c.maybe for c in candidates)
+                else:
+                    bounds = tuple(candidates)
+                cls._known_bounds[key] = bounds
+        return bounds
     
     @classmethod
     def upper_bound(cls, *types: Type) -> Type:
@@ -563,7 +573,6 @@ class CallableValue(ABC):
 class ConvertedCallableValue(CallableValue):
     cv: Final[CallableValue]
     param_converters: Final[Sequence[ValueConverter]]
-    result_converter: Final[ValueConverter]
     
     def __init__(self, cv: CallableValue, sig: Signature,
                  param_converters: Sequence[ValueConverter],
@@ -571,7 +580,7 @@ class ConvertedCallableValue(CallableValue):
         super().__init__(sig)
         self.cv = cv
         self.param_converters = param_converters
-        self.result_converter = result_converter
+        self.result_converter: Final[ValueConverter] = result_converter
         
     def apply(self, args: Sequence[Any]) -> Delayed[Any]:
         converted_args = [fn(a) for fn,a in zip(self.param_converters, args)]
@@ -955,7 +964,7 @@ class Rel(Enum):
         return res
     
     def comparable_type(self, lhs: Type, rhs: Type) -> Optional[Type]:
-        candidates = Type.upper_bounds(lhs, rhs)
+        candidates = (lhs,) if lhs is rhs else Type.upper_bounds(lhs, rhs)
         if len(candidates) < 1:
             return None
         if self is Rel.EQ or self is Rel.NE:
