@@ -1185,6 +1185,8 @@ class BoardMonitor:
                 if ret_type is dmf_lang.Type.ERROR:
                     assert isinstance(val, dmf_lang.EvaluationError)
                     print(f"  Caught exception ({type(val).__name__}): {val}")
+                elif ret_type is dmf_lang.Type.NO_VALUE:
+                    print(f"  Interactive command returned without value.")
                 else:
                     print(f"  Interactive cmd val ({ret_type.name}): {val}")
             if len(expr) > 0:

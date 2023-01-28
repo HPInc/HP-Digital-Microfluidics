@@ -349,6 +349,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#existence_expr.
+    def enterExistence_expr(self, ctx:DMFParser.Existence_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#existence_expr.
+    def exitExistence_expr(self, ctx:DMFParser.Existence_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#name_assign_expr.
     def enterName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext):
         pass
@@ -646,6 +655,24 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#existence.
+    def enterExistence(self, ctx:DMFParser.ExistenceContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#existence.
+    def exitExistence(self, ctx:DMFParser.ExistenceContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#possession.
+    def enterPossession(self, ctx:DMFParser.PossessionContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#possession.
+    def exitPossession(self, ctx:DMFParser.PossessionContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#reagent.
     def enterReagent(self, ctx:DMFParser.ReagentContext):
         pass
@@ -733,6 +760,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#param_type.
     def exitParam_type(self, ctx:DMFParser.Param_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#base_param_type.
+    def enterBase_param_type(self, ctx:DMFParser.Base_param_typeContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#base_param_type.
+    def exitBase_param_type(self, ctx:DMFParser.Base_param_typeContext):
         pass
 
 

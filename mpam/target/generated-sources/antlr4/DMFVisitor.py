@@ -202,6 +202,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#existence_expr.
+    def visitExistence_expr(self, ctx:DMFParser.Existence_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#name_assign_expr.
     def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext):
         return self.visitChildren(ctx)
@@ -367,6 +372,16 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#existence.
+    def visitExistence(self, ctx:DMFParser.ExistenceContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#possession.
+    def visitPossession(self, ctx:DMFParser.PossessionContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#reagent.
     def visitReagent(self, ctx:DMFParser.ReagentContext):
         return self.visitChildren(ctx)
@@ -414,6 +429,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#param_type.
     def visitParam_type(self, ctx:DMFParser.Param_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#base_param_type.
+    def visitBase_param_type(self, ctx:DMFParser.Base_param_typeContext):
         return self.visitChildren(ctx)
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from _collections_abc import Iterable
 from enum import Enum, auto
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
-    Any, Mapping, Union
+    Any, Mapping, Union, NoReturn, TypeVar
 
 from mpam.types import Delayed
 from _collections import defaultdict
@@ -17,14 +17,31 @@ from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
 
+Val_ = TypeVar("Val_")
+class EvaluationError(RuntimeError): ...
+MaybeError = Union[Val_, EvaluationError]
+
+
 class TypeMismatchError(RuntimeError):
     have: Final[Type]
     want: Final[Type]
     
     def __init__(self, have: Type, want: Type) -> None:
-        super().__init__(f"Cannot convert from {have} to {want}")
+        super().__init__(f"Cannot convert from {have.name} to {want.name}")
         self.have = have
         self.want = want
+        
+        
+class ConversionError(EvaluationError):
+    have: Final[Type]
+    want: Final[Type]
+    value: Final[Any]
+    
+    def __init__(self, have: Type, want: Type, value: Any) -> None:
+        super().__init__(f"Cannot convert from {have.name} to {want.name}: {value}")
+        self.have = have
+        self.want = want
+        self.value = value
         
 ValueConverter = Callable[[Any], Any]
 
@@ -64,8 +81,10 @@ class Type:
             mt = self._maybe = MaybeType(self)
         return mt
     
+    NO_VALUE: ClassVar[Type]
     ANY: ClassVar[Type]
-    NONE: ClassVar[Type]
+    # NONE: ClassVar[Type]
+    MISSING: ClassVar[Type]
     IGNORE: ClassVar[Type]
     ERROR: ClassVar[Type]
     NUMBER: ClassVar[Type]
@@ -120,12 +139,11 @@ class Type:
     #     funcs = self.upper_bounds(*candidates)
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
-                 is_root: bool = False,
                  as_func_type: Optional[CallableType] = None,
                  rep_types: TypeRepSpec = ()):
         self.name = name
         if supers is None:
-            supers = [] if is_root else  [Type.ANY]
+            supers = (Type.ANY,)
             
         self.direct_supers = supers
         self.direct_subs = []
@@ -197,12 +215,14 @@ class Type:
     
     def _find_conversion_to(self, other: Type) -> _Converter:
         # Called with _class_lock locked
-        if other is Type.ANY:
+        if self is other or other is Type.NO_VALUE:
+            return SpecialValueConverter.IDENTITY
+        if other is Type.ANY and self is not Type.NO_VALUE:
             return SpecialValueConverter.IDENTITY
         # if other is Type.NONE:
-        #     return to_const(None)
+        #    return to_const(None)
         if isinstance(other, MaybeType):
-            if self is Type.NONE:
+            if self is Type.MISSING:
                 return SpecialValueConverter.IDENTITY
             if not isinstance(self, MaybeType):
                 return self._conversion_to(other.if_there_type)
@@ -212,6 +232,7 @@ class Type:
                 return conv
             fn = conv
             return lambda v: None if v is None else fn(v)
+            
         if other in self.direct_supers:
             # There's no explicit conversion and no prohibited conversion,
             # so if it's a direct super, it's okay if the reps are compatible
@@ -275,7 +296,7 @@ class Type:
             # only once per pair.
             
             pairs = [*middles.items()]
-            logger.info(f"Converting {self} to {other} through {pairs[0][0]}")
+            # logger.info(f"Converting {self} to {other} through {pairs[0][0]}")
 
             if len(pairs) > 1:
                 # This warning will only happen once, because we cache the result.
@@ -328,6 +349,7 @@ class Type:
         maybe = any(isinstance(t, MaybeType) for t in types)
         if maybe:
             type_set = set(t.if_there_type if isinstance(t, MaybeType) else t for t in types)
+            type_set.discard(Type.MISSING)
         else:
             type_set = set(types)
         if len(type_set) == 1:
@@ -359,7 +381,7 @@ class Type:
     @classmethod
     def upper_bound(cls, *types: Type) -> Type:
         bounds = cls.upper_bounds(*types)
-        return Type.NONE if len(bounds) == 0 else bounds[0]
+        return Type.NO_VALUE if len(bounds) == 0 else bounds[0]
     
     @classmethod
     def register_conversion(cls, have: Type, want: Type, converter: Optional[ValueConverter]) -> None:
@@ -387,9 +409,18 @@ class Type:
             return True
         return self._conversion_to(want) is not SpecialValueConverter.NO_CONVERSION
     
+    def checked_convert_to(self, want: Type, val: Any) -> MaybeError[Any]:
+        try:
+            return self.convert_to(want, val)
+        except EvaluationError as ex:
+            return ex
+        
+    
 
-Type.ANY = Type("ANY", is_root = True)
-Type.NONE = Type("NONE")
+Type.NO_VALUE = Type("NO_VALUE", supers=())
+Type.ANY = Type("ANY", supers=(Type.NO_VALUE,))
+# Type.NONE = Type("NONE")
+Type.MISSING = Type("MISSING")
 Type.IGNORE = Type("IGNORE")
 Type.ERROR = Type("ERROR")
 Type.WELL = Type("WELL")
@@ -443,6 +474,21 @@ class MaybeType(Type):
     def __repr__(self) -> str:
         return f"Maybe({self.if_there_type})"
     
+    def _find_conversion_to(self, other: Type) -> _Converter:
+        conv = super()._find_conversion_to(other)
+        if conv is not SpecialValueConverter.NO_CONVERSION:
+            return conv
+        if_there_conv = self.if_there_type._conversion_to(other)
+        def raise_on_none() -> NoReturn:
+            raise ConversionError(self, other, None)
+        if if_there_conv is SpecialValueConverter.IDENTITY:
+            return lambda v : raise_on_none() if v is None else v
+        elif if_there_conv is SpecialValueConverter.NO_CONVERSION:
+            return SpecialValueConverter.NO_CONVERSION
+        else:
+            fn = if_there_conv
+            return lambda v : raise_on_none() if v is None else fn(v)
+    
     # def __lt__(self, rhs: Type) -> bool:
     #     if isinstance(rhs, MaybeType):
     #         return self.if_there_type < rhs.if_there_type
@@ -494,7 +540,7 @@ class Signature:
     def covariant_to(self, other: Signature) -> bool:
         params_ok = self.callable_using(other.param_types)
         their_return = other.return_type
-        return_ok = their_return is Type.NONE or self.return_type <= their_return
+        return_ok = self.return_type <= their_return
         return params_ok and return_ok
     
     def narrower_than(self, other: Signature) -> bool:
@@ -554,7 +600,7 @@ class CallableTypeKind(Enum):
     @classmethod
     def for_sig(cls, sig: Signature) -> CallableTypeKind:
         n_args = sig.arity
-        if sig.return_type is Type.NONE:
+        if sig.return_type is Type.NO_VALUE:
             if n_args == 0:
                 return CallableTypeKind.ACTION
             elif n_args == 1:
@@ -677,7 +723,7 @@ class CallableType(Type):
     def __hash__(self)->int:
         return hash(self.sig)
     
-Type.ACTION = CallableType.find((), Type.NONE, name="Action")        
+Type.ACTION = CallableType.find((), Type.NO_VALUE, name="Action")        
 
 
 class MotionType(CallableType):
@@ -698,7 +744,7 @@ Type.ORIENTED_DIR = Type("ORIENTED_DIR", [Type.DIR])
 
 class TwiddleOpType(CallableType):
     def __init__(self) -> None:
-        super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.NONE)
+        super().__init__("TWIDDLE_OP", (Type.BINARY_CPT,), Type.NO_VALUE)
         
 Type.TWIDDLE_OP = TwiddleOpType()
 Type.ON = Type("ON", [Type.BINARY_STATE, Type.TWIDDLE_OP])
@@ -865,7 +911,7 @@ class Func:
         return error
     
     def error_type(self, arg_types: Sequence[Type], *, 
-                   default_type: Type = Type.NONE) -> Type:
+                   default_type: Type = Type.NO_VALUE) -> Type:
         penetration: int = 0
         best: Optional[Type] = None
         mismatch = False
@@ -912,10 +958,9 @@ class Attr:
     def register_setter(self, otype: Union[Type, Sequence[Type]], vtype: Type, 
                         setter: Callable[[Any,Any], Any]) -> None:
         if isinstance(otype, Type):
-            self.func.register_immediate((otype, vtype), Type.NONE, setter)
-        else:
-            for ot in otype:
-                self.func.register_immediate((ot, vtype), Type.NONE, setter)
+            otype = (otype,)
+        for ot in otype:
+            self.func.register_immediate((ot, vtype), Type.NO_VALUE, setter)
                  
     
     def register(self, otype: Union[Type,Sequence[Type]], rtype: Type, extractor: Callable[[Any], Any],

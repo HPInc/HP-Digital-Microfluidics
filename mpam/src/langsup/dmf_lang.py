@@ -16,7 +16,8 @@ from DMFParser import DMFParser
 from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
-    NumberedItem, CallableTypeKind, CallableValue
+    NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
+    Val_
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System
@@ -46,11 +47,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 Name_ = TypeVar("Name_", bound=Hashable)
-Val_ = TypeVar("Val_")
 
-class EvaluationError(RuntimeError): ...
 
-MaybeError = Union[Val_, EvaluationError]
 
 class CompilationError(RuntimeError): ...
 
@@ -317,13 +315,13 @@ class ComposedCallable(CallableValue):
         self.second = second
         assert second_kind is not CallableTypeKind.GENERAL, f"Injection target cannot be of GENERAL kind: {second}"
         required_type = Type.ANY if second_kind is CallableTypeKind.ACTION else second_sig.param_types[0]
-        provided_type = (sig.param_types[0] if (len(sig.param_types) > 0
+        provided_type = (sig.param_types[0] if (sig.arity > 0
                                                 and first_kind in (CallableTypeKind.ACTION, CallableTypeKind.MONITOR))
                          else first_sig.return_type)
         
         if first_kind is CallableTypeKind.ACTION:
             def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
-                val = None if provided_type is Type.NONE else args[0]
+                val = None if provided_type is Type.NO_VALUE else args[0]
                 return first.apply(()).transformed(error_check(to_const(val)))
         elif first_kind is CallableTypeKind.MONITOR:
             def provide(args: Sequence[Any]) -> Delayed[MaybeError[Any]]:
@@ -341,12 +339,15 @@ class ComposedCallable(CallableValue):
                 return second.apply(()).transformed(error_check(to_const(v)))
         elif second_kind is CallableTypeKind.MONITOR:
             def inject(v: Any) -> Delayed[MaybeError[Any]]:
-                injected = provided_type.convert_to(required_type, v)
-                return second.apply((injected,)).transformed(error_check(to_const(v)))
+                injected = provided_type.checked_convert_to(required_type, v)
+                return (error_check_delayed(lambda i: second.apply((i,)))(injected)
+                        .transformed(error_check(to_const(v))))
+                # return second.apply((injected,)).transformed(error_check(to_const(v)))
         elif second_kind is CallableTypeKind.TRANSFORM:
             def inject(v: Any) -> Delayed[MaybeError[Any]]:
-                injected = provided_type.convert_to(required_type, v)
-                return second.apply((injected,))
+                injected = provided_type.checked_convert_to(required_type, v)
+                return error_check_delayed(lambda i: second.apply((i,)))(injected)                
+                # return second.apply((injected,))
         else:
             assert_never(second_kind)
         self.inject: Callable[[Any], Delayed[MaybeError[Any]]] = inject
@@ -502,7 +503,7 @@ TwiddleBinaryValue.OFF= TwiddleBinaryValue(BinaryComponent.TurnOff)
 TwiddleBinaryValue.TOGGLE = TwiddleBinaryValue(BinaryComponent.Toggle)
 
 class InjectableStatementValue(CallableValue):
-    _default_sig: ClassVar[Signature] = Signature.of((), Type.NONE)
+    _default_sig: ClassVar[Signature] = Type.ACTION.sig
     
     def __init__(self, sig: Optional[Signature] = None) -> None:
         super().__init__(sig or self._default_sig)
@@ -843,7 +844,7 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.POWER_SUPPLY: PowerSupply,
         Type.VOLTAGE: Voltage,
         Type.POWER_MODE: PowerMode,
-        Type.NONE: type(None),
+        Type.MISSING: type(None),
     }
 
 for t,reps in rep_types.items():
@@ -905,7 +906,7 @@ class Executable:
         if required is not None and required is not self.return_type:
             req_type = required
             def convert(val: Any) -> Any:
-                return self.return_type.convert_to(req_type, val=val)
+                return self.return_type.checked_convert_to(req_type, val=val)
                 # return Conversions.convert(have=self.return_type, want=req_type, val=val)
             future = future.transformed(convert)
         # if required is not None: 
@@ -1085,7 +1086,7 @@ class StepIterLoopType(LoopType):
     def __init__(self, header: DMFParser.Step_iter_loop_headerContext, *, compiler: DMFCompiler) -> None:
         super().__init__(compiler)
         
-        def raise_error(msg: str, ret_type: Type = Type.NONE) -> NoReturn:
+        def raise_error(msg: str, ret_type: Type = Type.NO_VALUE) -> NoReturn:
             raise ErrorToPropagate(compiler.error(header, ret_type, f"{msg}: {compiler.text_of(header)}"))
         
         sfd = cast(DMFParser.Step_first_and_dirContext, header.first)
@@ -1238,6 +1239,7 @@ class DMFInterpreter:
         self.globals = Environment(None, board=board)
         self.namespace = TypeMap(None)
         for file_name in file_names:
+            print(f"Loding macro file '{file_name}'")
             parser = self.get_parser(FileStream(file_name, encoding, errors))
             tree = parser.macro_file()
             assert isinstance(tree, DMFParser.Macro_fileContext)
@@ -1333,12 +1335,20 @@ class DMFCompiler(DMFVisitor):
             msg = msg(self.text_of(ctx))
         print(f"line {ctx.start.line}:{ctx.start.column} {msg}")
         return self.error_val(return_type, value)
+
+    def print_warning(self, 
+                      ctx: ParserRuleContext, 
+                      msg: Union[str, Callable[[str], str]]) -> None:
+        if not isinstance(msg, str):
+            msg = msg(self.text_of(ctx))
+        print(f"line {ctx.start.line}:{ctx.start.column} {msg}")
+        
     
     def not_yet_implemented(self,
                             kind: str,
                             ctx: ParserRuleContext,
                             *, 
-                            return_type: Type = Type.NONE,
+                            return_type: Type = Type.NO_VALUE,
                             value: Optional[Callable[[Environment], Any]] = None
                             ) -> Executable:
         msg = f"{kind} not yet implemented"
@@ -1394,6 +1404,8 @@ class DMFCompiler(DMFVisitor):
 
     def type_name_var(self, t_or_ctx: Union[DMFParser.Param_typeContext, Type], n: Optional[int] = None) -> str:
         t = t_or_ctx if isinstance(t_or_ctx, Type) else cast(Type, t_or_ctx.type)
+        if isinstance(t, MaybeType):
+            t = t.if_there_type
         # t: Type = cast(Type, ctx.type)
         index = "" if n is None else f"_{n}"
         return f"**{t.name}{index}**"
@@ -1405,7 +1417,7 @@ class DMFCompiler(DMFVisitor):
                    ctx: ParserRuleContext, 
                    msg: Optional[Union[str, Callable[[str, str, str], str]]] = None,
                    *,
-                   return_type: Type = Type.NONE,
+                   return_type: Type = Type.NO_VALUE,
                    value: Optional[Callable[[Environment], Any]] = None
                    ) -> Optional[Executable]:
         if isinstance(have, Executable):
@@ -1420,9 +1432,11 @@ class DMFCompiler(DMFVisitor):
                 return None
             else:
                 wname = map_str(tuple(w.name for w in want))
-        # if what we have is Type.NONE, we've already found something we can't recover from,
+        # if what we have is Type.NO_VALUE, we've already found something we can't recover from,
         # so we don't bother with a message
-        if have is Type.NONE:
+        
+        # Should that be Type.ERROR?
+        if have is Type.NO_VALUE:
             return self.error_val(return_type, value)
         m: Union[str, Callable[[str], str]]
         if isinstance(msg, str):
@@ -1457,7 +1471,7 @@ class DMFCompiler(DMFVisitor):
                                 ) -> Executable:
         types = attr.applies_to
         if len(types) == 0:
-            return self.error(attr_ctx, ret_type or Type.NONE,
+            return self.error(attr_ctx, ret_type or Type.NO_VALUE,
                               lambda txt: f"{txt} is an attribute, but I don't know what to do with it")
         if ret_type is None:
             ret_type = Type.upper_bound(*attr.returns)
@@ -1480,7 +1494,7 @@ class DMFCompiler(DMFVisitor):
         attr_name = attr_ctx.which
         attr_text = self.text_of(attr_ctx)
         type_spec = "" if (attr_text == attr_name) else f" ({attr_name})"
-        return self.error(ctx, Type.NONE,
+        return self.error(ctx, Type.NO_VALUE,
                           lambda text: f"'{attr_text}'{type_spec} is not an attribute: {text})")
         
     
@@ -1538,7 +1552,7 @@ class DMFCompiler(DMFVisitor):
             # what type it would have returned.
             real_func = func
             for ae in arg_execs:
-                if ae.return_type is Type.NONE and ae.contains_error:
+                if ae.return_type is Type.NO_VALUE and ae.contains_error:
                     return self.error_val(rt)
             return self.error(ctx, rt, lambda txt: real_func.type_error(arg_types, txt))
         sig, fn = desc
@@ -1570,7 +1584,7 @@ class DMFCompiler(DMFVisitor):
                     return lambda maybe_error: s.check_and_eval(maybe_error, env)
                 future = future.chain(evaluator(stat))
             return future
-        return Executable(Type.NONE, run, stats)
+        return Executable(Type.NO_VALUE, run, stats)
 
 
     def visitCompound_interactive(self, ctx:DMFParser.Compound_interactiveContext) -> Executable:
@@ -1595,13 +1609,13 @@ class DMFCompiler(DMFVisitor):
             and not isinstance(ctx, (DMFParser.Name_assign_exprContext,
                                      DMFParser.Attr_assign_exprContext))):
             def doit(fn: InjectableStatementValue) -> Delayed[MaybeError[None]]:
-                logger.info(f"Invoking {ex.return_type}: {fn}")
+                # logger.info(f"Invoking {ex.return_type}: {fn}")
                 return fn.apply(())
                                                               
             def run(env: Environment) -> Delayed[MaybeError[None]]:
                 return (ex.evaluate(env)
                         .chain(error_check_delayed(doit)))
-            return Executable(Type.NONE, run, (ex,))
+            return Executable(Type.NO_VALUE, run, (ex,))
         return ex
 
     def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext) -> Executable:
@@ -1797,7 +1811,7 @@ class DMFCompiler(DMFVisitor):
             def do_decl(env: Environment) -> Delayed[None]:
                 env.define(name, MISSING)
                 return Delayed.complete(None)
-            return Executable(Type.NONE, do_decl)
+            return Executable(Type.NO_VALUE, do_decl)
             
         if e := self.type_check(var_type, value.return_type, ctx, 
                                 lambda want,have,text: 
@@ -1866,7 +1880,7 @@ class DMFCompiler(DMFVisitor):
         with self.current_types.push():
             stat_execs = tuple(self.visit(sc) for sc in stat_contexts)
             
-        ret_type = Type.NONE if len(stat_execs) == 0 else stat_execs[-1].return_type
+        ret_type = Type.NO_VALUE if len(stat_execs) == 0 else stat_execs[-1].return_type
 
         def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
@@ -1896,7 +1910,7 @@ class DMFCompiler(DMFVisitor):
         with self.current_types.push():
             stat_execs = tuple(self.visit(sc) for sc in stat_contexts)
             
-        ret_type = Type.NONE
+        ret_type = Type.NO_VALUE
         
         def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
@@ -1955,20 +1969,18 @@ class DMFCompiler(DMFVisitor):
         #     return True
         
         if else_body is None:
-            # result_type = Type.NONE
-            else_type = Type.NONE
+            result_type = Type.NO_VALUE
             children = (*tests, *bodies)
         else:
-            # result_type = else_body.return_type
             else_type = else_body.return_type
             children = (*tests, *bodies, else_body)
+            result_type = Type.upper_bound(else_type, *(b.return_type for b in bodies))
             
             # for b in bodies:
             #     if check_result_type(b.return_type):
             #         break
                 
-        result_type = Type.upper_bound(else_type, *(b.return_type for b in bodies))
-        
+
         def run(env: Environment) -> Delayed:
             n_tests = len(tests)
             def check(i: int) -> Delayed:
@@ -2046,7 +2058,7 @@ class DMFCompiler(DMFVisitor):
                 return test_val.chain(check)
             return do_pass(None)
             
-        return Executable(Type.NONE, run, (*loop_type.based_on(), body_exec))
+        return Executable(Type.NO_VALUE, run, (*loop_type.based_on(), body_exec))
     
 
     def visitExit_stat(self, ctx:DMFParser.Exit_statContext) -> Executable:
@@ -2056,10 +2068,10 @@ class DMFCompiler(DMFVisitor):
         name_ctx: Optional[DMFParser.NameContext] = ctx.loop_name
         name = None if name_ctx is None else cast(str, name_ctx.val)
         if not self.control_stack.in_loop:
-            return self.error(ctx, Type.NONE, "Loop exit statement not within loop")
+            return self.error(ctx, Type.NO_VALUE, "Loop exit statement not within loop")
         if name is not None and not self.control_stack.in_named_loop(name):
-            return self.error(ctx, Type.NONE, f"Not within loop named '{name}'")
-        return Executable.constant(Type.NONE, LoopExit(name))
+            return self.error(ctx, Type.NO_VALUE, f"Not within loop named '{name}'")
+        return Executable.constant(Type.NO_VALUE, LoopExit(name))
         
         
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
@@ -2083,10 +2095,10 @@ class DMFCompiler(DMFVisitor):
         name = self.type_name_var(ctx.param_type(), n)
         var_type = self.current_types.lookup(name)
         if var_type is MISSING:
-            return self.error(ctx.param_type(), Type.NONE, f"Undefined variable: {name}")
+            return self.error(ctx.param_type(), Type.NO_VALUE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
             val = env.lookup(name)
-            if val is None:
+            if val is MISSING:
                 return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
             return Delayed.complete(val)
         return Executable(var_type, run)
@@ -2114,7 +2126,7 @@ class DMFCompiler(DMFVisitor):
             return Executable(special.var_type, lambda env: Delayed.complete(real_special.get(env)))
         var_type = self.current_types.lookup(name)
         if var_type is MISSING:
-            return self.error(ctx.name(), Type.NONE, f"Undefined variable: {name}")
+            return self.error(ctx.name(), Type.NO_VALUE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
             val = env.lookup(name)
             if val is MISSING:
@@ -2166,6 +2178,8 @@ class DMFCompiler(DMFVisitor):
         obj = self.visit(ctx.obj)
         attr_name: str = ctx.attr().which
         attr = Attributes.get(attr_name, None)
+        polarity: bool = ctx.possession().polarity
+        test = (lambda v: v is not None) if polarity else (lambda v: v is None) 
         if attr is None:
             return self.not_an_attr_error(ctx, ctx.attr())
         desc = attr.getter(obj.return_type)
@@ -2188,10 +2202,23 @@ class DMFCompiler(DMFVisitor):
                 return v is not None
             return (obj.evaluate(env, ot)
                     .chain(error_check_delayed(extractor))
-                    .transformed(error_check(lambda v: v is not None)))
+                    .transformed(error_check(test)))
             # return obj.evaluate(env, ot).chain(extractor).transformed(check)
         return Executable(Type.BOOL, run, (obj,))
     
+    def visitExistence_expr(self, ctx:DMFParser.Existence_exprContext) -> Executable:
+        val = self.visit(ctx.val)
+        polarity: bool = ctx.existence().polarity
+        test = (lambda v: v is not None) if polarity else (lambda v: v is None) 
+        val_type = val.return_type
+        # We can't just return the constant because we can't (yet) prove that there are no side effects.
+        if val_type is not Type.MISSING and not isinstance(val_type, MaybeType):
+            self.print_warning(ctx, lambda txt: f"Expression doesn't return MAYBE type in '{txt}'")
+        def run(env: Environment) -> Delayed[MaybeError[bool]]:
+            return val.evaluate(env).transformed(error_check(test))
+        return Executable(Type.BOOL, run, (val,))
+    
+        
     def visitIs_expr(self, ctx:DMFParser.Is_exprContext) -> Executable:
         neg = ctx.NOT() is not None or ctx.ISNT() is not None
         obj = self.visit(ctx.obj)
@@ -2203,11 +2230,19 @@ class DMFCompiler(DMFVisitor):
                                         f"Left-hand side of 'is <state>' expression needs to be {want}, was {have}: {text}",
                                      return_type = Type.BOOL)):
                 return e 
-            if pred_type is Type.ON or neg:
-                func = "#is on"
-            else:
-                func = "#is off"
+            want_on = pred_type is Type.ON
+            if neg:
+                want_on = not want_on
+            func = "#is on" if want_on else "#is off"
             return self.use_function(func, ctx, (ctx.obj,))
+        # if pred_type is Type.MISSING:
+        #     if (e := self.type_check(Type.ANY.maybe, obj, ctx,
+        #                              lambda want, have, text:
+        #                                 f"Left-hand side of 'is missing' expression needs to be {want}, was {have}: {text}",
+        #                              return_type = Type.BOOL)):
+        #         return e
+        #     func = "#exists" if neg else "#does not exist" 
+        #     return self.use_function(func, ctx, (ctx.obj,))
         if (not isinstance(pred_type, CallableType)
             or len(pred_type.param_types) != 1
             or pred_type.return_type is not Type.BOOL):
@@ -2344,12 +2379,12 @@ class DMFCompiler(DMFVisitor):
         if what.return_type is Type.BUILT_IN:
             func: MissingOr[Func] = what.const_val
             if func is MISSING:
-                return self.error(ctx.what, Type.NONE, f"Internal error: {self.text_of(ctx.what)} is a built-in, but no Func value")
+                return self.error(ctx.what, Type.NO_VALUE, f"Internal error: {self.text_of(ctx.what)} is a built-in, but no Func value")
             return self.use_function(func, ctx, (ctx.who,))
         target_type = what.return_type.as_func_type
         if (target_type is None
             or (target_kind := target_type.kind) is CallableTypeKind.GENERAL):
-            return self.error(ctx.what, Type.NONE, 
+            return self.error(ctx.what, Type.NO_VALUE, 
                               f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
         injected_type = who.return_type
         # if injected_type <= Type.MOTION:
@@ -2360,10 +2395,11 @@ class DMFCompiler(DMFVisitor):
         do_injection: Callable[[Any, CallableValue, Type], Delayed[Any]]
         if target_kind is CallableTypeKind.TRANSFORM:
             required_type = target_type.param_types[0]
-            do_injection = lambda v, fn, t: fn.apply((t.convert_to(required_type, v),))
+            do_injection = lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
         elif target_kind is CallableTypeKind.MONITOR:
             required_type = target_type.param_types[0]
-            do_injection = lambda v, fn, t: fn.apply((t.convert_to(required_type, v),)).transformed(to_const(v))
+            do_injection = (lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
+                            .transformed(to_const(v)))
         elif target_kind is CallableTypeKind.ACTION:
             required_type = Type.ANY
             do_injection = lambda v, fn, _: fn.apply(()).transformed(to_const(v)) 
@@ -2416,6 +2452,9 @@ class DMFCompiler(DMFVisitor):
     
     def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext) -> Executable:
         obj = self.visit(ctx.obj)
+        existence_check = ctx.existence() is not None 
+        
+        is_maybe = existence_check or (ctx.MAYBE() is not None)
         attr_name: str = ctx.attr().which
         attr = Attributes.get(attr_name, None)
         if attr is None:
@@ -2430,7 +2469,9 @@ class DMFCompiler(DMFVisitor):
         rt = sig.return_type
         ot = sig.param_types[0]
         check: Optional[Callable[[Any], Any]] = None
-        if isinstance(rt, MaybeType):
+        if is_maybe and not isinstance(rt, MaybeType):
+            self.print_warning(ctx, lambda text: f"{ot.name}'s {attr_name} is a {rt.name}, not a MAYBE type: {text}")
+        if isinstance(rt, MaybeType) and not is_maybe:
             real_extractor = extractor
             real_attr = attr
             def extractor(obj: Any) -> Delayed[Any]:
@@ -2442,8 +2483,18 @@ class DMFCompiler(DMFVisitor):
                         ex = MaybeNotSatisfiedError(f"{obj} has no '{name}'")
                         return ex
                     return val
-                return real_extractor(obj).transformed(check)
+                return real_extractor(obj).transformed(error_check(check))
             rt = rt.if_there_type
+        elif existence_check:
+            polarity = ctx.existence().polarity
+            test = (lambda v: v is not None) if polarity else (lambda v: v is None)
+            if rt is Type.MISSING:
+                return Executable.constant(Type.BOOL, test(None), (obj,))
+            elif not isinstance(rt, MaybeType):
+                return Executable.constant(Type.BOOL, not test(None), (obj,))
+            real_extractor = extractor
+            extractor = lambda obj: real_extractor(obj).transformed(error_check(test))
+            rt = Type.BOOL
         def run(env: Environment) -> Delayed[Any]:
             return obj.evaluate(env, ot).chain(error_check_delayed(extractor))
         return Executable(rt, run, (obj,))
@@ -2519,7 +2570,7 @@ class DMFCompiler(DMFVisitor):
         if f_type is Type.DIR:
             f_type = Type.DELTA
         if not isinstance(f_type, CallableType):
-            return self.error(fc, Type.NONE, lambda text: f"Not callable ({f_type.name}): {text}")
+            return self.error(fc, Type.NO_VALUE, lambda text: f"Not callable ({f_type.name}): {text}")
         ret_type = f_type.return_type
         param_types = f_type.param_types
         if len(param_types) != len(arg_execs):
@@ -2603,7 +2654,7 @@ class DMFCompiler(DMFVisitor):
                 seen.add(n)
         if not saw_duplicate and not saw_untyped:
             return None
-        macro_type = CallableType.find(types, Type.NONE)
+        macro_type = CallableType.find(types, Type.NO_VALUE)
         return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
 
     def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
@@ -2904,15 +2955,15 @@ class DMFCompiler(DMFVisitor):
                               lambda n: AmbiguousTemp(absolute=n*abs_C, relative=n*deg_C))
         
         fn = Functions["RESET PADS"]
-        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_pads()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_pads()))
         fn = Functions["RESET MAGNETS"]
-        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_magnets()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_magnets()))
         fn = Functions["RESET HEATERS"]
-        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_heaters()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_heaters()))
         fn = Functions["RESET CHILLERS"]
-        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_chillers()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_chillers()))
         fn = Functions["RESET ALL"]
-        fn.register((), Type.NONE, WithEnv(lambda env: env.board.reset_all()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_all()))
         
         fn = Functions["ROUND"]
         fn.register_immediate((Type.FLOAT,), Type.INT, lambda x: round(x))
@@ -2925,14 +2976,18 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["UNSAFE"]
         fn.register_immediate((Type.DIR,), Type.MOTION, lambda d: UnsafeWalkValue(DeltaValue(1,d)))
         fn = Functions["PRINT"]
-        fn.register_all_immediate([((Type.ANY,) * 10, Type.NONE) for n in range(1, 8)],
+        fn.register_all_immediate([((Type.ANY,) * 10, Type.NO_VALUE) for n in range(1, 8)],
                                                   print)
         fn = Functions["STRING"]
         fn.register_immediate((Type.ANY,), Type.STRING, str)
         fn = Functions["#is on"]
         fn.register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.ON)
         fn = Functions["#is off"]
-        fn.register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.OFF)   
+        fn.register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.OFF)
+        fn = Functions["#exists"]
+        fn.register_immediate((Type.ANY.maybe,), Type.BOOL, lambda v: v is not None)   
+        fn = Functions["#does not exist"]
+        fn.register_immediate((Type.ANY.maybe,), Type.BOOL, lambda v: v is None)   
         
 
         fn = Functions["#dispense drop"]
@@ -2945,7 +3000,7 @@ class DMFCompiler(DMFVisitor):
         def enter_well(d: Drop) -> Delayed[None]:
             path = Path.enter_well()
             return path.schedule_for(d)
-        fn.register((Type.DROP,), Type.NONE, enter_well)             
+        fn.register((Type.DROP,), Type.NO_VALUE, enter_well)             
         
     @classmethod
     def setup_special_vars(cls) -> None:
@@ -2963,10 +3018,10 @@ class DMFCompiler(DMFVisitor):
             monitor.interactive_volume = volume
         SpecialVars[name] = MonitorVariable(name, Type.VOLUME, getter=get_volume, setter=set_volume)
         
-        name = "none"
+        name = "missing"
         def get_none(env: Environment) -> None: # @UnusedVariable
             return None
-        SpecialVars["none"] = Constant(Type.NONE, None)
+        SpecialVars["missing"] = Constant(Type.MISSING, None)
         
         name = "the board"
         def get_board(env: Environment) -> Board:

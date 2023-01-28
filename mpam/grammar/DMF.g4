@@ -124,7 +124,10 @@ expr
 //  | 'heater' '#' which=expr			 # heater_expr
   | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
   | quant=expr 'as' 'a'? 'string' 'in' dim_unit # unit_string_expr
-  | obj=expr ATTR attr             # attr_expr
+  | obj=expr ATTR attr existence?      # attr_expr
+  | obj=expr ATTR MAYBE? attr             # attr_expr
+  | obj=expr ATTR '(' MAYBE ')' attr             # attr_expr
+  | val=expr existence                   # existence_expr
   | start_dir=expr 'turned' turn          # turn_expr
   | dist=expr 'in' ('dir' | 'direction') d=expr # in_dir_expr
   | INT rc[$INT.int]           # const_rc_expr
@@ -137,7 +140,7 @@ expr
   | lhs=expr (MUL | DIV) rhs=expr    # muldiv_expr 
   | lhs=expr (ADD | SUB) rhs=expr    # addsub_expr
   | lhs=expr rel rhs=expr            # rel_expr
-  | obj=expr 'has' ('a' | 'an') attr # has_expr
+  | obj=expr possession ('a' | 'an') attr # has_expr
   | obj=expr ('is' NOT? | ISNT) pred=expr     # is_expr
   | 'not' expr                       # not_expr
   | lhs=expr 'and' rhs=expr          # and_expr
@@ -172,6 +175,21 @@ expr
   | string # string_lit_expr
   | INT                              # int_expr
   | FLOAT							 # float_expr
+  ;
+  
+existence returns [bool polarity]
+  : 'exists' {$ctx.polarity=True}
+  | 'does' 'not' 'exist' {$ctx.polarity=False}
+  | 'doesn\'t' 'exist' {$ctx.polarity=False}
+  | 'is missing' {$ctx.polarity=False}
+  | 'is' 'not' 'missing' {$ctx.polarity=True}
+  | 'isn\'t' 'missing' {$ctx.polarity=True}
+  ;
+  
+possession returns [bool polarity]
+  : 'has' {$ctx.polarity=True}
+  | 'does' 'not' 'have' {$ctx.polarity=False}
+  | 'doesn\'t' 'have' {$ctx.polarity=False}
   ;
 
 reagent returns [Reagent r]
@@ -233,6 +251,12 @@ no_arg_action returns[str which]
   ;
   
 param_type returns[Type type]
+  : MAYBE base_param_type {$ctx.type=$base_param_type.type.maybe}
+  | '(' MAYBE ')' base_param_type {$ctx.type=$base_param_type.type.maybe}
+  | base_param_type {$ctx.type=$base_param_type.type}
+  ;
+
+base_param_type returns[Type type]
   : 'drop' {$ctx.type=Type.DROP}
   | 'pad'  {$ctx.type=Type.PAD}
   | 'well' {$ctx.type=Type.WELL}
@@ -338,7 +362,8 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
   | 'min' | 'max' | 'minimum' | 'maximum'
   | 'diff' | 'difference' | 'delta' | 'point'
   | 'index' | 'base' | 'dispense' | 'enter'
-  | 'reset' | 'magnets' | 'pads' | 'heaters' | 'chillers' | 'all' 
+  | 'reset' | 'magnets' | 'pads' | 'heaters' | 'chillers' | 'all'
+  | 'missing' 
   ;
 
 string : STRING ;
@@ -362,3 +387,4 @@ UNTIL: 'until';
 WHILE: 'while';
 CLOSE_BRACKET: ']';
 CLOSE_PAREN: ')';
+MAYBE: 'maybe';
