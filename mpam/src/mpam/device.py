@@ -4946,7 +4946,9 @@ class Board(SystemComponent):
             high = self._amb_threshold(at, True)
             return temp <= high
 
-    def print_blobs(self) -> None:
+    def print_blobs(self, *, force: bool = False) -> None:
+        if not force and not self.trace_blobs:
+            return
         from mpam.drop import Blob # @Reimport
         print("--------------")
         print("Blobs on board")
@@ -4971,8 +4973,7 @@ class Board(SystemComponent):
 
     def infer_drop_motion(self) -> None:
         self.replace_change_journal().process_changes()
-        if self.trace_blobs:
-            self.print_blobs()
+        self.print_blobs()
 
     def journal_state_change(self, pad: DropLoc, new_state: OnOff) -> None:
         self.change_journal.change_to(pad, new_state)

@@ -5,7 +5,7 @@ import logging
 from mpam import exerciser
 from mpam.pipettor import Pipettor, Transfer, PipettingSource
 from argparse import Namespace
-from mpam.types import XferDir, Reagent
+from mpam.types import XferDir, Reagent, Postable
 from typing import Final, Mapping, Sequence
 from _collections import defaultdict
 from erk.stringutils import conj_str
@@ -74,13 +74,14 @@ class ManualPipettor(Pipettor):
             vol = target.volume
             target.in_position(reagent, vol)
             if transfer.xfer_dir is XferDir.FILL:
-                print(f"Please add {vol:g} of {reagent}{sdesc} to {loc}.")
+                msg = f"Please add {vol:g} of {reagent}{sdesc} to {loc}."
                 self._adjust_source(vol, sources)
             else:
                 product = "product " if transfer.is_product else ""
-                print(f"Please remove {vol:g} of {product}{reagent} from {loc}")
-            print("Hit return when done.")
-            input()
+                msg = f"Please remove {vol:g} of {product}{reagent} from {loc}"
+            future = Postable[None]()
+            self.system.prompt_and_wait(future, prompt = msg)
+            future.wait()
             target.finished(reagent, vol)
         for target in transfer.targets:
             target.finished_overall_transfer(reagent)

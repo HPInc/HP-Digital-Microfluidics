@@ -756,7 +756,7 @@ class ClickHandler:
             self.changes.clear()
             self.scheduled = False
 
-    def process_shift_clicl(self, target: ClickableMonitor, *, with_control: bool) -> None:
+    def process_shift_click(self, target: ClickableMonitor, *, with_control: bool) -> None:
         assert isinstance(target, PadMonitor) or isinstance(target, WellPadMonitor)
         pad = target.pad
         change_journal = ChangeJournal()
@@ -787,7 +787,7 @@ class ClickHandler:
     def process_click(self, target: ClickableMonitor, *, with_control: bool, with_shift: bool) -> None:
         with self.lock:
             if with_shift:
-                self.process_shift_clicl(target, with_control=with_control)
+                self.process_shift_click(target, with_control=with_control)
                 return
 
             selecting = self.prepare(target)

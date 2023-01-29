@@ -377,6 +377,10 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
     worker: Worker
 
     xfer_sched: Final[TransferSchedule]
+    
+    @property
+    def system(self) -> System:
+        return self.sys_cpt.system
 
     def __init__(self, *, name: str="Pipettor") -> None:
         self.sys_cpt = PipettorSysCpt(self)
