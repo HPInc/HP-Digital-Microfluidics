@@ -2286,11 +2286,8 @@ class DMFCompiler(DMFVisitor):
         second = self.visit(ctx.second)
         if e := self.type_check(Type.BOOL, cond, ctx.cond):
             return e
-        if self.compatible(first.return_type, second.return_type):
-            result_type = second.return_type
-        elif second.return_type < first.return_type:
-            result_type = first.return_type
-        else:
+        result_type = Type.upper_bound(first.return_type, second.return_type)
+        if result_type is Type.NO_VALUE:
             t1 = first.return_type.name
             t2 = second.return_type.name
             return self.error(ctx, Type.ANY, 

@@ -367,9 +367,10 @@ class Type:
                 
                 remove = set[Type]()
                 for c1 in candidates:
-                    for c2 in candidates:
-                        if c1 < c2:
-                            remove.add(c2)
+                    if c1 not in remove:
+                        for c2 in candidates:
+                            if c2 not in remove and c1 < c2:
+                                remove.add(c2)
                 candidates -= remove
                 if maybe:
                     bounds = tuple(c.maybe for c in candidates)
@@ -405,7 +406,9 @@ class Type:
         return converter(val)
     
     def can_convert_to(self, want: Type) -> bool:
-        if self is want or want is Type.ANY:
+        if self is want or want is Type.NO_VALUE:
+            return True
+        if want is Type.ANY and self is not Type.NO_VALUE:
             return True
         return self._conversion_to(want) is not SpecialValueConverter.NO_CONVERSION
     
