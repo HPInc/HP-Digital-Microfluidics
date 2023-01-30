@@ -74,7 +74,8 @@ stat
      ('else' else_body=compound)?              # if_stat
   | expr TERMINATOR      # expr_stat
   | loop                 # loop_stat
-  | exit TERMINATOR      # exit_stat 
+  | exit TERMINATOR      # exit_stat
+  | ret TERMINATOR # return_stat 
   | compound             # compound_stat
   ;
   
@@ -106,6 +107,10 @@ loop
   
 exit
   : 'exit' (loop_name=name)? 'loop'
+  ;
+  
+ret
+  : 'return' expr?
   ;
   
 term_punct returns [bool is_closed]
@@ -228,7 +233,7 @@ macro_def
   ;
   
 macro_header
-  : 'macro' '(' (param (',' param)*)? ')'
+  : 'macro' '(' (param (',' param)*)? ')' ('->' ret_type=param_type)?
   ;
   
 param returns[Type type, str pname, int n, bool deprecated]

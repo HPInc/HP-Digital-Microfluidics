@@ -17,7 +17,7 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
-    Val_
+    Val_, LoopExitType
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc
@@ -102,6 +102,13 @@ class LoopExit(ControlTransfer):
     
     def __init__(self, name: Optional[str] = None) -> None:
         self.name = name
+        
+class MacroReturn(ControlTransfer):
+    value: Final[Any]
+    
+    def __init__(self, value: Any) -> None:
+        self.value = value
+            
 
 class Scope(Generic[Name_, Val_]):
     parent: Optional[Scope[Name_,Val_]]
@@ -231,8 +238,8 @@ TypeMap = Scope[str, Type]
 
 class ControlScope:
     parent: Final[Optional[ControlScope]]
-    return_ok: Final[bool]
     visible_loops: Final[Sequence[str]]
+    return_type: Final[Optional[Type]]
     
     @property
     def in_loop(self) -> bool:
@@ -240,15 +247,22 @@ class ControlScope:
     
     def __init__(self, *,
                  parent: Optional[ControlScope] = None,
-                 is_macro: bool = False,
+                 return_type: Optional[Type] = None,
                  loop_name: Optional[str] = None) -> None:
         self.parent = parent
-        self.return_ok = is_macro or (parent is not None and parent.return_ok)
+        self.return_type = (return_type if return_type is not None else 
+                            parent.return_type if parent is not None
+                            else None)
         parent_loops = () if parent is None else parent.visible_loops
-        self.visible_loops = () if is_macro else parent_loops if loop_name is None else (loop_name, *parent_loops)
+        self.visible_loops = (() if return_type is not None 
+                              else parent_loops if loop_name is None 
+                              else (loop_name, *parent_loops))
         
     def in_named_loop(self, name: str) -> bool:
         return name in self.visible_loops
+    
+    def named_loop_level(self, name: str) -> int:
+        return self.visible_loops.index(name)
         
     
 class ControlScopeStack:
@@ -256,7 +270,11 @@ class ControlScopeStack:
     
     @property
     def return_ok(self) -> bool:
-        return self.top.return_ok
+        return self.top.return_type is not None
+    
+    @property
+    def return_type(self) -> Optional[Type]:
+        return self.top.return_type
     
     @property
     def in_loop(self) -> bool:
@@ -268,8 +286,11 @@ class ControlScopeStack:
     def in_named_loop(self, name: str) -> bool:
         return self.top.in_named_loop(name)
     
-    def enter_macro(self) -> CSPush:
-        return CSPush(self, is_macro=True)
+    def named_loop_index(self, name: str) -> int:
+        return self.top.named_loop_level(name)
+    
+    def enter_macro(self, return_type: Type) -> CSPush:
+        return CSPush(self, return_type=return_type)
     
     def enter_loop(self, *, name: Optional[str] = None) -> CSPush:
         if name is None:
@@ -282,10 +303,10 @@ class CSPush:
     old: Final[ControlScope]
     
     def __init__(self, stack: ControlScopeStack, *, 
-                 is_macro: bool = False, loop_name: Optional[str] = None) -> None:
+                 return_type: Optional[Type] = None, loop_name: Optional[str] = None) -> None:
         self.stack = stack
         self.old = stack.top 
-        self.scope = ControlScope(parent=stack.top, is_macro=is_macro, loop_name=loop_name)
+        self.scope = ControlScope(parent=stack.top, return_type=return_type, loop_name=loop_name)
         
     def __enter__(self) -> CSPush:
         self.stack.top = self.scope
@@ -841,12 +862,12 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.TEMP_CONTROL: TemperatureControl,
         Type.HEATER: Heater,
         Type.CHILLER: Chiller,
-        Type.BOARD: Board,
+        Type.BOARD: Board, 
         Type.POWER_SUPPLY: PowerSupply,
         Type.VOLTAGE: Voltage,
         Type.POWER_MODE: PowerMode,
         Type.MISSING: type(None),
-    }
+   }
 
 for t,reps in rep_types.items():
     t.set_rep_type(reps)
@@ -1240,7 +1261,7 @@ class DMFInterpreter:
         self.globals = Environment(None, board=board)
         self.namespace = TypeMap(None)
         for file_name in file_names:
-            print(f"Loding macro file '{file_name}'")
+            print(f"Loading macro file '{file_name}'")
             parser = self.get_parser(FileStream(file_name, encoding, errors))
             tree = parser.macro_file()
             assert isinstance(tree, DMFParser.Macro_fileContext)
@@ -1334,7 +1355,7 @@ class DMFCompiler(DMFVisitor):
               value: Optional[Callable[[Environment], Any]] = None) -> Executable:
         if not isinstance(msg, str):
             msg = msg(self.text_of(ctx))
-        print(f"line {ctx.start.line}:{ctx.start.column} {msg}")
+        print(f"ERROR: line {ctx.start.line}:{ctx.start.column} {msg}")
         return self.error_val(return_type, value)
 
     def print_warning(self, 
@@ -1342,7 +1363,7 @@ class DMFCompiler(DMFVisitor):
                       msg: Union[str, Callable[[str], str]]) -> None:
         if not isinstance(msg, str):
             msg = msg(self.text_of(ctx))
-        print(f"line {ctx.start.line}:{ctx.start.column} {msg}")
+        print(f"WARNING: line {ctx.start.line}:{ctx.start.column} {msg}")
         
     
     def not_yet_implemented(self,
@@ -1683,9 +1704,7 @@ class DMFCompiler(DMFVisitor):
                 if var_type < Type.BINARY_STATE:
                     var_type = Type.BINARY_STATE
                 if not self.current_types.is_top_level:
-                    self.error(ctx, var_type,
-                               lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}"
-                               )
+                    self.print_warning(ctx, lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}")
             else:
                 var_type = vt
                 new_decl = False
@@ -1801,8 +1820,7 @@ class DMFCompiler(DMFVisitor):
             if old_type is not new_type:
                 return self.error(ctx, var_type, 
                                   lambda text: f"{name} redeclared as {new_type}, was {old_type}: {text}")
-            self.error(ctx, var_type,
-                       lambda text: f"{name} already declared in scope: {text}")
+            self.print_warning(ctx, lambda text: f"{name} already declared in scope: {text}")
             just_assign = True
         if (value is None or not value.contains_error) and not just_assign:
             self.current_types.define(name, var_type)            
@@ -1881,7 +1899,16 @@ class DMFCompiler(DMFVisitor):
         with self.current_types.push():
             stat_execs = tuple(self.visit(sc) for sc in stat_contexts)
             
-        ret_type = Type.NO_VALUE if len(stat_execs) == 0 else stat_execs[-1].return_type
+        ret_type = Type.NO_VALUE
+        
+        for i in range(len(stat_execs)):
+            if ret_type.is_control:
+                self.print_warning(stat_contexts[i], lambda txt: f"Statement is unreachable, ignoring: {txt}") # @UnusedVariable
+                stat_execs = stat_execs[:i]
+                break
+            rt = stat_execs[i].return_type
+            if rt.is_control:
+                ret_type = rt
 
         def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
@@ -1911,7 +1938,21 @@ class DMFCompiler(DMFVisitor):
         with self.current_types.push():
             stat_execs = tuple(self.visit(sc) for sc in stat_contexts)
             
-        ret_type = Type.NO_VALUE
+        
+        rts = [ex.return_type for ex in stat_execs]
+        ret_type = (Type.MACRO_RETURN if Type.MACRO_RETURN in rts
+                    else Type.UNNAMED_LOOP_EXIT if Type.UNNAMED_LOOP_EXIT in rts
+                    else Type.NO_VALUE)
+        # If we're NO_VALUE, we may still have named loop exits.  We need to
+        # pick the narrowest.
+        if ret_type is Type.NO_VALUE:
+            named_loop_exits = [t for t in rts if isinstance(t, LoopExitType)]
+            if named_loop_exits:
+                ret_type = named_loop_exits[0]
+                for let in named_loop_exits[1:]:
+                    if let.nested_levels < ret_type.nested_levels:
+                        ret_type = let
+                
         
         def run(env: Environment) -> Delayed[MaybeError[None]]:
             if len(stat_execs) == 0:
@@ -1931,12 +1972,15 @@ class DMFCompiler(DMFVisitor):
                     if error is None:
                         first = True
                         error = ex
-                    if first:
-                        # Firing the barrier will post the trigger_future, which
-                        # will cause future to return the error we just set. It
-                        # will fire again when all the statements reach it, but
-                        # nobody will be waiting.
-                        barrier.fire()
+                if first:
+                    # Firing the barrier will post the trigger_future, which
+                    # will cause future to return the error we just set. It
+                    # will fire again when all the statements reach it, but
+                    # nobody will be waiting.
+                    barrier.fire()
+                else:
+                    if not isinstance(ex, ControlTransfer):
+                        print(f"Uncaught error in parallel block ({type(ex).__name__}): {ex}")
             
             with env.board.system.batched():
                 def reach_barrier(maybe_error: MaybeError[None]) -> None:
@@ -2035,6 +2079,14 @@ class DMFCompiler(DMFVisitor):
         name = None if name_ctx is None else cast(str, name_ctx.val)
         with self.control_stack.enter_loop(name=name):
             body_exec = loop_type.compile_body(body)
+            
+        return_type = body_exec.return_type
+        # An exit from this loop (unnamed or one that matches our name) turns
+        # into a NO_VALUE for the loop as a whole.  Any other exit makes the
+        # entire loop be an exit.
+        if isinstance(return_type, LoopExitType):
+            levels = return_type.nested_levels
+            return_type = Type.NO_VALUE if levels == 0 else LoopExitType.for_level(levels-1)
         def run(env: Environment) -> Delayed[MaybeError[None]]:
             env = loop_type.header_env(env)
             test_iter = loop_type.test(env)
@@ -2059,7 +2111,7 @@ class DMFCompiler(DMFVisitor):
                 return test_val.chain(check)
             return do_pass(None)
             
-        return Executable(Type.NO_VALUE, run, (*loop_type.based_on(), body_exec))
+        return Executable(return_type, run, (*loop_type.based_on(), body_exec))
     
 
     def visitExit_stat(self, ctx:DMFParser.Exit_statContext) -> Executable:
@@ -2071,9 +2123,46 @@ class DMFCompiler(DMFVisitor):
         if not self.control_stack.in_loop:
             return self.error(ctx, Type.NO_VALUE, "Loop exit statement not within loop")
         if name is not None and not self.control_stack.in_named_loop(name):
-            return self.error(ctx, Type.NO_VALUE, f"Not within loop named '{name}'")
-        return Executable.constant(Type.NO_VALUE, LoopExit(name))
+            return self.error(ctx, Type.UNNAMED_LOOP_EXIT, f"Not within loop named '{name}'")
+        if name is None:
+            ret_type = Type.UNNAMED_LOOP_EXIT
+        else:
+            n = self.control_stack.named_loop_index(name)
+            ret_type = LoopExitType.for_level(n)
+        return Executable.constant(ret_type, LoopExit(name))
         
+    def visitReturn_stat(self, ctx:DMFParser.Return_statContext) -> Executable:
+        return self.visit(ctx.ret())
+    
+    def visitRet(self, ctx:DMFParser.RetContext) -> Executable:
+        value_ctx: Optional[DMFParser.ExprContext] = ctx.expr()
+        return_type = self.control_stack.return_type
+        if return_type is None:
+            return self.error(ctx, Type.NO_VALUE, "Return statement not within macro")
+
+        if value_ctx is None:
+            if return_type is not Type.NO_VALUE:
+                return self.error(ctx, Type.NO_VALUE, 
+                                  f"No value on return statement.  Expected {return_type.name}.")
+            return Executable.constant(Type.NO_VALUE, MacroReturn(None))
+        value = self.visit(value_ctx)
+        val_type = value.return_type
+
+        if return_type is Type.NO_VALUE:
+            return self.error(ctx, Type.MACRO_RETURN, 
+                              lambda txt: f"Returning value of type {val_type.name} from macro that does not return a value: {txt}")
+            
+        if e := self.type_check(return_type, val_type, value_ctx,
+                                lambda want,have,text:
+                                    f"Returned value must be of type {want}, was {have}: {text}",
+                                return_type = Type.MACRO_RETURN):
+            return e
+        
+        def run(env: Environment) -> Delayed[MaybeError[Any]]:
+            return value.evaluate(env, return_type).transformed(error_check(MacroReturn))
+        return Executable(Type.MACRO_RETURN, run, (value,))
+        
+    
         
     def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
@@ -2193,8 +2282,7 @@ class DMFCompiler(DMFVisitor):
         rt = sig.return_type
         ot = sig.param_types[0] 
         if not isinstance(rt, MaybeType):
-            self.error(ctx.attr(), Type.BOOL,
-                       lambda txt:  f"{txt} is not a 'maybe' attribute. 'has' will always return True.")
+            self.print_warning(ctx.attr(), lambda txt:  f"{txt} is not a 'maybe' attribute. 'has' will always return True.")
             return Executable(Type.BOOL, (to_const(Delayed.complete(True))), (obj,))
         def run(env: Environment) -> Delayed[MaybeError[bool]]:
             def check(v: Any) -> MaybeError[bool]:
@@ -2564,11 +2652,9 @@ class DMFCompiler(DMFVisitor):
             if builtin is not None:
                 return self.use_function(builtin, ctx, ctx.args)
         func_exec = self.visit(fc)
-        f_type = func_exec.return_type
-        if f_type is Type.DIR:
-            f_type = Type.DELTA
-        if not isinstance(f_type, CallableType):
-            return self.error(fc, Type.NO_VALUE, lambda text: f"Not callable ({f_type.name}): {text}")
+        f_type = func_exec.return_type.as_func_type
+        if f_type is None:
+            return self.error(fc, Type.NO_VALUE, lambda text: f"Not callable ({func_exec.return_type.name}): {text}")
         ret_type = f_type.return_type
         param_types = f_type.param_types
         if len(param_types) != len(arg_execs):
@@ -2582,9 +2668,16 @@ class DMFCompiler(DMFVisitor):
                 ae = arg_execs[i]
                 pt = param_types[i]
                 return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
+            
+        def catch_return(val: MaybeError[Any]) -> Any:
+            if isinstance(val, MacroReturn):
+                return val.value
+            # Either it's a fall-off-the-end value, which should only be allowed
+            # if it's okay, or it's some other error, which we should propagate.
+            return val
         
         def dispatch(fn: CallableValue, *args: Sequence[Any]) -> Delayed[Any]:
-            return fn.apply(args)
+            return fn.apply(args).transformed(catch_return)
         
         # fn_exec = Executable(f_type, lambda env: Delayed.complete(env[f_name]), ())
         
@@ -2656,7 +2749,7 @@ class DMFCompiler(DMFVisitor):
         return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
 
     def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
-        header: DMFParser.Macro_defContext = ctx.macro_header()
+        header: DMFParser.Macro_headerContext = ctx.macro_header()
         param_contexts: Sequence[DMFParser.ParamContext] = header.param()
         
         for pc in param_contexts:
@@ -2667,19 +2760,26 @@ class DMFCompiler(DMFVisitor):
         param_names = tuple(pdef[0] for pdef in param_defs)
         param_types = tuple(pdef[1] for pdef in param_defs)
         
+        return_type_context: Optional[DMFParser.Param_typeContext] = header.ret_type
+        return_type = Type.NO_VALUE if return_type_context is None else cast(Type, return_type_context.type)
+        
         if e := self.check_macro_params(param_names, param_types, param_contexts):
             return e
         
         # Unfortunately, you can't put parens around multiple with clauses until
         # Python 3.10.
         with self.current_types.push(dict(param_defs)), \
-             self.control_stack.enter_macro(): 
+             self.control_stack.enter_macro(return_type): 
             body: Executable
             if ctx.compound() is not None:
                 body = self.visit(ctx.compound())
             else:
                 body = self.visit(ctx.expr())
-            macro_type = CallableType.find(param_types, body.return_type)
+        
+        body_type = body.return_type
+        macro_type = CallableType.find(param_types, return_type)
+        if return_type is not Type.NO_VALUE and body_type is not Type.MACRO_RETURN:
+            return self.error(ctx, macro_type, "Macro does not return a value.")
         
         def run(env: Environment) -> Delayed[MacroValue]: # @UnusedVariable
             return Delayed.complete(MacroValue(macro_type, env, param_names, body))

@@ -19,7 +19,7 @@ ensure_drop = macro(well w) {
   }
 };
 
-dispense = macro(well w) {
+dispense = macro(well w) -> drop {
   w : ensure_drop;
   
   [[ w[3]: on; w[4]: on; w[5]: on; w[6]: on; w[7]: off;]]
@@ -29,15 +29,15 @@ dispense = macro(well w) {
   [[ w[1]: off;  w[4]: on; ]] 
   [[ w[3]: on; w[5]: on; w[6]: on; ]] 
   [[ w's gate: off; w's exit pad: on; ]]
-  w's exit pad's drop;
+  return w's exit pad's drop;
 };
 
-safe_direction = macro(well w) {
-  down if (w == well #0 
-           or w == well #2
-           or w == well #4
-           or w == well #6)
-       else up;
+safe_direction = macro(well w) -> direction {
+  return down if (w == well #0 
+           		  or w == well #2
+           		  or w == well #4
+                  or w == well #6)
+         else up;
 };
 
 
@@ -74,12 +74,12 @@ d8d = macro(well w) {
   w : dispense : 3 in dir safe : 0 in dir fwd; 
 };
 
-mix = macro(pad center, dir to_d1, dir to_d2) {
+mix = macro(pad center, dir to_d1, dir to_d2) -> drop {
   [[
      (center + to_d1)'s drop : unsafe_walk(to_d1 turned around);
      (center + to_d2)'s drop : unsafe_walk(to_d2 turned around);
   ]]
-  center's drop;
+  return center's drop;
 };
 
 collide = macro(well 1, well 2, pad dest, dir to_d1) {

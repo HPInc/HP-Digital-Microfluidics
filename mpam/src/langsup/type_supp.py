@@ -10,10 +10,11 @@ from _collections import defaultdict
 from quantities.core import Unit, qstr
 import typing
 from functools import cached_property
-from threading import RLock
+from threading import RLock, Lock
 import logging
 from erk.stringutils import conj_str
 from abc import ABC, abstractmethod
+from erk.basic import ComputedDefaultDict
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,7 @@ class Type:
     
     _conversions: Final[dict[Type, _Converter]]
     _maybe: Optional[MaybeType] = None
+    is_control: bool
     
     _class_lock: Final = RLock()
     
@@ -132,6 +134,8 @@ class Type:
     VOLTAGE: ClassVar[Type]
     POWER_MODE: ClassVar[Type]
     FAN: ClassVar[Type]
+    UNNAMED_LOOP_EXIT: ClassVar[LoopExitType]
+    MACRO_RETURN: ClassVar[Type]
     
     # @cached_property
     # def as_callable_type(self) -> Optional[CallableType]:
@@ -140,7 +144,8 @@ class Type:
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
                  as_func_type: Optional[CallableType] = None,
-                 rep_types: TypeRepSpec = ()):
+                 rep_types: TypeRepSpec = (),
+                 is_control: Optional[bool] = None):
         self.name = name
         if supers is None:
             supers = (Type.ANY,)
@@ -150,6 +155,7 @@ class Type:
         self.all_subs = []
         self.rep_types = _trs_to_tuple(rep_types)
         self._conversions = {}
+        self.is_control = any(t.is_control for t in supers) if is_control is None else is_control
         
         if as_func_type is None:
             super_func_types = set(s.as_func_type for s in supers if s.as_func_type is not None)
@@ -343,40 +349,61 @@ class Type:
             return vc
 
     _known_bounds: Final = dict[tuple['Type',...], Sequence['Type']]()
+    
+    @classmethod
+    def tightest_control_bound(cls, *types: Type) -> Type:
+        best = types[0]
+        for t in types[1:]:
+            if t is Type.MACRO_RETURN and best is Type.NO_VALUE:
+                best = t
+            elif isinstance(t, LoopExitType):
+                if not isinstance(best, LoopExitType) or t.nested_levels < best.nested_levels:
+                    best = t
+        return best
+        
         
     @classmethod
     def upper_bounds(cls, *types: Type) -> Sequence[Type]:
-        maybe = any(isinstance(t, MaybeType) for t in types)
-        if maybe:
-            type_set = set(t.if_there_type if isinstance(t, MaybeType) else t for t in types)
-            type_set.discard(Type.MISSING)
-        else:
-            type_set = set(types)
-        if len(type_set) == 1:
-            return (types[0].maybe,) if maybe else (types[0],)
-        if len(type_set) == 0:
-            return ()
-
-        key = tuple(type_set)
-        bounds = cls._known_bounds.get(key, None)
-        
+        bounds = cls._known_bounds.get(types, None)
         if bounds is None:
             with cls._class_lock:
-                candidates = {key[0], *key[0].all_supers}
-                candidates.intersection_update(*({t, *t.all_supers} for t in key[1:]))            
-                
-                remove = set[Type]()
-                for c1 in candidates:
-                    if c1 not in remove:
-                        for c2 in candidates:
-                            if c2 not in remove and c1 < c2:
-                                remove.add(c2)
-                candidates -= remove
+                maybe = any(isinstance(t, MaybeType) for t in types)
                 if maybe:
-                    bounds = tuple(c.maybe for c in candidates)
+                    type_set = set(t.if_there_type if isinstance(t, MaybeType) else t for t in types)
+                    type_set.discard(Type.MISSING)
+                    bounds = cls.upper_bounds(*type_set)
+                    bounds = tuple({t.maybe for t in bounds})
                 else:
-                    bounds = tuple(candidates)
-                cls._known_bounds[key] = bounds
+                    type_set = set(types)
+            
+                    if len(type_set) == 1:
+                        bounds = (types[0],)
+                    elif len(type_set) == 0:
+                        bounds = ()
+                    else:
+                        candidates = {types[0], *types[0].all_supers}
+                        candidates.intersection_update(*({t, *t.all_supers} for t in types[1:]))            
+                        
+                        all_control = all(t.is_control for t in candidates)
+                        if all_control:
+                            bounds = (cls.tightest_control_bound(*candidates),)
+                        else:
+                            remove = set[Type]()
+                            def still_ok(ct: Type) -> bool:
+                                if ct in remove:
+                                    return False
+                                if ct.is_control:
+                                    remove.add(ct)
+                                    return False
+                                return True
+                            for c1 in candidates:
+                                if still_ok(c1):
+                                    for c2 in candidates:
+                                        if still_ok(c2) and c1 < c2:
+                                            remove.add(c2)
+                            candidates -= remove
+                            bounds = tuple(candidates)
+                cls._known_bounds[types] = bounds
         return bounds
     
     @classmethod
@@ -462,6 +489,25 @@ Type.POWER_SUPPLY = Type("POWER_SUPPLY", [Type.BINARY_CPT])
 Type.VOLTAGE = Type("VOLTAGE")
 Type.POWER_MODE = Type("POWER_MODE")
 Type.FAN = Type("FAN", [Type.BINARY_CPT])
+Type.MACRO_RETURN = Type("MACRO_RETURN", is_control=True)
+
+
+class LoopExitType(Type):
+    nested_levels: Final[int]
+    def __init__(self, nested_levels: int) -> None:
+        name = "LOOP_EXIT" if nested_levels == 0 else f"LOOP_EXIT({nested_levels})"
+        super().__init__(name, is_control = True)
+        self.nested_levels = nested_levels
+        
+    _lock: Final = Lock()
+    _known: ClassVar[dict[int, LoopExitType]]
+    @classmethod
+    def for_level(cls, n: int) -> LoopExitType:
+        with cls._lock:
+            return cls._known[n]
+        
+LoopExitType._known = ComputedDefaultDict(LoopExitType)
+Type.UNNAMED_LOOP_EXIT = LoopExitType.for_level(0)
 
 class MaybeType(Type):
     if_there_type: Final[Type]
