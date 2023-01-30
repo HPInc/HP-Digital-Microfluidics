@@ -5383,6 +5383,7 @@ class System:
                                from_code=config_params
                                )
         self.monitor = monitor
+        # print(f"System's monitor is {monitor}")
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),
                            min_time = min_time,

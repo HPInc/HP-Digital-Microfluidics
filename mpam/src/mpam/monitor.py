@@ -901,8 +901,10 @@ class BoardMonitor:
     macro_file_names: Final[Sequence[str]]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
-    default_cmd_line_args = Namespace(highlight_reservations=False)
+    default_cmd_line_args = Namespace(highlight_reservations=False, 
+                                      trace_clicks=False)
     config_params: Final[ConfigParams]
+    last_clicked: Optional[BinaryComponent] = None
 
     _control_widgets: Final[Any]
 
@@ -942,6 +944,7 @@ class BoardMonitor:
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                  control_fraction: Optional[float] = None,
                  macro_file_names: Optional[list[str]] = None) -> None:
+        # print(f"Creating {self}.")
         self.board = board
         self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
                                           cmd_line = cmd_line_args,
@@ -1001,7 +1004,10 @@ class BoardMonitor:
                 with_control, with_shift = self.modifiers[key]
                 # with_control = key == "control" or key == "ctrl+shift"
                 # with_shift = key == "shift" or key == "ctrl+shift"
-                print(f"Clicked on {target} (modifiers: {key})")
+                if self.config_params.trace_clicks:
+                    print(f"Clicked on {target} (modifiers: {key})")
+                # print(f"  Monitor is {self}")
+                self.last_clicked = target.component
                 self.click_handler.process_click(target,
                                                  with_control=with_control,
                                                  with_shift=with_shift)
@@ -1032,6 +1038,11 @@ class BoardMonitor:
                            default=defaults.highlight_reservations,
                            help='''
                            Highlight reserved pads on the display.
+                           ''')
+        group.add_argument('--trace-clicks', action=BooleanOptionalAction,
+                           default=defaults.trace_clicks,
+                           help='''
+                           Trace clicks to console.
                            ''')
 
 
@@ -1183,7 +1194,7 @@ class BoardMonitor:
             def print_result(pair: tuple[dmf_lang.Type, Any]) -> None:
                 ret_type, val = pair
                 if ret_type is dmf_lang.Type.ERROR:
-                    assert isinstance(val, dmf_lang.EvaluationError)
+                    # assert isinstance(val, dmf_lang.EvaluationError)
                     print(f"  Caught exception ({type(val).__name__}): {val}")
                 elif ret_type is dmf_lang.Type.NO_VALUE:
                     print(f"  Interactive command returned without value.")

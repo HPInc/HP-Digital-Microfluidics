@@ -353,6 +353,8 @@ multi_word_name returns[str val]
   | 'the'? 'interactive' 'volume' {$ctx.val="interactive volume"}
   | 'the' 'board' {$ctx.val="the board"}
   | 'the'? 'index' 'base' {$ctx.val="index base"}
+  | 'the'? 'last'? 'clicked' 'pad'{$ctx.val="clicked pad"}
+  | 'the'? 'last'? 'clicked' 'drop'{$ctx.val="clicked drop"}
   | 'dispense' 'drop' {$ctx.val="dispense drop"}
   | 'enter' 'well' {$ctx.val="enter well"}
   ;
@@ -363,7 +365,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
   | 'diff' | 'difference' | 'delta' | 'point'
   | 'index' | 'base' | 'dispense' | 'enter'
   | 'reset' | 'magnets' | 'pads' | 'heaters' | 'chillers' | 'all'
-  | 'missing' 
+  | 'missing' | 'last' | 'clicked' 
   ;
 
 string : STRING ;

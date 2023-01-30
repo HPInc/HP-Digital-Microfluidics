@@ -20,7 +20,7 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Val_
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
-    Heater, System
+    Heater, System, DropLoc
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -212,6 +212,7 @@ class Environment(Scope[str, Any]):
     @property
     def monitor(self) -> Optional[BoardMonitor]:
         system = self.board.system
+        print(f"Monitor used is {system.monitor}")
         return system.monitor
     
     def __init__(self, parent: Optional[Scope[str, Any]], 
@@ -3014,6 +3015,24 @@ class DMFCompiler(DMFVisitor):
         def set_volume(monitor: BoardMonitor, volume: Volume) -> None:
             monitor.interactive_volume = volume
         SpecialVars[name] = MonitorVariable(name, Type.VOLUME, getter=get_volume, setter=set_volume)
+        
+        name = "clicked pad"
+        def get_clicked_pad(monitor: BoardMonitor) -> Optional[Pad]:
+            # print(f"Monitor looked in is {monitor}")
+            c: Optional[BinaryComponent] = monitor.last_clicked
+            # print(f"  Last clicked is {c}")
+            return c if c is not None and isinstance(c, Pad) else None
+        SpecialVars[name] = MonitorVariable(name, Type.PAD.maybe, getter=get_clicked_pad)
+        SpecialVars["clicked"] = SpecialVars[name]
+        
+        name = "clicked drop"
+        def get_clicked_drop(monitor: BoardMonitor) -> Optional[Drop]:
+            c: Optional[BinaryComponent] = monitor.last_clicked
+            return c.drop if c is not None and isinstance(c, DropLoc) else None
+            
+        SpecialVars[name] = MonitorVariable(name, Type.DROP.maybe, getter=get_clicked_drop)
+        
+        
         
         name = "missing"
         def get_none(env: Environment) -> None: # @UnusedVariable
