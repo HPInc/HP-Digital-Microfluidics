@@ -17,10 +17,10 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
-    Val_, LoopExitType
+    Val_, LoopExitType, ByNameCache
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
-    Heater, System, DropLoc, ExtractionPoint, PipettingTarget
+    Heater, System, DropLoc, ExtractionPoint
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 Name_ = TypeVar("Name_", bound=Hashable)
 
+T_ = TypeVar("T_")
 
 
 class CompilationError(RuntimeError): ...
@@ -643,16 +644,6 @@ class ScaledReagent(NamedTuple):
         ratio = self.mult/rhs.mult
         return Mixture.find_or_compute(self.reagent, rhs.reagent, ratio=ratio)
 
-K_ = TypeVar("K_")
-V_ = TypeVar("V_")
-T_ = TypeVar("T_")
-class ByNameCache(dict[K_,V_]):
-    def __init__(self, factory: Callable[[K_], V_]):
-        self.factory = factory
-    def __missing__(self, key: K_) -> V_:
-        ret: V_ = self.factory(key)
-        self[key] = ret
-        return ret
 
 Functions = ByNameCache[str, Func](lambda name: Func(name))
 Attributes = ByNameCache[str, Attr](lambda name: Attr(Functions[f"'{name}' attribute"]))
@@ -846,7 +837,7 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.PAD: Pad,
         Type.WELL_PAD: WellPad,
         Type.WELL_GATE: WellGate,
-        Type.PIPETTING_TARGET: PipettingTarget,
+        Type.PIPETTING_TARGET: (Well, ExtractionPoint),
         Type.WELL: Well,
         Type.EXTRACTION_POINT: ExtractionPoint,
         Type.DELTA: DeltaValue,
@@ -3109,19 +3100,27 @@ class DMFCompiler(DMFVisitor):
         fn.register((Type.DROP,), Type.NO_VALUE, enter_well)        
         
         fn = Functions["#transfer in"]
+        # def add_liquid(target: Union[Well,ExtractionPoint], liquid: Liquid, *,
+        #                result: Optional[Reagent] = None) -> Delayed[Well]:
+        #     if isinstance(target, Well):
+        #         return target.add(liquid.reagent, liquid.volume, mix_result=result)
+        #     else:
+        #         path = Path.teleport_into(target, liquid=liquid, mix_result=result)
+        #         return path.schedule()
+                
         def add_liquid_to_well(w: Well, liquid: Liquid, *,
                                result: Optional[Reagent] = None) -> Delayed[Well]:
             return w.add(liquid.reagent, liquid.volume, mix_result=result)
-        fn.register((Type.WELL, Type.LIQUID), Type.WELL, add_liquid_to_well)
+        fn.register((Type.WELL, Type.LIQUID), Type.WELL, add_liquid_to_well, curry_at=0)
         fn.register((Type.WELL, Type.LIQUID, Type.REAGENT), Type.WELL,
-                    lambda w,l,r: add_liquid_to_well(w, l, result=r))
+                    lambda w,l,r: add_liquid_to_well(w, l, result=r), curry_at=0)
         def add_volume_to_well(w: Well, v: Volume) -> Delayed[Well]:
             return w.add(w.reagent, v)
-        fn.register((Type.WELL, Type.VOLUME), Type.WELL, add_volume_to_well)
+        fn.register((Type.WELL, Type.VOLUME), Type.WELL, add_volume_to_well, curry_at=0)
         def add_liquid_to_ep(ep: ExtractionPoint, liquid: Liquid) -> Delayed[Drop]:
             path = Path.teleport_into(ep, liquid=liquid)
             return path.schedule()
-        fn.register((Type.EXTRACTION_POINT, Type.LIQUID), Type.DROP, add_liquid_to_ep)
+        fn.register((Type.EXTRACTION_POINT, Type.LIQUID), Type.DROP, add_liquid_to_ep, curry_at=0)
 
         # TODO: To transfer in just based on volume, we need to be able to get
         # our hands on the interactive reagent, which means we need an Environment.
@@ -3130,12 +3129,12 @@ class DMFCompiler(DMFVisitor):
                             # lambda ep,v: add_liquid_to_ep(ep, Liquid(ep, ))
         def add_reagent_to_ep(ep: ExtractionPoint, r: Reagent) -> Delayed[Drop]:
             return Path.teleport_into(ep, reagent=r).schedule()
-        fn.register((Type.EXTRACTION_POINT, Type.REAGENT), Type.DROP, add_reagent_to_ep)
+        fn.register((Type.EXTRACTION_POINT, Type.REAGENT), Type.DROP, add_reagent_to_ep, curry_at=0)
 
         fn = Functions["#transfer out"]
         def remove_volume_from_well(w: Well, v: Volume) -> Delayed[Well]:
             return w.remove(v)
-        fn.register((Type.WELL, Type.VOLUME), Type.WELL, remove_volume_from_well)
+        fn.register((Type.WELL, Type.VOLUME), Type.WELL, remove_volume_from_well, curry_at=0)
 
         def remove_liquid_from_ep(ep: ExtractionPoint, v: Optional[Volume] = None) -> Delayed[Liquid]:
             # def trace_loc(loc: ProductLocation) -> None:
@@ -3146,7 +3145,7 @@ class DMFCompiler(DMFVisitor):
             return ep.transfer_out(volume=v, is_product=True)
 
         fn.register((Type.EXTRACTION_POINT,), Type.LIQUID, remove_liquid_from_ep)
-        fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.LIQUID, remove_liquid_from_ep)
+        fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.LIQUID, remove_liquid_from_ep, curry_at=0)
         
         def remove_drop_from_ep(d: Drop) -> Delayed[Liquid]:
             if not isinstance((p:=d.pad), Pad) or (ep:=p.extraction_point) is None:
@@ -3160,7 +3159,7 @@ class DMFCompiler(DMFVisitor):
         def fill_well(w: Well, r: Optional[Reagent] = None) -> Delayed[Well]:
             return w.refill(reagent=r)
         fn.register((Type.WELL,), Type.WELL, fill_well)
-        fn.register((Type.WELL, Type.REAGENT), Type.WELL, fill_well)
+        fn.register((Type.WELL, Type.REAGENT), Type.WELL, fill_well, curry_at=0)
 
 
         fn = BuiltIns["empty"] = Functions["empty"]

@@ -690,6 +690,18 @@ class ConvertedCallableValue(CallableValue):
         converted_args = [fn(a) for fn,a in zip(self.param_converters, args)]
         future = self.cv.apply(converted_args)
         return future.transformed(self.result_converter)
+    
+class AdaptedDelayedCallableValue(CallableValue):
+    def __init__(self, sig: Signature, fn: Callable[..., Delayed[Any]]) -> None:
+        super().__init__(sig)
+        self.fn = fn
+        
+    def apply(self, args:Sequence[Any])->Delayed[Any]:
+        return self.fn(*args)
+
+class AdaptedImmediateCallableValue(AdaptedDelayedCallableValue):
+    def __init__(self, sig: Signature, fn: Callable[..., Any]) -> None:
+        super().__init__(sig, lambda *args: Delayed.complete(fn(*args)))
 
 class CallableType(Type):
     instances = dict[Signature, 'CallableType']()
@@ -856,6 +868,16 @@ Type.OFF = Type("OFF", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 #     def __hash__(self)->int:
 #         return hash(self.sig)
     
+K_ = TypeVar("K_")
+V_ = TypeVar("V_")
+T_ = TypeVar("T_")
+class ByNameCache(dict[K_,V_]):
+    def __init__(self, factory: Callable[[K_], V_]):
+        self.factory = factory
+    def __missing__(self, key: K_) -> V_:
+        ret: V_ = self.factory(key)
+        self[key] = ret
+        return ret
 
 class Func:
     Definition = Callable[..., Delayed]
@@ -864,6 +886,7 @@ class Func:
     # verb: Final[str]
     overloads: Final[dict[tuple[Type,...], tuple[Signature,Definition]]]
     type_expr_formatters: Final[dict[Optional[int], list[TypeExprFormatter]]]
+    curried_funcs: ClassVar[ByNameCache[str,Func]]
     
     def __init__(self, name: str, 
                  # *,
@@ -883,37 +906,61 @@ class Func:
     def known_sigs(self) -> Sequence[Signature]:
         return tuple(p[0] for p in self.overloads.values())
 
-    def register(self, param_types: Sequence[Type], return_type: Type, definition: Definition) -> Func:
+    def register(self, param_types: Sequence[Type], return_type: Type, definition: Definition, *,
+                 curry_at: Union[int,Sequence[int]]=()) -> Func:
         sig = Signature.of(param_types, return_type)
         self.overloads[sig.param_types] = (sig,definition)
+        if isinstance(curry_at, int):
+            curry_at=(curry_at,)
+        for curry_pos in curry_at:
+            pos = curry_pos
+            outer_param_types = list(param_types)
+            inner_param_type = outer_param_types.pop(0)
+            inner_return_type = return_type
+            outer_return_type = CallableType.find((inner_param_type,), inner_return_type)
+            # curry_name = f"{self.name}/{'x'.join(str(t) for t in outer_param_types)}"
+            def outer_fn(*outer_args: Sequence[Any]) -> CallableValue:
+                args = list(outer_args)
+                def inner_fn(inner_arg: Any) -> Delayed[Any]:
+                    args.insert(pos, inner_arg)
+                    return definition(*args)
+                return AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn)
+            self.register_immediate(outer_param_types, outer_return_type, outer_fn)
         return self
         
-    def register_immediate(self, param_types: Sequence[Type], return_type: Type, definition: Callable[..., Any]) -> Func:
+    def register_immediate(self, param_types: Sequence[Type], return_type: Type, 
+                           definition: Callable[..., Any], *,
+                           curry_at: Union[int,Sequence[int]]=()) -> Func:
         def fn(*args: Sequence[Any]) -> Delayed:
             return Delayed.complete(definition(*args))
-        return self.register(param_types, return_type, fn)
+        return self.register(param_types, return_type, fn, curry_at=curry_at)
         
     def register_all(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
-                     definition: Definition) -> Func:
+                     definition: Definition, *,
+                     curry_at: Union[int, Sequence[int]]=()) -> Func:
         for sig in sigs:
             if isinstance(sig, Signature):
                 param_types: Sequence[Type] = sig.param_types
                 return_type = sig.return_type
             else:
                 param_types, return_type = sig
-            self.register(param_types, return_type, definition)
+            self.register(param_types, return_type, definition,curry_at=curry_at)
         return self
         
     def register_all_immediate(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
-                               definition: Callable[..., Any]) -> Func:
+                               definition: Callable[..., Any], *,
+                               curry_at: Union[int, Sequence[int]]=()) -> Func:
         for sig in sigs:
             if isinstance(sig, Signature):
                 param_types: Sequence[Type] = sig.param_types
                 return_type = sig.return_type
             else:
                 param_types, return_type = sig
-            self.register_immediate(param_types, return_type, definition)
+            self.register_immediate(param_types, return_type, definition, curry_at=curry_at)
         return self
+
+        
+            
         
     def __getitem__(self, arg_types: Sequence[Type]) -> Optional[tuple[Signature, Func.Definition]]:
         d = self.overloads
@@ -987,7 +1034,8 @@ class Func:
                 elif not rt < best:
                     mismatch = True
         return default_type if mismatch or best is None else best
-                
+ 
+Func.curried_funcs = ByNameCache[str, Func](lambda name: Func(name))                
     
 class Attr:
     func: Final[Func]

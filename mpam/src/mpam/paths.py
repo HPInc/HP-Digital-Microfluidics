@@ -369,10 +369,11 @@ class Path:
     def teleport_into(cls, extraction_point: ExtractionPoint, *,
                       liquid: Optional[Liquid] = None,
                       reagent: Optional[Reagent] = None,
+                      mix_result: Optional[Union[Reagent,str]] = None,
                       after: WaitableType = NO_WAIT) -> Path.Start:
         return Path.Start(
             Path.TeleportInStep(
-                extraction_point, liquid=liquid, reagent=reagent, after=after),
+                extraction_point, liquid=liquid, reagent=reagent, after=after, mix_result=mix_result),
             ())
 
     @classmethod
@@ -516,11 +517,12 @@ class Path:
         def __init__(self, extraction_point: ExtractionPoint, *,
                      after: WaitableType,
                      liquid: Optional[Liquid] = None,
-                     reagent: Optional[Reagent] = None
+                     reagent: Optional[Reagent] = None,
+                     mix_result: Optional[Union[Reagent,str]] = None,
                      ) -> None:
             super().__init__(
                 Drop.TeleportInTo(
-                    extraction_point, liquid=liquid, reagent=reagent),
+                    extraction_point, liquid=liquid, reagent=reagent, mix_result=mix_result),
                 after=after)
     class AppearStep(StartStep):
         def __init__(self, pad: Union[Pad, XYCoord, tuple[int, int]], *,
