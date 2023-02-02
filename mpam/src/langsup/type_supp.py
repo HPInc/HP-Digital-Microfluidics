@@ -922,8 +922,10 @@ class Func:
             def outer_fn(*outer_args: Sequence[Any]) -> CallableValue:
                 args = list(outer_args)
                 def inner_fn(inner_arg: Any) -> Delayed[Any]:
-                    args.insert(pos, inner_arg)
-                    return definition(*args)
+                    # We need to copy in case we're called again
+                    local_args = list(args)
+                    local_args.insert(pos, inner_arg)
+                    return definition(*local_args)
                 return AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn)
             self.register_immediate(outer_param_types, outer_return_type, outer_fn)
         return self

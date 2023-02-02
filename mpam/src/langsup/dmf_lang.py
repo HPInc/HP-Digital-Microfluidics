@@ -444,6 +444,7 @@ class UnsafeWalkValue(MotionValue):
     delta: Final[DeltaValue]
     
     def __init__(self, delta: DeltaValue) -> None:
+        super().__init__()
         self.delta = delta
     
     def __str__(self) -> str:
@@ -470,6 +471,7 @@ class ToPadValue(MotionValue):
     dest: Final[Pad]
     
     def __init__(self, pad: Pad) -> None:
+        super().__init__()
         self.dest = pad
         
     def move(self, drop:Drop)->Delayed[Drop]:
@@ -481,6 +483,7 @@ class ToRowColValue(MotionValue):
     verticalp: Final[bool]
     
     def __init__(self, dest: int, verticalp: bool) -> None:
+        super().__init__()
         self.dest = dest
         self.verticalp = verticalp
         
@@ -874,6 +877,7 @@ for t,reps in rep_types.items():
 # Type.value_compatible((Type.INT, Type.FLOAT), Type.NUMBER)
 
 Type.register_conversion(Type.DROP, Type.PAD, lambda drop: drop.pad)
+Type.register_conversion(Type.EXTRACTION_POINT, Type.PAD, lambda ep: ep.pad)
 # Type.register_conversion(Type.DROP, Type.BINARY_CPT, lambda drop: drop.pad)
 Type.register_conversion(Type.INT, Type.FLOAT, float)
 Type.register_conversion(Type.REAGENT, Type.SCALED_REAGENT, lambda r: ScaledReagent(1, r))

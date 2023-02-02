@@ -1,0 +1,81 @@
+// The point to mix into for the reagent dispensed at well w
+comb_pad = macro(well w) -> pad {
+  // safe_direction(), defined in macros.dmf, specifies the direction
+  // (up or down) that you can safely walk on a Wombat board from the given 
+  // well.
+  return (w's exit pad
+          + 3 in dir w's exit direction
+            + 2 in dir safe_direction(w));
+};  
+
+// dispense a drop from the well and walk to the pad, avoiding dead zones
+disp_and_walk_to = macro(well w, pad p) -> drop {
+  return w : dispense drop 
+           : safe_direction(w)
+           : to col p's col
+           : to row p's row;
+};
+
+
+// In parallel, dispense drops from two wells and walk them safely to next 
+// to a combination pad.  Then mix and split them for a specified amount of time,
+// and return the resulting combined drop.
+combine_drops = macro(well outer, well inner, time mixing_time) -> drop {
+  pad center = comb_pad(outer);
+  dir inner_dir = outer's exit direction;
+  dir outer_dir = inner_dir turned around;
+  [[
+    disp_and_walk_to(inner, center+inner_dir);
+    disp_and_walk_to(outer, center+outer_dir);
+  ]]
+  // mix() and split() are defined in macros.dmf
+  drop d = mix(center, inner_dir, outer_dir);
+  repeat for mixing_time {
+    split(d, inner_dir, outer_dir);
+    d = mix(center, inner_dir, outer_dir);
+  } 
+   return d;
+};  
+
+// walk the drop safely to the extraction port and request 
+// that it be transferred out.
+extract = macro(drop d, extraction port ep) {
+  d : to row 1 : to col ep's col : to ep : transfer out;
+};
+
+dna_comb = macro() {
+  well wA = well #2;
+  well wB = well #3;
+  well wC = well #6;
+  well wD = well #7;
+
+  extraction port ep = extraction port #2;
+  
+  transfer in(wA, 10uL of reagent "A");
+  transfer in(wB, 10uL of reagent "B");
+  transfer in(wC, 10uL of reagent "C");
+  transfer in(wD, 10uL of reagent "D");
+  
+  time mixing_time = 10 seconds;
+  
+  // The drops need to be declared in this scope
+  // so that they will be available after the parallel block.
+
+  drop AB;
+  drop CB;
+  drop DB;
+  
+  // In parallel, create the three drops.
+  [[
+    AB = combine_drops(wA, wB, mixing_time);
+    CB = combine_drops(wC, wB, mixing_time);
+    DB = combine_drops(wD, wB, mixing_time);
+  ]]
+  
+  // Extract them in the specified order.  This could be
+  // done in a parallel block somewhat (negligibly) more 
+  // efficiently, but the order might not be what you want.
+  extract(DB, ep);
+  extract(CB, ep);
+  extract(AB, ep);
+};

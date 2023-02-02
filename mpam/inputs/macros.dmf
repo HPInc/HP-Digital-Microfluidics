@@ -82,6 +82,15 @@ mix = macro(pad center, dir to_d1, dir to_d2) -> drop {
   return center's drop;
 };
 
+split = macro(drop d, dir 1, dir 2) {
+  pad center = d's pad;
+  [[
+      center : off;
+      center + dir 1 : on;
+      center + dir 2 : on;
+  ]]
+};
+
 collide = macro(well 1, well 2, pad dest, dir to_d1) {
   dir to_d2 = to_d1 turned around;
   [[
