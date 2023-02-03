@@ -56,10 +56,19 @@ v2pins = v1pins.copy()
 v2pins["H09"] = v2pins["H23"]
 for pad in ("E24", "F24", "E16", "F16", "E08", "F08", "H23"):
     del v2pins[pad]
+    
+v2yaminonPins = v2pins.copy()
+for pad in ("D24", "D16", "D08"):
+    del v2yaminonPins[pad]
 
 _pins : Mapping[WombatLayout, Mapping[str, int]] = {
     WombatLayout.V1: v1pins,
     WombatLayout.V2: v2pins
+} 
+
+_yaminon_pins : Mapping[WombatLayout, Mapping[str, int]] = {
+    WombatLayout.V1: v1pins,
+    WombatLayout.V2: v2yaminonPins
 } 
 
 
@@ -170,7 +179,8 @@ class Board(joey.Board):
     def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
         if cell is None:
             return None
-        pin = _pins[self._layout].get(cell, None)
+        pin_map = _yaminon_pins if self.is_yaminon else _pins
+        pin = pin_map[self._layout].get(cell, None)
         if pin is None:
             return None
         return self._electrodes[pin]
@@ -213,9 +223,9 @@ class Board(joey.Board):
         self._states = bytearray(n_state_bytes)
         self._last_states = bytearray(n_state_bytes)
         self._od_version = od_version
-        self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
         logger.info("is_yaminon = %s", is_yaminon)
         self.is_yaminon = is_yaminon
+        self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
         logger.info("double_write = %s", double_write)
         self._double_write = double_write
         super().__init__(heater_type=heater_type, pipettor=pipettor, off_on_delay=off_on_delay)
