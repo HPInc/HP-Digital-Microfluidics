@@ -354,12 +354,15 @@ class ReagentLegend:
         old = self.legend
         if old is not None:
             old.remove()
-        ncols = math.ceil(math.sqrt(len(handles)))
-        self.legend = self.board_monitor.figure.legend(handles=handles,
-                                                       title="Reagents",
-                                                       ncol=ncols
-                                                       # handler_map={Circle: self.HandlerCircle}
-                                                       )
+        if len(handles) > 0:
+            ncols = math.ceil(math.sqrt(len(handles)))
+            self.legend = self.board_monitor.figure.legend(handles=handles,
+                                                           title="Reagents",
+                                                           ncol=ncols
+                                                           # handler_map={Circle: self.HandlerCircle}
+                                                           )
+        else:
+            self.legend = None
 
     class HandlerCircle(HandlerPatch):
         def create_artists(self, legend: Any, orig_handle: Any,
