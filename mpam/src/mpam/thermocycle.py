@@ -5,7 +5,7 @@ from threading import Lock
 from typing import Final, NamedTuple, Sequence, Literal, Union, Optional, \
     Iterator, Any, Callable
 
-from mpam.device import TemperatureControl, Pad
+from mpam.device import TemperatureControl, Pad, Heater
 from mpam.drop import Drop
 from mpam.paths import Path
 from mpam.processes import MultiDropProcessType, FinishFunction, PairwiseMix
@@ -18,7 +18,7 @@ from enum import Enum, auto
 
 
 class ChannelEndpoint(NamedTuple):
-    heater_no: int
+    heater: TemperatureControl
     threshold: Pad
     in_dir: Dir
     adjacent_step_dir: Dir
@@ -51,13 +51,13 @@ class ShuttleDir(Enum):
     COL_ONLY = auto()
 
 class Thermocycler:
-    heaters: Final[Sequence[TemperatureControl]]
+    # heaters: Final[Sequence[TemperatureControl]]
     channels: Final[Sequence[Channel]]
         
     def __init__(self, *,
-                 heaters: Sequence[TemperatureControl],
+                 # heaters: Sequence[TemperatureControl],
                  channels: Sequence[Optional[Channel]]):
-        self.heaters = heaters
+        # self.heaters = heaters
         self.channels = tuple(c for c in channels if c is not None)
         
     def as_process(self, *,
@@ -236,10 +236,8 @@ class ThermocycleProcessType(MultiDropProcessType):
         this_end: ChannelEnd = flr.end
         other_end: ChannelEnd = 1 if this_end == 0 else 0
         
-        these_heaters = HeaterState(tuple(tc.heaters[i] 
-                                          for i in set(c[this_end].heater_no for c in channels)))
-        those_heaters = HeaterState(tuple(tc.heaters[i] 
-                                          for i in set(c[other_end].heater_no for c in channels)))
+        these_heaters = HeaterState(tuple(set(c[this_end].heater for c in channels)))
+        those_heaters = HeaterState(tuple(set(c[other_end].heater for c in channels)))
 
         mapping = { c[this_end].threshold: i for i,c in enumerate(channels) }
         bound = tuple(BoundChannel(p.checked_drop, c) 

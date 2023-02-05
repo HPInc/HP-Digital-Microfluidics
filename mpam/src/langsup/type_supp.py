@@ -1149,7 +1149,7 @@ class NumberedItem(Enum):
     WELL = auto()
     HEATER = auto()
     CHILLER = auto()
-    TEMP_CONTROL = auto()
+    # TEMP_CONTROL = auto()
     MAGNET = auto()
     EXTRACTION_POINT = auto()
 

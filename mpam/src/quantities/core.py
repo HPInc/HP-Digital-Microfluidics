@@ -1133,8 +1133,14 @@ class NamedDimMeta(type, DimLike):
         val: T = getattr(self, "_zero")
         return val
     
+    @property
+    def INF(self: Type[T]) -> T:
+        val: T = getattr(self, "_infinity")
+        return val
+    
     def __init__(self, name: str, base: tuple[Type, ...], dct: Mapping) -> None:  # @UnusedVariable 
         self._zero = self(0.0)
+        self._infinity = self(math.inf)
         self._restriction_classes: dict[Any, type[BaseDim]] = {}
 
     def as_dimensionality(self: type[ND]) -> Dimensionality[ND]: # type: ignore[misc]

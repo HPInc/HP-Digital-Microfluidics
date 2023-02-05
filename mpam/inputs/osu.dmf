@@ -44,12 +44,12 @@ extract = macro(drop d, extraction port ep) {
 };
 
 dna_comb = macro() {
-  well wA = well #2;
-  well wB = well #3;
-  well wC = well #6;
-  well wD = well #7;
+  well wA = well #3;
+  well wB = well #4;
+  well wC = well #7;
+  well wD = well #8;
 
-  extraction port ep = extraction port #2;
+  extraction port ep = extraction port #3;
   
   transfer in(wA, 10uL of reagent "A");
   transfer in(wB, 10uL of reagent "B");

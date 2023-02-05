@@ -98,12 +98,12 @@ class Board(device.Board):
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
 
-    def _magnets(self, *, first_num: int = 0) -> Sequence[Magnet]: # @UnusedVariable
-        def make_magnet(num: int, *, pads: Sequence[Pad]) -> Magnet:
+    def _magnets(self) -> Sequence[Magnet]: # @UnusedVariable
+        def make_magnet(*, pads: Sequence[Pad]) -> Magnet:
             state = DummyState(initial_state=OnOff.OFF)
-            return Magnet(num, self, state=state, pads=pads)
-        pads = (self.pad_at(13, 6), self.pad_at(13, 12))
-        return (make_magnet(0, pads=pads),)
+            return Magnet(self, state=state, pads=pads)
+        pads = (self.pad_at(14, 7), self.pad_at(14, 13))
+        return (make_magnet(pads=pads),)
 
     def _rectangle(self, x: float, y: float, outdir: int, width: float, height: float) -> PadBounds:
         return ((x,y), (x+width*outdir,y), (x+width*outdir, y+height), (x, y+height))
@@ -120,7 +120,7 @@ class Board(device.Board):
               shared_states: Sequence[State[OnOff]]) -> Well:
         epx = exit_pad.location.x
         epy = exit_pad.location.y
-        outdir: Literal[-1,1] = -1 if epx == 0 else 1
+        outdir: Literal[-1,1] = -1 if epx == self.edge(Dir.LEFT) else 1
         if outdir == 1:
             epx += 1
         # gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
@@ -177,16 +177,16 @@ class Board(device.Board):
                                   noise_sd = 0.05*deg_C)
         regions: Sequence[Sequence[GridRegion]]
         if heater_type is HeaterType.TSRs:
-            regions = ([GridRegion(XYCoord(0,12),3,7)],
-                       [GridRegion(XYCoord(0,0),3,7)],
-                       [GridRegion(XYCoord(8,12),3,7)],
-                       [GridRegion(XYCoord(8,0),3,7)],
-                       [GridRegion(XYCoord(16,12),3,7)],
-                       [GridRegion(XYCoord(16,0),3,7)])
+            regions = ([GridRegion(XYCoord(1,13),3,7)],
+                       [GridRegion(XYCoord(1,1),3,7)],
+                       [GridRegion(XYCoord(9,13),3,7)],
+                       [GridRegion(XYCoord(9,1),3,7)],
+                       [GridRegion(XYCoord(17,13),3,7)],
+                       [GridRegion(XYCoord(17,1),3,7)])
         elif heater_type is HeaterType.Paddles:
-            regions = ([GridRegion(XYCoord(0,0),3,19)],
-                       [GridRegion(XYCoord(8,0),3,19)],
-                       [GridRegion(XYCoord(16,0),3,19)])
+            regions = ([GridRegion(XYCoord(1,1),3,19)],
+                       [GridRegion(XYCoord(9,1),3,19)],
+                       [GridRegion(XYCoord(17,1),3,19)])
         else:
             assert_never(heater_type)
         return [make_heater(regions=r) for r in regions]
@@ -261,10 +261,10 @@ class Board(device.Board):
                          off_on_delay=off_on_delay,
                          cpt_layout=RCOrder.DOWN_RIGHT)
 
-        dead_region = GridRegion(XYCoord(7,8), width=5, height=3)
+        dead_region = GridRegion(XYCoord(8,9), width=5, height=3)
 
-        for x in range(0,19):
-            for y in range(0,19):
+        for x in range(1,20):
+            for y in range(1,20):
                 loc = XYCoord(x, y)
                 state = self._pad_state(x, y)
                 exists = state is not None and loc not in dead_region
@@ -273,18 +273,18 @@ class Board(device.Board):
                 pad_dict[loc] = Pad(loc, self, exists=exists, state=state)
 
         sequences: WellOpSeqDict = {
-            (WellState.EXTRACTABLE, WellState.READY): ((7,), (7,6,3,4,5), (6,3,4,5)),
-            (WellState.READY, WellState.EXTRACTABLE): ((7,6,3,4,5,), (7,)),
-            (WellState.READY, WellState.DISPENSED): ((3,4,5,0,1,2,-1),
-                                                     (4,0,1,2,-1),
-                                                     (1,-1),
-                                                     (4,-1),
-                                                     (3,4,5,6,-1),
-                                                     (3,4,5,6)
+            (WellState.EXTRACTABLE, WellState.READY): ((8,), (8,7,6,5,4), (7,6,5,4)),
+            (WellState.READY, WellState.EXTRACTABLE): ((8,7,6,4,5,), (8,)),
+            (WellState.READY, WellState.DISPENSED): ((6,3,4,5,1,2,-1),
+                                                     (5,1,2,3,-1),
+                                                     (2,-1),
+                                                     (5,-1),
+                                                     (4,5,6,7,-1),
+                                                     (4,5,6,7)
                                                      ),
             (WellState.DISPENSED, WellState.READY): (),
-            (WellState.READY, WellState.ABSORBED): ((3,4,5,6,0,1,2,-1),),
-            (WellState.ABSORBED, WellState.READY): ((3,4,5,6),)
+            (WellState.READY, WellState.ABSORBED): ((4,5,6,7,1,2,3,-1),),
+            (WellState.ABSORBED, WellState.READY): ((4,5,6,7),)
             }
 
         transition = transitions_from(sequences)
@@ -301,14 +301,14 @@ class Board(device.Board):
         self.pipettor = pipettor
 
         self._add_wells((
-            self._well(left_group, Dir.RIGHT, self.pad_at(0,18), pipettor, left_states),
-            self._well(left_group, Dir.RIGHT, self.pad_at(0,12), pipettor, left_states),
-            self._well(left_group, Dir.RIGHT, self.pad_at(0,6), pipettor, left_states),
-            self._well(left_group, Dir.RIGHT, self.pad_at(0,0), pipettor, left_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(18,18), pipettor, right_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(18,12), pipettor, right_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(18,6), pipettor, right_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(18,0), pipettor, right_states),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,19), pipettor, left_states),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,13), pipettor, left_states),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,7), pipettor, left_states),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,1), pipettor, left_states),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,19), pipettor, right_states),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,13), pipettor, right_states),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,7), pipettor, right_states),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,1), pipettor, right_states),
             ))
 
         self._add_magnets(self._magnets())
@@ -317,8 +317,8 @@ class Board(device.Board):
         # self._add_heaters(self._heaters(HeaterType.Peltier))
         
 
-        for pos in ((13, 15), (13, 9), (13, 3)):
-            extraction_points.append(
+        for pos in ((14, 16), (14, 10), (14, 4)):
+            self._add_extraction_point(
                 ExtractionPoint(self.pad_at(*pos), pipettor, splash_radius=extraction_point_splash_radius))
 
         def tc_channel(row: int,
@@ -347,20 +347,20 @@ class Board(device.Board):
             if right_heater is None: 
                 return None
             
-            return (ChannelEndpoint(left_heater.number,
+            return (ChannelEndpoint(left_heater,
                                     left_thresh,
                                     in_dir,
                                     adjacent_step,
                                     Path.to_col(thresholds[1])),
-                    ChannelEndpoint(right_heater.number,
+                    ChannelEndpoint(right_heater,
                                     right_thresh,
                                     in_dir.opposite,
                                     adjacent_step,
                                     Path.to_col(thresholds[0])))
         # left_heaters = (1, 0)
         # right_heaters = (1, 2)
-        left_thresholds = (7, 3)
-        right_thresholds = (11, 15)
+        left_thresholds = (8, 4)
+        right_thresholds = (12, 16)
 
         def left_tc_channel(row: int, step_dir: Dir) -> Optional[Channel]:
             return tc_channel(row, left_thresholds,
@@ -371,17 +371,17 @@ class Board(device.Board):
 
 
         tc_channels = (
-                left_tc_channel(18, Dir.DOWN), left_tc_channel(16, Dir.UP),
-                left_tc_channel(14, Dir.DOWN), left_tc_channel(12, Dir.UP),
-                left_tc_channel(6, Dir.DOWN), left_tc_channel(4, Dir.UP),
-                left_tc_channel(2, Dir.DOWN), left_tc_channel(0, Dir.UP),
-                right_tc_channel(18, Dir.DOWN), right_tc_channel(16, Dir.UP),
-                right_tc_channel(14, Dir.DOWN), right_tc_channel(12, Dir.UP),
-                right_tc_channel(6, Dir.DOWN), right_tc_channel(4, Dir.UP),
-                right_tc_channel(2, Dir.DOWN), right_tc_channel(0, Dir.UP),
+                left_tc_channel(19, Dir.DOWN), left_tc_channel(17, Dir.UP),
+                left_tc_channel(15, Dir.DOWN), left_tc_channel(13, Dir.UP),
+                left_tc_channel(7, Dir.DOWN), left_tc_channel(5, Dir.UP),
+                left_tc_channel(3, Dir.DOWN), left_tc_channel(1, Dir.UP),
+                right_tc_channel(19, Dir.DOWN), right_tc_channel(17, Dir.UP),
+                right_tc_channel(15, Dir.DOWN), right_tc_channel(13, Dir.UP),
+                right_tc_channel(7, Dir.DOWN), right_tc_channel(5, Dir.UP),
+                right_tc_channel(3, Dir.DOWN), right_tc_channel(1, Dir.UP),
             )
         self.thermocycler = Thermocycler(
-            heaters = self.temperature_controls,
+            # heaters = self.temperature_controls,
             channels = tc_channels)
 
     def join_system(self, system: System) -> None:
@@ -459,4 +459,4 @@ class PlatformTask(PlatformChoiceTask):
 
         
     def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable
-        return [0,1,2,3,4,5,6,7]
+        return [1,2,3,4,5,6,7,8]

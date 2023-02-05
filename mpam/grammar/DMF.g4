@@ -361,7 +361,7 @@ multi_word_name returns[str val]
   | 'the'? 'interactive' 'reagent' {$ctx.val="interactive reagent"}
   | 'the'? 'interactive' 'volume' {$ctx.val="interactive volume"}
   | 'the' 'board' {$ctx.val="the board"}
-  | 'the'? 'index' 'base' {$ctx.val="index base"}
+//  | 'the'? 'index' 'base' {$ctx.val="index base"}
   | 'the'? 'last'? 'clicked' 'pad'{$ctx.val="clicked pad"}
   | 'the'? 'last'? 'clicked' 'drop'{$ctx.val="clicked drop"}
   | 'dispense' 'drop' {$ctx.val="dispense drop"}

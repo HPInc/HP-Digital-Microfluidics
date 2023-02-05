@@ -197,17 +197,17 @@ class Prepare(PCRTask):
 
         super().setup(board, args=args)
 
-        self.park_R1 = board.pad_at(18, 10)
-        self.park_R3 = (board.pad_at(0, 10), board.pad_at(2, 10),
-                        board.pad_at(0, 8), board.pad_at(2, 8),
-                        board.pad_at(18, 10))
-        self.park_R4 = (board.pad_at(18,8), board.pad_at(16,8))
+        self.park_R1 = board.pad_at(19, 11)
+        self.park_R3 = (board.pad_at(1, 11), board.pad_at(3, 11),
+                        board.pad_at(1, 9), board.pad_at(3, 9),
+                        board.pad_at(19, 11))
+        self.park_R4 = (board.pad_at(19,9), board.pad_at(17,9))
 
         self.dilution = dilution_sequences.lookup_placed(8, full=True,
-                                                         lower_left=board.pad_at(5,2),
+                                                         lower_left=board.pad_at(6,3),
                                                          rows=5, cols=9)
         self.mix3 = tuple(mixing_sequences.lookup_placed(3, full=True,
-                                                         lower_left=board.pad_at(1+3*i,1),
+                                                         lower_left=board.pad_at(2+3*i,2),
                                                          rows=5, cols=1)
                             for i in range(6))
 
@@ -218,18 +218,18 @@ class Prepare(PCRTask):
         bd = self.bd = self.reagent("Dilution Buffer")
         primer = self.primer = self.reagent("Primer_i")
 
-        self.pmo_ep = board.extraction_points[1]
+        self.pmo_ep = board.extraction_point_number(2)
 
-        self.mm_well = board.wells[5]
+        self.mm_well = board.well_number(6)
         self.mm_well.contains(Liquid(mm, 17*drops))
 
-        self.bd_well = board.wells[6]
+        self.bd_well = board.well_number(7)
         self.bd_well.contains(Liquid(bd, 14*drops))
 
-        self.primer_well = board.wells[7]
+        self.primer_well = board.well_number(8)
         self.primer_well.contains(Liquid(primer, 16*drops))
 
-        self.output_well = board.wells[3]
+        self.output_well = board.well_number(4)
 
     def initial_mix_and_tc(self) -> Drop:
         thermocycler = self.board.thermocycler
@@ -292,11 +292,11 @@ class Prepare(PCRTask):
 
     def dilute_2(self) -> Sequence[Drop]:
         r1_drop = self.parked_R1()
-        Path.run_paths([(r1_drop, Path.to_col(14))], system=self.board.system)
+        Path.run_paths([(r1_drop, Path.to_col(15))], system=self.board.system)
         drops = sorted(self.dilute(r1_drop), key=right_then_up)
         parking = [(drops[0], Path.to_pad(self.park_R3[2], row_first=False)),
                    (drops[1], Path.to_pad(self.park_R3[3], row_first=False)),
-                   (drops[-1], Path.to_col(14).to_pad(self.park_R3[4])),
+                   (drops[-1], Path.to_col(15).to_pad(self.park_R3[4])),
                    ]
         Path.run_paths(parking, system=self.board.system)
         return drops[2:-1]
@@ -348,11 +348,11 @@ class Prepare(PCRTask):
         return drops
     def mix_3_3(self) -> Sequence[Drop]:
         drops = [self.parked_R3(i) for i in range(5)]
-        Path.run_paths([(self.parked_R3(4), Path.to_col(14).to_row(1)),
-                        (self.parked_R3(2), Path.to_col(4).to_row(1)),
-                        (self.parked_R3(3), Path.to_col(6).to_row(1)),
-                        (self.parked_R3(0), Path.to_row(1)),
-                        (self.parked_R3(1), Path.to_row(1)),
+        Path.run_paths([(self.parked_R3(4), Path.to_col(15).to_row(2)),
+                        (self.parked_R3(2), Path.to_col(5).to_row(2)),
+                        (self.parked_R3(3), Path.to_col(7).to_row(2)),
+                        (self.parked_R3(0), Path.to_row(2)),
+                        (self.parked_R3(1), Path.to_row(2)),
                         ], system=self.board.system)
         drops = sorted(self.mix_3(drops, row_first=True), key=left_then_down)
         return drops
@@ -369,13 +369,13 @@ class Prepare(PCRTask):
                 path = path.start(self.full_tc)
             else:
                 path = path.join()
-            path = path.to_col(5).to_pad(self.output_well.exit_pad)
+            path = path.to_col(6).to_pad(self.output_well.exit_pad)
             paths.append((drops[d_no], path.enter_well()))
 
         for i in (12, 13, 14, 15):
-            add_path(i, Path.to_col(13).to_pad(pads[i-4]))
+            add_path(i, Path.to_col(14).to_pad(pads[i-4]))
 
-        add_path(7, Path.to_col(9).to_pad(pads[12]))
+        add_path(7, Path.to_col(10).to_pad(pads[12]))
 
         for i in (9, 10, 11):
             add_path(i, Path.to_pad(pads[i+4]))
@@ -385,9 +385,9 @@ class Prepare(PCRTask):
         add_path(4, Path.to_pad(pads[6]))
         add_path(5, Path.to_pad(pads[7]))
         add_path(3, Path.to_pad(pads[0]))
-        add_path(1, Path.to_col(4).to_pad(pads[1]))
-        add_path(2, Path.to_col(4).to_pad(pads[2]))
-        add_path(0, Path.to_row(2).to_col(4).to_pad(pads[3]))
+        add_path(1, Path.to_col(5).to_pad(pads[1]))
+        add_path(2, Path.to_col(5).to_pad(pads[2]))
+        add_path(0, Path.to_row(3).to_col(5).to_pad(pads[3]))
 
         drops = Path.run_paths(paths, system=self.board.system)
         return drops
@@ -405,13 +405,13 @@ class Prepare(PCRTask):
                 path = path.start(self.full_tc)
             else:
                 path = path.join()
-            path = path.to_col(5).to_pad(self.output_well.exit_pad)
+            path = path.to_col(6).to_pad(self.output_well.exit_pad)
             paths.append((drops[d_no], path.enter_well()))
 
         for i in (12, 13, 14):
-            add_path(i, Path.to_col(13).to_pad(pads[i-4]))
+            add_path(i, Path.to_col(14).to_pad(pads[i-4]))
 
-        add_path(7, Path.to_col(9).to_pad(pads[12]))
+        add_path(7, Path.to_col(10).to_pad(pads[12]))
 
         for i in (9, 10, 11):
             add_path(i, Path.to_pad(pads[i+4]))
@@ -421,9 +421,9 @@ class Prepare(PCRTask):
         add_path(4, Path.to_pad(pads[6]))
         add_path(5, Path.to_pad(pads[7]))
         add_path(3, Path.to_pad(pads[0]))
-        add_path(1, Path.to_col(4).to_pad(pads[1]))
-        add_path(2, Path.to_col(4).to_pad(pads[2]))
-        add_path(0, Path.to_row(2).to_col(4).to_pad(pads[3]))
+        add_path(1, Path.to_col(5).to_pad(pads[1]))
+        add_path(2, Path.to_col(5).to_pad(pads[2]))
+        add_path(0, Path.to_row(3).to_col(5).to_pad(pads[3]))
         add_path(15, Path.to_pad(pads[11]))
 
         drops = Path.run_paths(paths, system=self.board.system)
@@ -479,8 +479,8 @@ class MixPrep(PCRTask):
         assert isinstance(board, joey.Board)
         super().setup(board, args = args)
 
-        input_wells = list(board.wells[0:4])
-        output_wells = list(board.wells[4:])
+        input_wells = [board.well_number(n) for n in range(1, 5)]
+        output_wells = [board.well_number(n) for n in range(5, 9)]
 
         # it's easier if the last two output wells are swapped
         input_wells[2], input_wells[3] = input_wells[3], input_wells[2]
@@ -494,7 +494,7 @@ class MixPrep(PCRTask):
             w.contains(Liquid(reagent, n_drops*drops))
 
         mix4 = mixing_sequences.lookup_placed(4, full=True,
-                                              lower_left=board.pad_at(12, 8),
+                                              lower_left=board.pad_at(13, 9),
                                               rows=3, cols=5)
 
         pads = sorted(mix4.pads, key=down_then_left)
@@ -506,7 +506,7 @@ class MixPrep(PCRTask):
                 path = path.start(mix4.as_process(n_shuttles=self.shuttles))
             else:
                 path = path.join()
-            path = path.to_col(18).to_pad(output_wells[i].exit_pad)
+            path = path.to_col(19).to_pad(output_wells[i].exit_pad)
             paths.append(path.enter_well())
 
         paths = paths * n_drops
@@ -618,9 +618,9 @@ class CombSynth(PCRTask):
         sizes: Sequence[WeightedSize] = args.sizes
         self.sizes = tuple(s.size for s in sizes)
         self.size_weights = tuple(s.weight for s in sizes)
-        self.phase_1_ep = board.extraction_points[0]
-        self.phase_5_ep = board.extraction_points[1]
-        self.phase_6_ep = board.extraction_points[2]
+        self.phase_1_ep = board.extraction_point_number(1)
+        self.phase_5_ep = board.extraction_point_number(2)
+        self.phase_6_ep = board.extraction_point_number(3)
 
         self.phase_barrier = Barrier(0, name="phase-end")
 
@@ -628,33 +628,33 @@ class CombSynth(PCRTask):
         self.phase_2_dilution = dilution_sequences.lookup(8, full=False,
                                                           rows=3, cols=5) \
                                             .transformed(Transform.FLIP_Y) \
-                                            .placed(board.pad_at(14,12))
+                                            .placed(board.pad_at(15,13))
 
         self.phase_2_mix = mixing_sequences.lookup_placed(3, full=False,
-                                                          lower_left=board.pad_at(18,10),
+                                                          lower_left=board.pad_at(19,11),
                                                           rows=5, cols=1)
 
         self.phase_3_dilution = dilution_sequences.lookup(5, full=False,
                                                           rows=3, cols=3) \
                                             .transformed(Transform.ONE_EIGHTY) \
-                                            .placed(board.pad_at(16, 0))
+                                            .placed(board.pad_at(17, 1))
 
         self.phase_4_mix = mixing_sequences.lookup(2, full=False,
                                                    rows=3, cols=1) \
-                                            .placed(board.pad_at(18,4))
+                                            .placed(board.pad_at(19,5))
         self.phase_4_dilution = (dilution_sequences.lookup(3, full=False,
                                                            rows=3, cols=3)
-                                            .placed(board.pad_at(18,4)))
+                                            .placed(board.pad_at(19,5)))
 
         self.phase_5_mix = mixing_sequences.lookup(2, full=False,
                                                    rows=3, cols=1) \
-                                            .placed(board.pad_at(13,7))
+                                            .placed(board.pad_at(14,8))
 
 
         self.drops_needed = {}
 
         def well(n: int, r: str, drops_per_target: int) -> Well:
-            w = board.wells[n]
+            w = board.well_number(n)
             w.contains(Reagent.find(r))
             drops_needed = drops_per_target * self.n_combinations
             w.required = drops_needed*w.dispensed_volume
@@ -663,11 +663,11 @@ class CombSynth(PCRTask):
             return w
 
 
-        self.waste_well = board.wells[0]
-        self.pm_well = well(4, "PM Primers", 1)
-        self.db_well = well(5, "Dilution Buffer", 3)
-        self.mm_well = well(6, "Master Mix", 2)
-        self.rsm_well = well(7, "Prep Mixture", 5)
+        self.waste_well = board.well_number(1)
+        self.pm_well = well(5, "PM Primers", 1)
+        self.db_well = well(6, "Dilution Buffer", 3)
+        self.mm_well = well(7, "Master Mix", 2)
+        self.rsm_well = well(8, "Prep Mixture", 5)
 
         self.pf = Reagent.find("PF Primers")
 
@@ -677,11 +677,11 @@ class CombSynth(PCRTask):
 
         path = Path.empty().then_process(now_waste)
         if row <= 7:
-            path = path.to_col(11).to_row(7).to_col(6).to_row(11)
+            path = path.to_col(12).to_row(8).to_col(7).to_row(12)
         elif row <= 12:
-            path = path.to_col(13).to_row(13)
-        path = (path.to_col(11).to_row(18).to_col(5)
-                .reach(self.phase_barrier, wait=False).to_col(0)
+            path = path.to_col(14).to_row(14)
+        path = (path.to_col(12).to_row(19).to_col(6)
+                .reach(self.phase_barrier, wait=False).to_col(1)
                 )
         return path
 
@@ -705,20 +705,20 @@ class CombSynth(PCRTask):
 
     def mix_to_tcycle(self, row: int) -> Path.Middle:
         path = (Path.empty().reach(self.phase_barrier)
-                        .to_col(15)
-                        .to_row(0)
-                        .to_col(11)
-                        .to_row(6)
-                        .to_col(5)
+                        .to_col(16)
+                        .to_row(1)
+                        .to_col(12)
+                        .to_row(7)
+                        .to_col(6)
                         .to_row(row)
-                        .to_col(7))
+                        .to_col(8))
         return path
 
     def tcycle_to_mix(self, col: int, row: int) -> Path.Middle:
         path = (Path.empty().reach(self.phase_barrier)
-                        .to_col(5)
-                        .to_row(18)
-                        .to_col(15)
+                        .to_col(6)
+                        .to_row(19)
+                        .to_col(16)
                         .to_row(row)
                         .to_col(col))
         return path
@@ -776,7 +776,7 @@ class CombSynth(PCRTask):
         if c1 is not None:
             n = len(c1.fragments)
             mix = mixing_sequences.lookup_placed(n, full=False,
-                                                  lower_left=board.pad_at(13,16),
+                                                  lower_left=board.pad_at(14,17),
                                                   rows=3, cols=6)
             pads = sorted(mix.pads, key=down_then_left)
             ep = self.phase_1_ep
@@ -792,14 +792,14 @@ class CombSynth(PCRTask):
                                     .start(mix.as_process(n_shuttles=n_shuttles, result=result))
                                     .to_pad(ep.pad)
                                     .reach(passed_by)
-                                    .to_row(16)
+                                    .to_row(17)
                                     .then_process(update_drop(c1))
-                                    .extended(self.mix_to_tcycle(0)))
+                                    .extended(self.mix_to_tcycle(1)))
                 else:
                     paths.append(self.waste_drop((ep, frag), pad.row,
                                                  Path.to_pad(pad)
                                                     .join()
-                                                    .to_col(11)
+                                                    .to_col(12)
                                                     .reach(passed_by, wait=False)))
 
         if c2 is not None:
@@ -810,36 +810,36 @@ class CombSynth(PCRTask):
 
             paths.append((c2.lead_drop,
                           Path.empty().reach(in_pos)
-                                .to_pad((16,12))
+                                .to_pad((17,13))
                                 .start(self.phase_2_dilution.as_process(n_shuttles=n_shuttles,
                                                                         result=rdiluted))
-                                .to_row(10).reach(passed_by)
-                                .to_pad((18,12))
+                                .to_row(11).reach(passed_by)
+                                .to_pad((19,13))
                                 .start(self.phase_2_mix.as_process(n_shuttles=n_shuttles,
                                                                    result=result))
                                 .then_process(update_drop(c2))
-                                .extended(self.mix_to_tcycle(2))
+                                .extended(self.mix_to_tcycle(3))
                                 ))
 
-            paths.append(self.waste_drop(self.pm_well, 14,
-                                         Path.to_row(14).join()))
+            paths.append(self.waste_drop(self.pm_well, 15,
+                                         Path.to_row(15).join()))
 
-            paths.append(self.waste_drop(self.mm_well, 13,
-                                         Path.to_row(10).join()
-                                            .to_col(14).to_row(13)))
+            paths.append(self.waste_drop(self.mm_well, 14,
+                                         Path.to_row(11).join()
+                                            .to_col(15).to_row(14)))
 
-            paths.append(self.waste_drop(self.db_well, 12,
-                                         Path.to_pad((14,12)).join()))
+            paths.append(self.waste_drop(self.db_well, 13,
+                                         Path.to_pad((15,13)).join()))
 
-            paths.append(self.waste_drop(self.db_well, 12,
-                                         Path.to_pad((16,14), row_first=False)
+            paths.append(self.waste_drop(self.db_well, 13,
+                                         Path.to_pad((17,15), row_first=False)
                                             .reach(in_pos)
                                             .join()
-                                            .to_row(12)))
+                                            .to_row(13)))
 
-            paths.append(self.waste_drop(self.db_well, 12,
+            paths.append(self.waste_drop(self.db_well, 13,
                                          Path.join()
-                                            .to_col(14)
+                                            .to_col(15)
                                             .reach(passed_by, wait=False)))
 
         # We do c4 before c3, because we need to get the rsm drops here first
@@ -853,25 +853,25 @@ class CombSynth(PCRTask):
                           Path.start(self.phase_4_mix.as_process(n_shuttles=n_shuttles, result=rmixed))
                                 .start(self.phase_4_dilution.as_process(n_shuttles=n_shuttles, result=result))
                                 .then_process(update_drop(c4))
-                                .extended(self.mix_to_tcycle(14))
+                                .extended(self.mix_to_tcycle(15))
                                 ))
 
-            paths.append(self.waste_drop(self.rsm_well, 4,
-                                         Path.to_row(2).to_col(16).to_row(6)
-                                            .reach(mix_done).to_col(18)
+            paths.append(self.waste_drop(self.rsm_well, 5,
+                                         Path.to_row(3).to_col(17).to_row(7)
+                                            .reach(mix_done).to_col(19)
                                             .join()
-                                            .to_col(15).to_row(4)))
+                                            .to_col(16).to_row(5)))
 
-            paths.append(self.waste_drop(self.rsm_well, 4,
-                                         Path.to_row(2).to_col(16).to_row(4)
+            paths.append(self.waste_drop(self.rsm_well, 5,
+                                         Path.to_row(3).to_col(17).to_row(5)
                                             .join()))
 
-            paths.append(self.waste_drop(self.mm_well, 4,
+            paths.append(self.waste_drop(self.mm_well, 5,
                                          Path.join()
                                             .reach(mix_done, wait = False)
-                                            .to_row(8)
-                                            .to_col(15).to_row(5)
-                                            .to_col(14)))
+                                            .to_row(9)
+                                            .to_col(16).to_row(6)
+                                            .to_col(15)))
 
         if c3 is not None:
             result = c3.my_reagent("R3")
@@ -880,19 +880,19 @@ class CombSynth(PCRTask):
                           Path.start(self.phase_3_dilution.as_process(n_shuttles=n_shuttles,
                                                                         result=result))
                                 .then_process(update_drop(c3))
-                                .extended(self.mix_to_tcycle(4))
+                                .extended(self.mix_to_tcycle(5))
                                 ))
 
-            paths.append(self.waste_drop(self.rsm_well, 2,
-                                         Path.to_row(2).to_col(16)
+            paths.append(self.waste_drop(self.rsm_well, 3,
+                                         Path.to_row(3).to_col(17)
                                             .join()))
-            paths.append(self.waste_drop(self.rsm_well, 2,
-                                         Path.to_row(2)
+            paths.append(self.waste_drop(self.rsm_well, 3,
+                                         Path.to_row(3)
                                          .join()))
 
-            paths.append(self.waste_drop(self.rsm_well, 2,
+            paths.append(self.waste_drop(self.rsm_well, 3,
                                          Path.join()
-                                            .to_row(2)))
+                                            .to_row(3)))
 
         if c5 is not None:
             result = c5.my_reagent("R5")
@@ -901,11 +901,11 @@ class CombSynth(PCRTask):
                           Path.start(self.phase_5_mix.as_process(n_shuttles=n_shuttles,
                                                                  result=result))
                                 .then_process(update_drop(c5))
-                                .extended(self.mix_to_tcycle(16))
+                                .extended(self.mix_to_tcycle(17))
                                 ))
-            paths.append(self.waste_drop((self.phase_5_ep, self.pf), 9,
+            paths.append(self.waste_drop((self.phase_5_ep, self.pf), 10,
                                          Path.join()
-                                            .to_row(13)))
+                                            .to_row(14)))
 
 
         return paths
@@ -944,16 +944,16 @@ class CombSynth(PCRTask):
         # print(f"Tcycle channels: {channels_used}")
         if c1 is not None:
             # print(f"Starting tcycle with {c1.lead_drop}")
-            paths.append((c1.lead_drop, to_mix(17,10).reach(in_pos).to_col(16)))
+            paths.append((c1.lead_drop, to_mix(18,11).reach(in_pos).to_col(17)))
         if c2 is not None:
             # print(f"Joining tcycle with {c2.lead_drop}")
-            paths.append((c2.lead_drop, to_mix(17,0).reach(in_pos).to_col(16)))
+            paths.append((c2.lead_drop, to_mix(18,1).reach(in_pos).to_col(17)))
         if c3 is not None:
-            paths.append((c3.lead_drop, to_mix(18,4).reach(in_pos)))
+            paths.append((c3.lead_drop, to_mix(19,5).reach(in_pos)))
         if c4 is not None:
-            paths.append((c4.lead_drop, to_mix(13,7).reach(in_pos)))
+            paths.append((c4.lead_drop, to_mix(14,8).reach(in_pos)))
         if c5 is not None:
-            paths.append((c5.lead_drop, to_mix(13,3).reach(in_pos)))
+            paths.append((c5.lead_drop, to_mix(14,4).reach(in_pos)))
 
         return paths
 
@@ -1041,8 +1041,8 @@ class Test(Task):
             args:Namespace) -> None: # @UnusedVariable
         assert isinstance(board, joey.Board)
 
-        ep1 = board.extraction_points[1]
-        ep2 = board.extraction_points[2]
+        ep1 = board.extraction_point_number(2)
+        ep2 = board.extraction_point_number(3)
 
         path = Path.teleport_into(ep1).to_pad(ep2.pad).teleport_out()
         schedule(path)

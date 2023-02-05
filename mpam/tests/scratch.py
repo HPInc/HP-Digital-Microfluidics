@@ -1,6 +1,7 @@
 from __future__ import annotations
+from quantities.dimensions import Time
+from quantities.SI import seconds
 
-v = 2
+Time.default_units = (seconds,)
 
-print(v is None)
-print(v is not None)
+print(Time.INF.is_finite)

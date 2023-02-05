@@ -215,7 +215,6 @@ class Value(NamedTuple):
         
 class Environment(Scope[str, Any]):
     board: Final[Board]
-    index_base: int
 
     @property
     def monitor(self) -> Optional[BoardMonitor]:
@@ -226,13 +225,11 @@ class Environment(Scope[str, Any]):
     def __init__(self, parent: Optional[Scope[str, Any]], 
                  *,
                  board: Board, 
-                 initial: Optional[dict[str, Any]] = None,
-                 index_base: int = 0) -> None:
+                 initial: Optional[dict[str, Any]] = None) -> None:
         super().__init__(parent, initial=initial)
         self.board = board
-        self.index_base = index_base
     def new_child(self, initial: Optional[dict[str,Any]] = None) -> Environment:
-        return Environment(parent=self, board=self.board, initial=initial, index_base=self.index_base)
+        return Environment(parent=self, board=self.board, initial=initial)
     
     
 TypeMap = Scope[str, Type]
@@ -2592,35 +2589,36 @@ class DMFCompiler(DMFVisitor):
         kind_ctx = cast(DMFParser.Numbered_typeContext, ctx.kind)
         kind = cast(NumberedItem, kind_ctx.kind)
         
-        def figure(to_list: Callable[[Board], Sequence[T_]],
+        def figure(lookup: Callable[[Board, int], T_],
                    rt: Type,
-                   name: str) -> Executable:
+                   name: str, 
+                   *,
+                   max_val: Callable[[Board], int]) -> Executable:
             if e:=self.type_check(Type.INT, which, ctx.which, return_type=rt):
                 return e
             def run(env: Environment) -> Delayed[MaybeError[T_]]:
-                base = env.index_base
                 def find(n: int) -> MaybeError[T_]:
-                    cpts = to_list(env.board)
                     try:
-                        return cpts[n-base]
+                        return lookup(env.board, n)
                     except IndexError:
-                        return NoSuchComponentError(name, n, len(cpts)-1+base)
+                        return NoSuchComponentError(name, n, max_val(env.board))
                 return (which.evaluate(env, Type.INT)
                         .transformed(error_check(find)))
             return Executable(rt, run, (which,))
         
         if kind is NumberedItem.WELL:
-            return figure(lambda b: b.wells, Type.WELL, "well")
-        elif kind is NumberedItem.TEMP_CONTROL:
-            return figure(lambda b: b.temperature_controls, Type.HEATER, "temperature control")
+            return figure(Board.well_number, Type.WELL, "well", max_val=lambda b: len(b.wells))
+        # elif kind is NumberedItem.TEMP_CONTROL:
+        #     return figure(lambda b: b.temperature_controls, Type.HEATER, "temperature control")
         elif kind is NumberedItem.HEATER:
-            return figure(lambda b: b.heaters, Type.HEATER, "heater")
+            return figure(Board.heater_number, Type.HEATER, "heater", max_val=lambda b: len(b.heaters))
         elif kind is NumberedItem.CHILLER:
-            return figure(lambda b: b.chillers, Type.CHILLER, "chiller")
+            return figure(Board.chiller_number, Type.CHILLER, "chiller", max_val=lambda b: len(b.chillers))
         elif kind is NumberedItem.MAGNET:
-            return figure(lambda b: b.magnets, Type.MAGNET, "magnet")
+            return figure(Board.magnet_number, Type.MAGNET, "magnet", max_val=lambda b: len(b.magnets))
         elif kind is NumberedItem.EXTRACTION_POINT:
-            return figure(lambda b: b.extraction_points, Type.EXTRACTION_POINT, "extraction point")
+            return figure(Board.extraction_point_number, Type.EXTRACTION_POINT, "extraction point",
+                          max_val = lambda b: len(b.extraction_points))
         else:
             assert_never(kind)
 
@@ -2857,7 +2855,7 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["INDEX"]
         fn.format_type_expr_using(2, lambda x,y: f"{x}[{y}]")
         fn.register_all_immediate([((Type.WELL, Type.INT), Type.WELL_PAD),
-                                   ], lambda w,n: w.shared_pads[cast(int, n)])
+                                   ], lambda w,n: w.shared_pad_number(cast(int, n)))
         
 
         def add_delta(p: Pad, dn: Dir, n: int) -> Pad:
@@ -3211,6 +3209,7 @@ class DMFCompiler(DMFVisitor):
         def get_none(env: Environment) -> None: # @UnusedVariable
             return None
         SpecialVars["missing"] = Constant(Type.MISSING, None)
+        SpecialVars["none"] = Constant(Type.MISSING, None)
         
         name = "the board"
         def get_board(env: Environment) -> Board:
@@ -3222,13 +3221,13 @@ class DMFCompiler(DMFVisitor):
         SpecialVars["on"] = Constant(Type.ON, OnOff.ON)
         SpecialVars["off"] = Constant(Type.OFF, OnOff.OFF)
         
-        name="index base"
-        def get_index_base(env: Environment) -> int:
-            return env.index_base
-        def set_index_base(env: Environment, val: int) -> None:
-            env.index_base = val
-        SpecialVars[name] = SpecialVariable(Type.INT, getter=get_index_base, setter=set_index_base,
-                                            allowed_vals=(0,1))    
+        # name="index base"
+        # def get_index_base(env: Environment) -> int:
+        #     return env.index_base
+        # def set_index_base(env: Environment, val: int) -> None:
+        #     env.index_base = val
+        # SpecialVars[name] = SpecialVariable(Type.INT, getter=get_index_base, setter=set_index_base,
+        #                                     allowed_vals=(0,1))    
         
     @classmethod
     def setup_attributes(cls) -> None:

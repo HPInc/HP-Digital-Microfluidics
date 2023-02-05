@@ -33,10 +33,10 @@ dispense = macro(well w) -> drop {
 };
 
 safe_direction = macro(well w) -> direction {
-  return down if (w == well #0 
-           		  or w == well #2
-           		  or w == well #4
-                  or w == well #6)
+  return down if (w == well #1 
+           		  or w == well #3
+           		  or w == well #5
+                  or w == well #7)
          else up;
 };
 
@@ -103,11 +103,11 @@ collide = macro(well 1, well 2, pad dest, dir to_d1) {
 
 
 test = macro() {
-  well #3's reagent = reagent "A";
-  well #3's volume = 10 drops;
-  well #7's reagent = reagent "B";
-  well #7's volume = 10 drops; 
-  collide(well #3, well #7, (3,3), west);
+  well #4's reagent = reagent "A";
+  well #4's volume = 10 drops;
+  well #8's reagent = reagent "B";
+  well #8's volume = 10 drops; 
+  collide(well #4, well #8, (4,4), west);
 };
 
 remove_after = macro(time t) {

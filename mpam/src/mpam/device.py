@@ -38,6 +38,7 @@ from argparse import Namespace
 from erk.stringutils import map_str
 from quantities.US import deg_F
 from erk.network import local_ipv4_addr
+from functools import cached_property
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
@@ -1864,6 +1865,10 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
     other :class:`Well`\s in :attr:`group`.  Each one's :attr:`~WellPad.index`
     will be its index in this list.
     """
+    
+    def shared_pad_number(self, n: int) -> WellPad:
+        return self.shared_pads[n-1]
+    
     gate: Final[WellGate]
     """
     The :class:`WellGate` for this :class:`Well`.  It must be next to the
@@ -2226,7 +2231,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
         exit_pad._well = self
         gate.set_location(self, -1)
         for i,wp in enumerate(shared_pads):
-            wp.set_location(self, i)
+            wp.set_location(self, i+1)
 
     def prepare_for_add(self) -> None:
         """
@@ -2926,7 +2931,7 @@ class Magnet(BinaryComponent['Magnet']):
     """The :class:`Magnet`'s index in its :attr:`board`'s :attr:`~Board.magnets` list"""
     pads: Final[Sequence[Pad]] #: The :class:`Pad`\s affected by this :class:`Magnet`
 
-    def __init__(self, num: int, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
+    def __init__(self, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
         """
         Initialize the object.
 
@@ -2938,7 +2943,6 @@ class Magnet(BinaryComponent['Magnet']):
         """
 
         BinaryComponent.__init__(self, board, state=state)
-        self.number = num
         self.pads = pads
         for pad in pads:
             pad._magnet = self
@@ -3666,6 +3670,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
     pad: Final[Pad] #: The :class:`Pad` associated with this :class:`ExtractionPoint`
     reserved_pads: set[Pad]
     splash_radius: Final[int]
+    number: int = -1
 
     _splash_zone: Optional[set[Pad]] = None
     _splash_border: Optional[Sequence[Pad]] = None
@@ -4707,7 +4712,11 @@ class Board(SystemComponent):
     @property
     def temperature_controls(self) -> Sequence[TemperatureControl]:
         return (*self.heaters, *self.chillers)
-    extraction_points: Final[Sequence[ExtractionPoint]]
+    
+    _extraction_points: Final[list[ExtractionPoint]]
+    @property
+    def extraction_points(self) -> Sequence[ExtractionPoint]:
+        return self._extraction_points
     extraction_point_splash_radius: Final[int]
     power_supply: Final[PowerSupply]
     fan: Final[Optional[Fan]]
@@ -4774,7 +4783,9 @@ class Board(SystemComponent):
         self._magnet_list = [] 
         if magnets:
             self._add_magnets(magnets)
-        self.extraction_points = [] if extraction_points is None else extraction_points
+        self._extraction_points = [] 
+        if extraction_points:
+            self._add_extraction_points(extraction_points)
         self.extraction_point_splash_radius = extraction_point_splash_radius
         self.power_supply = power_supply or FixedPowerSupply(self)
         self.fan = fan
@@ -4791,7 +4802,7 @@ class Board(SystemComponent):
     def _add_well(self, well: Well) -> int:
         wells = self._well_list
         n = len(wells)
-        well.number = n
+        well.number = n+1
         wells.append(well)
         return n
         
@@ -4805,7 +4816,7 @@ class Board(SystemComponent):
     def _add_heater(self, heater: Heater) -> int:
         heaters = self.heaters
         n = len(heaters)
-        heater.number = n
+        heater.number = n+1
         heaters.append(heater)
         return n
         
@@ -4819,7 +4830,7 @@ class Board(SystemComponent):
     def _add_chiller(self, chiller: Chiller) -> int:
         chillers = self.chillers
         n = len(chillers)
-        chiller.number = n
+        chiller.number = n+1
         chillers.append(chiller)
         return n
 
@@ -4829,6 +4840,22 @@ class Board(SystemComponent):
         chillers = self.sorted(chillers, get_pads=lambda c: c.pads_for_sort, order=order)
         for c in chillers:
             self._add_chiller(c)
+            
+    def _add_extraction_point(self, ep: ExtractionPoint) -> int:
+        eps = self._extraction_points
+        n = len(eps)
+        ep.number = n+1
+        eps.append(ep)
+        return n
+
+    def _add_extraction_points(self, eps: Sequence[ExtractionPoint], *, order: Optional[RCOrder] = None) -> None:
+        if order is None:
+            order = self.component_layout
+        eps = self.sorted(eps, get_pads=lambda ep: (ep.pad,), order=order)
+        for ep in eps:
+            self._add_extraction_point(ep)
+            
+    
 
     # def _add_temperature_control(self, temperature_control: Union[Heater,Chiller]) -> int:
     #     if isinstance(temperature_control, Heater):
@@ -4848,7 +4875,7 @@ class Board(SystemComponent):
     def _add_magnet(self, magnet: Magnet) -> int:
         magnets = self._magnet_list
         n = len(magnets)
-        magnet.number = n
+        magnet.number = n+1
         magnets.append(magnet)
         return n
         
@@ -4877,21 +4904,44 @@ class Board(SystemComponent):
     def pad_at(self, x: int, y: int) -> Pad:
         return self.pads[XYCoord(x,y)]
 
-    @property
+    @cached_property
     def max_row(self) -> int:
         return max(coord.y for coord in self.pads)
 
-    @property
+    @cached_property
     def min_row(self) -> int:
         return min(coord.y for coord in self.pads)
 
-    @property
+    @cached_property
     def max_column(self) -> int:
         return max(coord.x for coord in self.pads)
 
-    @property
+    @cached_property
     def min_column(self) -> int:
         return min(coord.x for coord in self.pads)
+    
+    def edge(self, side: Dir) -> int:
+        orientation = self.orientation
+        if side is Dir.NORTH or side is Dir.SOUTH:
+            return self.max_row if orientation.pos_y is side else self.min_row
+        elif side is Dir.EAST or side is Dir.WEST:
+            return self.max_column if orientation.pos_x is side else self.min_column
+        assert False, f"Board.edge() requires a cardinal direction, got {side}."
+    
+    def well_number(self, n: int) -> Well:
+        return self.wells[n-1]
+    
+    def heater_number(self, n: int) -> Heater:
+        return self.heaters[n-1]
+    
+    def chiller_number(self, n: int) -> Chiller:
+        return self.chillers[n-1]
+    
+    def extraction_point_number(self, n: int) -> ExtractionPoint:
+        return self.extraction_points[n-1]
+    
+    def magnet_number(self, n: int) -> Magnet:
+        return self.magnets[n-1]
 
     # @property
     # def well_groups(self) -> Mapping[str, WellGroup]:
