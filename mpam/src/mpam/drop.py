@@ -5,19 +5,20 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 import math
 from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
-    Sequence, Mapping, NamedTuple, cast, Any
+    Sequence, Mapping, NamedTuple, cast, Any, ClassVar
 import logging
 
-from erk.basic import not_None, ComputedDefaultDict, Count
+from erk.basic import not_None, ComputedDefaultDict, Count, to_const
 from erk.errors import FIX_BY, PRINT
 from erk.stringutils import map_str
 from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
-    ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad
+    ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad,\
+    BinaryComponent
 from mpam.exceptions import NoSuchPad, NotAtWell
 from mpam.types import Liquid, Dir, Delayed, \
     OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
     StaticOperation, Reagent, Callback, T, MixResult, Postable, \
-    CSOperation, WaitableType, NO_WAIT, ComputeOp, V2
+    CSOperation, WaitableType, NO_WAIT, ComputeOp, V2, Operation, OnOff, Barrier
 from quantities.core import qstr
 from quantities.dimensions import Volume
 
@@ -288,7 +289,7 @@ class MotionInference:
                 ub.disappear()
 
 
-class Blob:
+class Blob(OpScheduler['Blob']):
     pads: Final[list[DropLoc]]
     pinned: bool
     contents: Liquid
@@ -632,6 +633,46 @@ class Blob:
         if need_to_detach:
             self.detach_from_well()
         self.die()
+        
+    class SetPadStates(Operation['Blob', None]):
+        target_state: Final[OnOff]
+        
+        def __init__(self, target: OnOff) -> None:
+            self.target_state = target
+            
+        def _binary_components(self, blob: Blob) -> Sequence[BinaryComponent]:
+            return [p for p in blob.pads if isinstance(p, BinaryComponent)]
+            
+        def _schedule_for(self, obj: Blob, *, 
+                          post_result: bool = True) -> Delayed[None]: # @UnusedVariable
+            modifier = BinaryComponent.SetState(self.target_state)
+            pads = self._binary_components(obj)
+            npads = len(pads)
+            if npads == 0:
+                return Delayed.complete(None)
+            first = pads[0]
+            if npads == 1:
+                return modifier.schedule_for(first).transformed(to_const(None))
+            future = Postable[None]()
+            barrier = Barrier[BinaryComponent](npads)
+            barrier.wait(None, future)
+            with first.board.system.batched():
+                for p in pads:
+                    p.schedule(modifier).then_call(lambda _: barrier.pass_through(p))
+            return future
+        
+        def after_delay(self, after:WaitableType, 
+                        fn:Callable[[], V2], 
+                        *, obj: Blob) -> Delayed[V2]:
+            pads = self._binary_components(obj)
+            assert len(pads) != 0, f"Blob {obj} has no pads to use to delay"
+            return pads[0].delayed(fn, after=after)
+        
+    TurnOn: ClassVar[SetPadStates]
+    TurnOff: ClassVar[SetPadStates]
+    
+Blob.TurnOn = Blob.SetPadStates(OnOff.ON)
+Blob.TurnOff = Blob.SetPadStates(OnOff.OFF)
 
 
 class DropStatus(Enum):

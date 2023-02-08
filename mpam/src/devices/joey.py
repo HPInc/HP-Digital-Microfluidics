@@ -155,8 +155,8 @@ class Board(device.Board):
                     shared_pads=tuple(WellPad(self, state=s, neighbors=ns) for s,ns in zip(shared_states,
                                                                                            pad_neighbors)),
                     capacity=54.25*uL,
-                    # dispensed_volume=0.5*uL,
-                    dispensed_volume=1*uL,
+                    dispensed_volume=0.5*uL,
+                    # dispensed_volume=1*uL,
                     exit_dir=exit_dir,
                     shape = shape,
                     pipettor = pipettor

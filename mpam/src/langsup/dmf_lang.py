@@ -711,58 +711,63 @@ BuiltIns = {
     "fill": Functions["fill"],
     }
 
-class SpecialVariable:
+class SpecialVariable(Generic[T_]):
     var_type: Final[Type]
-    allowed_vals: Final[Optional[tuple[Any,...]]]
     
     @property
     def is_settable(self) -> bool:
         return self._setter is not None
     
     def __init__(self, var_type: Type, *,
-                 getter: Callable[[Environment], Any],
-                 setter: Optional[Callable[[Environment, Any], None]] = None,
-                 allowed_vals: Optional[tuple[Any,...]] = None
+                 getter: Callable[[Environment], T_],
+                 setter: Optional[Callable[[Environment, T_], None]] = None,
+                 allowed_vals: Optional[tuple[T_,...]] = None
                  ) -> None:
         
         self.var_type = var_type
         self._getter = getter
         self._setter = setter
-        self.allowed_vals = allowed_vals
+        self.allowed_vals: Final = allowed_vals
     
-    def get(self, env: Environment) -> Any:
+    def get(self, env: Environment) -> T_:
         return (self._getter)(env)
     
-    def set(self, env: Environment, val: Any) -> None:
+    def set(self, env: Environment, val: T_) -> None:
         assert self._setter is not None
         (self._setter)(env, val)
         
-class Constant(SpecialVariable):
+class Constant(SpecialVariable[T_]):
     val: Final[Any]
-    def __init__(self, var_type: Type, val: Any) -> None:
+    def __init__(self, var_type: Type, val: T_) -> None:
         super().__init__(var_type, getter = to_const(val))
         self.val = val
         
-class MonitorVariable(SpecialVariable):
+class MonitorVariable(SpecialVariable[T_]):
     def __init__(self, name: str, var_type: Type, *,
-                 getter: Callable[[BoardMonitor], Any],
-                 setter: Optional[Callable[[BoardMonitor, Any], None]] = None) -> None:
+                 getter: Callable[[BoardMonitor], T_],
+                 setter: Optional[Callable[[BoardMonitor, T_], None]] = None,
+                 unmonitored_getter: Optional[Callable[[Environment], T_]] = None,
+                 unmonitored_setter: Optional[Callable[[Environment, T_], None]] = None) -> None:
         def adapted_getter(env: Environment) -> Any:
             monitor = env.monitor
-            if monitor is None:
-                raise EvaluationError(f"Evaluating {name} only works in a monitored run")
-            return getter(monitor)
+            if monitor is not None:
+                return getter(monitor)
+            if unmonitored_getter is not None:
+                return unmonitored_getter(env)
+            raise EvaluationError(f"Evaluating {name} only works in a monitored run")
         
-        def adapted_setter(env: Environment, val: Any) -> None:
+        def adapted_setter(env: Environment, val: T_) -> None:
             monitor = env.monitor
-            if monitor is None:
+            if setter is None:
+                raise EvaluationError(f"Attempted to set immutable variable {name}")
+            elif monitor is not None:
+                setter(monitor, val)
+            elif unmonitored_setter is not None:
+                unmonitored_setter(env, val)  
+            else:
                 raise EvaluationError(f"Setting {name} only works in a monitored run")
-            assert setter is not None
-            setter(monitor, val)
-            
         super().__init__(var_type, getter=adapted_getter, setter = setter and adapted_setter)
         
-    ...
     
 SpecialVars: dict[str, SpecialVariable] = {}
     
@@ -3122,37 +3127,53 @@ class DMFCompiler(DMFVisitor):
         def add_liquid_to_ep(ep: ExtractionPoint, liquid: Liquid) -> Delayed[Drop]:
             path = Path.teleport_into(ep, liquid=liquid)
             return path.schedule()
-        fn.register((Type.EXTRACTION_POINT, Type.LIQUID), Type.DROP, add_liquid_to_ep, curry_at=0)
-
+        fn.register((Type.EXTRACTION_POINT, Type.LIQUID), Type.DROP, add_liquid_to_ep)
         # TODO: To transfer in just based on volume, we need to be able to get
         # our hands on the interactive reagent, which means we need an Environment.
+        
+        def interactive_reagent(env: Environment) -> Reagent:
+            return cast(Reagent, SpecialVars["interactive reagent"].get(env))
 
         # fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.DROP,
                             # lambda ep,v: add_liquid_to_ep(ep, Liquid(ep, ))
         def add_reagent_to_ep(ep: ExtractionPoint, r: Reagent) -> Delayed[Drop]:
             return Path.teleport_into(ep, reagent=r).schedule()
         fn.register((Type.EXTRACTION_POINT, Type.REAGENT), Type.DROP, add_reagent_to_ep, curry_at=0)
+        fn.register((Type.EXTRACTION_POINT,), Type.DROP,
+                    WithEnv(lambda env, ep: add_reagent_to_ep(ep, interactive_reagent(env))))
 
         fn = Functions["#transfer out"]
-        def remove_volume_from_well(w: Well, v: Volume) -> Delayed[Well]:
-            return w.remove(v)
-        fn.register((Type.WELL, Type.VOLUME), Type.WELL, remove_volume_from_well, curry_at=0)
-
-        def remove_liquid_from_ep(ep: ExtractionPoint, v: Optional[Volume] = None) -> Delayed[Liquid]:
-            # def trace_loc(loc: ProductLocation) -> None:
-            #     print(f"Removed product {loc.reagent} to {loc.location}")
-            # prod_loc = Postable[ProductLocation]()
-            # prod_loc.then_call(trace_loc)
-            # return ep.transfer_out(volume=v, is_product=True, product_loc=prod_loc)
-            return ep.transfer_out(volume=v, is_product=True)
-
-        fn.register((Type.EXTRACTION_POINT,), Type.LIQUID, remove_liquid_from_ep)
-        fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.LIQUID, remove_liquid_from_ep, curry_at=0)
+        def remove_liquid(source: Union[Well, ExtractionPoint], volume: Optional[Volume] = None) -> Delayed[Liquid]:
+            if isinstance(source, Well):
+                if volume is None:
+                    volume = source.volume
+                return source.remove(volume)
+            else:
+                return source.transfer_out(volume=volume, is_product=True)
         
+        fn.register((Type.PIPETTING_TARGET, Type.VOLUME), Type.LIQUID, remove_liquid, curry_at=0)
+        fn.register((Type.PIPETTING_TARGET,), Type.LIQUID, remove_liquid)
+        
+        
+        # def remove_volume_from_well(w: Well, v: Volume) -> Delayed[Well]:
+        #     return w.remove(v)
+        # fn.register((Type.WELL, Type.VOLUME), Type.WELL, remove_volume_from_well, curry_at=0)
+        #
+        # def remove_liquid_from_ep(ep: ExtractionPoint, v: Optional[Volume] = None) -> Delayed[Liquid]:
+        #     # def trace_loc(loc: ProductLocation) -> None:
+        #     #     print(f"Removed product {loc.reagent} to {loc.location}")
+        #     # prod_loc = Postable[ProductLocation]()
+        #     # prod_loc.then_call(trace_loc)
+        #     # return ep.transfer_out(volume=v, is_product=True, product_loc=prod_loc)
+        #     return ep.transfer_out(volume=v, is_product=True)
+        #
+        # fn.register((Type.EXTRACTION_POINT,), Type.LIQUID, remove_liquid_from_ep)
+        # fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.LIQUID, remove_liquid_from_ep, curry_at=0)
+
         def remove_drop_from_ep(d: Drop) -> Delayed[Liquid]:
             if not isinstance((p:=d.pad), Pad) or (ep:=p.extraction_point) is None:
                 raise EvaluationError(f"No extraction point at {p}")
-            return remove_liquid_from_ep(ep)
+            return remove_liquid(ep)
         fn.register((Type.DROP,), Type.LIQUID, remove_drop_from_ep)
         
             
@@ -3165,7 +3186,7 @@ class DMFCompiler(DMFVisitor):
 
 
         fn = BuiltIns["empty"] = Functions["empty"]
-        def empty_well(w: Well) -> Delayed[Well]:
+        def empty_well(w: Well) -> Delayed[Liquid]:
             return w.empty_well()
         fn.register((Type.WELL,), Type.WELL, empty_well)
 
@@ -3173,19 +3194,38 @@ class DMFCompiler(DMFVisitor):
         
     @classmethod
     def setup_special_vars(cls) -> None:
+        unmonitored_interactive_reagent = unknown_reagent
         name = "interactive reagent"
         def get_reagent(monitor: BoardMonitor) -> Reagent:
             return monitor.interactive_reagent
+        def unmonitored_get_reagent(_env: Environment) -> Reagent:
+            return unmonitored_interactive_reagent
         def set_reagent(monitor: BoardMonitor, reagent: Reagent) -> None:
             monitor.interactive_reagent = reagent
-        SpecialVars[name] = MonitorVariable(name, Type.REAGENT, getter=get_reagent, setter=set_reagent)
+        def unmonitored_set_reagent(_env: Environment, reagent: Reagent) -> None:
+            nonlocal unmonitored_interactive_reagent
+            unmonitored_interactive_reagent = reagent
+        SpecialVars[name] = MonitorVariable[Reagent](name, Type.REAGENT, getter=get_reagent, setter=set_reagent,
+                                                     unmonitored_getter=unmonitored_get_reagent,
+                                                     unmonitored_setter=unmonitored_set_reagent)
         
+        unmonitored_interactive_volume: Optional[Volume] = None
         name = "interactive volume"
         def get_volume(monitor: BoardMonitor) -> Volume:
             return monitor.interactive_volume
+        def unmonitored_get_volume(env: Environment) -> Volume:
+            v = unmonitored_interactive_volume
+            if v is None:
+                v = env.board.drop_size
+            return v
         def set_volume(monitor: BoardMonitor, volume: Volume) -> None:
             monitor.interactive_volume = volume
-        SpecialVars[name] = MonitorVariable(name, Type.VOLUME, getter=get_volume, setter=set_volume)
+        def unmonitored_set_volume(_env: Environment, volume: Volume) -> None:
+            nonlocal unmonitored_interactive_volume
+            unmonitored_interactive_volume = volume
+        SpecialVars[name] = MonitorVariable[Volume](name, Type.VOLUME, getter=get_volume, setter=set_volume,
+                                                    unmonitored_getter=unmonitored_get_volume,
+                                                    unmonitored_setter=unmonitored_set_volume)
         
         name = "clicked pad"
         def get_clicked_pad(monitor: BoardMonitor) -> Optional[Pad]:
@@ -3193,7 +3233,7 @@ class DMFCompiler(DMFVisitor):
             c: Optional[BinaryComponent] = monitor.last_clicked
             # print(f"  Last clicked is {c}")
             return c if c is not None and isinstance(c, Pad) else None
-        SpecialVars[name] = MonitorVariable(name, Type.PAD.maybe, getter=get_clicked_pad)
+        SpecialVars[name] = MonitorVariable[Optional[Pad]](name, Type.PAD.maybe, getter=get_clicked_pad)
         SpecialVars["clicked"] = SpecialVars[name]
         
         name = "clicked drop"
@@ -3201,7 +3241,7 @@ class DMFCompiler(DMFVisitor):
             c: Optional[BinaryComponent] = monitor.last_clicked
             return c.drop if c is not None and isinstance(c, DropLoc) else None
             
-        SpecialVars[name] = MonitorVariable(name, Type.DROP.maybe, getter=get_clicked_drop)
+        SpecialVars[name] = MonitorVariable[Optional[Drop]](name, Type.DROP.maybe, getter=get_clicked_drop)
         
         
         
@@ -3214,7 +3254,7 @@ class DMFCompiler(DMFVisitor):
         name = "the board"
         def get_board(env: Environment) -> Board:
             return env.board
-        SpecialVars[name] = SpecialVariable(Type.BOARD, getter=get_board)
+        SpecialVars[name] = SpecialVariable[Board](Type.BOARD, getter=get_board)
         
         SpecialVars["AC"] = Constant(Type.POWER_MODE, PowerMode.AC)
         SpecialVars["DC"] = Constant(Type.POWER_MODE, PowerMode.DC)

@@ -5,7 +5,7 @@ from threading import Lock
 from typing import Final, NamedTuple, Sequence, Literal, Union, Optional, \
     Iterator, Any, Callable
 
-from mpam.device import TemperatureControl, Pad, Heater
+from mpam.device import TemperatureControl, Pad
 from mpam.drop import Drop
 from mpam.paths import Path
 from mpam.processes import MultiDropProcessType, FinishFunction, PairwiseMix

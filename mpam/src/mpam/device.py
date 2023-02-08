@@ -2594,7 +2594,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
 
     def remove(self, volume: Volume, *,
                on_no_sink: ErrorHandler = PRINT
-               ) -> Delayed[Well]:
+               ) -> Delayed[Liquid]:
         """
         Request that ``volume`` of the :class:`Well`'s :attr:`reagent` be
         removed from the :class:`Well`. Returns a
@@ -2646,7 +2646,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
 
         p_future = pipettor.schedule(pipettor.Extract(volume, self,
                                                       on_no_sink=on_no_sink))
-        return p_future.transformed(lambda _: self)
+        return p_future
 
     def refill(self, *, reagent: Optional[Reagent] = None) -> Delayed[Well]:
         """
@@ -2681,7 +2681,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
             reagent = self.reagent
         return self.add(reagent, volume)
 
-    def empty_well(self) -> Delayed[Well]:
+    def empty_well(self) -> Delayed[Liquid]:
         """
         Request that :attr:`reagent` be added to bring the :class:`Well`'s
         :attr:`volume` to its current :attr:`empty_to` level.  If the
@@ -2705,7 +2705,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
         volume = self.volume - self.empty_to
         # assert volume > Volume.ZERO, f"empty_well(volume={volume}) called on {self}"
         if volume <= 0:
-            return Delayed.complete(self)
+            return Delayed.complete(Liquid(self.reagent, Volume.ZERO))
         return self.remove(volume)
 
 
@@ -2835,7 +2835,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
             # print(f"{resulting_volume:g} <= {self.max_fill:g}")
             return Delayed.complete(self)
         # print(f"Need to empty well ({resulting_volume:g} > {self.max_fill:g}")
-        return self.empty_well()
+        return self.empty_well().transformed(lambda _: self)
 
     class TransitionTo(CSOperation['Well','Well']):
         """
@@ -3776,8 +3776,13 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
 
         By default, it waits until there is a :class:`.Drop` on :attr:`pad`.
         """
-        self.ensure_drop().wait()
-        self.reserve_pads(expect_drop=True).wait()
+        from mpam.drop import Blob # @Reimport
+        
+        def after_drop(drop: Drop) -> Delayed[None]:
+            return (self.reserve_pads(expect_drop=True)
+                    .chain(lambda _: Blob.TurnOff.schedule_for(drop.blob)))
+        self.ensure_drop().chain(after_drop).wait()
+        
 
     def pipettor_removed(self, reagent: Reagent, volume: Volume, # @UnusedVariable
                          *, last: bool) -> None: # @UnusedVariable
@@ -3796,18 +3801,16 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         Keyword Args:
             last: ``True`` if this is the last transfer in a transfer request.
         """
+        from mpam.drop import Blob # @Reimport
+        
         pad = self.pad
-        if volume > Volume.ZERO:
+        if volume > 0:
             pad.liquid_removed(volume)
-        blob = not_None(pad.blob, desc=lambda: f"{self} has no blob after extraction")
-        # If the blob is now empty, we turn off all of its pads.
-
-        # TODO: Should this be a property of the operation that called this?
-        if blob.total_volume.is_zero:
-            for p in blob.pads:
-                assert isinstance(p, Pad)
-                # TODO: Do I need to wait on this somewhere?
-                p.schedule(Pad.TurnOff, post_result=False)
+        blob = pad.blob
+        
+        if blob is not None and not blob.total_volume.is_zero:
+            Blob.TurnOn.schedule_for(blob)
+        
         if last:
             self.unreserve_pads()
 
@@ -3875,7 +3878,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         pipettor = self.pipettor
         assert pipettor is not None, f"{self} has no pipettor and transfer_out() not overridden"
         if volume is None:
-            drop = not_None(self.pad.drop, desc=lambda: f"volume is None and {self.pad} does not have Drop")
+            drop = not_None(self.pad.drop, desc=lambda: f"{self.pad}.drop")
             volume = drop.blob_volume
         p_future = pipettor.schedule(pipettor.Extract(volume, self,
                                                       is_product = is_product,
@@ -4009,7 +4012,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         while self.reserved_pads:
             self.reserved_pads.pop().unreserve()
 
-    def ensure_drop(self) -> Delayed[None]:
+    def ensure_drop(self) -> Delayed[Drop]:
         """
         Notify when there is a :class:`.Drop` at :attr:`pad`.
 
@@ -4018,7 +4021,9 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             :attr:`pad`
         """
         pad = self.pad
-        return pad.board.on_condition(lambda: pad.drop is not None, lambda: None)
+        return pad.board.on_condition(lambda: pad.drop is not None, 
+                                      lambda: not_None(pad.drop, 
+                                                       desc=lambda: f"{self} lost drop during ensure_drop()"))
 
     def _compute_splash(self) -> None:
         zone = set([self.pad])
