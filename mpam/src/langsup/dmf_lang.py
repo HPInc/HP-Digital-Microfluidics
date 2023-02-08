@@ -17,7 +17,7 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
-    Val_, LoopExitType, ByNameCache
+    Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint
@@ -956,17 +956,8 @@ class LazyEval:
         fn = self.func
         return fn(env, arg_execs)
 
-class WithEnv:
-    def __init__(self, func: Callable):
-        self.func = func
-    def __call__(self, env: Environment, *args: Sequence[Any]) -> Delayed[Any]:
-        return Delayed.complete(self.func(env, *args))    
-
-class WithEnvDelayed:
-    def __init__(self, func: Callable[..., Delayed[Any]]):
-        self.func = func
-    def __call__(self, env: Environment, *args: Sequence[Any]) -> Delayed[Any]:
-        return self.func(env, *args)    
+WithEnv = ExtraArgFunc[Environment]
+WithEnvDelayed = ExtraArgDelayedFunc[Environment]
 
 class LoopType(ABC):
     compiler: Final[DMFCompiler]
@@ -1550,7 +1541,7 @@ class DMFCompiler(DMFVisitor):
                         return Delayed.complete(maybe_error)
                     else:
                         try:
-                            if isinstance(fn, (WithEnv, WithEnvDelayed)):
+                            if isinstance(fn, (ExtraArgFunc, ExtraArgDelayedFunc)):
                                 return fn(env, *args, *extra_args)
                             else:
                                 return fn(*args, *extra_args)
@@ -1570,7 +1561,11 @@ class DMFCompiler(DMFVisitor):
             func = Functions[func]
         arg_execs = [self.visit(arg) for arg in arg_ctxts]
         arg_types = [ae.return_type for ae in arg_execs]
-        desc = func[arg_types]
+        will_inject = self.get_injected_type_annotation(ctx)
+        if will_inject is None:
+            desc = func[arg_types]
+        else:
+            desc = func.for_injection(arg_types, will_inject)
         if desc is None:
             rt = func.error_type(arg_types)
             # Don't bother to report an error if an arg already did and we don't know
@@ -1656,6 +1651,14 @@ class DMFCompiler(DMFVisitor):
     # def visitMacro_def_tls(self, ctx:DMFParser.Macro_def_tlsContext) -> Executable:
     #     return 0
 
+    injected_type_annotation: Final = "_injected_type_"
+    
+    def get_injected_type_annotation(self, ctx: DMFParser.ExprContext) -> Optional[Type]:
+        return getattr(ctx, self.injected_type_annotation, None)
+
+    def set_injected_type_annotation(self, ctx: DMFParser.ExprContext, t: Type) -> None:
+        setattr(ctx, self.injected_type_annotation, t)
+    
 
 
     def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext) -> Executable:
@@ -2463,6 +2466,7 @@ class DMFCompiler(DMFVisitor):
 
     def visitInjection_expr(self, ctx:DMFParser.Injection_exprContext) -> Executable:
         who = self.visit(ctx.who)
+        self.set_injected_type_annotation(cast(DMFParser.ExprContext, ctx.what), who.return_type)
         what = self.visit(ctx.what)
         # logger.info(f"Injecting {self.text_of(ctx.who)} into {self.text_of(ctx.what)}")
         if what.return_type is Type.BUILT_IN:
@@ -3127,12 +3131,16 @@ class DMFCompiler(DMFVisitor):
         def add_liquid_to_ep(ep: ExtractionPoint, liquid: Liquid) -> Delayed[Drop]:
             path = Path.teleport_into(ep, liquid=liquid)
             return path.schedule()
-        fn.register((Type.EXTRACTION_POINT, Type.LIQUID), Type.DROP, add_liquid_to_ep)
+        fn.register((Type.EXTRACTION_POINT, Type.LIQUID), Type.DROP, add_liquid_to_ep, curry_at=0)
         # TODO: To transfer in just based on volume, we need to be able to get
         # our hands on the interactive reagent, which means we need an Environment.
         
         def interactive_reagent(env: Environment) -> Reagent:
             return cast(Reagent, SpecialVars["interactive reagent"].get(env))
+
+        fn.register((Type.EXTRACTION_POINT,Type.VOLUME), Type.DROP,
+                    WithEnvDelayed(lambda env, ep, v: add_liquid_to_ep(ep, Liquid(interactive_reagent(env), v))),
+                    curry_at=0)
 
         # fn.register((Type.EXTRACTION_POINT, Type.VOLUME), Type.DROP,
                             # lambda ep,v: add_liquid_to_ep(ep, Liquid(ep, ))
@@ -3140,7 +3148,7 @@ class DMFCompiler(DMFVisitor):
             return Path.teleport_into(ep, reagent=r).schedule()
         fn.register((Type.EXTRACTION_POINT, Type.REAGENT), Type.DROP, add_reagent_to_ep, curry_at=0)
         fn.register((Type.EXTRACTION_POINT,), Type.DROP,
-                    WithEnv(lambda env, ep: add_reagent_to_ep(ep, interactive_reagent(env))))
+                    WithEnvDelayed(lambda env, ep: add_reagent_to_ep(ep, interactive_reagent(env))))
 
         fn = Functions["#transfer out"]
         def remove_liquid(source: Union[Well, ExtractionPoint], volume: Optional[Volume] = None) -> Delayed[Liquid]:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from _collections_abc import Iterable
 from enum import Enum, auto
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
-    Any, Mapping, Union, NoReturn, TypeVar
+    Any, Mapping, Union, NoReturn, TypeVar, Generic
 
 from mpam.types import Delayed
 from _collections import defaultdict
@@ -673,6 +673,9 @@ class CallableValue(ABC):
         want = self.sig.arity
         got = len(args)
         assert want == got, f"Functional object expected {qstr(want, 'argument')}, got {got}., "
+        
+    def __call__(self, args: Sequence[Any]) -> Delayed[Any]:
+        return self.apply(args)
     
 class ConvertedCallableValue(CallableValue):
     cv: Final[CallableValue]
@@ -712,6 +715,10 @@ class CallableType(Type):
     @property
     def param_types(self) -> Sequence[Type]:
         return self.sig.param_types
+    
+    @property
+    def arity(self) -> int:
+        return self.sig.arity
     
     @property
     def return_type(self) -> Type:
@@ -879,14 +886,28 @@ class ByNameCache(dict[K_,V_]):
         self[key] = ret
         return ret
 
+class ExtraArgFunc(Generic[T_]):
+    def __init__(self, func: Callable):
+        self.func = func
+    def __call__(self, extra: T_, *args: Sequence[Any]) -> Delayed[Any]:
+        return Delayed.complete(self.func(extra, *args))    
+
+class ExtraArgDelayedFunc(Generic[T_]):
+    def __init__(self, func: Callable[..., Delayed[Any]]):
+        self.func = func
+    def __call__(self, extra: T_, *args: Sequence[Any]) -> Delayed[Any]:
+        return self.func(extra, *args)    
+    
 class Func:
     Definition = Callable[..., Delayed]
+    SigDef = tuple[Signature,Definition]
+    OverloadDict = dict[tuple[Type,...], SigDef]
     TypeExprFormatter = Callable[..., Optional[str]]
     name: Final[str]
     # verb: Final[str]
-    overloads: Final[dict[tuple[Type,...], tuple[Signature,Definition]]]
+    overloads: OverloadDict
+    curried_overloads: Final[dict[Type, OverloadDict]]
     type_expr_formatters: Final[dict[Optional[int], list[TypeExprFormatter]]]
-    curried_funcs: ClassVar[ByNameCache[str,Func]]
     
     def __init__(self, name: str, 
                  # *,
@@ -896,6 +917,7 @@ class Func:
         self.name = name
         # self.verb = verb or name.lower()
         self.overloads = {}
+        self.curried_overloads = defaultdict(dict)
         # self.error_msg_factory = error_msg_factory
         self.type_expr_formatters = defaultdict(list)
         
@@ -907,8 +929,12 @@ class Func:
         return tuple(p[0] for p in self.overloads.values())
 
     def register(self, param_types: Sequence[Type], return_type: Type, definition: Definition, *,
-                 curry_at: Union[int,Sequence[int]]=()) -> Func:
+                 curry_at: Union[int,Sequence[int]]=(),
+                 curry_for: Optional[Type] = None) -> Func:
         sig = Signature.of(param_types, return_type)
+        if curry_for is not None:
+            assert isinstance(return_type, CallableType) and return_type.arity == 1
+            self.curried_overloads[curry_for][sig.param_types] = (sig,definition) 
         self.overloads[sig.param_types] = (sig,definition)
         if isinstance(curry_at, int):
             curry_at=(curry_at,)
@@ -918,6 +944,9 @@ class Func:
             inner_param_type = outer_param_types.pop(0)
             inner_return_type = return_type
             outer_return_type = CallableType.find((inner_param_type,), inner_return_type)
+            has_extra_arg = isinstance(definition, (ExtraArgFunc, ExtraArgDelayedFunc))
+            if has_extra_arg:
+                pos += 1
             # curry_name = f"{self.name}/{'x'.join(str(t) for t in outer_param_types)}"
             def outer_fn(*outer_args: Sequence[Any]) -> CallableValue:
                 args = list(outer_args)
@@ -926,16 +955,23 @@ class Func:
                     local_args = list(args)
                     local_args.insert(pos, inner_arg)
                     return definition(*local_args)
-                return AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn)
-            self.register_immediate(outer_param_types, outer_return_type, outer_fn)
+                adapted_fn = AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn)
+                return adapted_fn
+            if has_extra_arg:
+                self.register(outer_param_types, outer_return_type, ExtraArgFunc(outer_fn),
+                              curry_for=inner_param_type)
+            else:
+                self.register_immediate(outer_param_types, outer_return_type, outer_fn, 
+                                        curry_for=inner_param_type)
         return self
         
     def register_immediate(self, param_types: Sequence[Type], return_type: Type, 
                            definition: Callable[..., Any], *,
-                           curry_at: Union[int,Sequence[int]]=()) -> Func:
+                           curry_at: Union[int,Sequence[int]]=(),
+                           curry_for: Optional[Type] = None) -> Func:
         def fn(*args: Sequence[Any]) -> Delayed:
             return Delayed.complete(definition(*args))
-        return self.register(param_types, return_type, fn, curry_at=curry_at)
+        return self.register(param_types, return_type, fn, curry_at=curry_at, curry_for=curry_for)
         
     def register_all(self, sigs: Sequence[Union[Signature, tuple[Sequence[Type], Type]]],
                      definition: Definition, *,
@@ -960,18 +996,32 @@ class Func:
                 param_types, return_type = sig
             self.register_immediate(param_types, return_type, definition, curry_at=curry_at)
         return self
-
-        
-            
-        
-    def __getitem__(self, arg_types: Sequence[Type]) -> Optional[tuple[Signature, Func.Definition]]:
-        d = self.overloads
-        best: Optional[tuple[Signature, Func.Definition]] = None
+    
+    
+    
+    def _tightest(self, arg_types: Sequence[Type], d: OverloadDict) -> Optional[SigDef]:
+        best: Optional[Func.SigDef] = None
         for sig, defn in d.values():
             if sig.callable_using(arg_types) and (best is None or sig.narrower_than(best[0])):
                 best = (sig,defn)
         return best
+
+    def __getitem__(self, arg_types: Sequence[Type]) -> Optional[SigDef]:
+        return self._tightest(arg_types, self.overloads)
     
+    def for_injection(self, arg_types: Sequence[Type], injected_type: Type) -> Optional[SigDef]:
+        best: Optional[Func.SigDef] = None
+        tightest: Optional[Type] = None
+        for t,d in self.curried_overloads.items():
+            if injected_type <= t and (tightest is None or t < tightest):
+                candidate = self._tightest(arg_types, d)
+                if candidate is not None:
+                    best = candidate
+                    tightest = t
+        if best is None:
+            best = self[arg_types]
+        return best
+                
     def format_type_expr_using(self, arity: Optional[int], formatter: Func.TypeExprFormatter, *,
                                override: bool = False) -> Func:
         if override:
@@ -1037,7 +1087,6 @@ class Func:
                     mismatch = True
         return default_type if mismatch or best is None else best
  
-Func.curried_funcs = ByNameCache[str, Func](lambda name: Func(name))                
     
 class Attr:
     func: Final[Func]
