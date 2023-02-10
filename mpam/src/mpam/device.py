@@ -1488,7 +1488,7 @@ class WellMotion:
                             while not w.exit_pad.empty:
                                 yield True
                 else:
-                    states[pad_index] = OnOff.ON
+                    states[pad_index-1] = OnOff.ON
 
             gs = self.gate_status
 
