@@ -9,8 +9,8 @@ from erk.basic import assert_never
 from erk.stringutils import conj_str
 from mpam.device import WellOpSeqDict, WellState, PadBounds, \
     WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
-    transitions_from, WellGate, TemperatureControl, PowerSupply, PowerMode, Fan,\
-    Heater, Chiller
+    WellGate, TemperatureControl, PowerSupply, PowerMode, Fan,\
+    Heater, Chiller, StateDefs
 import mpam.device as device
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
@@ -273,8 +273,8 @@ class Board(device.Board):
                 pad_dict[loc] = Pad(loc, self, exists=exists, state=state)
 
         sequences: WellOpSeqDict = {
-            (WellState.EXTRACTABLE, WellState.READY): ((8,), (8,7,6,5,4), (7,6,5,4)),
-            (WellState.READY, WellState.EXTRACTABLE): ((8,7,6,4,5,), (8,)),
+            (WellState.EXTRACTABLE, WellState.READY): ((8,), (4,5,6,7,8), (4,5,6,7)),
+            (WellState.READY, WellState.EXTRACTABLE): ((4,5,6,7,8), (8,), ()),
             (WellState.READY, WellState.DISPENSED): ((6,3,4,5,1,2,-1),
                                                      (5,1,2,3,-1),
                                                      (2,-1),
@@ -282,15 +282,20 @@ class Board(device.Board):
                                                      (4,5,6,7,-1),
                                                      (4,5,6,7)
                                                      ),
-            (WellState.DISPENSED, WellState.READY): (),
             (WellState.READY, WellState.ABSORBED): ((4,5,6,7,1,2,3,-1),),
             (WellState.ABSORBED, WellState.READY): ((4,5,6,7),)
             }
 
-        transition = transitions_from(sequences)
+        states = {
+            WellState.READY: (4,5,6,7),
+            WellState.EXTRACTABLE: (),
+            WellState.INJECTABLE: (4,5,6,7,8), 
+            }
+        
+        state_defs = StateDefs(states, sequences)
 
-        left_group = DispenseGroup("left", transition)
-        right_group = DispenseGroup("right", transition)
+        left_group = DispenseGroup("left", states=state_defs)
+        right_group = DispenseGroup("right", states=state_defs)
 
         left_states = tuple(self._well_pad_state('left', n) for n in range(9))
         right_states = tuple(self._well_pad_state('right', n) for n in range(9))

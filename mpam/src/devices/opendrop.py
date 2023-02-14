@@ -7,8 +7,7 @@ from serial import Serial
 
 from mpam import device
 from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
-    WellShape, Pad, WellGate, WellPad, transitions_from, \
-    TransitionFunc
+    WellShape, Pad, WellGate, WellPad, StateDefs
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
 from mpam.pipettor import Pipettor
@@ -98,7 +97,7 @@ class Board(device.Board):
             epx += 1
         return (epx+5*outdir, epy-0.5)
     
-    def _well(self, transition: TransitionFunc, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
+    def _well(self, states: StateDefs, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
               inner_locs: Sequence[tuple[int,int]]) -> Well:
         shape = WellShape(
                     gate_pad_bounds= self._gate_bounds(exit_pad.location),
@@ -114,7 +113,7 @@ class Board(device.Board):
         inner_electrodes = tuple(Electrode(x, y, self._states) for x,y in inner_locs)
         shared = tuple(WellPad(self, state=s, neighbors=ns) for s,ns in zip(inner_electrodes, pad_neighbors))
         return Well(board=self,
-                    group=transition,
+                    group=states,
                     exit_dir=exit_dir,
                     exit_pad=exit_pad,
                     gate=gate,
@@ -143,24 +142,28 @@ class Board(device.Board):
                 p = Pad(loc, self, e)
                 pad_dict[loc] = p
                 
+        states = {
+            WellState.READY: (1,2),
+            WellState.EXTRACTABLE: (),
+            WellState.INJECTABLE: (),
+            }
+        
         sequences: WellOpSeqDict = {
             (WellState.EXTRACTABLE, WellState.READY): ((2,),(1,2)),
             (WellState.READY, WellState.EXTRACTABLE): ((2,), ()),
             (WellState.READY, WellState.DISPENSED): ((-1,0,1),(-1,),(1,2)),
-            (WellState.DISPENSED, WellState.READY): (),
             (WellState.READY, WellState.ABSORBED): ((-1,2),(1,2)),
-            (WellState.ABSORBED, WellState.READY): ()
             }
         
-        transition = transitions_from(sequences)
+        state_defs = StateDefs(states, sequences)
         
         def inner_locs(col: int, rows: Sequence[int]) -> Sequence[tuple[int,int]]:
             return [(col, r) for r in rows]
         
-        upper_left = self._well(transition, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)))
-        upper_right = self._well(transition, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)))
-        lower_left = self._well(transition, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)))
-        lower_right = self._well(transition, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)))
+        upper_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)))
+        upper_right = self._well(state_defs, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)))
+        lower_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)))
+        lower_right = self._well(state_defs, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)))
         self._add_wells((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:

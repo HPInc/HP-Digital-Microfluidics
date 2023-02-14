@@ -1186,6 +1186,7 @@ class WellState(Enum):
     (via a :class:`WellMotion`), it will not be in any of them.
     """
     EXTRACTABLE = auto()    #: The contents are in positition to be removed by a :class:`.Pipettor`
+    INJECTABLE = auto()
     READY = auto()          #: The :class:`Well` is ready to move to a different :class:`WellState`
     DISPENSED = auto()      #: The :class:`Well` has just dispensed a :class:`.Drop`
     ABSORBED = auto()       #: The :class:`Well` has just absorbed a :class:`.Drop`
@@ -1208,6 +1209,7 @@ WellOpSeqDict = Mapping[tuple[WellState,WellState], WellOpStepSeq]
 A :class:`Mapping` from source-target pairs of :class:`WellState`\s to
 :class:`WellOpStepSeq`\s.
 """
+
 
 class GateStatus(Enum):
     """
@@ -1262,6 +1264,7 @@ class WellMotion:
     upon completion
     """
     # post_result: Final[bool]
+    lead_well: Final[Well]
     well_gates: Final[set[WellGate]]    #: The :attr:`~Well.gate`\s of the :class:`Well`\s
     shared_pads: Final[Sequence[WellPad]]   #: The internal :class:`WellPad`\s of the initial :class:`Well`
     guard: Final[Optional[Iterator[bool]]]
@@ -1296,6 +1299,7 @@ class WellMotion:
         self.futures = [(well, self.initial_future)] if post_result else []
         self.target = target
         # self.post_result = post_result
+        self.lead_well = well
         self.well_gates = { well.gate }
         self.shared_pads = well.shared_pads
         self.guard = guard
@@ -1411,6 +1415,9 @@ class WellMotion:
 
         # print(f"New motion to {self.target}, gates = {self.well_gates}: {self}")
         group = self.group
+        
+        def current_state() -> Optional[WellState]:
+            return group.states.state_for(self.lead_well)
 
         def with_lock() -> Optional[bool]:
             with group.lock:
@@ -1427,7 +1434,7 @@ class WellMotion:
                         # print(f"Deferring")
                         return True
                 # print(f"We're the first")
-                if group.state is target:
+                if current_state() is target:
                     # There's no motion, and we're already where we want to be.
                     # If this is EXTRACTABLE or READY, we're fine, otherwise, we got here
                     # without using our gates, so we need to go through READY again
@@ -1469,7 +1476,7 @@ class WellMotion:
         shared_pads = self.shared_pads
         # turned_gates_on = self.turned_gates_on
         # turned_gates_off = self.turned_gates_off
-        for on_last_step, step in group.transition_func(group.state, target):
+        for on_last_step, step in group.states.transition_steps(self.lead_well, target):
             # We squirrel it away so that it can be used in try_adopt()
             # self.on_last_step = on_last_step
             states = list(itertools.repeat(OnOff.OFF, len(shared_pads)))
@@ -1543,7 +1550,6 @@ class WellMotion:
             #     gate.schedule(WellPad.TurnOff, post_result=False)
             with group.lock:
                 group.motion = None
-                group.state = self.target
                 self.post_futures()
         self.board.after_tick(cb)
         yield False
@@ -1620,43 +1626,94 @@ TransitionStep = tuple[bool,WellOpStep]
 A pair in which the second element is a :class:`WellOpStep` and the first is an
 ``True`` if this is the last step in its :class:`WellOpStepSeq`
 """
-TransitionFunc = Callable[[WellState,WellState], Iterator[TransitionStep]]
-"""
-A :class:`.Callable` that takes source and target :class:`WellState`\s and
-returns an :class:`.Iterator` that yields :class:`TransitionStep`\s.  All
-yielded :class:`TransitionStep`\s will have ``False`` as their first element
-except the last, which will have ``True``.
-"""
 
-def transitions_from(sd: WellOpSeqDict) -> TransitionFunc:
-    """
-    Create a :class:`TransitionFunc` from a :class:`WellOpSeqDict`.
+class StateDefs:
+    state_for_pads: Final[Mapping[tuple[int,...], WellState]]
+    pads_for_state: Final[Mapping[WellState, tuple[int, ...]]]
+    transitions: Final[dict[tuple[Optional[WellState], WellState], MissingOr[Sequence[TransitionStep]]]]
+    ready_state: Final[tuple[int, ...]]
 
-    The yielded :class:`TransitionStep`\s will be based on the
-    :class:`WellOpStepSeq`\s in ``sd``.  If either the source or target states
-    are :attr:`~WellState.READY`, ``(source, target)`` is looked up in ``sd``.
-    Otherwise, both ``(source,`` :attr:`~WellState.READY` ``)`` and ``(``
-    :attr:`~WellState.READY` ``, target)`` are looked up and the results are
-    concatenated.
-
-    Args:
-        sd: the :class:`WellOpSeqDict` describing transitions.
-    Returns:
-        an :class:`.Iterator` that yields :class:`TransitionStep`\s.
-    Raises:
-        KeyError: if the :class:`.Iterator` cannot be constructed based on
-                  ``sd``.
-    """
-    def fn(start: WellState, end: WellState) -> Iterator[TransitionStep]:
-        ready = WellState.READY
-        if start is ready or end is ready:
-            seq = sd[(start, end)]
-        else:
-            seq = [*sd[(start, ready)], *sd[(ready, end)]]
+    def __init__(self, states: Mapping[WellState, tuple[int, ...]],
+                 transitions: WellOpSeqDict)-> None:
+        fwd = { state: tuple(sorted(pads)) for state,pads in states.items()}
+        self.pads_for_state = fwd
+        self.ready_state = states[WellState.READY]
+        self.state_for_pads = { pads: state for state,pads in fwd.items() }
+        self.transitions = { states: self.to_steps(seq) for states,seq in transitions.items() }
+        self.transitions[(None, WellState.READY)] = [(True, self.ready_state)]
+            
+    def to_steps(self, seq: WellOpStepSeq) -> Sequence[TransitionStep]:
         last = len(seq)-1
-        return ((i==last, s) for i,s in enumerate(seq))
-    return fn
-
+        return [(i==last, step) for i,step in enumerate(seq)]
+        
+    def state_for(self, well: Well) -> Optional[WellState]:
+        pads = [p.index for p in (well.gate, *well.shared_pads) if p.current_state is OnOff.ON]
+        pads.sort()
+        key = tuple(pads)
+        return self.state_for_pads.get(key, None)
+    
+    def pads_for(self, state: WellState) -> Optional[tuple[int,...]]:
+        return self.pads_for_state.get(state, None)
+    
+    def _transition_steps(self, start: Optional[WellState], end: WellState, *,
+                          cached_only: bool = False) -> MissingOr[Sequence[TransitionStep]]:
+        if start is end:
+            return []
+        steps = self.transitions.get((start,end), MISSING)
+        if steps is MISSING and not cached_only:
+            steps = self._compute_transition_steps(start, end)
+            self.transitions[(start,end)] = steps
+        return steps
+    
+    def transition_steps(self, well: Well, target: WellState) -> Sequence[TransitionStep]:
+        start = self.state_for(well)
+        steps = self._transition_steps(start, target)
+        if steps is MISSING:
+            state_desc= "unknown" if start is None else start.name
+            logger.error(f"{well}'s state is {state_desc}.  Don't know how to get from there to {target.name}.")
+            assert False
+        return steps
+    
+    def _transition_through(self, middle: WellState, start: WellState, end: WellState) -> MissingOr[Sequence[TransitionStep]]:
+        # We want to avoid a regress, so if we're called here and middle is one of the endpoints, we give up.
+        if middle is start or middle is end:
+            return MISSING
+        to_middle = self._transition_steps(start, middle)
+        from_middle = self._transition_steps(middle, end)
+        if to_middle is MISSING or from_middle is MISSING:
+            return MISSING
+        # If both sides are just "Turn on the state", don't bother.
+        if len(to_middle) == 1 and len(from_middle) == 1:
+            return MISSING
+        return [*((False, p[1]) for p in to_middle), *from_middle]
+        
+    
+    def _compute_transition_steps(self, start: Optional[WellState], end: WellState) -> MissingOr[Sequence[TransitionStep]]:
+        if start is None:
+            # We don't know where we are.  If we have a sequence to get from READY, we assert READY and use it.
+            from_ready = self._transition_steps(WellState.READY, end)
+            if from_ready is not MISSING:
+                return [(False, self.ready_state), *from_ready]
+            # Otherwise, we just assert the end state if we know it.
+            end_pads = self.pads_for(end)
+            if end_pads is None:
+                return MISSING
+            return [(True, end_pads)]
+        start_pads = self.pads_for(start)
+        end_pads = self.pads_for(end)
+        # If the two states are identical, we don't do anything
+        if start_pads is not None and start_pads == end_pads:
+            return ()
+        # Can we go through READY?
+        steps = self._transition_through(WellState.READY, start, end)
+        if steps is not MISSING:
+            return steps
+        # Apparently not.  If we know the configuration for end, we just switch to it.
+        if end_pads is not None:
+            return [(True, end_pads)]
+        # We really don't know.
+        return MISSING
+            
 
 class DispenseGroup:
     """
@@ -1678,12 +1735,14 @@ class DispenseGroup:
     The in-progress :class:`WellMotion`, if any for the :class:`Well`\s in this
     group.
     """
-    state: WellState
-    """
-    The current :class:`WellState` for the :class:`Well`\s in this group
-    """
+    # state: WellState
+    # """
+    # The current :class:`WellState` for the :class:`Well`\s in this group
+    # """
+    
+    states: Final[StateDefs]
 
-    def __init__(self, key: Any, transition_func: TransitionFunc) -> None:
+    def __init__(self, key: Any, *, states: StateDefs) -> None:
         """
         Initialize the object.
 
@@ -1695,14 +1754,14 @@ class DispenseGroup:
             transition_func: the :class:`TransitionFunc` to use to change states.
         """
         self.key = key
-        self.transition_func: Final[TransitionFunc] = transition_func
         """
         The :class:`TransitionFunc` to use to iterate through
         :class:`WellOpStateSeq`\s to change to a new :class:`WellState`.
         """
+        self.states = states
         self.lock = Lock()
         self.motion = None
-        self.state = WellState.EXTRACTABLE
+        # self.state = WellState.EXTRACTABLE
 
     def __repr__(self) -> str:
         if isinstance(self.key, Well):
@@ -2165,7 +2224,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
 
     def __init__(self, *,
                  board: Board,
-                 group: Union[DispenseGroup, TransitionFunc],
+                 group: Union[DispenseGroup, StateDefs],
                  exit_pad: Pad,
                  gate: WellGate,
                  shared_pads: Sequence[WellPad],
@@ -2216,7 +2275,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
         """
         BoardComponent.__init__(self, board)
         if not isinstance(group, DispenseGroup):
-            group = DispenseGroup(self, group)
+            group = DispenseGroup(self, states=group)
         self.group = group
         self.exit_pad = exit_pad
         self.gate = gate
@@ -2235,16 +2294,18 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
 
     def prepare_for_add(self) -> None:
         """
-        Do nothing.  No blocking is necessary before a :class:`.Pipettor` adds
-        :class:`.Liquid`.
+        Get into an injectable state.
         """
+        op = Well.TransitionTo(WellState.INJECTABLE)
+        self.schedule(op).wait()
 
     def prepare_for_remove(self) -> None:
         """
-        Do nothing.  No blocking is necessary before a :class:`.Pipettor`
-        removes :class:`.Liquid`.
+        Get into an extractable state
         """
-        pass
+        op = Well.TransitionTo(WellState.EXTRACTABLE)
+        self.schedule(op).wait()
+
 
     def pipettor_added(self, reagent: Reagent, volume: Volume, *,
                        mix_result: Optional[MixResult],

@@ -1755,6 +1755,12 @@ class Delayed(Generic[Tco]):
         # self.when_value(lambda val: future.post(fn(val)))
         return future
     
+    def monitor(self, fn: Callable[[Tco], Any]) -> Delayed[Tco]:
+        def call_and_post(val: Tco) -> Tco: # type: ignore[misc]
+            fn(val)
+            return val
+        return self.transformed(call_and_post)
+    
     def to_const(self, val: V) -> Delayed[V]:
         def ignore_arg(v: Any) -> V:
             return val

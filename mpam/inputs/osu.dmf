@@ -40,7 +40,7 @@ combine_drops = macro(well outer, well inner, time mixing_time) -> drop {
 // walk the drop safely to the extraction port and request 
 // that it be transferred out.
 extract = macro(drop d, extraction port ep) {
-  d : to row 1 : to col ep's col : to ep : transfer out;
+  d : to row 2 : to col ep's col : to ep : transfer out;
 };
 
 dna_comb = macro() {
@@ -51,10 +51,10 @@ dna_comb = macro() {
 
   extraction port ep = extraction port #3;
   
-  transfer in(wA, 10uL of reagent "A");
-  transfer in(wB, 10uL of reagent "B");
-  transfer in(wC, 10uL of reagent "C");
-  transfer in(wD, 10uL of reagent "D");
+  wA: transfer in(10uL of reagent "A");
+  wB: transfer in(10uL of reagent "B");
+  wC: transfer in(10uL of reagent "C");
+  wD: transfer in(10uL of reagent "D");
   
   time mixing_time = 10 seconds;
   

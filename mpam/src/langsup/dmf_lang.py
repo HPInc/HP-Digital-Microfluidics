@@ -1812,7 +1812,7 @@ class DMFCompiler(DMFVisitor):
             assert value is not None
             var_type = value.return_type
             if var_type < Type.BINARY_STATE:
-                var_type = Type.BINARY_STATE        
+                var_type = Type.BINARY_STATE     
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
             return self.error(ctx, var_type, 
