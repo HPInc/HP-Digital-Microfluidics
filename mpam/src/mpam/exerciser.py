@@ -73,10 +73,11 @@ class Exerciser(ABC):
     default_extraction_point_splash_radius: int = 0
 
     def __init__(self, description: Optional[str] = None, *,
-                 task: Optional[Task] = None) -> None:
+                 task: Optional[Task] = None,
+                 fromfile_prefix_chars: Optional[str] = '@') -> None:
         if description is None:
             description = "run tasks on a board" if task is None else task.description
-        self.parser = ArgumentParser(description=description)
+        self.parser = ArgumentParser(description=description, fromfile_prefix_chars=fromfile_prefix_chars)
         subparsers: Optional[_SubParsersAction]
         if task is not None:
             self.setup_task(task, parser=self.parser)
@@ -499,10 +500,11 @@ class PlatformChoiceExerciser(Exerciser):
                  platforms: Sequence[PCTaskDesc],
                  pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
                  default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
+                 fromfile_prefix_chars: Optional[str] = '@'
                  ) -> None:
         if description is None:
             description = f"Run the {task.name} task"
-        super().__init__(description)
+        super().__init__(description, fromfile_prefix_chars=fromfile_prefix_chars)
         self.task = task
         
         from devices import dummy_pipettor, manual_pipettor
