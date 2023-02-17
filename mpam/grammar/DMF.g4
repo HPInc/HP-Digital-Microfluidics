@@ -250,7 +250,7 @@ no_arg_action returns[str which]
   | 'remove' ('from' 'the'? 'board')? {$ctx.which="REMOVE-FROM-BOARD"}
   | 'reset' 'pads' {$ctx.which="RESET PADS"}
   | 'reset' 'magnets' {$ctx.which="RESET MAGNETS"}
-  | 'reset' 'heaters' {$ctx.which="RESET HEATERS"}
+  | 'reset' ('heaters' | 'heating' 'zones') {$ctx.which="RESET HEATERS"}
   | 'reset' 'chillers' {$ctx.which="RESET CHILLERS"}
   | 'reset' 'all' {$ctx.which="RESET ALL"}
   ;
@@ -286,7 +286,7 @@ base_param_type returns[Type type]
   | 'liquid' {$ctx.type=Type.LIQUID}
   | ('temp' | 'temperature') ('diff' | 'difference' | 'delta') {$ctx.type=Type.REL_TEMP}
   | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
-  | 'heater' {$ctx.type=Type.HEATER}
+  | ('heater' | 'heating' 'zone') {$ctx.type=Type.HEATER}
   | 'chiller' {$ctx.type=Type.CHILLER}
   | 'magnet' {$ctx.type=Type.MAGNET}
 //  | 'board' {$ctx.Type=Type.BOARD}
@@ -307,7 +307,7 @@ dim_unit returns[PhysUnit unit]
   
 numbered_type returns[NumberedItem kind]
   : 'well' {$ctx.kind=NumberedItem.WELL}
-  | 'heater' {$ctx.kind=NumberedItem.HEATER}
+  | ('heater' | 'heating' 'zone') {$ctx.kind=NumberedItem.HEATER}
   | 'chiller' {$ctx.kind=NumberedItem.CHILLER}
   | 'magnet' {$ctx.kind=NumberedItem.MAGNET}
   | (('extraction' ('point' | 'port')) | ('extraction'? 'hole'))
@@ -329,8 +329,9 @@ attr returns[str which]
   | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
   | ('min' | 'minimum') ('target' | 'temperature' | 'temp') {$ctx.which="#min_target"}
   | ('max' | 'maximum') ('target' | 'temperature' | 'temp') {$ctx.which="#max_target"}
+  | 'heating' 'zone' {$ctx.which="heater"}
   | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
-  	   | 'fan' 
+  	   | 'fan' | 'capacity'
   	   | ID
   )
   	{$ctx.which=$n.text}
@@ -378,6 +379,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
   | 'reset' | 'magnets' | 'pads' | 'heaters' | 'chillers' | 'all'
   | 'missing' | 'last' | 'clicked' 
   | 'port' | 'transfer' | 'in' | 'out'
+  | 'heating' | 'zone' | 'zones'
   ;
 
 string : STRING ;

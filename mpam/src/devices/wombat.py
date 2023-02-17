@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Mapping, Final, Optional, Sequence
+from typing import Mapping, Final, Optional, Sequence, Union
 
 from serial import Serial
 
 from devices import joey
-from mpam.types import OnOff, State, DummyState, XYCoord
+from mpam.types import OnOff, State, DummyState, XYCoord, Dir
 from erk.basic import ComputedDefaultDict, assert_never
-from quantities.dimensions import Time
+from quantities.dimensions import Time, Volume
 import logging
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
@@ -16,12 +16,20 @@ from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
 from mpam.pipettor import Pipettor
 from devices.joey import HeaterType
 from mpam import device
+from mpam.device import Pad
+from quantities.SI import uL
 
 logger = logging.getLogger(__name__)
 
 class WombatLayout(Enum):
     V1 = auto()
     V2 = auto()
+
+class LidType(Enum):
+    GLASS = auto()
+    PLASTIC = auto()
+
+
 
 v1pins = {
     "B01": 244, "H06": 243, "B02": 242, "B03": 241, "C04": 240,
@@ -155,6 +163,7 @@ class Electrode(State[OnOff]):
 
 class Board(joey.Board):
     _layout: Final[WombatLayout]
+    _lid_type: Final[LidType]
     _device: Final[Optional[str]]
     _states: Final[bytearray]
     _last_states: bytearray
@@ -206,14 +215,48 @@ class Board(joey.Board):
         # print(f"({x}, {y}): {cell}")
         return self._electrode(cell)
     
+    def _extraction_point_locs(self)->Sequence[Union[XYCoord, Pad, tuple[int, int]]]:
+        layout = self._layout
+        if layout is WombatLayout.V1:
+            return ((15,3),)
+        elif layout is WombatLayout.V2:
+            return ((6,16), (6,4))
+        else:
+            assert_never(self._layout)
+            
+    def _dispensed_volume(self)->Volume:
+        base = 1.424*1.424*uL
+        layout = self._layout
+        if layout is WombatLayout.V1:
+            return 0.3*base
+        elif layout is WombatLayout.V2:
+            lid_type = self._lid_type
+            if lid_type is LidType.PLASTIC:
+                return 0.3*base
+            elif lid_type is LidType.GLASS:
+                return 0.2*base
+            else:
+                assert_never(lid_type)
+        else:
+            assert_never(layout)
+            
+    def _well_capacity(self, exit_dir: Dir) -> Volume:
+        layout = self._layout
+        if layout is WombatLayout.V1:
+            return 30*uL if exit_dir is Dir.EAST else 15*uL
+        elif layout is WombatLayout.V2:
+            return 15*uL
+    
     def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
                  is_yaminon: bool = False,
                  layout: WombatLayout,
-                 heater_type: HeaterType,
+                 lid_type: LidType = LidType.PLASTIC,
+                 heater_type: HeaterType = HeaterType.TSRs,
                  off_on_delay: Time = Time.ZERO,
                  double_write: bool = True,
                  pipettor: Optional[Pipettor] = None) -> None:
         self._layout = layout
+        self._lid_type = lid_type
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -280,6 +323,7 @@ class PlatformTask(joey.PlatformTask):
                      heater_type = HeaterType.from_name(args.heaters),
                      device=args.port, od_version=args.od_version, is_yaminon=self.is_yaminon(),
                      layout = args.layout_version,
+                     lid_type = args.lid_type,
                      off_on_delay=args.off_on_delay,
                      double_write=args.double_write)
         
@@ -305,6 +349,11 @@ class PlatformTask(joey.PlatformTask):
                            The communication port (e.g., COM5) to use to talk to the board.
                            By default, only the display is run
                            ''')
+        lidg = group.add_mutually_exclusive_group()
+        lidg.add_argument('--glass', action='store_const', const=LidType.GLASS, dest='lid_type',
+                          help="Glass lid")
+        lidg.add_argument('--plastic', action='store_const', const=LidType.PLASTIC, dest='lid_type',
+                          help="Plastic lid")
         vg = group.add_mutually_exclusive_group()
         vg.add_argument('-4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
                         help="The OpenDrop board uses firmware version 4.0")
@@ -320,6 +369,7 @@ class PlatformTask(joey.PlatformTask):
                            ''')
         parser.set_defaults(od_version=OpenDropVersion.V40)
         parser.set_defaults(layout_version=WombatLayout.V1)
+        parser.set_defaults(lid_type=LidType.PLASTIC)
         
 class YaminonPlatformTask(PlatformTask):
     def __init__(self, name: str = "Yaminon",

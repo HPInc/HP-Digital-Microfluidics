@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from argparse import Namespace, ArgumentParser, _ArgumentGroup
 from enum import Enum, auto
-from typing import Optional, Sequence, Final, Literal
+from typing import Optional, Sequence, Final, Literal, Union
 
 from devices.emulated_heater import EmulatedHeater, EmulatedChiller
 from erk.basic import assert_never
@@ -32,7 +32,8 @@ class HeaterType(Enum):
     @classmethod
     def from_name(cls, name: str) -> HeaterType:
         return heater_type_arg_names[name]
-
+    
+    
 class Well(device.Well):
     _pipettor: Final[Pipettor]
 
@@ -115,6 +116,12 @@ class Board(device.Board):
         y3 = y+2.25
         y4 = y+4
         return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4))
+    
+    def _well_capacity(self, exit_dir: Dir) -> Volume:
+        return 54.25*uL
+    
+    def _dispensed_volume(self) -> Volume:
+        return 0.5*uL
 
     def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor,
               shared_states: Sequence[State[OnOff]]) -> Well:
@@ -154,8 +161,8 @@ class Board(device.Board):
                                   neighbors=(pre_gate,)),
                     shared_pads=tuple(WellPad(self, state=s, neighbors=ns) for s,ns in zip(shared_states,
                                                                                            pad_neighbors)),
-                    capacity=54.25*uL,
-                    dispensed_volume=0.5*uL,
+                    capacity=self._well_capacity(exit_dir),
+                    dispensed_volume=self._dispensed_volume(),
                     # dispensed_volume=1*uL,
                     exit_dir=exit_dir,
                     shape = shape,
@@ -224,6 +231,12 @@ class Board(device.Board):
     def _fan(self, *,
              initial_state: OnOff) -> Fan:
         return Fan(self, state=initial_state)
+    
+    def _extraction_point_locs(self) -> Sequence[Union[XYCoord,Pad,tuple[int,int]]]:
+        return ((14, 16), (14, 10), (14, 4))
+                                                 
+        
+    
 
     def __init__(self, *,
                  heater_type: HeaterType,
@@ -322,9 +335,18 @@ class Board(device.Board):
         # self._add_heaters(self._heaters(HeaterType.Peltier))
         
 
-        for pos in ((14, 16), (14, 10), (14, 4)):
-            self._add_extraction_point(
-                ExtractionPoint(self.pad_at(*pos), pipettor, splash_radius=extraction_point_splash_radius))
+        def to_ep(xy: Union[XYCoord,Pad,tuple[int,int]], pipettor: Pipettor) -> ExtractionPoint:
+            if isinstance(xy, tuple):
+                xy = self.pad_at(*xy)
+            elif isinstance(xy, XYCoord):
+                xy = self.pad_array[xy]
+            return ExtractionPoint(xy, pipettor, splash_radius=extraction_point_splash_radius)
+        
+        self._add_extraction_points([to_ep(xy, pipettor) for xy in self._extraction_point_locs()])
+
+        # for pos in ((14, 16), (14, 10), (14, 4)):
+        #     self._add_extraction_point(
+        #         ExtractionPoint(self.pad_at(*pos), pipettor, splash_radius=extraction_point_splash_radius))
 
         def tc_channel(row: int,
                        # heaters: tuple[int,int],
