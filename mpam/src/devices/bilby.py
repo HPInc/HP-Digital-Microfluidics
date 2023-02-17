@@ -250,6 +250,8 @@ class Board(joey.Board):
     
     def __init__(self, *,
                  heater_type: HeaterType,
+                 holes: Sequence[XYCoord] = (),
+                 default_holes: bool = True,
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None,
                  pipettor: Optional[Pipettor] = None,
@@ -271,7 +273,9 @@ class Board(joey.Board):
             
         fan_state = self._device.fan_state
         
-        super().__init__(heater_type=heater_type, 
+        super().__init__(heater_type=heater_type,
+                         holes=holes,
+                         default_holes=default_holes, 
                          pipettor=pipettor, off_on_delay=off_on_delay,
                          ps_min_voltage=ps_min_voltage,
                          ps_max_voltage=ps_max_voltage,

@@ -26,6 +26,7 @@ class PlatformTask(joey.PlatformTask):
         if voltage == 0:
             voltage = None
         return bilby.Board(heater_type = HeaterType.from_name(args.heaters),
+                           holes=args.holes, default_holes=args.default_holes,
                            pipettor=pipettor,
                            dll_dir=args.dll_dir, config_dir=args.config_dir,
                            off_on_delay=args.off_on_delay,

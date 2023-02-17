@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from argparse import Namespace, ArgumentParser, _ArgumentGroup
+from argparse import Namespace, ArgumentParser, _ArgumentGroup,\
+    BooleanOptionalAction
 from enum import Enum, auto
 from typing import Optional, Sequence, Final, Literal, Union
 
@@ -24,6 +25,7 @@ from quantities.SI import uL, ms, volts, deg_C
 
 from quantities.dimensions import Time, Volume, Voltage
 from quantities.temperature import abs_C
+from mpam.cmd_line import coord_arg
 
 class HeaterType(Enum):
     TSRs = auto()
@@ -250,6 +252,8 @@ class Board(device.Board):
                  ps_can_toggle: bool = True,
                  ps_can_change_mode: bool = True,
                  fan_initial_state: OnOff = OnOff.OFF,
+                 holes: Sequence[XYCoord] = [],
+                 default_holes: bool = True,
                  ) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
@@ -342,7 +346,11 @@ class Board(device.Board):
                 xy = self.pad_array[xy]
             return ExtractionPoint(xy, pipettor, splash_radius=extraction_point_splash_radius)
         
-        self._add_extraction_points([to_ep(xy, pipettor) for xy in self._extraction_point_locs()])
+        ep_locs = list[Union[XYCoord,Pad,tuple[int,int]]](holes)
+        if default_holes:
+            ep_locs.extend(self._extraction_point_locs())
+        
+        self._add_extraction_points([to_ep(xy, pipettor) for xy in ep_locs])
 
         # for pos in ((14, 16), (14, 10), (14, 4)):
         #     self._add_extraction_point(
@@ -466,7 +474,10 @@ class PlatformTask(PlatformChoiceTask):
         return Board(pipettor=pipettor,
                      heater_type = HeaterType.from_name(args.heaters),
                      off_on_delay=off_on_delay,
-                     extraction_point_splash_radius=args.extraction_point_splash_radius)
+                     extraction_point_splash_radius=args.extraction_point_splash_radius,
+                     holes=args.holes,
+                     default_holes=args.default_holes
+                     )
         
     def add_args_to(self, 
                      group: _ArgumentGroup, 
@@ -482,6 +493,14 @@ class PlatformTask(PlatformChoiceTask):
                            help=f'''
                            The type of heater to use.  The default is {self.default_heater_type}.
                            ''')
+        group.add_argument('--hole', action='append', dest="holes", default=[],
+                           type=coord_arg, metavar="X,Y",
+                           help=f'''
+                           The x,y coordinates of a hole in the lid.
+                           ''')
+        group.add_argument('--default-holes', action=BooleanOptionalAction, default=True,
+                           help="Whether or not to include default holes in addition to those specified by --hole"
+                           )
         
 
         
