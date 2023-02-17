@@ -11,7 +11,7 @@ from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from quantities import temperature
 from quantities.prefixes import kilo
 from mpam.types import logging_levels, logging_formats, LoggingSpec,\
-    LoggingLevel
+    LoggingLevel, XYCoord
 from re import Pattern
 from erk.network import canonicalize_ip_addr
 
@@ -200,4 +200,16 @@ def ip_subnet_arg(arg: str) -> str:
     except ValueError:
         pass
     raise ArgumentTypeError(f'"{arg}" not parsable as an IP subnet')
-    
+
+coord_arg_re: Final[Pattern] = re.compile(f"(\\d+),\s*(\\d+)")
+
+def coord_arg(arg: str) -> XYCoord:
+    m = coord_arg_re.fullmatch(arg)
+    if m is None:
+        raise ArgumentTypeError(f"""
+                    {arg} not parsable as a coordinate.
+                    Requires a pair of non-negative integers separated by a comma""")
+    x = int(m.group(1))
+    y = int(m.group(2))
+    return XYCoord(x,y)
+

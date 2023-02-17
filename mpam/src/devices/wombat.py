@@ -254,7 +254,10 @@ class Board(joey.Board):
                  heater_type: HeaterType = HeaterType.TSRs,
                  off_on_delay: Time = Time.ZERO,
                  double_write: bool = True,
-                 pipettor: Optional[Pipettor] = None) -> None:
+                 pipettor: Optional[Pipettor] = None,
+                 holes: Sequence[XYCoord] = (),
+                 default_holes: bool = True,
+                 ) -> None:
         self._layout = layout
         self._lid_type = lid_type
         if od_version is OpenDropVersion.V40:
@@ -271,7 +274,8 @@ class Board(joey.Board):
         self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
         logger.info("double_write = %s", double_write)
         self._double_write = double_write
-        super().__init__(heater_type=heater_type, pipettor=pipettor, off_on_delay=off_on_delay)
+        super().__init__(heater_type=heater_type, pipettor=pipettor, off_on_delay=off_on_delay,
+                         holes=holes, default_holes=default_holes)
         self._device = device
         self._port = None
         
@@ -325,7 +329,9 @@ class PlatformTask(joey.PlatformTask):
                      layout = args.layout_version,
                      lid_type = args.lid_type,
                      off_on_delay=args.off_on_delay,
-                     double_write=args.double_write)
+                     double_write=args.double_write,
+                     holes=args.holes,
+                     default_holes=args.default_holes)
         
     def is_yaminon(self) -> bool:
         return False
