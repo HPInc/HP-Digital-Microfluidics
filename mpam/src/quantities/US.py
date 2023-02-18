@@ -30,7 +30,7 @@ lea = leagues = league = (3*mi).as_unit("lea")
 ftm = fathoms = fathom = (2*yd).as_unit("yd")
 nmi = nautical_miles = nautical_mile = (1.151*mi).as_unit("nmi")
 hands = hand = (4*inch).as_unit("hand")
-th = thous = thou = (inch/1000).as_unit("th")
+th = thous = thou = mil = mils = (inch/1000).as_unit("th")
 ch = chains = chain = (66*ft).as_unit("ch")
 cables = cable = (100*ftm).as_unit("cable")
 

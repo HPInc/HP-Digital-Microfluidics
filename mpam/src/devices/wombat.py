@@ -8,7 +8,7 @@ from serial import Serial
 from devices import joey
 from mpam.types import OnOff, State, DummyState, XYCoord, Dir
 from erk.basic import ComputedDefaultDict, assert_never
-from quantities.dimensions import Time, Volume
+from quantities.dimensions import Time, Volume, Distance
 import logging
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
@@ -17,7 +17,8 @@ from mpam.pipettor import Pipettor
 from devices.joey import HeaterType
 from mpam import device
 from mpam.device import Pad
-from quantities.SI import uL
+from quantities.SI import uL, mm
+from quantities.US import mil
 
 logger = logging.getLogger(__name__)
 
@@ -225,18 +226,22 @@ class Board(joey.Board):
             assert_never(self._layout)
             
     def _dispensed_volume(self)->Volume:
-        base = 1.424*1.424*uL
         layout = self._layout
+        pitch = 1.5*mm
+        def to_vol(height: Distance, gap: Distance) -> Volume:
+            return (height*(pitch-gap)**2).a(Volume)
         if layout is WombatLayout.V1:
-            return 0.3*base
+            return to_vol(0.3*mm, 3*mil)
         elif layout is WombatLayout.V2:
+            gap = 2*mil
             lid_type = self._lid_type
             if lid_type is LidType.PLASTIC:
-                return 0.3*base
+                height = 0.3*mm
             elif lid_type is LidType.GLASS:
-                return 0.2*base
+                height = 0.2*mm
             else:
                 assert_never(lid_type)
+            return to_vol(height, gap)
         else:
             assert_never(layout)
             
