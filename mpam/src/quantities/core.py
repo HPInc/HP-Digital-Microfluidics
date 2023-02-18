@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 ExptFormatter = Callable[[int],str] 
 """
 A :class:`.Callable` that maps integers to strings representing that integer as
-an expoinent
+an exponent
 """
 
 class Exponents:
@@ -76,6 +76,8 @@ D2 = TypeVar('D2', bound='Quantity')
 ND = TypeVar('ND', bound='NamedDim')
 BD = TypeVar('BD', bound='BaseDim')
 CD = TypeVar('CD', bound='CountDim')
+U = TypeVar('U', bound='Unit')
+UE = TypeVar('UE', bound='UnitExpr')
 
 D_co = TypeVar('D_co', bound='Quantity', covariant=True)
 D_ca = TypeVar('D_ca', bound='Quantity', contravariant=True)
@@ -493,11 +495,11 @@ class Quantity:
         return new_dim.make_quantity(self.magnitude**rhs)
 
     @overload
-    def __mul__(self: D, rhs: float) -> D: ...  # @UnusedVariable
+    def __mul__(self: D, _rhs: Union[float, Scalar]) -> D: ...  
     @overload
-    def __mul__(self: D, rhs: Quantity) -> Quantity: ...  # @UnusedVariable
+    def __mul__(self: D, _rhs: Quantity) -> Quantity: ...  
     @overload
-    def __mul__(self: D, rhs: UnitExpr) -> Quantity: ...  # @UnusedVariable
+    def __mul__(self: D, _rhs: UnitExpr) -> Quantity: ...  
     def __mul__(self: D, rhs: Union[float, Quantity, UnitExpr]) ->  Union[D, Quantity]:
         if isinstance(rhs, (float, int)):
             return self.dimensionality.make_quantity(self.magnitude*rhs)
@@ -512,11 +514,11 @@ class Quantity:
         return dim.make_quantity(lhs*self.magnitude)
 
     @overload
-    def __truediv__(self: D, rhs: float) -> D: ...  # @UnusedVariable
+    def __truediv__(self: D, _rhs: Union[float, Scalar]) -> D: ...  
     @overload
-    def __truediv__(self: D, rhs: Quantity) -> Quantity: ...  # @UnusedVariable
+    def __truediv__(self: D, _rhs: Union[D, UnitExpr[D]]) -> Scalar: ...
     @overload
-    def __truediv__(self: D, rhs: UnitExpr) -> Quantity: ...  # @UnusedVariable
+    def __truediv__(self: D, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...
     def __truediv__(self: D, rhs: Union[float, Quantity, UnitExpr]) -> Union[D, Quantity]:
         if isinstance(rhs, (float, int)):
             return self.dimensionality.make_quantity(self.magnitude/rhs)
@@ -527,6 +529,12 @@ class Quantity:
     def __rtruediv__(self, lhs: float) -> Quantity:
         return self.in_denom(lhs)
 
+    @overload
+    def __pow__(self: D, _rhs: Literal[0]) -> Scalar: ...
+    @overload
+    def __pow__(self: D, _rhs: Literal[1]) -> D: ...
+    @overload
+    def __pow__(self: D, _rhs: int) -> Quantity: ...
     def __pow__(self, rhs: int) -> Quantity:
         return self.to_power(rhs)
     
@@ -950,9 +958,9 @@ class UnitExpr(Generic[D]):
 
         
     @overload
-    def __mul__(self, rhs: float) -> D: ...  # @UnusedVariable
+    def __mul__(self, _rhs: float) -> D: ...  
     @overload
-    def __mul__(self, rhs: UnitExpr) -> UnitExpr: ...  # @UnusedVariable
+    def __mul__(self, _rhs: UnitExpr) -> UnitExpr: ...  
     def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[D, UnitExpr]:
         if isinstance(rhs, (float, int)):
             return self.quantity*rhs
@@ -968,11 +976,13 @@ class UnitExpr(Generic[D]):
         return n*q
     
     @overload
-    def __truediv__(self, rhs: float) -> D: ...  # @UnusedVariable
+    def __truediv__(self, _rhs: float) -> D: ...  
     @overload
-    def __truediv__(self, rhs: UnitExpr) -> UnitExpr: ...  # @UnusedVariable
+    def __truediv__(self, _rhs: UnitExpr[D]) -> ScalarUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr) -> UnitExpr: ...  
     def __truediv__(self, rhs: Union[float, UnitExpr]) -> Union[D, UnitExpr]:
-        if isinstance(rhs, (float, int)):
+        if isinstance(rhs, (float, int, Scalar)):
             return self.quantity/rhs
 
         if not isinstance(rhs, UnitExpr):
@@ -989,18 +999,18 @@ class UnitExpr(Generic[D]):
         # return cast(UnknownDimQuant, self.quantity**rhs)
 
     @overload
-    def __pow__(self, rhs: Literal[1]) -> UnitExpr[D]: ... # @UnusedVariable
+    def __pow__(self, _rhs: Literal[0]) -> ScalarUnitExpr: ... 
     @overload
-    def __pow__(self, rhs: Literal[0]) -> UnitExpr[Scalar]: ... # @UnusedVariable
+    def __pow__(self: UE, _rhs: Literal[1]) -> UE: ... 
     @overload
-    def __pow__(self, rhs: int) -> UnitExpr: ... # @UnusedVariable
+    def __pow__(self, _rhs: int) -> UnitExpr: ...
     def __pow__(self, rhs: int) -> UnitExpr:
         # if not isinstance(rhs, numbers.Integral):
         #     raise TypeError(f"LHS not an integer: {rhs}")
         if rhs == 1:
             return self
         if rhs == 0:
-            return UnitExpr(Scalar(1),(),())
+            return Scalar.unit_expr
         Tpair = tuple[tuple[AbbrExp,...], tuple[AbbrExp, ...]]
         Cache = dict[int, Tpair]
         cache: Optional[Cache] = getattr(self, "_cached_power", None)
@@ -1031,14 +1041,15 @@ class UnitExpr(Generic[D]):
         return self.format(q)
     
     def a(self, expected: type[ND]) -> UnitExpr[ND]:
-        # TODO: Is this kosher?  Should Dimensionality take a convariant type param
+        # TODO: Is this kosher?  Should Dimensionality take a contravariant type param?
         edim = cast(Dimensionality[D], expected.dim())
         self.quantity.check_dimensionality(edim)
         return cast(UnitExpr[ND], self)
     an = a
     
     def as_unit(self, abbr: str, check: Optional[type[D]] = None, singular: Optional[str]=None) -> Unit[D]:  # @UnusedVariable
-        return Unit[D](abbr, self, singular=singular)
+        return self.quantity.as_unit(abbr, singular=singular)
+        # return Unit[D](abbr, self, singular=singular)
     
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, UnitExpr): 
@@ -1053,7 +1064,12 @@ class UnitExpr(Generic[D]):
     def __le__(self, other: UnitExpr[D]) -> bool:
         return self.quantity <= other.quantity
     
-    
+class TiedUnitExpr(UnitExpr[D], Generic[D, U]):
+    def as_unit(self, abbr:str, check:Optional[type[D]]=None, singular:Optional[str]=None)->U:
+        return cast(U, super().as_unit(abbr, check=check, singular=singular))
+   
+    # I should be able to override a() to return something typed to the type of self, but
+    # I can't figure out how to get it by the compiler.
 
 class Unit(UnitExpr[D]):
     """
@@ -1093,6 +1109,7 @@ class Unit(UnitExpr[D]):
             q = self.quantity.of(restriction, dim=dim)
             a = f"{self.abbreviation}[{_restriction_name(restriction)}]"
             u = Unit(a, q)
+            # u = q.as_unit(a)
             self._restrictions[restriction] = u
         return u
     
@@ -1112,10 +1129,12 @@ class Prefix:
     def __rep__(self) -> str:
         return f"Prefix({self.prefix}, {self.multiplier})"
 
-    def __call__(self, unit: Unit[D]) -> Unit[D]:
+    def __call__(self, unit: U) -> U:
         if not isinstance(unit, Unit):
             raise TypeError(f"Prefix {self} applied to non-Unit {unit}")
-        return Unit(self.prefix+unit.abbreviation, self.multiplier*unit.quantity)
+        magnitude = self.multiplier * unit.quantity
+        abbr = self.prefix + unit.abbreviation
+        return cast(U, magnitude.as_unit(abbr))
     
     def __mul__(self, rhs: float) -> float:
         return self.multiplier*rhs
@@ -1212,7 +1231,11 @@ class NamedDim(Quantity, metaclass=NamedDimMeta):
     
     @classmethod
     def unit(cls: type[ND], abbr: str, quant: Union[ND, UnitExpr[ND]]) -> Unit[ND]:
-        return Unit[ND](abbr, quant, check=cls.dim())
+        if isinstance(quant, UnitExpr):
+            return quant.as_unit(abbr, check=cls)
+        else:
+            quant.check_dimensionality(cls.dim())
+            return quant.as_unit(abbr)
         
     _restriction_classes: ClassVar[dict[Any, type[BaseDim]]]
     @classmethod
@@ -1411,25 +1434,50 @@ def qstr(n: float, singular: str, *, plural: Optional[str] = None) -> Quantity:
 
 class Scalar(NamedDim):
     _dim = Dimensionality['Scalar']((), 'scalar')
+    unit_expr: ScalarUnitExpr
     def __float__(self) -> float:
         return float(self.magnitude)
     
+    def __pow__(self:D, _rhs: int) -> Scalar:
+        return Scalar(self.magnitude**_rhs)
+    
+    @overload   
+    def __mul__(self, _rhs: Union[float, Scalar]) -> Scalar: ...
+    @overload
+    def __mul__(self, _rhs: Union[D, UnitExpr[D]]) -> D: ...
+    def __mul__(self, rhs: Union[float, D, UnitExpr[D]]) ->  Quantity:
+        return super().__mul__(rhs)
+    
+    def __rtruediv__(self, lhs: float) -> Scalar:
+        return cast(Scalar, self.in_denom(lhs))
+
     @classmethod
     def dim(cls)->Dimensionality[Scalar]:
         return cls._dim
     
-    # @overload
-    # def __mul__(self, rhs: float) -> Scalar: ...  # @UnusedVariable
-    # # @overload
-    # # def __mul__(self, rhs: Time) -> Time: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: Quantity) -> Quant: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: UnitExpr) -> Quant: ...  # @UnusedVariable
-    # def __mul__(self, rhs):
-    #     return super().__mul__(rhs)    
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> ScalarUnitExpr:
+        return ScalarUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> ScalarUnit:
+        return ScalarUnit(abbr, self, singular=singular)
     
 Scalar.dim().quant_class = Scalar
+
+class ScalarUnitExpr(TiedUnitExpr[Scalar, 'ScalarUnit']):
+    def __pow__(self, rhs: int) -> ScalarUnitExpr:
+        return cast(ScalarUnitExpr, super().__pow__(rhs))
+    
+    @overload
+    def __mul__(self, _rhs: float) -> Scalar: ...  
+    @overload
+    def __mul__(self, _rhs: UE) -> UE: ...
+    def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[Scalar, UnitExpr]:
+        return super().__mul__(rhs)
+    
+Scalar.unit_expr = Scalar(1).as_unit_expr((),())
+        
+class ScalarUnit(Unit[Scalar], ScalarUnitExpr):
+    ...
 
 def set_default_units(*units: UnitExpr) -> Mapping[Dimensionality, Sequence[UnitExpr]]:
     # print(f"Setting default units to {map_str(units)}")

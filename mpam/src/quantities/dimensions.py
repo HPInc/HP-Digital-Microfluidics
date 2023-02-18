@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, Scalar
+from quantities.core import BaseDim, DerivedDim, _DecomposedQuantity, Scalar,\
+    Quantity, UnitExpr, Unit, AbbrExp, TiedUnitExpr, ScalarUnitExpr
 import time
+from typing import overload, Union, Literal, cast, Optional
+
 
 class Mass(BaseDim): 
     """
@@ -56,39 +59,100 @@ class Distance(BaseDim):
 
     
     """
-    ...
-    # @overload
-    # def __pow__(self, rhs: Literal[2]) -> 'Area': ...  # @UnusedVariable
-    # @overload
-    # def __pow__(self, rhs: Literal[3]) -> 'Volume': ...  # @UnusedVariable
-    # @overload
-    # def __pow__(self, rhs: int) -> Quantity: ...  # @UnusedVariable
-    # def __pow__(self, rhs: int):
-    #     return super().__pow__(rhs)
-    #
-    # class DistanceUnitExpr(UnitExpr['Distance']):
-    #     @overload
-    #     def __pow__(self, rhs: Literal[2]) -> 'Area.AreaUnitExpr': ...  # @UnusedVariable
-    #     @overload
-    #     def __pow__(self, rhs: Literal[3]) -> 'Volume.VolumeUnitExpr': ...  # @UnusedVariable
-    #     @overload
-    #     def __pow__(self, rhs: int) -> UnitExpr: ...  # @UnusedVariable
-    #     def __pow__(self, rhs: int):
-    #         return super().__pow__(rhs)
-    #
-    # class DistanceUnit(Unit['Distance'], DistanceUnitExpr):
-    #     ...
 
-    # @overload
-    # def __mul__(self, rhs: float) -> Distance: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: Distance) -> Area: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: Quant) -> Quant: ...  # @UnusedVariable
-    # @overload
-    # def __mul__(self, rhs: UnitExpr) -> Quant: ...  # @UnusedVariable
-    # def __mul__(self, rhs):
-    #     return super().__mul__(rhs)
+    @overload   # type: ignore[override]
+    def __pow__(self, _rhs: Literal[0]) -> Scalar: ...  
+    @overload
+    def __pow__(self, _rhs: Literal[1]) -> Distance: ...  
+    @overload
+    def __pow__(self, _rhs: Literal[2]) -> Area: ...  
+    @overload
+    def __pow__(self, _rhs: Literal[3]) -> Volume: ... 
+    @overload
+    def __pow__(self, _rhs: int) -> Quantity: ...
+    def __pow__(self, rhs: int) -> Quantity:
+        return super().__pow__(rhs)
+    
+    @overload   # type: ignore[override]
+    def __mul__(self, _rhs: Union[float, Scalar]) -> Distance: ...
+    @overload
+    def __mul__(self, _rhs: Union[Distance, UnitExpr[Distance]]) -> Area: ...
+    @overload
+    def __mul__(self, _rhs: Union[Area, UnitExpr[Area]]) -> Volume: ...
+    @overload
+    def __mul__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...
+    def __mul__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Union[Distance, Quantity]:
+        return super().__mul__(rhs)
+    
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Distance: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Distance, UnitExpr[Distance]]) -> Scalar: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Time, UnitExpr[Time]]) -> Velocity: ...  
+    @overload
+    def __truediv__(self, _rhs: Union[TimeSquared, UnitExpr[TimeSquared]]) -> Acceleration: ...  
+    @overload
+    def __truediv__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...  
+    def __truediv__(self, rhs: Union[float, Quantity, UnitExpr]) -> Union[Distance, Quantity]:
+        return super().__truediv__(rhs)
+    
+    
+    
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> DistanceUnitExpr:
+        return DistanceUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> DistanceUnit:
+        return DistanceUnit(abbr, self, singular=singular)
+    
+    @classmethod
+    def base_unit(cls, abbr:str, *, singular:Optional[str]=None)->DistanceUnit:
+        return cast(DistanceUnit, super(Distance, cls).base_unit(abbr, singular=singular))
+    
+    
+
+class DistanceUnitExpr(TiedUnitExpr[Distance, 'DistanceUnit']):
+    @overload
+    def __mul__(self, _rhs: float) -> Distance: ...  
+    @overload
+    def __mul__(self, _rhs: UnitExpr[Distance]) -> AreaUnitExpr: ...
+    @overload
+    def __mul__(self, _rhs: UnitExpr[Area]) -> VolumeUnitExpr: ...
+    @overload
+    def __mul__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[Distance, UnitExpr]:
+        return super().__mul__(rhs)
+    
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Distance: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Distance]) -> ScalarUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Time]) -> VelocityUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[TimeSquared]) -> AccelerationUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __truediv__(self, rhs: Union[float, UnitExpr]) -> Union[Distance, UnitExpr]:
+        return super().__truediv__(rhs)
+    
+    
+    @overload   # type: ignore[override]
+    def __pow__(self, _rhs: Literal[0]) -> ScalarUnitExpr: ... 
+    @overload
+    def __pow__(self, _rhs: Literal[1]) -> DistanceUnitExpr: ...
+    @overload
+    def __pow__(self, _rhs: Literal[2]) -> AreaUnitExpr: ... 
+    @overload
+    def __pow__(self, _rhs: Literal[3]) -> VolumeUnitExpr: ... 
+    @overload
+    def __pow__(self, _rhs: int) -> UnitExpr: ... 
+    def __pow__(self, rhs: int) -> UnitExpr:
+        return super().__pow__(rhs)
+    
+class DistanceUnit(Unit[Distance], DistanceUnitExpr):
+    ...
+        
 
 class Time(BaseDim): 
     """
@@ -164,6 +228,30 @@ class Time(BaseDim):
         """
         from quantities.SI import minutes, seconds
         return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
+    
+    @overload   # type: ignore[override]
+    def __pow__(self, _rhs: Literal[0]) -> Scalar: ...  
+    @overload
+    def __pow__(self, _rhs: Literal[1]) -> Time: ...  
+    @overload
+    def __pow__(self, _rhs: Literal[2]) -> TimeSquared: ...  
+    @overload
+    def __pow__(self, _rhs: int) -> Quantity: ...
+    def __pow__(self, rhs: int) -> Quantity:
+        return super().__pow__(rhs)
+    
+    @overload   # type: ignore[override]
+    def __mul__(self, _rhs: Union[float, Scalar]) -> Time: ...
+    @overload
+    def __mul__(self, _rhs: Union[Time, UnitExpr[Time]]) -> TimeSquared: ...
+    @overload
+    def __mul__(self, _rhs: Union[Velocity, UnitExpr[Velocity]]) -> Distance: ...
+    @overload
+    def __mul__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...
+    def __mul__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Union[Time, Quantity]:
+        return super().__mul__(rhs)
+
+    
     def __rtruediv__(self, lhs: float) -> Frequency:
         return super().__rtruediv__(lhs).a(Frequency)
     
@@ -180,6 +268,54 @@ class Time(BaseDim):
     # @classmethod
     # def base_unit(cls, abbr: str, *, singular: Optional[str]=None) -> _Unit:
     #     return cast(Time._Unit, super().base_unit(abbr, singular=singular))
+
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> TimeUnitExpr:
+        return TimeUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> TimeUnit:
+        return TimeUnit(abbr, self, singular=singular)
+    
+    @classmethod
+    def base_unit(cls, abbr:str, *, singular:Optional[str]=None)->TimeUnit:
+        return cast(TimeUnit, super(Time, cls).base_unit(abbr, singular=singular))
+    
+    
+    
+class TimeUnitExpr(TiedUnitExpr[Time, 'TimeUnit']):
+    @overload   # type: ignore[override]
+    def __pow__(self, _rhs: Literal[0]) -> ScalarUnitExpr: ... 
+    @overload
+    def __pow__(self, _rhs: Literal[1]) -> TimeUnitExpr: ...
+    @overload
+    def __pow__(self, _rhs: Literal[2]) -> TimeSquaredUnitExpr: ... 
+    @overload
+    def __pow__(self, _rhs: int) -> UnitExpr: ... 
+    def __pow__(self, rhs: int) -> UnitExpr:
+        return super().__pow__(rhs)
+    
+    
+    
+    @overload
+    def __mul__(self, _rhs: float) -> Time: ...  
+    @overload
+    def __mul__(self, _rhs: UnitExpr[Time]) -> TimeSquaredUnitExpr: ...
+    @overload
+    def __mul__(self, _rhs: UnitExpr[Velocity]) -> DistanceUnitExpr: ...
+    @overload
+    def __mul__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[Time, UnitExpr]:
+        return super().__mul__(rhs)
+    
+    def __rtruediv__(self, n: float) -> Frequency:
+        # I have no idea why, but with Python 3.10.9, when I say, in SI.py,
+        # "J/s" as part of the definition of watt, it tries the rtruediv, which
+        # fails, before the truediv, which succeeds.
+        if not isinstance(n, (float, int)):
+            return NotImplemented   # type: ignore[unreachable]
+        return n/self.quantity
+    
+class TimeUnit(Unit[Time], TimeUnitExpr):
+    ...
     
 
 class Temperature(BaseDim): 
@@ -244,18 +380,73 @@ An alias for :attr:`.Scalar` for representing solid angles
 
 class Area(DerivedDim): 
     """
-    A :class:`.Quantity` representing area (:class:`Distance`\ ``**2``)
+    A :class:`.Quantity` representing area (:class:`Area`\ ``**2``)
 
     SI :class:`.Unit`\s include:
        * :attr:`~quantities.SI.hectares` (:attr:`~quantities.SI.ha`,
          :attr:`~quantities.SI.hectare`)
     """ 
     derived = Distance**2
-    # class AreaUnitExpr(UnitExpr['Area']): ...
+    
+    @overload   # type: ignore[override]
+    def __mul__(self, _rhs: Union[float, Scalar]) -> Area: ...
+    @overload
+    def __mul__(self, _rhs: Union[Distance, UnitExpr[Distance]]) -> 'Volume': ...
+    @overload
+    def __mul__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...
+    def __mul__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Union[Area, Quantity]:
+        return super().__mul__(rhs)
+
+
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Area: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Area, UnitExpr[Area]]) -> Scalar: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Distance, UnitExpr[Distance]]) -> Distance: ...  
+    @overload
+    def __truediv__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...  
+    def __truediv__(self, rhs: Union[float, Quantity, UnitExpr]) -> Union[Area, Quantity]:
+        return super().__truediv__(rhs)
+    
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> AreaUnitExpr:
+        return AreaUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> AreaUnit:
+        return AreaUnit(abbr, self, singular=singular)
+    
+
+class AreaUnitExpr(TiedUnitExpr[Area, 'AreaUnit']):
+    @overload
+    def __mul__(self, _rhs: float) -> Area: ...  
+    @overload
+    def __mul__(self, _rhs: UnitExpr[Distance]) -> VolumeUnitExpr: ...
+    @overload
+    def __mul__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[Area, UnitExpr]:
+        return super().__mul__(rhs)
+    
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Area: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Area]) -> ScalarUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Distance]) -> DistanceUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __truediv__(self, rhs: Union[float, UnitExpr]) -> Union[Area, UnitExpr]:
+        return super().__truediv__(rhs)
+
+
+
+class AreaUnit(Unit[Area], AreaUnitExpr):
+    ...
+        
+
 
 class Volume(DerivedDim): 
     """
-    A :class:`.Quantity` representing volume (:class:`Distance`\ ``**3``)
+    A :class:`.Quantity` representing volume (:class:`Volume`\ ``**3``)
 
     SI :class:`.Unit`\s include:
        * :attr:`~quantities.SI.liters` (:attr:`~quantities.SI.L`,
@@ -287,6 +478,42 @@ class Volume(DerivedDim):
     derived = Distance**3
     # class VolumeUnitExpr(UnitExpr['Volume']): ...
     
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Volume: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Volume, UnitExpr[Volume]]) -> Scalar: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Distance, UnitExpr[Distance]]) -> Area: ...  
+    @overload
+    def __truediv__(self, _rhs: Union[Area, UnitExpr[Area]]) -> Distance: ...  
+    @overload
+    def __truediv__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...  
+    def __truediv__(self, rhs: Union[float, Quantity, UnitExpr]) -> Union[Area, Quantity]:
+        return super().__truediv__(rhs)
+
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> VolumeUnitExpr:
+        return VolumeUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> VolumeUnit:
+        return VolumeUnit(abbr, self, singular=singular)
+    
+
+class VolumeUnitExpr(TiedUnitExpr[Volume, 'VolumeUnit']):
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Volume: ...  
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Volume]) -> ScalarUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Distance]) -> AreaUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Area]) -> DistanceUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __truediv__(self, rhs: Union[float, UnitExpr]) -> Union[Volume, UnitExpr]:
+        return super().__truediv__(rhs)
+    
+class VolumeUnit(Unit[Volume], VolumeUnitExpr):
+    ...
 class Density(DerivedDim):
     """
     A :class:`.Quantity` representing density (:class:`Mass`\
@@ -366,6 +593,58 @@ class Frequency(DerivedDim):
     def __rtruediv__(self, lhs: float) -> Time:
         return super().__rtruediv__(lhs).a(Time)
     
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> FrequencyUnitExpr:
+        return FrequencyUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> FrequencyUnit:
+        return FrequencyUnit(abbr, self, singular=singular)
+    
+class FrequencyUnitExpr(TiedUnitExpr[Frequency, 'FrequencyUnit']):
+    def __rtruediv__(self, n: float) -> Time:
+        return n/self.quantity
+    
+class FrequencyUnit(Unit[Frequency], FrequencyUnitExpr):
+    ...
+    
+    
+class TimeSquared(DerivedDim):
+    derived = Time**2
+    
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> TimeSquared: ...
+    @overload
+    def __truediv__(self, _rhs: Union[TimeSquared, UnitExpr[TimeSquared]]) -> Scalar: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Time, UnitExpr[Time]]) -> Time: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...  
+    def __truediv__(self, rhs: Union[float, Quantity, UnitExpr]) -> Union[TimeSquared, Quantity]:
+        return super().__truediv__(rhs)
+
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> TimeSquaredUnitExpr:
+        return TimeSquaredUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> TimeSquaredUnit:
+        return TimeSquaredUnit(abbr, self, singular=singular)
+    
+    
+
+class TimeSquaredUnitExpr(TiedUnitExpr[TimeSquared, 'TimeSquaredUnit']):
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> TimeSquared: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[TimeSquared]) -> ScalarUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Time]) -> TimeUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __truediv__(self, rhs: Union[float, UnitExpr]) -> Union[TimeSquared, UnitExpr]:
+        return super().__truediv__(rhs)
+
+    
+class TimeSquaredUnit(Unit[TimeSquared], TimeSquaredUnitExpr):
+    ...
+    
 
 class Radioactivity(DerivedDim):
     """
@@ -379,13 +658,88 @@ class Velocity(DerivedDim):
     A :class:`.Quantity` representing velocity (:class:`Distance`\ ``/``:class:`Time`)
     """
     derived = Distance/Time
+    
+    @overload   # type: ignore[override]
+    def __mul__(self, _rhs: Union[float, Scalar]) -> Velocity: ...
+    @overload
+    def __mul__(self, _rhs: Union[Time, UnitExpr[Time]]) -> Distance: ...
+    @overload
+    def __mul__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...
+    def __mul__(self, rhs: Union[float, Quantity, UnitExpr]) ->  Union[Velocity, Quantity]:
+        return super().__mul__(rhs)
 
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Velocity: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Velocity, UnitExpr[Velocity]]) -> Scalar: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Time, UnitExpr[Time]]) -> Acceleration: ...
+    @overload
+    def __truediv__(self, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...  
+    def __truediv__(self, rhs: Union[float, Quantity, UnitExpr]) -> Union[Velocity, Quantity]:
+        return super().__truediv__(rhs)
+    
+    
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> VelocityUnitExpr:
+        return VelocityUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> VelocityUnit:
+        return VelocityUnit(abbr, self, singular=singular)
+    
+
+class VelocityUnitExpr(TiedUnitExpr[Velocity, 'VelocityUnit']):
+    @overload
+    def __mul__(self, _rhs: float) -> Velocity: ...  
+    @overload
+    def __mul__(self, _rhs: UnitExpr[Time]) -> DistanceUnitExpr: ...
+    @overload
+    def __mul__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[Velocity, UnitExpr]:
+        return super().__mul__(rhs)
+    
+    @overload   # type: ignore[override]
+    def __truediv__(self, _rhs: float) -> Velocity: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Area]) -> ScalarUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Time]) -> AccelerationUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr[Distance]) -> FrequencyUnitExpr: ...
+    @overload
+    def __truediv__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __truediv__(self, rhs: Union[float, UnitExpr]) -> Union[Velocity, UnitExpr]:
+        return super().__truediv__(rhs)
+
+class VelocityUnit(Unit[Velocity], VelocityUnitExpr):
+    ...
+        
 class Acceleration(DerivedDim): 
     """
     A :class:`.Quantity` representing acceleration (:class:`Velocity`\ ``/``:class:`Time`)
     """
     derived = Velocity/Time
 
+    
+    def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> AccelerationUnitExpr:
+        return AccelerationUnitExpr(self, num, denom)
+    
+    def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> AccelerationUnit:
+        return AccelerationUnit(abbr, self, singular=singular)
+    
+
+class AccelerationUnitExpr(TiedUnitExpr[Acceleration, 'AccelerationUnit']):
+    @overload
+    def __mul__(self, _rhs: float) -> Acceleration: ...  
+    @overload
+    def __mul__(self, _rhs: UnitExpr[Time]) -> VelocityUnitExpr: ...
+    @overload
+    def __mul__(self, _rhs: UnitExpr) -> UnitExpr: ...  
+    def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[Acceleration, UnitExpr]:
+        return super().__mul__(rhs)
+    
+
+class AccelerationUnit(Unit[Acceleration], AccelerationUnitExpr):
+    ...
 class Force(DerivedDim): 
     """
     A :class:`.Quantity` representing force (:class:`Mass`\ ``*``:class:`Acceleration`)

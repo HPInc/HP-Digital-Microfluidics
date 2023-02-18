@@ -229,7 +229,7 @@ class Board(joey.Board):
         layout = self._layout
         pitch = 1.5*mm
         def to_vol(height: Distance, gap: Distance) -> Volume:
-            return (height*(pitch-gap)**2).a(Volume)
+            return height*(pitch-gap)**2
         if layout is WombatLayout.V1:
             return to_vol(0.3*mm, 3*mil)
         elif layout is WombatLayout.V2:

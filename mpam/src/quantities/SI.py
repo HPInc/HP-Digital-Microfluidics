@@ -1,5 +1,6 @@
 from quantities import dimensions, prefixes
 import math
+from quantities.core import UnitExpr
 
 # angle
 radians = dimensions.Angle(1).as_unit("rad")
@@ -191,7 +192,7 @@ kilometre = kilometers  #: alias of :attr:`kilometers`
 km = kilometers  #: alias of :attr:`kilometers`
 
 # area
-hectares = (10000*(m**2)).a(dimensions.Area).as_unit("ha")
+hectares = (10000*(m**2)).as_unit("ha")
 """
 :class:`~quantities.core.Unit` (``ha = 10,000 m**2``) of
 :class:`~quantities.dimensions.Area`
@@ -202,7 +203,7 @@ hectare = hectares   #: alias of :attr:`hectares`
 ha  = hectares   #: alias of :attr:`hectares`
 
 # volume
-liters = (dm**3).a(dimensions.Volume).as_unit("l")
+liters = (dm**3).as_unit("l")
 """
 :class:`~quantities.core.Unit` (``L = dm**3``) of
 :class:`~quantities.dimensions.Volume`
@@ -303,12 +304,12 @@ picolitre = picoliters  #: alias of :attr:`picoliters`
 pL = picoliters  #: alias of :attr:`picoliters`
 pl = picoliters  #: alias of :attr:`picoliters`
 
-cc = (cm**3).a(dimensions.Volume).as_unit("cc")
+cc = (cm**3).as_unit("cc")
 """
 :class:`~quantities.core.Unit` (``cc = cm**3``) of
 :class:`~quantities.dimensions.Volume`
 """ 
-steres = (m**3).a(dimensions.Volume).as_unit("st")
+steres = (m**3).as_unit("st")
 """
 :class:`~quantities.core.Unit` (``st = m**3``) of
 :class:`~quantities.dimensions.Volume`
@@ -427,10 +428,9 @@ Aliases include :attr:`wk` and :attr:`week`.
 week = weeks    #: alias of :attr:`weeks`
 wk = weeks    #: alias of :attr:`weeks`
 
-
 # frequency
 
-hertz = (1/s).a(dimensions.Frequency).as_unit("Hz")
+hertz = (1/s).as_unit("Hz")
 """
 :class:`~quantities.core.Unit` (``Hz = 1/s``) of
 :class:`~quantities.dimensions.Frequency`

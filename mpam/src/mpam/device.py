@@ -5254,7 +5254,7 @@ class Clock:
     def start(self, interval: Optional[Union[Time,Frequency]] = None) -> None:
         assert not self.running, "Clock.start() called while clock is running"
         if isinstance(interval, Frequency):
-            interval = (1/interval).a(Time)
+            interval = 1/interval
         if interval is not None:
             self.update_interval = interval
         self.on_state_change.process(False, True)

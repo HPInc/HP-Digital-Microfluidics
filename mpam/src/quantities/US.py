@@ -1,6 +1,5 @@
 from quantities import prefixes, SI, dimensions
 
-
 # mass
 lb = pounds = pound = (0.45359237*SI.kg).as_unit("lb")
 oz = ounces = ounce = (lb/16).as_unit("oz")
@@ -36,14 +35,14 @@ cables = cable = (100*ftm).as_unit("cable")
 
 #area
 
-sq_in = square_inches = square_inch = (inch**2).a(dimensions.Area).as_unit("sq_in")
-sq_ft = square_feet = square_foot = (ft**2).a(dimensions.Area).as_unit("sq_ft")
-sq_mi = square_miles = square_mile = (mi**2).a(dimensions.Area).as_unit("sq_mi")
+sq_in = square_inches = square_inch = (inch**2).as_unit("sq_in")
+sq_ft = square_feet = square_foot = (ft**2).as_unit("sq_ft")
+sq_mi = square_miles = square_mile = (mi**2).as_unit("sq_mi")
 acres = acre = (sq_mi/640).as_unit("acre")
 sections = section = (sq_mi).as_unit("section")
 
 # volume
-cu_in = cubic_inches = cubic_inch = (inch**3).a(dimensions.Volume).as_unit("cu_in")
+cu_in = cubic_inches = cubic_inch = (inch**3).as_unit("cu_in")
 gal = gallons = gallon = (231*cu_in).as_unit("gal")
 fl_oz = fluid_ounces = fluid_ounce = (gal/128).as_unit("fl_oz")
 qt = quarts = quart = (32*fl_oz).as_unit("qt")
@@ -56,7 +55,7 @@ minims = minim = (tsp/80).as_unit("min")
 shots = shot = jig = jiggers = jigger = (1.5*fl_oz).as_unit("jig")
 bbl = barrels = barrel = (31.5*gal).as_unit("bbl")
 hogsheads = hogshead = (63*gal).as_unit("hogshead")
-board_ft = board_feet = board_foot = (ft**2*inch).a(dimensions.Volume).as_unit("board_ft")
+board_ft = board_feet = board_foot = (ft**2*inch).as_unit("board_ft")
 
 pt_d = dry_pt = dry_pints = dry_pint = (33.6003125*cu_in).as_unit("pt_d")
 qt_d = dry_qt = dry_quarts = dry_quart = (2*pt_d).as_unit("qt_d")
@@ -71,8 +70,8 @@ from quantities.SI import s,sec,second,secs,seconds,mins,minutes,minute,hr,hours
 
 
 # velocity
-fps = feet_per_second = foot_per_second = (ft/s).a(dimensions.Velocity).as_unit("fps")
-mph = miles_per_hour = mile_per_hour = (mi/hr).a(dimensions.Velocity).as_unit("mph")
+fps = feet_per_second = foot_per_second = (ft/s).as_unit("fps")
+mph = miles_per_hour = mile_per_hour = (mi/hr).as_unit("mph")
 
 # temperature
 deg_F = degrees_F = degree_F = (1.8*SI.deg_C).as_unit("°F")
