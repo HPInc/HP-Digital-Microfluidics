@@ -1,6 +1,5 @@
 from quantities import dimensions, prefixes
 import math
-from quantities.core import UnitExpr
 
 # angle
 radians = dimensions.Angle(1).as_unit("rad")
@@ -431,6 +430,7 @@ wk = weeks    #: alias of :attr:`weeks`
 # frequency
 
 hertz = (1/s).as_unit("Hz")
+
 """
 :class:`~quantities.core.Unit` (``Hz = 1/s``) of
 :class:`~quantities.dimensions.Frequency`
@@ -440,16 +440,16 @@ Aliases include :attr:`Hz`.
 Hz = hertz  #: alias of :attr:`hertz` 
 
 # force
-N = newtons = newton = (kg*m/s**2).a(dimensions.Force).as_unit("N")
+N = newtons = newton = (kg*m/s**2).as_unit("N")
 
 # work
-J = joules = joule = (N*m).a(dimensions.Work).as_unit("J")
+J = joules = joule = (N*m).as_unit("J")
 
 # pressure
-Pa = pascals = pascal = (N/m**2).a(dimensions.Pressure).as_unit("Pa")
+Pa = pascals = pascal = (N/m**2).as_unit("Pa")
 
 # power
-W = watts = watt = (J/s).a(dimensions.Power).as_unit("W")
+W = watts = watt = (J/s).as_unit("W")
 
 # temperature
 degrees_Kelvin = dimensions.Temperature.base_unit("K")
@@ -498,59 +498,57 @@ deg_C = degrees_Celsius  #: alias of :attr:`degrees_Celsius`
 cd = candelas = candela = dimensions.LumInt.base_unit("cd")
 
 # luminous flux
-lm = lumens = lumen = (cd*sr).a(dimensions.LumFlux).as_unit("lm")
+lm = lumens = lumen = (cd*sr).as_unit("lm")
 
 # illuminance
-lx = lux = (lm/m**2).a(dimensions.Illuminance).as_unit("lux")
+lx = lux = (lm/m**2).as_unit("lux")
 
 # current
 A = amperes = ampere = dimensions.Current.base_unit("A")
 
 # charge
-C = coulombs = coulomb = (A*s).a(dimensions.Charge).as_unit("C")
+C = coulombs = coulomb = (A*s).as_unit("C")
 faradays = faraday = (96485.33212310084*C).as_unit("F")
 
 # voltage, electric potential, emf
-V = volts = volt = (J/C).a(dimensions.Voltage).as_unit("V")
+V = volts = volt = (J/C).as_unit("V")
 mV = millivolts = millivolt = prefixes.milli(volts)
 kV = kilovolts = kilovolt = prefixes.kilo(volts)
 
 # magnetic flux
-Wb = webers = weber = (V*s).a(dimensions.MagneticFlux).as_unit("Wb")
+Wb = webers = weber = (V*s).as_unit("Wb")
 
 # magnetic induction, flux density
-T = teslas = tesla = (Wb/m**2).a(dimensions.MagneticInduction).as_unit("T")
+T = teslas = tesla = (Wb/m**2).as_unit("T")
 
 # capacitance
-F = farads = farad = (C/V).a(dimensions.Capacitance).as_unit("F")
+F = farads = farad = (C/V).as_unit("F")
 
 # resistance
-Ω = ohms = ohm = (V/A).a(dimensions.Resistance).as_unit("Ω")
+Ω = ohms = ohm = (V/A).as_unit("Ω")
 
 # conductance
-S = siemens = (A/V).a(dimensions.Conductance).as_unit("S")
+S = siemens = (A/V).as_unit("S")
 mhos = mho = S.as_unit("mho")
 
 # inductance
-H = henrys = henry = (V*s/A).a(dimensions.Inductance).as_unit("H")
+H = henrys = henry = (V*s/A).as_unit("H")
 
 # radioactivity
-Bq = becquerels = becquerel = (1/s).a(dimensions.Radioactivity).as_unit("Bq")
+Bq = becquerels = becquerel = (1/s).as_unit("Bq")
 
 # ionizing radiation dose
-Gy = grays = gray = (J/kg).a(dimensions.IonizingRadDose).as_unit("Gy")
-Sv = sieverts = sievert = (J/kg).a(dimensions.IonizingRadDose).as_unit("Sv")
+Gy = grays = gray = (J/kg).as_unit("Gy")
+Sv = sieverts = sievert = (J/kg).as_unit("Sv")
 
 # amount
 mol = moles = mole = dimensions.Amount.base_unit("mol")
 mmol = millimoles = millimole = prefixes.milli(mole)
 µmol = umol = micromoles = micromole = prefixes.micro(mole)
 
-
 # molar concentration
-M = molar = (mmol/L).a(dimensions.MolarConcentration).as_unit("M")
+M = molar = (mmol/L).as_unit("M")
 mM = millimolar = prefixes.milli(molar)
 µM = micromolar = prefixes.micro(molar)
 nM = nanomolar = prefixes.nano(molar)
-
 

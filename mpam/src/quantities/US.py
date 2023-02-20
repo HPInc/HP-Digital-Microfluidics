@@ -1,4 +1,4 @@
-from quantities import prefixes, SI, dimensions
+from quantities import prefixes, SI
 
 # mass
 lb = pounds = pound = (0.45359237*SI.kg).as_unit("lb")
@@ -84,11 +84,11 @@ kcal = kilocalories = kilocalorie = prefixes.kilo(small_cal)
 Cal = food_calories = food_calorie = calories = calorie = (kcal).as_unit("Cal")
 
 # force
-pdl = poundals = poundal = (lb*ft/s**2).a(dimensions.Force).as_unit("pdl")
-lbf = pounds_force = pound_force = (slug*ft/s**2).a(dimensions.Force).as_unit("lbf")
+pdl = poundals = poundal = (lb*ft/s**2).as_unit("pdl")
+lbf = pounds_force = pound_force = (slug*ft/s**2).as_unit("lbf")
 
 # pressure
-psi = (lbf/sq_in).a(dimensions.Pressure).as_unit("psi")
+psi = (lbf/sq_in).as_unit("psi")
 
 # power
 hp = horsepower = (845.7*SI.W).as_unit("hp")

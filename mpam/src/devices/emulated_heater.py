@@ -5,9 +5,9 @@ from typing import Sequence, Optional, Union, Final
 
 from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode,\
     Heater, Chiller
-from mpam.types import HeatingRate, GridRegion, Delayed
+from mpam.types import GridRegion, Delayed
 from quantities.SI import ms, deg_C, sec
-from quantities.dimensions import Time, Temperature
+from quantities.dimensions import Time, Temperature, HeatingRate
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
 from random import Random
@@ -55,6 +55,7 @@ class TemperatureControlEmulator:
         target = tc.target
         if target is None:
             target = tc.board.ambient_temperature
+        rate: HeatingRate
         if mode.is_active:
             heating = mode is TemperatureMode.HEATING
             sign = 1 if heating else -1
@@ -66,7 +67,7 @@ class TemperatureControlEmulator:
             rate = self.return_rate
             clip = max if cooling else min
             
-        delta = sign*(rate*elapsed).a(Temperature)
+        delta = sign*rate*elapsed
         new_temp = current + delta
         new_temp = clip(new_temp, target)
         return new_temp

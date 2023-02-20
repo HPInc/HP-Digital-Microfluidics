@@ -23,9 +23,9 @@ from weakref import WeakKeyDictionary, finalize
 from matplotlib._color_data import XKCD_COLORS
 
 from erk.numutils import farey
-from quantities.core import CountDim, DerivedDim
+from quantities.core import CountDim
 from quantities.dimensions import Molarity, MassConcentration, \
-    VolumeConcentration, Volume, Time, Temperature
+    VolumeConcentration, Volume, Time
 from quantities.temperature import TemperaturePoint
 from functools import cached_property
 from quantities.SI import sec, deg_C
@@ -518,27 +518,7 @@ results in a :class:`Ticks` object.
 """
 tick = ticks    ; "An alias for :attr:`ticks`, usually used when the magnitude is `1`"
 
-class HeatingRate(DerivedDim):
-    derived = Temperature/Time
-    
-    # MyPy 0.982 doesn't understand that Time->Temperature is compatible with
-    # Quantity->Quantity.  Sigh.
-    
-    # @overload
-    # def __mul__(self, rhs: float) -> HeatingRate: ...
-    # @overload
-    # def __mul__(self, rhs: Time) -> Temperature: ...
-    # @overload
-    # def __mul__(self, rhs: Quantity) -> Quantity: ...
-    # @overload
-    # def __mul__(self, rhs: UnitExpr) -> Quantity: ...
-    # def __mul__(self, rhs: Union[float, Time, Quantity, UnitExpr]) -> Union[HeatingRate, Quantity, str]:
-    #     return super().__mul__(rhs)
-    
-    def for_time(self, time: Time) -> Temperature:
-        return (self*time).a(Temperature)
-    
-deg_C_per_sec: Final = (deg_C/sec).a(HeatingRate)
+deg_C_per_sec: Final = (deg_C/sec)
 
 class NoWait(Enum):
     SINGLETON = auto()

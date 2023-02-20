@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from quantities.core import BaseDim, Prefix, DerivedDim, Unit, Quantity
-from quantities import prefixes, dimensions, SI
+from quantities.core import Prefix, Unit, Quantity
+from quantities import prefixes, SI
 from typing import TypeVar, Final
+from quantities.dimensions import Storage
 
-
-class Storage(BaseDim): ...
-class DataRate (DerivedDim):
-    derived = Storage/dimensions.Time
 
 bkilo = Prefix("K", 1024**1)
 bmega = Prefix("M", 1024**2)
@@ -52,7 +49,6 @@ def _prefixed(unit: Unit[_D], n: int) -> tuple[Unit[_D], Unit[_D], Unit[_D]]:
 
 b = bit = bits = Storage.base_unit("bits", singular="bit")
 
-
 kilobit = kilobits = Kb = bkilo(bits)
 megabit = megabits = Mb = bmega(bits)
 gigabit = gigabits = Gb = bgiga(bits)
@@ -87,7 +83,7 @@ dec_gigabyte = dec_gigabytes = dec_GB = dec_giga(n_bytes)
 dec_terabyte = dec_terabytes = dec_TB = dec_tera(n_bytes)
 dec_petabyte = dec_petabytes = dec_PB = dec_peta(n_bytes)
 
-bps = bit_per_sec = bits_per_sec = (bit/SI.second).a(DataRate ).as_unit("bps")
+bps = bit_per_sec = bits_per_sec = (bit/SI.second).as_unit("bps")
 
 kilobit_per_sec = kilobits_per_sec = Kbps = bkilo(bps)
 megabit_per_sec = megabits_per_sec = Mbps = bmega(bps)
@@ -97,8 +93,7 @@ kibibit_per_sec = kibibits_per_sec = Kibps = kibi(bps)
 mebibit_per_sec = mebibits_per_sec = Mibps = mebi(bps)
 gibibit_per_sec = gibibits_per_sec = Gibps = gibi(bps)
 
-Bps = byte_per_sec = bytes_per_sec = (n_bytes/SI.second).a(DataRate ).as_unit("Bps")
-
+Bps = byte_per_sec = bytes_per_sec = (n_bytes/SI.second).as_unit("Bps")
 
 kilobyte_per_sec = kilobytes_per_sec = KBps = bkilo(Bps)
 megabyte_per_sec = megabytes_per_sec = MBps = bmega(Bps)

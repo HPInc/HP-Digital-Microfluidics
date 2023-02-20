@@ -1047,7 +1047,9 @@ class UnitExpr(Generic[D]):
         return cast(UnitExpr[ND], self)
     an = a
     
-    def as_unit(self, abbr: str, check: Optional[type[D]] = None, singular: Optional[str]=None) -> Unit[D]:  # @UnusedVariable
+    def as_unit(self, abbr: str, *,
+                check: Optional[type[D]] = None, # @UnusedVariable
+                singular: Optional[str]=None) -> Unit[D]: 
         return self.quantity.as_unit(abbr, singular=singular)
         # return Unit[D](abbr, self, singular=singular)
     
@@ -1064,12 +1066,12 @@ class UnitExpr(Generic[D]):
     def __le__(self, other: UnitExpr[D]) -> bool:
         return self.quantity <= other.quantity
     
-class TiedUnitExpr(UnitExpr[D], Generic[D, U]):
-    def as_unit(self, abbr:str, check:Optional[type[D]]=None, singular:Optional[str]=None)->U:
-        return cast(U, super().as_unit(abbr, check=check, singular=singular))
-   
-    # I should be able to override a() to return something typed to the type of self, but
-    # I can't figure out how to get it by the compiler.
+# class TiedUnitExpr(UnitExpr[D], Generic[D, U]):
+#     def as_unit(self, abbr:str, check:Optional[type[D]]=None, singular:Optional[str]=None)->U:
+#         return cast(U, super().as_unit(abbr, check=check, singular=singular))
+#
+#     # I should be able to override a() to return something typed to the type of self, but
+#     # I can't figure out how to get it by the compiler.
 
 class Unit(UnitExpr[D]):
     """
@@ -1238,6 +1240,14 @@ class NamedDim(Quantity, metaclass=NamedDimMeta):
             return quant.as_unit(abbr)
         
     _restriction_classes: ClassVar[dict[Any, type[BaseDim]]]
+    
+    @classmethod
+    def note_restriction(cls, restriction: T, rclass: type[BaseDim]) -> None:
+        cls._restriction_classes[restriction] = rclass
+        new_dim: BaseDimension = rclass.dim()
+        new_dim._unrestricted = cls.dim()
+        new_dim._restriction = restriction
+        
     @classmethod
     def restricted(cls, restriction: T) -> type[BaseDim]:
         c = cls._restriction_classes.get(restriction, None)
@@ -1249,10 +1259,7 @@ class NamedDim(Quantity, metaclass=NamedDimMeta):
         # immediate_base = CountDim if issubclass(self.quant_class, CountDim) else BaseDim
         immediate_base: Union[Type[NamedDim], Type[BaseDim]] = cls if issubclass(cls, BaseDim) else BaseDim
         new_dim_class = cast(type[BaseDim], BaseDimMeta(rname,(immediate_base,), {"_dim_name": pname}))
-        new_dim: BaseDimension = new_dim_class.dim()
-        cls._restriction_classes[restriction] = new_dim_class
-        new_dim._unrestricted = cls.dim()
-        new_dim._restriction = restriction
+        cls.note_restriction(restriction, new_dim_class)
         return new_dim_class
     
     
@@ -1297,7 +1304,7 @@ class BaseDimMeta(NamedDimMeta):
         return super().__new__(cls, name, base, dct)
     
     def __init__(self, name: str, base: tuple[Type,...], dct: dict[str, Any]) -> None:  # @UnusedVariable
-        if name == "BaseDim":
+        if name == "BaseDim" or name == "TiedBaseDim":
             return
         # cls._this_class = cls
         # d = getattr(cls, "_dim", None)
@@ -1312,11 +1319,17 @@ class BaseDimMeta(NamedDimMeta):
         else:
             n = "_".join(split_camel_case(name)).lower()
         d = BaseDimension[ND](n)
-        d.quant_class = cast(type[DerivedDim], self)
+        d.quant_class = cast(type[BaseDim], self)
         def my_dim() -> BaseDimension:
             return d
         self.dim = my_dim
         super().__init__(name, base, dct)
+
+# class UnitFunc(Protocol[U]):
+#     def __call__(self, abbr: str, quant: Union[D,UnitExpr[D]], 
+#                  *, check: Optional[Dimensionality[D]] = None,
+#                  singular: Optional[str] = None) -> U:
+        ...    
 
 class BaseDim(NamedDim, metaclass=BaseDimMeta): 
     # _dim: ClassVar[BaseDimension[BD]]
@@ -1324,10 +1337,46 @@ class BaseDim(NamedDim, metaclass=BaseDimMeta):
     @classmethod
     def dim(cls:type[BD])->BaseDimension[BD]:
         assert False, f"{cls}.dim() not defined by BaseDimMeta"
+        
+    @staticmethod
+    def use_unit(unit: type[U]) -> Callable[[ND, str], U]:
+        return unit
+    
+    @classmethod
+    def _base_unit(cls: type[BD],
+                   unit: type[U], 
+                   abbr: str, *, singular: Optional[str]=None,
+                   ) -> U:
+        return cast(U, cls.dim().base_unit(abbr, singular=singular))
+    
     
     @classmethod
     def base_unit(cls: type[BD], abbr: str, *, singular: Optional[str]=None) -> Unit[BD]:
-        return cls.dim().base_unit(abbr, singular=singular)
+        return cls._base_unit(Unit[BD], abbr, singular=singular)
+    
+    
+    
+# class TiedBaseDim(Generic[UE, U], BaseDim):
+#     @property
+#     @abstractmethod
+#     def unit_expr_class(self) -> type[UE]: 
+#         ...
+#
+#     @property
+#     @abstractmethod
+#     def unit_class(self) -> type[U]:
+#         ...
+#
+#     def as_unit_expr(self, num: tuple[AbbrExp, ...], denom: tuple[AbbrExp, ...]) -> UE:
+#         return (self.unit_expr_class)(self, num, denom)
+#
+#     def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> U:
+#         return (self.unit_class)(abbr, self, singular=singular)
+#
+#     @classmethod
+#     def base_unit(cls, abbr:str, *, singular:Optional[str]=None)->U:
+#         return cast(U, super(TiedBaseDim, cls).base_unit(abbr, singular=singular))
+    
     
 class CountDim(BaseDim):
     @property
@@ -1463,7 +1512,7 @@ class Scalar(NamedDim):
     
 Scalar.dim().quant_class = Scalar
 
-class ScalarUnitExpr(TiedUnitExpr[Scalar, 'ScalarUnit']):
+class ScalarUnitExpr(UnitExpr[Scalar]):
     def __pow__(self, rhs: int) -> ScalarUnitExpr:
         return cast(ScalarUnitExpr, super().__pow__(rhs))
     

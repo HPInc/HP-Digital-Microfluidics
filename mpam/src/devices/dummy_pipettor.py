@@ -6,8 +6,7 @@ import logging
 from mpam.pipettor import Pipettor, Transfer, EmptyTarget, PipettingSource
 from mpam.types import XferDir, waste_reagent, Reagent
 from quantities.SI import seconds, second, uL
-from quantities.core import DerivedDim
-from quantities.dimensions import Time, Volume
+from quantities.dimensions import Time, Volume, FlowRate
 from mpam.device import ProductLocation
 from mpam import exerciser
 from argparse import Namespace, _ArgumentGroup
@@ -22,10 +21,6 @@ class ArmPos(Enum):
     PRODUCTS = auto()
     TIPS = auto()
     WASTE = auto()
-
-class FlowRate(DerivedDim):
-    derived = Volume/Time
-
 
 class DummyPipettor(Pipettor):
     dip_time: Time
@@ -49,7 +44,7 @@ class DummyPipettor(Pipettor):
                  long_transit_time: Time = 1*second,
                  get_tip_time: Time = 0.5*seconds,
                  drop_tip_time: Time = 0.5*seconds,
-                 flow_rate: FlowRate = (100*uL/second).a(FlowRate),
+                 flow_rate: FlowRate = 100*uL/second, 
                  n_plates: int = 1,
                  speed_up: Optional[float] = None,
                  ) -> None:
@@ -137,7 +132,7 @@ class DummyPipettor(Pipettor):
         self._sleep_for(self.get_tip_time)
 
     def xfer(self, volume: Volume) -> None:
-        t = (volume/self.flow_rate).a(Time)
+        t = volume/self.flow_rate
         self._sleep_for(t)
 
 

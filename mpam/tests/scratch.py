@@ -43,4 +43,24 @@ reveal_type(m/sec/sec)
 reveal_type(mph/sec*sec)
 reveal_type(3*m/sec**2)
 
+class Foo:
+    def __init__(self, x: int) -> None: ...
+    
+class Bar(Foo): ...
+
+
+class Parent:
+    def test(self, n: int) -> Foo: 
+        return Foo(n)
+    
+class Child:
+    test = Bar
+    
+c = Child()
+
+reveal_type(c.test(2))
+    
+    
+    
+
 
