@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from devices import joey, opentrons, bilby_task
 from mpam.exerciser import PlatformChoiceExerciser
-import pcr
+from support import pcr
 
 
 if __name__ == '__main__':

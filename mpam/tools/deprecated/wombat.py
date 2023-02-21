@@ -5,7 +5,7 @@ from argparse import ArgumentParser, Namespace, _ArgumentGroup,\
 from typing import Union, Optional, Sequence
 
 from devices import wombat
-from joey import JoeyExerciser
+from deprecated.joey import JoeyExerciser
 from mpam.device import System, Well, TemperatureControl, Magnet, Board
 from mpam.exerciser import Task, Exerciser
 from mpam.paths import Path

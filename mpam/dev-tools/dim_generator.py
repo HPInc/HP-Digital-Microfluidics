@@ -403,13 +403,12 @@ class {restr}:
         indent = self.indent
         if len(mapping) > 0:
             print(f"{indent}@overload{indent}# type: ignore[override]")
-            if is_ue:
-                print(f"{indent}def {op}(self, _rhs: float) -> {name}: ...")
-            else:
-                print(f"{indent}def {op}(self, _rhs: Union[float, Scalar]) -> {name}: ...")
+            print(f"{indent}def {op}(self, _rhs: float) -> {name}: ...")
             for d2,d3 in mapping:
                 print(f"{indent}@overload")
-                arg = f"UnitExpr[{d2.name}]" if is_ue else f"Union[{d2.name}, UnitExpr[{d2.name}]]"
+                # d2_ue = self.unit_expr_name(d2)
+                d2_ue = f"UnitExpr[{d2.name}]"
+                arg = d2_ue if is_ue else f"Union[{d2.name}, {d2_ue}]"
                 d3_name = self.unit_expr_name(d3) if is_ue else d3.name
                 print(f"{indent}def {op}(self, _rhs: {arg}) -> {d3_name}: ...")
             if is_ue:

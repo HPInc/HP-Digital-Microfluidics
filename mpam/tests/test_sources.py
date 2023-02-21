@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from argparse import _ArgumentGroup, ArgumentParser, Namespace
 
-from devices import joey, wombat, bilby, opentrons, dummy_pipettor
+from devices import joey, wombat, opentrons, dummy_pipettor, bilby_task
 from mpam.device import Board, System
 from mpam.exerciser import PlatformChoiceExerciser, Task, Exerciser
 from mpam.paths import Path
@@ -42,7 +42,7 @@ class SourceTest(Task):
 
 if __name__ == '__main__':
     platforms = (
-                bilby.PlatformTask,
+                bilby_task.PlatformTask,
                 joey.PlatformTask,
                 wombat.PlatformTask,
                 wombat.YaminonPlatformTask,
