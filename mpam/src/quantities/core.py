@@ -72,6 +72,8 @@ DimOpCache = MutableMapping[T, 'Dimensionality']
 AbbrExp = tuple[Union[str, tuple[str,str]], int]
 
 D = TypeVar('D', bound='Quantity')
+Dco = TypeVar('Dco', bound='Quantity', covariant=True)
+Dctr = TypeVar('Dctr', bound='Quantity', contravariant=True)
 D2 = TypeVar('D2', bound='Quantity')
 ND = TypeVar('ND', bound='NamedDim')
 BD = TypeVar('BD', bound='BaseDim')
@@ -405,16 +407,19 @@ class Quantity:
         if not rhs.has_dimensionality(self.dimensionality):
             raise TypeError(f"{self.dimensionality} {op} {rhs.dimensionality} is ill-formed")
 
+    def same_dim(self: D, magnitude: float) -> D:
+        return self.dimensionality.make_quantity(magnitude)        
+
     def __neg__(self: D) -> D:
-        return self.dimensionality.make_quantity(-self.magnitude)
+        return self.same_dim(-self.magnitude)
     
     def __add__(self: D, rhs: D) -> D:
         self._ensure_dim_match(rhs, "+")
-        return self.dimensionality.make_quantity(self.magnitude+rhs.magnitude)
+        return self.same_dim(self.magnitude+rhs.magnitude)
 
     def __sub__(self: D, rhs: D) -> D:
         self._ensure_dim_match(rhs, "-")
-        return self.dimensionality.make_quantity(self.magnitude-rhs.magnitude)
+        return self.same_dim(self.magnitude-rhs.magnitude)
 
     def __eq__(self, rhs: object) -> bool:
         if isinstance(rhs, int) and rhs == 0:
@@ -491,9 +496,13 @@ class Quantity:
     def to_power(self, rhs: int) -> Quantity:
         # if not isinstance(rhs, numbers.Integral):
             # raise TypeError(f"RHS not an integer: {rhs}")
+        if rhs == 1:
+            return self
+        if rhs == 0:
+            return Scalar.from_float(1)
         new_dim = self.dimensionality**rhs
         return new_dim.make_quantity(self.magnitude**rhs)
-
+    
     @overload
     def __mul__(self: D, _rhs: Union[float, Scalar]) -> D: ...  
     @overload
@@ -502,7 +511,7 @@ class Quantity:
     def __mul__(self: D, _rhs: UnitExpr) -> Quantity: ...  
     def __mul__(self: D, rhs: Union[float, Quantity, UnitExpr]) ->  Union[D, Quantity]:
         if isinstance(rhs, (float, int)):
-            return self.dimensionality.make_quantity(self.magnitude*rhs)
+            return self.same_dim(self.magnitude*rhs)
         if isinstance(rhs, UnitExpr):
             return self.multiply_by(rhs.quantity)
         return self.multiply_by(rhs)
@@ -510,8 +519,7 @@ class Quantity:
     def __rmul__(self: D, lhs: float) -> D:
         # if not isinstance(lhs, numbers.Real):
             # raise TypeError(f"LHS not a real number: {lhs}")
-        dim: Dimensionality[D] = self.dimensionality
-        return dim.make_quantity(lhs*self.magnitude)
+        return self.same_dim(lhs*self.magnitude)
 
     @overload
     def __truediv__(self: D, _rhs: Union[float, Scalar]) -> D: ...  
@@ -521,7 +529,7 @@ class Quantity:
     def __truediv__(self: D, _rhs: Union[Quantity, UnitExpr]) -> Quantity: ...
     def __truediv__(self: D, rhs: Union[float, Quantity, UnitExpr]) -> Union[D, Quantity]:
         if isinstance(rhs, (float, int)):
-            return self.dimensionality.make_quantity(self.magnitude/rhs)
+            return self.same_dim(self.magnitude/rhs)
         if isinstance(rhs, UnitExpr):
             return self.divide_by(rhs.quantity)
         return self.divide_by(rhs)
@@ -1318,7 +1326,8 @@ class BaseDimMeta(NamedDimMeta):
             n = explicit_name
         else:
             n = "_".join(split_camel_case(name)).lower()
-        d = BaseDimension[ND](n)
+        
+        d: BaseDimension[Any] = BaseDimension(n)
         d.quant_class = cast(type[BaseDim], self)
         def my_dim() -> BaseDimension:
             return d
@@ -1398,10 +1407,10 @@ class CountDim(BaseDim):
     
     def __add__(self: CD, rhs: Union[float,CD]) -> CD:
         rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
-        return self.dimensionality.make_quantity(self.magnitude+rmag)
+        return self.same_dim(self.magnitude+rmag)
     
     def __radd__(self: CD, lhs: float) -> CD:
-        return self.dimensionality.make_quantity(self.magnitude+lhs)
+        return self.same_dim(lhs+self.magnitude)
     
     # I'm getting rid of the in-place operations because it's maddeningly frustrating to 
     # track down errors due to ZERO() changing because it was used in a context in
@@ -1414,10 +1423,10 @@ class CountDim(BaseDim):
     
     def __sub__(self: CD, rhs: Union[float,BD]) -> CD:
         rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
-        return self.dimensionality.make_quantity(self.magnitude-rmag)
+        return self.same_dim(self.magnitude-rmag)
     
     def __rsub__(self: CD, lhs: float) -> CD:
-        return self.dimensionality.make_quantity(lhs-self.magnitude)
+        return self.same_dim(lhs-self.magnitude)
         
     # def __isub__(self, rhs: Union[float,ND]) -> ND:
     #     rmag: float = rhs if isinstance(rhs, (float, int)) else rhs.magnitude
@@ -1509,6 +1518,10 @@ class Scalar(NamedDim):
     
     def as_unit(self, abbr:str, *, singular: Optional[str] = None) -> ScalarUnit:
         return ScalarUnit(abbr, self, singular=singular)
+    
+    @classmethod
+    def from_float(cls, magnitude: float) -> Scalar:
+        return Scalar(magnitude, cls.dim())
     
 Scalar.dim().quant_class = Scalar
 

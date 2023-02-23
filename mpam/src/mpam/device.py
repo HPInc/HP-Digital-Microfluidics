@@ -294,9 +294,9 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 
     ...
 
-BinaryComponent[BC].TurnOn = BinaryComponent.ModifyState(lambda _: OnOff.ON)
-BinaryComponent[BC].TurnOff = BinaryComponent.ModifyState(lambda _: OnOff.OFF)
-BinaryComponent[BC].Toggle = BinaryComponent.ModifyState(lambda s: ~s)
+BinaryComponent.TurnOn = BinaryComponent.ModifyState(lambda _: OnOff.ON)
+BinaryComponent.TurnOff = BinaryComponent.ModifyState(lambda _: OnOff.OFF)
+BinaryComponent.Toggle = BinaryComponent.ModifyState(lambda s: ~s)
 
 class PipettingTarget(ABC):
     """
