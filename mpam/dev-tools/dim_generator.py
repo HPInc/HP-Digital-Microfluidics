@@ -33,6 +33,9 @@ class Dimensionality:
     restrictions: Final[dict[str, Dimensionality]]
     restriction: Optional[tuple[Dimensionality, str]] = None
     extra_methods: Final[list[str]]
+    extra_unit_expr_methods: Final[list[str]]
+    extra_unit_methods: Final[list[str]]
+    pre_class_functions: Final[list[str]]
     bounds: Final[dict[str, tuple[int, int]]] = {}
     explicitly_named: bool = False
     derivation: Optional[str] = None
@@ -89,6 +92,9 @@ class Dimensionality:
         self.dependencies = () if self.is_base else tuple(self.bases[e[0]] for e in exponents)
         self.restrictions = {}
         self.extra_methods = []
+        self.extra_unit_expr_methods = []
+        self.extra_unit_methods = []
+        self.pre_class_functions = []
         
     def __repr__(self) -> str:
         return self.name
@@ -134,6 +140,18 @@ class Dimensionality:
     
     def extra_code(self, method: ValOrFn[str]) -> Dimensionality:
         self.extra_methods.append(ensure_val(method, str))
+        return self
+
+    def extra_unit_expr_code(self, method: ValOrFn[str]) -> Dimensionality:
+        self.extra_unit_expr_methods.append(ensure_val(method, str))
+        return self
+    
+    def extra_unit_code(self, method: ValOrFn[str]) -> Dimensionality:
+        self.extra_unit_methods.append(ensure_val(method, str))
+        return self
+    
+    def pre_class_code(self, method: ValOrFn[str]) -> Dimensionality:
+        self.pre_class_functions.append(ensure_val(method, str))
         return self
     
     @classmethod
@@ -263,6 +281,9 @@ class Dimensionality:
 class Emitter:
     dims: Final[set[Dimensionality]]
     restrictions: Final[Sequence[str]]
+    top_code: Final[list[str]]
+    bottom_code: Final[list[str]]
+    
     indent = "    "
     
     def __init__(self, *,
@@ -271,9 +292,20 @@ class Emitter:
                  ) -> None:
         self.dims = {*Dimensionality.by_name.values(), *extras}
         self.restrictions = tuple(restrictions)
+        self.top_code = []
+        self.bottom_code = []
+        
+    def at_top(self, method: ValOrFn[str]) -> Emitter:
+        self.top_code.append(ensure_val(method, str))
+        return self
+
+    def at_bottom(self, method: ValOrFn[str]) -> Emitter:
+        self.bottom_code.append(ensure_val(method, str))
+        return self
 
     def emit(self) -> None:
         self.emit_header()
+        self.print_extra_code(self.top_code)
         self.emit_aliases(Dimensionality.scalar())
         for r in self.restrictions:
             self.emit_restriction(r)
@@ -282,6 +314,8 @@ class Emitter:
         
         for d in dims:
             self.emit_dim(d)
+
+        self.print_extra_code(self.bottom_code)
         
 
     def emit_header(self) -> None:
@@ -462,6 +496,7 @@ class {ue_name}(UnitExpr[{name}]):
             self.emit_powers(powers, is_ue=True)
             self.emit_op(d.name, "__mul__", products,is_ue=True)
             self.emit_op(d.name, "__truediv__", quotients, is_ue=True)
+        self.print_extra_code(d.extra_unit_expr_methods)
     
     def emit_unit(self, d: Dimensionality) -> None:
         name = d.name
@@ -474,8 +509,16 @@ class {u_name}(Unit[{name}], {ue_name}):
     """
     ...
         ''')
+        self.print_extra_code(d.extra_unit_methods)
+        
+        
+    def print_extra_code(self, blocks: Sequence[str]) -> None:
+        for code in blocks:
+            print(code)
+        
     
     def emit_dim(self, d: Dimensionality) -> None:
+        self.print_extra_code(d.pre_class_functions)
         self.emit_dim_header(d)
         powers = self.powers_of(d)
         products = self.op_of(d, lambda x,y: x*y)
@@ -484,8 +527,7 @@ class {u_name}(Unit[{name}], {ue_name}):
         self.emit_op(d.name, "__mul__", products)
         self.emit_op(d.name, "__truediv__", quotients)
         self.emit_unit_ops(d)
-        for code in d.extra_methods:
-            print(code)
+        self.print_extra_code(d.extra_methods)
             
         self.emit_aliases(d)
         if d.restriction:

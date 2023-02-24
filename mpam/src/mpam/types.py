@@ -835,7 +835,7 @@ class Operation(Generic[T, V], ABC):
         Returns:
             the new :class:`Operation`
         """
-        return CombinedOperation[T, V, V3](self, op, after=after)
+        return CombinedOperation[T, V, V2](self, op, after=after)
 
     def then_compute(self, fn: Callable[[V], Delayed[V2]]) -> Operation[T, V2]:
         """

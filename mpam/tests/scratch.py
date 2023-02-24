@@ -1,32 +1,19 @@
 from __future__ import annotations
-from quantities.money import USD, UKP, dollars, cents
-from quantities.SI import day
-from quantities.dimensions import Money
+from quantities.currency.pre_decimal_GBP import shillings, sixpence, farthings,\
+    pence, pounds
+from typing import Protocol, Optional
 
-a = 1*USD
-print(a)    
+x = 2*shillings+2*farthings+3*pence+5*pounds
+print(x.in_units((pounds, shillings, pence)))
+print(x.as_currency())
 
-b = 5*UKP + 2*UKP   
+class Foo(Protocol):
+    def __call__(self, x: int, *, k: Optional[str] = None) -> int: ...
+    
+def bar(_x: int, y: float=1, *, k: Optional[str] = "Hi", b: bool=True) -> int:
+    print(k)
+    return _x+1
 
-print(b)
+v: Foo = bar
 
-Money.default_units = USD
-
-salary = 25*UKP/day
-
-#UKP.set_exchange_rate(1.2*USD)
-USD.set_exchange_rate(0.8*UKP)
-# USD.set_exchange_rate(0.5*UKP)
-print(salary.in_units(USD/day))
-print(salary.in_units(UKP/day))
-
-print(f"{b:.2f}")
-
-print((1*USD).decomposed((dollars, cents), required="all"))
-
-print((2*USD+3*UKP).in_units(UKP))
-
-
-
-
-
+v(8)

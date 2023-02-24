@@ -46,10 +46,7 @@ price_rate = money.derived_quotient(time, "PriceRate", alias="Salary")
 vol_conc = volume["Substance"].derived_quotient(volume, "VolumeConcentration")
 
 time.extra_code(f'''
-    from quantities.core import _DecomposedQuantity
-
     def sleep(self) -> None:
-        import time
         from quantities import SI
         time.sleep(self.as_number(SI.seconds))
     def in_HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
@@ -91,12 +88,15 @@ time.extra_code(f'''
 ''')
 
 money.extra_code(f'''
-    import typing
-    from typing import Sequence
-    from quantities.core import Dimensionality, _BoundQuantity, T
-    
-    class CurrencyProxy(typing.Protocol):
-        from typing import Sequence # @Reimport
+    class CurrencyFormatter(ABC):
+        @abstractmethod
+        def format_currency(self, money: Money, *,      # @UnusedVariable
+                            force_prefix: bool = False, # @UnusedVariable
+                            force_suffix: bool = False, # @UnusedVariable
+                            decimal_places: Optional[int] = None # @UnusedVariable
+                            ) -> str: ...
+
+    class CurrencyProxy(Protocol):
         # If the currency has an established value wrt the base,
         # force_magnitude() replaces money's magnitude with the scaled value and
         # clears its currency_proxy. Otherwise, it raises an exception
@@ -109,8 +109,13 @@ money.extra_code(f'''
                                    Sequence[UnitExpr[Money]]]) -> None: ...        
         def to_str(self, money: Money) -> str: ...    # @UnusedVariable
         def format_str(self, money: Money, format_spec: str) -> str: ...    # @UnusedVariable
+        def as_currency_formatter(self) -> Money.CurrencyFormatter: ...
+        
     
     currency_proxy: Optional[CurrencyProxy]
+    default_currency_formatter: ClassVar[Optional[Union[CurrencyFormatter, 
+                                                        Callable[[Money], str]]]] = None
+    
 
     def __init__(self, mag: float, dim: Optional[Dimensionality[Money]] = None, *,
                  currency_proxy: Optional[CurrencyProxy] = None) -> None:
@@ -186,23 +191,55 @@ money.extra_code(f'''
             self._force_magnitude()
         return super().to_power(rhs)
     
-    def in_units(self, units:Union[UnitExpr[Money], Sequence[UnitExpr[Money]]])->_BoundQuantity[Money]:
+    def _force_if_necessary(self, units: Union[UnitExpr[Money], Sequence[UnitExpr[Money]]]) -> None:
         cp = self.currency_proxy
         if cp is not None:
             cp.unit_check(self, units)
+        # We've been forced, so we need to make sure that all of the units are as well.
+        elif isinstance(units, UnitExpr):
+            units.quantity._force_magnitude()
         else:
-            # We've been forced, so we need to make sure that all of the units are as well.
-            if isinstance(units, UnitExpr):
-                units.quantity._force_magnitude()
-            else:
-                for u in units:
-                    u.quantity._force_magnitude()
+            for u in units:
+                u.quantity._force_magnitude()
+
+    def in_units(self, units:Union[UnitExpr[Money], Sequence[UnitExpr[Money]]])->_BoundQuantity[Money]:
+        self._force_if_necessary(units)
         return super().in_units(units)
     
+    def decomposed(self, units: Iterable[UnitExpr[Money]], *, 
+                   required: Optional[Union[Iterable[UnitExpr[Money]],
+                                            Literal["all"]]] = None) -> _DecomposedQuantity[Money]:
+        units = list(units)
+        if required is not None and required != "all":
+            required = list(required)
+            self._force_if_necessary((*units, *required))
+        else: 
+            self._force_if_necessary(units)
+        return super().decomposed(units, required=required)
+        
     def of(self, restriction:T, *, dim: Optional[str] = None)-> BaseDim: # @UnusedVariable
         # We can only do this if forced.
         self._force_magnitude()
         return super().of(restriction)
+
+    def as_currency(self,                     
+                    formatter: Optional[Union[Money.CurrencyFormatter,
+                                              Callable[[Money], str]]] = None,
+                    *,
+                    force_prefix: bool = False,
+                    force_suffix: bool = False,
+                    decimal_places: Optional[int] = None) -> str:
+        if formatter is None:
+            formatter = Money.default_currency_formatter
+        if formatter is None: 
+            assert self.currency_proxy is not None, f"No default currency formatter and no currency proxy: {{self}}"
+            formatter = self.currency_proxy.as_currency_formatter()
+        if isinstance(formatter, Money.CurrencyFormatter):
+            return formatter.format_currency(self, force_prefix=force_prefix,
+                                             force_suffix=force_suffix, 
+                                             decimal_places=decimal_places)
+        else:
+            return formatter(self)
 ''')
 
 restrictions = ("Substance", "Solution", "Solvent")
@@ -210,6 +247,12 @@ extras = (time**2,
           mass*distance)
 
 emitter = Emitter(extras=extras, restrictions=restrictions)
+emitter.at_top(f'''
+import time
+from abc import ABC, abstractmethod
+from typing import Protocol, Sequence, ClassVar, Callable, Iterable
+from quantities.core import Dimensionality, _BoundQuantity, _DecomposedQuantity, T
+''')
 emitter.emit()
 
 

@@ -438,24 +438,32 @@ class Quantity:
         self._ensure_dim_match(other, op)
         return other.magnitude
     
+    # Some dimensions (e.g., money) may change self.magnitude during the call to
+    # _ensure_dim_match(), so we have to make sure it's called before we read
+    # it.
+    
     def __lt__(self: D, rhs: ZeroOr[D]) -> bool:
-        return self.magnitude < self._magnitude_of(rhs, "<")
+        their_mag = self._magnitude_of(rhs, "<")
+        return self.magnitude < their_mag
     
     def __le__(self:D , rhs: ZeroOr[D]) -> bool:
-        return self.magnitude <= self._magnitude_of(rhs, "<=")
+        their_mag = self._magnitude_of(rhs, "<=")
+        return self.magnitude <= their_mag
     
     def __gt__(self: D, rhs: ZeroOr[D]) -> bool:
-        return self.magnitude > self._magnitude_of(rhs, ">")
+        their_mag = self._magnitude_of(rhs, ">")
+        return self.magnitude > their_mag
     
     def __ge__(self:D , rhs: ZeroOr[D]) -> bool:
-        return self.magnitude >= self._magnitude_of(rhs, ">=")
+        their_mag = self._magnitude_of(rhs, ">=")
+        return self.magnitude >= their_mag
     
     def is_close_to(self, other: ZeroOr[D], *, 
                     rel_tol: float = 1e-09, 
                     abs_tol: Optional[ZeroOr[D]] = None,
                     ) -> bool:
-        my_mag = self.magnitude
         their_mag = self._magnitude_of(other, "is_close_to")
+        my_mag = self.magnitude
         if my_mag == their_mag:
             return True
         tol = self._magnitude_of(abs_tol, "is_close_to.abs_tol") if abs_tol is not None else 1e-9 if their_mag==0 else 0
@@ -603,9 +611,14 @@ class Quantity:
         last = biggest_first[-1]
         for u in biggest_first:
             m = q.as_number(u)
-            if m >= 1:
-                whole = math.floor(m)
-                remainder = m - whole
+            whole = math.floor(m)
+            if math.isclose(m, whole+1):
+                whole=whole+1
+            if whole >= 1:
+                if math.isclose(m, whole):
+                    remainder = 0.0
+                else:
+                    remainder = m - whole
                 used.append((u, whole))
                 q = remainder*u
                 last = u
