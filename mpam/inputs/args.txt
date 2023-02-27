@@ -1,0 +1,9 @@
+yaminon
+-v1
+-4.1
+--plastic
+--min-time=1day
+--clock-speed=500ms
+--trace-clicks
+--macro-file=../inputs/macros.dmf
+--macro-file=../inputs/osu.dmf
