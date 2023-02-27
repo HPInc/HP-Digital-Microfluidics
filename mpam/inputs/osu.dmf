@@ -4,7 +4,7 @@ comb_pad = macro(well w) -> pad {
   // (up or down) that you can safely walk on a Wombat board from the given 
   // well.
   return (w's exit pad
-          + 3 in dir w's exit direction
+          + 2 in dir w's exit direction
             + 2 in dir safe_direction(w));
 };  
 
@@ -20,7 +20,9 @@ disp_and_walk_to = macro(well w, pad p) -> drop {
 // In parallel, dispense drops from two wells and walk them safely to next 
 // to a combination pad.  Then mix and split them for a specified amount of time,
 // and return the resulting combined drop.
-combine_drops = macro(well outer, well inner, time mixing_time) -> drop {
+// mixing style 1 is to merge then split continuously, mixing style 2 is to merge
+// then walk then split continuosly 
+combine_drops = macro(well outer, well inner, time mixing_time, int mixing_style) -> drop {
   pad center = comb_pad(outer);
   dir inner_dir = outer's exit direction;
   dir outer_dir = inner_dir turned around;
@@ -30,9 +32,15 @@ combine_drops = macro(well outer, well inner, time mixing_time) -> drop {
   ]]
   // mix() and split() are defined in macros.dmf
   drop d = mix(center, inner_dir, outer_dir);
+  if mixing_style == 2 {
+     d: left 1: right 2:left 1;
+  }
   repeat for mixing_time {
     split(d, inner_dir, outer_dir);
     d = mix(center, inner_dir, outer_dir);
+    if mixing_style == 2 {
+     d: left 1: right 2:left 1;
+    }
   } 
    return d;
 };  
@@ -40,23 +48,80 @@ combine_drops = macro(well outer, well inner, time mixing_time) -> drop {
 // walk the drop safely to the extraction port and request 
 // that it be transferred out.
 extract = macro(drop d, extraction port ep) {
-  d : to row 2 : to col ep's col : to ep : transfer out;
+  d : to row 3 : to col ep's col : to ep : transfer out;
 };
 
-dna_comb = macro() {
+//take in well to load, volume to load, and reagent name
+well_load = macro(well w,volume vol1, string rg1_str) {
+  reagent rg1 = reagent rg1_str;
+  w: transfer in(vol1 of rg1);
+};
+
+well_load_1 = macro() {
+  well wC = well #7;
+  well wD = well #8;
+  
+  wC: transfer in(5uL of reagent "C");
+  wD: transfer in(5uL of reagent "D");
+};
+
+well_load_2 = macro() {
+  well wA = well #3;
+  well wB = well #4;
+  well wC = well #7;
+  well wD = well #8;
+  
+  wA: transfer in(5uL of reagent "A");
+  wB: transfer in(5uL of reagent "B");
+  wC: transfer in(5uL of reagent "C");
+  wD: transfer in(5uL of reagent "D");
+};
+
+// dna_comb_1 will combine one drop each from 
+// well #7 and #8 with mixing style 1(merge/split), then move a 2X drop to the 
+// extraction port for removal
+dna_comb_1 = macro() {
+  well wC = well #7;
+  well wD = well #8;
+  drop CD;
+  
+  //define the port to extract from 
+  extraction port ep = extraction port #1;
+  
+  //Define how long to mix the drops for 
+  time mixing_time = 10 seconds;
+  
+  //Define how to mix
+  //style 1: merge then split continuously
+  //style 2: merge then walk then split continuoulsy
+  int mixing_style = 1;
+  
+  //dispense a drop of each well and combine 
+  CD = combine_drops(wC, wD, mixing_time, mixing_style);
+  
+  //move drops to the extraction port for manual pipette removal
+  extract(CD, ep);
+};
+
+// dna_comb_4 will combine one drop each from 
+// well #3, #7, and #8, with well #4 using mixing style 1, then 
+// move each 2X drop to the extraction port for removal
+dna_comb_2 = macro() {
   well wA = well #3;
   well wB = well #4;
   well wC = well #7;
   well wD = well #8;
 
-  extraction port ep = extraction port #3;
+  //define the port to extract from 
+  extraction port ep = extraction port #1;
   
-  wA: transfer in(10uL of reagent "A");
-  wB: transfer in(10uL of reagent "B");
-  wC: transfer in(10uL of reagent "C");
-  wD: transfer in(10uL of reagent "D");
-  
+  //Define how long to mix the drops for 
   time mixing_time = 10 seconds;
+  
+  //Define how to mix
+  //style 1: merge then split continuously
+  //style 2: merge then walk then split continuoulsy
+  int mixing_style = 1;
   
   // The drops need to be declared in this scope
   // so that they will be available after the parallel block.
@@ -67,9 +132,77 @@ dna_comb = macro() {
   
   // In parallel, create the three drops.
   [[
-    AB = combine_drops(wA, wB, mixing_time);
-    CB = combine_drops(wC, wB, mixing_time);
-    DB = combine_drops(wD, wB, mixing_time);
+    AB = combine_drops(wA, wB, mixing_time, mixing_style);
+    CB = combine_drops(wC, wB, mixing_time, mixing_style);
+    DB = combine_drops(wD, wB, mixing_time, mixing_style);
+  ]]
+  
+  // Extract them in the specified order.  This could be
+  // done in a parallel block somewhat (negligibly) more 
+  // efficiently, but the order might not be what you want.
+  extract(DB, ep);
+  extract(CB, ep);
+  extract(AB, ep);
+};
+
+// dna_comb_3 will combine one drop each from 
+// well #7 and #8 with mixing style 2(merge/walk/split), then move a 2X drop to the 
+// extraction port for removal
+dna_comb_3 = macro() {
+  well wC = well #7;
+  well wD = well #8;
+  drop CD;
+  
+  //define the port to extract from 
+  extraction port ep = extraction port #1;
+  
+  //Define how long to mix the drops for 
+  time mixing_time = 10 seconds;
+  
+  //Define how to mix
+  //style 1: merge then split continuously
+  //style 2: merge then walk then split continuoulsy
+  int mixing_style = 2;
+  
+  //dispense a drop of each well and combine 
+  CD = combine_drops(wC, wD, mixing_time, mixing_style);
+  
+  //move drops to the extraction port for manual pipette removal
+  extract(CD, ep);
+};
+
+// dna_comb_4 will combine one drop each from 
+// well #3, #7, and #8, with well #4 using mixing style 2, then 
+// move each 2X drop to the extraction port for removal
+dna_comb_4 = macro() {
+  well wA = well #3;
+  well wB = well #4;
+  well wC = well #7;
+  well wD = well #8;
+
+  //define the port to extract from 
+  extraction port ep = extraction port #1;
+  
+  //Define how long to mix the drops for 
+  time mixing_time = 10 seconds;
+  
+  //Define how to mix
+  //style 1: merge then split continuously
+  //style 2: merge then walk then split continuoulsy
+  int mixing_style = 2;
+  
+  // The drops need to be declared in this scope
+  // so that they will be available after the parallel block.
+
+  drop AB;
+  drop CB;
+  drop DB;
+  
+  // In parallel, create the three drops.
+  [[
+    AB = combine_drops(wA, wB, mixing_time, mixing_style);
+    CB = combine_drops(wC, wB, mixing_time, mixing_style);
+    DB = combine_drops(wD, wB, mixing_time, mixing_style);
   ]]
   
   // Extract them in the specified order.  This could be
