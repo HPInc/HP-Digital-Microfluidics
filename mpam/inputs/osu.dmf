@@ -17,11 +17,21 @@ disp_and_walk_to = macro(well w, pad p) -> drop {
 };
 
 
+do_mix = macro(pad center, dir inner_dir, dir outer_dir, int mixing_style) -> drop {
+  drop d = mix(center, inner_dir, outer_dir);
+  if mixing_style == 2 {
+    d : 1 in dir inner_dir
+      : 2 in dir outer_dir
+      : 1 in dir inner_dir;
+  }
+  return d;
+};
+
 // In parallel, dispense drops from two wells and walk them safely to next 
 // to a combination pad.  Then mix and split them for a specified amount of time,
 // and return the resulting combined drop.
 // mixing style 1 is to merge then split continuously, mixing style 2 is to merge
-// then walk then split continuosly 
+// then walk then split continuously 
 combine_drops = macro(well outer, well inner, time mixing_time, int mixing_style) -> drop {
   pad center = comb_pad(outer);
   dir inner_dir = outer's exit direction;
@@ -31,16 +41,10 @@ combine_drops = macro(well outer, well inner, time mixing_time, int mixing_style
     disp_and_walk_to(outer, center+outer_dir);
   ]]
   // mix() and split() are defined in macros.dmf
-  drop d = mix(center, inner_dir, outer_dir);
-  if mixing_style == 2 {
-     d: left 1: right 2:left 1;
-  }
+  drop d = do_mix(center, inner_dir, outer_dir, mixing_style);
   repeat for mixing_time {
     split(d, inner_dir, outer_dir);
-    d = mix(center, inner_dir, outer_dir);
-    if mixing_style == 2 {
-     d: left 1: right 2:left 1;
-    }
+    d = do_mix(center, inner_dir, outer_dir, mixing_style);
   } 
    return d;
 };  
