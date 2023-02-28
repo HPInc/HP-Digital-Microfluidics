@@ -709,6 +709,7 @@ BuiltIns = {
     "transfer out": Functions["#transfer out"],
     "remove": Functions["#remove liquid"],
     "fill": Functions["fill"],
+    "prepare to dispense": Functions["#prepare to dispense"]
     }
 
 class SpecialVariable(Generic[T_]):
@@ -3198,7 +3199,23 @@ class DMFCompiler(DMFVisitor):
             return w.empty_well()
         fn.register((Type.WELL,), Type.WELL, empty_well)
 
-             
+        fn = Functions["#prepare to dispense"]
+        def prepare_to_dispense(w: Well, what: Optional[Union[Volume,Liquid,Reagent]] = None) -> None:
+            v = (what if isinstance(what, Volume)
+                 else what.volume if isinstance(what, Liquid)
+                 else None)
+            r = (what if isinstance(what, Reagent)
+                 else what.reagent if isinstance(what, Liquid)
+                 else None)
+            if v is not None:
+                w.required = v
+            w.ensure_content(v, r)
+        fn.register_all_immediate([((Type.WELL, Type.LIQUID), Type.NO_VALUE),
+                                   ((Type.WELL, Type.VOLUME), Type.NO_VALUE),
+                                   ((Type.WELL, Type.REAGENT), Type.NO_VALUE),
+                                   ((Type.WELL,), Type.NO_VALUE)],
+                                   prepare_to_dispense,
+                                   curry_at=0)
         
     @classmethod
     def setup_special_vars(cls) -> None:
@@ -3336,6 +3353,23 @@ class DMFCompiler(DMFVisitor):
         
         Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
         Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
+        
+        def set_required(w: Well, v: Optional[Volume]) -> None:
+            w.required = v
+        Attributes["requirement"].register(Type.WELL, Type.VOLUME.maybe, lambda w: w.required,
+                                           setter=set_required)
+        
+        def set_fill_level(w: Well, v: Optional[Volume]) -> None:
+            w.compute_max_fill(v)
+        Attributes["#fill_level"].register(Type.WELL, Type.VOLUME.maybe, lambda w: w.max_fill,
+                                           setter=set_fill_level)
+        
+        def set_refill_level(w: Well, v: Optional[Volume]) -> None:
+            w.compute_min_fill(v)
+        Attributes["#refill_level"].register(Type.WELL, Type.VOLUME.maybe, lambda w: w.min_fill,
+                                           setter=set_refill_level)
+        
+            
         
         Attributes["heater"].register((Type.PAD, Type.WELL), Type.HEATER.maybe, lambda p: p.heater)
         Attributes["chiller"].register((Type.PAD, Type.WELL), Type.CHILLER.maybe, lambda p: p.chiller)

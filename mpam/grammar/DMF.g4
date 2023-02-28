@@ -322,6 +322,8 @@ attr returns[str which]
   | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="column"}
   | 'exit' ('dir' | 'direction') {$ctx.which="#exit_dir"}
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
+  | 'fill' 'level' {$ctx.which="#fill_level"}
+  | 'refill' 'level' {$ctx.which="#refill_level"}
   | 'target' ('temp' | 'temperature')? {$ctx.which="#target_temperature"}
   | 'current'? ('temp' | 'temperature') {$ctx.which="#current_temperature"}
   | 'power' 'supply' {$ctx.which="#power_supply"}
@@ -365,10 +367,11 @@ multi_word_name returns[str val]
 //  | 'the'? 'index' 'base' {$ctx.val="index base"}
   | 'the'? 'last'? 'clicked' 'pad'{$ctx.val="clicked pad"}
   | 'the'? 'last'? 'clicked' 'drop'{$ctx.val="clicked drop"}
-  | 'dispense' 'drop' {$ctx.val="dispense drop"}
+  | 'dispense' 'a'? 'drop' {$ctx.val="dispense drop"}
   | 'enter' 'well' {$ctx.val="enter well"}
   | 'transfer' 'in' {$ctx.val="transfer in"}
   | 'transfer' 'out' {$ctx.val="transfer out"}
+  | 'prepare' 'to' 'dispense' {$ctx.val="prepare to dispense"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
@@ -380,6 +383,8 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
   | 'missing' | 'last' | 'clicked' 
   | 'port' | 'transfer' | 'in' | 'out'
   | 'heating' | 'zone' | 'zones'
+  | 'fill' | 'refil' | 'level'
+  | 'prepare' | 'to' | 'dispense'
   ;
 
 string : STRING ;

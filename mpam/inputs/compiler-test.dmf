@@ -109,3 +109,7 @@ test_loop_if_exit = macro(pad) {
     print "Hi";
   }
 };
+
+debug = macro() {
+  well #1 : prepare to dispense(3 drops);
+};

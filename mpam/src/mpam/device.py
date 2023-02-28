@@ -2164,8 +2164,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
         """
         def default_fill_line() -> Volume:
             if self.required is None:
-                return self.capacity
-            return min(self.capacity, self.required)
+                return self.max_fill
+            return min(self.max_fill, self.required+self.min_fill)
         return self.volume_from_spec(self._fill_to, default_fill_line)
 
     @fill_to.setter
