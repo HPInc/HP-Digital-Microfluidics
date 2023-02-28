@@ -350,26 +350,26 @@ class PlatformTask(joey.PlatformTask):
                     *,
                     exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
-        lg = group.add_mutually_exclusive_group()
-        lg.add_argument('-v1', action='store_const', const=WombatLayout.V1, dest='layout_version',
-                        help="Version 1 of the Wombat layout")
-        lg.add_argument('-v2', action='store_const', const=WombatLayout.V2, dest='layout_version',
-                        help="Version 2 of the Wombat layout")
+        # lg = group.add_mutually_exclusive_group()
+        group.add_argument('-v1', '--v1', action='store_const', const=WombatLayout.V1, dest='layout_version',
+                           help="Version 1 of the Wombat layout")
+        group.add_argument('-v2', '--v2', action='store_const', const=WombatLayout.V2, dest='layout_version',
+                           help="Version 2 of the Wombat layout")
         group.add_argument('-p', '--port',
                            help='''
                            The communication port (e.g., COM5) to use to talk to the board.
                            By default, only the display is run
                            ''')
-        lidg = group.add_mutually_exclusive_group()
-        lidg.add_argument('--glass', action='store_const', const=LidType.GLASS, dest='lid_type',
-                          help="Glass lid")
-        lidg.add_argument('--plastic', action='store_const', const=LidType.PLASTIC, dest='lid_type',
-                          help="Plastic lid")
-        vg = group.add_mutually_exclusive_group()
-        vg.add_argument('-4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
-                        help="The OpenDrop board uses firmware version 4.0")
-        vg.add_argument('-4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
-                        help="The OpenDrop board uses firmware version 4.1")
+        # lidg = group.add_mutually_exclusive_group()
+        group.add_argument('--glass', action='store_const', const=LidType.GLASS, dest='lid_type',
+                           help="Glass lid")
+        group.add_argument('--plastic', action='store_const', const=LidType.PLASTIC, dest='lid_type',
+                           help="Plastic lid")
+        # vg = group.add_mutually_exclusive_group()
+        group.add_argument('-4.0', '--4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
+                           help="The OpenDrop board uses firmware version 4.0")
+        group.add_argument('-4.1', '--4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
+                           help="The OpenDrop board uses firmware version 4.1")
         # group.add_argument('--yaminon', action='store_true',
         #                    help="Mirror pads on top and bottom of the board.")
         double_write_default = True

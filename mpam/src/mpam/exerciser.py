@@ -278,17 +278,17 @@ class Exerciser(ABC):
         debug_group = parser.add_argument_group("debugging options")
         debug_group.add_argument("--trace-blobs", action="store_true",
                                  help=f"Trace blobs.")
-        log_group = group.add_mutually_exclusive_group()
+        # log_group = group.add_mutually_exclusive_group()
         # level_choices = ['debug', 'info', 'warning', 'error', 'critical']
         # log_group.add_argument('--log-level', metavar='LEVEL',
         #                        choices=level_choices,
         #                        help=f'''
         #                        Configure the logging level.  Options are {conj_str([f'"{s}"' for s in level_choices])}
         #                        ''')
-        log_group.add_argument('--log-config', metavar='FILE',
-                               help='Configuration file for logging')
-        log_group.add_argument('--log-level', metavar='SPEC', type=logging_spec_arg, action='append',
-                               help=f""" 
+        group.add_argument('--log-config', metavar='FILE',
+                           help='Configuration file for logging')
+        group.add_argument('--log-level', metavar='SPEC', type=logging_spec_arg, action='append',
+                           help=f""" 
                                     Configure logging.  The format is <level>,
                                     <name>:<level> or <level>:<format>, where
                                     <level> is an integer or one of
