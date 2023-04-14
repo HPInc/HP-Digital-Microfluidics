@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import pyglider
-from typing import Union, Optional, Final, Generic, TypeVar, Callable
+from typing import Union, Optional, Final, Generic, TypeVar, Callable, List,\
+    cast
 from mpam.types import State, OnOff
 from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
@@ -33,7 +34,7 @@ class BinState(Generic[CT, ST], State[OnOff]):
                  remote: CT,
                  on_val: ST,
                  off_val: ST,
-                 realize: Callable[[CT, ST], pyglider.ErrorCode],
+                 realize: Callable[[CT, ST], Optional[pyglider.ErrorCode]],
                  initial_state: Union[OnOff, Callable[[CT], ST]] = OnOff.OFF) -> None:
         if not isinstance(initial_state, OnOff):
             initial_state = OnOff.from_bool(initial_state(remote) is on_val)
@@ -54,7 +55,7 @@ class BinState(Generic[CT, ST], State[OnOff]):
         ec = self.realize(self.remote, s)
         if ec != pyglider.ErrorCode.ErrorSuccess:
             logger.error(f"Error {ec} returned trying to set electrode {self.name} to {new_state}.")
-            
+
 class Electrode(BinState[pyglider.Electrode, pyglider.Electrode.ElectrodeState]):
     def __init__(self, name: str, remote: pyglider.Electrode) -> None:
         super().__init__(kind = "electrode",
@@ -65,11 +66,20 @@ class Electrode(BinState[pyglider.Electrode, pyglider.Electrode.ElectrodeState])
                          realize = lambda r,s: r.SetTargetState(s),
                          initial_state = lambda r: r.GetCurrentState() )
         
-    def heater_names(self) -> list[str]:
-        return self.remote.GetHeaters()
+    def heater_names(self) -> List[str]:
+        # Bug: mypy 4/17/23 For some reason, mypy on the github server isn't
+        # able to infer the type of `self.remote` and calls it `Any`, resulting
+        # in it complaining on the return.  Amazingly, this persists even if you
+        # assign it to a correctly-annotated variable or even if you do an
+        # explicit cast.  GPT-4 was just as mystified as I was, but it was
+        # taking too much time, so I'm just going to ignore that error in the
+        # three places it currently occurs: here, in `Electrode.magnet_names()`
+        # and in `Heater.read_temperature()`.
+        return self.remote.GetHeaters() # type: ignore [no-any-return]
     
-    def magnet_names(self) -> list[str]:
-        return self.remote.GetMagnets()
+    def magnet_names(self) -> List[str]:
+        # See comment in Electrode.heater_names()
+        return self.remote.GetMagnets() # type: ignore [no-any-return]
     
 class Magnet(BinState[pyglider.Magnet, pyglider.Magnet.MagnetState]):
     def __init__(self, name: str, remote: pyglider.Magnet) -> None:
@@ -79,6 +89,7 @@ class Magnet(BinState[pyglider.Magnet, pyglider.Magnet.MagnetState]):
                          on_val = pyglider.Magnet.MagnetState.On,
                          off_val = pyglider.Magnet.MagnetState.Off,
                          realize = lambda r,s: r.SetTargetState(s))
+
     
 class Heater:
     name: Final[str]
@@ -109,7 +120,9 @@ class Heater:
         temp = self.remote.GetCurrentTemperature()
         tp = temp*abs_C
         # print(f"  {tp}")
-        return tp
+        
+        # See comment in Electrode.heater_names()
+        return tp   # type: ignore [no-any-return]
     
     def set_heating_target(self, target: Optional[TemperaturePoint]) -> None:
         temp = 0.0 if target is None else target.as_number(abs_C)
@@ -175,9 +188,9 @@ class GliderClient:
         self.electrodes = {}
         self.heaters = {n: Heater(n, h) for h,n in ((ph, ph.GetName()) for ph in self.remote.GetHeaters()) }
         self.magnets = {n: Magnet(n, h) for h,n in ((pm, pm.GetName()) for pm in self.remote.GetMagnets()) }
-        ec, n = self.remote.GetHighVoltage()
-        if ec != pyglider.ErrorCode.ErrorSuccess:
-            logger.error(f"Error {ec} returned trying to read voltage level.")
+        n = self.remote.GetHighVoltage()
+        if isinstance(n, pyglider.ErrorCode):
+            logger.error(f"Error {n} returned trying to read voltage level.")
             self._voltage_level = None
         else:
             logger.info(f"The voltage level is {n}")

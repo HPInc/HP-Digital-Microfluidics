@@ -5,7 +5,7 @@ import pyglider
 from typing import Mapping, Final, Optional, Union, Sequence, Callable
 
 from devices import joey, glider_client
-from devices.glider_client import GliderClient
+from devices.glider_client import GliderClient, Electrode
 from mpam.pipettor import Pipettor
 from mpam.types import OnOff, State, DummyState, Delayed, XYCoord
 from mpam import device
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 _shared_pad_cells: Mapping[tuple[str,int], str] = {
     ('left', 1): 'BC27', ('left', 2): 'B27', ('left', 3): 'AB27', 
     ('left', 4): 'C28', ('left', 5): 'B28', ('left', 6): 'A28',
-    ('left', 7): 'B29', ('left', 9): 'B30', ('left', 9): 'B31',
+    ('left', 7): 'B29', ('left', 8): 'B30', ('left', 9): 'B31',
     ('right', 1): 'BC05', ('right', 2): 'B05', ('right', 3): 'AB05', 
     ('right', 4): 'C04', ('right', 5): 'B04', ('right', 6): 'A04',
     ('right', 7): 'B03', ('right', 8): 'B02', ('right', 9): 'B01',
@@ -147,7 +147,10 @@ class Board(joey.Board):
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
         cell = _shared_pad_cells.get((group_name, num))  
         # print(f"-- shared: {group_name} {num} -- {cell}")
-        return self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
+        # state = self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
+        state = self._device.electrode(cell)
+        assert state is not None
+        return state
 
     def _well_gate_state(self, exit_pad: Pad) -> State[OnOff]:
         cell = _well_gate_cells.get(exit_pad.location, None)

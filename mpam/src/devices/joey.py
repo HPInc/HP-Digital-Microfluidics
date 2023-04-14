@@ -314,8 +314,8 @@ class Board(device.Board):
         left_group = DispenseGroup("left", states=state_defs)
         right_group = DispenseGroup("right", states=state_defs)
 
-        left_states = tuple(self._well_pad_state('left', n) for n in range(9))
-        right_states = tuple(self._well_pad_state('right', n) for n in range(9))
+        left_states = tuple(self._well_pad_state('left', n+1) for n in range(9))
+        right_states = tuple(self._well_pad_state('right', n+1) for n in range(9))
 
         if pipettor is None:
             from devices.dummy_pipettor import DummyPipettor

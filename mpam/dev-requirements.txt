@@ -1,0 +1,4 @@
+sphinx
+sphinx-rtd-theme
+sphinx-toolbox
+pybind11-stubgen
