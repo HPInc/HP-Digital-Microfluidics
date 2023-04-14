@@ -8,6 +8,8 @@ from mpam.pipettor import Pipettor
 from quantities.SI import volts
 from mpam.cmd_line import voltage_arg
 from devices.joey import HeaterType
+from erk.basic import not_None
+import sys
 
 class PlatformTask(joey.PlatformTask):
     def __init__(self, name: str = "Bilby",
@@ -20,6 +22,8 @@ class PlatformTask(joey.PlatformTask):
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
                    pipettor: Pipettor) -> joey.Board: # @UnusedVariable
+        dll_dir: str = not_None(args.dll_dir, desc = "No dll-dir specified")
+        sys.path.append(dll_dir)
         from devices import bilby
         voltage: Optional[Voltage] = args.voltage
         assert voltage is not None
@@ -28,7 +32,7 @@ class PlatformTask(joey.PlatformTask):
         return bilby.Board(heater_type = HeaterType.from_name(args.heaters),
                            holes=args.holes, default_holes=args.default_holes,
                            pipettor=pipettor,
-                           dll_dir=args.dll_dir, config_dir=args.config_dir,
+                           dll_dir=dll_dir, config_dir=args.config_dir,
                            off_on_delay=args.off_on_delay,
                            voltage=voltage,
                            extraction_point_splash_radius=args.extraction_point_splash_radius)

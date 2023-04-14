@@ -4,6 +4,3 @@ clipboard>=0.0.4
 matplotlib>=3.4.2
 pyserial>=3.5
 requests>=2.26.0
-sphinx
-sphinx-rtd-theme
-sphinx-toolbox
