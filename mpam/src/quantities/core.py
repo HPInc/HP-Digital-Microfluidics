@@ -1094,6 +1094,8 @@ class UnitExpr(Generic[D]):
 #     # I should be able to override a() to return something typed to the type of self, but
 #     # I can't figure out how to get it by the compiler.
 
+UEorSeq = Union[UnitExpr[D], Sequence[UnitExpr[D]]]
+
 class Unit(UnitExpr[D]):
     """
     A dimensional unit.  When a number is multiplied by a :class:`Unit`, a

@@ -18,7 +18,7 @@ from mpam.types import PathOrStr, logging_levels, logging_formats, LoggingSpec,\
     LoggingLevel
 from quantities.SI import ms, minutes, hr, days, uL, secs, \
     volts, deg_C
-from quantities.core import set_default_units, UnitExpr
+from quantities.core import set_default_units, UnitExpr, UEorSeq
 from quantities.dimensions import Time
 from mpam.pipettor import Pipettor
 from erk.basic import ValOrFn
@@ -36,13 +36,22 @@ class Task(ABC):
     name: Final[str]
     description: Final[str]
     aliases: Final[Sequence[str]]
+    
+    default_initial_delay: Time = 0*secs
+    default_hold_display: Optional[Time] = 0*ms
+    default_min_time: Optional[Time] = 0*ms
+    default_max_time: Optional[Time] = None
+    default_update_interval: Time = 20*ms
+    # default_off_on_delay: Time = 0*ms
+    default_extraction_point_splash_radius: int = 0
+    default_clock_interval=100*ms    
 
     def __init__(self, name: str, description: str, *,
                  aliases: Optional[Sequence[str]] = None) -> None:
         self.name = name
         self.description = description
         self.aliases = [] if aliases is None else aliases
-
+        
     @abstractmethod
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
         ...
@@ -66,11 +75,6 @@ class Exerciser(ABC):
     parser: Final[ArgumentParser]
     subparsers: Final[Optional[_SubParsersAction]]
 
-    default_initial_delay: Time = 5*secs
-    default_min_time: Time = 5*minutes
-    default_update_interval: Time = 20*ms
-    default_off_on_delay: Time = 0*ms
-    default_extraction_point_splash_radius: int = 0
 
     def __init__(self, description: Optional[str] = None, *,
                  task: Optional[Task] = None,
@@ -111,7 +115,7 @@ class Exerciser(ABC):
         set_default_units(ms, uL, deg_C, volts)
         
         task.add_args_to(group, parser, exerciser=self)
-        self.add_common_args_to(parser)
+        self.add_common_args_to(parser, task=task)
         parser.set_defaults(task=task)
 
     def add_task(self, task: Task, *,
@@ -158,6 +162,7 @@ class Exerciser(ABC):
         else:
             macro_files: Optional[list[str]] = args.macro_file
             system.run_monitored(lambda _: do_run(),
+                                 hold_display_for=args.hold_display_for,
                                  min_time=args.min_time,
                                  max_time=args.max_time,
                                  update_interval=args.update_interval,
@@ -188,7 +193,13 @@ class Exerciser(ABC):
         self.run_task(task, ns, board=board)
 
     @classmethod
-    def fmt_time(self, t: Time) -> str:
+    def fmt_time(self, t: Optional[Time], *,
+                 units: Optional[UEorSeq[Time]] = None,
+                 on_None: str = "unspecified") -> str:
+        if t is None:
+            return on_None
+        if units is not None:
+            return str(t.in_units(units))
         return str(t.decomposed((days, hr, minutes, secs)))
 
     def add_device_specific_common_args(self,
@@ -197,52 +208,59 @@ class Exerciser(ABC):
                                         ) -> None:
         # by default, no args to add.
         ...
+        
 
-    def add_common_args_to(self, parser: ArgumentParser) -> None:
+    def add_common_args_to(self, parser: ArgumentParser, *,
+                           task: Task) -> None:
         group = parser.add_argument_group(title="common options")
         self.add_device_specific_common_args(group, parser)
-        default_clock_interval=100*ms
-        group.add_argument('-cs', '--clock-speed', type=time_arg, default=default_clock_interval, metavar='TIME',
+
+        group.add_argument('-cs', '--clock-speed', type=time_arg, default=task.default_clock_interval, metavar='TIME',
                            help=f'''
                            The amount of time between clock ticks.
-                           Default is {default_clock_interval.in_units(ms)}.
+                           Default is {self.fmt_time(task.default_clock_interval, units=ms)}.
                            ''')
         group.add_argument('--paused', action='store_false', dest='start_clock',
                            help='''
                            Don't start the clock automatically. Note that operations that are not gated
                            by the clock may still run.
                            ''')
-        group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=self.default_initial_delay,
+        group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=task.default_initial_delay,
                            help=f'''
                            The amount of time to wait before running the task.
-                           Default is {self.fmt_time(self.default_initial_delay)}.
+                           Default is {self.fmt_time(task.default_initial_delay)}.
                            ''')
-        group.add_argument('--min-time', type=time_arg, default=self.default_min_time, metavar='TIME',
+        group.add_argument('--hold-display-for', type=time_arg, default=task.default_hold_display, metavar='TIME',
+                           help=f'''
+                           The minimum amount of time to leave the display up after the
+                           task has finished. Default is {self.fmt_time(task.default_hold_display, on_None="to wait forever")}.
+                           ''')
+        group.add_argument('--min-time', type=time_arg, default=task.default_min_time, metavar='TIME',
                            help=f'''
                            The minimum amount of time to leave the display up, even if the
-                           operation has finished. Default is {self.fmt_time(self.default_min_time)}.
+                           task has finished. Default is {self.fmt_time(task.default_min_time, on_None="to wait forever")}.
                            ''')
-        group.add_argument('--max-time', type=time_arg, metavar='TIME',
-                           help='''
+        group.add_argument('--max-time', type=time_arg, default=task.default_max_time, metavar='TIME',
+                           help=f'''
                            The maximum amount of time to leave the display up, even if the
-                           operation hasn't finished. Default is no limit
+                           task hasn't finished. Default is {self.fmt_time(task.default_max_time, on_None="no limit")}.
                            ''')
         group.add_argument('-nd', '--no-display', action='store_false', dest='use_display',
                             help='Run the task without the on-screen display')
-        group.add_argument('--update-interval', type=time_arg, metavar='TIME', default=self.default_update_interval,
+        group.add_argument('--update-interval', type=time_arg, metavar='TIME', default=task.default_update_interval,
                            help=f'''
                            The maximum amount of time between display updates.
-                           Default is {self.default_update_interval}.
+                           Default is {self.fmt_time(task.default_update_interval,units=ms)}.
                            ''')
         group.add_argument('--macro-file', action='append',
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
         group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, metavar="PADS",
-                           default=self.default_extraction_point_splash_radius,
+                           default=task.default_extraction_point_splash_radius,
                            help=f'''
                            The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
-                           Default is {self.default_extraction_point_splash_radius}.
+                           Default is {task.default_extraction_point_splash_radius}.
                            ''')
         group.add_argument('--local-ip', metavar="IP-ADDR", type=ip_addr_arg,
                            help=f'''
@@ -398,6 +416,17 @@ class PlatformChoiceTask(Task):
                 aliases = (name.lower(),)
         super().__init__(name, description, aliases=aliases)
         
+    def defaults_from(self, task: Task) -> None:
+        self.default_initial_delay = task.default_initial_delay
+        self.default_hold_display = task.default_hold_display
+        self.default_min_time = task.default_min_time
+        self.default_max_time = task.default_max_time
+        self.default_update_interval = task.default_update_interval
+        # self.default_off_on_delay = task.default_off_on_delay
+        self.default_extraction_point_splash_radius = task.default_extraction_point_splash_radius
+        self.default_clock_interval=task.default_clock_interval
+
+        
     @abstractmethod
     def make_board(self, args: Namespace, *, # @UnusedVariable
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
@@ -526,6 +555,7 @@ class PlatformChoiceExerciser(Exerciser):
         for p in platforms:
             try:
                 platform = PlatformChoiceTask.from_desc(p)
+                platform.defaults_from(task)
             except BadPlatformDescError as ex:
                 logger.warn(f"Platform option '{ex.desc}' '{ex.error}, ignoring")
                 continue
