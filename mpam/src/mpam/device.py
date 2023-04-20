@@ -5465,7 +5465,8 @@ class System:
 
     def run_monitored(self, fn: Callable[[System],T],
                       *,
-                      min_time: Time = 0*sec,
+                      hold_display_for: Optional[Time] = 0*sec,
+                      min_time: Optional[Time] = 0*sec,
                       max_time: Optional[Time] = None,
                       update_interval: Time = 20*ms,
                       control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
@@ -5502,6 +5503,7 @@ class System:
         # print(f"System's monitor is {monitor}")
         thread.start()
         monitor.keep_alive(sentinel = lambda : done.is_set(),
+                           hold_display_for = hold_display_for,
                            min_time = min_time,
                            max_time = max_time,
                            update_interval = update_interval)

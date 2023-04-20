@@ -121,6 +121,7 @@ class Thermocycle(Task):
 
 
 class JoeyExerciser(Exerciser):
+    default_off_on_delay = Time.ZERO
     def __init__(self, name: str = "Joey") -> None:
         super().__init__(description=f"Put the {name} board through its paces")
         self.add_task(Dispense())

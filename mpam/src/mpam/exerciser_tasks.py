@@ -219,6 +219,7 @@ class DisplayOnly(Task):
         super().__init__(name="display-only",
                          description = "Just bring up the display.",
                          aliases=["display"])
+        self.default_min_time = None
 
     def add_args_to(self, 
                     group: _ArgumentGroup, # @UnusedVariable

@@ -38,9 +38,9 @@ from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C, TemperaturePoint
-from quantities.timestamp import time_now
+from quantities.timestamp import time_now, Timestamp
 from weakref import WeakKeyDictionary
-from erk.stringutils import match_width
+from erk.stringutils import match_width, conj_str
 import traceback
 from langsup import dmf_lang
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
@@ -1288,21 +1288,49 @@ class BoardMonitor:
                 cb()
 
     def keep_alive(self, *,
-                   min_time: Time = 0*sec,
+                   hold_display_for: Optional[Time] = 0*sec,
+                   min_time: Optional[Time] = 0*sec,
                    max_time: Optional[Time] = None,
                    sentinel: Optional[Callable[[], bool]] = None,
                    update_interval: Time = 20*ms) -> None:
         now = time_now()
         kill_at = None if max_time is None else now+max_time
-        live_through = now+min_time
+        live_through = None if min_time is None else now+min_time
         pause = update_interval.as_number(sec)
         saw_sentinel: bool = False
+        time_desc = ""
+        def fmt_timestamp(ts: Timestamp) -> str:
+            return ts.strftime(fmt="%Y-%m-%d_%H:%M:%S")
+        if min_time is None or hold_display_for is None:
+            time_desc = "until the user closes the window"
+        else:
+            options = list[str]()
+            time_desc = "until the task ends"
+            if min_time > 0 and live_through is not None:
+                options.append(f"for at least {min_time.in_HMS():.0} (until {fmt_timestamp(live_through)}), even if the task has completed")
+            if hold_display_for > 0:
+                options.append(f"for at least {hold_display_for.in_HMS():.0} after the task completes")
+            if options:
+                time_desc = f"{conj_str(options)}"
+        if max_time is not None and kill_at is not None:
+            time_desc += f", but no longer than {max_time.in_HMS():.0} (until {fmt_timestamp(kill_at)}), even if the task hasn't completed"
+        if time_desc:
+            logger.info(f"The display will stay up {time_desc}")
         def done() -> bool:
-            nonlocal saw_sentinel
+            nonlocal saw_sentinel, live_through
+            just_ended = False
             if not saw_sentinel and sentinel is not None:
                 saw_sentinel = sentinel()
+                if saw_sentinel and hold_display_for is not None:
+                    just_ended = True
             now = time_now()
-            if now < live_through and not self.close_event.is_set():
+            if just_ended and hold_display_for is not None:
+                logger.info("Task completed")
+                hold_end = now+hold_display_for
+                if hold_display_for > 0 and live_through is not None and live_through < hold_end:
+                    live_through = hold_end
+                    logger.info(f"The display will stay up at least until {fmt_timestamp(live_through)}")
+            if (live_through is None or now < live_through) and not self.close_event.is_set():
                 return False
             if kill_at is not None and now > kill_at:
                 return True
@@ -1312,4 +1340,5 @@ class BoardMonitor:
             self.process_display_updates()
             self.figure.canvas.draw_idle()
             pyplot.pause(pause)
+        logger.info("Closing display")
             
