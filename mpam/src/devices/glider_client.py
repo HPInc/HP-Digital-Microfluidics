@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import pyglider
-from typing import Union, Optional, Final, Generic, TypeVar, Callable, List,\
-    cast
+from typing import Union, Optional, Final, Generic, TypeVar, Callable, List
 from mpam.types import State, OnOff
 from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
@@ -53,7 +52,7 @@ class BinState(Generic[CT, ST], State[OnOff]):
         s = self.on_val if new_state else self.off_val
         # print(f"Setting {self.name} to {new_state} ({s})")
         ec = self.realize(self.remote, s)
-        if ec != pyglider.ErrorCode.ErrorSuccess:
+        if ec is not None:
             logger.error(f"Error {ec} returned trying to set electrode {self.name} to {new_state}.")
 
 class Electrode(BinState[pyglider.Electrode, pyglider.Electrode.ElectrodeState]):
@@ -204,7 +203,7 @@ class GliderClient:
         
     def update_state(self) -> None:
         ec = self.remote.MakeItSo()
-        if ec != pyglider.ErrorCode.ErrorSuccess:
+        if ec is not None:
             logger.error(f"Error {ec} returned trying to update board.")
             
             
