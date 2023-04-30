@@ -7,15 +7,14 @@ import os
 __all__ = [
     "Board",
     "BoardId",
+    "ConfigParam",
+    "ConfigParamSet",
+    "ESElog",
     "Electrode",
     "ErrorCode",
     "Heater",
     "Magnet",
-    "ResultType",
-    "Sensor",
-    "SensorResult",
-    "SensorResults",
-    "SensorType"
+    "Sensor"
 ]
 
 
@@ -90,6 +89,10 @@ class Board():
         """
         Gets a list containing each magnet object on the board
         """
+    def GetSensors(self) -> typing.List[Sensor]: 
+        """
+        Gets a list containing each sensor object
+        """
     def HeaterNamed(self, name: str) -> typing.Optional[Heater]: 
         """
         Find the heater (if any) with the given name
@@ -148,6 +151,221 @@ class BoardId():
     Unknown: pyglider.BoardId # value = <BoardId.Unknown: 0>
     Wallaby: pyglider.BoardId # value = <BoardId.Wallaby: 1>
     __members__: dict # value = {'Unknown': <BoardId.Unknown: 0>, 'Wallaby': <BoardId.Wallaby: 1>}
+    pass
+class ConfigParam():
+    class ForFloat(ConfigParam):
+        pass
+    class ForInt(ConfigParam):
+        pass
+    class ForUChar(ConfigParam):
+        pass
+    class ForUInt(ConfigParam):
+        pass
+    class ForUShort(ConfigParam):
+        pass
+    @property
+    def key(self) -> str:
+        """
+        :type: str
+        """
+    pass
+class ConfigParamSet():
+    @typing.overload
+    def __contains__(self, cp: ConfigParam.ForFloat) -> bool: ...
+    @typing.overload
+    def __contains__(self, cp: ConfigParam.ForInt) -> bool: ...
+    @typing.overload
+    def __contains__(self, cp: ConfigParam.ForUChar) -> bool: ...
+    @typing.overload
+    def __contains__(self, cp: ConfigParam.ForUInt) -> bool: ...
+    @typing.overload
+    def __contains__(self, cp: ConfigParam.ForUShort) -> bool: ...
+    @typing.overload
+    def __delitem__(self, cp: ConfigParam.ForFloat) -> int: ...
+    @typing.overload
+    def __delitem__(self, cp: ConfigParam.ForInt) -> int: ...
+    @typing.overload
+    def __delitem__(self, cp: ConfigParam.ForUChar) -> int: ...
+    @typing.overload
+    def __delitem__(self, cp: ConfigParam.ForUInt) -> int: ...
+    @typing.overload
+    def __delitem__(self, cp: ConfigParam.ForUShort) -> int: ...
+    @typing.overload
+    def __getitem__(self, cp: ConfigParam.ForFloat) -> float: ...
+    @typing.overload
+    def __getitem__(self, cp: ConfigParam.ForInt) -> int: ...
+    @typing.overload
+    def __getitem__(self, cp: ConfigParam.ForUChar) -> int: ...
+    @typing.overload
+    def __getitem__(self, cp: ConfigParam.ForUInt) -> int: ...
+    @typing.overload
+    def __getitem__(self, cp: ConfigParam.ForUShort) -> int: ...
+    @typing.overload
+    def __setitem__(self, cp: ConfigParam.ForFloat, val: float) -> None: ...
+    @typing.overload
+    def __setitem__(self, cp: ConfigParam.ForInt, val: int) -> None: ...
+    @typing.overload
+    def __setitem__(self, cp: ConfigParam.ForUChar, val: int) -> None: ...
+    @typing.overload
+    def __setitem__(self, cp: ConfigParam.ForUInt, val: int) -> None: ...
+    @typing.overload
+    def __setitem__(self, cp: ConfigParam.ForUShort, val: int) -> None: ...
+    @typing.overload
+    def contains(self, cp: ConfigParam.ForFloat) -> bool: ...
+    @typing.overload
+    def contains(self, cp: ConfigParam.ForInt) -> bool: ...
+    @typing.overload
+    def contains(self, cp: ConfigParam.ForUChar) -> bool: ...
+    @typing.overload
+    def contains(self, cp: ConfigParam.ForUInt) -> bool: ...
+    @typing.overload
+    def contains(self, cp: ConfigParam.ForUShort) -> bool: ...
+    @typing.overload
+    def erase(self, cp: ConfigParam.ForFloat) -> int: ...
+    @typing.overload
+    def erase(self, cp: ConfigParam.ForInt) -> int: ...
+    @typing.overload
+    def erase(self, cp: ConfigParam.ForUChar) -> int: ...
+    @typing.overload
+    def erase(self, cp: ConfigParam.ForUInt) -> int: ...
+    @typing.overload
+    def erase(self, cp: ConfigParam.ForUShort) -> int: ...
+    @typing.overload
+    def find(self, cp: ConfigParam.ForFloat) -> typing.Optional[float]: ...
+    @typing.overload
+    def find(self, cp: ConfigParam.ForInt) -> typing.Optional[int]: ...
+    @typing.overload
+    def find(self, cp: ConfigParam.ForUChar) -> typing.Optional[int]: ...
+    @typing.overload
+    def find(self, cp: ConfigParam.ForUInt) -> typing.Optional[int]: ...
+    @typing.overload
+    def find(self, cp: ConfigParam.ForUShort) -> typing.Optional[int]: ...
+    @typing.overload
+    def set(self, cp: ConfigParam.ForFloat, val: float) -> None: ...
+    @typing.overload
+    def set(self, cp: ConfigParam.ForInt, val: int) -> None: ...
+    @typing.overload
+    def set(self, cp: ConfigParam.ForUChar, val: int) -> None: ...
+    @typing.overload
+    def set(self, cp: ConfigParam.ForUInt, val: int) -> None: ...
+    @typing.overload
+    def set(self, cp: ConfigParam.ForUShort, val: int) -> None: ...
+    pass
+class Sensor():
+    class ResultType():
+        """
+        Enumeration of result types
+
+        Members:
+
+          Raw
+
+          Millivolts
+        """
+        def __eq__(self, other: object) -> bool: ...
+        def __getstate__(self) -> int: ...
+        def __hash__(self) -> int: ...
+        def __index__(self) -> int: ...
+        def __init__(self, value: int) -> None: ...
+        def __int__(self) -> int: ...
+        def __ne__(self, other: object) -> bool: ...
+        def __repr__(self) -> str: ...
+        def __setstate__(self, state: int) -> None: ...
+        @property
+        def name(self) -> str:
+            """
+            :type: str
+            """
+        @property
+        def value(self) -> int:
+            """
+            :type: int
+            """
+        Millivolts: pyglider.Sensor.ResultType # value = <ResultType.Millivolts: 2>
+        Raw: pyglider.Sensor.ResultType # value = <ResultType.Raw: 1>
+        __members__: dict # value = {'Raw': <ResultType.Raw: 1>, 'Millivolts': <ResultType.Millivolts: 2>}
+        pass
+    class SensorResult():
+        pass
+    class SensorResults():
+        @property
+        def results(self) -> typing.List[Sensor.SensorResult]:
+            """
+            :type: typing.List[Sensor.SensorResult]
+            """
+        pass
+    class SensorType():
+        """
+        Enumeration of sensor types
+
+        Members:
+
+          Unknown
+
+          ESElog
+
+          ESElogEmulator
+        """
+        def __eq__(self, other: object) -> bool: ...
+        def __getstate__(self) -> int: ...
+        def __hash__(self) -> int: ...
+        def __index__(self) -> int: ...
+        def __init__(self, value: int) -> None: ...
+        def __int__(self) -> int: ...
+        def __ne__(self, other: object) -> bool: ...
+        def __repr__(self) -> str: ...
+        def __setstate__(self, state: int) -> None: ...
+        @property
+        def name(self) -> str:
+            """
+            :type: str
+            """
+        @property
+        def value(self) -> int:
+            """
+            :type: int
+            """
+        ESElog: pyglider.Sensor.SensorType # value = <SensorType.ESElog: 1>
+        ESElogEmulator: pyglider.Sensor.SensorType # value = <SensorType.ESElogEmulator: 2>
+        Unknown: pyglider.Sensor.SensorType # value = <SensorType.Unknown: 0>
+        __members__: dict # value = {'Unknown': <SensorType.Unknown: 0>, 'ESElog': <SensorType.ESElog: 1>, 'ESElogEmulator': <SensorType.ESElogEmulator: 2>}
+        pass
+    def Aim(self, bOn: bool) -> typing.Optional[ErrorCode]: 
+        """
+        Turn on/off an LED to assist with aiming the snsor.  Pass in True to turn On, False to turn off.
+        """
+    def GetConfiguration(self) -> typing.Union[ConfigParamSet,ErrorCode]: 
+        """
+        A copy of the current configuration, or an error.
+        """
+    def GetType(self) -> typing.Union[Sensor.SensorType,ErrorCode]: 
+        """
+        Gets the type of the sensor
+        """
+    def IsAvailable(self) -> typing.Union[bool,ErrorCode]: 
+        """
+        Returns true if the sensor is available, false if not, or an error
+        """
+    def IsBusy(self) -> bool: 
+        """
+        Returns true if the sensor is busy, false otherwise.
+        """
+    def ReadResultsAsync(self, units: Sensor.ResultType) -> typing.Union[Sensor.SensorResults,ErrorCode]: 
+        """
+        Read any available results asynchronously.  The parameter specifies raw or converted results
+        """
+    def ReadResultsSync(self, units: Sensor.ResultType) -> typing.Union[Sensor.SensorResults,ErrorCode]: 
+        """
+        Wait for any acquisition to complete and then read the results. The parameter specifies raw or converted results
+        """
+    @typing.overload
+    def RequestSamples(self) -> typing.Union[int,ErrorCode]: 
+        """
+        Request samples. Returns the expected time in ms, or an error. if num_samples is omitted, uses default number.
+        """
+    @typing.overload
+    def RequestSamples(self, num_samples: int) -> typing.Union[int,ErrorCode]: ...
+    def SetConfiguration(self, sensor_config: ConfigParamSet) -> typing.Optional[ErrorCode]: ...
     pass
 class Electrode():
     class ElectrodeState():
@@ -490,87 +708,82 @@ class Magnet():
         """
     def __repr__(self) -> str: ...
     pass
-class ResultType():
-    """
-    Enumeration of result types
-
-    Members:
-
-      Raw
-
-      Millivolts
-    """
-    def __eq__(self, other: object) -> bool: ...
-    def __getstate__(self) -> int: ...
-    def __hash__(self) -> int: ...
-    def __index__(self) -> int: ...
-    def __init__(self, value: int) -> None: ...
-    def __int__(self) -> int: ...
-    def __ne__(self, other: object) -> bool: ...
-    def __repr__(self) -> str: ...
-    def __setstate__(self, state: int) -> None: ...
-    @property
-    def name(self) -> str:
-        """
-        :type: str
-        """
-    @property
-    def value(self) -> int:
-        """
-        :type: int
-        """
-    Millivolts: pyglider.ResultType # value = <ResultType.Millivolts: 2>
-    Raw: pyglider.ResultType # value = <ResultType.Raw: 1>
-    __members__: dict # value = {'Raw': <ResultType.Raw: 1>, 'Millivolts': <ResultType.Millivolts: 2>}
-    pass
-class Sensor():
-    def GetType(self) -> typing.Union[SensorType,ErrorCode]: 
-        """
-        Gets the type of the sensor
-        """
-    pass
-class SensorResult():
-    pass
-class SensorResults():
-    @property
-    def results(self) -> typing.List[SensorResult]:
-        """
-        :type: typing.List[SensorResult]
-        """
-    pass
-class SensorType():
-    """
-    Enumeration of sensor types
-
-    Members:
-
-      Unknown
-
-      ESElog
-
-      ESElogEmulator
-    """
-    def __eq__(self, other: object) -> bool: ...
-    def __getstate__(self) -> int: ...
-    def __hash__(self) -> int: ...
-    def __index__(self) -> int: ...
-    def __init__(self, value: int) -> None: ...
-    def __int__(self) -> int: ...
-    def __ne__(self, other: object) -> bool: ...
-    def __repr__(self) -> str: ...
-    def __setstate__(self, state: int) -> None: ...
-    @property
-    def name(self) -> str:
-        """
-        :type: str
-        """
-    @property
-    def value(self) -> int:
-        """
-        :type: int
-        """
-    ESElog: pyglider.SensorType # value = <SensorType.ESElog: 1>
-    ESElogEmulator: pyglider.SensorType # value = <SensorType.ESElogEmulator: 2>
-    Unknown: pyglider.SensorType # value = <SensorType.Unknown: 0>
-    __members__: dict # value = {'Unknown': <SensorType.Unknown: 0>, 'ESElog': <SensorType.ESElog: 1>, 'ESElogEmulator': <SensorType.ESElogEmulator: 2>}
+class ESElog(Sensor):
+    class ESElogResult(Sensor.SensorResult):
+        @property
+        def e1d1_valueOff(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def e1d1_valueOn(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def e1d2_valueOff(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def e1d2_valueOn(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def e2d2_valueOff(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def e2d2_valueOn(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def ticket(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def time(self) -> int:
+            """
+            :type: int
+            """
+        @property
+        def units(self) -> Sensor.ResultType:
+            """
+            :type: Sensor.ResultType
+            """
+        ADCSamplingParam: pyglider.ConfigParam.ForUShort
+        AverageParam: pyglider.ConfigParam.ForUChar
+        BaudrateParam: pyglider.ConfigParam.ForUInt
+        ComPortParam: pyglider.ConfigParam.ForUInt
+        CycleTimeParam: pyglider.ConfigParam.ForUShort
+        CyclesParam: pyglider.ConfigParam.ForUShort
+        DarkSignalTypeParam: pyglider.ConfigParam.ForUInt
+        E1D1FactorParam: pyglider.ConfigParam.ForFloat
+        E1D1OffsetParam: pyglider.ConfigParam.ForInt
+        E1D2FactorParam: pyglider.ConfigParam.ForFloat
+        E1D2OffsetParam: pyglider.ConfigParam.ForInt
+        E2D2FactorParam: pyglider.ConfigParam.ForFloat
+        E2D2OffsetParam: pyglider.ConfigParam.ForInt
+        LED1CurrentDefaultParam: pyglider.ConfigParam.ForUChar
+        LED1CurrentMaxParam: pyglider.ConfigParam.ForUChar
+        LED1CurrentMinParam: pyglider.ConfigParam.ForUChar
+        LED1CurrentParam: pyglider.ConfigParam.ForUChar
+        LED2CurrentDefaultParam: pyglider.ConfigParam.ForUChar
+        LED2CurrentMaxParam: pyglider.ConfigParam.ForUChar
+        LED2CurrentMinParam: pyglider.ConfigParam.ForUChar
+        LED2CurrentParam: pyglider.ConfigParam.ForUChar
+        LedModeParam: pyglider.ConfigParam.ForUInt
+        MethodTypeParam: pyglider.ConfigParam.ForUInt
+        ModbusAddressParam: pyglider.ConfigParam.ForUChar
+        OffDelayLED1Param: pyglider.ConfigParam.ForUShort
+        OffDelayLED2Param: pyglider.ConfigParam.ForUShort
+        OnDelayLED1Param: pyglider.ConfigParam.ForUShort
+        OnDelayLED2Param: pyglider.ConfigParam.ForUShort
+        StartModeParam: pyglider.ConfigParam.ForUInt
+        TriggerDelayParam: pyglider.ConfigParam.ForUShort
+        pass
     pass
