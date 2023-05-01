@@ -98,15 +98,7 @@ class Board(device.Board):
         return (epx+5*outdir, epy-0.5)
     
     def _well(self, states: StateDefs, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
-              inner_locs: Sequence[tuple[int,int]]) -> Well:
-        shape = WellShape(
-                    gate_pad_bounds= self._gate_bounds(exit_pad.location),
-                    shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
-                                         self._side_pad_bounds(exit_pad.location),
-                                         self._big_pad_bounds(exit_pad.location)),
-                    reagent_id_circle_radius = 1,
-                    reagent_id_circle_center = self._reagent_circle_center(exit_pad.location) 
-            )
+              inner_locs: Sequence[tuple[int,int]], shape: WellShape) -> Well:
         gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
         gate = WellGate(self, exit_pad, exit_dir, gate_electrode, neighbors=(0,1))
         pad_neighbors = [[-1,1,2], [0,2], [0, 1]]
@@ -160,10 +152,22 @@ class Board(device.Board):
         def inner_locs(col: int, rows: Sequence[int]) -> Sequence[tuple[int,int]]:
             return [(col, r) for r in rows]
         
-        upper_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)))
-        upper_right = self._well(state_defs, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)))
-        lower_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)))
-        lower_right = self._well(state_defs, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)))
+        shape = WellShape( 
+                    side = Dir.EAST,
+                    shared_pad_bounds = (
+                        [(1,0.5), (1,1.5), (3,1.5),
+                         (3,-1.5), (1,-1.5), (1,-0.5),
+                         (2,-0.5), (2, 0.5)],
+                        [WellShape.square((0.5,-1)), 
+                         WellShape.square((0.5, 1))],
+                        WellShape.rectangle((1.25,0),width=1.5)),
+                    reagent_id_circle_radius = 1,
+                    reagent_id_circle_center = (4.5, 0)
+            )
+        upper_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)), shape)
+        upper_right = self._well(state_defs, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)), shape)
+        lower_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)), shape)
+        lower_right = self._well(state_defs, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)), shape)
         self._add_wells((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:

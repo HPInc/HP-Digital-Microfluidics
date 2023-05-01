@@ -5,7 +5,7 @@ import pyglider
 from typing import Mapping, Final, Optional, Union, Sequence, Callable
 
 from devices import joey, glider_client
-from devices.glider_client import GliderClient, Electrode
+from devices.glider_client import GliderClient
 from mpam.pipettor import Pipettor
 from mpam.types import OnOff, State, DummyState, Delayed, XYCoord
 from mpam import device

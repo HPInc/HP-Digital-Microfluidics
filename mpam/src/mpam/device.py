@@ -1564,6 +1564,8 @@ For purposes of specifying these, a :class:`Pad`'s :attr:`~LocatedPad.location`
 is considered to be its :attr:`~.Dir.SOUTHWEST` corner.
 """
 
+
+
 class WellShape:
     """
     A description of the shape of a :class:`Well`, suitable for rendering by a
@@ -1576,26 +1578,29 @@ class WellShape:
     The :class:`WellShape` also describes the center and radius of a circle for
     the :class:`.BoardMonitor` to use to show the :class:`.Reagent` contained in
     the :class:`Well`
-    """
-    gate_pad_bounds: Final[PadBounds]
-    """
-    The shape of the :class:`Well`'s :attr:`~Well.gate`
+    
+    Coordinates are described with the middle of the :class:`Well`'s gate being
+    `(0,0)` with the assumption that the well exits to the west.  The
+    coordinates can be translated to apply to a particular well by calling
+    :func:`for_well`.
     """
     shared_pad_bounds: Final[Sequence[Union[PadBounds, Sequence[PadBounds]]]]
     """
     The shape of the :class:`Well`'s :attr:`~Well.shared_pads`
     """
-    reagent_id_circle_center: tuple[float,float]
+    reagent_id_circle_center: Final[tuple[float,float]]
     """
     The center of the :class:`Well`'s :class:`Reagent` circle
     """
-    reagent_id_circle_radius: float
+    reagent_id_circle_radius: Final[float]
     """
     The radius of the :class:`Well`'s :class:`Reagent` circle
     """
+    
+    side: Final[Dir]
 
     def __init__(self, *,
-                 gate_pad_bounds: PadBounds,
+                 side: Dir,
                  shared_pad_bounds: Sequence[Union[PadBounds, Sequence[PadBounds]]],
                  reagent_id_circle_center: tuple[float, float],
                  reagent_id_circle_radius: float = 1):
@@ -1603,7 +1608,6 @@ class WellShape:
         Initialize the object
 
         Keyword Args:
-            gate_pad_bounds: the shape of the :class:`Well`'s :attr:`~Well.gate`
             shared_pad_bounds: the shape of the :class:`Well`'s
                                :attr:`~Well.shared_pads`
             reagent_id_circle_center: the center of the :class:`Well`'s
@@ -1611,10 +1615,38 @@ class WellShape:
             reagent_id_circle_radius: the radius of the :class:`Well`'s
                                       :class:`Reagent` circle
         """
-        self.gate_pad_bounds = gate_pad_bounds
+        self.side = side
         self.shared_pad_bounds = shared_pad_bounds
         self.reagent_id_circle_center = reagent_id_circle_center
         self.reagent_id_circle_radius = reagent_id_circle_radius
+        
+    @classmethod
+    def rectangle(cls, center: tuple[float, float], *, 
+                  width: float = 1,
+                  height: float = 1) -> PadBounds:
+        cx, cy=center
+        hw = width/2
+        hh = height/2
+        return ((cx-hw, cy-hh), (cx+hw, cy-hh),
+                (cx+hw, cy+hh), (cx-hw, cy+hh))
+        
+    @classmethod
+    def square(cls, center: tuple[float, float], *, side: float=1) -> PadBounds:
+        return cls.rectangle(center, width=side, height=side)
+    
+    def for_well(self, well: Well, xy: tuple[float, float]) -> tuple[float,float]:
+        gate = well.gate
+        gx: float = gate.column
+        gy: float = gate.row
+        orientation = well.board.orientation
+        # Get it onto the correct side
+        xy = orientation.remap(xy, self.side.opposite, well.exit_dir)
+        pos_x = orientation.pos_x
+        pos_y = orientation.pos_y
+        gx += -0.5 if pos_x is Dir.WEST else 0.5
+        gy += 0.5 if pos_y is Dir.NORTH else -0.5
+        x,y = xy
+        return x+gx, y+gy
 
 WellVolumeSpec = Union[Volume, Callable[[], Volume]]
 """

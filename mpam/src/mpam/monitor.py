@@ -30,7 +30,7 @@ from langsup.dmf_lang import DMFInterpreter
 from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
     TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate,\
-    TempControllable, TemperatureControl
+    TempControllable, TemperatureControl, WellShape
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent, ConfigParams
@@ -550,7 +550,8 @@ class WellPadMonitor(ClickableMonitor):
                  bounds: Union[PadBounds, Sequence[PadBounds]],
                  *,
                  well: Well,
-                 is_gate: bool) -> None:
+                 is_gate: bool,
+                 well_shape: WellShape) -> None:
         super().__init__(pad)
         self.board_monitor = board_monitor
         self.pad = pad
@@ -560,14 +561,15 @@ class WellPadMonitor(ClickableMonitor):
             bounds = (cast(PadBounds, bounds),)
         else:
             bounds = cast(Sequence[PadBounds], bounds)
-        self.shapes = [ self._make_shape(b, pad, well=well, is_gate=is_gate) for b in bounds ]
+        self.shapes = [ self._make_shape(b, pad, well=well, is_gate=is_gate, well_shape=well_shape) for b in bounds ]
         self.patches.extend(self.shapes)
 
 
-    def _make_shape(self, bounds: PadBounds, pad: WellPad, *, well: Well, is_gate:bool) -> PathPatch:  # @UnusedVariable
+    def _make_shape(self, bounds: PadBounds, pad: WellPad, *, 
+                    well: Well, is_gate:bool, well_shape: WellShape) -> PathPatch:  # @UnusedVariable
 
         bm = self.board_monitor
-        verts = [bm.map_coord(xy) for xy in bounds]
+        verts = [bm.map_coord(well_shape.for_well(well, xy)) for xy in bounds]
         verts.append(verts[0])
         for v in verts:
             bm._on_board(v[0], v[1])
@@ -653,9 +655,9 @@ class WellMonitor:
 
         shared_pads = well.shared_pads
 
-        self.shared_pad_monitors = [WellPadMonitor(wp, board_monitor, bounds, well=well, is_gate = False)
+        self.shared_pad_monitors = [WellPadMonitor(wp, board_monitor, bounds, well=well, is_gate = False, well_shape=shape)
                                     for bounds, wp in zip(shape.shared_pad_bounds, shared_pads)]
-        rc_center = board_monitor.map_coord(shape.reagent_id_circle_center)
+        rc_center = board_monitor.map_coord(shape.for_well(well, shape.reagent_id_circle_center))
         rc_radius = shape.reagent_id_circle_radius
         board_monitor._on_board(rc_center[0]-rc_radius, rc_center[1]-rc_radius)
         board_monitor._on_board(rc_center[0]+rc_radius, rc_center[1]+rc_radius)

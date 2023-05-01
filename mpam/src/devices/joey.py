@@ -3,12 +3,12 @@ from __future__ import annotations
 from argparse import Namespace, ArgumentParser, _ArgumentGroup,\
     BooleanOptionalAction
 from enum import Enum, auto
-from typing import Optional, Sequence, Final, Literal, Union
+from typing import Optional, Sequence, Final, Union
 
 from devices.emulated_heater import EmulatedHeater, EmulatedChiller
 from erk.basic import assert_never
 from erk.stringutils import conj_str
-from mpam.device import WellOpSeqDict, WellState, PadBounds, \
+from mpam.device import WellOpSeqDict, WellState, \
     WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
     WellGate, TemperatureControl, PowerSupply, PowerMode, Fan,\
     Heater, Chiller, StateDefs
@@ -108,16 +108,6 @@ class Board(device.Board):
         pads = (self.pad_at(14, 7), self.pad_at(14, 13))
         return (make_magnet(pads=pads),)
 
-    def _rectangle(self, x: float, y: float, outdir: int, width: float, height: float) -> PadBounds:
-        return ((x,y), (x+width*outdir,y), (x+width*outdir, y+height), (x, y+height))
-
-    def _big_well_pad(self, x: float, y: float, outdir: Literal[-1,1]) -> PadBounds:
-        x2 = x+0.8*outdir
-        x3 = x+2*outdir
-        y2 = y+1.75
-        y3 = y+2.25
-        y4 = y+4
-        return ((x,y), (x2,y), (x3,y2), (x3,y3), (x2,y4), (x,y4))
     
     def _well_capacity(self, exit_dir: Dir) -> Volume:
         return 54.25*uL
@@ -126,33 +116,13 @@ class Board(device.Board):
         return 0.5*uL
 
     def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor,
-              shared_states: Sequence[State[OnOff]]) -> Well:
-        epx = exit_pad.location.x
-        epy = exit_pad.location.y
-        outdir: Literal[-1,1] = -1 if epx == self.edge(Dir.LEFT) else 1
-        if outdir == 1:
-            epx += 1
-        # gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
+              shared_states: Sequence[State[OnOff]], shape: WellShape) -> Well:
 
         pre_gate = 1
         pad_neighbors = [[1,4],[-1,0,2,4], [1,4],
                          [4,6], [0,1,2,3,5,6],[4,6],
                          [3,4,5,7],[6,8],[7]]
 
-        shape = WellShape(
-                    gate_pad_bounds= self._rectangle(epx, epy, outdir, 1, 1),
-                    shared_pad_bounds = [self._rectangle(epx+1*outdir,epy+1,outdir,1,0.5),
-                                         self._rectangle(epx+1*outdir,epy,outdir,1,1),
-                                         self._rectangle(epx+1*outdir,epy-0.5,outdir,1,0.5),
-                                         self._rectangle(epx+2*outdir,epy+1.5,outdir,1,1),
-                                         self._rectangle(epx+2*outdir,epy-0.5,outdir,1,2),
-                                         self._rectangle(epx+2*outdir,epy-1.5,outdir,1,1),
-                                         self._rectangle(epx+3*outdir,epy-1.5,outdir,1,4),
-                                         self._rectangle(epx+4*outdir,epy-1.5,outdir,1,4),
-                                         self._big_well_pad(epx+5*outdir, epy-1.5, outdir)],
-                    reagent_id_circle_radius = 1,
-                    reagent_id_circle_center = (epx+8.5*outdir, epy+0.5)
-                    )
         return Well(board=self,
                     group=group,
                     exit_pad=exit_pad,
@@ -169,10 +139,6 @@ class Board(device.Board):
                     exit_dir=exit_dir,
                     shape = shape,
                     pipettor = pipettor
-                                         # self._rectangle(epx+5*outdir,epy-1.5,outdir,1,4),
-                    # shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
-                    #                      self._side_pad_bounds(exit_pad.location),
-                    #                      self._big_pad_bounds(exit_pad.location))
                     )
         
     def _heaters(self, heater_type: HeaterType, *,
@@ -321,16 +287,34 @@ class Board(device.Board):
             from devices.dummy_pipettor import DummyPipettor
             pipettor = DummyPipettor()
         self.pipettor = pipettor
+        
+        well_shape = WellShape(
+                    side = Dir.EAST,
+                    # gate_pad_bounds= self._rectangle(epx, epy, outdir, 1, 1),
+                    shared_pad_bounds = [WellShape.rectangle((1, 0.75), height=0.5),
+                                         WellShape.square((1,0)),
+                                         WellShape.rectangle((1, -0.75), height=0.5),
+                                         WellShape.square((2, 1.5)),
+                                         WellShape.rectangle((2, 0), height=2),
+                                         WellShape.square((2, -1.5)),
+                                         WellShape.rectangle((3,0), height=4),
+                                         WellShape.rectangle((4,0), height=4),
+                                         [(4.5,-2), (5.3,-2), (6.5, -0.25),
+                                          (6.5, 0.25), (5.3, 2), (4.5, 2)]],
+                    reagent_id_circle_radius = 1,
+                    reagent_id_circle_center = (8, 0)
+                    )
+        
 
         self._add_wells((
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,19), pipettor, left_states),
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,13), pipettor, left_states),
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,7), pipettor, left_states),
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,1), pipettor, left_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,19), pipettor, right_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,13), pipettor, right_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,7), pipettor, right_states),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,1), pipettor, right_states),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,19), pipettor, left_states, well_shape),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,13), pipettor, left_states, well_shape),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,7), pipettor, left_states, well_shape),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,1), pipettor, left_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,19), pipettor, right_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,13), pipettor, right_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,7), pipettor, right_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,1), pipettor, right_states, well_shape),
             ))
 
         self._add_magnets(self._magnets())
