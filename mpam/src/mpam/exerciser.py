@@ -404,6 +404,9 @@ class BadPlatformDescError(RuntimeError):
         self.desc = desc
         self.error = error
 
+BoardKwdArgs = dict[str, Any]
+
+
 class PlatformChoiceTask(Task):
     
     def __init__(self, name: str, description: Optional[str] = None, *,
@@ -457,6 +460,25 @@ class PlatformChoiceTask(Task):
                             {self.fmt_time(self.default_off_on_delay())}.
                             ''')
         
+    def add_kwd_arg(self, args: Namespace, kwds: BoardKwdArgs, arg: str, *,
+                    kwd: Optional[str] = None,
+                    transform: Optional[Callable[[Any], Any]] = None) -> None:
+        if kwd is None:
+            kwd = arg
+        val = getattr(args, arg)
+        if transform is not None:
+            val = transform(val)
+        kwds[kwd] = val
+
+
+    def board_kwd_args(self, args: Namespace, *,
+                       announce: bool = False) -> BoardKwdArgs: # @UnusedVariable
+        kwds: BoardKwdArgs = {}
+        self.add_kwd_arg(args, kwds, "off_on_delay")
+        self.add_kwd_arg(args, kwds, "extraction_point_splash_radius")
+        
+        return kwds
+    
     def default_off_on_delay(self) -> Time:
         return 0*ms
     

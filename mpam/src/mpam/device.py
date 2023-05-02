@@ -4793,7 +4793,7 @@ of such values (as lower and upper values, respectively).
 """
 
 class Board(SystemComponent):
-    pads: Final[PadArray]
+    pads: Final[dict[XYCoord, Pad]]
     
     _well_list: Final[list[Well]]
     @property
@@ -4852,7 +4852,7 @@ class Board(SystemComponent):
             return self._change_journal
 
     def __init__(self, *,
-                 pads: PadArray,
+                 pads: dict[XYCoord, Pad],
                  wells: Optional[Sequence[Well]] = None,
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
@@ -5001,6 +5001,11 @@ class Board(SystemComponent):
 
     def pad_at(self, x: int, y: int) -> Pad:
         return self.pads[XYCoord(x,y)]
+    
+    def remove_pad_at(self, x: int, y: int) -> None:
+        xy = XYCoord(x, y)
+        self.pads[xy] = Pad(xy, self, DummyState(initial_state=OnOff.OFF), 
+                            exists = False)
 
     @cached_property
     def max_row(self) -> int:

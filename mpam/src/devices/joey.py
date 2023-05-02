@@ -14,18 +14,23 @@ from mpam.device import WellOpSeqDict, WellState, \
     Heater, Chiller, StateDefs
 import mpam.device as device
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
-    Exerciser
+    Exerciser, BoardKwdArgs
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import XYCoord, Orientation, GridRegion, Dir, State, \
     OnOff, DummyState, RCOrder, deg_C_per_sec
-from quantities.SI import uL, ms, volts, deg_C
+from quantities.SI import uL, ms, volts, deg_C, mm
 
 
-from quantities.dimensions import Time, Volume, Voltage
+from quantities.dimensions import Time, Volume, Voltage, Distance, Area
 from quantities.temperature import abs_C
 from mpam.cmd_line import coord_arg
+from quantities.US import mil
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class HeaterType(Enum):
     TSRs = auto()
@@ -85,11 +90,76 @@ class ExtractionPoint(device.ExtractionPoint):
     @property
     def pipettor(self) -> Optional[Pipettor]:
         return self._pipettor
+    
+class JoeyLayout(Enum):
+    V1 = auto()
+    V1_5 = auto()
+    
+    @classmethod
+    def from_name(cls, name: str) -> JoeyLayout:
+        return joey_layout_arg_names[name]
+    
+    @property
+    def gap(self) -> Distance:
+        if self is JoeyLayout.V1:
+            return 3*mil
+        elif self is JoeyLayout.V1_5:
+            return 2*mil
+        else:
+            assert_never(self)
+            
+    @property
+    def pad_area(self) -> Area:
+        pitch = 1.5*mm
+        return (pitch-self.gap)**2
+    
+    def well_capacity(self, exit_dir: Dir) -> Volume:
+        assert exit_dir is Dir.EAST or exit_dir is Dir.WEST
+        if self is JoeyLayout.V1:
+            return 30*uL if exit_dir is Dir.EAST else 15*uL
+        if self is JoeyLayout.V1_5:
+            return 15*uL
+        else:
+            assert_never(self)
+            
+joey_layout_arg_names = {
+    "1": JoeyLayout.V1,
+    "1.0": JoeyLayout.V1,
+    "1.5": JoeyLayout.V1_5,
+    }    
 
+def joey_layout_arg(arg: str) -> JoeyLayout:
+    try:
+        return joey_layout_arg_names[arg]
+    except KeyError:
+        choices = conj_str([f'"{s}"' for s in sorted(joey_layout_arg_names.keys())])
+        raise ValueError(f"{arg} is not a valid Joey layout version.  Choices are {choices}")
+    
+def joey_layout_arg_name_for(version: JoeyLayout) -> str:
+    for k,v in joey_layout_arg_names.items():
+        if v is version:
+            return k
+    assert False, f"Joey layout version {version} doesn't have an argument representation"
+         
+    
+class LidType(Enum):
+    GLASS = auto()
+    PLASTIC = auto()
+
+    @property
+    def height(self) -> Distance:
+        if self is LidType.PLASTIC:
+            return 0.3*mm
+        elif self is LidType.GLASS:
+            return 0.2*mm
+        else:
+            assert_never(self)
 
 class Board(device.Board):
     thermocycler: Final[Thermocycler]
     pipettor: Final[Pipettor]
+    _layout: Final[JoeyLayout]
+    _lid: Final[LidType]
 
     def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
@@ -110,18 +180,27 @@ class Board(device.Board):
 
     
     def _well_capacity(self, exit_dir: Dir) -> Volume:
-        return 54.25*uL
+        # TODO: Should this be based on the lid height?
+        return self._layout.well_capacity(exit_dir)
+        # return 54.25*uL
     
     def _dispensed_volume(self) -> Volume:
-        return 0.5*uL
+        return self._layout.pad_area*self._lid.height
 
     def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor,
               shared_states: Sequence[State[OnOff]], shape: WellShape) -> Well:
 
-        pre_gate = 1
-        pad_neighbors = [[1,4],[-1,0,2,4], [1,4],
-                         [4,6], [0,1,2,3,5,6],[4,6],
-                         [3,4,5,7],[6,8],[7]]
+        if self._layout is JoeyLayout.V1:
+            pre_gate = 1
+            pad_neighbors = [[1,4],[-1,0,2,4], [1,4],
+                             [4,6], [0,1,2,3,5,6],[4,6],
+                             [3,4,5,7],[6,8],[7]]
+        elif self._layout is JoeyLayout.V1_5:
+            pre_gate = 0
+            pad_neighbors = [[-1,1], [0,2], [1,3], [2,4],
+                             [3,5],[4]]
+        else:
+            assert_never(self._layout)
 
         return Well(board=self,
                     group=group,
@@ -201,7 +280,8 @@ class Board(device.Board):
         return Fan(self, state=initial_state)
     
     def _extraction_point_locs(self) -> Sequence[Union[XYCoord,Pad,tuple[int,int]]]:
-        return ((14, 16), (14, 10), (14, 4))
+        return ()
+        # return ((14, 16), (14, 10), (14, 4))
                                                  
         
     
@@ -220,7 +300,13 @@ class Board(device.Board):
                  fan_initial_state: OnOff = OnOff.OFF,
                  holes: Sequence[XYCoord] = [],
                  default_holes: bool = True,
+                 lid_type: LidType = LidType.PLASTIC,
+                 joey_layout: JoeyLayout = JoeyLayout.V1,
                  ) -> None:
+        logger.info(f"Joey layout version is {joey_layout}")
+        logger.info(f"Lid type is {lid_type}")
+        self._lid = lid_type
+        self._layout = joey_layout
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
@@ -243,54 +329,57 @@ class Board(device.Board):
                          drop_motion_time=500*ms,
                          off_on_delay=off_on_delay,
                          cpt_layout=RCOrder.DOWN_RIGHT)
-
-        dead_region = GridRegion(XYCoord(8,9), width=5, height=3)
+        
+        dead_regions: Sequence[GridRegion]
+        if joey_layout is JoeyLayout.V1:
+            dead_regions = [GridRegion(XYCoord(8,9), width=5, height=3)]
+        elif joey_layout is JoeyLayout.V1_5:
+            dead_regions = [GridRegion(XYCoord(8,9), width=4, height=1),
+                            GridRegion(XYCoord(8,11), width=4, height=1),
+                            GridRegion(XYCoord(19,10), width=1, height=1),
+                            GridRegion(XYCoord(2,4), width=1, height=2),
+                            GridRegion(XYCoord(2,15), width=1, height=2),
+                            GridRegion(XYCoord(10,4), width=1, height=2),
+                            GridRegion(XYCoord(10,15), width=1, height=2),
+                            GridRegion(XYCoord(18,4), width=1, height=2),
+                            GridRegion(XYCoord(18,15), width=1, height=2),
+                            ]
+        else:
+            assert_never(joey_layout)
 
         for x in range(1,20):
             for y in range(1,20):
                 loc = XYCoord(x, y)
                 state = self._pad_state(x, y)
-                exists = state is not None and loc not in dead_region
+                exists = (state is not None and 
+                          all(loc not in r for r in dead_regions))
                 if state is None:
                     state = DummyState(initial_state=OnOff.OFF)
                 pad_dict[loc] = Pad(loc, self, exists=exists, state=state)
-
-        sequences: WellOpSeqDict = {
-            (WellState.EXTRACTABLE, WellState.READY): ((8,), (4,5,6,7,8), (4,5,6,7)),
-            (WellState.READY, WellState.EXTRACTABLE): ((4,5,6,7,8), (8,), ()),
-            (WellState.READY, WellState.DISPENSED): ((6,3,4,5,1,2,-1),
-                                                     (5,1,2,3,-1),
-                                                     (2,-1),
-                                                     (5,-1),
-                                                     (4,5,6,7,-1),
-                                                     (4,5,6,7)
-                                                     ),
-            (WellState.READY, WellState.ABSORBED): ((4,5,6,7,1,2,3,-1),),
-            (WellState.ABSORBED, WellState.READY): ((4,5,6,7),)
-            }
-
-        states = {
-            WellState.READY: (4,5,6,7),
-            WellState.EXTRACTABLE: (),
-            WellState.INJECTABLE: (4,5,6,7,8), 
-            }
-        
-        state_defs = StateDefs(states, sequences)
-
-        left_group = DispenseGroup("left", states=state_defs)
-        right_group = DispenseGroup("right", states=state_defs)
-
-        left_states = tuple(self._well_pad_state('left', n+1) for n in range(9))
-        right_states = tuple(self._well_pad_state('right', n+1) for n in range(9))
-
-        if pipettor is None:
-            from devices.dummy_pipettor import DummyPipettor
-            pipettor = DummyPipettor()
-        self.pipettor = pipettor
-        
-        well_shape = WellShape(
+                
+        sequences: WellOpSeqDict
+        if self._layout is JoeyLayout.V1:
+            sequences = {
+                (WellState.EXTRACTABLE, WellState.READY): ((8,), (4,5,6,7,8), (4,5,6,7)),
+                (WellState.READY, WellState.EXTRACTABLE): ((4,5,6,7,8), (8,), ()),
+                (WellState.READY, WellState.DISPENSED): ((6,3,4,5,1,2,-1),
+                                                         (5,1,2,3,-1),
+                                                         (2,-1),
+                                                         (5,-1),
+                                                         (4,5,6,7,-1),
+                                                         (4,5,6,7)
+                                                         ),
+                (WellState.READY, WellState.ABSORBED): ((4,5,6,7,1,2,3,-1),),
+                (WellState.ABSORBED, WellState.READY): ((4,5,6,7),)
+                }
+            states = {
+                WellState.READY: (4,5,6,7),
+                WellState.EXTRACTABLE: (),
+                WellState.INJECTABLE: (4,5,6,7,8), 
+                }
+            n_shared_pads = 9   
+            well_shape = WellShape(
                     side = Dir.EAST,
-                    # gate_pad_bounds= self._rectangle(epx, epy, outdir, 1, 1),
                     shared_pad_bounds = [WellShape.rectangle((1, 0.75), height=0.5),
                                          WellShape.square((1,0)),
                                          WellShape.rectangle((1, -0.75), height=0.5),
@@ -304,6 +393,60 @@ class Board(device.Board):
                     reagent_id_circle_radius = 1,
                     reagent_id_circle_center = (8, 0)
                     )
+        elif self._layout is JoeyLayout.V1_5:
+            sequences = {
+                (WellState.EXTRACTABLE, WellState.READY): ((4,), (2,3,4), (2,3)),
+                (WellState.READY, WellState.EXTRACTABLE): ((2,3,4), (4,), ()),
+                (WellState.READY, WellState.DISPENSED): ((1,2,-1),
+                                                         (1,2,-1),
+                                                         (1,-1),
+                                                         (2,-1),
+                                                         (2,3,-1),
+                                                         (2,3)
+                                                         ),
+                (WellState.READY, WellState.ABSORBED): ((1,2,3,-1),),
+                (WellState.ABSORBED, WellState.READY): ((2,3),)
+                }
+            states = {
+                WellState.READY: (2,3),
+                WellState.EXTRACTABLE: (),
+                WellState.INJECTABLE: (2,3,4), 
+                }   
+            n_shared_pads = 6
+            well_shape = WellShape(
+                    side = Dir.EAST,
+                    shared_pad_bounds = [WellShape.square((1,0)),
+                                         [(1, -0.5), (1, -0.75), (2.5, -2),
+                                          (2.5, 2), (1, 0.75), (1, 0.5),
+                                          (1.5, 0.5), (1.5, -0.5)],
+                                         WellShape.rectangle((3,0), height=4),
+                                         WellShape.rectangle((4,0), height=4),
+                                         WellShape.rectangle((5,0), height=4),
+                                         [(5.5, -2), (5.75, -2), (6.5, -0.75),
+                                          (6.5, 0.75), (5.75, 2), (5.5, 2),
+                                          ]
+                                         ],
+                    reagent_id_circle_radius = 1,
+                    reagent_id_circle_center = (8, 0)
+                    )
+        else:
+            assert_never(self._layout)
+
+
+        
+        state_defs = StateDefs(states, sequences)
+
+        left_group = DispenseGroup("left", states=state_defs)
+        right_group = DispenseGroup("right", states=state_defs)
+
+        left_states = tuple(self._well_pad_state('left', n+1) for n in range(n_shared_pads))
+        right_states = tuple(self._well_pad_state('right', n+1) for n in range(n_shared_pads))
+
+        if pipettor is None:
+            from devices.dummy_pipettor import DummyPipettor
+            pipettor = DummyPipettor()
+        self.pipettor = pipettor
+        
         
 
         self._add_wells((
@@ -442,26 +585,30 @@ def heater_type_arg_name_for(t: HeaterType) -> str:
         
 class PlatformTask(PlatformChoiceTask):
     default_heater_type: Final[HeaterType]
+    default_joey_layout: Final[JoeyLayout]
     def __init__(self, name: str = "Joey",
                  description: Optional[str] = None,
                  *,
                  default_heater_type: HeaterType = HeaterType.TSRs,
+                 default_joey_layout: JoeyLayout = JoeyLayout.V1,
                  aliases: Optional[Sequence[str]] = None) -> None:
         super().__init__(name, description, aliases=aliases)
         self.default_heater_type = default_heater_type
+        self.default_joey_layout = default_joey_layout
     
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
                    pipettor: Pipettor) -> Board: 
-        off_on_delay: Time = args.off_on_delay
-        return Board(pipettor=pipettor,
-                     heater_type = HeaterType.from_name(args.heaters),
-                     off_on_delay=off_on_delay,
-                     extraction_point_splash_radius=args.extraction_point_splash_radius,
-                     holes=args.holes,
-                     default_holes=args.default_holes
-                     )
+        kwds = self.board_kwd_args(args, announce=True)
+        # off_on_delay: Time = args.off_on_delay
+        return Board(pipettor=pipettor, **kwds)
+                    # heater_type = HeaterType.from_name(args.heaters),
+                    # off_on_delay=off_on_delay,
+                    # extraction_point_splash_radius=args.extraction_point_splash_radius,
+                    # holes=args.holes,
+                    # default_holes=args.default_holes
+                    # )
         
     def add_args_to(self, 
                      group: _ArgumentGroup, 
@@ -477,6 +624,14 @@ class PlatformTask(PlatformChoiceTask):
                            help=f'''
                            The type of heater to use.  The default is {self.default_heater_type}.
                            ''')
+        group.add_argument('--joey-version', 
+                           # type=heater_type_arg, 
+                           default=joey_layout_arg_name_for(self.default_joey_layout),
+                           metavar="VERSION", 
+                           choices=sorted(joey_layout_arg_names),
+                           help=f'''
+                           The version of the Joey layout.  The default is {self.default_joey_layout}.
+                           ''')
         group.add_argument('--hole', action='append', dest="holes", default=[],
                            type=coord_arg, metavar="X,Y",
                            help=f'''
@@ -486,6 +641,16 @@ class PlatformTask(PlatformChoiceTask):
                            help="Whether or not to include default holes in addition to those specified by --hole"
                            )
         
+    def board_kwd_args(self, args: Namespace, *,
+                       announce: bool = False) -> BoardKwdArgs:
+        kwds = super().board_kwd_args(args, announce=announce)
+        self.add_kwd_arg(args, kwds, "holes")
+        self.add_kwd_arg(args, kwds, "default_holes")
+        self.add_kwd_arg(args, kwds, "heaters", kwd="heater_type",
+                         transform=HeaterType.from_name)
+        self.add_kwd_arg(args, kwds, "joey_version", kwd="joey_layout",
+                         transform=JoeyLayout.from_name)
+        return kwds
 
         
     def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable
