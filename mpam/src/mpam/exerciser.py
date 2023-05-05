@@ -25,6 +25,8 @@ from erk.basic import ValOrFn
 from importlib import import_module
 from mpam.cmd_line import time_arg, units_arg, logging_spec_arg, ip_addr_arg,\
     ip_subnet_arg
+from erk.config import ConfigParam
+from mpam import device
 
 
 # import logging
@@ -42,8 +44,6 @@ class Task(ABC):
     default_min_time: Optional[Time] = 0*ms
     default_max_time: Optional[Time] = None
     default_update_interval: Time = 20*ms
-    # default_off_on_delay: Time = 0*ms
-    default_extraction_point_splash_radius: int = 0
     default_clock_interval=100*ms    
 
     def __init__(self, name: str, description: str, *,
@@ -184,6 +184,8 @@ class Exerciser(ABC):
                            args: Optional[Sequence[str]]=None,
                            namespace: Optional[Namespace]=None) -> None:
         task, ns = self.parse_args(args=args, namespace=namespace)
+        print(ns)
+        ConfigParam.set_namespace(ns)
         if ns.trace_blobs:
             Board.trace_blobs = True
         default_units: Optional[Sequence[Sequence[UnitExpr]]] = ns.units
@@ -256,11 +258,10 @@ class Exerciser(ABC):
                            # type=FileType(),
                            metavar='FILE',
                            help='A file containing DMF macro definitions.')
-        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, metavar="PADS",
-                           default=task.default_extraction_point_splash_radius,
+        device.Config.extraction_point_splash_radius.add_arg_to(group,
+                           '-ep-rad', '--extraction-point-splash-radius', type=int, metavar="PADS",
                            help=f'''
                            The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
-                           Default is {task.default_extraction_point_splash_radius}.
                            ''')
         group.add_argument('--local-ip', metavar="IP-ADDR", type=ip_addr_arg,
                            help=f'''
@@ -425,8 +426,6 @@ class PlatformChoiceTask(Task):
         self.default_min_time = task.default_min_time
         self.default_max_time = task.default_max_time
         self.default_update_interval = task.default_update_interval
-        # self.default_off_on_delay = task.default_off_on_delay
-        self.default_extraction_point_splash_radius = task.default_extraction_point_splash_radius
         self.default_clock_interval=task.default_clock_interval
 
         
@@ -450,14 +449,13 @@ class PlatformChoiceTask(Task):
                     parser:ArgumentParser, # @UnusedVariable
                     *, 
                     exerciser:Exerciser)->None: # @UnusedVariable
-        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
-                           default=self.default_off_on_delay(),
+        device.Config.off_on_delay.add_arg_to(group, '-ood','--off-on-delay', 
+                                              type=time_arg, metavar='TIME', 
                            help=f'''
                             The amount of time to wait between turning pads off
                             and turning pads on in a clock tick.  0ms is no
                             delay.  Negative values means pads are turned on
-                            before pads are turned off. Default is
-                            {self.fmt_time(self.default_off_on_delay())}.
+                            before pads are turned off. 
                             ''')
         
     def add_kwd_arg(self, args: Namespace, kwds: BoardKwdArgs, arg: str, *,
@@ -474,13 +472,8 @@ class PlatformChoiceTask(Task):
     def board_kwd_args(self, args: Namespace, *,
                        announce: bool = False) -> BoardKwdArgs: # @UnusedVariable
         kwds: BoardKwdArgs = {}
-        self.add_kwd_arg(args, kwds, "off_on_delay")
-        self.add_kwd_arg(args, kwds, "extraction_point_splash_radius")
         
         return kwds
-    
-    def default_off_on_delay(self) -> Time:
-        return 0*ms
     
     @classmethod
     def fmt_time(cls, t: Time) -> str:

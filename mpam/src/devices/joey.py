@@ -28,9 +28,9 @@ from quantities.temperature import abs_C
 from mpam.cmd_line import coord_arg
 from quantities.US import mil
 import logging
+from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
-
 
 class HeaterType(Enum):
     TSRs = auto()
@@ -40,6 +40,77 @@ class HeaterType(Enum):
     def from_name(cls, name: str) -> HeaterType:
         return heater_type_arg_names[name]
     
+class JoeyLayout(Enum):
+    V1 = auto()
+    V1_5 = auto()
+    
+    @classmethod
+    def from_name(cls, name: str) -> JoeyLayout:
+        return joey_layout_arg_names[name]
+    
+    @property
+    def gap(self) -> Distance:
+        if self is JoeyLayout.V1:
+            return 3*mil
+        elif self is JoeyLayout.V1_5:
+            return 2*mil
+        else:
+            assert_never(self)
+            
+    @property
+    def pad_area(self) -> Area:
+        pitch = 1.5*mm
+        return (pitch-self.gap)**2
+    
+    def well_capacity(self, exit_dir: Dir) -> Volume:
+        assert exit_dir is Dir.EAST or exit_dir is Dir.WEST
+        if self is JoeyLayout.V1:
+            return 30*uL if exit_dir is Dir.EAST else 15*uL
+        if self is JoeyLayout.V1_5:
+            return 15*uL
+        else:
+            assert_never(self)
+            
+joey_layout_arg_names = {
+    "1": JoeyLayout.V1,
+    "1.0": JoeyLayout.V1,
+    "1.5": JoeyLayout.V1_5,
+    }
+
+class LidType(Enum):
+    GLASS = auto()
+    PLASTIC = auto()
+
+    @property
+    def height(self) -> Distance:
+        if self is LidType.PLASTIC:
+            return 0.3*mm
+        elif self is LidType.GLASS:
+            return 0.2*mm
+        else:
+            assert_never(self)
+
+lid_type_arg_names = {
+    "glass": LidType.GLASS,
+    "GLASS": LidType.GLASS,
+    "plastic": LidType.PLASTIC,
+    "PLASTIC": LidType.PLASTIC
+    }
+
+class Config:
+    heater_type: Final = ConfigParam(HeaterType.TSRs)
+    layout: Final = ConfigParam(JoeyLayout.V1)
+    ps_min_voltage: Final = ConfigParam(60*volts)
+    ps_max_voltage: Final = ConfigParam(298*volts)
+    ps_initial_voltage: Final = ConfigParam(0*volts)
+    ps_initial_mode: Final = ConfigParam(PowerMode.DC)
+    ps_can_toggle: Final = ConfigParam(True)
+    ps_can_change_mode: Final = ConfigParam(True)
+    fan_initial_state: Final = ConfigParam(OnOff.OFF)
+    holes: Final = ConfigParam[Sequence[XYCoord]]([])
+    default_holes: Final = ConfigParam(True)
+    lid_type: Final = ConfigParam(LidType.PLASTIC)
+
     
 class Well(device.Well):
     _pipettor: Final[Pipettor]
@@ -91,70 +162,7 @@ class ExtractionPoint(device.ExtractionPoint):
     def pipettor(self) -> Optional[Pipettor]:
         return self._pipettor
     
-class JoeyLayout(Enum):
-    V1 = auto()
-    V1_5 = auto()
     
-    @classmethod
-    def from_name(cls, name: str) -> JoeyLayout:
-        return joey_layout_arg_names[name]
-    
-    @property
-    def gap(self) -> Distance:
-        if self is JoeyLayout.V1:
-            return 3*mil
-        elif self is JoeyLayout.V1_5:
-            return 2*mil
-        else:
-            assert_never(self)
-            
-    @property
-    def pad_area(self) -> Area:
-        pitch = 1.5*mm
-        return (pitch-self.gap)**2
-    
-    def well_capacity(self, exit_dir: Dir) -> Volume:
-        assert exit_dir is Dir.EAST or exit_dir is Dir.WEST
-        if self is JoeyLayout.V1:
-            return 30*uL if exit_dir is Dir.EAST else 15*uL
-        if self is JoeyLayout.V1_5:
-            return 15*uL
-        else:
-            assert_never(self)
-            
-joey_layout_arg_names = {
-    "1": JoeyLayout.V1,
-    "1.0": JoeyLayout.V1,
-    "1.5": JoeyLayout.V1_5,
-    }    
-
-def joey_layout_arg(arg: str) -> JoeyLayout:
-    try:
-        return joey_layout_arg_names[arg]
-    except KeyError:
-        choices = conj_str([f'"{s}"' for s in sorted(joey_layout_arg_names.keys())])
-        raise ValueError(f"{arg} is not a valid Joey layout version.  Choices are {choices}")
-    
-def joey_layout_arg_name_for(version: JoeyLayout) -> str:
-    for k,v in joey_layout_arg_names.items():
-        if v is version:
-            return k
-    assert False, f"Joey layout version {version} doesn't have an argument representation"
-         
-    
-class LidType(Enum):
-    GLASS = auto()
-    PLASTIC = auto()
-
-    @property
-    def height(self) -> Distance:
-        if self is LidType.PLASTIC:
-            return 0.3*mm
-        elif self is LidType.GLASS:
-            return 0.2*mm
-        else:
-            assert_never(self)
-
 class Board(device.Board):
     thermocycler: Final[Thermocycler]
     pipettor: Final[Pipettor]
@@ -287,47 +295,33 @@ class Board(device.Board):
     
 
     def __init__(self, *,
-                 heater_type: HeaterType,
                  pipettor: Optional[Pipettor] = None,
-                 off_on_delay: Time = Time.ZERO,
-                 extraction_point_splash_radius: int = 0,
-                 ps_min_voltage: Voltage = 60*volts,
-                 ps_max_voltage: Voltage = 298*volts,
-                 ps_initial_voltage: Voltage = 0*volts,
-                 ps_initial_mode: PowerMode = PowerMode.DC,
-                 ps_can_toggle: bool = True,
-                 ps_can_change_mode: bool = True,
-                 fan_initial_state: OnOff = OnOff.OFF,
-                 holes: Sequence[XYCoord] = [],
-                 default_holes: bool = True,
-                 lid_type: LidType = LidType.PLASTIC,
-                 joey_layout: JoeyLayout = JoeyLayout.V1,
                  ) -> None:
-        logger.info(f"Joey layout version is {joey_layout}")
-        logger.info(f"Lid type is {lid_type}")
-        self._lid = lid_type
-        self._layout = joey_layout
+        joey_layout = Config.layout()
+        logger.info(f"Joey layout version is {Config.layout()}")
+        logger.info(f"Lid type is {Config.lid_type()}")
+        logger.info(f"Heater type is {Config.heater_type()}")
+        self._lid = Config.lid_type()
+        self._layout = Config.layout()
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         magnets: list[Magnet] = []
         extraction_points: list[ExtractionPoint] = []
-        power_supply = self._power_supply(min_voltage=ps_min_voltage,
-                                          max_voltage=ps_max_voltage,
-                                          initial_voltage=ps_initial_voltage,
-                                          initial_mode=ps_initial_mode,
-                                          can_toggle=ps_can_toggle,
-                                          can_change_mode=ps_can_change_mode)
-        fan = self._fan(initial_state=fan_initial_state)
+        power_supply = self._power_supply(min_voltage=Config.ps_min_voltage(),
+                                          max_voltage=Config.ps_max_voltage(),
+                                          initial_voltage=Config.ps_initial_voltage(),
+                                          initial_mode=Config.ps_initial_mode(),
+                                          can_toggle=Config.ps_can_toggle(),
+                                          can_change_mode=Config.ps_can_change_mode())
+        fan = self._fan(initial_state=Config.fan_initial_state())
         super().__init__(pads=pad_dict,
                          wells=wells,
                          magnets=magnets,
                          extraction_points=extraction_points,
-                         extraction_point_splash_radius=extraction_point_splash_radius,
                          power_supply=power_supply,
                          fan=fan,
                          orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms,
-                         off_on_delay=off_on_delay,
                          cpt_layout=RCOrder.DOWN_RIGHT)
         
         dead_regions: Sequence[GridRegion]
@@ -461,7 +455,7 @@ class Board(device.Board):
             ))
 
         self._add_magnets(self._magnets())
-        self._add_heaters(self._heaters(heater_type))
+        self._add_heaters(self._heaters(Config.heater_type()))
         self._add_chillers(self._chillers())
         # self._add_heaters(self._heaters(HeaterType.Peltier))
         
@@ -471,17 +465,13 @@ class Board(device.Board):
                 xy = self.pad_at(*xy)
             elif isinstance(xy, XYCoord):
                 xy = self.pad_array[xy]
-            return ExtractionPoint(xy, pipettor, splash_radius=extraction_point_splash_radius)
+            return ExtractionPoint(xy, pipettor)
         
-        ep_locs = list[Union[XYCoord,Pad,tuple[int,int]]](holes)
-        if default_holes:
+        ep_locs = list[Union[XYCoord,Pad,tuple[int,int]]](Config.holes())
+        if Config.default_holes():
             ep_locs.extend(self._extraction_point_locs())
         
         self._add_extraction_points([to_ep(xy, pipettor) for xy in ep_locs])
-
-        # for pos in ((14, 16), (14, 10), (14, 4)):
-        #     self._add_extraction_point(
-        #         ExtractionPoint(self.pad_at(*pos), pipettor, splash_radius=extraction_point_splash_radius))
 
         def tc_channel(row: int,
                        # heaters: tuple[int,int],
@@ -569,18 +559,18 @@ heater_type_arg_names = {
     "paddle": HeaterType.Paddles,
     }
     
-def heater_type_arg(arg: str) -> HeaterType:
-    try:
-        return heater_type_arg_names[arg]
-    except KeyError:
-        choices = conj_str([f'"{s}"' for s in sorted(heater_type_arg_names.keys())])
-        raise ValueError(f"{arg} is not a valid heater type.  Choices are {choices}")
-    
-def heater_type_arg_name_for(t: HeaterType) -> str:
-    for k,v in heater_type_arg_names.items():
-        if v is t:
-            return k
-    assert False, f"TemperatureControl type {t} doesn't have an argument representation"
+# def heater_type_arg(arg: str) -> HeaterType:
+#     try:
+#         return heater_type_arg_names[arg]
+#     except KeyError:
+#         choices = conj_str([f'"{s}"' for s in sorted(heater_type_arg_names.keys())])
+#         raise ValueError(f"{arg} is not a valid heater type.  Choices are {choices}")
+#
+# def heater_type_arg_name_for(t: HeaterType) -> str:
+#     for k,v in heater_type_arg_names.items():
+#         if v is t:
+#             return k
+#     assert False, f"TemperatureControl type {t} doesn't have an argument representation"
 
         
 class PlatformTask(PlatformChoiceTask):
@@ -616,40 +606,52 @@ class PlatformTask(PlatformChoiceTask):
                      *,
                      exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
-        group.add_argument('--heaters', 
-                           # type=heater_type_arg, 
-                           default=heater_type_arg_name_for(self.default_heater_type),
-                           metavar="TYPE", 
-                           choices=sorted(heater_type_arg_names),
-                           help=f'''
-                           The type of heater to use.  The default is {self.default_heater_type}.
-                           ''')
-        group.add_argument('--joey-version', 
-                           # type=heater_type_arg, 
-                           default=joey_layout_arg_name_for(self.default_joey_layout),
-                           metavar="VERSION", 
-                           choices=sorted(joey_layout_arg_names),
-                           help=f'''
-                           The version of the Joey layout.  The default is {self.default_joey_layout}.
-                           ''')
-        group.add_argument('--hole', action='append', dest="holes", default=[],
-                           type=coord_arg, metavar="X,Y",
-                           help=f'''
-                           The x,y coordinates of a hole in the lid.
-                           ''')
-        group.add_argument('--default-holes', action=BooleanOptionalAction, default=True,
-                           help="Whether or not to include default holes in addition to those specified by --hole"
+        Config.heater_type.add_choice_arg_to(group, heater_type_arg_names, 
+                                             '--heaters', metavar="TYPE",
+                                             help = "The type of heater to use.")
+        Config.layout.add_choice_arg_to(group, joey_layout_arg_names,
+                                        '--joey-version', 
+                                        metavar="VERSION", 
+                                        help="The version of the Joey layout.")
+        Config.lid_type.add_choice_arg_to(group, lid_type_arg_names,
+                                        '--lid_type', 
+                                        metavar="TYPE", 
+                                        help="The type of lid used.")
+        Config.lid_type.add_arg_to(group, '--glass', action='store_const', 
+                                   dest='lid_type',
+                                   # const=LidType.GLASS,
+                                   const="glass", 
+                                   deprecated=ConfigParam.use_instead("--lid-type glass"),
+                                   help="Glass lid.")
+        Config.lid_type.add_arg_to(group, '--plastic', action='store_const', 
+                                   dest='lid_type',
+                                   # const=LidType.PLASTIC,
+                                   const="plastic", 
+                                   deprecated=ConfigParam.use_instead("--lid-type plastic"),
+                                   help="Plastic lid.")
+        
+        def default_holes_desc(holes: Sequence[XYCoord]) -> str:
+            def fmt(xy: XYCoord) -> str:
+                return f"({xy.col}, {xy.row})"
+            if len(holes) == 0:
+                return "to have no holes"
+            if len(holes) == 1:
+                return f"to have a hole at  {fmt(holes[0])}"
+            return f"to have holes at {conj_str([fmt(xy) for xy in holes])}"
+        Config.holes.add_arg_to(group,
+                                '--hole', action='append', dest="holes", 
+                                default_desc=default_holes_desc,
+                                type=coord_arg, metavar="X,Y",
+                                help='''The x,y coordinates of a hole in the lid.  
+                                This may be specified multiple times.'''
+                                )
+        Config.default_holes.add_arg_to(group, '--default-holes', action=BooleanOptionalAction,
+                           help="Whether or not to include default holes in addition to those specified by --hole."
                            )
         
     def board_kwd_args(self, args: Namespace, *,
                        announce: bool = False) -> BoardKwdArgs:
         kwds = super().board_kwd_args(args, announce=announce)
-        self.add_kwd_arg(args, kwds, "holes")
-        self.add_kwd_arg(args, kwds, "default_holes")
-        self.add_kwd_arg(args, kwds, "heaters", kwd="heater_type",
-                         transform=HeaterType.from_name)
-        self.add_kwd_arg(args, kwds, "joey_version", kwd="joey_layout",
-                         transform=JoeyLayout.from_name)
         return kwds
 
         

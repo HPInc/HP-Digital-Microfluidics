@@ -39,6 +39,7 @@ from erk.stringutils import map_str
 from quantities.US import deg_F
 from erk.network import local_ipv4_addr
 from functools import cached_property
+from erk.config import ConfigParam
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
@@ -4792,6 +4793,10 @@ Either a :class:`.TemperaturePoint`, a :class:`.Temperature` offset, or a pair
 of such values (as lower and upper values, respectively).
 """
 
+class Config:
+    off_on_delay: Final = ConfigParam[Time](Time.ZERO)
+    extraction_point_splash_radius: Final = ConfigParam[int](0)
+
 class Board(SystemComponent):
     pads: Final[dict[XYCoord, Pad]]
     
@@ -4858,12 +4863,10 @@ class Board(SystemComponent):
                  heaters: Optional[Sequence[Heater]] = None,
                  chillers: Optional[Sequence[Chiller]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
-                 extraction_point_splash_radius: int = 0,
                  power_supply: Optional[PowerSupply] = None,
                  fan: Optional[Fan] = None,
                  orientation: Orientation,
                  drop_motion_time: Time,
-                 off_on_delay: Time = Time.ZERO,
                  cpt_layout: Optional[RCOrder] = None) -> None:
         super().__init__()
         self._change_journal = ChangeJournal()
@@ -4884,14 +4887,14 @@ class Board(SystemComponent):
         self._extraction_points = [] 
         if extraction_points:
             self._add_extraction_points(extraction_points)
-        self.extraction_point_splash_radius = extraction_point_splash_radius
+        self.extraction_point_splash_radius = Config.extraction_point_splash_radius()
         self.power_supply = power_supply or FixedPowerSupply(self)
         self.fan = fan
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
-        self.off_on_delay = off_on_delay
-        if off_on_delay != 0:
-            logger.info("off-on delay is %s", off_on_delay)
+        self.off_on_delay = Config.off_on_delay()
+        if self.off_on_delay != 0:
+            logger.info("off-on delay is %s", self.off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
         # self._drops = []

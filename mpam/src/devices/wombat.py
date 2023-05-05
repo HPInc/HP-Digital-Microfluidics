@@ -8,14 +8,14 @@ from serial import Serial
 from devices import joey
 from mpam.types import OnOff, State, DummyState, XYCoord
 from erk.basic import ComputedDefaultDict, assert_never
-from quantities.dimensions import Time
 import logging
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser, BoardKwdArgs
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
 from mpam.pipettor import Pipettor
-from devices.joey import HeaterType, LidType, JoeyLayout
+from devices.joey import JoeyLayout
 from mpam import device
+from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
 
@@ -154,10 +154,15 @@ class Electrode(State[OnOff]):
         self.bit_index = bit_index
         self.array = a
         
-
+class Config:
+    is_yaminon: Final = ConfigParam(False)
+    device: Final = ConfigParam[str]()
+    od_version: Final = ConfigParam(OpenDropVersion.V40)
+    double_write: Final = ConfigParam(False)
+    
+    
 
 class Board(joey.Board):
-    _lid_type: Final[LidType]
     _device: Final[Optional[str]]
     _states: Final[bytearray]
     _last_states: bytearray
@@ -210,20 +215,12 @@ class Board(joey.Board):
         return self._electrode(cell)
     
     
-    def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
-                 is_yaminon: bool = False,
-                 lid_type: LidType = LidType.PLASTIC,
-                 joey_layout: JoeyLayout = JoeyLayout.V1,
-                 heater_type: HeaterType = HeaterType.TSRs,
-                 off_on_delay: Time = Time.ZERO,
-                 double_write: bool = True,
+    def __init__(self, 
                  pipettor: Optional[Pipettor] = None,
-                 holes: Sequence[XYCoord] = (),
-                 default_holes: bool = True,
-                 extraction_point_splash_radius: int = 0,
                  ) -> None:
-        self._lid_type = lid_type
+        od_version = Config.od_version()
         logger.info(f"Opendrop version is {od_version}",)
+            
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -232,17 +229,14 @@ class Board(joey.Board):
             assert_never(od_version)
         self._states = bytearray(n_state_bytes)
         self._last_states = bytearray(n_state_bytes)
-        self._od_version = od_version
-        logger.info("is_yaminon = %s", is_yaminon)
-        self.is_yaminon = is_yaminon
+        self._od_version = Config.od_version()
+        logger.info("is_yaminon = %s", Config.is_yaminon())
+        self.is_yaminon = Config.is_yaminon()
         self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
-        logger.info("double_write = %s", double_write)
-        self._double_write = double_write
-        super().__init__(heater_type=heater_type, pipettor=pipettor, off_on_delay=off_on_delay,
-                         holes=holes, default_holes=default_holes, 
-                         lid_type=lid_type, joey_layout=joey_layout,
-                         extraction_point_splash_radius=extraction_point_splash_radius)
-        if is_yaminon:
+        logger.info("double_write = %s", Config.double_write())
+        self._double_write = Config.double_write()
+        super().__init__(pipettor=pipettor)
+        if Config.is_yaminon():
             for x, y in ((i, j) for i in range(1, 20) for j in range(1, 10)):
                 y2 = y+12
                 remove = False
@@ -256,7 +250,7 @@ class Board(joey.Board):
                     self.remove_pad_at(x, y2)
                 
                 
-        self._device = device
+        self._device = Config.device()
         self._port = None
         
     def send_states(self, states: bytearray) -> None:
@@ -302,7 +296,7 @@ class PlatformTask(joey.PlatformTask):
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
                    pipettor: Pipettor) -> Board: # @UnusedVariable
         kwds = self.board_kwd_args(args, announce=True)
-        return Board(pipettor=pipettor,
+        return Board(pipettor=pipettor, 
                      **kwds)
 
     def is_yaminon(self) -> bool:
@@ -317,50 +311,54 @@ class PlatformTask(joey.PlatformTask):
                     *,
                     exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
-        # lg = group.add_mutually_exclusive_group()
-        group.add_argument('-v1', '--v1', action='store_const', const="v1", dest='wombat_version',
-                           help='''
-                           Version 1 of the Wombat layout.  Deprecated and ignored.  Use --joey-version 1.0
-                           ''')
-        group.add_argument('-v2', '--v2', action='store_const', const="v2", dest='wombat_version',
-                           help='''
-                           Version 2 of the Wombat layout.  Deprecated and ignored.  Use --joey-version 1.4
-                           ''')
-        group.add_argument('-p', '--port',
-                           help='''
-                           The communication port (e.g., COM5) to use to talk to the board.
-                           By default, only the display is run
-                           ''')
-        # lidg = group.add_mutually_exclusive_group()
-        group.add_argument('--glass', action='store_const', const=LidType.GLASS, dest='lid_type',
-                           help="Glass lid")
-        group.add_argument('--plastic', action='store_const', const=LidType.PLASTIC, dest='lid_type',
-                           help="Plastic lid")
-        # vg = group.add_mutually_exclusive_group()
-        group.add_argument('-4.0', '--4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
-                           help="The OpenDrop board uses firmware version 4.0")
-        group.add_argument('-4.1', '--4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
-                           help="The OpenDrop board uses firmware version 4.1")
-        # group.add_argument('--yaminon', action='store_true',
-        #                    help="Mirror pads on top and bottom of the board.")
-        double_write_default = True
-        group.add_argument('--double-write', action=BooleanOptionalAction, default=double_write_default,
+        ignored_cp = ConfigParam[str]()
+        ignored_cp.add_arg_to(group, '-v1', '--v1', action='store_const', const="v1", 
+                              deprecated = ConfigParam.use_instead("--joey-version 1.0"),
+                              ignored = True, 
+                              help = "Version 1 of the Wombat layout.")
+        ignored_cp.add_arg_to(group, '-v2', '--v2', action='store_const', const="v2", 
+                              deprecated = ConfigParam.use_instead("--joey-version 1.5"),
+                              ignored = True, 
+                              help = "Version 2 of the Wombat layout.")
+        Config.device.add_arg_to(group, '-p', '--port',
+                                 help='''
+                                    The communication port (e.g., COM5) to use to talk to the board.
+                                    By default, only the display is run
+                                    ''')
+        od_version_arg_names = {"4.0": OpenDropVersion.V40,    
+                                "4.1": OpenDropVersion.V41
+                                }        
+        Config.od_version.add_choice_arg_to(group, od_version_arg_names,
+                                            '--od_version', 
+                                            metavar="VERSION",
+                                            help="The version of the Opendrop firmware."
+                                            )
+        Config.od_version.add_arg_to(group, '-4.0', '--4.0',
+                                     dest='od_version',
+                                     action='store_const', const="4.0",
+                                     deprecated=ConfigParam.use_instead("--od_version 4.0"),
+                                     help="Opendrop firmware version 4.0")
+        Config.od_version.add_arg_to(group, '-4.1', '--4.1',
+                                     dest='od_version',
+                                     action='store_const', const="4.1",
+                                     deprecated=ConfigParam.use_instead("--od_version 4.1"),
+                                     help="Opendrop firmware version 4.1")
+        Config.double_write.add_arg_to(group, '--double-write', 
+                                            action=BooleanOptionalAction, 
                            help=f'''
                            Send state array to OpenDrop twice.  
-                           Default is {double_write_default}
                            ''')
-        parser.set_defaults(od_version=OpenDropVersion.V40)
-        parser.set_defaults(lid_type=LidType.PLASTIC)
         
     def board_kwd_args(self, args: Namespace, announce: bool = False) -> BoardKwdArgs:
         kwds = super().board_kwd_args(args, announce=announce)
-        kwds["is_yaminon"] = self.is_yaminon()
-        self.add_kwd_arg(args, kwds, "port", kwd="device")
-        self.add_kwd_arg(args, kwds, "od_version")
-        # self.add_kwd_arg(args, kwds, "wombat_version")
-        self.add_kwd_arg(args, kwds, "double_write")
-        # self.add_kwd_arg(args, kwds, "holes")
-        # self.add_kwd_arg(args, kwds, "default_holes")
+        Config.is_yaminon.value = self.is_yaminon()
+        # kwds["is_yaminon"] = self.is_yaminon()
+        # self.add_kwd_arg(args, kwds, "port", kwd="device")
+        # self.add_kwd_arg(args, kwds, "od_version")
+        # # self.add_kwd_arg(args, kwds, "wombat_version")
+        # self.add_kwd_arg(args, kwds, "double_write")
+        # # self.add_kwd_arg(args, kwds, "holes")
+        # # self.add_kwd_arg(args, kwds, "default_holes")
         return kwds
         
         
