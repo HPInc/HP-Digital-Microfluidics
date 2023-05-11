@@ -17,6 +17,7 @@ from quantities.dimensions import Volume
 from mpam.engine import Worker
 from erk.stringutils import map_str
 import math
+from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
 
@@ -549,3 +550,8 @@ class Pipettor(OpScheduler['Pipettor'], ABC):
                                        on_unknown=self.on_no_sink, on_insufficient=self.on_insufficient_space,
                                        is_product = self.is_product, product_loc=self.product_loc)
             return future
+        
+        
+class Config:
+    pipettor = ConfigParam[Pipettor]()
+

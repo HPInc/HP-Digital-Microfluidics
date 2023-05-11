@@ -23,12 +23,13 @@ from mpam.types import XYCoord, Orientation, GridRegion, Dir, State, \
 from quantities.SI import uL, ms, volts, deg_C, mm
 
 
-from quantities.dimensions import Time, Volume, Voltage, Distance, Area
+from quantities.dimensions import Volume, Distance, Area
 from quantities.temperature import abs_C
-from mpam.cmd_line import coord_arg
 from quantities.US import mil
 import logging
 from erk.config import ConfigParam
+import mpam
+from mpam.cmd_line import coord_arg
 
 logger = logging.getLogger(__name__)
 
@@ -100,16 +101,24 @@ lid_type_arg_names = {
 class Config:
     heater_type: Final = ConfigParam(HeaterType.TSRs)
     layout: Final = ConfigParam(JoeyLayout.V1)
-    ps_min_voltage: Final = ConfigParam(60*volts)
-    ps_max_voltage: Final = ConfigParam(298*volts)
-    ps_initial_voltage: Final = ConfigParam(0*volts)
-    ps_initial_mode: Final = ConfigParam(PowerMode.DC)
-    ps_can_toggle: Final = ConfigParam(True)
-    ps_can_change_mode: Final = ConfigParam(True)
-    fan_initial_state: Final = ConfigParam(OnOff.OFF)
     holes: Final = ConfigParam[Sequence[XYCoord]]([])
     default_holes: Final = ConfigParam(True)
     lid_type: Final = ConfigParam(LidType.PLASTIC)
+    
+    _defaults_set_up = False
+    @classmethod
+    def setup_defaults(cls) -> None:
+        if not cls._defaults_set_up:
+            device.Config.polling_interval.default = 200*ms
+            device.Config.ps_min_voltage.default = 60*volts
+            device.Config.ps_max_voltage.default = 298*volts
+            device.Config.ps_initial_voltage.default = 0*volts
+            device.Config.ps_initial_mode.default = PowerMode.DC
+            device.Config.ps_can_toggle.default = True
+            device.Config.ps_can_change_mode.default = True
+            device.Config.fan_initial_state.default = OnOff.OFF
+            device.Config.fan_can_toggle.default = True
+            cls._defaults_set_up = True
 
     
 class Well(device.Well):
@@ -228,12 +237,11 @@ class Board(device.Board):
                     pipettor = pipettor
                     )
         
-    def _heaters(self, heater_type: HeaterType, *,
-                 polling_interval: Time = 200*ms) -> Sequence[Heater]:
+    def _heaters(self) -> Sequence[Heater]:
+        heater_type = Config.heater_type()
         def make_heater(*, regions: Sequence[GridRegion]) -> Heater:
             return EmulatedHeater(board=self, regions=regions, wells=[],
                                   limit = 120*abs_C,
-                                  polling_interval=polling_interval,
                                   driving_rate = 100*deg_C_per_sec,
                                   return_rate = 10*deg_C_per_sec,
                                   noise_sd = 0.05*deg_C)
@@ -253,11 +261,10 @@ class Board(device.Board):
             assert_never(heater_type)
         return [make_heater(regions=r) for r in regions]
             
-    def _chillers(self, *, polling_interval: Time = 200*ms) -> Sequence[Chiller]:
+    def _chillers(self) -> Sequence[Chiller]:
         def make_chiller(*, wells: Sequence[device.Well]) -> Chiller:
             return EmulatedChiller(board=self, regions=[], wells=wells,
                                    limit = 5*abs_C,
-                                   polling_interval=polling_interval,
                                    driving_rate = 100*deg_C_per_sec,
                                    return_rate = 10*deg_C_per_sec,
                                    noise_sd = 0.1*deg_C)
@@ -267,25 +274,11 @@ class Board(device.Board):
             
     
     
-    def _power_supply(self, *,
-                      min_voltage: Voltage,
-                      max_voltage: Voltage,
-                      initial_voltage: Voltage,
-                      initial_mode: PowerMode,
-                      can_toggle: bool,
-                      can_change_mode: bool,
-                      ) -> PowerSupply:
-        return PowerSupply(self,
-                           min_voltage=min_voltage,
-                           max_voltage=max_voltage,
-                           initial_voltage=initial_voltage,
-                           mode=initial_mode,
-                           can_toggle=can_toggle,
-                           can_change_mode=can_change_mode)
+    def _power_supply(self) -> PowerSupply:
+        return PowerSupply(self)
 
-    def _fan(self, *,
-             initial_state: OnOff) -> Fan:
-        return Fan(self, state=initial_state)
+    def _fan(self) -> Fan:
+        return Fan(self)
     
     def _extraction_point_locs(self) -> Sequence[Union[XYCoord,Pad,tuple[int,int]]]:
         return ()
@@ -294,9 +287,7 @@ class Board(device.Board):
         
     
 
-    def __init__(self, *,
-                 pipettor: Optional[Pipettor] = None,
-                 ) -> None:
+    def __init__(self) -> None:
         joey_layout = Config.layout()
         logger.info(f"Joey layout version is {Config.layout()}")
         logger.info(f"Lid type is {Config.lid_type()}")
@@ -307,13 +298,8 @@ class Board(device.Board):
         wells: list[Well] = []
         magnets: list[Magnet] = []
         extraction_points: list[ExtractionPoint] = []
-        power_supply = self._power_supply(min_voltage=Config.ps_min_voltage(),
-                                          max_voltage=Config.ps_max_voltage(),
-                                          initial_voltage=Config.ps_initial_voltage(),
-                                          initial_mode=Config.ps_initial_mode(),
-                                          can_toggle=Config.ps_can_toggle(),
-                                          can_change_mode=Config.ps_can_change_mode())
-        fan = self._fan(initial_state=Config.fan_initial_state())
+        power_supply = self._power_supply()
+        fan = self._fan()
         super().__init__(pads=pad_dict,
                          wells=wells,
                          magnets=magnets,
@@ -436,9 +422,11 @@ class Board(device.Board):
         left_states = tuple(self._well_pad_state('left', n+1) for n in range(n_shared_pads))
         right_states = tuple(self._well_pad_state('right', n+1) for n in range(n_shared_pads))
 
-        if pipettor is None:
+        pipettor_cp = mpam.pipettor.Config.pipettor 
+        def make_dummy() -> Pipettor:
             from devices.dummy_pipettor import DummyPipettor
-            pipettor = DummyPipettor()
+            return DummyPipettor()
+        pipettor = pipettor_cp() if pipettor_cp.has_value else make_dummy()
         self.pipettor = pipettor
         
         
@@ -455,7 +443,7 @@ class Board(device.Board):
             ))
 
         self._add_magnets(self._magnets())
-        self._add_heaters(self._heaters(Config.heater_type()))
+        self._add_heaters(self._heaters())
         self._add_chillers(self._chillers())
         # self._add_heaters(self._heaters(HeaterType.Peltier))
         
@@ -589,31 +577,30 @@ class PlatformTask(PlatformChoiceTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: 
+                  ) -> Board: 
         kwds = self.board_kwd_args(args, announce=True)
         # off_on_delay: Time = args.off_on_delay
-        return Board(pipettor=pipettor, **kwds)
+        return Board(**kwds)
                     # heater_type = HeaterType.from_name(args.heaters),
                     # off_on_delay=off_on_delay,
                     # extraction_point_splash_radius=args.extraction_point_splash_radius,
                     # holes=args.holes,
                     # default_holes=args.default_holes
                     # )
+                    
+    def setup_config_defaults(self) -> None:
+        Config.setup_defaults()
         
     def add_args_to(self, 
                      group: _ArgumentGroup, 
                      parser: ArgumentParser,
                      *,
                      exerciser: Exerciser) -> None:
-        super().add_args_to(group, parser, exerciser=exerciser)
-        Config.heater_type.add_choice_arg_to(group, heater_type_arg_names, 
-                                             '--heaters', metavar="TYPE",
-                                             help = "The type of heater to use.")
         Config.layout.add_choice_arg_to(group, joey_layout_arg_names,
                                         '--joey-version', 
                                         metavar="VERSION", 
                                         help="The version of the Joey layout.")
-        Config.lid_type.add_choice_arg_to(group, lid_type_arg_names,
+        Config.lid_type.add_choice_arg_to(group, LidType,
                                         '--lid_type', 
                                         metavar="TYPE", 
                                         help="The type of lid used.")
@@ -629,7 +616,6 @@ class PlatformTask(PlatformChoiceTask):
                                    const="plastic", 
                                    deprecated=ConfigParam.use_instead("--lid-type plastic"),
                                    help="Plastic lid.")
-        
         def default_holes_desc(holes: Sequence[XYCoord]) -> str:
             def fmt(xy: XYCoord) -> str:
                 return f"({xy.col}, {xy.row})"
@@ -648,7 +634,24 @@ class PlatformTask(PlatformChoiceTask):
         Config.default_holes.add_arg_to(group, '--default-holes', action=BooleanOptionalAction,
                            help="Whether or not to include default holes in addition to those specified by --hole."
                            )
+        super().add_args_to(group, parser, exerciser=exerciser)
+        self.add_heater_args_to(parser, exerciser=exerciser)
+        self.add_power_supply_args_to(parser, exerciser=exerciser)
+        self.add_fan_args_to(parser, exerciser=exerciser)
         
+    def add_heater_args_to(self, parser:ArgumentParser, 
+                           *, exerciser:Exerciser)->None:
+        group = self.heater_group(parser)
+        Config.heater_type.add_choice_arg_to(group, (HeaterType,
+                                                     { "tsr": HeaterType.TSRs,
+                                                       "TSR": HeaterType.TSRs,
+                                                       "paddle": HeaterType.Paddles,
+                                                       "PADDLE": HeaterType.Paddles,
+                                                      }), 
+                                             '--heaters', metavar="TYPE",
+                                             help = "The type of heater to use.")
+        super().add_heater_args_to(parser, exerciser=exerciser)
+
     def board_kwd_args(self, args: Namespace, *,
                        announce: bool = False) -> BoardKwdArgs:
         kwds = super().board_kwd_args(args, announce=announce)

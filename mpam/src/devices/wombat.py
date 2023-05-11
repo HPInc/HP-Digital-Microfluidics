@@ -12,7 +12,6 @@ import logging
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser, BoardKwdArgs
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
-from mpam.pipettor import Pipettor
 from devices.joey import JoeyLayout
 from mpam import device
 from erk.config import ConfigParam
@@ -156,10 +155,17 @@ class Electrode(State[OnOff]):
         
 class Config:
     is_yaminon: Final = ConfigParam(False)
-    device: Final = ConfigParam[str]()
+    device: Final = ConfigParam[Optional[str]](None)
     od_version: Final = ConfigParam(OpenDropVersion.V40)
     double_write: Final = ConfigParam(False)
     
+    _defaults_set_up = False
+    @classmethod
+    def setup_defaults(cls) -> None:
+        if not cls._defaults_set_up:
+            joey.Config.setup_defaults()
+            print("Setting up Config defaults for Wombat")
+            cls._defaults_set_up = True
     
 
 class Board(joey.Board):
@@ -216,7 +222,6 @@ class Board(joey.Board):
     
     
     def __init__(self, 
-                 pipettor: Optional[Pipettor] = None,
                  ) -> None:
         od_version = Config.od_version()
         logger.info(f"Opendrop version is {od_version}",)
@@ -235,7 +240,7 @@ class Board(joey.Board):
         self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
         logger.info("double_write = %s", Config.double_write())
         self._double_write = Config.double_write()
-        super().__init__(pipettor=pipettor)
+        super().__init__()
         if Config.is_yaminon():
             for x, y in ((i, j) for i in range(1, 20) for j in range(1, 10)):
                 y2 = y+12
@@ -294,16 +299,19 @@ class PlatformTask(joey.PlatformTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
+                  ) -> Board: # @UnusedVariable
         kwds = self.board_kwd_args(args, announce=True)
-        return Board(pipettor=pipettor, 
-                     **kwds)
+        return Board(**kwds)
 
     def is_yaminon(self) -> bool:
         return False
         
     def available_wells(self, exerciser: Exerciser) -> Sequence[int]: # @UnusedVariable
         return [2,3,6,7]
+
+    def setup_config_defaults(self) -> None:
+        super().setup_config_defaults()
+        Config.setup_defaults()
 
     def add_args_to(self, 
                     group: _ArgumentGroup, 

@@ -33,7 +33,7 @@ from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
     TempControllable, TemperatureControl, WellShape
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent, ConfigParams
+    ColorAllocator, Liquid, unknown_reagent, waste_reagent
 from quantities.SI import ms, sec
 from quantities.core import Unit
 from quantities.dimensions import Volume, Time
@@ -43,11 +43,15 @@ from weakref import WeakKeyDictionary
 from erk.stringutils import match_width, conj_str
 import traceback
 from langsup import dmf_lang
-from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
+from argparse import _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
+from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
 
+class Config:
+    highlight_reservations: Final = ConfigParam(False)
+    trace_clicks: Final = ConfigParam(False)
 
 class ClickableMonitor(ABC):
     component: Final[BinaryComponent]
@@ -234,7 +238,7 @@ class PadMonitor(ClickableMonitor):
 
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
-        if isinstance(pad, Pad) and board_monitor.config_params.highlight_reservations: # pad can be Pad or Gate
+        if isinstance(pad, Pad) and Config.highlight_reservations(): # pad can be Pad or Gate
             pad.on_reserved_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_reserved(new)))
 
 
@@ -906,9 +910,7 @@ class BoardMonitor:
     macro_file_names: Final[Sequence[str]]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
-    default_cmd_line_args = Namespace(highlight_reservations=False, 
-                                      trace_clicks=False)
-    config_params: Final[ConfigParams]
+    # config_params: Final[ConfigParams]
     last_clicked: Optional[BinaryComponent] = None
 
     _control_widgets: Final[Any]
@@ -944,16 +946,16 @@ class BoardMonitor:
             self.max_y = max(y, self.max_y)
 
     def __init__(self, board: Board, *,
-                 cmd_line_args: Optional[Namespace] = None,
-                 from_code: Optional[Mapping[str, Any]] = None,
+                 # cmd_line_args: Optional[Namespace] = None,
+                 # from_code: Optional[Mapping[str, Any]] = None,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                  control_fraction: Optional[float] = None,
                  macro_file_names: Optional[list[str]] = None) -> None:
         # print(f"Creating {self}.")
         self.board = board
-        self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
-                                          cmd_line = cmd_line_args,
-                                          from_code = from_code)
+        # self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
+        #                                   cmd_line = cmd_line_args,
+        #                                   from_code = from_code)
         self.interactive_volume = board.drop_size
         self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()
@@ -1009,7 +1011,7 @@ class BoardMonitor:
                 with_control, with_shift = self.modifiers[key]
                 # with_control = key == "control" or key == "ctrl+shift"
                 # with_shift = key == "shift" or key == "ctrl+shift"
-                if self.config_params.trace_clicks:
+                if Config.trace_clicks():
                     print(f"Clicked on {target} (modifiers: {key})")
                 # print(f"  Monitor is {self}")
                 self.last_clicked = target.component
@@ -1038,17 +1040,10 @@ class BoardMonitor:
     @classmethod
     def add_args_to(cls, group: _ArgumentGroup,
                          parser: ArgumentParser) -> None: # @UnusedVariable
-        defaults = cls.default_cmd_line_args
-        group.add_argument('--highlight-reservations', action=BooleanOptionalAction,
-                           default=defaults.highlight_reservations,
-                           help='''
-                           Highlight reserved pads on the display.
-                           ''')
-        group.add_argument('--trace-clicks', action=BooleanOptionalAction,
-                           default=defaults.trace_clicks,
-                           help='''
-                           Trace clicks to console.
-                           ''')
+        Config.highlight_reservations.add_arg_to(group, '--highlight-reservations', action=BooleanOptionalAction,
+                                                 help="Highlight reserved pads on the display.")
+        Config.trace_clicks.add_arg_to(group, '--trace-clicks', action=BooleanOptionalAction,
+                                       help="Trace clicks to console.")
 
 
     def label(self, text: str, spec: SubplotSpec,

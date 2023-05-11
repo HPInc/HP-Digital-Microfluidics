@@ -7,12 +7,11 @@ from functools import cached_property
 
 from typing import Mapping, Any, Optional, Union, TypeVar,\
     Callable, Generic, Final, cast, Sequence, overload, Iterator, Iterable,\
-    Literal, Type
+    Literal, Type, NoReturn
 from enum import Enum, auto
 import itertools
 from erk.stringutils import conj_str
 import logging
-from types import TracebackType
 import argparse
 
 logger = logging.getLogger(__name__)
@@ -33,49 +32,30 @@ class Unset(Enum):
 UNSET: Final[Unset] = Unset.SINGLETON
 
 class _TemporaryOverride:
-    old_val: Optional[CPOverrideSet]
-    to_add: Final[CPOverrideSet]
-    expect: CPOverrideSet
+    old_val: Optional[CPBindings]
+    expect: CPBindings
     
-    def __init__(self, overrides: CPOverrideSet) -> None:
-        self.to_add = overrides
-        
-    def __enter__(self) -> _TemporaryOverride:
+    def __init__(self, overrides: CPBindings) -> None:
         current = ConfigParam._temp_overrides
         self.old_val = current
         if current is None:
-            new_val = self.to_add
+            new_val = overrides
         else:
-            new_val = current.but(self.to_add)
+            new_val = current.but(overrides)
         self.expect = new_val
         ConfigParam._temp_overrides = new_val
-        return self
         
-    def __exit__(self,
-                 _exc_type: Optional[type[BaseException]],
-                 _exc_val: Optional[BaseException],
-                 _exc_tb: Optional[TracebackType]) -> Literal[False]:
+    def close(self) -> None:
         if ConfigParam._temp_overrides is self.expect:
             ConfigParam._temp_overrides = self.old_val
         else:
             logger.warning(f"Exiting temporary ConfigParam bindings out of order.  Expected {self.expect}, found {ConfigParam._temp_overrides}.")
-        return False
-
-class CPVal:
-    cp: Final[ConfigParam]
-    val: Final[Any]
-    
-    def __init__(self, cp: ConfigParam[T], val: T) -> None:
-        self.cp = cp
-        self.val = val
         
-    def __enter__(self) -> _TemporaryOverride:
-        return ConfigParam.temporary(self)
-        
-class CPOverrideSet:
+class CPBindings:
     _overrides: Final[dict[ConfigParam,Any]]
+    _use_stack: Optional[list[_TemporaryOverride]] = None
     
-    _Addable = Union[CPVal, 'CPOverrideSet', Iterable[Union[CPVal, 'CPOverrideSet']]]
+    _Addable = Union['CPBindings', Iterable['CPBindings']]
     
     @overload
     def __init__(self, cp: ConfigParam[T], value: T) -> None: ... # @UnusedVariable
@@ -100,33 +80,29 @@ class CPOverrideSet:
             assert second is not None
             self[first] = second   #type: ignore[misc]
         else:
-            def add_override(o: CPVal) -> None:
-                self._overrides[o.cp] = o.val
-            def process(a: CPOverrideSet._Addable) -> None:
-                if isinstance(a, CPVal):
-                    add_override(a)
-                elif isinstance(a, CPOverrideSet):
+            def process(a: CPBindings._Addable) -> None:
+                if isinstance(a, CPBindings):
                     self._overrides.update(a._overrides)
                 else:
                     for a2 in a:
                         process(a2)
             process(first)
             if second is not None:
-                process(cast(CPOverrideSet._Addable, second))
+                process(cast(CPBindings._Addable, second))
             for a in rest:
                 process(a)
                 
 
     
     @overload
-    def but(self, cp: ConfigParam[T], value: T) -> CPOverrideSet: ... # @UnusedVariable
+    def but(self, cp: ConfigParam[T], value: T) -> CPBindings: ... # @UnusedVariable
     @overload
-    def but(self, first: _Addable, *rest: _Addable) -> CPOverrideSet: ... # @UnusedVariable
-    def but(self, *args) -> CPOverrideSet: #type: ignore
+    def but(self, first: _Addable, *rest: _Addable) -> CPBindings: ... # @UnusedVariable
+    def but(self, *args) -> CPBindings: #type: ignore
         if len(args) == 2 and isinstance(args[0], ConfigParam):
             cp, val = args
-            args = (CPVal(cp, val),)
-        return CPOverrideSet(*args)
+            args = (cp >> val,)
+        return CPBindings(self, *args)
 
     @overload        
     def get(self, cp: ConfigParam[T], default: Unset = UNSET) -> T: ... # @UnusedVariable
@@ -156,21 +132,34 @@ class CPOverrideSet:
     def __iter__(self) -> Iterator[ConfigParam]:
         return self._overrides.__iter__()
     
-    def copy(self) -> CPOverrideSet:
-        cpo = CPOverrideSet()
+    def copy(self) -> CPBindings:
+        cpo = CPBindings()
         cpo._overrides.update(self._overrides)
         return cpo
     
-    def plus(self, cp: ConfigParam[T], val: T) -> CPOverrideSet:
+    def plus(self, cp: ConfigParam[T], val: T) -> CPBindings:
         self._overrides[cp] = val
         return self
     
-    def __enter__(self) -> _TemporaryOverride:
-        return ConfigParam.temporary(self)
+    def __enter__(self) -> CPBindings:
+        if self._use_stack is None:
+            self._use_stack = []
+        self._use_stack.append(_TemporaryOverride(self))
+        return self
+    
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+        if not self._use_stack:
+            logger.error("Exiting CPBindings that wasn't entered")
+        else:
+            self._use_stack.pop().close()
+        return False
+            
+    
+    def __and__(self, other: CPBindings._Addable) -> CPBindings:
+        return CPBindings(self, other)
     
     
-    
-NO_OVERRIDES: Final = CPOverrideSet()
+NO_OVERRIDES: Final = CPBindings()
 
 class DeprecatedAction(argparse.Action):
     def __init__(self, *args: Any,
@@ -201,15 +190,29 @@ class ConfigParam(Generic[T]):
     
     _key: Optional[str] = None
     _namespace_value: Union[Unset, T] = UNSET
-    _overridden: Optional[tuple[CPOverrideSet, T]] = None
+    _overridden: Optional[tuple[CPBindings, T]] = None
     
-    _temp_overrides: Optional[CPOverrideSet] = None
+    _temp_overrides: Optional[CPBindings] = None
+    
+    @staticmethod
+    def _default_no_default_action(cp: ConfigParam) -> NoReturn:
+        raise AttributeError(f"{cp.full_name} has no value")
+        
+    _on_no_default: Callable[[ConfigParam], NoReturn] = _default_no_default_action
+    
 
     def __init__(self, default_val: Union[Unset, T] = UNSET, *,
                  name: Optional[str] = None):
         self._default_val = default_val
         self._name = name
         
+    def __repr__(self) -> str:
+        v = "<UNSET>"
+        try:
+            v = str(self.value)
+        except AttributeError:
+            pass
+        return f"ConfigParam[{self.full_name}={v}]" 
         
     @property
     def default(self) -> T:
@@ -220,6 +223,10 @@ class ConfigParam(Generic[T]):
     @default.setter
     def default(self, val: T) -> None:
         self._default_val = val
+        
+    @property
+    def has_default(self) -> bool:
+        return self._default_val is not UNSET
         
     @cached_property
     def name(self) -> str:
@@ -234,6 +241,14 @@ class ConfigParam(Generic[T]):
     @cached_property
     def full_name(self) -> str:
         return self._full_name or self.name
+    
+    @property
+    def has_value(self) -> bool:
+        try:
+            self.value
+            return True
+        except AttributeError:
+            return False
 
 
     @property
@@ -242,7 +257,7 @@ class ConfigParam(Generic[T]):
         v: Union[T, Unset]
         if (to is not None
             and (o:=self._overridden) is not None
-            and o[0] is self._temp_overrides):
+            and o[0] is to):
             return o[1]
         if to is not None:
             try:
@@ -284,12 +299,26 @@ class ConfigParam(Generic[T]):
                     return cast(T, from_namespace)
         if self._default_val is not UNSET:
             return self._default_val
-        raise AttributeError(f"{self.full_name} has no value")
-    
-    def __call__(self, val: Union[T, Unset, CPOverrideSet] = UNSET) -> T:
+        handler = self._on_no_default
+        handler(self)
+        
+    def on_no_default(self, fn: Callable[[ConfigParam], Any]) -> None:
+        old_fn = self._on_no_default
+        def composed(cp: ConfigParam) -> NoReturn:
+            fn(cp)
+            old_fn(cp)
+        self._on_no_default = composed
+        
+    def raise_on_no_default(self, factory: Callable[[ConfigParam], Exception]) -> None:
+        def raise_ex(cp: ConfigParam) -> NoReturn:
+            ex = factory(cp)
+            raise ex
+        self.on_no_default(raise_ex)
+        
+    def __call__(self, val: Union[T, Unset, CPBindings] = UNSET) -> T:
         if val is UNSET:
             pass
-        elif isinstance(val, CPOverrideSet):
+        elif isinstance(val, CPBindings):
             if self in val:
                 return val[self]
         else:
@@ -300,23 +329,25 @@ class ConfigParam(Generic[T]):
         self._name = name
         self._nested_name = f"{owner.__name__}.{name}"
         self._full_name = f"{owner.__module__}.{owner.__qualname__}.{name}"
+        # logger.warning(f"Calling __set_name__() on {self._full_name}: {self._namespace_value}/{self._default_val}")
         
-    def temp_val(self, val: T) -> _TemporaryOverride:
-        return self.temporary(self, val)
 
-    @overload
-    @classmethod
-    def temporary(cls, cp: ConfigParam[T], value: T) -> _TemporaryOverride: ... # @UnusedVariable
-    @overload
-    @classmethod
-    def temporary(cls, first: CPOverrideSet._Addable, *rest: CPOverrideSet._Addable) -> _TemporaryOverride: ... # @UnusedVariable
-    @classmethod #type: ignore
-    def temporary(cls, *args) -> _TemporaryOverride:
-        if len(args) == 2 and isinstance(args[0], ConfigParam):
-            cp, val = args
-            args = (CPVal(cp, val),)
-        new = CPOverrideSet(*args)
-        return _TemporaryOverride(new)
+    # @overload
+    # @classmethod
+    # def temporary(cls, cp: ConfigParam[T], value: T) -> _TemporaryOverride: ... # @UnusedVariable
+    # @overload
+    # @classmethod
+    # def temporary(cls, first: CPBindings._Addable, *rest: CPBindings._Addable) -> _TemporaryOverride: ... # @UnusedVariable
+    # @classmethod #type: ignore
+    # def temporary(cls, *args) -> _TemporaryOverride:
+    #     if len(args) == 2 and isinstance(args[0], ConfigParam):
+    #         cp, val = args
+    #         args = (cp >> val,)
+    #     new = CPBindings(*args)
+    #     return _TemporaryOverride(new)
+    
+    def __rshift__(self, val: T) -> CPBindings:
+        return CPBindings(self, val)
 
 
     
@@ -359,8 +390,6 @@ class ConfigParam(Generic[T]):
                    deprecated: Union[bool, str] = False,
                    ignored: bool = False,
                    **kwargs: Any) -> None:
-        
-
         def desc_from_default(v: Any) -> str:
             if isinstance(v, str):
                 return f"'{v}'"
@@ -384,7 +413,7 @@ class ConfigParam(Generic[T]):
         if default is not UNSET:
             if isinstance(default_desc, str):
                 self.add_to_help(kwargs, f"The default value is {default_desc}.")
-                kwargs['default'] = default
+                # kwargs['default'] = default
                 
             
         # If the action is BooleanOptionalAction, we replace it with our own
@@ -414,7 +443,7 @@ class ConfigParam(Generic[T]):
             kwargs['original_action_class'] = old_action
             kwargs['action'] = DeprecatedAction
             
-        action = parser.add_argument(name, *args, **kwargs)
+        action = parser.add_argument(name, *args, default=default, **kwargs)
         self._key = None if ignored else action.dest
         if transform is not None:
             self._transform = transform
@@ -433,10 +462,45 @@ class ConfigParam(Generic[T]):
             group.add_argument(f"--{k}", action='store_const', const=v, dest=dest, **kwargs)
         self._key = dest
         
-    def add_choice_arg_to(self, parser: _ActionsContainer, options: Mapping[str, T], 
+    def add_bool_arg_to(self, parser: _ActionsContainer, name: str, *args: Any, **kwargs: Any) -> None:
+        self.add_arg_to(parser, name, *args, action=BooleanOptionalAction, **kwargs)
+        
+        
+    def add_choice_arg_to(self, parser: _ActionsContainer, 
+                          options: Union[Mapping[str, T], 
+                                         type[T], 
+                                         tuple[type[T], Mapping[str, T]]],
                           name: str, *args: str, 
                           **kwargs: Any) -> None:
-        options = {k:v for k,v in options.items()}
+        def to_mapping(etype: type[T], extras: Mapping[str, T]) -> Mapping[str, T]:
+            assert issubclass(etype, Enum), f"{etype} not an enum type"
+            m = {k:v for k,v in extras.items()}
+            seen: dict[str, Union[T, Unset]] = {k: v for k,v in m.items()}
+
+            def check(s: str, val: T) -> None:
+                old = seen.get(s)
+                if old is None or old is val:
+                    seen[s] = val
+                else:
+                    seen[s] = UNSET
+                    
+            for name,val in etype.__members__.items():
+                v = cast(T, val)
+                check(name, v)
+                check(name.upper(), v)
+                check(name.lower(), v)
+            
+            result = {k:v for k,v in seen.items() if v is not UNSET}
+            return result
+        
+        
+            
+        if isinstance(options, type): 
+            options = to_mapping(options, {})
+        elif isinstance(options, tuple):
+            options = to_mapping(*options)
+        else:
+            options = {k:v for k,v in options.items()}
         option_desc = conj_str(sorted(f"'{k}'" for k in options.keys()))
         def not_an_option(prefix: str, suffix: Optional[str] = None) -> str:
             if suffix is None:
@@ -457,16 +521,17 @@ class ConfigParam(Generic[T]):
             choices = sorted(options.keys())
             kwargs['choices'] = choices
             
+        opts = options
         def to_default(dv: T) -> Union[Unset, str]:
-            for k,v in options.items():
+            for k,v in opts.items():
                 if v == dv:
                     return k
             not_an_option(f"Default value for {self.full_name} [{dv}]", "ignoring")
             return UNSET
         def transform(v: Any) -> T:
-            if not v in  options:
+            if not v in  opts:
                 raise ArgumentTypeError(not_an_option(f"Argument {c} for {self.full_name}"))
-            return options[v]
+            return opts[v]
         self.add_arg_to(parser, name, *args,
                         to_default=to_default, 
                         transform=transform, **kwargs)
@@ -474,3 +539,14 @@ class ConfigParam(Generic[T]):
     @classmethod
     def set_namespace(cls, namespace: Namespace) -> None:
         cls._namespace = namespace
+        
+
+if __name__ == '__main__':
+    class TestConfig:
+        int_cp = ConfigParam(5)     
+        
+    print(TestConfig.int_cp())
+    with TestConfig.int_cp >> 7:
+        print(TestConfig.int_cp())
+    print(TestConfig.int_cp())
+        

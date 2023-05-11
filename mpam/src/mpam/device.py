@@ -3348,7 +3348,6 @@ class TemperatureControl(ABC, BinaryComponent['TemperatureControl']):
 
     def __init__(self, board: Board, *,
                  locations: Sequence[TempControllable],
-                 polling_interval: Time,
                  limit: Optional[TemperaturePoint],
                  # max_heat: Optional[TemperaturePoint],
                  # min_chill: Optional[TemperaturePoint],
@@ -3376,7 +3375,7 @@ class TemperatureControl(ABC, BinaryComponent['TemperatureControl']):
         # self.max_heat_temperature = max_heat
         # self.min_chill_temperature = min_chill
         self._mode = TemperatureMode.AMBIENT
-        self.polling_interval = polling_interval
+        self.polling_interval = Config.polling_interval()
         self._lock = RLock()
         # self._current_op_key = None
         for loc in locations:
@@ -4613,17 +4612,18 @@ class PowerSupply(BinaryComponent['PowerSupply']):
         return m
 
     def __init__(self, board: Board, *,
-                 min_voltage: Voltage,
-                 max_voltage: Voltage,
-                 initial_voltage: Voltage,
-                 mode: PowerMode,
-                 can_toggle: bool = True,
-                 can_change_mode: bool = True,
                  on_high_voltage: ErrorHandler = PRINT,
                  on_low_voltage: ErrorHandler = PRINT,
                  on_illegal_toggle: ErrorHandler = PRINT,
                  on_illegal_mode_change: ErrorHandler = PRINT,
                  ) -> None:
+        min_voltage = Config.ps_min_voltage()
+        max_voltage = Config.ps_max_voltage()
+        initial_voltage = Config.ps_initial_voltage()
+        mode = Config.ps_initial_mode()
+        can_toggle = Config.ps_can_toggle()
+        can_change_mode = Config.ps_can_change_mode()
+
         initial_state = initial_voltage > 0
         super().__init__(board=board,
                          state=DummyState(initial_state=OnOff.from_bool(initial_state)),
@@ -4703,32 +4703,13 @@ class FixedPowerSupply(PowerSupply):
         print("Power supply voltage level cannot be changed")
         return MISSING
 
-    def __init__(self, board: Board, *,
-                 voltage_level: Voltage = 0*volts,
-                 is_toggleable: bool = False,
-                 changeable_mode: bool = False,
-                 mode: PowerMode = PowerMode.DC) -> None:
-        self.is_toggleable = is_toggleable
-        self.voltage_level = voltage_level
-        self.expected_state = OnOff.from_bool(voltage_level > 0)
+    def __init__(self, board: Board) -> None:
+        self.is_toggleable = Config.ps_can_toggle()
+        self.voltage_level = Config.ps_initial_voltage()
+        self.expected_state = OnOff.from_bool(self.voltage_level > 0)
 
-        super().__init__(board,
-                         min_voltage=0*volts,
-                         max_voltage=voltage_level,
-                         initial_voltage=voltage_level,
-                         can_change_mode=changeable_mode,
-                         mode=mode)
-
-        # def no_voltage_changes(ps: PowerSupply, v: Voltage) -> MissingOr[Voltage]:
-        #     if not isinstance(ps, FixedPowerSupply):
-        #         return v
-        #     if v == self.voltage_level:
-        #         return v
-        #     if is_toggleable and v == 0:
-        #         return v
-        #     print("Power supply voltage level cannot be changed")
-        #     return MISSING
-        # PowerSupply.voltage.transform(no_voltage_changes)
+        with Config.ps_min_voltage >> 0*volts:
+            super().__init__(board)
 
 
 
@@ -4745,7 +4726,13 @@ class FixedPowerSupply(PowerSupply):
 class Fan(BinaryComponent["Fan"]):
     # There's nothing special about fans, but we make it a separate type for
     # type checking and value printing purposes.
-    ...
+    def __init__(self, board: Board,
+                 live: bool = True,
+                 on_illegal_toggle: ErrorHandler = PRINT,
+                 ) -> None:
+        super().__init__(board, state=Config.fan_initial_state(),
+                         can_toggle=Config.fan_can_toggle(),
+                         live=live, on_illegal_toggle=on_illegal_toggle)
 
 class ChangeJournal:
     turned_on: Final[set[DropLoc]]
@@ -4794,8 +4781,24 @@ of such values (as lower and upper values, respectively).
 """
 
 class Config:
+    local_ip_addr: Final = ConfigParam[Optional[str]](None)
+    subnet: Final = ConfigParam[Optional[str]](None)
+    subnet_mask: Final = ConfigParam[Optional[str]](None)
+    
     off_on_delay: Final = ConfigParam[Time](Time.ZERO)
     extraction_point_splash_radius: Final = ConfigParam[int](0)
+    
+    polling_interval: Final = ConfigParam[Time]()
+    ps_min_voltage: Final = ConfigParam[Voltage]()
+    ps_max_voltage: Final = ConfigParam[Voltage]()
+    ps_initial_voltage: Final = ConfigParam(0*volts)
+    ps_initial_mode: Final = ConfigParam[PowerMode]()
+    ps_can_toggle: Final = ConfigParam(True)
+    ps_can_change_mode: Final = ConfigParam(False)
+    fan_initial_state: Final = ConfigParam(OnOff.OFF)
+    fan_can_toggle: Final = ConfigParam(True)
+    
+    
 
 class Board(SystemComponent):
     pads: Final[dict[XYCoord, Pad]]
@@ -5395,11 +5398,7 @@ class System:
         return ip
     
 
-    def __init__(self, *, board: Board,
-                 local_ip: Optional[str] = None,
-                 subnet: Optional[str] = None,
-                 subnet_mask: Optional[str] = None
-                 ):
+    def __init__(self, *, board: Board) -> None:
         self.board = board
         self.engine = Engine(default_clock_interval=board.drop_motion_time)
         self.clock = Clock(self)
@@ -5407,9 +5406,9 @@ class System:
         self._batch_lock = Lock()
         self._cpts_lock = Lock()
         self.components = []
-        self._requested_ip = local_ip
-        self._subnet = subnet
-        self._subnet_mask = subnet_mask
+        self._requested_ip = Config.local_ip_addr()
+        self._subnet = Config.subnet()
+        self._subnet_mask = Config.subnet_mask()
         self.terminal_interaction = AsyncFunctionSerializer(thread_name="Terminal interaction thread")
         
         board.join_system(self)
@@ -5536,8 +5535,8 @@ class System:
                                control_setup=control_setup,
                                control_fraction=control_fraction,
                                macro_file_names=macro_file_names,
-                               cmd_line_args=cmd_line_args,
-                               from_code=config_params
+                               # cmd_line_args=cmd_line_args,
+                               # from_code=config_params
                                )
         self.monitor = monitor
         # print(f"System's monitor is {monitor}")

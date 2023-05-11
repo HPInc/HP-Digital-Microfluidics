@@ -10,10 +10,12 @@ from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
     WellShape, Pad, WellGate, WellPad, StateDefs
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
-from mpam.pipettor import Pipettor
 from mpam.types import OnOff, XYCoord, Orientation, Dir, State
 from quantities.SI import uL, ms
-from quantities.dimensions import Time
+from erk.config import ConfigParam
+
+class Config:
+    device = ConfigParam[Optional[str]](None)
 
 
 class Electrode(State[OnOff]):
@@ -115,16 +117,14 @@ class Board(device.Board):
                     shape=shape
                     )
     
-    def __init__(self, dev : Optional[str], *,
-                 off_on_delay: Time = Time.ZERO) -> None:
+    def __init__(self) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         super().__init__(pads=pad_dict, 
                          wells=wells,
                          orientation=Orientation.NORTH_NEG_EAST_POS,
-                         drop_motion_time=500*ms,
-                         off_on_delay=off_on_delay)
-        self._dev = dev
+                         drop_motion_time=500*ms)
+        self._dev = Config.device()
         self._states = bytearray(128)
         self._port= None
         for x in range(1,15):
@@ -203,10 +203,8 @@ class PlatformTask(PlatformChoiceTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
-        off_on_delay: Time = args.off_on_delay
-        port: Optional[str] = args.port
-        return Board(dev=port, off_on_delay=off_on_delay)
+                   ) -> Board: # @UnusedVariable
+        return Board()
         
     def add_args_to(self, 
                      group: _ArgumentGroup, 
@@ -214,11 +212,9 @@ class PlatformTask(PlatformChoiceTask):
                      *,
                      exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
-        group.add_argument('-p', '--port',
-                           help='''
-                           The communication port (e.g., COM5) to use to talk to the board.
-                           By default, only the display is run
-                           ''')
+        Config.device.add_arg_to(group,'-p', '--port',
+                                 default_desc="to only run the display",
+                                 help="The communication port (e.g., COM5) to use to talk to the board.")
         
         
     def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable
