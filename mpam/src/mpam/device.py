@@ -29,12 +29,11 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
     NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer
-from quantities.SI import sec, ms, volts, deg_C
+from quantities.SI import volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
-from argparse import Namespace
 from erk.stringutils import map_str
 from quantities.US import deg_F
 from erk.network import local_ipv4_addr
@@ -5504,16 +5503,9 @@ class System:
 
     def run_monitored(self, fn: Callable[[System],T],
                       *,
-                      hold_display_for: Optional[Time] = 0*sec,
-                      min_time: Optional[Time] = 0*sec,
-                      max_time: Optional[Time] = None,
-                      update_interval: Time = 20*ms,
                       control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                       control_fraction: Optional[float] = None,
-                      macro_file_names: Optional[list[str]] = None,
                       thread_name: Optional[str] = None,
-                      cmd_line_args: Optional[Namespace] = None,
-                      config_params: Optional[Mapping[str, Any]] = None,
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -5529,23 +5521,14 @@ class System:
         if thread_name is None:
             thread_name = f"Monitored task @ {time_now()}"
         thread = Thread(target=run_it, name=thread_name)
-        if cmd_line_args is None:
-            cmd_line_args = Namespace()
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
                                control_fraction=control_fraction,
-                               macro_file_names=macro_file_names,
-                               # cmd_line_args=cmd_line_args,
-                               # from_code=config_params
                                )
         self.monitor = monitor
         # print(f"System's monitor is {monitor}")
         thread.start()
-        monitor.keep_alive(sentinel = lambda : done.is_set(),
-                           hold_display_for = hold_display_for,
-                           min_time = min_time,
-                           max_time = max_time,
-                           update_interval = update_interval)
+        monitor.keep_alive(sentinel = lambda : done.is_set())
 
         return val
     

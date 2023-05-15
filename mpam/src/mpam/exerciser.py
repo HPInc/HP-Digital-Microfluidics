@@ -28,21 +28,15 @@ from mpam.cmd_line import time_arg, units_arg, logging_spec_arg, ip_addr_arg,\
 from erk.config import ConfigParam
 from mpam import device, pipettor
 from functools import cache
+from mpam.interpreter import DMLInterpreter
 
 
 # import logging
 logger = logging.getLogger(__name__)
 
 class Config:
-    initial_delay: Final = ConfigParam(0*ms)
-    hold_display: Final = ConfigParam[Optional[Time]](0*ms)
-    min_time: Final = ConfigParam[Optional[Time]](0*ms)
-    max_time: Final = ConfigParam[Optional[Time]](None)
-    update_interval: Final = ConfigParam(20*ms)
     clock_interval: Final = ConfigParam[Time](100*ms)
     start_clock: Final = ConfigParam(True)
-    use_display: Final = ConfigParam(True)
-    macro_files: Final = ConfigParam[list[str]]([])
     units: Final = ConfigParam[Optional[Sequence[Sequence[UnitExpr]]]]([[uL,ms,V]])
     log_config: Final = ConfigParam[Optional[str]](None)
     log_levels: Final = ConfigParam[list[LoggingSpec]]([])
@@ -168,6 +162,7 @@ class Exerciser(ABC):
         return self
 
     def run_task(self, task: Task, args: Namespace, *, board: Board) -> None:
+        from mpam import monitor
         system = System(board=board)
 
         def prepare_and_run() -> None:
@@ -180,27 +175,21 @@ class Exerciser(ABC):
 
         def do_run() -> None:
             event = Event()
-            system.call_after(Config.initial_delay(), lambda: event.set())
+            system.call_after(monitor.Config.initial_delay(), lambda: event.set())
             event.wait()
             prepare_and_run()
 
         def make_controls(monitor: BoardMonitor, spec: SubplotSpec) -> Any:
             return task.control_setup(monitor, spec, self)
 
-        if not Config.use_display():
+        if not monitor.Config.use_display():
             with system:
                 do_run()
             system.shutdown()
         else:
             system.run_monitored(lambda _: do_run(),
-                                 hold_display_for=Config.hold_display(),
-                                 min_time=Config.min_time(),
-                                 max_time=Config.max_time(),
-                                 update_interval=Config.update_interval(),
                                  control_setup = make_controls,
-                                 macro_file_names = Config.macro_files(),
-                                 thread_name = f"Monitored {task.name}",
-                                 cmd_line_args = args)
+                                 thread_name = f"Monitored {task.name}")
 
     def parse_args(self,
                    args: Optional[Sequence[str]]=None,
@@ -249,7 +238,7 @@ class Exerciser(ABC):
         
         devcon = device.Config
 
-        Config.update_interval.add_arg_to(group, '-cs', '--clock-speed', type=time_arg, metavar='TIME',
+        Config.clock_interval.add_arg_to(group, '-cs', '--clock-speed', type=time_arg, metavar='TIME',
                                           default_desc = lambda t: self.fmt_time(t, units=ms),
                                           help="The amount of time between clock ticks.")
         devcon.off_on_delay.add_arg_to(group, '-ood','--off-on-delay', 
@@ -266,31 +255,6 @@ class Exerciser(ABC):
                            Don't start the clock automatically. Note that operations that are not gated
                            by the clock may still run.
                            ''')
-        Config.initial_delay.add_arg_to(group, '--initial-delay', type=time_arg, metavar='TIME',
-                                        default_desc = lambda t: self.fmt_time(t),
-                           help=f'''
-                           The amount of time to wait before running the task.
-                           ''')
-        Config.hold_display.add_arg_to(group, '--hold-display-for', type=time_arg, metavar='TIME',
-                                       default_desc = lambda t: self.fmt_time(t, on_None="to wait forever"),
-                           help="The minimum amount of time to leave the display up after the task has finished")
-        Config.min_time.add_arg_to(group, '--min-time', type=time_arg, metavar='TIME',
-                                   default_desc = lambda t: self.fmt_time(t, on_None="to wait forever"),
-                           help="The minimum amount of time to leave the display up, even if the task has finished")
-        Config.max_time.add_arg_to(group, '--max-time', type=time_arg, metavar='TIME',
-                                   default_desc = lambda t: self.fmt_time(t, on_None="no limit"),
-                           help="The maximum amount of time to leave the display up, even if the task hasn't finished")
-        Config.use_display.add_arg_to(group, '-nd', '--no-display', action='store_false', dest='use_display',
-                                      default_desc = lambda b: f"to {'' if b else 'not '} use the on-screen display",
-                            help='Run the task without the on-screen display')
-        Config.update_interval.add_arg_to(group, '--update-interval', type=time_arg, metavar='TIME', 
-                                          default_desc = lambda t: self.fmt_time(t, units=ms),
-                           help="The maximum amount of time between display updates.")
-        Config.macro_files.add_arg_to(group, '--macro-file', action='append',
-                                      # type=FileType(),
-                                      metavar='FILE',
-                                      default_desc = lambda s: "no macro files" if s is None else conj_str([f"'{f}'" for f in s]),
-                                      help='A file containing DMF macro definitions.')
         devcon.extraction_point_splash_radius.add_arg_to(group, '-ep-rad', '--extraction-point-splash-radius', 
                                                          type=int, metavar="PADS",
                                                          help=f'''
@@ -329,18 +293,13 @@ class Exerciser(ABC):
                                printed value (or the smallest if none are
                                smaller). 
                                """)
-        display_group = parser.add_argument_group("display_options")
+        display_group = parser.add_argument_group("display options")
         BoardMonitor.add_args_to(display_group, parser)
+        input_group = parser.add_argument_group("input options")
+        DMLInterpreter.add_args_to(input_group, parser)
         debug_group = parser.add_argument_group("debugging options")
         Config.trace_blobs.add_arg_to(debug_group, "--trace-blobs", action="store_true",
                                       help=f"Trace blobs.")
-        # log_group = group.add_mutually_exclusive_group()
-        # level_choices = ['debug', 'info', 'warning', 'error', 'critical']
-        # log_group.add_argument('--log-level', metavar='LEVEL',
-        #                        choices=level_choices,
-        #                        help=f'''
-        #                        Configure the logging level.  Options are {conj_str([f'"{s}"' for s in level_choices])}
-        #                        ''')
         Config.log_config.add_arg_to(group, '--log-config', metavar='FILE',
                                        help='Configuration file for logging')
         Config.log_levels.add_arg_to(group, '--log-level', metavar='SPEC', type=logging_spec_arg, action='append',

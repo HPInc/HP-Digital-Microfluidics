@@ -63,6 +63,10 @@ class NoSuchComponentError(EvaluationError):
     def __init__(self, kind: str, which: int, max_val: int) -> None:
         super().__init__(f"{kind} #{which} does not exist.  Max is {max_val}.")
         
+class NoSuchPadError(EvaluationError):
+    def __init__(self, x: int, y: int) -> None:
+        super().__init__(f"No pad at ({x}, {y}).")
+        
 class UnknownUnitDimensionError(CompilationError):
     unit: Final[Unit]
     dimensionality: Final[Dimensionality]
@@ -3041,9 +3045,12 @@ class DMFCompiler(DMFVisitor):
         
         fn = Functions["COORD"]
         fn.format_type_expr_using(2, lambda x,y: f"({x}, {y})")
-        def find_pad(env: Environment, x: int, y: int) -> Pad:
+        def find_pad(env: Environment, x: int, y: int) -> MaybeError[Pad]:
             board = env.board
-            return board.pad_at(x, y)
+            try:
+                return board.pad_at(x, y)
+            except KeyError:
+                return NoSuchPadError(x, y)
         fn.register((Type.INT, Type.INT), Type.PAD, WithEnv(find_pad))
         
         fn = Functions["MIX"]

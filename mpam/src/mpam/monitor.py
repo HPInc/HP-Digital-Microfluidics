@@ -26,7 +26,6 @@ from matplotlib.text import Annotation
 from matplotlib.widgets import Button, TextBox
 
 from erk.basic import Count
-from langsup.dmf_lang import DMFInterpreter
 from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
     TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate,\
@@ -35,23 +34,31 @@ from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent
 from quantities.SI import ms, sec
-from quantities.core import Unit
+from quantities.core import Unit, UEorSeq
 from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C, TemperaturePoint
 from quantities.timestamp import time_now, Timestamp
 from weakref import WeakKeyDictionary
 from erk.stringutils import match_width, conj_str
 import traceback
-from langsup import dmf_lang
 from argparse import _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
 from erk.config import ConfigParam
+from mpam.cmd_line import time_arg
+from mpam.interpreter import DMLInterpreter
 
 logger = logging.getLogger(__name__)
 
 class Config:
     highlight_reservations: Final = ConfigParam(False)
     trace_clicks: Final = ConfigParam(False)
+    initial_delay: Final = ConfigParam(0*ms)
+    hold_display: Final = ConfigParam[Optional[Time]](0*ms)
+    min_time: Final = ConfigParam[Optional[Time]](0*ms)
+    max_time: Final = ConfigParam[Optional[Time]](None)
+    update_interval: Final = ConfigParam(20*ms)
+    use_display: Final = ConfigParam(True)
+    
 
 class ClickableMonitor(ABC):
     component: Final[BinaryComponent]
@@ -907,7 +914,6 @@ class BoardMonitor:
     close_event: Final[Event]
     legend: Final[ReagentLegend]
     click_handler: Final[ClickHandler]
-    macro_file_names: Final[Sequence[str]]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
     # config_params: Final[ConfigParams]
@@ -949,8 +955,7 @@ class BoardMonitor:
                  # cmd_line_args: Optional[Namespace] = None,
                  # from_code: Optional[Mapping[str, Any]] = None,
                  control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
-                 control_fraction: Optional[float] = None,
-                 macro_file_names: Optional[list[str]] = None) -> None:
+                 control_fraction: Optional[float] = None) -> None:
         # print(f"Creating {self}.")
         self.board = board
         # self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
@@ -963,7 +968,6 @@ class BoardMonitor:
         self.click_id = {}
         self.close_event = Event()
         self.click_handler = ClickHandler(self)
-        self.macro_file_names = macro_file_names or []
 
         self.no_bounds = True
 
@@ -1036,10 +1040,37 @@ class BoardMonitor:
 
 
         self.figure.canvas.draw()
+        
+    @classmethod
+    def fmt_time(self, t: Optional[Time], *,
+                 units: Optional[UEorSeq[Time]] = None,
+                 on_None: str = "unspecified") -> str:
+        from mpam.exerciser import Exerciser
+        return Exerciser.fmt_time(t, units=units, on_None=on_None)
 
     @classmethod
     def add_args_to(cls, group: _ArgumentGroup,
                          parser: ArgumentParser) -> None: # @UnusedVariable
+        Config.initial_delay.add_arg_to(group, '--initial-delay', type=time_arg, metavar='TIME',
+                                        default_desc = lambda t: cls.fmt_time(t),
+                           help=f'''
+                           The amount of time to wait before running the task.
+                           ''')
+        Config.hold_display.add_arg_to(group, '--hold-display-for', type=time_arg, metavar='TIME',
+                                       default_desc = lambda t: cls.fmt_time(t, on_None="to wait forever"),
+                           help="The minimum amount of time to leave the display up after the task has finished")
+        Config.min_time.add_arg_to(group, '--min-time', type=time_arg, metavar='TIME',
+                                   default_desc = lambda t: cls.fmt_time(t, on_None="to wait forever"),
+                           help="The minimum amount of time to leave the display up, even if the task has finished")
+        Config.max_time.add_arg_to(group, '--max-time', type=time_arg, metavar='TIME',
+                                   default_desc = lambda t: cls.fmt_time(t, on_None="no limit"),
+                           help="The maximum amount of time to leave the display up, even if the task hasn't finished")
+        Config.use_display.add_arg_to(group, '-nd', '--no-display', action='store_false', dest='use_display',
+                                      default_desc = lambda b: f"to {'' if b else 'not '} use the on-screen display",
+                            help='Run the task without the on-screen display')
+        Config.update_interval.add_arg_to(group, '--update-interval', type=time_arg, metavar='TIME', 
+                                          default_desc = lambda t: cls.fmt_time(t, units=ms),
+                           help="The maximum amount of time between display updates.")
         Config.highlight_reservations.add_arg_to(group, '--highlight-reservations', action=BooleanOptionalAction,
                                                  help="Highlight reserved pads on the display.")
         Config.trace_clicks.add_arg_to(group, '--trace-clicks', action=BooleanOptionalAction,
@@ -1187,25 +1218,13 @@ class BoardMonitor:
 
         apply = Button(fig.add_subplot(grid[0,1]), "Do it")
 
-        macro_files: Sequence[str] = self.macro_file_names
-        interp = DMFInterpreter(macro_files, board=self.board)
+        interp = DMLInterpreter(board=self.board, cache_val_as="last")
         def on_press(event: KeyEvent) -> None: # @UnusedVariable
             expr = text.text.strip()
-            def print_result(pair: tuple[dmf_lang.Type, Any]) -> None:
-                ret_type, val = pair
-                if ret_type is dmf_lang.Type.ERROR:
-                    # assert isinstance(val, dmf_lang.EvaluationError)
-                    print(f"  Caught exception ({type(val).__name__}): {val}")
-                elif ret_type is dmf_lang.Type.NO_VALUE:
-                    print(f"  Interactive command returned without value.")
-                else:
-                    print(f"  Interactive cmd val ({ret_type.name}): {val}")
             if len(expr) > 0:
-                print(f"Interactive cmd: {expr}")
                 text.add_to_history(expr)
                 try:
-                    (interp.evaluate(expr, cache_as="last")
-                        .then_call(print_result))
+                    interp.eval_and_print(expr)
                     text.set_val("")
                 except RuntimeError as ex:
                     header = f"Exception caught evaluating '{expr}':"
@@ -1285,11 +1304,12 @@ class BoardMonitor:
                 cb()
 
     def keep_alive(self, *,
-                   hold_display_for: Optional[Time] = 0*sec,
-                   min_time: Optional[Time] = 0*sec,
-                   max_time: Optional[Time] = None,
                    sentinel: Optional[Callable[[], bool]] = None,
-                   update_interval: Time = 20*ms) -> None:
+                   ) -> None:
+        min_time = Config.min_time()
+        max_time = Config.max_time()
+        update_interval = Config.update_interval()
+        hold_display_for = Config.hold_display()
         now = time_now()
         kill_at = None if max_time is None else now+max_time
         live_through = None if min_time is None else now+min_time
