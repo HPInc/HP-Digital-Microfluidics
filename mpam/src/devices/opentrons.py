@@ -24,16 +24,46 @@ from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
 
 from mpam import exerciser
-from argparse import Namespace, _ArgumentGroup
+from argparse import _ArgumentGroup
 
 import fileinput
 from tempfile import NamedTemporaryFile
 import logging
 import re
+from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
 
 JSONObj = dict[str, Any]
+
+class ReagentUse(Enum):
+    INPUT = auto()
+    OUTPUT = auto()
+    BIDI = auto()
+
+class ReagentSource(NamedTuple):
+    plate: int
+    well: str
+    quantity: Volume
+    use: ReagentUse = ReagentUse.INPUT
+    
+    def as_json(self) -> JSONObj:
+        use = self.use
+        u = "input" if use is ReagentUse.INPUT else "output" if use is ReagentUse.OUTPUT else "bidi"
+        return { 
+                "plate": self.plate, 
+                "well": self.well,
+                "quantity": self.quantity.as_number(uL),
+                "use": u 
+                }
+
+class Config:
+    robot_ip: Final = ConfigParam[str]()
+    configuration = ConfigParam[Union[str, JSONObj]]()
+    reagents = ConfigParam[Optional[Union[str, dict[Reagent, Sequence[ReagentSource]]]]](None)
+    listener_port = ConfigParam[Union[str, int]](8087)
+    robot_port = ConfigParam[Union[str, int]](31950)
+    board_def = ConfigParam[Optional[str]](None)
 
 class VolAccum:
     total: Volume = Volume.ZERO
@@ -527,26 +557,7 @@ class ProtocolManager(Thread):
             response = self.delete_request(f"runs/{self.session_id}")
             self.trace_response("Deleted session", response)
             
-class ReagentUse(Enum):
-    INPUT = auto()
-    OUTPUT = auto()
-    BIDI = auto()
     
-class ReagentSource(NamedTuple):
-    plate: int
-    well: str
-    quantity: Volume
-    use: ReagentUse = ReagentUse.INPUT
-    
-    def as_json(self) -> JSONObj:
-        use = self.use
-        u = "input" if use is ReagentUse.INPUT else "output" if use is ReagentUse.OUTPUT else "bidi"
-        return { 
-                "plate": self.plate, 
-                "well": self.well,
-                "quantity": self.quantity.as_number(uL),
-                "use": u 
-                }
         
 class WellPlate:
     pipettor: Final[OT2]
@@ -631,26 +642,28 @@ class OT2(Pipettor):
     _receiving_update: bool
     _dirty_wells: Optional[set[WPWell]] = None
     
-    _listener_port: Final[Union[str,int]]
+    _listener_port: Final[int]
     
     def __init__(self, *,
-                 robot_ip_addr: str,
-                 robot_port: Union[str, int] = 31950,
-                 listener_port: Union[str, int] = 8087,
-                 config: Union[str, JSONObj],
-                 reagents: Optional[Union[str, dict[Reagent, Sequence[ReagentSource]]]] = None,
-                 board_def: Optional[str] = None,
                  name: str = "OT-2") -> None:
         super().__init__(name=name)
         self._lock = RLock()
         self._receiving_update = False
         
-        self._listener_port = listener_port
+        robot_ip_addr = Config.robot_ip()
+        robot_port = Config.robot_port()
+        listener_port = Config.listener_port()
+        config = Config.configuration()
+        reagents = Config.reagents() 
+        board_def = Config.board_def()
         
         if isinstance(listener_port, str):
             listener_port = int(listener_port)
+        self._listener_port = listener_port
+        
         self.listener = Listener(port=listener_port,
                                  name = f"{name} listener")
+        
         if isinstance(robot_port, str):
             robot_port = int(robot_port)
         if isinstance(config, str):
@@ -761,32 +774,26 @@ class PipettorConfig(exerciser.PipettorConfig):
     def __init__(self) -> None:
         super().__init__("opentrons", aliases=("ot", "ot2"))
 
-    def create(self, args: Namespace) -> Pipettor:
-        ip: Optional[str] = args.ot_ip
-        config: Optional[str] = args.ot_config
-        reagents: Optional[str] = args.ot_reagents
-        port: int = args.ot_listener_port
+    def create(self) -> Pipettor:
 
-        if ip is None:
-            raise ValueError(f"--ot-ip must be specified to use the Opentrons pipettor")
-        if config is None:
-            raise ValueError(f"--ot-config must be specified to use the Opentrons pipettor")
-        pipettor = OT2(robot_ip_addr = ip,
-                       config = config,
-                       reagents = reagents,
-                       listener_port = port)
+        pipettor = OT2()
         return pipettor
     
     def add_args_to(self, group:_ArgumentGroup)->None:
         super().add_args_to(group)
         
-        group.add_argument("-otip", "--ot-ip", metavar="IP",
-                           help="The IP address of the Opentrons robot")
-        group.add_argument("-otc", "--ot-config", metavar="FILE",
-                           help="The config file for the the Opentrons robot")
-        group.add_argument("-otr", "--ot-reagents", metavar="FILE",
-                           help=f"The reagents JSON file for the the Opentrons robot")
-        default_local_port = 8087
-        group.add_argument("-otlp", "--ot-listener-port", metavar="PORT",
-                           type=int, default=default_local_port,
-                           help=f"The port for the local listener for the Opentrons robot")
+        Config.robot_ip.add_arg_to(group, "-otip", "--ot-ip", metavar="IP",
+                                   help="The IP address of the Opentrons robot")
+        Config.robot_port.add_arg_to(group, "-otrp", "--ot-port", metavar="PORT",
+                                    type=int, 
+                                    help=f"The port to call on the Opentrons robot")
+        Config.robot_ip.raise_on_no_default(lambda _cp: ValueError(f"--ot-ip must be specified to use the Opentrons pipettor"))
+
+        Config.configuration.add_arg_to(group, "-otc", "--ot-config", metavar="FILE",
+                                        help="The config file for the the Opentrons robot")
+        Config.configuration.raise_on_no_default(lambda _cp: ValueError(f"--ot-config must be specified to use the Opentrons pipettor"))
+        Config.reagents.add_arg_to(group, "-otr", "--ot-reagents", metavar="FILE",
+                                   help=f"The reagents JSON file for the the Opentrons robot")
+        Config.listener_port.add_arg_to(group, "-otlp", "--ot-listener-port", metavar="PORT",
+                                        type=int, 
+                                        help=f"The port for the local listener for the Opentrons robot")

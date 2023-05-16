@@ -12,24 +12,35 @@ from typing import Final, Union, Optional, Sequence, Any, Callable, \
 from matplotlib.gridspec import SubplotSpec
 
 from erk.stringutils import conj_str
-from mpam.device import Board, System
+from mpam.device import Board, System, PowerMode
 from mpam.monitor import BoardMonitor
 from mpam.types import PathOrStr, logging_levels, logging_formats, LoggingSpec,\
-    LoggingLevel
+    LoggingLevel, OnOff
 from quantities.SI import ms, minutes, hr, days, uL, secs, \
-    volts, deg_C
+    volts, deg_C, V
 from quantities.core import set_default_units, UnitExpr, UEorSeq
 from quantities.dimensions import Time
 from mpam.pipettor import Pipettor
 from erk.basic import ValOrFn
 from importlib import import_module
 from mpam.cmd_line import time_arg, units_arg, logging_spec_arg, ip_addr_arg,\
-    ip_subnet_arg
+    ip_subnet_arg, voltage_arg
+from erk.config import ConfigParam
+from mpam import device, pipettor
+from functools import cache
+from mpam.interpreter import DMLInterpreter
 
 
 # import logging
 logger = logging.getLogger(__name__)
 
+class Config:
+    clock_interval: Final = ConfigParam[Time](100*ms)
+    start_clock: Final = ConfigParam(True)
+    units: Final = ConfigParam[Optional[Sequence[Sequence[UnitExpr]]]]([[uL,ms,V]])
+    log_config: Final = ConfigParam[Optional[str]](None)
+    log_levels: Final = ConfigParam[list[LoggingSpec]]([])
+    trace_blobs: Final = ConfigParam(False)
     
 
 class Task(ABC):
@@ -37,14 +48,12 @@ class Task(ABC):
     description: Final[str]
     aliases: Final[Sequence[str]]
     
-    default_initial_delay: Time = 0*secs
-    default_hold_display: Optional[Time] = 0*ms
-    default_min_time: Optional[Time] = 0*ms
-    default_max_time: Optional[Time] = None
-    default_update_interval: Time = 20*ms
-    # default_off_on_delay: Time = 0*ms
-    default_extraction_point_splash_radius: int = 0
-    default_clock_interval=100*ms    
+    # default_initial_delay: Time = 0*secs
+    # default_hold_display: Optional[Time] = 0*ms
+    # default_min_time: Optional[Time] = 0*ms
+    # default_max_time: Optional[Time] = None
+    # default_update_interval: Time = 20*ms
+    # default_clock_interval=100*ms    
 
     def __init__(self, name: str, description: str, *,
                  aliases: Optional[Sequence[str]] = None) -> None:
@@ -54,6 +63,9 @@ class Task(ABC):
         
     @abstractmethod
     def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
+        ...
+        
+    def setup_config_defaults(self) -> None:
         ...
 
     def add_args_to(self, group: _ArgumentGroup, # @UnusedVariable
@@ -70,7 +82,18 @@ class Task(ABC):
     
     def available_wells(self, exerciser: Exerciser) -> Sequence[int]:
         return exerciser.available_wells()
-
+    
+class _DeferredSubtaskParser(ArgumentParser):
+    def __init__(self, *,
+                 finish: Callable[[ArgumentParser], Any], 
+                 **kwargs: Any) -> None:
+        self.finish = finish
+        self.parser = ArgumentParser(**kwargs)
+    def parse_known_args(self, args: Optional[Sequence[str]]=None, 
+                         namespace: Optional[Namespace]=None) -> tuple[Namespace, list[str]]:
+        self.finish(self.parser)
+        return self.parser.parse_known_args(args, namespace)
+    
 class Exerciser(ABC):
     parser: Final[ArgumentParser]
     subparsers: Final[Optional[_SubParsersAction]]
@@ -88,6 +111,7 @@ class Exerciser(ABC):
             subparsers = None
         else:
             subparsers = self.parser.add_subparsers(help="Tasks", dest='task_name', required=True, 
+                                                    parser_class=_DeferredSubtaskParser,
                                                     metavar=self._task_metavar())
         self.subparsers = subparsers
         
@@ -114,6 +138,7 @@ class Exerciser(ABC):
         # will be printed correctly by parse_args()
         set_default_units(ms, uL, deg_C, volts)
         
+        task.setup_config_defaults()
         task.add_args_to(group, parser, exerciser=self)
         self.add_common_args_to(parser, task=task)
         parser.set_defaults(task=task)
@@ -127,55 +152,50 @@ class Exerciser(ABC):
         name = task.name if name is None else name
         desc = task.description if description is None else description
         aliases = task.aliases if aliases is None else aliases
-        parser = subparsers.add_parser(name, help=desc, description=desc, aliases=aliases)
-        self.setup_task(task, parser=parser)
+        def finish(parser: ArgumentParser) -> None:
+            self.setup_task(task, parser=parser)
+        # add_parser turns around and passes all keywords into its parser_class,
+        # which can require more keywords (as _DefaultSubtaskParser does), but
+        # its .pyi doesn't allow that.
+        subparsers.add_parser(name, help=desc, description=desc, aliases=aliases, finish=finish) # type: ignore[call-arg]
         
         return self
 
     def run_task(self, task: Task, args: Namespace, *, board: Board) -> None:
-        system = System(board=board, 
-                        local_ip = args.local_ip,
-                        subnet = args.local_subnet,
-                        subnet_mask = args.local_subnet_mask
-                        )
+        from mpam import monitor
+        system = System(board=board)
 
         def prepare_and_run() -> None:
-            if args.start_clock:
-                system.clock.start(args.clock_speed)
+            interval = Config.clock_interval()
+            if Config.start_clock():
+                system.clock.start(interval)
             else:
-                system.clock.update_interval = args.clock_speed
+                system.clock.update_interval = interval
             task.run(board, system, args)
 
         def do_run() -> None:
             event = Event()
-            system.call_after(args.initial_delay, lambda: event.set())
+            system.call_after(monitor.Config.initial_delay(), lambda: event.set())
             event.wait()
             prepare_and_run()
 
         def make_controls(monitor: BoardMonitor, spec: SubplotSpec) -> Any:
             return task.control_setup(monitor, spec, self)
 
-        if not args.use_display:
+        if not monitor.Config.use_display():
             with system:
                 do_run()
             system.shutdown()
         else:
-            macro_files: Optional[list[str]] = args.macro_file
             system.run_monitored(lambda _: do_run(),
-                                 hold_display_for=args.hold_display_for,
-                                 min_time=args.min_time,
-                                 max_time=args.max_time,
-                                 update_interval=args.update_interval,
                                  control_setup = make_controls,
-                                 macro_file_names = macro_files,
-                                 thread_name = f"Monitored {task.name}",
-                                 cmd_line_args = args)
+                                 thread_name = f"Monitored {task.name}")
 
     def parse_args(self,
                    args: Optional[Sequence[str]]=None,
                    namespace: Optional[Namespace]=None) -> tuple[Task, Namespace]:
         ns = self.parser.parse_args(args=args, namespace=namespace)
-        Exerciser.setup_logging(levels=ns.log_level, file=ns.log_config)
+        Exerciser.setup_logging(levels=Config.log_levels(), file=Config.log_config())
 
         task: Task = ns.task
         return task, ns
@@ -184,9 +204,10 @@ class Exerciser(ABC):
                            args: Optional[Sequence[str]]=None,
                            namespace: Optional[Namespace]=None) -> None:
         task, ns = self.parse_args(args=args, namespace=namespace)
-        if ns.trace_blobs:
+        ConfigParam.set_namespace(ns)
+        if Config.trace_blobs():
             Board.trace_blobs = True
-        default_units: Optional[Sequence[Sequence[UnitExpr]]] = ns.units
+        default_units: Optional[Sequence[Sequence[UnitExpr]]] = Config.units()
         if default_units is not None:
             set_default_units(*(u for us in default_units for u in us))
         board = self.make_board(ns)
@@ -214,74 +235,55 @@ class Exerciser(ABC):
                            task: Task) -> None:
         group = parser.add_argument_group(title="common options")
         self.add_device_specific_common_args(group, parser)
+        
+        devcon = device.Config
 
-        group.add_argument('-cs', '--clock-speed', type=time_arg, default=task.default_clock_interval, metavar='TIME',
+        Config.clock_interval.add_arg_to(group, '-cs', '--clock-speed', type=time_arg, metavar='TIME',
+                                          default_desc = lambda t: self.fmt_time(t, units=ms),
+                                          help="The amount of time between clock ticks.")
+        devcon.off_on_delay.add_arg_to(group, '-ood','--off-on-delay', 
+                                       type=time_arg, metavar='TIME', 
                            help=f'''
-                           The amount of time between clock ticks.
-                           Default is {self.fmt_time(task.default_clock_interval, units=ms)}.
-                           ''')
-        group.add_argument('--paused', action='store_false', dest='start_clock',
+                            The amount of time to wait between turning pads off
+                            and turning pads on in a clock tick.  0ms is no
+                            delay.  Negative values means pads are turned on
+                            before pads are turned off. 
+                            ''')
+        Config.start_clock.add_arg_to(group, '--paused', action='store_false', dest='start_clock',
+                                      default_desc = lambda b: f"to {'' if b else 'not '} start the clock",
                            help='''
                            Don't start the clock automatically. Note that operations that are not gated
                            by the clock may still run.
                            ''')
-        group.add_argument('--initial-delay', type=time_arg, metavar='TIME', default=task.default_initial_delay,
-                           help=f'''
-                           The amount of time to wait before running the task.
-                           Default is {self.fmt_time(task.default_initial_delay)}.
-                           ''')
-        group.add_argument('--hold-display-for', type=time_arg, default=task.default_hold_display, metavar='TIME',
-                           help=f'''
-                           The minimum amount of time to leave the display up after the
-                           task has finished. Default is {self.fmt_time(task.default_hold_display, on_None="to wait forever")}.
-                           ''')
-        group.add_argument('--min-time', type=time_arg, default=task.default_min_time, metavar='TIME',
-                           help=f'''
-                           The minimum amount of time to leave the display up, even if the
-                           task has finished. Default is {self.fmt_time(task.default_min_time, on_None="to wait forever")}.
-                           ''')
-        group.add_argument('--max-time', type=time_arg, default=task.default_max_time, metavar='TIME',
-                           help=f'''
-                           The maximum amount of time to leave the display up, even if the
-                           task hasn't finished. Default is {self.fmt_time(task.default_max_time, on_None="no limit")}.
-                           ''')
-        group.add_argument('-nd', '--no-display', action='store_false', dest='use_display',
-                            help='Run the task without the on-screen display')
-        group.add_argument('--update-interval', type=time_arg, metavar='TIME', default=task.default_update_interval,
-                           help=f'''
-                           The maximum amount of time between display updates.
-                           Default is {self.fmt_time(task.default_update_interval,units=ms)}.
-                           ''')
-        group.add_argument('--macro-file', action='append',
-                           # type=FileType(),
-                           metavar='FILE',
-                           help='A file containing DMF macro definitions.')
-        group.add_argument('-ep-rad', '--extraction-point-splash-radius', type=int, metavar="PADS",
-                           default=task.default_extraction_point_splash_radius,
-                           help=f'''
-                           The radius (of square shape) around extraction point that is held in place while fluid is transferred (added or removed) from the extraction point.
-                           Default is {task.default_extraction_point_splash_radius}.
-                           ''')
-        group.add_argument('--local-ip', metavar="IP-ADDR", type=ip_addr_arg,
+        devcon.extraction_point_splash_radius.add_arg_to(group, '-ep-rad', '--extraction-point-splash-radius', 
+                                                         type=int, metavar="PADS",
+                                                         help=f'''
+                                                           The radius (of square shape) around extraction point that is held 
+                                                           in place while fluid is transferred 
+                                                           (added or removed) from the extraction point.
+                                                           ''')
+        devcon.local_ip_addr.add_arg_to(group, '--local-ip', metavar="IP-ADDR", type=ip_addr_arg,
                            help=f'''
                            The IP address to use as the local IP address for listeners as a dotted
                            quad ("x.x.x.x").  
                            ''') 
-        group.add_argument('--local-subnet', metavar="IP-ADDR", type=ip_subnet_arg,
+        devcon.subnet.add_arg_to(group, '--local-subnet', metavar="IP-ADDR", type=ip_subnet_arg,
                            help=f'''
                            The local subnet to match IP addresses against to select an IP address
                            for listeners on machines with more than one IP address.  The selected
                            address must match based on --local-subnet-mask.  If fewer than four components
                            are provided, trailing zeroes are assumed.
                            ''') 
-        group.add_argument('--local-subnet-mask', metavar="IP-ADDR", type=ip_addr_arg,
+        devcon.subnet_mask.add_arg_to(group, '--local-subnet-mask', metavar="IP-ADDR", type=ip_addr_arg,
                            help=f'''
                            The subnet mask to use for the local subnet for --local-subnet as a dotted
                            quad ("x.x.x.x").  If not provided, is the same length as --subnet.  (I.e.,
                            if --subnet is "192.168", the default will be "255.255.0.0", while if --subnet
                            is "192.168.0", the default will be "255.255.255.0".)
                            ''') 
-        group.add_argument('--units', type=units_arg, action='append',
+        Config.units.add_arg_to(group, '--units', type=units_arg, action='append',
+                                default_desc = lambda uss: ("unknown" if uss is None 
+                                                            else conj_str([u for us in uss for u in us])),
                            help="""
                                A comma- or space-separated list of units to use
                                for printing.  This argument may be specified
@@ -289,23 +291,18 @@ class Exerciser(ABC):
                                provided for a given dimension, the unit chosen
                                will be the largest one that's no bigger than the
                                printed value (or the smallest if none are
-                               smaller).  Default is equivalent to 'uL,ms,V'.
+                               smaller). 
                                """)
-        display_group = parser.add_argument_group("display_options")
+        display_group = parser.add_argument_group("display options")
         BoardMonitor.add_args_to(display_group, parser)
+        input_group = parser.add_argument_group("input options")
+        DMLInterpreter.add_args_to(input_group, parser)
         debug_group = parser.add_argument_group("debugging options")
-        debug_group.add_argument("--trace-blobs", action="store_true",
-                                 help=f"Trace blobs.")
-        # log_group = group.add_mutually_exclusive_group()
-        # level_choices = ['debug', 'info', 'warning', 'error', 'critical']
-        # log_group.add_argument('--log-level', metavar='LEVEL',
-        #                        choices=level_choices,
-        #                        help=f'''
-        #                        Configure the logging level.  Options are {conj_str([f'"{s}"' for s in level_choices])}
-        #                        ''')
-        group.add_argument('--log-config', metavar='FILE',
-                           help='Configuration file for logging')
-        group.add_argument('--log-level', metavar='SPEC', type=logging_spec_arg, action='append',
+        Config.trace_blobs.add_arg_to(debug_group, "--trace-blobs", action="store_true",
+                                      help=f"Trace blobs.")
+        Config.log_config.add_arg_to(group, '--log-config', metavar='FILE',
+                                       help='Configuration file for logging')
+        Config.log_levels.add_arg_to(group, '--log-level', metavar='SPEC', type=logging_spec_arg, action='append',
                            help=f""" 
                                     Configure logging.  The format is <level>,
                                     <name>:<level> or <level>:<format>, where
@@ -404,6 +401,9 @@ class BadPlatformDescError(RuntimeError):
         self.desc = desc
         self.error = error
 
+BoardKwdArgs = dict[str, Any]
+
+
 class PlatformChoiceTask(Task):
     
     def __init__(self, name: str, description: Optional[str] = None, *,
@@ -416,21 +416,19 @@ class PlatformChoiceTask(Task):
                 aliases = (name.lower(),)
         super().__init__(name, description, aliases=aliases)
         
-    def defaults_from(self, task: Task) -> None:
-        self.default_initial_delay = task.default_initial_delay
-        self.default_hold_display = task.default_hold_display
-        self.default_min_time = task.default_min_time
-        self.default_max_time = task.default_max_time
-        self.default_update_interval = task.default_update_interval
-        # self.default_off_on_delay = task.default_off_on_delay
-        self.default_extraction_point_splash_radius = task.default_extraction_point_splash_radius
-        self.default_clock_interval=task.default_clock_interval
+    # def defaults_from(self, task: Task) -> None:
+    #     self.default_initial_delay = task.default_initial_delay
+    #     self.default_hold_display = task.default_hold_display
+    #     self.default_min_time = task.default_min_time
+    #     self.default_max_time = task.default_max_time
+    #     self.default_update_interval = task.default_update_interval
+    #     self.default_clock_interval=task.default_clock_interval
 
         
     @abstractmethod
     def make_board(self, args: Namespace, *, # @UnusedVariable
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
+                   ) -> Board: # @UnusedVariable
         ...
         
     # available_wells() is implemented in Task, but we override it to make it
@@ -447,18 +445,70 @@ class PlatformChoiceTask(Task):
                     parser:ArgumentParser, # @UnusedVariable
                     *, 
                     exerciser:Exerciser)->None: # @UnusedVariable
-        group.add_argument('-ood','--off-on-delay', type=time_arg, metavar='TIME', 
-                           default=self.default_off_on_delay(),
-                           help=f'''
-                            The amount of time to wait between turning pads off
-                            and turning pads on in a clock tick.  0ms is no
-                            delay.  Negative values means pads are turned on
-                            before pads are turned off. Default is
-                            {self.fmt_time(self.default_off_on_delay())}.
-                            ''')
+        ...
         
-    def default_off_on_delay(self) -> Time:
-        return 0*ms
+    @cache
+    def heater_group(self, parser: ArgumentParser) -> _ArgumentGroup:
+        return parser.add_argument_group("heater options")
+        
+    def add_heater_args_to(self, parser: ArgumentParser, *, 
+                           exerciser: Exerciser) ->None : # @UnusedVariable
+        group = self.heater_group(parser)
+        device.Config.polling_interval.add_arg_to(group, '--polling-interval',
+                                                  type=time_arg, metavar="TIME",
+                                                  help="The polling interval for checking heater temperatures.")
+        
+    @cache
+    def power_supply_group(self, parser: ArgumentParser) -> _ArgumentGroup:
+        return parser.add_argument_group("power supply options")
+        
+    def add_power_supply_args_to(self, parser: ArgumentParser, *, 
+                           exerciser: Exerciser) ->None : # @UnusedVariable
+        group = self.power_supply_group(parser)
+        config = device.Config
+        config.ps_min_voltage.add_arg_to(group, '--ps-min-voltage', type=voltage_arg, metavar="VOLTAGE",
+                                         help="The minimum voltage for the power supply.")
+        config.ps_max_voltage.add_arg_to(group, '--ps-max-voltage', type=voltage_arg, metavar="VOLTAGE",
+                                         help="The maximum voltage for the power supply.")
+        config.ps_initial_voltage.add_arg_to(group, '--ps-initial-voltage', type=voltage_arg, metavar="VOLTAGE",
+                                             help="The initial voltage for the power supply.")
+        config.ps_can_toggle.add_bool_arg_to(group, '--ps-can-toggle',
+                                             help="Can the power supply be turned on and off?")
+        config.ps_initial_mode.add_choice_arg_to(group, PowerMode, '--ps-initial-mode',
+                                                 help="The initial mode for the power supply.")
+        config.ps_can_change_mode.add_bool_arg_to(group, '--ps-can-change-mode',
+                                                  help="Can the power supply's mode be changed between AC and DC?")
+        
+        
+    @cache
+    def fan_group(self, parser: ArgumentParser) -> _ArgumentGroup:
+        return parser.add_argument_group("fan options")
+        
+    def add_fan_args_to(self, parser: ArgumentParser, *, 
+                        exerciser: Exerciser) ->None : # @UnusedVariable
+        group = self.fan_group(parser)
+        config = device.Config
+        config.fan_initial_state.add_choice_arg_to(group, OnOff, '--fan-initial-state', metavar="STATE",
+                                                   help="The initial state of the fan.")
+        config.fan_can_toggle.add_bool_arg_to(group, '--fan-can-toggle',
+                                             help="Can the fan be turned on and off?")
+        
+    def add_kwd_arg(self, args: Namespace, kwds: BoardKwdArgs, arg: str, *,
+                    kwd: Optional[str] = None,
+                    transform: Optional[Callable[[Any], Any]] = None) -> None:
+        if kwd is None:
+            kwd = arg
+        val = getattr(args, arg)
+        if transform is not None:
+            val = transform(val)
+        kwds[kwd] = val
+
+
+    def board_kwd_args(self, args: Namespace, *,
+                       announce: bool = False) -> BoardKwdArgs: # @UnusedVariable
+        kwds: BoardKwdArgs = {}
+        
+        return kwds
     
     @classmethod
     def fmt_time(cls, t: Time) -> str:
@@ -516,9 +566,11 @@ class PipettorConfig(ABC):
         ...
     
     @abstractmethod    
-    def create(self, args: Namespace) -> Pipettor: # @UnusedVariable
+    def create(self) -> Pipettor: # @UnusedVariable
         ...
         
+    
+
 class PlatformChoiceExerciser(Exerciser):
     task: Final[Task]
     pipettors: Final[tuple[PipettorConfig, ...]]
@@ -555,7 +607,7 @@ class PlatformChoiceExerciser(Exerciser):
         for p in platforms:
             try:
                 platform = PlatformChoiceTask.from_desc(p)
-                platform.defaults_from(task)
+                # platform.defaults_from(task)
             except BadPlatformDescError as ex:
                 logger.warn(f"Platform option '{ex.desc}' '{ex.error}, ignoring")
                 continue
@@ -596,16 +648,16 @@ class PlatformChoiceExerciser(Exerciser):
     def _find_pipettor(self, name: str, args: Namespace) -> Pipettor:
         for p in self.pipettors:
             if name == p.name or name in p.aliases:
-                return p.create(args)
+                return p.create()
         choices = conj_str([p.names for p in self.pipettors])
         raise ValueError(f'"{name}" is not a known pipettor name.  Choices are {choices}.')
         
     def make_board(self, args: Namespace) -> Board:
         platform: Task = args.task
         assert isinstance(platform, PlatformChoiceTask), f"Task is not a PlatformChoiceTask: {platform}"
-        pipettor = self._find_pipettor(args.pipettor, args)
+        # pipettor = self._find_pipettor(args.pipettor, args)
 
-        return platform.make_board(args, exerciser=self, pipettor=pipettor)
+        return platform.make_board(args, exerciser=self)
         
     def add_device_specific_common_args(self, 
                                         group:_ArgumentGroup, 
@@ -616,12 +668,19 @@ class PlatformChoiceExerciser(Exerciser):
             pipettor_choices.append(p.name)
             pipettor_choices.extend(p.aliases)
         choices_desc = conj_str([p.names for p in self.pipettors])
-        group.add_argument('--pipettor', default=self.default_pipettor.name,
+        def find_pipettor(name: str) -> Pipettor:
+            for p in self.pipettors:
+                if name == p.name or name in p.aliases:
+                    return p.create()
+            choices = conj_str([p.names for p in self.pipettors])
+            raise ValueError(f'"{name}" is not a known pipettor name.  Choices are {choices}.')
+            
+        pipettor.Config.pipettor.add_arg_to(group, '--pipettor', default=self.default_pipettor.name,
                            metavar="PIPETTOR",
                            choices=sorted(pipettor_choices),
+                           transform = find_pipettor,
                            help=f'''
                            The pipettor to use if needed.  Valid options are: {choices_desc}.  
-                           The default is "{self.default_pipettor.name}".
                            ''')
         
 

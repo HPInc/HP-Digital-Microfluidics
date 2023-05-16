@@ -4,7 +4,6 @@ import logging
 
 from mpam import exerciser
 from mpam.pipettor import Pipettor, Transfer, PipettingSource
-from argparse import Namespace
 from mpam.types import XferDir, Reagent, Postable
 from typing import Final, Mapping, Sequence
 from _collections import defaultdict
@@ -90,5 +89,5 @@ class PipettorConfig(exerciser.PipettorConfig):
     def __init__(self) -> None:
         super().__init__("manual")
     
-    def create(self, _args: Namespace) -> Pipettor:
+    def create(self) -> Pipettor:
         return ManualPipettor()

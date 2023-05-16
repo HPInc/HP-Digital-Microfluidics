@@ -6,8 +6,8 @@ from typing import Sequence, Optional, Union, Final
 from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode,\
     Heater, Chiller
 from mpam.types import GridRegion, Delayed
-from quantities.SI import ms, deg_C, sec
-from quantities.dimensions import Time, Temperature, HeatingRate
+from quantities.SI import deg_C, sec
+from quantities.dimensions import Temperature, HeatingRate
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
 from random import Random
@@ -86,7 +86,6 @@ class EmulatedHeater(Heater):
                  wells: Sequence[Well],
                  limit: Optional[TemperaturePoint],
                  initial_temperature: Optional[TemperaturePoint] = None,
-                 polling_interval: Time = 200*ms,
                  driving_rate: HeatingRate = 100*(deg_C/sec),
                  return_rate: HeatingRate = 10*(deg_C/sec),
                  noise_sd: Temperature = Temperature.ZERO) -> None:
@@ -101,7 +100,7 @@ class EmulatedHeater(Heater):
             initial_temperature = board.ambient_temperature
 
         super().__init__(board, locations=locs, limit=limit, 
-                         initial_temperature=initial_temperature, polling_interval=polling_interval)
+                         initial_temperature=initial_temperature)
         self.emulator = TemperatureControlEmulator(self, 
                                                    driving_rate=driving_rate, return_rate=return_rate,
                                                    noise_sd=noise_sd)
@@ -117,7 +116,6 @@ class EmulatedChiller(Chiller):
                  wells: Sequence[Well],
                  limit: Optional[TemperaturePoint],
                  initial_temperature: Optional[TemperaturePoint] = None,
-                 polling_interval: Time = 200*ms,
                  driving_rate: HeatingRate = 100*(deg_C/sec),
                  return_rate: HeatingRate = 10*(deg_C/sec),
                  noise_sd: Temperature = Temperature.ZERO) -> None:
@@ -132,7 +130,7 @@ class EmulatedChiller(Chiller):
             initial_temperature = board.ambient_temperature
 
         super().__init__(board, locations=locs, limit=limit, 
-                         initial_temperature=initial_temperature, polling_interval=polling_interval)
+                         initial_temperature=initial_temperature)
         self.emulator = TemperatureControlEmulator(self, 
                                                    driving_rate=driving_rate, return_rate=return_rate,
                                                    noise_sd=noise_sd)

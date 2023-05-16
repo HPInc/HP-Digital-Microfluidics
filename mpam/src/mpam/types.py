@@ -29,6 +29,7 @@ from quantities.dimensions import Molarity, MassConcentration, \
 from quantities.temperature import TemperaturePoint
 from functools import cached_property
 from quantities.SI import sec, deg_C
+from erk.basic import assert_never
 
 
 logger = logging.getLogger(__name__)
@@ -130,6 +131,10 @@ class Dir(Enum):
         The cardinal directions (`NORTH`, `SOUTH`, `EAST`, and `WEST`)
         '''
         return (Dir.N, Dir.S, Dir.E, Dir.W)
+    
+    @cached_property
+    def is_cardinal(self) -> bool:
+        return self in Dir.cardinals()
 
     @property
     def opposite(self) -> Dir:
@@ -169,7 +174,15 @@ class Dir(Enum):
         if turn is Turn.NONE:
             return self
         return self._turns[turn][self]
-
+    
+    def turn_to(self, d: Dir) -> Turn:
+        for t in Turn.__members__.values():
+            if self.turned(t) is d:
+                return t
+        logger.error(f"{self}.turn_to({d}) not defined")
+        assert False, f"{self}.turn_to({d}) not defined"
+        
+        
 Dir._opposites = {
         Dir.N: Dir.S,
         Dir.NE: Dir.SW,
@@ -386,6 +399,38 @@ class Orientation(Enum):
             return c1.col < c2.col
         else:
             return c1.col > c2.col
+        
+    def remap(self, xy: tuple[float, float], from_dir: Dir, to_dir: Dir) -> tuple[float,float]:
+        assert from_dir.is_cardinal, f"{from_dir} is not a cardinal direction"
+        assert to_dir.is_cardinal, f"{to_dir} is not a cardinal direction"
+        
+        if from_dir is to_dir:
+            return xy
+        turn = from_dir.turn_to(to_dir)
+        assert turn is not Turn.NONE
+        x,y = xy
+        if turn is Turn.AROUND:
+            return (-x,-y)
+        def adjust() -> None:
+            # Get to or from a NORTH_POS_EAST_POS system
+            nonlocal x,y
+            if self.pos_y is Dir.SOUTH:
+                y = -y
+            if self.pos_x is Dir.WEST:
+                x = -x
+        # First we get to a NORTH_POS_EAST_POS system
+        adjust()
+        if turn is Turn.LEFT:
+            x,y = -y,x
+        elif turn is Turn.RIGHT:
+            x,y = y,-x
+        else:
+            assert_never(turn)
+        # Now we get back to our actual system
+        adjust()
+        return x,y 
+            
+            
         
 class RCOrder(Enum):
     row_major: Final[bool]

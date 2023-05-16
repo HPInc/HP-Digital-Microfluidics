@@ -1,34 +1,22 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Mapping, Final, Optional, Sequence, Union
+from typing import Mapping, Final, Optional, Sequence
 
 from serial import Serial
 
 from devices import joey
-from mpam.types import OnOff, State, DummyState, XYCoord, Dir
+from mpam.types import OnOff, State, DummyState, XYCoord
 from erk.basic import ComputedDefaultDict, assert_never
-from quantities.dimensions import Time, Volume, Distance
 import logging
-from mpam.exerciser import PlatformChoiceExerciser, Exerciser
+from mpam.exerciser import PlatformChoiceExerciser, Exerciser, BoardKwdArgs
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
-from mpam.pipettor import Pipettor
-from devices.joey import HeaterType
+from devices.joey import JoeyLayout
 from mpam import device
-from mpam.device import Pad
-from quantities.SI import uL, mm
-from quantities.US import mil
+from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
-
-class WombatLayout(Enum):
-    V1 = auto()
-    V2 = auto()
-
-class LidType(Enum):
-    GLASS = auto()
-    PLASTIC = auto()
 
 
 
@@ -61,25 +49,20 @@ v1pins = {
     "B28": 62, "B31": 61, "H26": 60
 } 
 
-v2pins = v1pins.copy()
-v2pins["H09"] = v2pins["H23"]
-for pad in ("E24", "F24", "E16", "F16", "E08", "F08", "H23"):
-    del v2pins[pad]
-    
-v2yaminonPins = v2pins.copy()
-for pad in ("D24", "D16", "D08"):
-    del v2yaminonPins[pad]
+v1_5pins = v1pins.copy()
+for old,new in [
+                #("BC27", "K16"), ("C28", "K18"), ("AB27", "K17"),
+                #("A04", "L14"), ("AB05", "K15"), 
+                ("C04", "B00"),
+                #("BC05", "J14"), 
+                # ("K07", "K14"), 
+                ("A28", "B32")]:
+    v1_5pins[new] = v1_5pins.pop(old)
 
-_pins : Mapping[WombatLayout, Mapping[str, int]] = {
-    WombatLayout.V1: v1pins,
-    WombatLayout.V2: v2pins
+_pins : Mapping[JoeyLayout, Mapping[str, int]] = {
+    JoeyLayout.V1: v1pins,
+    JoeyLayout.V1_5: v1_5pins
 } 
-
-_yaminon_pins : Mapping[WombatLayout, Mapping[str, int]] = {
-    WombatLayout.V1: v1pins,
-    WombatLayout.V2: v2yaminonPins
-} 
-
 
 
 _opendrop: Mapping[int, tuple[int,int]] = {
@@ -117,7 +100,7 @@ _opendrop: Mapping[int, tuple[int,int]] = {
     241: (16, 5), 242: (16, 6), 243: (16, 7), 244: (16, 8),
 }
 
-_shared_pad_cells: Mapping[tuple[str,int], str] = {
+v1_shared_pad_cells: Mapping[tuple[str,int], str] = {
     ('left', 1): 'BC27', ('left', 2): 'B27', ('left', 3): 'AB27', 
     ('left', 4): 'C28', ('left', 5): 'B28', ('left', 6): 'A28',
     ('left', 7): 'B29', ('left', 8): 'B30', ('left', 9): 'B31',
@@ -125,7 +108,17 @@ _shared_pad_cells: Mapping[tuple[str,int], str] = {
     ('right', 4): 'C04', ('right', 5): 'B04', ('right', 6): 'A04',
     ('right', 7): 'B03', ('right', 8): 'B02', ('right', 9): 'B01',
     }
+v1_5_shared_pad_cells: Mapping[tuple[str,int], str] = {
+    ('left', 1): 'B27', ('left', 2): 'B28', ('left', 3): 'B29', 
+    ('left', 4): 'B30', ('left', 5): 'B31', ('left', 6): 'A32',
+    ('right', 1): 'B05', ('right', 2): 'B04', ('right', 3): 'B03', 
+    ('right', 4): 'B02', ('right', 5): 'B01', ('right', 6): 'B00',
+    }
 
+_shared_pad_cells: Mapping[JoeyLayout, Mapping[tuple[str,int], str]] = {
+    JoeyLayout.V1: v1_shared_pad_cells,
+    JoeyLayout.V1_5: v1_5_shared_pad_cells
+} 
 _well_gate_cells: Mapping[XYCoord, str] = {
     XYCoord(1,19): 'T26', XYCoord(1,13): 'N26', XYCoord(1,7): 'H26', XYCoord(1,1): 'B26',
     XYCoord(19,19): 'T06', XYCoord(19,13): 'N06', XYCoord(19,7): 'H06', XYCoord(19,1): 'B06'
@@ -160,11 +153,22 @@ class Electrode(State[OnOff]):
         self.bit_index = bit_index
         self.array = a
         
-
+class Config:
+    is_yaminon: Final = ConfigParam(False)
+    device: Final = ConfigParam[Optional[str]](None)
+    od_version: Final = ConfigParam(OpenDropVersion.V40)
+    double_write: Final = ConfigParam(False)
+    
+    _defaults_set_up = False
+    @classmethod
+    def setup_defaults(cls) -> None:
+        if not cls._defaults_set_up:
+            joey.Config.setup_defaults()
+            print("Setting up Config defaults for Wombat")
+            cls._defaults_set_up = True
+    
 
 class Board(joey.Board):
-    _layout: Final[WombatLayout]
-    _lid_type: Final[LidType]
     _device: Final[Optional[str]]
     _states: Final[bytearray]
     _last_states: bytearray
@@ -189,14 +193,14 @@ class Board(joey.Board):
     def _electrode(self, cell: Optional[str]) -> Optional[Electrode]:
         if cell is None:
             return None
-        pin_map = _yaminon_pins if self.is_yaminon else _pins
+        pin_map = _pins
         pin = pin_map[self._layout].get(cell, None)
         if pin is None:
             return None
         return self._electrodes[pin]
     
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
-        cell = _shared_pad_cells.get((group_name, num))  
+        cell = _shared_pad_cells[self._layout].get((group_name, num))  
         # print(f"-- shared: {group_name} {num} -- {cell}")
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
 
@@ -216,55 +220,12 @@ class Board(joey.Board):
         # print(f"({x}, {y}): {cell}")
         return self._electrode(cell)
     
-    def _extraction_point_locs(self)->Sequence[Union[XYCoord, Pad, tuple[int, int]]]:
-        layout = self._layout
-        if layout is WombatLayout.V1:
-            return ((15,3),)
-        elif layout is WombatLayout.V2:
-            return ((6,16), (6,4))
-        else:
-            assert_never(self._layout)
-            
-    def _dispensed_volume(self)->Volume:
-        layout = self._layout
-        pitch = 1.5*mm
-        def to_vol(height: Distance, gap: Distance) -> Volume:
-            return height*(pitch-gap)**2
-        if layout is WombatLayout.V1:
-            return to_vol(0.3*mm, 3*mil)
-        elif layout is WombatLayout.V2:
-            gap = 2*mil
-            lid_type = self._lid_type
-            if lid_type is LidType.PLASTIC:
-                height = 0.3*mm
-            elif lid_type is LidType.GLASS:
-                height = 0.2*mm
-            else:
-                assert_never(lid_type)
-            return to_vol(height, gap)
-        else:
-            assert_never(layout)
-            
-    def _well_capacity(self, exit_dir: Dir) -> Volume:
-        layout = self._layout
-        if layout is WombatLayout.V1:
-            return 30*uL if exit_dir is Dir.EAST else 15*uL
-        elif layout is WombatLayout.V2:
-            return 15*uL
     
-    def __init__(self, device: Optional[str], od_version: OpenDropVersion, *,
-                 is_yaminon: bool = False,
-                 layout: WombatLayout,
-                 lid_type: LidType = LidType.PLASTIC,
-                 heater_type: HeaterType = HeaterType.TSRs,
-                 off_on_delay: Time = Time.ZERO,
-                 double_write: bool = True,
-                 pipettor: Optional[Pipettor] = None,
-                 holes: Sequence[XYCoord] = (),
-                 default_holes: bool = True,
+    def __init__(self, 
                  ) -> None:
-        self._layout = layout
-        self._lid_type = lid_type
+        od_version = Config.od_version()
+        logger.info(f"Opendrop version is {od_version}",)
+            
         if od_version is OpenDropVersion.V40:
             n_state_bytes = 128
         elif od_version is OpenDropVersion.V41:
@@ -273,15 +234,28 @@ class Board(joey.Board):
             assert_never(od_version)
         self._states = bytearray(n_state_bytes)
         self._last_states = bytearray(n_state_bytes)
-        self._od_version = od_version
-        logger.info("is_yaminon = %s", is_yaminon)
-        self.is_yaminon = is_yaminon
+        self._od_version = Config.od_version()
+        logger.info("is_yaminon = %s", Config.is_yaminon())
+        self.is_yaminon = Config.is_yaminon()
         self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
-        logger.info("double_write = %s", double_write)
-        self._double_write = double_write
-        super().__init__(heater_type=heater_type, pipettor=pipettor, off_on_delay=off_on_delay,
-                         holes=holes, default_holes=default_holes)
-        self._device = device
+        logger.info("double_write = %s", Config.double_write())
+        self._double_write = Config.double_write()
+        super().__init__()
+        if Config.is_yaminon():
+            for x, y in ((i, j) for i in range(1, 20) for j in range(1, 10)):
+                y2 = y+12
+                remove = False
+                try:
+                    remove = (not self.pad_at(x, y).exists
+                              or not self.pad_at(x, y2).exists)
+                except KeyError:
+                    ...
+                if remove:
+                    self.remove_pad_at(x, y)
+                    self.remove_pad_at(x, y2)
+                
+                
+        self._device = Config.device()
         self._port = None
         
     def send_states(self, states: bytearray) -> None:
@@ -325,24 +299,19 @@ class PlatformTask(joey.PlatformTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
-        logger.info(f"Wombat layout is {args.layout_version}")
-        logger.info(f"Version is {args.od_version}")
-        return Board(pipettor=pipettor,
-                     heater_type = HeaterType.from_name(args.heaters),
-                     device=args.port, od_version=args.od_version, is_yaminon=self.is_yaminon(),
-                     layout = args.layout_version,
-                     lid_type = args.lid_type,
-                     off_on_delay=args.off_on_delay,
-                     double_write=args.double_write,
-                     holes=args.holes,
-                     default_holes=args.default_holes)
-        
+                  ) -> Board: # @UnusedVariable
+        kwds = self.board_kwd_args(args, announce=True)
+        return Board(**kwds)
+
     def is_yaminon(self) -> bool:
         return False
         
     def available_wells(self, exerciser: Exerciser) -> Sequence[int]: # @UnusedVariable
         return [2,3,6,7]
+
+    def setup_config_defaults(self) -> None:
+        super().setup_config_defaults()
+        Config.setup_defaults()
 
     def add_args_to(self, 
                     group: _ArgumentGroup, 
@@ -350,37 +319,56 @@ class PlatformTask(joey.PlatformTask):
                     *,
                     exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
-        # lg = group.add_mutually_exclusive_group()
-        group.add_argument('-v1', '--v1', action='store_const', const=WombatLayout.V1, dest='layout_version',
-                           help="Version 1 of the Wombat layout")
-        group.add_argument('-v2', '--v2', action='store_const', const=WombatLayout.V2, dest='layout_version',
-                           help="Version 2 of the Wombat layout")
-        group.add_argument('-p', '--port',
-                           help='''
-                           The communication port (e.g., COM5) to use to talk to the board.
-                           By default, only the display is run
-                           ''')
-        # lidg = group.add_mutually_exclusive_group()
-        group.add_argument('--glass', action='store_const', const=LidType.GLASS, dest='lid_type',
-                           help="Glass lid")
-        group.add_argument('--plastic', action='store_const', const=LidType.PLASTIC, dest='lid_type',
-                           help="Plastic lid")
-        # vg = group.add_mutually_exclusive_group()
-        group.add_argument('-4.0', '--4.0', action='store_const', const=OpenDropVersion.V40, dest='od_version',
-                           help="The OpenDrop board uses firmware version 4.0")
-        group.add_argument('-4.1', '--4.1', action='store_const', const=OpenDropVersion.V41, dest='od_version',
-                           help="The OpenDrop board uses firmware version 4.1")
-        # group.add_argument('--yaminon', action='store_true',
-        #                    help="Mirror pads on top and bottom of the board.")
-        double_write_default = True
-        group.add_argument('--double-write', action=BooleanOptionalAction, default=double_write_default,
+        ignored_cp = ConfigParam[str]()
+        ignored_cp.add_arg_to(group, '-v1', '--v1', action='store_const', const="v1", 
+                              deprecated = ConfigParam.use_instead("--joey-version 1.0"),
+                              ignored = True, 
+                              help = "Version 1 of the Wombat layout.")
+        ignored_cp.add_arg_to(group, '-v2', '--v2', action='store_const', const="v2", 
+                              deprecated = ConfigParam.use_instead("--joey-version 1.5"),
+                              ignored = True, 
+                              help = "Version 2 of the Wombat layout.")
+        Config.device.add_arg_to(group, '-p', '--port',
+                                 help='''
+                                    The communication port (e.g., COM5) to use to talk to the board.
+                                    By default, only the display is run
+                                    ''')
+        od_version_arg_names = {"4.0": OpenDropVersion.V40,    
+                                "4.1": OpenDropVersion.V41
+                                }        
+        Config.od_version.add_choice_arg_to(group, od_version_arg_names,
+                                            '--od_version', 
+                                            metavar="VERSION",
+                                            help="The version of the Opendrop firmware."
+                                            )
+        Config.od_version.add_arg_to(group, '-4.0', '--4.0',
+                                     dest='od_version',
+                                     action='store_const', const="4.0",
+                                     deprecated=ConfigParam.use_instead("--od_version 4.0"),
+                                     help="Opendrop firmware version 4.0")
+        Config.od_version.add_arg_to(group, '-4.1', '--4.1',
+                                     dest='od_version',
+                                     action='store_const', const="4.1",
+                                     deprecated=ConfigParam.use_instead("--od_version 4.1"),
+                                     help="Opendrop firmware version 4.1")
+        Config.double_write.add_arg_to(group, '--double-write', 
+                                            action=BooleanOptionalAction, 
                            help=f'''
                            Send state array to OpenDrop twice.  
-                           Default is {double_write_default}
                            ''')
-        parser.set_defaults(od_version=OpenDropVersion.V40)
-        parser.set_defaults(layout_version=WombatLayout.V1)
-        parser.set_defaults(lid_type=LidType.PLASTIC)
+        
+    def board_kwd_args(self, args: Namespace, announce: bool = False) -> BoardKwdArgs:
+        kwds = super().board_kwd_args(args, announce=announce)
+        Config.is_yaminon.value = self.is_yaminon()
+        # kwds["is_yaminon"] = self.is_yaminon()
+        # self.add_kwd_arg(args, kwds, "port", kwd="device")
+        # self.add_kwd_arg(args, kwds, "od_version")
+        # # self.add_kwd_arg(args, kwds, "wombat_version")
+        # self.add_kwd_arg(args, kwds, "double_write")
+        # # self.add_kwd_arg(args, kwds, "holes")
+        # # self.add_kwd_arg(args, kwds, "default_holes")
+        return kwds
+        
         
 class YaminonPlatformTask(PlatformTask):
     def __init__(self, name: str = "Yaminon",

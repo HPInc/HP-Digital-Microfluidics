@@ -85,4 +85,4 @@ class final_cached_property(Generic[Obj_, T_]):
 #                               ) -> Union[Callable[[Obj_], T_],
 #                                          Callable[[Callable[[Obj_], T_]], Callable[[Obj_], T_]]]:
 #     ...  
-            
+

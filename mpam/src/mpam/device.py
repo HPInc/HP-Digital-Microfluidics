@@ -29,16 +29,16 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
     NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer
-from quantities.SI import sec, ms, volts, deg_C
+from quantities.SI import volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
 from quantities.temperature import TemperaturePoint, abs_F
 from quantities.timestamp import time_now, Timestamp
-from argparse import Namespace
 from erk.stringutils import map_str
 from quantities.US import deg_F
 from erk.network import local_ipv4_addr
 from functools import cached_property
+from erk.config import ConfigParam
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
@@ -1564,6 +1564,8 @@ For purposes of specifying these, a :class:`Pad`'s :attr:`~LocatedPad.location`
 is considered to be its :attr:`~.Dir.SOUTHWEST` corner.
 """
 
+
+
 class WellShape:
     """
     A description of the shape of a :class:`Well`, suitable for rendering by a
@@ -1576,26 +1578,29 @@ class WellShape:
     The :class:`WellShape` also describes the center and radius of a circle for
     the :class:`.BoardMonitor` to use to show the :class:`.Reagent` contained in
     the :class:`Well`
-    """
-    gate_pad_bounds: Final[PadBounds]
-    """
-    The shape of the :class:`Well`'s :attr:`~Well.gate`
+    
+    Coordinates are described with the middle of the :class:`Well`'s gate being
+    `(0,0)` with the assumption that the well exits to the west.  The
+    coordinates can be translated to apply to a particular well by calling
+    :func:`for_well`.
     """
     shared_pad_bounds: Final[Sequence[Union[PadBounds, Sequence[PadBounds]]]]
     """
     The shape of the :class:`Well`'s :attr:`~Well.shared_pads`
     """
-    reagent_id_circle_center: tuple[float,float]
+    reagent_id_circle_center: Final[tuple[float,float]]
     """
     The center of the :class:`Well`'s :class:`Reagent` circle
     """
-    reagent_id_circle_radius: float
+    reagent_id_circle_radius: Final[float]
     """
     The radius of the :class:`Well`'s :class:`Reagent` circle
     """
+    
+    side: Final[Dir]
 
     def __init__(self, *,
-                 gate_pad_bounds: PadBounds,
+                 side: Dir,
                  shared_pad_bounds: Sequence[Union[PadBounds, Sequence[PadBounds]]],
                  reagent_id_circle_center: tuple[float, float],
                  reagent_id_circle_radius: float = 1):
@@ -1603,7 +1608,6 @@ class WellShape:
         Initialize the object
 
         Keyword Args:
-            gate_pad_bounds: the shape of the :class:`Well`'s :attr:`~Well.gate`
             shared_pad_bounds: the shape of the :class:`Well`'s
                                :attr:`~Well.shared_pads`
             reagent_id_circle_center: the center of the :class:`Well`'s
@@ -1611,10 +1615,38 @@ class WellShape:
             reagent_id_circle_radius: the radius of the :class:`Well`'s
                                       :class:`Reagent` circle
         """
-        self.gate_pad_bounds = gate_pad_bounds
+        self.side = side
         self.shared_pad_bounds = shared_pad_bounds
         self.reagent_id_circle_center = reagent_id_circle_center
         self.reagent_id_circle_radius = reagent_id_circle_radius
+        
+    @classmethod
+    def rectangle(cls, center: tuple[float, float], *, 
+                  width: float = 1,
+                  height: float = 1) -> PadBounds:
+        cx, cy=center
+        hw = width/2
+        hh = height/2
+        return ((cx-hw, cy-hh), (cx+hw, cy-hh),
+                (cx+hw, cy+hh), (cx-hw, cy+hh))
+        
+    @classmethod
+    def square(cls, center: tuple[float, float], *, side: float=1) -> PadBounds:
+        return cls.rectangle(center, width=side, height=side)
+    
+    def for_well(self, well: Well, xy: tuple[float, float]) -> tuple[float,float]:
+        gate = well.gate
+        gx: float = gate.column
+        gy: float = gate.row
+        orientation = well.board.orientation
+        # Get it onto the correct side
+        xy = orientation.remap(xy, self.side.opposite, well.exit_dir)
+        pos_x = orientation.pos_x
+        pos_y = orientation.pos_y
+        gx += -0.5 if pos_x is Dir.WEST else 0.5
+        gy += 0.5 if pos_y is Dir.NORTH else -0.5
+        x,y = xy
+        return x+gx, y+gy
 
 WellVolumeSpec = Union[Volume, Callable[[], Volume]]
 """
@@ -3315,7 +3347,6 @@ class TemperatureControl(ABC, BinaryComponent['TemperatureControl']):
 
     def __init__(self, board: Board, *,
                  locations: Sequence[TempControllable],
-                 polling_interval: Time,
                  limit: Optional[TemperaturePoint],
                  # max_heat: Optional[TemperaturePoint],
                  # min_chill: Optional[TemperaturePoint],
@@ -3343,7 +3374,7 @@ class TemperatureControl(ABC, BinaryComponent['TemperatureControl']):
         # self.max_heat_temperature = max_heat
         # self.min_chill_temperature = min_chill
         self._mode = TemperatureMode.AMBIENT
-        self.polling_interval = polling_interval
+        self.polling_interval = Config.polling_interval()
         self._lock = RLock()
         # self._current_op_key = None
         for loc in locations:
@@ -4580,17 +4611,18 @@ class PowerSupply(BinaryComponent['PowerSupply']):
         return m
 
     def __init__(self, board: Board, *,
-                 min_voltage: Voltage,
-                 max_voltage: Voltage,
-                 initial_voltage: Voltage,
-                 mode: PowerMode,
-                 can_toggle: bool = True,
-                 can_change_mode: bool = True,
                  on_high_voltage: ErrorHandler = PRINT,
                  on_low_voltage: ErrorHandler = PRINT,
                  on_illegal_toggle: ErrorHandler = PRINT,
                  on_illegal_mode_change: ErrorHandler = PRINT,
                  ) -> None:
+        min_voltage = Config.ps_min_voltage()
+        max_voltage = Config.ps_max_voltage()
+        initial_voltage = Config.ps_initial_voltage()
+        mode = Config.ps_initial_mode()
+        can_toggle = Config.ps_can_toggle()
+        can_change_mode = Config.ps_can_change_mode()
+
         initial_state = initial_voltage > 0
         super().__init__(board=board,
                          state=DummyState(initial_state=OnOff.from_bool(initial_state)),
@@ -4670,32 +4702,13 @@ class FixedPowerSupply(PowerSupply):
         print("Power supply voltage level cannot be changed")
         return MISSING
 
-    def __init__(self, board: Board, *,
-                 voltage_level: Voltage = 0*volts,
-                 is_toggleable: bool = False,
-                 changeable_mode: bool = False,
-                 mode: PowerMode = PowerMode.DC) -> None:
-        self.is_toggleable = is_toggleable
-        self.voltage_level = voltage_level
-        self.expected_state = OnOff.from_bool(voltage_level > 0)
+    def __init__(self, board: Board) -> None:
+        self.is_toggleable = Config.ps_can_toggle()
+        self.voltage_level = Config.ps_initial_voltage()
+        self.expected_state = OnOff.from_bool(self.voltage_level > 0)
 
-        super().__init__(board,
-                         min_voltage=0*volts,
-                         max_voltage=voltage_level,
-                         initial_voltage=voltage_level,
-                         can_change_mode=changeable_mode,
-                         mode=mode)
-
-        # def no_voltage_changes(ps: PowerSupply, v: Voltage) -> MissingOr[Voltage]:
-        #     if not isinstance(ps, FixedPowerSupply):
-        #         return v
-        #     if v == self.voltage_level:
-        #         return v
-        #     if is_toggleable and v == 0:
-        #         return v
-        #     print("Power supply voltage level cannot be changed")
-        #     return MISSING
-        # PowerSupply.voltage.transform(no_voltage_changes)
+        with Config.ps_min_voltage >> 0*volts:
+            super().__init__(board)
 
 
 
@@ -4712,7 +4725,13 @@ class FixedPowerSupply(PowerSupply):
 class Fan(BinaryComponent["Fan"]):
     # There's nothing special about fans, but we make it a separate type for
     # type checking and value printing purposes.
-    ...
+    def __init__(self, board: Board,
+                 live: bool = True,
+                 on_illegal_toggle: ErrorHandler = PRINT,
+                 ) -> None:
+        super().__init__(board, state=Config.fan_initial_state(),
+                         can_toggle=Config.fan_can_toggle(),
+                         live=live, on_illegal_toggle=on_illegal_toggle)
 
 class ChangeJournal:
     turned_on: Final[set[DropLoc]]
@@ -4760,8 +4779,28 @@ Either a :class:`.TemperaturePoint`, a :class:`.Temperature` offset, or a pair
 of such values (as lower and upper values, respectively).
 """
 
+class Config:
+    local_ip_addr: Final = ConfigParam[Optional[str]](None)
+    subnet: Final = ConfigParam[Optional[str]](None)
+    subnet_mask: Final = ConfigParam[Optional[str]](None)
+    
+    off_on_delay: Final = ConfigParam[Time](Time.ZERO)
+    extraction_point_splash_radius: Final = ConfigParam[int](0)
+    
+    polling_interval: Final = ConfigParam[Time]()
+    ps_min_voltage: Final = ConfigParam[Voltage]()
+    ps_max_voltage: Final = ConfigParam[Voltage]()
+    ps_initial_voltage: Final = ConfigParam(0*volts)
+    ps_initial_mode: Final = ConfigParam[PowerMode]()
+    ps_can_toggle: Final = ConfigParam(True)
+    ps_can_change_mode: Final = ConfigParam(False)
+    fan_initial_state: Final = ConfigParam(OnOff.OFF)
+    fan_can_toggle: Final = ConfigParam(True)
+    
+    
+
 class Board(SystemComponent):
-    pads: Final[PadArray]
+    pads: Final[dict[XYCoord, Pad]]
     
     _well_list: Final[list[Well]]
     @property
@@ -4820,18 +4859,16 @@ class Board(SystemComponent):
             return self._change_journal
 
     def __init__(self, *,
-                 pads: PadArray,
+                 pads: dict[XYCoord, Pad],
                  wells: Optional[Sequence[Well]] = None,
                  magnets: Optional[Sequence[Magnet]] = None,
                  heaters: Optional[Sequence[Heater]] = None,
                  chillers: Optional[Sequence[Chiller]] = None,
                  extraction_points: Optional[Sequence[ExtractionPoint]] = None,
-                 extraction_point_splash_radius: int = 0,
                  power_supply: Optional[PowerSupply] = None,
                  fan: Optional[Fan] = None,
                  orientation: Orientation,
                  drop_motion_time: Time,
-                 off_on_delay: Time = Time.ZERO,
                  cpt_layout: Optional[RCOrder] = None) -> None:
         super().__init__()
         self._change_journal = ChangeJournal()
@@ -4852,14 +4889,14 @@ class Board(SystemComponent):
         self._extraction_points = [] 
         if extraction_points:
             self._add_extraction_points(extraction_points)
-        self.extraction_point_splash_radius = extraction_point_splash_radius
+        self.extraction_point_splash_radius = Config.extraction_point_splash_radius()
         self.power_supply = power_supply or FixedPowerSupply(self)
         self.fan = fan
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
-        self.off_on_delay = off_on_delay
-        if off_on_delay != 0:
-            logger.info("off-on delay is %s", off_on_delay)
+        self.off_on_delay = Config.off_on_delay()
+        if self.off_on_delay != 0:
+            logger.info("off-on delay is %s", self.off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
         # self._drops = []
@@ -4969,6 +5006,11 @@ class Board(SystemComponent):
 
     def pad_at(self, x: int, y: int) -> Pad:
         return self.pads[XYCoord(x,y)]
+    
+    def remove_pad_at(self, x: int, y: int) -> None:
+        xy = XYCoord(x, y)
+        self.pads[xy] = Pad(xy, self, DummyState(initial_state=OnOff.OFF), 
+                            exists = False)
 
     @cached_property
     def max_row(self) -> int:
@@ -5355,11 +5397,7 @@ class System:
         return ip
     
 
-    def __init__(self, *, board: Board,
-                 local_ip: Optional[str] = None,
-                 subnet: Optional[str] = None,
-                 subnet_mask: Optional[str] = None
-                 ):
+    def __init__(self, *, board: Board) -> None:
         self.board = board
         self.engine = Engine(default_clock_interval=board.drop_motion_time)
         self.clock = Clock(self)
@@ -5367,9 +5405,9 @@ class System:
         self._batch_lock = Lock()
         self._cpts_lock = Lock()
         self.components = []
-        self._requested_ip = local_ip
-        self._subnet = subnet
-        self._subnet_mask = subnet_mask
+        self._requested_ip = Config.local_ip_addr()
+        self._subnet = Config.subnet()
+        self._subnet_mask = Config.subnet_mask()
         self.terminal_interaction = AsyncFunctionSerializer(thread_name="Terminal interaction thread")
         
         board.join_system(self)
@@ -5465,16 +5503,9 @@ class System:
 
     def run_monitored(self, fn: Callable[[System],T],
                       *,
-                      hold_display_for: Optional[Time] = 0*sec,
-                      min_time: Optional[Time] = 0*sec,
-                      max_time: Optional[Time] = None,
-                      update_interval: Time = 20*ms,
                       control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
                       control_fraction: Optional[float] = None,
-                      macro_file_names: Optional[list[str]] = None,
                       thread_name: Optional[str] = None,
-                      cmd_line_args: Optional[Namespace] = None,
-                      config_params: Optional[Mapping[str, Any]] = None,
                       ) -> T:
         from mpam.monitor import BoardMonitor  # @Reimport
         val: T
@@ -5490,23 +5521,14 @@ class System:
         if thread_name is None:
             thread_name = f"Monitored task @ {time_now()}"
         thread = Thread(target=run_it, name=thread_name)
-        if cmd_line_args is None:
-            cmd_line_args = Namespace()
         monitor = BoardMonitor(self.board,
                                control_setup=control_setup,
                                control_fraction=control_fraction,
-                               macro_file_names=macro_file_names,
-                               cmd_line_args=cmd_line_args,
-                               from_code=config_params
                                )
         self.monitor = monitor
         # print(f"System's monitor is {monitor}")
         thread.start()
-        monitor.keep_alive(sentinel = lambda : done.is_set(),
-                           hold_display_for = hold_display_for,
-                           min_time = min_time,
-                           max_time = max_time,
-                           update_interval = update_interval)
+        monitor.keep_alive(sentinel = lambda : done.is_set())
 
         return val
     

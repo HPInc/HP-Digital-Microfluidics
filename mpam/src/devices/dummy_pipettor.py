@@ -9,8 +9,9 @@ from quantities.SI import seconds, second, uL
 from quantities.dimensions import Time, Volume, FlowRate
 from mpam.device import ProductLocation
 from mpam import exerciser
-from argparse import Namespace, _ArgumentGroup
+from argparse import _ArgumentGroup
 from typing import Optional, Final, Mapping, Callable
+from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,17 @@ class ArmPos(Enum):
     PRODUCTS = auto()
     TIPS = auto()
     WASTE = auto()
+
+class Config:
+    dip_time: Final = ConfigParam(0.25*seconds)
+    short_transit_time: Final = ConfigParam(0.5*seconds)
+    long_transit_time: Final = ConfigParam(1*second)
+    get_tip_time: Final = ConfigParam(0.5*seconds)
+    drop_tip_time: Final = ConfigParam(0.5*seconds)
+    flow_rate: Final = ConfigParam(100*uL/second)
+    n_plates: Final = ConfigParam(1)
+    speed_up: Final = ConfigParam[Optional[float]](None)
+
 
 class DummyPipettor(Pipettor):
     dip_time: Time
@@ -39,26 +51,18 @@ class DummyPipettor(Pipettor):
 
     def __init__(self, *,
                  name: str="Dummy Pipettor",
-                 dip_time: Time = 0.25*seconds,
-                 short_transit_time: Time = 0.5*seconds,
-                 long_transit_time: Time = 1*second,
-                 get_tip_time: Time = 0.5*seconds,
-                 drop_tip_time: Time = 0.5*seconds,
-                 flow_rate: FlowRate = 100*uL/second, 
-                 n_plates: int = 1,
-                 speed_up: Optional[float] = None,
                  ) -> None:
         super().__init__(name=name)
         self.arm_pos = ArmPos.WASTE
-        self.dip_time = dip_time
-        self.short_transit_time = short_transit_time
-        self.long_transit_time = long_transit_time
-        self.get_tip_time = get_tip_time
-        self.drop_tip_time = drop_tip_time
-        self.flow_rate = flow_rate
+        self.dip_time = Config.dip_time()
+        self.short_transit_time = Config.short_transit_time()
+        self.long_transit_time = Config.long_transit_time()
+        self.get_tip_time = Config.get_tip_time()
+        self.drop_tip_time = Config.drop_tip_time()
+        self.flow_rate = Config.flow_rate()
         self.next_product = 1
 
-        source_names = self._generate_source_names(plates=n_plates)
+        source_names = self._generate_source_names(plates=Config.n_plates())
         sources = self._generate_sources_named(source_names)
         self._unallocated_sources = sources
         self._sources_by_reagent = {}
@@ -72,6 +76,7 @@ class DummyPipettor(Pipettor):
                 return doit
             source.assigned_reagent.when_value(remember_source(source))
 
+        speed_up = Config.speed_up()
         if speed_up is not None:
             self.speed_up(speed_up)
 
@@ -207,17 +212,14 @@ class PipettorConfig(exerciser.PipettorConfig):
     def __init__(self) -> None:
         super().__init__("simulated", aliases=("sim", "dummy"))
 
-    def create(self, args: Namespace) -> Pipettor:
-        speedup: Optional[float] = args.pipettor_speed
-        n_well_plates: int = args.n_well_plates
-        pipettor = DummyPipettor(n_plates = n_well_plates,
-                                 speed_up = speedup)
+    def create(self) -> Pipettor:
+        pipettor = DummyPipettor()
         return pipettor
 
     def add_args_to(self, group:_ArgumentGroup)->None:
         super().add_args_to(group)
-        group.add_argument('-ps', '--pipettor-speed', type=float, metavar='MULT',
-                           help="A speed-up factor for dummy pipettor operations.")
+        Config.speed_up.add_arg_to(group, '-ps', '--pipettor-speed', type=float, metavar='MULT',
+                                   help="A speed-up factor for dummy pipettor operations.")
         default_n_well_plates = 1
-        group.add_argument('--n-well-plates', type=int, metavar='INT', default=default_n_well_plates,
-                           help=f"The number of well plates to model.  Default is {default_n_well_plates}.")
+        Config.n_plates.add_arg_to(group, '--n-well-plates', type=int, metavar='INT', default=default_n_well_plates,
+                                   help=f"The number of well plates to model.  Default is {default_n_well_plates}.")

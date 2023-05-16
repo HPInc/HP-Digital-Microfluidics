@@ -10,10 +10,12 @@ from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
     WellShape, Pad, WellGate, WellPad, StateDefs
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
-from mpam.pipettor import Pipettor
 from mpam.types import OnOff, XYCoord, Orientation, Dir, State
 from quantities.SI import uL, ms
-from quantities.dimensions import Time
+from erk.config import ConfigParam
+
+class Config:
+    device = ConfigParam[Optional[str]](None)
 
 
 class Electrode(State[OnOff]):
@@ -98,15 +100,7 @@ class Board(device.Board):
         return (epx+5*outdir, epy-0.5)
     
     def _well(self, states: StateDefs, exit_dir: Dir, gate_loc: XYCoord, exit_pad: Pad,
-              inner_locs: Sequence[tuple[int,int]]) -> Well:
-        shape = WellShape(
-                    gate_pad_bounds= self._gate_bounds(exit_pad.location),
-                    shared_pad_bounds = (self._long_pad_bounds(exit_pad.location),
-                                         self._side_pad_bounds(exit_pad.location),
-                                         self._big_pad_bounds(exit_pad.location)),
-                    reagent_id_circle_radius = 1,
-                    reagent_id_circle_center = self._reagent_circle_center(exit_pad.location) 
-            )
+              inner_locs: Sequence[tuple[int,int]], shape: WellShape) -> Well:
         gate_electrode = Electrode(gate_loc.x, gate_loc.y, self._states)
         gate = WellGate(self, exit_pad, exit_dir, gate_electrode, neighbors=(0,1))
         pad_neighbors = [[-1,1,2], [0,2], [0, 1]]
@@ -123,16 +117,14 @@ class Board(device.Board):
                     shape=shape
                     )
     
-    def __init__(self, dev : Optional[str], *,
-                 off_on_delay: Time = Time.ZERO) -> None:
+    def __init__(self) -> None:
         pad_dict = dict[XYCoord, Pad]()
         wells: list[Well] = []
         super().__init__(pads=pad_dict, 
                          wells=wells,
                          orientation=Orientation.NORTH_NEG_EAST_POS,
-                         drop_motion_time=500*ms,
-                         off_on_delay=off_on_delay)
-        self._dev = dev
+                         drop_motion_time=500*ms)
+        self._dev = Config.device()
         self._states = bytearray(128)
         self._port= None
         for x in range(1,15):
@@ -160,10 +152,22 @@ class Board(device.Board):
         def inner_locs(col: int, rows: Sequence[int]) -> Sequence[tuple[int,int]]:
             return [(col, r) for r in rows]
         
-        upper_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)))
-        upper_right = self._well(state_defs, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)))
-        lower_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)))
-        lower_right = self._well(state_defs, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)))
+        shape = WellShape( 
+                    side = Dir.EAST,
+                    shared_pad_bounds = (
+                        [(1,0.5), (1,1.5), (3,1.5),
+                         (3,-1.5), (1,-1.5), (1,-0.5),
+                         (2,-0.5), (2, 0.5)],
+                        [WellShape.square((0.5,-1)), 
+                         WellShape.square((0.5, 1))],
+                        WellShape.rectangle((1.25,0),width=1.5)),
+                    reagent_id_circle_radius = 1,
+                    reagent_id_circle_center = (4.5, 0)
+            )
+        upper_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,0), self.pad_at(1,1), inner_locs(0, (1,2,3)), shape)
+        upper_right = self._well(state_defs, Dir.LEFT, XYCoord(15,0), self.pad_at(14,1), inner_locs(15, (1,2,3)), shape)
+        lower_left = self._well(state_defs, Dir.RIGHT, XYCoord(0,7), self.pad_at(1,6), inner_locs(0, (6,5,4)), shape)
+        lower_right = self._well(state_defs, Dir.LEFT, XYCoord(15,7), self.pad_at(14,6), inner_locs(15, (6,5,4)), shape)
         self._add_wells((upper_left, upper_right, lower_left, lower_right))
         
     def update_state(self) -> None:
@@ -199,10 +203,8 @@ class PlatformTask(PlatformChoiceTask):
     
     def make_board(self, args: Namespace, *, 
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   pipettor: Pipettor) -> Board: # @UnusedVariable
-        off_on_delay: Time = args.off_on_delay
-        port: Optional[str] = args.port
-        return Board(dev=port, off_on_delay=off_on_delay)
+                   ) -> Board: # @UnusedVariable
+        return Board()
         
     def add_args_to(self, 
                      group: _ArgumentGroup, 
@@ -210,11 +212,9 @@ class PlatformTask(PlatformChoiceTask):
                      *,
                      exerciser: Exerciser) -> None:
         super().add_args_to(group, parser, exerciser=exerciser)
-        group.add_argument('-p', '--port',
-                           help='''
-                           The communication port (e.g., COM5) to use to talk to the board.
-                           By default, only the display is run
-                           ''')
+        Config.device.add_arg_to(group,'-p', '--port',
+                                 default_desc="to only run the display",
+                                 help="The communication port (e.g., COM5) to use to talk to the board.")
         
         
     def available_wells(self, exerciser:Exerciser) -> Sequence[int]: # @UnusedVariable

@@ -4,6 +4,7 @@ from devices import joey, opendrop, wombat, opentrons, manual_pipettor,\
     bilby_task
 from mpam.exerciser import PlatformChoiceExerciser
 from mpam.exerciser_tasks import DisplayOnly
+from mpam.monitor import Config as monConfig
 
 
 if __name__ == '__main__':
@@ -17,6 +18,7 @@ if __name__ == '__main__':
     pipettors = (opentrons.PipettorConfig,)
     default_pipettor = manual_pipettor.PipettorConfig
     # exerciser = InteractiveExerciser(platforms=platforms, pipettors=pipettors)
+    monConfig.min_time.default = None
     exerciser = PlatformChoiceExerciser.for_task(DisplayOnly, 
                                                  "Interact with a DMF board",
                                                  platforms=platforms,
