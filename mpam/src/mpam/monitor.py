@@ -46,6 +46,7 @@ from argparse import _ArgumentGroup, ArgumentParser,\
 from erk.config import ConfigParam
 from mpam.cmd_line import time_arg
 from mpam.interpreter import DMLInterpreter
+import tkinter
 
 logger = logging.getLogger(__name__)
 
@@ -897,6 +898,45 @@ class InputBox(TextBox):
                 self.cursor_index += len(t)
             return
         TextBox._keypress(self, event)
+        
+class NonBlockingDialog:
+    root: Final[tkinter.Tk]
+    window: Final[tkinter.Toplevel]
+    def __init__(self, root: tkinter.Tk, *, 
+                 message: Optional[str],
+                 buttons: Sequence[str],
+                 on_click: Callable[[str], Any],
+                 title: str = "User Action Required") -> None:
+        self.root = root
+        self.on_click: Final = on_click
+        self.window = tkinter.Toplevel(root)
+        self.window.title(title)  # this line sets the window's title
+        self.window.attributes('-topmost', 1)
+
+        title_font = tkinter.font.Font(size=14, weight="bold")
+        title_label = tkinter.Label(self.window, text=title, font=title_font)
+        title_label.pack()
+        
+        tkinter.Frame(self.window, height=2, bg="black").pack(fill='x')
+
+        if message is not None:        
+            label = tkinter.Label(self.window, text=message, wraplength=200)
+            label.pack()
+
+        for button_text in buttons:
+            button = tkinter.Button(self.window, text=button_text, command=lambda: self.button_clicked(button_text))
+            button.pack(pady=5)
+            
+        self.window.update_idletasks()  # update window size
+        width = max(self.window.winfo_width(), len(title) * 8)  # adjust width to title        
+        x = root.winfo_rootx() + (root.winfo_width() - self.window.winfo_width()) // 2
+        y = root.winfo_rooty() + (root.winfo_height() - self.window.winfo_height()) // 2
+        self.window.geometry(f"{width}x{self.window.winfo_height()}+{x}+{y}")  # adjust width and position
+
+    def button_clicked(self, text: str) -> None:
+        (self.on_click)(text)
+        self.window.destroy()
+        
 
 class BoardMonitor:
     board: Final[Board]
@@ -1286,6 +1326,15 @@ class BoardMonitor:
     def reagent_color(self, reagent: Reagent) -> Color:
         with self.lock:
             return self.color_allocator.get_color(reagent)
+        
+    def prompt_user(self, *,
+                    message: str,
+                    on_click: Callable[[str], None],
+                    buttons: Sequence[str]) -> None:
+        def open_dialog_box() -> None:
+            root = self.figure.canvas._tkcanvas.master
+            NonBlockingDialog(root, message=message, on_click=on_click, buttons=buttons)
+        self.in_display_thread(open_dialog_box)
 
     def in_display_thread(self, cb: Callback) -> None:
         with self.lock:

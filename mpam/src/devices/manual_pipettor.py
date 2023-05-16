@@ -9,8 +9,15 @@ from typing import Final, Mapping, Sequence
 from _collections import defaultdict
 from erk.stringutils import conj_str
 from quantities.dimensions import Volume
+from erk.config import ConfigParam
+from argparse import _ArgumentGroup
+from quantities.SI import uL
+import math
 
 logger = logging.getLogger(__name__)
+
+class Config:
+    rounding: Final = ConfigParam(0.5)
 
 class ManualPipettor(Pipettor):
     _sources_by_reagent: Final[dict[Reagent, list[PipettingSource]]]
@@ -71,6 +78,11 @@ class ManualPipettor(Pipettor):
         for target in transfer.targets:
             loc = target.target
             vol = target.volume
+            rounding = Config.rounding()
+            if rounding >= 0:
+                n = vol.as_number(uL)
+                n = math.ceil(n/rounding)*rounding
+                vol = n*uL
             target.in_position(reagent, vol)
             if transfer.xfer_dir is XferDir.FILL:
                 msg = f"Please add {vol:g} of {reagent}{sdesc} to {loc}."
@@ -88,6 +100,13 @@ class ManualPipettor(Pipettor):
 class PipettorConfig(exerciser.PipettorConfig):
     def __init__(self) -> None:
         super().__init__("manual")
+        
+    def add_args_to(self, group:_ArgumentGroup)->None:
+        super().add_args_to(group)
+        Config.rounding.add_arg_to(group, '--transfer-rounding', type=float, metavar='TO',
+                                    help=f'''Manual transfers will round up to this resolution, in {uL}.
+                                        A value of zero indicates no rounding.
+                                        ''')
     
     def create(self) -> Pipettor:
         return ManualPipettor()

@@ -5533,11 +5533,22 @@ class System:
         return val
     
     def prompt_and_wait(self, future: Postable[None], *, prompt: Optional[str] = None) -> None:
-        def doit() -> None:
-            if prompt is not None:
-                print(prompt)
-            print("Hit <RETURN> to continue.")
-            input()
-            future.post(None)
+        if self.monitor is not None:
+            real_monitor = self.monitor
+            def doit() -> None:
+                selected = Postable[str]()
+                def on_click(which: str) -> None:
+                    selected.post(which)
+                msg = prompt if prompt is not None else  "I hope you know what to do."
+                real_monitor.prompt_user(message=msg, on_click=on_click, buttons=["Done"])  
+                selected.wait()
+                future.post(None)
+        else:
+            def doit() -> None:
+                if prompt is not None:
+                    print(prompt)
+                print("Hit <RETURN> to continue.")
+                input()
+                future.post(None)
         self.terminal_interaction.enqueue(doit)
     

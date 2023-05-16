@@ -14,7 +14,9 @@ from mpam.types import StaticOperation, Operation, Delayed, \
     WaitableType, Callback, Postable, NO_WAIT, CSOperation, \
     Trigger
 from quantities.dimensions import Volume
+import logging
 
+logger = logging.getLogger(__name__)
 
 Schedulable = Union['Path.Start', 'Path.Full',
                     tuple[Union[Drop, Delayed[Drop]],
