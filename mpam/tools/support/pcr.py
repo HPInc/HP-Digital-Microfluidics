@@ -25,7 +25,7 @@ from mpam.processes import PlacedMixSequence, Transform
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
 from mpam.types import Reagent, Liquid, Dir, Color, waste_reagent, Barrier, \
-    schedule, Delayed, Postable
+    schedule, Delayed, Postable, WaitableType, NO_WAIT, SingleFireTrigger
 from quantities.SI import second, seconds
 from quantities.temperature import abs_C
 from devices.dummy_pipettor import DummyPipettor
@@ -681,7 +681,7 @@ class CombSynth(PCRTask):
         return path
 
     def waste_drop(self,
-                   source: Union[Well, tuple[ExtractionPoint, Reagent]],
+                   source: Union[Well, tuple[ExtractionPoint, Reagent, Optional[WaitableType]]],
                    waste_row: int,
                    path: Path.Middle
                    ) -> Path.Full:
@@ -694,7 +694,10 @@ class CombSynth(PCRTask):
             # start = Path.dispense_from(source, before_release=drop_used)
             start = Path.dispense_from(source)
         else:
-            start = Path.teleport_into(source[0], reagent=source[1])
+            ep, reagent, after = source
+            if after is None:
+                after = NO_WAIT
+            start = Path.teleport_into(ep, reagent=reagent, after=after)
         return (start+path+self.to_waste_from_row(waste_row)).enter_well()
 
 
@@ -777,25 +780,32 @@ class CombSynth(PCRTask):
             ep = self.phase_1_ep
             result = c1.my_reagent("R1")
             passed_by = Barrier[Drop](n)
+            ready_for_next: WaitableType = NO_WAIT
             for pad, frag in zip(pads, c1.fragments):
                 if pad is mix.lead_drop_pad:
                     # def remember_lead_drop(drop: Drop) -> None:
                     #     assert c1 is not None
                     #     c1.lead_drop = drop
-                    paths.append(Path.teleport_into(ep, reagent=frag)
+                    new_trigger = SingleFireTrigger()
+                    paths.append(Path.teleport_into(ep, reagent=frag, after=ready_for_next)
                                     .to_pad(pad)
+                                    .then_fire(new_trigger)
                                     .start(mix.as_process(n_shuttles=n_shuttles, result=result))
                                     .to_pad(ep.pad)
                                     .reach(passed_by)
                                     .to_row(17)
                                     .then_process(update_drop(c1))
                                     .extended(self.mix_to_tcycle(1)))
+                    ready_for_next = new_trigger
                 else:
-                    paths.append(self.waste_drop((ep, frag), pad.row,
+                    new_trigger = SingleFireTrigger()
+                    paths.append(self.waste_drop((ep, frag, ready_for_next), pad.row,
                                                  Path.to_pad(pad)
+                                                    .then_fire(new_trigger)
                                                     .join()
                                                     .to_col(12)
                                                     .reach(passed_by, wait=False)))
+                    ready_for_next = new_trigger
 
         if c2 is not None:
             rdiluted = c2.my_reagent("R1[diluted]")
@@ -898,7 +908,7 @@ class CombSynth(PCRTask):
                                 .then_process(update_drop(c5))
                                 .extended(self.mix_to_tcycle(17))
                                 ))
-            paths.append(self.waste_drop((self.phase_5_ep, self.pf), 10,
+            paths.append(self.waste_drop((self.phase_5_ep, self.pf, None), 10,
                                          Path.join()
                                             .to_row(14)))
 
