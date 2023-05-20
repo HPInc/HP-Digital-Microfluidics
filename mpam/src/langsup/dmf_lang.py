@@ -600,9 +600,7 @@ class PromptValue(InjectableStatementValue):
         return f"Prompt({self.prompt})"
         
     def invoke(self)->Delayed[None]:
-        future = Postable[None]()
-        self.system.prompt_and_wait(future, prompt=self.prompt)
-        return future
+        return self.system.prompt_and_wait(prompt=self.prompt)
     
     
 

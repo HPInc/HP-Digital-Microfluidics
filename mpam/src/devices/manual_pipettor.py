@@ -4,7 +4,7 @@ import logging
 
 from mpam import exerciser
 from mpam.pipettor import Pipettor, Transfer, PipettingSource
-from mpam.types import XferDir, Reagent, Postable
+from mpam.types import XferDir, Reagent
 from typing import Final, Mapping, Sequence
 from _collections import defaultdict
 from erk.stringutils import conj_str
@@ -90,9 +90,7 @@ class ManualPipettor(Pipettor):
             else:
                 product = "product " if transfer.is_product else ""
                 msg = f"Please remove {vol:g} of {product}{reagent} from {loc}"
-            future = Postable[None]()
-            self.system.prompt_and_wait(future, prompt = msg)
-            future.wait()
+            self.system.prompt_and_wait(prompt = msg).wait()
             target.finished(reagent, vol)
         for target in transfer.targets:
             target.finished_overall_transfer(reagent)

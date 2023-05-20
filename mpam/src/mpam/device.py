@@ -4779,6 +4779,37 @@ Either a :class:`.TemperaturePoint`, a :class:`.Temperature` offset, or a pair
 of such values (as lower and upper values, respectively).
 """
 
+class Laser(BinaryComponent['Laser']):
+    ...
+
+class Sensor(BoardComponent, ABC):
+    class Sample:
+        ...
+    aiming_laser: Final[Optional[Laser]]
+    target: Optional[Pad]
+    
+    def __init__(self, board: Board, *,
+                 aiming_laser: Optional[Laser] = None,
+                 target: Optional[Pad] = None) -> None:
+        super().__init__(board)
+        self.aiming_laser = aiming_laser
+        self.target = target
+    
+    @property
+    @abstractmethod
+    def available(self) -> bool:
+        ...
+    @abstractmethod
+    def request_samples(self, *, n_samples: Optional[int] = None,
+                        raw: bool = False) -> None:
+        ...
+    @abstractmethod
+    def read_samples(self, *, read_async: bool = False) -> Delayed[Sequence[Sample]]:
+        ...
+    @abstractmethod
+    def aim(self, *, at_pad: Optional[Pad]=None) -> Delayed[None]:
+        ...
+
 class Config:
     local_ip_addr: Final = ConfigParam[Optional[str]](None)
     subnet: Final = ConfigParam[Optional[str]](None)
@@ -5532,7 +5563,12 @@ class System:
 
         return val
     
-    def prompt_and_wait(self, future: Postable[None], *, prompt: Optional[str] = None) -> None:
+    def prompt_and_wait(self, prompt: Optional[str] = None, *,
+                        future: Optional[Postable[None]]=None 
+                        ) -> Delayed[None]:
+        if future is None:
+            future = Postable[None]()
+        nn_future = future
         if self.monitor is not None:
             real_monitor = self.monitor
             def doit() -> None:
@@ -5542,13 +5578,14 @@ class System:
                 msg = prompt if prompt is not None else  "I hope you know what to do."
                 real_monitor.prompt_user(message=msg, on_click=on_click, buttons=["Done"])  
                 selected.wait()
-                future.post(None)
+                nn_future.post(None)
         else:
             def doit() -> None:
                 if prompt is not None:
                     print(prompt)
                 print("Hit <RETURN> to continue.")
                 input()
-                future.post(None)
+                nn_future.post(None)
         self.terminal_interaction.enqueue(doit)
+        return future
     
