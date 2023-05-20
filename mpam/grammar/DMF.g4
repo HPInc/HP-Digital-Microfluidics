@@ -331,6 +331,8 @@ attr returns[str which]
   | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
   | ('min' | 'minimum') ('target' | 'temperature' | 'temp') {$ctx.which="#min_target"}
   | ('max' | 'maximum') ('target' | 'temperature' | 'temp') {$ctx.which="#max_target"}
+  | 'power'? 'mode' {$ctx.which="mode"}
+  | 'voltage' {$ctx.which="voltage"}
   | 'heating' 'zone' {$ctx.which="heater"}
   | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
   	   | 'fan' | 'capacity'

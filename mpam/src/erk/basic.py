@@ -59,15 +59,22 @@ class Count(dict[_H,int]):
             self[elt] = new
         return new
     
+ValOrFn = Union[_T, Callable[[], _T]]
+
+def ensure_val(val: ValOrFn[_T], as_class: type[_T]) -> _T:
+    # Note, we're making an assumption that the type passed in is exactly _T. It
+    # could be a subtype, in which case, this might not work, but the explicit
+    # call we would have made would've failed, too.
+    if isinstance(val, as_class):
+        return val
+    fn = cast(Callable[[], _T], val)
+    return fn()
+
 def not_None(x: Optional[_T], *, 
-             desc: Optional[Union[str, Callable[[], str]]] = None) -> _T:
+             desc: Optional[ValOrFn[str]] = None) -> _T:
     def error_msg() -> str:
-        nonlocal desc
-        if desc is None:
-            desc = "argument to not_None"
-        elif not isinstance(desc, str):
-            desc = desc()
-        return f"{desc} is None"
+        d = "argument to not_None" if desc is None else ensure_val(desc, str)
+        return f"{d} is None"
     assert x is not None, error_msg()
     return x
 
@@ -86,16 +93,6 @@ class ComputedDefaultDict(dict[_H,_T]):
         self[key] = ret
         return ret
     
-ValOrFn = Union[_T, Callable[[], _T]]
-
-def ensure_val(val: ValOrFn[_T], as_class: type[_T]) -> _T:
-    # Note, we're making an assumption that the type passed in is exactly _T. It
-    # could be a subtype, in which case, this might not work, but the explicit
-    # call we would have made would've failed, too.
-    if isinstance(val, as_class):
-        return val
-    fn = cast(Callable[[], _T], val)
-    return fn()
 
 def assert_never(value: NoReturn) -> NoReturn:
     assert False, f'Unhandled value: {value} ({type(value).__name__})'

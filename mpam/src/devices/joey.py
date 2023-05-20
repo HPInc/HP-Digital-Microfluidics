@@ -9,7 +9,7 @@ from devices.emulated_heater import EmulatedHeater, EmulatedChiller
 from erk.basic import assert_never
 from erk.stringutils import conj_str
 from mpam.device import WellOpSeqDict, WellState, \
-    WellShape, System, WellPad, Pad, Magnet, DispenseGroup, \
+    WellShape, WellPad, Pad, Magnet, DispenseGroup, \
     WellGate, TemperatureControl, PowerSupply, PowerMode, Fan,\
     Heater, Chiller, StateDefs
 import mpam.device as device
@@ -28,8 +28,8 @@ from quantities.temperature import abs_C
 from quantities.US import mil
 import logging
 from erk.config import ConfigParam
-import mpam
 from mpam.cmd_line import coord_arg
+from functools import cached_property
 
 logger = logging.getLogger(__name__)
 
@@ -174,9 +174,13 @@ class ExtractionPoint(device.ExtractionPoint):
     
 class Board(device.Board):
     thermocycler: Final[Thermocycler]
-    pipettor: Final[Pipettor]
     _layout: Final[JoeyLayout]
     _lid: Final[LidType]
+    
+    @cached_property
+    def power_supply(self) -> PowerSupply:
+        return self.find_one(PowerSupply,
+                             if_missing="Joey board doesn't have a registered power supply.")
 
     def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]: # @UnusedVariable
         return DummyState(initial_state=OnOff.OFF)
@@ -288,27 +292,19 @@ class Board(device.Board):
     
 
     def __init__(self) -> None:
+        from mpam.pipettor import Pipettor # @Reimport
+        
         joey_layout = Config.layout()
         logger.info(f"Joey layout version is {Config.layout()}")
         logger.info(f"Lid type is {Config.lid_type()}")
         logger.info(f"Heater type is {Config.heater_type()}")
-        self._lid = Config.lid_type()
-        self._layout = Config.layout()
-        pad_dict = dict[XYCoord, Pad]()
-        wells: list[Well] = []
-        magnets: list[Magnet] = []
-        extraction_points: list[ExtractionPoint] = []
-        power_supply = self._power_supply()
-        fan = self._fan()
-        super().__init__(pads=pad_dict,
-                         wells=wells,
-                         magnets=magnets,
-                         extraction_points=extraction_points,
-                         power_supply=power_supply,
-                         fan=fan,
-                         orientation=Orientation.NORTH_POS_EAST_POS,
+
+        super().__init__(orientation=Orientation.NORTH_POS_EAST_POS,
                          drop_motion_time=500*ms,
                          cpt_layout=RCOrder.DOWN_RIGHT)
+        
+        self._lid = Config.lid_type()
+        self._layout = Config.layout()
         
         dead_regions: Sequence[GridRegion]
         if joey_layout is JoeyLayout.V1:
@@ -335,7 +331,7 @@ class Board(device.Board):
                           all(loc not in r for r in dead_regions))
                 if state is None:
                     state = DummyState(initial_state=OnOff.OFF)
-                pad_dict[loc] = Pad(loc, self, exists=exists, state=state)
+                self.pads[loc] = Pad(loc, self, exists=exists, state=state)
                 
         sequences: WellOpSeqDict
         if self._layout is JoeyLayout.V1:
@@ -422,14 +418,7 @@ class Board(device.Board):
         left_states = tuple(self._well_pad_state('left', n+1) for n in range(n_shared_pads))
         right_states = tuple(self._well_pad_state('right', n+1) for n in range(n_shared_pads))
 
-        pipettor_cp = mpam.pipettor.Config.pipettor 
-        def make_dummy() -> Pipettor:
-            from devices.dummy_pipettor import DummyPipettor
-            return DummyPipettor()
-        pipettor = pipettor_cp() if pipettor_cp.has_value else make_dummy()
-        self.pipettor = pipettor
-        
-        
+        pipettor = self.pipettor
 
         self._add_wells((
             self._well(left_group, Dir.RIGHT, self.pad_at(1,19), pipettor, left_states, well_shape),
@@ -441,12 +430,13 @@ class Board(device.Board):
             self._well(right_group, Dir.LEFT, self.pad_at(19,7), pipettor, right_states, well_shape),
             self._well(right_group, Dir.LEFT, self.pad_at(19,1), pipettor, right_states, well_shape),
             ))
-
-        self._add_magnets(self._magnets())
-        self._add_heaters(self._heaters())
-        self._add_chillers(self._chillers())
-        # self._add_heaters(self._heaters(HeaterType.Peltier))
         
+        self._add_externals(Magnet, self._magnets())
+        self._add_externals(Heater, self._heaters())
+        self._add_externals(Chiller, self._chillers())
+        self._add_external(Pipettor, pipettor) # type: ignore [type-abstract]
+        self._add_external(PowerSupply, self._power_supply())
+        self._add_external(Fan, self._fan())
 
         def to_ep(xy: Union[XYCoord,Pad,tuple[int,int]], pipettor: Pipettor) -> ExtractionPoint:
             if isinstance(xy, tuple):
@@ -524,9 +514,6 @@ class Board(device.Board):
             # heaters = self.temperature_controls,
             channels = tc_channels)
 
-    def join_system(self, system: System) -> None:
-        super().join_system(system)
-        self.pipettor.join_system(system)
 
     def update_state(self) -> None:
         super().update_state()
@@ -579,14 +566,7 @@ class PlatformTask(PlatformChoiceTask):
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
                   ) -> Board: 
         kwds = self.board_kwd_args(args, announce=True)
-        # off_on_delay: Time = args.off_on_delay
         return Board(**kwds)
-                    # heater_type = HeaterType.from_name(args.heaters),
-                    # off_on_delay=off_on_delay,
-                    # extraction_point_splash_radius=args.extraction_point_splash_radius,
-                    # holes=args.holes,
-                    # default_holes=args.default_holes
-                    # )
                     
     def setup_config_defaults(self) -> None:
         Config.setup_defaults()
