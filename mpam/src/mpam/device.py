@@ -299,6 +299,8 @@ BinaryComponent.TurnOn = BinaryComponent.ModifyState(lambda _: OnOff.ON)
 BinaryComponent.TurnOff = BinaryComponent.ModifyState(lambda _: OnOff.OFF)
 BinaryComponent.Toggle = BinaryComponent.ModifyState(lambda s: ~s)
 
+EC = TypeVar('EC', bound='ExternalComponent')
+
 class ExternalComponent: 
     number: int = -1
     
@@ -316,9 +318,43 @@ class ExternalComponent:
         me = self
         if isinstance(me, BinaryComponent):
             me.current_state = OnOff.OFF
-
-EC = TypeVar('EC', bound=ExternalComponent)
-
+            
+    @classmethod
+    def find_all_in(cls: type[EC], board: Board) -> Sequence[EC]:
+        return board.find_all(cls)
+    
+    @overload
+    @classmethod
+    def find_one_in(cls: type[EC], board: Board, *, if_missing: ValOrFn[str]) -> EC: ... # @UnusedVariable
+    @overload
+    @classmethod
+    def find_one_in(cls: type[EC], board: Board, *, if_missing: Missing = MISSING) -> Optional[EC]: ... # @UnusedVariable
+    @classmethod
+    def find_one_in(cls: type[EC], board: Board, *,
+                 if_missing: MissingOr[ValOrFn[str]] = MISSING) -> Optional[EC]:
+        return board.find_one(cls, if_missing=if_missing)
+    
+    @classmethod
+    def _add_external_to(cls: type[EC], board: Board, cpt: EC) -> int:
+        return board._add_external(cls, cpt)
+    
+    @classmethod
+    def _maybe_add_external_to(cls: type[EC], board: Board, cpt: Optional[EC]) -> None:
+        board._maybe_add_external(cls, cpt)
+    
+    @classmethod
+    def _add_externals_to(cls: type[EC], board: Board, cpts: Sequence[EC], *,
+                          order: Optional[RCOrder] = None) -> None:
+        board._add_externals(cls, cpts, order=order)
+        
+    @classmethod
+    def component_number_in(cls: type[EC], board: Board, n: int) -> EC:
+        return cls.find_all_in(board)[n-1]
+    
+    @classmethod
+    def reset_in(cls: type[EC], board: Board) -> None:
+        board.reset_components(cls)
+    
 
 class PipettingTarget(ABC):
     """
@@ -4900,8 +4936,7 @@ class Board(SystemComponent):
     @cached_property
     def pipettor(self) -> Pipettor:
         from mpam.pipettor import Pipettor # @Reimport
-        return self.find_one(Pipettor,  # type: ignore [type-abstract]
-                             if_missing=lambda: f"{self} doesn't have a registered pipettor.")
+        return Pipettor.find_one_in(self, if_missing=lambda: f"{self} doesn't have a registered pipettor.")
         
 
     def __init__(self, *,
@@ -4928,7 +4963,7 @@ class Board(SystemComponent):
         pipettor = pipettor_cp() if pipettor_cp.has_value else ensure_val(self.default_pipettor(), 
                                                                           mpam.pipettor.Pipettor) # type: ignore [type-abstract]
         
-        self._add_external(mpam.pipettor.Pipettor, pipettor)    # type: ignore [type-abstract]
+        mpam.pipettor.Pipettor._add_external_to(self, pipettor)
         
     def default_pipettor(self) -> ValOrFn[Pipettor]:
         from devices.dummy_pipettor import DummyPipettor
@@ -4969,33 +5004,6 @@ class Board(SystemComponent):
         for c in cpts:
             self._add_external(cpt_type, c)
             
-    # def _add_heater(self, heater: Heater) -> int:
-    #     heaters = self.heaters
-    #     n = len(heaters)
-    #     heater.number = n+1
-    #     heaters.append(heater)
-    #     return n
-    #
-    # def _add_heaters(self, heaters: Sequence[Heater], *, order: Optional[RCOrder] = None) -> None:
-    #     if order is None:
-    #         order = self.component_layout
-    #     heaters = self.sorted(heaters, get_pads=lambda h: h.pads_for_sort, order=order)
-    #     for h in heaters:
-    #         self._add_heater(h)
-    #
-    # def _add_chiller(self, chiller: Chiller) -> int:
-    #     chillers = self.chillers
-    #     n = len(chillers)
-    #     chiller.number = n+1
-    #     chillers.append(chiller)
-    #     return n
-    #
-    # def _add_chillers(self, chillers: Sequence[Chiller], *, order: Optional[RCOrder] = None) -> None:
-    #     if order is None:
-    #         order = self.component_layout
-    #     chillers = self.sorted(chillers, get_pads=lambda c: c.pads_for_sort, order=order)
-    #     for c in chillers:
-    #         self._add_chiller(c)
             
     def _add_extraction_point(self, ep: ExtractionPoint) -> int:
         eps = self._extraction_points

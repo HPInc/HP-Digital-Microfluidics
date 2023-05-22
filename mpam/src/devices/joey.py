@@ -434,7 +434,6 @@ class Board(device.Board):
         self._add_externals(Magnet, self._magnets())
         self._add_externals(Heater, self._heaters())
         self._add_externals(Chiller, self._chillers())
-        self._add_external(Pipettor, pipettor) # type: ignore [type-abstract]
         self._add_external(PowerSupply, self._power_supply())
         self._add_external(Fan, self._fan())
 
