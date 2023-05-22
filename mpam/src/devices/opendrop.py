@@ -118,11 +118,7 @@ class Board(device.Board):
                     )
     
     def __init__(self) -> None:
-        pad_dict = dict[XYCoord, Pad]()
-        wells: list[Well] = []
-        super().__init__(pads=pad_dict, 
-                         wells=wells,
-                         orientation=Orientation.NORTH_NEG_EAST_POS,
+        super().__init__(orientation=Orientation.NORTH_NEG_EAST_POS,
                          drop_motion_time=500*ms)
         self._dev = Config.device()
         self._states = bytearray(128)
@@ -132,7 +128,7 @@ class Board(device.Board):
                 loc = XYCoord(x, y)
                 e = Electrode(x, y, self._states)
                 p = Pad(loc, self, e)
-                pad_dict[loc] = p
+                self.pads[loc] = p
                 
         states = {
             WellState.READY: (1,2),

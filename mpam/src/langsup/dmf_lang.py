@@ -20,7 +20,7 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
-    Heater, System, DropLoc, ExtractionPoint
+    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -2570,13 +2570,14 @@ class DMFCompiler(DMFVisitor):
         if isinstance(rt, MaybeType) and not is_maybe:
             real_extractor = extractor
             real_attr = attr
+            attr_text = self.text_of(ctx.attr())
             def extractor(obj: Any) -> Delayed[Any]:
                 def check(val: Any) -> MaybeError:
                     if val is None:
                         name = real_attr.func.name
                         if (m := re.fullmatch("'(.*)' attribute", name)) is not None:
                             name = m.group(1)
-                        ex = MaybeNotSatisfiedError(f"{obj} has no '{name}'")
+                        ex = MaybeNotSatisfiedError(f"{obj} has no '{attr_text}'.")
                         return ex
                     return val
                 return real_extractor(obj).transformed(error_check(check))
@@ -2601,11 +2602,29 @@ class DMFCompiler(DMFVisitor):
         kind_ctx = cast(DMFParser.Numbered_typeContext, ctx.kind)
         kind = cast(NumberedItem, kind_ctx.kind)
         
-        def figure(lookup: Callable[[Board, int], T_],
-                   rt: Type,
-                   name: str, 
-                   *,
-                   max_val: Callable[[Board], int]) -> Executable:
+        def find_component(cpt_type: type[EC],
+                           rt: Type,
+                           name: str) -> Executable:
+            if e:=self.type_check(Type.INT, which, ctx.which, return_type=rt):
+                return e
+            def run(env: Environment) -> Delayed[MaybeError[EC]]:
+                def find(n: int) -> MaybeError[EC]:
+                    try:
+                        def lookup(board: Board, n: int) -> EC:
+                            return board.component_number(n, cpt_type)
+                        return lookup(env.board, n)
+                    except IndexError:
+                        max_val = len(env.board.find_all(cpt_type))
+                        return NoSuchComponentError(name, n, max_val)
+                return (which.evaluate(env, Type.INT)
+                        .transformed(error_check(find)))
+            return Executable(rt, run, (which,))
+        
+        def find_in_list(lookup: Callable[[Board, int], T_],
+                         rt: Type,
+                         name: str, 
+                         *,
+                         max_val: Callable[[Board], int]) -> Executable:
             if e:=self.type_check(Type.INT, which, ctx.which, return_type=rt):
                 return e
             def run(env: Environment) -> Delayed[MaybeError[T_]]:
@@ -2619,18 +2638,18 @@ class DMFCompiler(DMFVisitor):
             return Executable(rt, run, (which,))
         
         if kind is NumberedItem.WELL:
-            return figure(Board.well_number, Type.WELL, "well", max_val=lambda b: len(b.wells))
+            return find_in_list(Board.well_number, Type.WELL, "well", max_val=lambda b: len(b.wells))
         # elif kind is NumberedItem.TEMP_CONTROL:
         #     return figure(lambda b: b.temperature_controls, Type.HEATER, "temperature control")
         elif kind is NumberedItem.HEATER:
-            return figure(Board.heater_number, Type.HEATER, "heater", max_val=lambda b: len(b.heaters))
+            return find_component(Heater, Type.HEATER, "heater")
         elif kind is NumberedItem.CHILLER:
-            return figure(Board.chiller_number, Type.CHILLER, "chiller", max_val=lambda b: len(b.chillers))
+            return find_component(Chiller, Type.CHILLER, "chiller")
         elif kind is NumberedItem.MAGNET:
-            return figure(Board.magnet_number, Type.MAGNET, "magnet", max_val=lambda b: len(b.magnets))
+            return find_component(Magnet, Type.MAGNET, "magnet")
         elif kind is NumberedItem.EXTRACTION_POINT:
-            return figure(Board.extraction_point_number, Type.EXTRACTION_POINT, "extraction point",
-                          max_val = lambda b: len(b.extraction_points))
+            return find_in_list(Board.extraction_point_number, Type.EXTRACTION_POINT, "extraction point",
+                                max_val = lambda b: len(b.extraction_points))
         else:
             assert_never(kind)
 
@@ -3071,11 +3090,11 @@ class DMFCompiler(DMFVisitor):
         fn = Functions["RESET PADS"]
         fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_pads()))
         fn = Functions["RESET MAGNETS"]
-        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_magnets()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_components(Magnet)))
         fn = Functions["RESET HEATERS"]
-        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_heaters()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_components(Heater)))
         fn = Functions["RESET CHILLERS"]
-        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_chillers()))
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_components(Chiller)))
         fn = Functions["RESET ALL"]
         fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_all()))
         
@@ -3389,7 +3408,7 @@ class DMFCompiler(DMFVisitor):
         Attributes["#max_target"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.max_target)
         Attributes["#min_target"].register(Type.CHILLER, Type.ABS_TEMP, lambda c: c.min_target)
         
-        Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY, lambda b: b.power_supply)
+        Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY.maybe, lambda b: b.find_one(PowerSupply))
         
         def set_ps_voltage(ps: PowerSupply, v: Voltage) -> None:
             ps.voltage = v
@@ -3404,7 +3423,7 @@ class DMFCompiler(DMFVisitor):
         Attributes["#min_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.min_voltage)
         Attributes["#max_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.max_voltage)
         
-        Attributes["fan"].register(Type.BOARD, Type.FAN.maybe, lambda b: b.fan)
+        Attributes["fan"].register(Type.BOARD, Type.FAN.maybe, lambda b: b.find_one(Fan))
 
 DMFCompiler.setup_attributes()
 DMFCompiler.setup_function_table()

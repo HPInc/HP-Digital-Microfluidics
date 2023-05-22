@@ -7,7 +7,7 @@ import logging
 
 from erk.errors import ErrorHandler, PRINT
 from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
-    ProductLocation
+    ProductLocation, ExternalComponent
 from mpam.types import Reagent, OpScheduler, Callback, \
     Liquid, Delayed, AsyncFunctionSerializer, T, XferDir, \
     unknown_reagent, MixResult, Postable, WaitableType, NO_WAIT, \
@@ -371,7 +371,7 @@ class PipettorSysCpt(SystemComponent):
     def system_shutdown(self) -> None:
         self.pipettor.system_shutdown()
 
-class Pipettor(OpScheduler['Pipettor'], ABC):
+class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
     sys_cpt: Final[PipettorSysCpt]
     OpFunc = Callable[[], None]
     name: Final[str]

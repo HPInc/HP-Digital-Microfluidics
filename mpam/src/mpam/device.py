@@ -13,11 +13,11 @@ from threading import Event, Lock, Thread, RLock
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
-    NamedTuple, Iterable
+    NamedTuple, Iterable, Type, overload
 
 from matplotlib.gridspec import SubplotSpec
 
-from erk.basic import not_None, assert_never
+from erk.basic import not_None, assert_never, ValOrFn, ensure_val
 from erk.errors import ErrorHandler, PRINT
 from mpam.engine import DevCommRequest, TimerFunc, ClockCallback, \
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest, \
@@ -28,7 +28,7 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
-    NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer
+    NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer, Missing
 from quantities.SI import volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -51,6 +51,7 @@ PadArray = Mapping[XYCoord, 'Pad']
 
 T = TypeVar('T')            #: A generic type variable
 Modifier = Callable[[T],T]  #: A :class:`Callable` that returns a value of the same type as its argument
+
 
 class BoardComponent:
     """
@@ -297,6 +298,63 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 BinaryComponent.TurnOn = BinaryComponent.ModifyState(lambda _: OnOff.ON)
 BinaryComponent.TurnOff = BinaryComponent.ModifyState(lambda _: OnOff.OFF)
 BinaryComponent.Toggle = BinaryComponent.ModifyState(lambda s: ~s)
+
+EC = TypeVar('EC', bound='ExternalComponent')
+
+class ExternalComponent: 
+    number: int = -1
+    
+    @property
+    def pads_for_sort(self) -> Sequence[Pad]:
+        return ()
+    
+    def join_system(self, system: System) -> None: # @UnusedVariable
+        ...
+        
+    def reset_component(self) -> None:
+        # Mypy (1.2.0) appears to be unwilling to do flow analysis on self and
+        # complains that self can't be a BinaryComponent if it is checked
+        # directly with isinstance().
+        me = self
+        if isinstance(me, BinaryComponent):
+            me.current_state = OnOff.OFF
+            
+    @classmethod
+    def find_all_in(cls: type[EC], board: Board) -> Sequence[EC]:
+        return board.find_all(cls)
+    
+    @overload
+    @classmethod
+    def find_one_in(cls: type[EC], board: Board, *, if_missing: ValOrFn[str]) -> EC: ... # @UnusedVariable
+    @overload
+    @classmethod
+    def find_one_in(cls: type[EC], board: Board, *, if_missing: Missing = MISSING) -> Optional[EC]: ... # @UnusedVariable
+    @classmethod
+    def find_one_in(cls: type[EC], board: Board, *,
+                 if_missing: MissingOr[ValOrFn[str]] = MISSING) -> Optional[EC]:
+        return board.find_one(cls, if_missing=if_missing)
+    
+    @classmethod
+    def _add_external_to(cls: type[EC], board: Board, cpt: EC) -> int:
+        return board._add_external(cls, cpt)
+    
+    @classmethod
+    def _maybe_add_external_to(cls: type[EC], board: Board, cpt: Optional[EC]) -> None:
+        board._maybe_add_external(cls, cpt)
+    
+    @classmethod
+    def _add_externals_to(cls: type[EC], board: Board, cpts: Sequence[EC], *,
+                          order: Optional[RCOrder] = None) -> None:
+        board._add_externals(cls, cpts, order=order)
+        
+    @classmethod
+    def component_number_in(cls: type[EC], board: Board, n: int) -> EC:
+        return cls.find_all_in(board)[n-1]
+    
+    @classmethod
+    def reset_in(cls: type[EC], board: Board) -> None:
+        board.reset_components(cls)
+    
 
 class PipettingTarget(ABC):
     """
@@ -3003,7 +3061,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
             board.before_tick(lambda: next(iterator))
             return motion.initial_future
 
-class Magnet(BinaryComponent['Magnet']):
+class Magnet(BinaryComponent['Magnet'], ExternalComponent):
     """
     A magnet that affects a set of :class:`Pad`\s.
 
@@ -3023,6 +3081,10 @@ class Magnet(BinaryComponent['Magnet']):
     number: int = -1
     """The :class:`Magnet`'s index in its :attr:`board`'s :attr:`~Board.magnets` list"""
     pads: Final[Sequence[Pad]] #: The :class:`Pad`\s affected by this :class:`Magnet`
+    
+    @property
+    def pads_for_sort(self)->Sequence[Pad]:
+        return self.pads
 
     def __init__(self, board: Board, *, state: State[OnOff], pads: Sequence[Pad]) -> None:
         """
@@ -3113,7 +3175,7 @@ class TemperatureMode(Enum):
         return self is TemperatureMode.CHILLING or self is TemperatureMode.COOLING
 
 
-class TemperatureControl(ABC, BinaryComponent['TemperatureControl']):
+class TemperatureControl(ABC, BinaryComponent['TemperatureControl'], ExternalComponent):
     """
     A :class:`BoardComponent` that can be used to control the temperature of its
     associated :attr:`pads`.
@@ -3498,6 +3560,9 @@ class TemperatureControl(ABC, BinaryComponent['TemperatureControl']):
             self.poll().then_call(set_temp)
             return self.polling_interval if self._polling else None
         self.board.call_after(Time.ZERO, do_poll, daemon=True)
+        
+    def join_system(self, system:System)->None: # @UnusedVariable
+        self.start_polling()
 
     def stop_polling(self) -> None:
         """
@@ -4569,7 +4634,7 @@ class PowerMode(Enum):
     DC = auto()
     AC = auto()
 
-class PowerSupply(BinaryComponent['PowerSupply']):
+class PowerSupply(BinaryComponent['PowerSupply'], ExternalComponent):
     _last_voltage: Voltage = Voltage.ZERO
     _lock: Final[RLock]
 
@@ -4722,7 +4787,7 @@ class FixedPowerSupply(PowerSupply):
             print("Power supply cannot be turned on or off")
 
 
-class Fan(BinaryComponent["Fan"]):
+class Fan(BinaryComponent["Fan"], ExternalComponent):
     # There's nothing special about fans, but we make it a separate type for
     # type checking and value printing purposes.
     def __init__(self, board: Board,
@@ -4837,25 +4902,35 @@ class Board(SystemComponent):
     @property
     def wells(self) -> Sequence[Well]:
         return self._well_list
-    _magnet_list: Final[list[Magnet]]
-
+    
+    _external_components: Final[list[ExternalComponent]]
+    
     @property
-    def magnets(self) -> Sequence[Magnet]:
-        return self._magnet_list
+    def external_components(self) -> Sequence[ExternalComponent]:
+        return self._external_components
+    
+    def find_all(self, of_type: Type[EC]) -> Sequence[EC]:
+        return [c for c in self.external_components if isinstance(c, of_type)]
 
-    heaters: Final[list[Heater]]
-    chillers: Final[list[Chiller]]
-    @property
-    def temperature_controls(self) -> Sequence[TemperatureControl]:
-        return (*self.heaters, *self.chillers)
+    @overload
+    def find_one(self, of_type: type[EC], *, if_missing: ValOrFn[str]) -> EC: ... # @UnusedVariable
+    @overload
+    def find_one(self, of_type: type[EC], *, if_missing: Missing = MISSING) -> Optional[EC]: ... # @UnusedVariable
+    def find_one(self, of_type: type[EC], *,
+                 if_missing: MissingOr[ValOrFn[str]] = MISSING) -> Optional[EC]:
+        all_found = self.find_all(of_type)
+        if len(all_found) > 0:
+            return all_found[0]
+        if if_missing is MISSING:
+            return None
+        assert False, ensure_val(if_missing, str)
+    
     
     _extraction_points: Final[list[ExtractionPoint]]
     @property
     def extraction_points(self) -> Sequence[ExtractionPoint]:
         return self._extraction_points
     extraction_point_splash_radius: Final[int]
-    power_supply: Final[PowerSupply]
-    fan: Final[Optional[Fan]]
     orientation: Final[Orientation]
     drop_motion_time: Final[Time]
     off_on_delay: Time
@@ -4888,41 +4963,25 @@ class Board(SystemComponent):
     def change_journal(self) -> ChangeJournal:
         with self._lock:
             return self._change_journal
+        
+    @cached_property
+    def pipettor(self) -> Pipettor:
+        from mpam.pipettor import Pipettor # @Reimport
+        return Pipettor.find_one_in(self, if_missing=lambda: f"{self} doesn't have a registered pipettor.")
+        
 
     def __init__(self, *,
-                 pads: dict[XYCoord, Pad],
-                 wells: Optional[Sequence[Well]] = None,
-                 magnets: Optional[Sequence[Magnet]] = None,
-                 heaters: Optional[Sequence[Heater]] = None,
-                 chillers: Optional[Sequence[Chiller]] = None,
-                 extraction_points: Optional[Sequence[ExtractionPoint]] = None,
-                 power_supply: Optional[PowerSupply] = None,
-                 fan: Optional[Fan] = None,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  cpt_layout: Optional[RCOrder] = None) -> None:
         super().__init__()
         self._change_journal = ChangeJournal()
-        self.pads = pads
+        self.pads = dict[XYCoord, Pad]()
+        self._external_components = []
         self.component_layout = cpt_layout
         self._well_list = []
-        if wells:
-            self._add_wells(wells)
-        self.heaters = []
-        if heaters:
-            self._add_heaters(heaters)
-        self.chillers = []
-        if chillers:
-            self._add_chillers(chillers)
-        self._magnet_list = [] 
-        if magnets:
-            self._add_magnets(magnets)
         self._extraction_points = [] 
-        if extraction_points:
-            self._add_extraction_points(extraction_points)
         self.extraction_point_splash_radius = Config.extraction_point_splash_radius()
-        self.power_supply = power_supply or FixedPowerSupply(self)
-        self.fan = fan
         self.orientation = orientation
         self.drop_motion_time = drop_motion_time
         self.off_on_delay = Config.off_on_delay()
@@ -4930,8 +4989,18 @@ class Board(SystemComponent):
             logger.info("off-on delay is %s", self.off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
-        # self._drops = []
-        # self._to_appear = []
+        import mpam
+        pipettor_cp = mpam.pipettor.Config.pipettor
+        pipettor = pipettor_cp() if pipettor_cp.has_value else ensure_val(self.default_pipettor(), 
+                                                                          mpam.pipettor.Pipettor) # type: ignore [type-abstract]
+        
+        mpam.pipettor.Pipettor._add_external_to(self, pipettor)
+        
+    def default_pipettor(self) -> ValOrFn[Pipettor]:
+        from devices.dummy_pipettor import DummyPipettor
+        return DummyPipettor
+        
+        
         
     def _add_well(self, well: Well) -> int:
         wells = self._well_list
@@ -4947,33 +5016,25 @@ class Board(SystemComponent):
         for w in wells:
             self._add_well(w)
             
-    def _add_heater(self, heater: Heater) -> int:
-        heaters = self.heaters
-        n = len(heaters)
-        heater.number = n+1
-        heaters.append(heater)
+    def _add_external(self, cpt_type: type[EC], cpt: EC) -> int:
+        known = self.find_all(cpt_type)
+        n = len(known)
+        cpt.number = n+1
+        self._external_components.append(cpt)
         return n
-        
-    def _add_heaters(self, heaters: Sequence[Heater], *, order: Optional[RCOrder] = None) -> None:
+    
+    def _maybe_add_external(self, cpt_type: type[EC], cpt: Optional[EC]) -> None:
+        if cpt is not None:
+            self._add_external(cpt_type, cpt)
+    
+    def _add_externals(self, cpt_type: type[EC], cpts: Sequence[EC], *,
+                       order: Optional[RCOrder] = None) -> None:
         if order is None:
             order = self.component_layout
-        heaters = self.sorted(heaters, get_pads=lambda h: h.pads_for_sort, order=order)
-        for h in heaters:
-            self._add_heater(h)
-
-    def _add_chiller(self, chiller: Chiller) -> int:
-        chillers = self.chillers
-        n = len(chillers)
-        chiller.number = n+1
-        chillers.append(chiller)
-        return n
-
-    def _add_chillers(self, chillers: Sequence[Chiller], *, order: Optional[RCOrder] = None) -> None:
-        if order is None:
-            order = self.component_layout
-        chillers = self.sorted(chillers, get_pads=lambda c: c.pads_for_sort, order=order)
-        for c in chillers:
-            self._add_chiller(c)
+        cpts = self.sorted(cpts, get_pads = lambda c: c.pads_for_sort, order=order)
+        for c in cpts:
+            self._add_external(cpt_type, c)
+            
             
     def _add_extraction_point(self, ep: ExtractionPoint) -> int:
         eps = self._extraction_points
@@ -5006,19 +5067,19 @@ class Board(SystemComponent):
     #     for tc in temperature_controls:
     #         self._add_temperature_control(tc)
 
-    def _add_magnet(self, magnet: Magnet) -> int:
-        magnets = self._magnet_list
-        n = len(magnets)
-        magnet.number = n+1
-        magnets.append(magnet)
-        return n
-        
-    def _add_magnets(self, magnets: Sequence[Magnet], *, order: Optional[RCOrder] = None) -> None:
-        if order is None:
-            order = self.component_layout
-        magnets = self.sorted(magnets, get_pads = lambda m: m.pads, order=order)
-        for m in magnets:
-            self._add_magnet(m)
+    # def _add_magnet(self, magnet: Magnet) -> int:
+    #     magnets = self._magnet_list
+    #     n = len(magnets)
+    #     magnet.number = n+1
+    #     magnets.append(magnet)
+    #     return n
+    #
+    # def _add_magnets(self, magnets: Sequence[Magnet], *, order: Optional[RCOrder] = None) -> None:
+    #     if order is None:
+    #         order = self.component_layout
+    #     magnets = self.sorted(magnets, get_pads = lambda m: m.pads, order=order)
+    #     for m in magnets:
+    #         self._add_magnet(m)
 
     def replace_change_journal(self) -> ChangeJournal:
         with self._lock:
@@ -5070,26 +5131,12 @@ class Board(SystemComponent):
     def well_number(self, n: int) -> Well:
         return self.wells[n-1]
     
-    def heater_number(self, n: int) -> Heater:
-        return self.heaters[n-1]
-    
-    def chiller_number(self, n: int) -> Chiller:
-        return self.chillers[n-1]
+    def component_number(self, n: int, cpt_type: type[EC]) -> EC:
+        return self.find_all(cpt_type)[n-1]
     
     def extraction_point_number(self, n: int) -> ExtractionPoint:
         return self.extraction_points[n-1]
     
-    def magnet_number(self, n: int) -> Magnet:
-        return self.magnets[n-1]
-
-    # @property
-    # def well_groups(self) -> Mapping[str, WellGroup]:
-    #     cache: Optional[Mapping[str, WellGroup]] = getattr(self, '_well_groups', None)
-    #     if cache is None:
-    #         cache = {well.group.name: well.group for well in self.wells}
-    #         self._well_groups = cache
-    #     return cache
-
     @property
     def drop_size(self) -> Volume:
         cache: Optional[Volume] = getattr(self, '_drop_size', None)
@@ -5113,8 +5160,9 @@ class Board(SystemComponent):
 
     def join_system(self, system: System)->None:
         super().join_system(system)
-        for h in self.temperature_controls:
-            h.start_polling()
+        
+        for cpt in self.external_components:
+            cpt.join_system(system)
 
     def _amb_threshold(self, t: TempOrTP, upper: bool) -> TemperaturePoint:
         if isinstance(t, TemperaturePoint):
@@ -5182,26 +5230,14 @@ class Board(SystemComponent):
         self._reset(*self.pad_array.values())
         for well in self.wells:
             self._reset(well.gate, *well.shared_pads)
-
-    def reset_temperature_controls(self) -> None:
-        self._reset(*self.temperature_controls)
-
-    def reset_heaters(self) -> None:
-        self._reset(*self.heaters)
-
-    def reset_chillers(self) -> None:
-        self._reset(*self.chillers)
-
-    def reset_magnets(self) -> None:
-        self._reset(*self.magnets)
+            
+    def reset_components(self, of_type: type[ExternalComponent] = ExternalComponent) -> None:
+        for cpt in self.find_all(of_type):
+            cpt.reset_component()
 
     def reset_all(self) -> None:
         self.reset_pads()
-        self.reset_temperature_controls()
-        self.reset_magnets()
-        self._reset(self.power_supply)
-        if self.fan is not None:
-            self._reset(self.fan)
+        self.reset_components()
 
     def sorted(self, cpts: Sequence[T], *,
                get_pads: Callable[[T], Sequence[LocatedPad]],

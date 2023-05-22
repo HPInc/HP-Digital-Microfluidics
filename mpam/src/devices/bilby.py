@@ -249,7 +249,7 @@ class Board(joey.Board):
             for e in on_electrodes:
                 e.current_state = OnOff.ON
             self.infer_drop_motion()
-        
+            
         self.power_supply.voltage = Config.voltage()
         
     def update_state(self) -> None:
