@@ -20,14 +20,14 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
-    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan
+    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr,\
     not_Missing
 from quantities.core import Unit, Dimensionality
-from quantities.dimensions import Time, Volume, Temperature, Voltage
+from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from erk.stringutils import map_str, conj_str
 import math
 from functools import reduce
@@ -40,6 +40,7 @@ from quantities.SI import deg_C
 from quantities.timestamp import Timestamp, time_in, time_now
 import io
 import logging
+from devices.eselog import ESELog
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -682,6 +683,13 @@ def unit_func(unit: PhysUnit) -> Func:
 
 UnitFuncs = ByNameCache[PhysUnit, Func](unit_func)
 
+def unit_recip_func(unit: PhysUnit) -> Func:
+    return unit_adaptor(unit, str(unit), 
+                        lambda qt,nt: ((nt,), qt),
+                        lambda unit: lambda n: n/unit)
+
+UnitRecipFuncs = ByNameCache[PhysUnit, Func](unit_recip_func)
+
 def unit_mag_func(unit: PhysUnit) -> Func:
     return unit_adaptor(unit, f"'s magnitude in {unit}",
                         lambda qt,nt: ((qt,), Type.FLOAT), # @UnusedVariable
@@ -779,6 +787,7 @@ DimensionToType: dict[Dimensionality, tuple[Type, Type]] = {
     Volume.dim(): (Type.VOLUME, Type.FLOAT),
     Ticks.dim(): (Type.TICKS, Type.INT),
     Voltage.dim(): (Type.VOLTAGE, Type.FLOAT),
+    Frequency.dim(): (Type.FREQUENCY, Type.FLOAT)
     }
 
 AnyTemp = Union[Temperature, TemperaturePoint, "AmbiguousTemp"]
@@ -1583,6 +1592,10 @@ class DMFCompiler(DMFVisitor):
     
     def unit_exec(self, unit: PhysUnit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
         func = UnitFuncs[unit]
+        return self.use_function(func, ctx, (size_ctx,))
+
+    def unit_recip_exec(self, unit: PhysUnit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
+        func = UnitRecipFuncs[unit]
         return self.use_function(func, ctx, (size_ctx,))
     
     def unit_mag_exec(self, unit: PhysUnit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
@@ -2818,7 +2831,12 @@ class DMFCompiler(DMFVisitor):
         return Executable(macro_type, run, (body,))
 
     def visitUnit_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
-        return self.unit_exec(ctx.dim_unit().unit, ctx, ctx.amount)
+        unit: Unit = ctx.dim_unit().unit
+        return self.unit_exec(unit, ctx, ctx.amount)
+    
+    def visitUnit_recip_expr(self, ctx:DMFParser.Unit_recip_exprContext) -> Executable:
+        unit: Unit = ctx.dim_unit().unit
+        return self.unit_recip_exec(unit, ctx, ctx.amount)
     
     def visitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext) -> Executable:
         if ctx.dim_unit() is None:
@@ -2999,6 +3017,8 @@ class DMFCompiler(DMFVisitor):
                                    ((Type.REL_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    # ((Type.AMBIG_TEMP,Type.FLOAT), Type.REL_TEMP),
                                    ((Type.VOLTAGE,Type.FLOAT), Type.VOLTAGE),
+                                   ((Type.FLOAT,Type.TIME), Type.FREQUENCY),
+                                   ((Type.FLOAT,Type.FREQUENCY), Type.TIME),
                                    ], lambda x,y: x/y)
         fn.register_immediate((Type.LIQUID, Type.FLOAT), Type.LIQUID,
                               lambda liquid, split: Liquid(liquid.reagent, liquid.volume/split)
@@ -3241,6 +3261,23 @@ class DMFCompiler(DMFVisitor):
                                    prepare_to_dispense,
                                    curry_at=0)
         
+        fn = BuiltIns["aim"] = Functions["aim"]
+        def aim_sensor(s: Sensor, p: Optional[Pad] = None) -> Delayed[None]:
+            return s.aim(at_pad=p)
+        fn.register((Type.SENSOR,), Type.NO_VALUE, aim_sensor)
+        fn.register((Type.SENSOR, Type.PAD.maybe), Type.NO_VALUE, aim_sensor, curry_at=0)
+        
+        fn = BuiltIns["take reading"] = Functions["#take reading"]
+        def read_from_sensor(s: Sensor, n: Optional[int]=None, r: Optional[Union[Time,Frequency]]=None) -> Delayed[int]:
+            return s.read(n_samples=n, speed=r).transformed(lambda seq: len(seq))
+        fn.register((Type.SENSOR,), Type.INT, read_from_sensor)
+        fn.register((Type.SENSOR, Type.INT), Type.INT, read_from_sensor, curry_at=0)
+        fn.register((Type.SENSOR, Type.INT, Type.TIME), Type.INT, read_from_sensor, curry_at=0)
+        fn.register((Type.SENSOR, Type.INT, Type.FREQUENCY), Type.INT, read_from_sensor, curry_at=0)
+        fn.register((Type.SENSOR, Type.TIME), Type.INT, lambda s,t: read_from_sensor(s, None, t), curry_at=0)
+        fn.register((Type.SENSOR, Type.FREQUENCY), Type.INT, lambda s,f: read_from_sensor(s, None, f), curry_at=0)
+        
+        
     @classmethod
     def setup_special_vars(cls) -> None:
         unmonitored_interactive_reagent = unknown_reagent
@@ -3404,6 +3441,8 @@ class DMFCompiler(DMFVisitor):
             h.target = t
         Attributes["#target_temperature"].register(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, lambda h: h.target)
         Attributes["#target_temperature"].register_setter(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, set_tc_target)
+        Attributes["target"].register(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, lambda h: h.target)
+        Attributes["target"].register_setter(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, set_tc_target)
         
         Attributes["#max_target"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.max_target)
         Attributes["#min_target"].register(Type.CHILLER, Type.ABS_TEMP, lambda c: c.min_target)
@@ -3424,7 +3463,28 @@ class DMFCompiler(DMFVisitor):
         Attributes["#max_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.max_voltage)
         
         Attributes["fan"].register(Type.BOARD, Type.FAN.maybe, lambda b: b.find_one(Fan))
-
+        
+        Attributes["eselog"].register(Type.BOARD, Type.ESELOG.maybe, lambda b: b.find_one(ESELog))
+        
+        def set_n_samples(s: Sensor, n: int) -> None:
+            s.n_samples = n
+        Attributes["#n_samples"].register(Type.SENSOR, Type.INT.maybe, lambda s: s.n_samples)
+        Attributes["#n_samples"].register_setter(Type.SENSOR, Type.INT, set_n_samples)
+        
+        Attributes["#sample_rate"].register(Type.SENSOR, Type.FREQUENCY.maybe, 
+                                            lambda s: None if s.sample_interval is None else 1/s.sample_interval)
+        Attributes["#sample_interval"].register(Type.SENSOR, Type.FREQUENCY.maybe, 
+                                                lambda s: s.sample_interval)
+        def set_sample_interval(s: Sensor, t: Union[Time, Frequency]) -> None:
+            s.sample_interval = Time.rate_from(t)
+        Attributes["#sample_rate"].register_setter(Type.SENSOR, Type.FREQUENCY.maybe, set_sample_interval) 
+        Attributes["#sample_interval"].register_setter(Type.SENSOR, Type.TIME.maybe, set_sample_interval) 
+        
+        def set_target(s: Sensor, p: Optional[Pad]) -> None:
+            s.target = p
+        Attributes["target"].register(Type.SENSOR, Type.PAD.maybe, lambda s: s.target)
+        Attributes["target"].register_setter(Type.SENSOR, Type.PAD.maybe, set_target)
+        
 DMFCompiler.setup_attributes()
 DMFCompiler.setup_function_table()
 DMFCompiler.setup_special_vars()

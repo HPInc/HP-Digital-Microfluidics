@@ -45,7 +45,6 @@ from argparse import _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
 from erk.config import ConfigParam
 from mpam.cmd_line import time_arg
-from mpam.interpreter import DMLInterpreter
 import tkinter
 
 logger = logging.getLogger(__name__)
@@ -1258,6 +1257,7 @@ class BoardMonitor:
 
         apply = Button(fig.add_subplot(grid[0,1]), "Do it")
 
+        from mpam.interpreter import DMLInterpreter
         interp = DMLInterpreter(board=self.board, cache_val_as="last")
         def on_press(event: KeyEvent) -> None: # @UnusedVariable
             expr = text.text.strip()

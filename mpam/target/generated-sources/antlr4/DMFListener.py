@@ -655,6 +655,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#unit_recip_expr.
+    def enterUnit_recip_expr(self, ctx:DMFParser.Unit_recip_exprContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#unit_recip_expr.
+    def exitUnit_recip_expr(self, ctx:DMFParser.Unit_recip_exprContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#is_expr.
     def enterIs_expr(self, ctx:DMFParser.Is_exprContext):
         pass

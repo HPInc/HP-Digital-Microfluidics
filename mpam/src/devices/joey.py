@@ -289,23 +289,9 @@ class Board(device.Board):
         # return ((14, 16), (14, 10), (14, 4))
                                                  
         
-    
-
-    def __init__(self) -> None:
-        from mpam.pipettor import Pipettor # @Reimport
-        
-        joey_layout = Config.layout()
-        logger.info(f"Joey layout version is {Config.layout()}")
-        logger.info(f"Lid type is {Config.lid_type()}")
-        logger.info(f"Heater type is {Config.heater_type()}")
-
-        super().__init__(orientation=Orientation.NORTH_POS_EAST_POS,
-                         drop_motion_time=500*ms,
-                         cpt_layout=RCOrder.DOWN_RIGHT)
-        
-        self._lid = Config.lid_type()
-        self._layout = Config.layout()
-        
+    def _add_pads(self)->None:
+        super()._add_pads()
+        joey_layout = self._layout
         dead_regions: Sequence[GridRegion]
         if joey_layout is JoeyLayout.V1:
             dead_regions = [GridRegion(XYCoord(8,9), width=5, height=3)]
@@ -332,6 +318,22 @@ class Board(device.Board):
                 if state is None:
                     state = DummyState(initial_state=OnOff.OFF)
                 self.pads[loc] = Pad(loc, self, exists=exists, state=state)
+
+    def __init__(self) -> None:
+        from mpam.pipettor import Pipettor # @Reimport
+        
+        logger.info(f"Joey layout version is {Config.layout()}")
+        logger.info(f"Lid type is {Config.lid_type()}")
+        logger.info(f"Heater type is {Config.heater_type()}")
+
+        self._lid = Config.lid_type()
+        self._layout = Config.layout()
+
+        super().__init__(orientation=Orientation.NORTH_POS_EAST_POS,
+                         drop_motion_time=500*ms,
+                         cpt_layout=RCOrder.DOWN_RIGHT)
+        
+        
                 
         sequences: WellOpSeqDict
         if self._layout is JoeyLayout.V1:

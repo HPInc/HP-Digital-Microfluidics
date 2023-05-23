@@ -12,7 +12,8 @@ from typing import Final, Union, Optional, Sequence, Any, Callable, \
 from matplotlib.gridspec import SubplotSpec
 
 from erk.stringutils import conj_str
-from mpam.device import Board, System, PowerMode
+from mpam.device import Board, System, PowerMode, EC, ExternalComponent,\
+    BoardComponent, ComponentFactory
 from mpam.monitor import BoardMonitor
 from mpam.types import PathOrStr, logging_levels, logging_formats, LoggingSpec,\
     LoggingLevel, OnOff
@@ -28,7 +29,6 @@ from mpam.cmd_line import time_arg, units_arg, logging_spec_arg, ip_addr_arg,\
 from erk.config import ConfigParam
 from mpam import device, pipettor
 from functools import cache
-from mpam.interpreter import DMLInterpreter
 
 
 # import logging
@@ -296,6 +296,7 @@ class Exerciser(ABC):
         display_group = parser.add_argument_group("display options")
         BoardMonitor.add_args_to(display_group, parser)
         input_group = parser.add_argument_group("input options")
+        from mpam.interpreter import DMLInterpreter
         DMLInterpreter.add_args_to(input_group, parser)
         debug_group = parser.add_argument_group("debugging options")
         Config.trace_blobs.add_arg_to(debug_group, "--trace-blobs", action="store_true",
@@ -547,9 +548,33 @@ class PlatformChoiceTask(Task):
         return desc
         
         
-class PipettorConfig(ABC):
+# class PipettorConfig(ABC):
+#     name: Final[str]
+#     aliases: Final[tuple[str, ...]]
+#
+#     @property
+#     def names(self) -> str:
+#         name = f'"{self.name}"'
+#         aliases = ", ".join(f'"{a}"' for a in self.aliases)
+#         return f"{name} ({aliases})" if aliases else name
+#
+#     def __init__(self, name: str, *,
+#                  aliases: Sequence[str] = ()) -> None:
+#         self.name = name
+#         self.aliases = tuple(sorted(aliases))
+#
+#     def add_args_to(self, group: _ArgumentGroup) -> None: # @UnusedVariable
+#         ...
+#
+#     @abstractmethod    
+#     def create(self) -> Pipettor: # @UnusedVariable
+#         ...
+        
+        
+class ComponentConfig(ComponentFactory[EC], ABC):
     name: Final[str]
     aliases: Final[tuple[str, ...]]
+    default_component_group: Final[type[ExternalComponent]]
     
     @property
     def names(self) -> str:
@@ -557,29 +582,74 @@ class PipettorConfig(ABC):
         aliases = ", ".join(f'"{a}"' for a in self.aliases)
         return f"{name} ({aliases})" if aliases else name
     
-    def __init__(self, name: str, *,
-                 aliases: Sequence[str] = ()) -> None:
+    def __init__(self, name: str, component_class: type[EC], *,
+                 aliases: Sequence[str] = (),
+                 group: type[ExternalComponent] = ExternalComponent) -> None:
         self.name = name
         self.aliases = tuple(sorted(aliases))
+        self.component_class: Final = component_class
+        self.default_component_group = group
+        
+        
+    def __str__(self) -> str:
+        return f"<{self.name} config>"
         
     def add_args_to(self, group: _ArgumentGroup) -> None: # @UnusedVariable
         ...
-    
-    @abstractmethod    
-    def create(self) -> Pipettor: # @UnusedVariable
-        ...
         
+    def component_group(self, groups: Sequence[type[ExternalComponent]] = (), *,
+                        use_default: bool = True) -> type[ExternalComponent]:
+        best = self.default_component_group if use_default else ExternalComponent
+        me = self.component_class
+        for g in groups:
+            if issubclass(me, g) and issubclass(g, best): 
+                best = g
+        return best
     
+    def for_board(self, board: Board) -> EC:
+        if issubclass(self.component_class, BoardComponent):
+            return self.component_class(board)  # type: ignore[unreachable]
+        return self.component_class()
+    
+    def create(self) -> EC:
+        if issubclass(self.component_class, BoardComponent):
+            raise ValueError(f"{self} creates a BoardComponent and can only be created using for_board().")
+        return self.component_class()
+        
+        
+    @classmethod
+    def choices(cls, configs: Sequence[ComponentConfig[EC]]) -> Sequence[str]:
+        choices = []
+        for c in configs:
+            choices.append(c.name)
+            choices.extend(c.aliases)
+        choices.sort()
+        return choices
+    
+    @classmethod
+    def choices_desc(cls, configs: Sequence[ComponentConfig[EC]]) -> str:
+        return conj_str([c.names for c in configs])
+
+class PipettorConfig(ComponentConfig[Pipettor]):
+    
+    def __init__(self, name: str, component_class: type[Pipettor], *,
+                 aliases: Sequence[str] = (),
+                 group: type[ExternalComponent] = Pipettor) -> None:
+        super().__init__(name, component_class, aliases=aliases, group=group)
+
+        
 
 class PlatformChoiceExerciser(Exerciser):
     task: Final[Task]
     pipettors: Final[tuple[PipettorConfig, ...]]
     default_pipettor: Final[PipettorConfig]
+    available_components: Final[tuple[ComponentConfig, ...]]
     
     def __init__(self, description: Optional[str] = None, *,
                  task: Task,
                  platforms: Sequence[PCTaskDesc],
                  pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
+                 components: Sequence[ValOrFn[ComponentConfig]] = (),
                  default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
                  fromfile_prefix_chars: Optional[str] = '@'
                  ) -> None:
@@ -604,6 +674,10 @@ class PlatformChoiceExerciser(Exerciser):
         plist.sort(key=lambda p:p.name)
         self.pipettors = tuple(plist)
         
+        clist = [c if isinstance(c, ComponentConfig) else c() for c in components]
+        clist.sort(key = lambda c:c.name)
+        self.available_components = tuple(clist)
+        
         for p in platforms:
             try:
                 platform = PlatformChoiceTask.from_desc(p)
@@ -620,6 +694,7 @@ class PlatformChoiceExerciser(Exerciser):
                  *,
                  platforms: Sequence[PCTaskDesc],
                  pipettors: Sequence[ValOrFn[PipettorConfig]] = (),
+                 components: Sequence[ValOrFn[ComponentConfig]] = (),
                  default_pipettor: Optional[ValOrFn[PipettorConfig]] = None,
                  ) -> PlatformChoiceExerciser:
         if not isinstance(task, Task):
@@ -628,6 +703,7 @@ class PlatformChoiceExerciser(Exerciser):
                                        task=task,
                                        platforms=platforms,
                                        pipettors=pipettors,
+                                       components=components,
                                        default_pipettor=default_pipettor)
         
         
@@ -644,18 +720,14 @@ class PlatformChoiceExerciser(Exerciser):
         for pipettor in self.pipettors:
             group = parser.add_argument_group(f"{pipettor.name} pipettor options")
             pipettor.add_args_to(group)
+        for component in self.available_components:
+            group = parser.add_argument_group(f"{component.name} options")
+            component.add_args_to(group)
         
-    def _find_pipettor(self, name: str, args: Namespace) -> Pipettor:
-        for p in self.pipettors:
-            if name == p.name or name in p.aliases:
-                return p.create()
-        choices = conj_str([p.names for p in self.pipettors])
-        raise ValueError(f'"{name}" is not a known pipettor name.  Choices are {choices}.')
         
     def make_board(self, args: Namespace) -> Board:
         platform: Task = args.task
         assert isinstance(platform, PlatformChoiceTask), f"Task is not a PlatformChoiceTask: {platform}"
-        # pipettor = self._find_pipettor(args.pipettor, args)
 
         return platform.make_board(args, exerciser=self)
         
@@ -663,25 +735,68 @@ class PlatformChoiceExerciser(Exerciser):
                                         group:_ArgumentGroup, 
                                         parser:ArgumentParser)-> None:
         super().add_device_specific_common_args(group, parser)
-        pipettor_choices = []
-        for p in self.pipettors:
-            pipettor_choices.append(p.name)
-            pipettor_choices.extend(p.aliases)
-        choices_desc = conj_str([p.names for p in self.pipettors])
-        def find_pipettor(name: str) -> Pipettor:
-            for p in self.pipettors:
-                if name == p.name or name in p.aliases:
-                    return p.create()
-            choices = conj_str([p.names for p in self.pipettors])
-            raise ValueError(f'"{name}" is not a known pipettor name.  Choices are {choices}.')
+
+        def find(configs: Sequence[ComponentConfig[EC]], kind: str) -> Callable[[str], ComponentConfig[EC]]:
+            def doit(name: str) -> ComponentConfig[EC]:
+                for c in configs:
+                    if name == c.name or name in c.aliases:
+                        return c
+                choices = conj_str([c.names for c in configs])
+                raise ValueError(f'"{name}" is not a known {kind} name.  Choices are {choices}.')
+            return doit
+
+        def find_and_create(configs: Sequence[ComponentConfig[EC]], kind: str) -> Callable[[str], EC]:
+            finder = find(configs, kind)
+            def doit(name: str) -> EC:
+                return finder(name).create()
+            return doit
+
+        # pipettor_choices = []
+        # for p in self.pipettors:
+        #     pipettor_choices.append(p.name)
+        #     pipettor_choices.extend(p.aliases)
+        # choices_desc = conj_str([p.names for p in self.pipettors])
+        # def find_pipettor(name: str) -> Pipettor:
+        #     for p in self.pipettors:
+        #         if name == p.name or name in p.aliases:
+        #             return p.create()
+        #     choices = conj_str([p.names for p in self.pipettors])
+        #     raise ValueError(f'"{name}" is not a known pipettor name.  Choices are {choices}.')
+        
             
         pipettor.Config.pipettor.add_arg_to(group, '--pipettor', default=self.default_pipettor.name,
                            metavar="PIPETTOR",
-                           choices=sorted(pipettor_choices),
-                           transform = find_pipettor,
+                           choices=PipettorConfig.choices(self.pipettors),
+                           transform = find_and_create(self.pipettors, "pipettor"),
                            help=f'''
-                           The pipettor to use if needed.  Valid options are: {choices_desc}.  
+                           The pipettor to use if needed.  Valid options are: {PipettorConfig.choices_desc(self.pipettors)}.  
                            ''')
+        
+        # component_choices = []
+        # for c in self.available_components:
+        #     component_choices.append(c.name)
+        #     component_choices.extend(c.aliases)
+        # choices_desc = conj_str([c.names for c in self.available_components])
+        
+        if self.available_components:
+            def default_components_desc(components: Sequence[ComponentFactory]) -> str:
+                if len(components) == 0:
+                    return "to have no additional components"
+                else:
+                    return f"to have {conj_str(components)}"
+            def transform(names: Sequence[str]) -> list[ComponentFactory]:
+                finder = find(self.available_components, "component")
+                return [finder(name) for name in names]
+            device.Config.component_factories.add_arg_to(group, '--have', metavar="COMPONENT", action='append', 
+                                                         choices=ComponentConfig.choices(self.available_components),
+                                                         default_desc = default_components_desc,
+                                                         transform = transform,
+                                                         help=f'''
+                                                            A component that is present.  Valid options are: 
+                                                            {ComponentConfig.choices_desc(self.available_components)}.
+                                                            This argument may be specified more than once.
+                                                            '''
+                                                )
         
 
     def available_wells(self)->NoReturn:

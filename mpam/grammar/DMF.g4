@@ -138,6 +138,7 @@ expr
   | INT rc[$INT.int]           # const_rc_expr
   | dist=expr rc[0]           # n_rc_expr
   | amount=expr dim_unit             # unit_expr
+  | amount=expr 'per' dim_unit             # unit_recip_expr
   | amount=expr 'C'					 # temperature_expr
   | 'the'? (reagent 'reagent'?)		 # reagent_lit_expr
   | ('the' | 'a')? 'reagent' 'named'? which=expr # reagent_expr
@@ -278,6 +279,7 @@ base_param_type returns[Type type]
   | 'motion' {$ctx.type=Type.MOTION}
   | 'delay' {$ctx.type=Type.DELAY}
   | 'time' {$ctx.type=Type.TIME}
+  | 'frequency' {$ctx.type=Time.FREQUENCY}
   | 'ticks' {$ctx.type=Type.TICKS}
   | 'bool' {$ctx.type=Type.BOOL}
   | ('direction' | 'dir') {$ctx.type=Type.DIR}
@@ -293,6 +295,8 @@ base_param_type returns[Type type]
   | 'power' 'supply' {$ctx.type=Type.POWER_SUPPLY}
   | 'power' 'mode' {$ctx.type=Type.POWER_MODE}
   | 'fan' {$ctx.type=Type.FAN}
+  | 'sensor' {$ctx.type=Type.SENSOR}
+  | 'eselog' {$ctx.type=Type.ESELOG}
   ;
   
 dim_unit returns[PhysUnit unit]
@@ -303,6 +307,7 @@ dim_unit returns[PhysUnit unit]
   | ('tick' | 'ticks') {$ctx.unit=ticks}
   | ('drop' | 'drops') {$ctx.unit=EnvRelativeUnit.DROP}
   | ('V' | 'volt' | 'volts') {$ctx.unit=SI.volts}
+  | ('Hz' | 'hz') {$ctx.unit=SI.hertz}
   ;
   
 numbered_type returns[NumberedItem kind]
@@ -324,7 +329,7 @@ attr returns[str which]
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
   | 'fill' 'level' {$ctx.which="#fill_level"}
   | 'refill' 'level' {$ctx.which="#refill_level"}
-  | 'target' ('temp' | 'temperature')? {$ctx.which="#target_temperature"}
+  | 'target' ('temp' | 'temperature') {$ctx.which="#target_temperature"}
   | 'current'? ('temp' | 'temperature') {$ctx.which="#current_temperature"}
   | 'power' 'supply' {$ctx.which="#power_supply"}
   | ('min' | 'minimum') 'voltage' {$ctx.which="#min_voltage"}
@@ -334,8 +339,11 @@ attr returns[str which]
   | 'power'? 'mode' {$ctx.which="mode"}
   | 'voltage' {$ctx.which="voltage"}
   | 'heating' 'zone' {$ctx.which="heater"}
+  | 'n' 'samples' {$ctx.which="#n_samples"}
+  | ('sampling' | 'sample') 'rate' {$ctx.which="#sample_rate"}
+  | ('sampling' | 'sample') 'interval' {$ctx.which="#sample_interval"}
   | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
-  	   | 'fan' | 'capacity'
+  	   | 'fan' | 'capacity' | 'eselog' | 'target'
   	   | ID
   )
   	{$ctx.which=$n.text}
@@ -374,10 +382,12 @@ multi_word_name returns[str val]
   | 'transfer' 'in' {$ctx.val="transfer in"}
   | 'transfer' 'out' {$ctx.val="transfer out"}
   | 'prepare' 'to' 'dispense' {$ctx.val="prepare to dispense"}
+  | 'take' ('a'? 'reading' | 'readings') {$ctx.val="take reading"}
   ;
 
-kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
+kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'on' | 'off'
+  | 'per'
   | 'min' | 'max' | 'minimum' | 'maximum'
   | 'diff' | 'difference' | 'delta' | 'point' 
   | 'index' | 'base' | 'dispense' | 'enter'
@@ -387,6 +397,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an'
   | 'heating' | 'zone' | 'zones'
   | 'fill' | 'refil' | 'level'
   | 'prepare' | 'to' | 'dispense'
+  | 'samples' | 'sampling' | 'rate' | 'interval'
   ;
 
 string : STRING ;

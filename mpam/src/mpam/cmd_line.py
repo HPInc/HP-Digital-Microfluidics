@@ -5,8 +5,8 @@ from _collections import defaultdict
 from erk.stringutils import conj_str
 import re
 from argparse import ArgumentTypeError
-from quantities.dimensions import Time, Volume, Voltage
-from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL
+from quantities.dimensions import Time, Volume, Voltage, Frequency
+from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from quantities import temperature
 from quantities.prefixes import kilo
@@ -109,6 +109,8 @@ ArgUnits.register_units(Time,
 
 def time_arg(arg: str) -> Time:
     return ArgUnits.parse_arg(Time, arg, default="30ms")
+
+ArgUnits.register_units(Frequency, { Hz: ("Hz", "hz")})
 
 
 ArgUnits.register_units(Volume,

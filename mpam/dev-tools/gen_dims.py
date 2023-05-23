@@ -49,6 +49,9 @@ time.extra_code(f'''
     def sleep(self) -> None:
         from quantities import SI
         time.sleep(self.as_number(SI.seconds))
+    @classmethod
+    def rate_from(cls, val: Union[Time, Frequency]) -> Time:
+        return val if isinstance(val, Time) else 1/val
     def in_HMS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         """
         Format the :class:`.Time` as hours, minutes, and seconds, separated by
@@ -85,6 +88,13 @@ time.extra_code(f'''
         """
         from quantities.SI import minutes, seconds
         return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
+''')
+
+frequency.extra_code(f'''
+    @classmethod
+    def rate_from(cls, val: Union[Time, Frequency]) -> Frequency:
+        return val if isinstance(val, Frequency) else 1/val
+
 ''')
 
 money.extra_code(f'''

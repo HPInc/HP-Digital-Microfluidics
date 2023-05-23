@@ -372,6 +372,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#unit_recip_expr.
+    def visitUnit_recip_expr(self, ctx:DMFParser.Unit_recip_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#is_expr.
     def visitIs_expr(self, ctx:DMFParser.Is_exprContext):
         return self.visitChildren(ctx)

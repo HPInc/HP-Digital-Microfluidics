@@ -13,7 +13,7 @@ from threading import Event, Lock, Thread, RLock
 from types import TracebackType
 from typing import Optional, Final, Mapping, Callable, Literal, \
     TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
-    NamedTuple, Iterable, Type, overload
+    NamedTuple, Iterable, Type, overload, Generic
 
 from matplotlib.gridspec import SubplotSpec
 
@@ -39,6 +39,9 @@ from quantities.US import deg_F
 from erk.network import local_ipv4_addr
 from functools import cached_property
 from erk.config import ConfigParam
+from os import PathLike
+import os
+import csv
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
@@ -4847,33 +4850,140 @@ of such values (as lower and upper values, respectively).
 class Laser(BinaryComponent['Laser']):
     ...
 
-class Sensor(BoardComponent, ABC):
-    class Sample:
-        ...
+class Sensor(BoardComponent, ExternalComponent, ABC):
+    class Sample(ABC):
+        timestamp: Final[Timestamp]
+        
+        def __init__(self, timestamp: Timestamp) -> None:
+            self.timestamp = timestamp
+            
+        @property
+        @abstractmethod
+        def csv_headers(self) -> Sequence[str]: ...
+        
+        @property
+        @abstractmethod
+        def csv_line(self) -> Sequence[Any]: ...
+        
+    name: Final[str]
     aiming_laser: Final[Optional[Laser]]
     target: Optional[Pad]
+    _n_samples: MissingOr[int] = MISSING
+    _sample_interval: MissingOr[Time] = MISSING
     
     def __init__(self, board: Board, *,
+                 name: str,
                  aiming_laser: Optional[Laser] = None,
-                 target: Optional[Pad] = None) -> None:
+                 target: Optional[Pad] = None,
+                 n_samples: Optional[int] = None,
+                 sample_interval: Optional[Union[Time, Frequency]] = None) -> None:
         super().__init__(board)
+        self.name = name
         self.aiming_laser = aiming_laser
         self.target = target
+        if n_samples is not None:
+            self._n_samples = n_samples
+        if sample_interval is not None:
+            self._sample_interval = Time.rate_from(sample_interval)
+        
+    def __str__(self) -> str:
+        return f"<{self.name} sensor>"
     
     @property
     @abstractmethod
-    def available(self) -> bool:
-        ...
+    def available(self) -> bool: ...
+        
+    @property
+    def n_samples(self) -> int:
+        assert self._n_samples is not MISSING, f"{self}.n_samples not set"
+        return self._n_samples
+    
+    @n_samples.setter
+    def n_samples(self, n: int) -> None:
+        self._n_samples = n
+    
+    @property
+    def sample_interval(self) -> Time: 
+        assert self._sample_interval is not MISSING, f"{self}.sample_interval not set"
+        return self._sample_interval
+    
+    @sample_interval.setter
+    def sample_interval(self, interval: Union[Time, Frequency]) -> None:
+        self._sample_interval = Time.rate_from(interval)
+    
+    @property
+    def pads_for_sort(self) -> Sequence[Pad]:
+        return (self.target,) if self.target is not None else super().pads_for_sort 
+
     @abstractmethod
-    def request_samples(self, *, n_samples: Optional[int] = None,
-                        raw: bool = False) -> None:
+    def read(self, *,
+             n_samples: Optional[int] = None,                # @UnusedVariable
+             speed: Optional[Union[Time, Frequency]] = None, # @UnusedVariable
+             ) -> Delayed[Sequence[Sample]]: 
         ...
+    
+    def aim(self, *, at_pad: Optional[Pad]=None) -> Delayed[None]: # @UnusedVariable
+        if at_pad is not None:
+            self.target = at_pad
+        target = self.target
+        
+        if target is None:
+            logger.error(f"{self} has no target.  Ignoring aim request.")
+            return Delayed.complete(None)
+        
+        laser = self.aiming_laser
+        
+        what = f"the {self.name}" if laser is None else f"the {self.name}'s laser"
+        prompt = f"Aim {what} at pad ({target.column}, {target.row})"
+        system = self.board.system
+        def do_prompt(_ignored: Optional[Any]=None) -> Delayed[None]:
+            return system.prompt_and_wait(prompt)
+        if laser is None:
+            return do_prompt()
+        future = (laser.schedule(Laser.TurnOn)
+                  .chain(do_prompt)
+                  .transformed(lambda _: laser)
+                  .then_schedule(Laser.TurnOff)
+                  .transformed(lambda _: None))
+        return future 
+                  
+        
+        
+    def reset_component(self)->None:
+        super().reset_component()
+        if self.aiming_laser is not None:
+            self.aiming_laser.current_state = OnOff.OFF
+            
+            
+    def write_csv_file(self, samples: Sequence[Sample], *,
+                       name_template: str,
+                       to_dir: Union[str, PathLike] = ".",
+                       timestamp: Optional[Timestamp] = None) -> None:
+        if len(samples) == 0:
+            return
+        if timestamp is None:
+            timestamp = samples[0].timestamp
+        file_name = timestamp.strftime(fmt=name_template)
+        path = os.path.join(to_dir, file_name)
+
+        with open(path, 'w') as f:
+            csvwriter = csv.writer(f)
+            csvwriter.writerow(samples[0].csv_headers)
+            for s in samples:
+                csvwriter.writerow(s.csv_line)
+        logger.info(f"Wrote {self.name} CSV file '{os.path.abspath(path)}'")
+            
+
+class ComponentFactory(Generic[EC], ABC):
     @abstractmethod
-    def read_samples(self, *, read_async: bool = False) -> Delayed[Sequence[Sample]]:
+    def for_board(self, board: Board) -> EC: # @UnusedVariable
         ...
+
     @abstractmethod
-    def aim(self, *, at_pad: Optional[Pad]=None) -> Delayed[None]:
+    def component_group(self, groups: Sequence[type[ExternalComponent]] = (), *, # @UnusedVariable
+                        use_default: bool = True) -> type[ExternalComponent]:    # @UnusedVariable
         ...
+
 
 class Config:
     local_ip_addr: Final = ConfigParam[Optional[str]](None)
@@ -4892,6 +5002,8 @@ class Config:
     ps_can_change_mode: Final = ConfigParam(False)
     fan_initial_state: Final = ConfigParam(OnOff.OFF)
     fan_can_toggle: Final = ConfigParam(True)
+    
+    component_factories: Final = ConfigParam[list[ComponentFactory]]([])
     
     
 
@@ -4969,6 +5081,8 @@ class Board(SystemComponent):
         from mpam.pipettor import Pipettor # @Reimport
         return Pipettor.find_one_in(self, if_missing=lambda: f"{self} doesn't have a registered pipettor.")
         
+    @abstractmethod
+    def _add_pads(self) -> None: ...
 
     def __init__(self, *,
                  orientation: Orientation,
@@ -4989,12 +5103,23 @@ class Board(SystemComponent):
             logger.info("off-on delay is %s", self.off_on_delay)
         self._lock = Lock()
         self._reserved_well_gates = []
+        self._add_pads()
         import mpam
         pipettor_cp = mpam.pipettor.Config.pipettor
         pipettor = pipettor_cp() if pipettor_cp.has_value else ensure_val(self.default_pipettor(), 
                                                                           mpam.pipettor.Pipettor) # type: ignore [type-abstract]
         
         mpam.pipettor.Pipettor._add_external_to(self, pipettor)
+        
+        component_groups: dict[type[ExternalComponent], list[ExternalComponent]] = defaultdict(list)
+        for factory in Config.component_factories():
+            component = factory.for_board(self)
+            component_groups[factory.component_group()].append(component)
+        
+        for group,components in component_groups.items():
+            group._add_externals_to(self, components)
+        
+        
         
     def default_pipettor(self) -> ValOrFn[Pipettor]:
         from devices.dummy_pipettor import DummyPipettor
@@ -5245,9 +5370,13 @@ class Board(SystemComponent):
         if order is None: return cpts
         def get_loc(p: LocatedPad) -> XYCoord:
             return p.location
+        
+        pads = { c: get_pads(c) for c in cpts }
+        no_pads = [ c for c,ps in pads.items() if len(ps) == 0]
         key = order.key_for(self.orientation, loc=get_loc)
-        min_pad = { c: min(get_pads(c), key=key) for c in cpts }
-        return sorted(cpts, key=lambda c: key(min_pad[c]))
+        min_pad = { c: min(ps, key=key) for c,ps in pads.items() if len(ps) > 0}
+        return [*sorted(min_pad.keys(), key=lambda c: key(min_pad[c])), 
+                *no_pads]
 
 class UserOperation(Worker):
     def __init__(self, idle_barrier: IdleBarrier, desc: Optional[Any] = None) -> None:

@@ -443,6 +443,11 @@ class ConfigParam(Generic[T]):
             kwargs['original_action_class'] = old_action
             kwargs['action'] = DeprecatedAction
             
+        # We need to make sure that the help string doesn't have a percent sign.
+        help_str: Optional[str] = kwargs.get('help')
+        if help_str is not None and '%' in help_str:
+            kwargs['help'] = help_str.replace(r"%", r"%%")
+            
         action = parser.add_argument(name, *args, default=default, **kwargs)
         self._key = None if ignored else action.dest
         if transform is not None:

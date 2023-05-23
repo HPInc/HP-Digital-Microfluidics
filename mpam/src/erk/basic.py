@@ -78,6 +78,10 @@ def not_None(x: Optional[_T], *,
     assert x is not None, error_msg()
     return x
 
+def if_not_None(x: Optional[_T], fn: Callable[[_T], Any]) -> None:
+    if x is not None:
+        fn(x)
+
 
 def always(val: _T) -> Callable[[], _T]:
     return lambda: val

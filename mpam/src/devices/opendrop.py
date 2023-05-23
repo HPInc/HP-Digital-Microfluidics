@@ -116,6 +116,15 @@ class Board(device.Board):
                     dispensed_volume=2*uL,
                     shape=shape
                     )
+        
+    def _add_pads(self)->None:
+        super()._add_pads()
+        for x in range(1,15):
+            for y in range(0,8):
+                loc = XYCoord(x, y)
+                e = Electrode(x, y, self._states)
+                p = Pad(loc, self, e)
+                self.pads[loc] = p
     
     def __init__(self) -> None:
         super().__init__(orientation=Orientation.NORTH_NEG_EAST_POS,
@@ -123,12 +132,6 @@ class Board(device.Board):
         self._dev = Config.device()
         self._states = bytearray(128)
         self._port= None
-        for x in range(1,15):
-            for y in range(0,8):
-                loc = XYCoord(x, y)
-                e = Electrode(x, y, self._states)
-                p = Pad(loc, self, e)
-                self.pads[loc] = p
                 
         states = {
             WellState.READY: (1,2),

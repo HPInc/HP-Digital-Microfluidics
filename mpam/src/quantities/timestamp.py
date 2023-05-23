@@ -199,3 +199,11 @@ def time_since(ts: Timestamp) -> dimensions.Time:
     """
     
     return time_now()-ts
+
+def time_until(ts: Timestamp) -> dimensions.Time:
+    return ts-time_now()
+
+def sleep_until(ts: Timestamp) -> None:
+    t = time_until(ts)
+    if t > 0:
+        t.sleep()

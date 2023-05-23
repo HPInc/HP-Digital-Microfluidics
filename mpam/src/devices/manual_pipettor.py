@@ -97,7 +97,7 @@ class ManualPipettor(Pipettor):
 
 class PipettorConfig(exerciser.PipettorConfig):
     def __init__(self) -> None:
-        super().__init__("manual")
+        super().__init__("manual", ManualPipettor)
         
     def add_args_to(self, group:_ArgumentGroup)->None:
         super().add_args_to(group)
@@ -106,5 +106,3 @@ class PipettorConfig(exerciser.PipettorConfig):
                                         A value of zero indicates no rounding.
                                         ''')
     
-    def create(self) -> Pipettor:
-        return ManualPipettor()

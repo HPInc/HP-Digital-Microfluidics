@@ -337,7 +337,7 @@ class PlatformTask(joey.PlatformTask):
                                 "4.1": OpenDropVersion.V41
                                 }        
         Config.od_version.add_choice_arg_to(group, od_version_arg_names,
-                                            '--od_version', 
+                                            '--od-version', 
                                             metavar="VERSION",
                                             help="The version of the Opendrop firmware."
                                             )

@@ -115,6 +115,7 @@ class Type:
     BARRIER: ClassVar[Type]
     DELAY: ClassVar[Type]
     TIME: ClassVar[Type]
+    FREQUENCY: ClassVar[Type]
     TICKS: ClassVar[Type]
     BOOL: ClassVar[Type]
     STRING: ClassVar[Type]
@@ -138,6 +139,8 @@ class Type:
     FAN: ClassVar[Type]
     UNNAMED_LOOP_EXIT: ClassVar[LoopExitType]
     MACRO_RETURN: ClassVar[Type]
+    SENSOR: ClassVar[Type]
+    ESELOG: ClassVar[Type]
     
     # @cached_property
     # def as_callable_type(self) -> Optional[CallableType]:
@@ -474,6 +477,7 @@ Type.BARRIER = Type("BARRIER")
 Type.DELAY = Type("DELAY")
 Type.TIME = Type("TIME", [Type.DELAY])
 Type.TICKS = Type("TICKS", [Type.DELAY])
+Type.FREQUENCY = Type("FREQUENCY")
 Type.BOOL = Type("BOOL")
 Type.STRING = Type("STRING")
 Type.VOLUME = Type("VOLUME")
@@ -494,6 +498,8 @@ Type.VOLTAGE = Type("VOLTAGE")
 Type.POWER_MODE = Type("POWER_MODE")
 Type.FAN = Type("FAN", [Type.BINARY_CPT])
 Type.MACRO_RETURN = Type("MACRO_RETURN", is_control=True)
+Type.SENSOR = Type("SENSOR")
+Type.ESELOG = Type("ESELOG", [Type.SENSOR])
 
 
 class LoopExitType(Type):

@@ -210,11 +210,8 @@ class DummyPipettor(Pipettor):
 
 class PipettorConfig(exerciser.PipettorConfig):
     def __init__(self) -> None:
-        super().__init__("simulated", aliases=("sim", "dummy"))
+        super().__init__("simulated", DummyPipettor, aliases=("sim", "dummy"))
 
-    def create(self) -> Pipettor:
-        pipettor = DummyPipettor()
-        return pipettor
 
     def add_args_to(self, group:_ArgumentGroup)->None:
         super().add_args_to(group)

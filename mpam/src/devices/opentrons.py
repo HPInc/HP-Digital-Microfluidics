@@ -772,7 +772,7 @@ class OT2(Pipettor):
 
 class PipettorConfig(exerciser.PipettorConfig):
     def __init__(self) -> None:
-        super().__init__("opentrons", aliases=("ot", "ot2"))
+        super().__init__("opentrons", OT2, aliases=("ot", "ot2"))
 
     def create(self) -> Pipettor:
 
