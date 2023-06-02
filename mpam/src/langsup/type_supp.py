@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from _collections_abc import Iterable
+from _collections_abc import Iterable, Iterator
 from enum import Enum, auto
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
     Any, Mapping, Union, NoReturn, TypeVar, Generic
@@ -44,6 +44,13 @@ class ConversionError(EvaluationError):
         self.want = want
         self.value = value
         
+class NotSampleableError(EvaluationError):
+    have: Final[Type]
+    
+    def __init__(self, have: Type) -> None:
+        super().__init__(f"{have.name} is not sampleable.")
+        self.have = have 
+        
 ValueConverter = Callable[[Any], Any]
 
 class SpecialValueConverter(Enum):
@@ -68,7 +75,6 @@ class Type:
     as_func_type: Final[Optional[CallableType]]
     
     _conversions: Final[dict[Type, _Converter]]
-    _maybe: Optional[MaybeType] = None
     is_control: bool
     
     _class_lock: Final = RLock()
@@ -76,12 +82,18 @@ class Type:
     conversions: ClassVar[dict[tuple[Type,Type], Callable[[Any],Any]]] = {}
     compatible: ClassVar[set[tuple[Type,Type]]] = set()
     
-    @property
+    @cached_property
     def maybe(self) -> MaybeType:
-        mt = self._maybe
-        if mt is None:
-            mt = self._maybe = MaybeType(self)
-        return mt
+        return MaybeType(self)
+    
+    @property
+    def is_sampleable(self) -> bool:
+        return False
+    
+    @property
+    def sample(self) -> SampleType:
+        raise NotSampleableError(self)
+    
     
     NO_VALUE: ClassVar[Type]
     ANY: ClassVar[Type]
@@ -128,6 +140,7 @@ class Type:
     ABS_TEMP: ClassVar[Type]
     REL_TEMP: ClassVar[Type]
     AMBIG_TEMP: ClassVar[Type]
+    TIMESTAMP: ClassVar[Type]
     TEMP_CONTROL: ClassVar[Type]
     HEATER: ClassVar[Type]
     CHILLER: ClassVar[Type]
@@ -140,7 +153,10 @@ class Type:
     UNNAMED_LOOP_EXIT: ClassVar[LoopExitType]
     MACRO_RETURN: ClassVar[Type]
     SENSOR: ClassVar[Type]
+    SENSOR_READING: ClassVar[Type]
     ESELOG: ClassVar[Type]
+    ESELOG_READING: ClassVar[Type]
+    
     
     # @cached_property
     # def as_callable_type(self) -> Optional[CallableType]:
@@ -450,6 +466,34 @@ class Type:
         except EvaluationError as ex:
             return ex
         
+class SampleableType(Type):
+    _all: list[SampleableType] = []
+    lock = Lock()
+    
+    is_sampleable: Final = True
+    
+    
+    @cached_property
+    def sample(self) -> SampleType:
+        return SampleType(self)
+    
+    def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
+                 as_func_type: Optional[CallableType] = None,
+                 rep_types: TypeRepSpec = (),
+                 is_control: Optional[bool] = None):
+        super().__init__(name, supers, 
+                         as_func_type=as_func_type, rep_types=rep_types,
+                         is_control=is_control)
+        with self.lock:
+            self._all.append(self)
+    
+    @classmethod
+    def all(cls) -> Sequence[SampleableType]:
+        return cls._all
+    
+class QuantityType(SampleableType):
+    ...
+        
     
 
 Type.NO_VALUE = Type("NO_VALUE", supers=())
@@ -462,8 +506,8 @@ Type.PIPETTING_TARGET = Type("PIPETTING_TARGET")
 Type.WELL = Type("WELL", [Type.PIPETTING_TARGET])
 Type.EXTRACTION_POINT = Type("EXTRACTION POINT", [Type.PIPETTING_TARGET])
 Type.NUMBER = Type("NUMBER")
-Type.FLOAT = Type("FLOAT", [Type.NUMBER])
-Type.INT = Type("INT", [Type.FLOAT, Type.NUMBER])
+Type.FLOAT = SampleableType("FLOAT", [Type.NUMBER])
+Type.INT = SampleableType("INT", [Type.FLOAT, Type.NUMBER])
 Type.BINARY_CPT = Type("BINARY_CPT")
 Type.BINARY_STATE = Type("BINARY_STATE")
 Type.PAD = Type("PAD", [Type.BINARY_CPT])
@@ -475,32 +519,34 @@ Type.ROW = Type("ROW")
 Type.COLUMN = Type("COLUMN")
 Type.BARRIER = Type("BARRIER")
 Type.DELAY = Type("DELAY")
-Type.TIME = Type("TIME", [Type.DELAY])
-Type.TICKS = Type("TICKS", [Type.DELAY])
-Type.FREQUENCY = Type("FREQUENCY")
+Type.TIME = QuantityType("TIME", [Type.DELAY])
+Type.TICKS = QuantityType("TICKS", [Type.DELAY])
+Type.FREQUENCY = QuantityType("FREQUENCY")
 Type.BOOL = Type("BOOL")
 Type.STRING = Type("STRING")
-Type.VOLUME = Type("VOLUME")
+Type.VOLUME = QuantityType("VOLUME")
 Type.SCALED_REAGENT = Type("SCALED_REAGENT")
 Type.REAGENT = Type("REAGENT", [Type.SCALED_REAGENT])
 Type.LIQUID = Type("LIQUID")
 Type.BUILT_IN = Type("BUILT_IN")
-Type.ABS_TEMP = Type("ABS_TEMP")
-Type.REL_TEMP = Type("REL_TEMP")
+Type.ABS_TEMP = SampleableType("ABS_TEMP")
+Type.REL_TEMP = QuantityType("REL_TEMP")
 Type.AMBIG_TEMP = Type("AMBIG_TEMP", [Type.ABS_TEMP, Type.REL_TEMP])
+Type.TIMESTAMP = SampleableType("TIMESTAMP")
 Type.TEMP_CONTROL = Type("TEMP_CONTROL", [Type.BINARY_CPT])
 Type.HEATER = Type("HEATER", [Type.TEMP_CONTROL])
 Type.CHILLER = Type("CHILLER", [Type.TEMP_CONTROL])
 Type.MAGNET = Type("MAGNET", [Type.BINARY_CPT])
 Type.BOARD = Type("BOARD")
 Type.POWER_SUPPLY = Type("POWER_SUPPLY", [Type.BINARY_CPT])
-Type.VOLTAGE = Type("VOLTAGE")
+Type.VOLTAGE = QuantityType("VOLTAGE")
 Type.POWER_MODE = Type("POWER_MODE")
 Type.FAN = Type("FAN", [Type.BINARY_CPT])
 Type.MACRO_RETURN = Type("MACRO_RETURN", is_control=True)
 Type.SENSOR = Type("SENSOR")
+Type.SENSOR_READING = Type("SENSOR_READING")
 Type.ESELOG = Type("ESELOG", [Type.SENSOR])
-
+Type.ESELOG_READING = Type("ESELOG_READING", [Type.SENSOR_READING])
 
 class LoopExitType(Type):
     nested_levels: Final[int]
@@ -526,7 +572,7 @@ class MaybeType(Type):
         super().__init__(f"MAYBE({if_there_type.name})")
         self.if_there_type = if_there_type
         
-    @property
+    @cached_property
     def maybe(self)->MaybeType:
         return self
         
@@ -553,6 +599,30 @@ class MaybeType(Type):
     #         return self.if_there_type < rhs.if_there_type
     #     return super().__lt__(rhs)
     
+class SampleType(Type):
+    element_type: Final[Type]
+    
+    @cached_property
+    def difference_type(self) -> Type:
+        et = self.element_type
+        return (Type.TIME if et is Type.TIMESTAMP
+                else Type.REL_TEMP if et is Type.ABS_TEMP
+                else et)
+        
+    @cached_property
+    def continuous_type(self) -> Type:
+        et = self.element_type
+        return Type.FLOAT if et is Type.INT else et
+    
+    def __init__(self, element_type: SampleableType) -> None:
+        assert element_type.is_sampleable, f"Trying to make a SampleType{element_type}."
+        super().__init__(f"SAMPLE({element_type.name})")
+        self.element_type = element_type
+    
+    @classmethod
+    def all(cls) -> Iterator[SampleType]:
+        for t in SampleableType.all():
+            yield t.sample
 
 class Signature:
     param_types: Final[tuple[Type,...]]

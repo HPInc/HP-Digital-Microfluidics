@@ -442,13 +442,33 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#param_type.
-    def visitParam_type(self, ctx:DMFParser.Param_typeContext):
+    # Visit a parse tree produced by DMFParser#value_type.
+    def visitValue_type(self, ctx:DMFParser.Value_typeContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#base_param_type.
-    def visitBase_param_type(self, ctx:DMFParser.Base_param_typeContext):
+    # Visit a parse tree produced by DMFParser#not_maybe_type.
+    def visitNot_maybe_type(self, ctx:DMFParser.Not_maybe_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#atomic_type.
+    def visitAtomic_type(self, ctx:DMFParser.Atomic_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#sampleable_type.
+    def visitSampleable_type(self, ctx:DMFParser.Sampleable_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#quantity_type.
+    def visitQuantity_type(self, ctx:DMFParser.Quantity_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#component_type.
+    def visitComponent_type(self, ctx:DMFParser.Component_typeContext):
         return self.visitChildren(ctx)
 
 
@@ -462,8 +482,28 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#minimum.
+    def visitMinimum(self, ctx:DMFParser.MinimumContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#maximum.
+    def visitMaximum(self, ctx:DMFParser.MaximumContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#min_max.
+    def visitMin_max(self, ctx:DMFParser.Min_maxContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#attr.
     def visitAttr(self, ctx:DMFParser.AttrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#old_attr.
+    def visitOld_attr(self, ctx:DMFParser.Old_attrContext):
         return self.visitChildren(ctx)
 
 

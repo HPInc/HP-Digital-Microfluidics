@@ -781,21 +781,57 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#param_type.
-    def enterParam_type(self, ctx:DMFParser.Param_typeContext):
+    # Enter a parse tree produced by DMFParser#value_type.
+    def enterValue_type(self, ctx:DMFParser.Value_typeContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#param_type.
-    def exitParam_type(self, ctx:DMFParser.Param_typeContext):
+    # Exit a parse tree produced by DMFParser#value_type.
+    def exitValue_type(self, ctx:DMFParser.Value_typeContext):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#base_param_type.
-    def enterBase_param_type(self, ctx:DMFParser.Base_param_typeContext):
+    # Enter a parse tree produced by DMFParser#not_maybe_type.
+    def enterNot_maybe_type(self, ctx:DMFParser.Not_maybe_typeContext):
         pass
 
-    # Exit a parse tree produced by DMFParser#base_param_type.
-    def exitBase_param_type(self, ctx:DMFParser.Base_param_typeContext):
+    # Exit a parse tree produced by DMFParser#not_maybe_type.
+    def exitNot_maybe_type(self, ctx:DMFParser.Not_maybe_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#atomic_type.
+    def enterAtomic_type(self, ctx:DMFParser.Atomic_typeContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#atomic_type.
+    def exitAtomic_type(self, ctx:DMFParser.Atomic_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#sampleable_type.
+    def enterSampleable_type(self, ctx:DMFParser.Sampleable_typeContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#sampleable_type.
+    def exitSampleable_type(self, ctx:DMFParser.Sampleable_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#quantity_type.
+    def enterQuantity_type(self, ctx:DMFParser.Quantity_typeContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#quantity_type.
+    def exitQuantity_type(self, ctx:DMFParser.Quantity_typeContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#component_type.
+    def enterComponent_type(self, ctx:DMFParser.Component_typeContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#component_type.
+    def exitComponent_type(self, ctx:DMFParser.Component_typeContext):
         pass
 
 
@@ -817,12 +853,48 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#minimum.
+    def enterMinimum(self, ctx:DMFParser.MinimumContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#minimum.
+    def exitMinimum(self, ctx:DMFParser.MinimumContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#maximum.
+    def enterMaximum(self, ctx:DMFParser.MaximumContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#maximum.
+    def exitMaximum(self, ctx:DMFParser.MaximumContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#min_max.
+    def enterMin_max(self, ctx:DMFParser.Min_maxContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#min_max.
+    def exitMin_max(self, ctx:DMFParser.Min_maxContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#attr.
     def enterAttr(self, ctx:DMFParser.AttrContext):
         pass
 
     # Exit a parse tree produced by DMFParser#attr.
     def exitAttr(self, ctx:DMFParser.AttrContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#old_attr.
+    def enterOld_attr(self, ctx:DMFParser.Old_attrContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#old_attr.
+    def exitOld_attr(self, ctx:DMFParser.Old_attrContext):
         pass
 
 

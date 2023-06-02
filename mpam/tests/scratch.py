@@ -1,28 +1,29 @@
 from __future__ import annotations
 
-from typing import Optional, Any
+from mpam.types import Sample
+from quantities.SI import volts
+from quantities.dimensions import Voltage
+from quantities.timestamp import Timestamp, time_now
 
-class A:
-    _name: Optional[str] = None
+
+Voltage.default_units=volts
+
+vs = [20*volts, 30*volts, 40*volts, 2*volts, 50*volts]
+
+s = Sample.for_type(Voltage, vs)
+
+atts = ("count", "values", *Sample._cached_properies)
+
+for a in sorted(atts):
+    print(f"{a}: {getattr(s, a)}")
     
-    @property
-    def name(self) -> Optional[str]:
-        return self._name
+print("------------")
+s.add(5*volts)
+
+for a in sorted(atts):
+    print(f"{a}: {getattr(s, a)}")
     
-    @name.setter
-    def name(self, n: str) -> None:
-        print(f"Name is now {n}")
-        self._name = n
-        
-    def __set_name__(self, owner: Any, name: str) -> None:
-        self.name = f"{owner.__qualname__}.{name}"
-        
-class B:
-    x = A()
-    
-class C:
-    y = B.x
-    
-print(B.x._name)
-print(C.y._name)
-        
+s2 = Sample.for_type(Timestamp, (time_now(), time_now(), time_now()))
+print("------------")
+for a in sorted(atts):
+    print(f"{a}: {getattr(s2, a)}")

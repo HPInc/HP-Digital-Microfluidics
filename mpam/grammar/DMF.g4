@@ -35,7 +35,7 @@ interactive
 //  ;
   
 //assignment
-//  : which=name (':' param_type)? ASSIGN what=expr           # name_assignment
+//  : which=name (':' value_type)? ASSIGN what=expr           # name_assignment
 ////  | obj=expr ATTR attr ASSIGN what=expr   # attr_assignment
 //  ;
   
@@ -43,14 +43,14 @@ declaration returns [Optional[Type] type, str pname, int n]
   : LOCAL name ASSIGN init=expr
   	{$ctx.pname=$name.text}
   	{$ctx.type=None} 
-  | LOCAL? param_type INT ASSIGN init=expr? 
-  	{$ctx.type=$param_type.type}
+  | LOCAL? value_type INT ASSIGN init=expr? 
+  	{$ctx.type=$value_type.type}
   	{$ctx.n=$INT.int}
-  | LOCAL param_type INT
-  	{$ctx.type=$param_type.type}
+  | LOCAL value_type INT
+  	{$ctx.type=$value_type.type}
   	{$ctx.n=$INT.int}
-  | LOCAL? param_type name (ASSIGN init=expr)? 
-  	{$ctx.type=$param_type.type}
+  | LOCAL? value_type name (ASSIGN init=expr)? 
+  	{$ctx.type=$value_type.type}
   	{$ctx.pname=$name.text}
   ;
   
@@ -168,8 +168,8 @@ expr
 //  | 'toggle' 'state'?                # twiddle_expr
 //  | 'remove' ('from' 'the'? 'board')? # remove_expr
 
-  | 'the'? param_type                # type_name_expr
-  | param_type n=INT                 # type_name_expr
+  | 'the'? value_type                # type_name_expr
+  | value_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
 //  | 'reagent' STRING                 # reagent_expr
 //  | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
@@ -177,7 +177,7 @@ expr
   | multi_word_name                  # mw_name_expr
   | which=name ASSIGN what=expr    # name_assign_expr
   | obj=expr ATTR attr ASSIGN what=expr  # attr_assign_expr
-  | ptype=param_type n=INT ASSIGN what=expr # name_assign_expr
+  | ptype=value_type n=INT ASSIGN what=expr # name_assign_expr
   | string # string_lit_expr
   | INT                              # int_expr
   | FLOAT							 # float_expr
@@ -234,14 +234,14 @@ macro_def
   ;
   
 macro_header
-  : 'macro' '(' (param (',' param)*)? ')' ('->' ret_type=param_type)?
+  : 'macro' '(' (param (',' param)*)? ')' ('->' ret_type=value_type)?
   ;
   
 param returns[Type type, str pname, int n, bool deprecated]
-  : ('a' | 'an')? param_type {$ctx.type=$param_type.type} 
-  | param_type {$ctx.type=$param_type.type} INT {$ctx.n=$INT.int} 
-  | param_type name {$ctx.type=$param_type.type} {$ctx.pname=$name.text}
-  | name ':' param_type {$ctx.type=$param_type.type} {$ctx.pname=$name.text} {$ctx.deprecated=True}
+  : ('a' | 'an')? value_type {$ctx.type=$value_type.type} 
+  | value_type {$ctx.type=$value_type.type} INT {$ctx.n=$INT.int} 
+  | value_type name {$ctx.type=$value_type.type} {$ctx.pname=$name.text}
+  | name ':' value_type {$ctx.type=$value_type.type} {$ctx.pname=$name.text} {$ctx.deprecated=True}
   ;
   
 no_arg_action returns[str which]
@@ -256,47 +256,68 @@ no_arg_action returns[str which]
   | 'reset' 'all' {$ctx.which="RESET ALL"}
   ;
   
-param_type returns[Type type]
-  : MAYBE base_param_type {$ctx.type=$base_param_type.type.maybe}
-  | '(' MAYBE ')' base_param_type {$ctx.type=$base_param_type.type.maybe}
-  | base_param_type {$ctx.type=$base_param_type.type}
+value_type returns[Type type]
+  : MAYBE not_maybe_type {$ctx.type=$not_maybe_type.type.maybe}
+  | '(' MAYBE ')' not_maybe_type {$ctx.type=$not_maybe_type.type.maybe}
+  | not_maybe_type {$ctx.type=$not_maybe_type.type}
+  ;
+  
+not_maybe_type returns[Type type]
+  : sampleable_type 'sample' {$ctx.type=$sampleable_type.type.sample}
+  | atomic_type {$ctx.type=$atomic_type.type}
   ;
 
-base_param_type returns[Type type]
+atomic_type returns[Type type]
   : 'drop' {$ctx.type=Type.DROP}
-  | 'pad'  {$ctx.type=Type.PAD}
-  | 'pipetting'? 'target' {$ctx.type=Type.PIPETTING_TARGET}
-  | 'well' {$ctx.type=Type.WELL}
-  |  (('extraction' ('point' | 'port')) | ('extraction'? 'hole')) {$ctx.type=Type.EXTRACTION_POINT}
-  | 'well' 'pad' {$ctx.type=Type.WELL_PAD}
-  | 'well'? 'gate' {$ctx.type=Type.WELL_GATE} 
-  | 'int'  {$ctx.type=Type.INT}
-  | 'float' {$ctx.type=Type.FLOAT}
   | 'string' {$ctx.type=Type.STRING}
   | 'state' {$ctx.type=Type.BINARY_STATE}
   | 'binary' {$ctx.type=Type.BINARY_CPT}
   | 'delta' {$ctx.type=Type.DELTA}
   | 'motion' {$ctx.type=Type.MOTION}
   | 'delay' {$ctx.type=Type.DELAY}
-  | 'time' {$ctx.type=Type.TIME}
-  | 'frequency' {$ctx.type=Time.FREQUENCY}
-  | 'ticks' {$ctx.type=Type.TICKS}
   | 'bool' {$ctx.type=Type.BOOL}
   | ('direction' | 'dir') {$ctx.type=Type.DIR}
-  | 'volume' {$ctx.type=Type.VOLUME}
   | 'reagent' {$ctx.type=Type.REAGENT}
   | 'liquid' {$ctx.type=Type.LIQUID}
-  | ('temp' | 'temperature') ('diff' | 'difference' | 'delta') {$ctx.type=Type.REL_TEMP}
+  | 'sensor' 'reading' {$ctx.type=Type.SENSOR_READING}
+  | 'eselog' 'reading' {$ctx.type=Type.ESELOG_READING}
+  | component_type {$ctx.type=$component_type.type}
+  | sampleable_type {$ctx.type=$sampleable_type.type}
+  ;
+  
+sampleable_type returns[Type type]
+  : 'int'  {$ctx.type=Type.INT}
+  | 'float' {$ctx.type=Type.FLOAT}
   | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
+  | 'timestamp' {$ctx.type=Type.TIMESTAMP}
+  | quantity_type {$ctx.type=$quantity_type.type}
+  ;
+  
+quantity_type returns[Type type]
+  : 'time' {$ctx.type=Type.TIME}
+  | 'frequency' {$ctx.type=Time.FREQUENCY}
+  | 'ticks' {$ctx.type=Type.TICKS}
+  | 'volume' {$ctx.type=Type.VOLUME}
+  | 'voltage' {$ctx.type=Type.VOLTAGE}
+  | ('temp' | 'temperature') ('diff' | 'difference' | 'delta') {$ctx.type=Type.REL_TEMP}
+  ;
+  
+component_type returns[Type type]
+  : 'pad'  {$ctx.type=Type.PAD}
+  | 'pipetting'? 'target' {$ctx.type=Type.PIPETTING_TARGET}
+  | 'well' {$ctx.type=Type.WELL}
+  |  (('extraction' ('point' | 'port')) | ('extraction'? 'hole')) {$ctx.type=Type.EXTRACTION_POINT}
+  | 'well' 'pad' {$ctx.type=Type.WELL_PAD}
+  | 'well'? 'gate' {$ctx.type=Type.WELL_GATE} 
   | ('heater' | 'heating' 'zone') {$ctx.type=Type.HEATER}
   | 'chiller' {$ctx.type=Type.CHILLER}
   | 'magnet' {$ctx.type=Type.MAGNET}
-//  | 'board' {$ctx.Type=Type.BOARD}
   | 'power' 'supply' {$ctx.type=Type.POWER_SUPPLY}
   | 'power' 'mode' {$ctx.type=Type.POWER_MODE}
   | 'fan' {$ctx.type=Type.FAN}
   | 'sensor' {$ctx.type=Type.SENSOR}
   | 'eselog' {$ctx.type=Type.ESELOG}
+//  | 'board' {$ctx.Type=Type.BOARD}
   ;
   
 dim_unit returns[PhysUnit unit]
@@ -318,32 +339,77 @@ numbered_type returns[NumberedItem kind]
   | (('extraction' ('point' | 'port')) | ('extraction'? 'hole'))
     {$ctx.kind=NumberedItem.EXTRACTION_POINT}
   ;
+  
+minimum
+  : 'min' | 'minimum'
+  ;
+  
+maximum
+  : 'max' | 'maximum'
+  ;
+  
+min_max
+  : minimum | maximum
+  ;
+  
+attr
+  : 'exit' 'pad'
+  | 'y' ('coord' | 'coordinate')
+  | 'x' ('coord' | 'coordinate')
+  | 'exit' ('dir' | 'direction')
+  | 'remaining' 'capacity'
+  | 'fill' 'level'
+  | 'refill' 'level'
+  | 'target' ('temp' | 'temperature')
+  | 'current' ('temp' | 'temperature')
+  | 'power' 'supply'
+  | min_max 'voltage'
+  | min_max ('target' | 'temperature' | 'temp')
+  | 'power'? 'mode'
+  | 'heating' 'zone'
+  | 'n' 'samples'
+  | ('sampling' | 'sample') 'rate'
+  | ('sampling' | 'sample') 'interval'
+  | 'first' 'value'?
+  | 'last' 'value'?
+  | min_max 'value'?
+  | ('arithmetic'? | 'harmonic' | 'geometric') 'mean'
+  | ('std' | 'standard') ('dev' | 'deviation')
+  | kwd_names
+  | 'drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
+  	   | 'fan' | 'capacity' | 'eselog' | 'timestamp' | 'temperature' |'temp' | 'gate'
+  	   | 'dir' | 'direction' | 'row' | 'col' | 'column' | 'voltage' | 'mode'
+  	   | 'value'
+//  | atomic_type
+  | ID
+  ;
 
-attr returns[str which]
+old_attr returns[str which]
   : 'exit' 'pad' {$ctx.which="#exit_pad"}
-  | 'gate' {$ctx.which="gate"}
-  | ('dir' | 'direction') {$ctx.which="direction"}
-  | ('row' | 'y' ('coord' | 'coordinate')) {$ctx.which="row"}
-  | ('col' | 'column' | 'x' ('coord' | 'coordinate')) {$ctx.which="column"}
+  | 'y' ('coord' | 'coordinate') {$ctx.which="#y_coord"}
+  | 'x' ('coord' | 'coordinate') {$ctx.which="#x_coord"}
   | 'exit' ('dir' | 'direction') {$ctx.which="#exit_dir"}
   | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
   | 'fill' 'level' {$ctx.which="#fill_level"}
   | 'refill' 'level' {$ctx.which="#refill_level"}
   | 'target' ('temp' | 'temperature') {$ctx.which="#target_temperature"}
-  | 'current'? ('temp' | 'temperature') {$ctx.which="#current_temperature"}
+  | 'current' ('temp' | 'temperature') {$ctx.which="#current_temperature"}
   | 'power' 'supply' {$ctx.which="#power_supply"}
   | ('min' | 'minimum') 'voltage' {$ctx.which="#min_voltage"}
   | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
   | ('min' | 'minimum') ('target' | 'temperature' | 'temp') {$ctx.which="#min_target"}
   | ('max' | 'maximum') ('target' | 'temperature' | 'temp') {$ctx.which="#max_target"}
-  | 'power'? 'mode' {$ctx.which="mode"}
-  | 'voltage' {$ctx.which="voltage"}
-  | 'heating' 'zone' {$ctx.which="heater"}
+  | 'power' 'mode' {$ctx.which="#power_mode"}
+  | 'heating' 'zone' {$ctx.which="#heating_zone"}
   | 'n' 'samples' {$ctx.which="#n_samples"}
   | ('sampling' | 'sample') 'rate' {$ctx.which="#sample_rate"}
   | ('sampling' | 'sample') 'interval' {$ctx.which="#sample_interval"}
+  | 'first' 'value' {$ctx.which="#first_value"}
+  | 'last' 'value' {$ctx.which="#last_value"}
   | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
-  	   | 'fan' | 'capacity' | 'eselog' | 'target'
+  	   | 'fan' | 'capacity' | 'eselog' | 'target' | 'timestamp' | 'temperature' |'temp' | 'gate'
+  	   | 'dir' | 'direction' | 'row' | 'col' | 'column' | 'voltage' | 'mode'
+  	   | 'first' | 'last' | 'value'
   	   | ID
   )
   	{$ctx.which=$n.text}
@@ -398,6 +464,9 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'fill' | 'refil' | 'level'
   | 'prepare' | 'to' | 'dispense'
   | 'samples' | 'sampling' | 'rate' | 'interval'
+  | 'reading'
+  | 'target'
+  | 'first' | 'last' | 'value'
   ;
 
 string : STRING ;

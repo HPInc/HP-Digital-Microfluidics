@@ -17,7 +17,8 @@ from DMFVisitor import DMFVisitor
 from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
-    Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc
+    Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc,\
+    SampleType
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor
@@ -40,7 +41,9 @@ from quantities.SI import deg_C
 from quantities.timestamp import Timestamp, time_in, time_now
 import io
 import logging
-from devices.eselog import ESELog
+from devices.eselog import ESELog, ESELogChannel
+from itertools import product
+import os
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -901,6 +904,8 @@ Type.register_conversion(Type.AMBIG_TEMP, Type.ABS_TEMP, lambda t: t.absolute)
 Type.register_conversion(Type.AMBIG_TEMP, Type.REL_TEMP, lambda t: t.relative)
 Type.register_conversion(Type.ON, Type.TWIDDLE_OP, to_const(TwiddleBinaryValue.ON))
 Type.register_conversion(Type.OFF, Type.TWIDDLE_OP, to_const(TwiddleBinaryValue.OFF))
+for st in SampleType.all():
+    Type.register_conversion(st, st.element_type, lambda s: s.mean)
 
 
 class Executable:
@@ -1263,10 +1268,22 @@ class DMFInterpreter:
     globals: Final[Environment]
     namespace: Final[TypeMap]
     
-    def __init__(self, file_names: Sequence[str], *, board: Board, encoding: str='ascii', errors: str='strict') -> None:
+    def __init__(self, file_names: Sequence[str], *, board: Board, 
+                 encoding: str='ascii', 
+                 errors: str='strict',
+                 dirs: Sequence[str]=[],
+                 ) -> None:
         self.globals = Environment(None, board=board)
         self.namespace = TypeMap(None)
+        dirs = ['.', *dirs]
+        def find_file(f: str) -> str:
+            for d in dirs:
+                p = os.path.join(d, f)
+                if os.path.isfile(p):
+                    return os.path.abspath(p)
+            return f
         for file_name in file_names:
+            file_name=find_file(file_name)
             print(f"Loading macro file '{file_name}'")
             parser = self.get_parser(FileStream(file_name, encoding, errors))
             tree = parser.macro_file()
@@ -1430,7 +1447,7 @@ class DMFCompiler(DMFVisitor):
         val = self.escape_re.value.sub(repl_escape, val)
         return val
 
-    def type_name_var(self, t_or_ctx: Union[DMFParser.Param_typeContext, Type], n: Optional[int] = None) -> str:
+    def type_name_var(self, t_or_ctx: Union[DMFParser.Value_typeContext, Type], n: Optional[int] = None) -> str:
         t = t_or_ctx if isinstance(t_or_ctx, Type) else cast(Type, t_or_ctx.type)
         if isinstance(t, MaybeType):
             t = t.if_there_type
@@ -1519,11 +1536,9 @@ class DMFCompiler(DMFVisitor):
     def not_an_attr_error(self,
                           ctx: ParserRuleContext, 
                           attr_ctx: DMFParser.AttrContext) -> Executable:
-        attr_name = attr_ctx.which
         attr_text = self.text_of(attr_ctx)
-        type_spec = "" if (attr_text == attr_name) else f" ({attr_name})"
         return self.error(ctx, Type.NO_VALUE,
-                          lambda text: f"'{attr_text}'{type_spec} is not an attribute: {text})")
+                          lambda text: f"'{attr_text}' is not an attribute: {text})")
         
     
     def use_callable(self, fn: Callable[..., Delayed[Any]],
@@ -1679,7 +1694,7 @@ class DMFCompiler(DMFVisitor):
 
     def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext) -> Executable:
         name_ctx = cast(DMFParser.NameContext, ctx.which)
-        type_ctx = cast(Optional[DMFParser.Param_typeContext], ctx.param_type())
+        type_ctx = cast(Optional[DMFParser.Value_typeContext], ctx.value_type())
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
 
         if type_ctx is None:
@@ -1756,7 +1771,8 @@ class DMFCompiler(DMFVisitor):
     def visitAttr_assign_expr(self, ctx:DMFParser.Attr_assign_exprContext) -> Executable:
         obj = self.visit(ctx.obj)
         value = self.visit(ctx.what)
-        attr_name: str = ctx.attr().which
+        # attr_name: str = ctx.attr().which
+        attr_name: str = self.text_of(ctx.attr())
         attr = Attributes.get(attr_name, None)
         if attr is None:
             return self.not_an_attr_error(ctx, ctx.attr())
@@ -2204,10 +2220,10 @@ class DMFCompiler(DMFVisitor):
 
     def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext) -> Executable:
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
-        name = self.type_name_var(ctx.param_type(), n)
+        name = self.type_name_var(ctx.value_type(), n)
         var_type = self.current_types.lookup(name)
         if var_type is MISSING:
-            return self.error(ctx.param_type(), Type.NO_VALUE, f"Undefined variable: {name}")
+            return self.error(ctx.value_type(), Type.NO_VALUE, f"Undefined variable: {name}")
         def run(env: Environment) -> Delayed[Any]:
             val = env.lookup(name)
             if val is MISSING:
@@ -2288,7 +2304,8 @@ class DMFCompiler(DMFVisitor):
     
     def visitHas_expr(self, ctx:DMFParser.Has_exprContext) -> Executable:
         obj = self.visit(ctx.obj)
-        attr_name: str = ctx.attr().which
+        # attr_name: str = ctx.attr().which
+        attr_name: str = self.text_of(ctx.attr())
         attr = Attributes.get(attr_name, None)
         polarity: bool = ctx.possession().polarity
         test = (lambda v: v is not None) if polarity else (lambda v: v is None) 
@@ -2564,7 +2581,9 @@ class DMFCompiler(DMFVisitor):
         existence_check = ctx.existence() is not None 
         
         is_maybe = existence_check or (ctx.MAYBE() is not None)
-        attr_name: str = ctx.attr().which
+        # attr_name: str = ctx.attr().which
+        attr_name: str = self.text_of(ctx.attr())
+        # logger.info(f"Attribute {attr_name}: {self.text_of(ctx.attr())}")
         attr = Attributes.get(attr_name, None)
         if attr is None:
             return self.not_an_attr_error(ctx, ctx.attr())
@@ -2771,7 +2790,7 @@ class DMFCompiler(DMFVisitor):
             self.error(ctx, Type.IGNORE, lambda txt: f"No type specified for parameter '{txt}'")
         name_ctx: Optional[str] = ctx.name()
         if name_ctx is None:
-            name = self.type_name_var(ctx.param_type(), ctx.n)
+            name = self.type_name_var(ctx.value_type(), ctx.n)
         else:
             name = self.text_of(name_ctx)
         return (name, param_type)
@@ -2805,7 +2824,7 @@ class DMFCompiler(DMFVisitor):
         param_names = tuple(pdef[0] for pdef in param_defs)
         param_types = tuple(pdef[1] for pdef in param_defs)
         
-        return_type_context: Optional[DMFParser.Param_typeContext] = header.ret_type
+        return_type_context: Optional[DMFParser.Value_typeContext] = header.ret_type
         return_type = Type.NO_VALUE if return_type_context is None else cast(Type, return_type_context.type)
         
         if e := self.check_macro_params(param_names, param_types, param_contexts):
@@ -2881,8 +2900,8 @@ class DMFCompiler(DMFVisitor):
         return DMFVisitor.visitParam(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitParam_type(self, ctx:DMFParser.Param_typeContext) -> Executable:
-        return DMFVisitor.visitParam_type(self, ctx) # type: ignore [no-any-return]
+    def visitValue_type(self, ctx:DMFParser.Value_typeContext) -> Executable:
+        return DMFVisitor.visitValue_type(self, ctx) # type: ignore [no-any-return]
 
 
     def visitName(self, ctx:DMFParser.NameContext) -> Executable:
@@ -3268,14 +3287,22 @@ class DMFCompiler(DMFVisitor):
         fn.register((Type.SENSOR, Type.PAD.maybe), Type.NO_VALUE, aim_sensor, curry_at=0)
         
         fn = BuiltIns["take reading"] = Functions["#take reading"]
-        def read_from_sensor(s: Sensor, n: Optional[int]=None, r: Optional[Union[Time,Frequency]]=None) -> Delayed[int]:
-            return s.read(n_samples=n, speed=r).transformed(lambda seq: len(seq))
-        fn.register((Type.SENSOR,), Type.INT, read_from_sensor)
-        fn.register((Type.SENSOR, Type.INT), Type.INT, read_from_sensor, curry_at=0)
-        fn.register((Type.SENSOR, Type.INT, Type.TIME), Type.INT, read_from_sensor, curry_at=0)
-        fn.register((Type.SENSOR, Type.INT, Type.FREQUENCY), Type.INT, read_from_sensor, curry_at=0)
-        fn.register((Type.SENSOR, Type.TIME), Type.INT, lambda s,t: read_from_sensor(s, None, t), curry_at=0)
-        fn.register((Type.SENSOR, Type.FREQUENCY), Type.INT, lambda s,f: read_from_sensor(s, None, f), curry_at=0)
+        def read_from_sensor(s: Sensor, n: Optional[int]=None, r: Optional[Union[Time,Frequency]]=None) -> Delayed[Sensor.Reading]:
+            return s.read(n_samples=n, speed=r)
+        fn.register((Type.SENSOR,), Type.SENSOR_READING, read_from_sensor)
+        fn.register((Type.SENSOR, Type.INT), Type.SENSOR_READING, read_from_sensor, curry_at=0)
+        fn.register((Type.SENSOR, Type.INT, Type.TIME), Type.SENSOR_READING, read_from_sensor, curry_at=0)
+        fn.register((Type.SENSOR, Type.INT, Type.FREQUENCY), Type.SENSOR_READING, read_from_sensor, curry_at=0)
+        fn.register((Type.SENSOR, Type.TIME), Type.SENSOR_READING, lambda s,t: read_from_sensor(s, None, t), curry_at=0)
+        fn.register((Type.SENSOR, Type.FREQUENCY), Type.SENSOR_READING, lambda s,f: read_from_sensor(s, None, f), curry_at=0)
+        def read_from_eselog(s: ESELog, n: Optional[int]=None, r: Optional[Union[Time,Frequency]]=None) -> Delayed[ESELog.Reading]:
+            return s.read(n_samples=n, speed=r)
+        fn.register((Type.ESELOG,), Type.ESELOG_READING, read_from_sensor)
+        fn.register((Type.ESELOG, Type.INT), Type.SENSOR_READING, read_from_sensor, curry_at=0)
+        fn.register((Type.ESELOG, Type.INT, Type.TIME), Type.ESELOG_READING, read_from_sensor, curry_at=0)
+        fn.register((Type.ESELOG, Type.INT, Type.FREQUENCY), Type.ESELOG_READING, read_from_sensor, curry_at=0)
+        fn.register((Type.ESELOG, Type.TIME), Type.ESELOG_READING, lambda s,t: read_from_sensor(s, None, t), curry_at=0)
+        fn.register((Type.ESELOG, Type.FREQUENCY), Type.ESELOG_READING, lambda s,f: read_from_sensor(s, None, f), curry_at=0)
         
         
     @classmethod
@@ -3358,7 +3385,7 @@ class DMFCompiler(DMFVisitor):
     @classmethod
     def setup_attributes(cls) -> None:
         Attributes["gate"].register(Type.WELL, Type.WELL_GATE, lambda well: well.gate)
-        Attributes["#exit_pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
+        Attributes["exit pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
         def set_state(c: BinaryComponent, s: OnOff) -> None:
             c.current_state = s
         Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
@@ -3366,15 +3393,19 @@ class DMFCompiler(DMFVisitor):
         
         Attributes["state"].register(Type.BINARY_CPT, Type.BINARY_STATE, lambda cpt: cpt.current_state)
         Attributes["distance"].register(Type.DELTA, Type.INT, lambda delta: delta.dist)
-        Attributes["direction"].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
+        for a in ("dir", "direction"):
+            Attributes[a].register(Type.DELTA, Type.DIR, lambda delta: delta.direction)
         # Attributes["duration"].register(Type.PAUSE, Type.DELAY, lambda pause: pause.duration)
         def set_pad(d: Drop, p: Pad) -> None:
             d.pad = p
             d.status = DropStatus.ON_BOARD
         Attributes["pad"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=set_pad)
-        Attributes["row"].register(Type.PAD, Type.INT, lambda pad: pad.row)
-        Attributes["column"].register(Type.PAD, Type.INT, lambda pad: pad.column)
-        Attributes["#exit_dir"].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
+        for a in ("row", "y coord", "y coordinate"):
+            Attributes[a].register(Type.PAD, Type.INT, lambda pad: pad.row)
+        for a in ("col", "column", "x coord", "x coordinate"):
+            Attributes[a].register(Type.PAD, Type.INT, lambda pad: pad.column)
+        for a in ("exit dir", "exit direction"):
+            Attributes[a].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
         Attributes["well"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
         Attributes["well"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
         Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop) 
@@ -3413,7 +3444,7 @@ class DMFCompiler(DMFVisitor):
                                         setter=set_well_contents)
         
         Attributes["capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.capacity)
-        Attributes["#remaining_capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
+        Attributes["remaining capacity"].register(Type.WELL, Type.VOLUME, lambda w: w.remaining_capacity)
         
         def set_required(w: Well, v: Optional[Volume]) -> None:
             w.required = v
@@ -3422,32 +3453,34 @@ class DMFCompiler(DMFVisitor):
         
         def set_fill_level(w: Well, v: Optional[Volume]) -> None:
             w.compute_max_fill(v)
-        Attributes["#fill_level"].register(Type.WELL, Type.VOLUME.maybe, lambda w: w.max_fill,
+        Attributes["fill level"].register(Type.WELL, Type.VOLUME.maybe, lambda w: w.max_fill,
                                            setter=set_fill_level)
         
         def set_refill_level(w: Well, v: Optional[Volume]) -> None:
             w.compute_min_fill(v)
-        Attributes["#refill_level"].register(Type.WELL, Type.VOLUME.maybe, lambda w: w.min_fill,
-                                           setter=set_refill_level)
+        Attributes["refill level"].register(Type.WELL, Type.VOLUME.maybe, lambda w: w.min_fill,
+                                            setter=set_refill_level)
         
             
-        
-        Attributes["heater"].register((Type.PAD, Type.WELL), Type.HEATER.maybe, lambda p: p.heater)
+        for a in ("heater", "heating zone"):
+            Attributes[a].register((Type.PAD, Type.WELL), Type.HEATER.maybe, lambda p: p.heater)
         Attributes["chiller"].register((Type.PAD, Type.WELL), Type.CHILLER.maybe, lambda p: p.chiller)
         Attributes["magnet"].register(Type.PAD, Type.MAGNET.maybe, lambda p: p.magnet)
         
-        Attributes["#current_temperature"].register(Type.TEMP_CONTROL, Type.ABS_TEMP, lambda h: h.current_temperature)
+        for a in ("temperature", "temp", "current temp", "current temperature"):
+            Attributes[a].register(Type.TEMP_CONTROL, Type.ABS_TEMP, lambda h: h.current_temperature)
         def set_tc_target(h: TemperatureControl, t: Optional[TemperaturePoint]) -> None:
             h.target = t
-        Attributes["#target_temperature"].register(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, lambda h: h.target)
-        Attributes["#target_temperature"].register_setter(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, set_tc_target)
-        Attributes["target"].register(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, lambda h: h.target)
-        Attributes["target"].register_setter(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, set_tc_target)
+        for a in ("target", "target temp", "target temperature"):
+            Attributes[a].register(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, lambda h: h.target)
+            Attributes[a].register_setter(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, set_tc_target)
         
-        Attributes["#max_target"].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.max_target)
-        Attributes["#min_target"].register(Type.CHILLER, Type.ABS_TEMP, lambda c: c.min_target)
+        for a in (f"{a} {b}" for a,b in product(("max", "maximum"), ("target", "temperature", "temp"))):
+            Attributes[a].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.max_target)
+        for a in (f"{a} {b}" for a,b in product(("min", "minimum"), ("target", "temperature", "temp"))):
+            Attributes[a].register(Type.CHILLER, Type.ABS_TEMP, lambda c: c.min_target)
         
-        Attributes["#power_supply"].register(Type.BOARD, Type.POWER_SUPPLY.maybe, lambda b: b.find_one(PowerSupply))
+        Attributes["power supply"].register(Type.BOARD, Type.POWER_SUPPLY.maybe, lambda b: b.find_one(PowerSupply))
         
         def set_ps_voltage(ps: PowerSupply, v: Voltage) -> None:
             ps.voltage = v
@@ -3456,11 +3489,14 @@ class DMFCompiler(DMFVisitor):
         
         def set_ps_mode(ps: PowerSupply, m: PowerMode) -> None:
             ps.mode = m
-        Attributes["mode"].register(Type.POWER_SUPPLY, Type.POWER_MODE, lambda ps: ps.mode)
-        Attributes["mode"].register_setter(Type.POWER_SUPPLY, Type.POWER_MODE, set_ps_mode)
+        for a in ("mode", "power mode"):
+            Attributes[a].register(Type.POWER_SUPPLY, Type.POWER_MODE, lambda ps: ps.mode)
+            Attributes[a].register_setter(Type.POWER_SUPPLY, Type.POWER_MODE, set_ps_mode)
         
-        Attributes["#min_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.min_voltage)
-        Attributes["#max_voltage"].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.max_voltage)
+        for a in ("min voltage", "minimum voltage"):
+            Attributes[a].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.min_voltage)
+        for a in ("max voltage", "maximum voltage"):
+            Attributes[a].register(Type.POWER_SUPPLY, Type.VOLTAGE, lambda ps: ps.max_voltage)
         
         Attributes["fan"].register(Type.BOARD, Type.FAN.maybe, lambda b: b.find_one(Fan))
         
@@ -3468,22 +3504,60 @@ class DMFCompiler(DMFVisitor):
         
         def set_n_samples(s: Sensor, n: int) -> None:
             s.n_samples = n
-        Attributes["#n_samples"].register(Type.SENSOR, Type.INT.maybe, lambda s: s.n_samples)
-        Attributes["#n_samples"].register_setter(Type.SENSOR, Type.INT, set_n_samples)
+        Attributes["n samples"].register(Type.SENSOR, Type.INT.maybe, lambda s: s.n_samples)
+        Attributes["n samples"].register_setter(Type.SENSOR, Type.INT, set_n_samples)
         
-        Attributes["#sample_rate"].register(Type.SENSOR, Type.FREQUENCY.maybe, 
-                                            lambda s: None if s.sample_interval is None else 1/s.sample_interval)
-        Attributes["#sample_interval"].register(Type.SENSOR, Type.FREQUENCY.maybe, 
-                                                lambda s: s.sample_interval)
         def set_sample_interval(s: Sensor, t: Union[Time, Frequency]) -> None:
             s.sample_interval = Time.rate_from(t)
-        Attributes["#sample_rate"].register_setter(Type.SENSOR, Type.FREQUENCY.maybe, set_sample_interval) 
-        Attributes["#sample_interval"].register_setter(Type.SENSOR, Type.TIME.maybe, set_sample_interval) 
+        for a in("sampling rate", "sample rate"):
+            Attributes[a].register(Type.SENSOR, Type.FREQUENCY.maybe, 
+                                   lambda s: None if s.sample_interval is None else 1/s.sample_interval)
+            Attributes[a].register_setter(Type.SENSOR, Type.FREQUENCY.maybe, set_sample_interval) 
+        for a in("sampling interval", "sample interval"):
+            Attributes[a].register(Type.SENSOR, Type.FREQUENCY.maybe, 
+                                   lambda s: s.sample_interval)
+            Attributes[a].register_setter(Type.SENSOR, Type.TIME.maybe, set_sample_interval) 
         
         def set_target(s: Sensor, p: Optional[Pad]) -> None:
             s.target = p
         Attributes["target"].register(Type.SENSOR, Type.PAD.maybe, lambda s: s.target)
         Attributes["target"].register_setter(Type.SENSOR, Type.PAD.maybe, set_target)
+        
+        Attributes["timestamp"].register(Type.SENSOR_READING, Type.TIMESTAMP.sample, lambda r: r.timestamp)
+        Attributes["ticket"].register(Type.ESELOG_READING, Type.INT.sample, lambda r: r.ticket)
+        # Heaters grabbed 'temperature'. I should fix that at some point.
+        Attributes["temperature"].register(Type.ESELOG_READING, Type.ABS_TEMP.sample, lambda r: r.temperature)
+        def setup_eselog_val_atts() -> None:
+            for (channel, state) in product(ESELogChannel, OnOff):
+                name = f"{channel.name}_{state.name}".lower()
+                Attributes[name].register(Type.ESELOG_READING, Type.VOLTAGE.sample, lambda r: r.value(channel, state))
+        setup_eselog_val_atts()
+        
+        def setup_sample_atts() -> None:
+            for st in SampleType.all():
+                t = st.element_type
+                cont_type = st.continuous_type
+                diff_type = st.difference_type
+                Attributes["count"].register(st, Type.INT, lambda s: s.count)
+                for a in ("first", "first value"):
+                    Attributes[a].register(st, t.maybe, lambda s: None if s.is_empty else s.first)
+                for a in ("last", "lastvalue"):
+                    Attributes[a].register(st, t.maybe, lambda s: None if s.is_empty else s.last)
+                for a in ("min", "minimum", "min value", "minimum value"):
+                    Attributes[a].register(st, t.maybe, lambda s: None if s.is_empty else s.min)
+                for a in ("max", "maximum", "max value", "maximum value"):
+                    Attributes[a].register(st, t.maybe, lambda s: None if s.is_empty else s.max)
+                Attributes["range"].register(st, diff_type.maybe, lambda s: None if s.is_empty else s.range)
+                for a in ("mean", "arithmetic mean"):
+                    Attributes[a].register(st, cont_type.maybe, lambda s: None if s.is_empty else s.mean)
+                Attributes["median"].register(st, cont_type.maybe, lambda s: None if s.is_empty else s.median)
+                for a in (f"{a} {b}" for a,b in product(("std", "standard"), ("dev", "deviation"))):
+                    Attributes[a].register(st, diff_type.maybe, lambda s: None if s.is_empty else s.std_dev)
+                Attributes["harmonic mean"].register(st, cont_type.maybe, lambda s: None if s.is_empty else s.mean)
+                Attributes["geometric mean"].register(st, cont_type.maybe, lambda s: None if s.is_empty else s.mean)
+                
+                
+        setup_sample_atts()
         
 DMFCompiler.setup_attributes()
 DMFCompiler.setup_function_table()

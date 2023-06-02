@@ -25,7 +25,7 @@ class Board():
         """
     def DisableHighVoltage(self) -> typing.Optional[ErrorCode]: 
         """
-        Disable high viltage
+        Disable high voltage
         """
     def DumpElectrodes(self) -> typing.Optional[ErrorCode]: 
         """
@@ -741,6 +741,11 @@ class ESElog(Sensor):
             :type: int
             """
         @property
+        def temperature(self) -> int:
+            """
+            :type: int
+            """
+        @property
         def ticket(self) -> int:
             """
             :type: int
@@ -755,35 +760,35 @@ class ESElog(Sensor):
             """
             :type: Sensor.ResultType
             """
-        ADCSamplingParam: pyglider.ConfigParam.ForUShort
-        AverageParam: pyglider.ConfigParam.ForUChar
-        BaudrateParam: pyglider.ConfigParam.ForUInt
-        ComPortParam: pyglider.ConfigParam.ForUInt
-        CycleTimeParam: pyglider.ConfigParam.ForUShort
-        CyclesParam: pyglider.ConfigParam.ForUShort
-        DarkSignalTypeParam: pyglider.ConfigParam.ForUInt
-        E1D1FactorParam: pyglider.ConfigParam.ForFloat
-        E1D1OffsetParam: pyglider.ConfigParam.ForInt
-        E1D2FactorParam: pyglider.ConfigParam.ForFloat
-        E1D2OffsetParam: pyglider.ConfigParam.ForInt
-        E2D2FactorParam: pyglider.ConfigParam.ForFloat
-        E2D2OffsetParam: pyglider.ConfigParam.ForInt
-        LED1CurrentDefaultParam: pyglider.ConfigParam.ForUChar
-        LED1CurrentMaxParam: pyglider.ConfigParam.ForUChar
-        LED1CurrentMinParam: pyglider.ConfigParam.ForUChar
-        LED1CurrentParam: pyglider.ConfigParam.ForUChar
-        LED2CurrentDefaultParam: pyglider.ConfigParam.ForUChar
-        LED2CurrentMaxParam: pyglider.ConfigParam.ForUChar
-        LED2CurrentMinParam: pyglider.ConfigParam.ForUChar
-        LED2CurrentParam: pyglider.ConfigParam.ForUChar
-        LedModeParam: pyglider.ConfigParam.ForUInt
-        MethodTypeParam: pyglider.ConfigParam.ForUInt
-        ModbusAddressParam: pyglider.ConfigParam.ForUChar
-        OffDelayLED1Param: pyglider.ConfigParam.ForUShort
-        OffDelayLED2Param: pyglider.ConfigParam.ForUShort
-        OnDelayLED1Param: pyglider.ConfigParam.ForUShort
-        OnDelayLED2Param: pyglider.ConfigParam.ForUShort
-        StartModeParam: pyglider.ConfigParam.ForUInt
-        TriggerDelayParam: pyglider.ConfigParam.ForUShort
         pass
+    ADCSamplingParam: pyglider.ConfigParam.ForUShort
+    AverageParam: pyglider.ConfigParam.ForUChar
+    BaudrateParam: pyglider.ConfigParam.ForUInt
+    ComPortParam: pyglider.ConfigParam.ForUInt
+    CycleTimeParam: pyglider.ConfigParam.ForUShort
+    CyclesParam: pyglider.ConfigParam.ForUShort
+    DarkSignalTypeParam: pyglider.ConfigParam.ForUInt
+    E1D1FactorParam: pyglider.ConfigParam.ForFloat
+    E1D1OffsetParam: pyglider.ConfigParam.ForInt
+    E1D2FactorParam: pyglider.ConfigParam.ForFloat
+    E1D2OffsetParam: pyglider.ConfigParam.ForInt
+    E2D2FactorParam: pyglider.ConfigParam.ForFloat
+    E2D2OffsetParam: pyglider.ConfigParam.ForInt
+    LED1CurrentDefaultParam: pyglider.ConfigParam.ForUChar
+    LED1CurrentMaxParam: pyglider.ConfigParam.ForUChar
+    LED1CurrentMinParam: pyglider.ConfigParam.ForUChar
+    LED1CurrentParam: pyglider.ConfigParam.ForUChar
+    LED2CurrentDefaultParam: pyglider.ConfigParam.ForUChar
+    LED2CurrentMaxParam: pyglider.ConfigParam.ForUChar
+    LED2CurrentMinParam: pyglider.ConfigParam.ForUChar
+    LED2CurrentParam: pyglider.ConfigParam.ForUChar
+    LedModeParam: pyglider.ConfigParam.ForUInt
+    MethodTypeParam: pyglider.ConfigParam.ForUInt
+    ModbusAddressParam: pyglider.ConfigParam.ForUChar
+    OffDelayLED1Param: pyglider.ConfigParam.ForUShort
+    OffDelayLED2Param: pyglider.ConfigParam.ForUShort
+    OnDelayLED1Param: pyglider.ConfigParam.ForUShort
+    OnDelayLED2Param: pyglider.ConfigParam.ForUShort
+    StartModeParam: pyglider.ConfigParam.ForUInt
+    TriggerDelayParam: pyglider.ConfigParam.ForUShort
     pass

@@ -6,7 +6,7 @@ from typing import Sequence, Optional, Final, Union, Callable, Any, TypeVar,\
 from quantities.dimensions import Voltage, Time, Frequency
 from quantities.timestamp import Timestamp, time_now, sleep_until
 from mpam.types import Delayed, OnOff, XYCoord, AsyncFunctionSerializer,\
-    Postable
+    Postable, IntSample, TemperaturePointSample, QuantitySample
 from enum import Enum, auto
 from erk.config import ConfigParam
 from os import PathLike
@@ -90,6 +90,22 @@ class ESELog(Sensor):
             return [self.ticket, self.timestamp, 
                     self.temperature.as_number(abs_C), 
                     *self._for_pairs(fn)]
+        
+    class Reading(Sensor.Reading):
+        ticket: Final[IntSample]
+        temperature: Final[TemperaturePointSample]
+        _values: Final[Mapping[tuple[ESELogChannel,OnOff], QuantitySample[Voltage]]]
+        
+        def __init__(self, samples: Sequence[ESELog.Sample]) -> None:
+            super().__init__(samples)
+            self.ticket = IntSample([s.ticket for s in samples])
+            self.temperature = TemperaturePointSample([s.temperature for s in samples])
+            self._values = {
+                   (c,o): QuantitySample([s.value(c,o) for s in samples]) for c in ESELogChannel for o in OnOff
+                }
+            
+        def value(self, channel: ESELogChannel, state: OnOff) -> QuantitySample[Voltage]:
+            return self._values[(channel,state)]
         
     class Proxy(ABC):
         eseLog: Final[ESELog]
@@ -194,7 +210,7 @@ class ESELog(Sensor):
              speed: Optional[Union[Time, Frequency]] = None, # @UnusedVariable
              force_write: bool = False, 
              suppress_write: bool = False             
-             ) -> Delayed[Sequence[Sample]]:
+             ) -> Delayed[Reading]:
         n = n_samples or self.n_samples
         interval = "" if n < 2 else f"(every {self.sample_interval}) "
         logger.info(f"Reading {qstr(n, 'sample')} {interval}from {self}.") 
@@ -205,7 +221,7 @@ class ESELog(Sensor):
                                     name_template = self.file_name_template,
                                     to_dir = self.file_dir,)
             future.then_call(write_samples)
-        return future
+        return future.transformed(ESELog.Reading)
     
     def reset_component(self)->None:
         super().reset_component()

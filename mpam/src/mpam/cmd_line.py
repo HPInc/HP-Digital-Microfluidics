@@ -9,7 +9,7 @@ from quantities.dimensions import Time, Volume, Voltage, Frequency
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from quantities import temperature
-from quantities.prefixes import kilo
+from quantities.prefixes import kilo, milli
 from mpam.types import logging_levels, logging_formats, LoggingSpec,\
     LoggingLevel, XYCoord
 from re import Pattern
@@ -154,6 +154,7 @@ ArgUnits.register_units(Voltage,
                         {
                             volts: ("V", "v", "volt", "volts"),
                             kilo(volts): ("kV", "KV", "kv", "kilovolt", "kilovolts"),
+                            milli(volts): ("mV", "mv", "millivolt", "millivolts")
                         })
 def voltage_arg(arg: str) -> Voltage:
     return ArgUnits.parse_arg(Voltage, arg, default="60V")

@@ -9,6 +9,7 @@ from argparse import _ArgumentGroup, ArgumentParser
 from erk.stringutils import conj_str
 
 class Config:
+    dml_dirs: Final = ConfigParam[list[str]]([])
     dml_file_names: Final = ConfigParam[list[str]]([])
     dml_encoding: Final = ConfigParam('ascii')
 
@@ -20,7 +21,8 @@ class DMLInterpreter:
                  board: Board, 
                  errors: str='strict',
                  cache_val_as: Optional[str] = None) -> None:
-        self.interp = DMFInterpreter(Config.dml_file_names(), 
+        self.interp = DMFInterpreter(Config.dml_file_names(),
+                                     dirs=Config.dml_dirs(), 
                                      board=board, 
                                      encoding=Config.dml_encoding(), 
                                      errors=errors)
@@ -50,6 +52,15 @@ class DMLInterpreter:
     @classmethod
     def add_args_to(cls, group: _ArgumentGroup,
                     parser: ArgumentParser) -> None: # @UnusedVariable
+        Config.dml_dirs.add_arg_to(group, '--macro-dir', '--dml-dir',
+                                         action='append',
+                                         # type=FileType(),
+                                         metavar='FILE',
+                                         default_desc = lambda s: "to only search the current directory" if not s else conj_str([f"'{f}'" for f in s]),
+                                         help='''A directory to search for DML files.  
+                                                 This argument may be specified multiple times.
+                                                 The current directory is always searched first
+                                                 ''')
         Config.dml_file_names.add_arg_to(group, '--macro-file', '--dml-file',
                                          action='append',
                                          # type=FileType(),

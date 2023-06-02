@@ -28,7 +28,8 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
-    NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer, Missing
+    NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer, Missing, \
+    TimestampSample
 from quantities.SI import volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -4865,6 +4866,15 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
         @abstractmethod
         def csv_line(self) -> Sequence[Any]: ...
         
+    class Reading:
+        timestamp: TimestampSample
+        
+        samples: Final[Sequence[Sensor.Sample]]
+        
+        def __init__(self, samples: Sequence[Sensor.Sample]) -> None:
+            self.samples = samples
+            self.timestamp = TimestampSample([s.timestamp for s in samples])
+        
     name: Final[str]
     aiming_laser: Final[Optional[Laser]]
     target: Optional[Pad]
@@ -4919,7 +4929,7 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
     def read(self, *,
              n_samples: Optional[int] = None,                # @UnusedVariable
              speed: Optional[Union[Time, Frequency]] = None, # @UnusedVariable
-             ) -> Delayed[Sequence[Sample]]: 
+             ) -> Delayed[Reading]: 
         ...
     
     def aim(self, *, at_pad: Optional[Pad]=None) -> Delayed[None]: # @UnusedVariable

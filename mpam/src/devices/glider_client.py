@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import pyglider
-from typing import Union, Optional, Final, Generic, TypeVar, Callable, List
+from typing import Union, Optional, Final, Generic, TypeVar, Callable, List,\
+    cast
 from mpam.types import State, OnOff
 from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
@@ -248,4 +249,21 @@ class GliderClient:
                 m = Magnet(name, re)
                 self.magnets[name] = m
         return m
+    
+class Sensor:
+    _remote: Final[pyglider.Sensor]
+    @property
+    def remote(self) -> pyglider.Sensor:
+        return self._remote
+    
+    def __init__(self, remote: pyglider.Sensor) -> None:
+        self._remote = remote
+        
+class ESELog(Sensor):
+    @property
+    def remote(self) -> pyglider.ESElog:
+        return cast(pyglider.ESElog, self._remote)
+    
+    def __init__(self, remote: pyglider.ESElog) -> None:
+        super().__init__(remote)
     
