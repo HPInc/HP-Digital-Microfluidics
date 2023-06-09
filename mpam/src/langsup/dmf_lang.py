@@ -622,7 +622,9 @@ class MacroValue(CallableValue):
     def apply(self, args:Sequence[Any])->Delayed[Any]:
         bindings = dict(zip(self.param_names, args))
         local_env = self.static_env.new_child(bindings)
-        return self.body.evaluate(local_env)
+        def unwrap_return(val: MaybeError[Any]) -> MaybeError[Any]:
+            return val.value if isinstance(val, MacroReturn) else val
+        return self.body.evaluate(local_env).transformed(unwrap_return)
     
     def __str__(self) -> str:
         params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
@@ -2733,15 +2735,15 @@ class DMFCompiler(DMFVisitor):
                 pt = param_types[i]
                 return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
             
-        def catch_return(val: MaybeError[Any]) -> Any:
-            if isinstance(val, MacroReturn):
-                return val.value
-            # Either it's a fall-off-the-end value, which should only be allowed
-            # if it's okay, or it's some other error, which we should propagate.
-            return val
+        # def catch_return(val: MaybeError[Any]) -> Any:
+        #     if isinstance(val, MacroReturn):
+        #         return val.value
+        #     # Either it's a fall-off-the-end value, which should only be allowed
+        #     # if it's okay, or it's some other error, which we should propagate.
+        #     return val
         
         def dispatch(fn: CallableValue, *args: Sequence[Any]) -> Delayed[Any]:
-            return fn.apply(args).transformed(catch_return)
+            return fn.apply(args)
         
         # fn_exec = Executable(f_type, lambda env: Delayed.complete(env[f_name]), ())
         
