@@ -1,19 +1,23 @@
 from __future__ import annotations
 
 import pyglider
-from typing import Mapping, Final, Optional, Sequence, Callable
+from typing import Mapping, Final, Optional, Sequence, Callable, Union
 
-from devices import joey, glider_client, bilby_task
+from devices import joey, glider_client, bilby_task, eselog
 from devices.glider_client import GliderClient
-from mpam.types import OnOff, State, DummyState, Delayed, XYCoord
+from mpam.types import OnOff, State, DummyState, Delayed, XYCoord,\
+    AsyncFunctionSerializer, Postable
 from mpam import device
 from mpam.device import Pad, Magnet, Well
-from quantities.dimensions import Voltage
+from quantities.dimensions import Voltage, Frequency, Time
 from quantities.temperature import TemperaturePoint, abs_C
 import logging
 from erk.errors import ErrorHandler, PRINT
 from devices.joey import HeaterType
-from erk.basic import assert_never
+from erk.basic import assert_never, not_None
+from devices.eselog import ESELog, ESELogChannel, EmulatedESELog
+from quantities.SI import mV
+from quantities.timestamp import Timestamp, time_now, time_in, sleep_until
 
 
 logger = logging.getLogger(__name__)
@@ -129,6 +133,70 @@ class Fan(device.Fan):
                 logger.info(f"Fan is {which}")
                 glider.fan_state = new
             self.on_state_change(state_changed)
+
+class ESELogProxy(ESELog.Proxy):
+    remote: Final[glider_client.ESELog]
+    serializer: Final[AsyncFunctionSerializer]
+    
+    
+    def __init__(self, eselog: ESELog, remote: glider_client.ESELog) -> None:
+        super().__init__(eselog)
+        self.remote = remote
+        laser = not_None(eselog.aiming_laser, desc=lambda: f"{eselog} has no laser")
+        def handle_laser(_old: OnOff, new: OnOff) -> None:
+            remote.aim(new)
+        laser.on_state_change(handle_laser)
+        self.serializer = AsyncFunctionSerializer(thread_name="{self.eselog.name} Thread")
+        
+    @property
+    def available(self)->bool:
+        return self.remote.is_available
+        
+    def read(self, *, n_samples:Optional[int]=None, 
+             speed:Optional[Union[Time, Frequency]]=None)-> Delayed[Sequence[ESELog.Sample]]:
+        
+        future = Postable[Sequence[ESELog.Sample]]()
+        
+        def to_result(r: pyglider.ESElog.ESElogResult) -> ESELog.Sample:
+            values = {
+                (ESELogChannel.E1D1, OnOff.ON): r.e1d1_valueOn*mV,
+                (ESELogChannel.E1D1, OnOff.OFF): r.e1d1_valueOff*mV,
+                (ESELogChannel.E1D2, OnOff.ON): r.e1d1_valueOn*mV,
+                (ESELogChannel.E1D2, OnOff.OFF): r.e1d1_valueOff*mV,
+                (ESELogChannel.E2D2, OnOff.ON): r.e1d1_valueOn*mV,
+                (ESELogChannel.E2D2, OnOff.OFF): r.e1d1_valueOff*mV,
+                }
+            return ESELog.Sample(ticket = r.ticket,
+                                 time = Timestamp.from_time_t(r.time),
+                                 temperature = r.temperature*abs_C,
+                                 values = values)
+        
+        def take_readings() -> None:
+            nonlocal n_samples
+            remote = self.remote
+            if speed is None:
+                remote.request_samples(n_samples)
+                vals = remote.read_results()
+            else:
+                n = self.eseLog.n_samples if n_samples is None else n_samples
+                interval = Time.rate_from(speed)
+                vals = list[pyglider.ESElog.ESElogResult]()
+                next_reading = time_now()
+                for _i in range(n):
+                    sleep_until(next_reading)
+                    next_reading = time_in(interval)
+                    remote.request_samples(1)
+                    vals.extend(remote.read_results())
+            future.post([to_result(r) for r in vals])
+                    
+        
+        self.serializer.enqueue(take_readings)
+        return future
+        
+    def reset(self) -> None:
+        ...
+
+
 class Board(joey.Board):
     _device: Final[GliderClient]
     
@@ -241,9 +309,16 @@ class Board(joey.Board):
         if current_voltage.is_close_to(0):
             logger.info(f"Near-zero voltage ({current_voltage}) read from device.  Assuming zero.")
             current_voltage = Voltage.ZERO
-            
         
-        super().__init__()
+        def eselog_proxy_factory(eselog: ESELog) -> ESELog.Proxy:
+            remote = self._device.eselog
+            if remote is None:
+                logger.warning(f"Using emulated ESELog, because Bilby device doesn't have one.")
+                return EmulatedESELog(eselog)
+            return ESELogProxy(eselog, remote)
+
+        with eselog.Config.proxy_factory >> eselog_proxy_factory:
+            super().__init__()
         on_electrodes = self._device.on_electrodes()
         if on_electrodes:
             for e in on_electrodes:

@@ -19,8 +19,8 @@ from mpam.types import Dir
 
 def serializedATN():
     with StringIO() as buf:
-        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\u00f1")
-        buf.write("\u0463\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
+        buf.write("\3\u608b\ua72a\u8133\ub9ed\u417c\u3be7\u7786\u5964\3\u00f5")
+        buf.write("\u046f\4\2\t\2\4\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7")
         buf.write("\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t\13\4\f\t\f\4\r\t\r\4\16")
         buf.write("\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22\4\23\t\23")
         buf.write("\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31")
@@ -115,22 +115,23 @@ def serializedATN():
         buf.write("\n)\3)\3)\3)\3)\3)\3)\3)\5)\u0430\n)\3)\5)\u0433\n)\3")
         buf.write(")\3)\3)\3)\5)\u0439\n)\3)\5)\u043c\n)\3)\3)\3)\3)\3)\5")
         buf.write(")\u0443\n)\3)\3)\3)\3)\3)\3)\3)\3)\3)\3)\3)\3)\3)\3)\3")
-        buf.write(")\3)\3)\5)\u0456\n)\3)\3)\5)\u045a\n)\3)\5)\u045d\n)\3")
-        buf.write("*\3*\3+\3+\3+\2\3\30,\2\4\6\b\n\f\16\20\22\24\26\30\32")
-        buf.write("\34\36 \"$&(*,.\60\62\64\668:<>@BDFHJLNPRT\2(\3\2\u00e6")
-        buf.write("\u00e7\4\2\32\32!!\3\2)*\3\2/\60\3\2\35\36\4\2\u00da\u00da")
-        buf.write("\u00df\u00df\4\2\u00d7\u00d7\u00e3\u00e3\4\2\32\32%%\3")
-        buf.write("\2;<\4\2\17\17==\3\2>?\3\2@A\4\2@@BB\4\2>>CC\3\2GH\3\2")
-        buf.write("IJ\3\2fg\4\2\\\\op\4\2hhvv\3\2\u0081\u0085\3\2\u0086\u0088")
-        buf.write("\3\2\u0089\u008e\3\2\u008f\u0094\4\2ll\u0095\u0095\4\2")
-        buf.write("..\u0096\u0096\3\2\u0097\u0099\3\2\u009a\u009b\3\2\u009c")
+        buf.write(")\3)\3)\5)\u0456\n)\3)\3)\5)\u045a\n)\3)\3)\3)\3)\3)\3")
+        buf.write(")\5)\u0462\n)\3)\5)\u0465\n)\3)\3)\5)\u0469\n)\3*\3*\3")
+        buf.write("+\3+\3+\2\3\30,\2\4\6\b\n\f\16\20\22\24\26\30\32\34\36")
+        buf.write(" \"$&(*,.\60\62\64\668:<>@BDFHJLNPRT\2(\3\2\u00ea\u00eb")
+        buf.write("\4\2\32\32!!\3\2)*\3\2/\60\3\2\35\36\4\2\u00de\u00de\u00e3")
+        buf.write("\u00e3\4\2\u00db\u00db\u00e7\u00e7\4\2\32\32%%\3\2;<\4")
+        buf.write("\2\17\17==\3\2>?\3\2@A\4\2@@BB\4\2>>CC\3\2GH\3\2IJ\3\2")
+        buf.write("fg\4\2\\\\op\4\2hhvv\3\2\u0081\u0085\3\2\u0086\u0088\3")
+        buf.write("\2\u0089\u008e\3\2\u008f\u0094\4\2ll\u0095\u0095\4\2.")
+        buf.write(".\u0096\u0096\3\2\u0097\u0099\3\2\u009a\u009b\3\2\u009c")
         buf.write("\u009d\3\2\u009e\u009f\3\2\u00a1\u00a2\4\2fgss\4\2ZZ\u00ac")
         buf.write("\u00ac\3\2\u00b6\u00b7\3\2\u00b8\u00b9\24\2\35\36\"\"")
         buf.write("..EEGHNNccfgiimnqqstxy{|\177\u0080\u00a5\u00a5\u00af\u00b1")
-        buf.write("\u00eb\u00eb\3\2\u00c0\u00c5\3\2\u00c6\u00cb\30\2\f\r")
+        buf.write("\u00ef\u00ef\3\2\u00c0\u00c5\3\2\u00c6\u00cb\30\2\f\r")
         buf.write("\32\32\37\37%%\66\66RY\\\\bbhhopssvvzz\u0081\u0081\u0086")
-        buf.write("\u0086\u009c\u00a0\u00a3\u00a3\u00a6\u00a7\u00aa\u00b1")
-        buf.write("\u00cc\u00d1\u00d4\u00d6\u00e1\u00e2\2\u056e\2Y\3\2\2")
+        buf.write("\u0086\u009c\u00a0\u00a3\u00a3\u00a6\u00a7\u00a9\u00b1")
+        buf.write("\u00cc\u00d1\u00d7\u00da\u00e5\u00e6\2\u057e\2Y\3\2\2")
         buf.write("\2\4q\3\2\2\2\6\u0098\3\2\2\2\b\u00b9\3\2\2\2\n\u00cb")
         buf.write("\3\2\2\2\f\u00eb\3\2\2\2\16\u00f8\3\2\2\2\20\u00fe\3\2")
         buf.write("\2\2\22\u0104\3\2\2\2\24\u010a\3\2\2\2\26\u0112\3\2\2")
@@ -142,30 +143,30 @@ def serializedATN():
         buf.write("\2\2:\u032d\3\2\2\2<\u033f\3\2\2\2>\u0356\3\2\2\2@\u0358")
         buf.write("\3\2\2\2B\u035a\3\2\2\2D\u035e\3\2\2\2F\u03b6\3\2\2\2")
         buf.write("H\u03f9\3\2\2\2J\u0407\3\2\2\2L\u040d\3\2\2\2N\u0417\3")
-        buf.write("\2\2\2P\u045c\3\2\2\2R\u045e\3\2\2\2T\u0460\3\2\2\2VX")
+        buf.write("\2\2\2P\u0468\3\2\2\2R\u046a\3\2\2\2T\u046c\3\2\2\2VX")
         buf.write("\5\b\5\2WV\3\2\2\2X[\3\2\2\2YW\3\2\2\2YZ\3\2\2\2Z\\\3")
         buf.write("\2\2\2[Y\3\2\2\2\\]\7\2\2\3]\3\3\2\2\2^_\5\n\6\2_`\7\2")
         buf.write("\2\3`r\3\2\2\2ab\5\20\t\2bc\7\2\2\3cr\3\2\2\2df\5\6\4")
-        buf.write("\2eg\7\u00e4\2\2fe\3\2\2\2fg\3\2\2\2gh\3\2\2\2hi\7\2\2")
-        buf.write("\3ir\3\2\2\2jl\5\30\r\2km\7\u00e4\2\2lk\3\2\2\2lm\3\2")
+        buf.write("\2eg\7\u00e8\2\2fe\3\2\2\2fg\3\2\2\2gh\3\2\2\2hi\7\2\2")
+        buf.write("\3ir\3\2\2\2jl\5\30\r\2km\7\u00e8\2\2lk\3\2\2\2lm\3\2")
         buf.write("\2\2mn\3\2\2\2no\7\2\2\3or\3\2\2\2pr\7\2\2\3q^\3\2\2\2")
         buf.write("qa\3\2\2\2qd\3\2\2\2qj\3\2\2\2qp\3\2\2\2r\5\3\2\2\2st")
-        buf.write("\7\u00de\2\2tu\5N(\2uv\7\u00d8\2\2vw\5\30\r\2wx\b\4\1")
-        buf.write("\2xy\b\4\1\2y\u0099\3\2\2\2z|\7\u00de\2\2{z\3\2\2\2{|")
-        buf.write("\3\2\2\2|}\3\2\2\2}~\5\60\31\2~\177\7\u00ec\2\2\177\u0081")
-        buf.write("\7\u00d8\2\2\u0080\u0082\5\30\r\2\u0081\u0080\3\2\2\2")
+        buf.write("\7\u00e2\2\2tu\5N(\2uv\7\u00dc\2\2vw\5\30\r\2wx\b\4\1")
+        buf.write("\2xy\b\4\1\2y\u0099\3\2\2\2z|\7\u00e2\2\2{z\3\2\2\2{|")
+        buf.write("\3\2\2\2|}\3\2\2\2}~\5\60\31\2~\177\7\u00f0\2\2\177\u0081")
+        buf.write("\7\u00dc\2\2\u0080\u0082\5\30\r\2\u0081\u0080\3\2\2\2")
         buf.write("\u0081\u0082\3\2\2\2\u0082\u0083\3\2\2\2\u0083\u0084\b")
         buf.write("\4\1\2\u0084\u0085\b\4\1\2\u0085\u0099\3\2\2\2\u0086\u0087")
-        buf.write("\7\u00de\2\2\u0087\u0088\5\60\31\2\u0088\u0089\7\u00ec")
+        buf.write("\7\u00e2\2\2\u0087\u0088\5\60\31\2\u0088\u0089\7\u00f0")
         buf.write("\2\2\u0089\u008a\b\4\1\2\u008a\u008b\b\4\1\2\u008b\u0099")
-        buf.write("\3\2\2\2\u008c\u008e\7\u00de\2\2\u008d\u008c\3\2\2\2\u008d")
+        buf.write("\3\2\2\2\u008c\u008e\7\u00e2\2\2\u008d\u008c\3\2\2\2\u008d")
         buf.write("\u008e\3\2\2\2\u008e\u008f\3\2\2\2\u008f\u0090\5\60\31")
-        buf.write("\2\u0090\u0093\5N(\2\u0091\u0092\7\u00d8\2\2\u0092\u0094")
+        buf.write("\2\u0090\u0093\5N(\2\u0091\u0092\7\u00dc\2\2\u0092\u0094")
         buf.write("\5\30\r\2\u0093\u0091\3\2\2\2\u0093\u0094\3\2\2\2\u0094")
         buf.write("\u0095\3\2\2\2\u0095\u0096\b\4\1\2\u0096\u0097\b\4\1\2")
         buf.write("\u0097\u0099\3\2\2\2\u0098s\3\2\2\2\u0098{\3\2\2\2\u0098")
         buf.write("\u0086\3\2\2\2\u0098\u008d\3\2\2\2\u0099\7\3\2\2\2\u009a")
-        buf.write("\u009b\5\6\4\2\u009b\u009c\7\u00e4\2\2\u009c\u00ba\3\2")
+        buf.write("\u009b\5\6\4\2\u009b\u009c\7\u00e8\2\2\u009c\u00ba\3\2")
         buf.write("\2\2\u009d\u009e\7\3\2\2\u009e\u009f\5\30\r\2\u009f\u00a7")
         buf.write("\5\n\6\2\u00a0\u00a1\7\4\2\2\u00a1\u00a2\7\3\2\2\u00a2")
         buf.write("\u00a3\5\30\r\2\u00a3\u00a4\5\n\6\2\u00a4\u00a6\3\2\2")
@@ -173,10 +174,10 @@ def serializedATN():
         buf.write("\3\2\2\2\u00a7\u00a8\3\2\2\2\u00a8\u00ac\3\2\2\2\u00a9")
         buf.write("\u00a7\3\2\2\2\u00aa\u00ab\7\4\2\2\u00ab\u00ad\5\n\6\2")
         buf.write("\u00ac\u00aa\3\2\2\2\u00ac\u00ad\3\2\2\2\u00ad\u00ba\3")
-        buf.write("\2\2\2\u00ae\u00af\5\30\r\2\u00af\u00b0\7\u00e4\2\2\u00b0")
+        buf.write("\2\2\2\u00ae\u00af\5\30\r\2\u00af\u00b0\7\u00e8\2\2\u00b0")
         buf.write("\u00ba\3\2\2\2\u00b1\u00ba\5\20\t\2\u00b2\u00b3\5\22\n")
-        buf.write("\2\u00b3\u00b4\7\u00e4\2\2\u00b4\u00ba\3\2\2\2\u00b5\u00b6")
-        buf.write("\5\24\13\2\u00b6\u00b7\7\u00e4\2\2\u00b7\u00ba\3\2\2\2")
+        buf.write("\2\u00b3\u00b4\7\u00e8\2\2\u00b4\u00ba\3\2\2\2\u00b5\u00b6")
+        buf.write("\5\24\13\2\u00b6\u00b7\7\u00e8\2\2\u00b7\u00ba\3\2\2\2")
         buf.write("\u00b8\u00ba\5\n\6\2\u00b9\u009a\3\2\2\2\u00b9\u009d\3")
         buf.write("\2\2\2\u00b9\u00ae\3\2\2\2\u00b9\u00b1\3\2\2\2\u00b9\u00b2")
         buf.write("\3\2\2\2\u00b9\u00b5\3\2\2\2\u00b9\u00b8\3\2\2\2\u00ba")
@@ -202,13 +203,13 @@ def serializedATN():
         buf.write("\2\u00e9\u00ea\3\2\2\2\u00ea\u00ec\3\2\2\2\u00eb\u00cd")
         buf.write("\3\2\2\2\u00eb\u00d0\3\2\2\2\u00eb\u00d2\3\2\2\2\u00eb")
         buf.write("\u00d4\3\2\2\2\u00eb\u00d9\3\2\2\2\u00eb\u00e2\3\2\2\2")
-        buf.write("\u00ec\r\3\2\2\2\u00ed\u00ee\7\u00d8\2\2\u00ee\u00ef\5")
+        buf.write("\u00ec\r\3\2\2\2\u00ed\u00ee\7\u00dc\2\2\u00ee\u00ef\5")
         buf.write("\30\r\2\u00ef\u00f0\7\17\2\2\u00f0\u00f1\b\b\1\2\u00f1")
-        buf.write("\u00f9\3\2\2\2\u00f2\u00f3\7\u00d8\2\2\u00f3\u00f4\5\30")
+        buf.write("\u00f9\3\2\2\2\u00f2\u00f3\7\u00dc\2\2\u00f3\u00f4\5\30")
         buf.write("\r\2\u00f4\u00f5\b\b\1\2\u00f5\u00f9\3\2\2\2\u00f6\u00f7")
         buf.write("\7\17\2\2\u00f7\u00f9\b\b\1\2\u00f8\u00ed\3\2\2\2\u00f8")
         buf.write("\u00f2\3\2\2\2\u00f8\u00f6\3\2\2\2\u00f9\17\3\2\2\2\u00fa")
-        buf.write("\u00fb\7\20\2\2\u00fb\u00fc\5N(\2\u00fc\u00fd\7\u00e8")
+        buf.write("\u00fb\7\20\2\2\u00fb\u00fc\5N(\2\u00fc\u00fd\7\u00ec")
         buf.write("\2\2\u00fd\u00ff\3\2\2\2\u00fe\u00fa\3\2\2\2\u00fe\u00ff")
         buf.write("\3\2\2\2\u00ff\u0100\3\2\2\2\u0100\u0101\7\21\2\2\u0101")
         buf.write("\u0102\5\f\7\2\u0102\u0103\5\n\6\2\u0103\21\3\2\2\2\u0104")
@@ -216,16 +217,16 @@ def serializedATN():
         buf.write("\u0106\u0107\3\2\2\2\u0107\u0108\3\2\2\2\u0108\u0109\7")
         buf.write("\23\2\2\u0109\23\3\2\2\2\u010a\u010c\7\24\2\2\u010b\u010d")
         buf.write("\5\30\r\2\u010c\u010b\3\2\2\2\u010c\u010d\3\2\2\2\u010d")
-        buf.write("\25\3\2\2\2\u010e\u010f\7\u00e8\2\2\u010f\u0113\b\f\1")
-        buf.write("\2\u0110\u0111\7\u00e9\2\2\u0111\u0113\b\f\1\2\u0112\u010e")
+        buf.write("\25\3\2\2\2\u010e\u010f\7\u00ec\2\2\u010f\u0113\b\f\1")
+        buf.write("\2\u0110\u0111\7\u00ed\2\2\u0111\u0113\b\f\1\2\u0112\u010e")
         buf.write("\3\2\2\2\u0112\u0110\3\2\2\2\u0113\27\3\2\2\2\u0114\u0115")
         buf.write("\b\r\1\2\u0115\u0116\7\25\2\2\u0116\u0117\5\30\r\2\u0117")
-        buf.write("\u0118\7\u00e9\2\2\u0118\u017b\3\2\2\2\u0119\u011a\7\25")
+        buf.write("\u0118\7\u00ed\2\2\u0118\u017b\3\2\2\2\u0119\u011a\7\25")
         buf.write("\2\2\u011a\u011b\5\30\r\2\u011b\u011c\7\26\2\2\u011c\u011d")
-        buf.write("\5\30\r\2\u011d\u011e\7\u00e9\2\2\u011e\u017b\3\2\2\2")
-        buf.write("\u011f\u0120\7\u00e3\2\2\u0120\u017b\5\30\r\65\u0121\u0122")
+        buf.write("\5\30\r\2\u011d\u011e\7\u00ed\2\2\u011e\u017b\3\2\2\2")
+        buf.write("\u011f\u0120\7\u00e7\2\2\u0120\u017b\5\30\r\65\u0121\u0122")
         buf.write("\5> \2\u0122\u0123\7\27\2\2\u0123\u0124\5\30\r\63\u0124")
-        buf.write("\u017b\3\2\2\2\u0125\u0126\7\u00ec\2\2\u0126\u017b\5$")
+        buf.write("\u017b\3\2\2\2\u0125\u0126\7\u00f0\2\2\u0126\u017b\5$")
         buf.write("\23\2\u0127\u0129\7!\2\2\u0128\u0127\3\2\2\2\u0128\u0129")
         buf.write("\3\2\2\2\u0129\u012a\3\2\2\2\u012a\u012c\5\36\20\2\u012b")
         buf.write("\u012d\7\"\2\2\u012c\u012b\3\2\2\2\u012c\u012d\3\2\2\2")
@@ -233,7 +234,7 @@ def serializedATN():
         buf.write("\2\2\2\u012f\u0130\3\2\2\2\u0130\u0131\3\2\2\2\u0131\u0133")
         buf.write("\7\"\2\2\u0132\u0134\7#\2\2\u0133\u0132\3\2\2\2\u0133")
         buf.write("\u0134\3\2\2\2\u0134\u0135\3\2\2\2\u0135\u017b\5\30\r")
-        buf.write("$\u0136\u0137\7\u00e0\2\2\u0137\u017b\5\30\r\35\u0138")
+        buf.write("$\u0136\u0137\7\u00e4\2\2\u0137\u017b\5\30\r\35\u0138")
         buf.write("\u0139\5 \21\2\u0139\u013a\5\30\r\32\u013a\u017b\3\2\2")
         buf.write("\2\u013b\u017b\5 \21\2\u013c\u013e\7\r\2\2\u013d\u013f")
         buf.write("\5&\24\2\u013e\u013d\3\2\2\2\u013e\u013f\3\2\2\2\u013f")
@@ -255,13 +256,13 @@ def serializedATN():
         buf.write("\u017b\5(\25\2\u0163\u017b\5.\30\2\u0164\u0166\7!\2\2")
         buf.write("\u0165\u0164\3\2\2\2\u0165\u0166\3\2\2\2\u0166\u0167\3")
         buf.write("\2\2\2\u0167\u017b\5\60\31\2\u0168\u0169\5\60\31\2\u0169")
-        buf.write("\u016a\7\u00ec\2\2\u016a\u017b\3\2\2\2\u016b\u017b\5L")
+        buf.write("\u016a\7\u00f0\2\2\u016a\u017b\3\2\2\2\u016b\u017b\5L")
         buf.write("\'\2\u016c\u017b\5N(\2\u016d\u017b\5P)\2\u016e\u016f\5")
-        buf.write("N(\2\u016f\u0170\7\u00d8\2\2\u0170\u0171\5\30\r\b\u0171")
-        buf.write("\u017b\3\2\2\2\u0172\u0173\5\60\31\2\u0173\u0174\7\u00ec")
-        buf.write("\2\2\u0174\u0175\7\u00d8\2\2\u0175\u0176\5\30\r\6\u0176")
-        buf.write("\u017b\3\2\2\2\u0177\u017b\5T+\2\u0178\u017b\7\u00ec\2")
-        buf.write("\2\u0179\u017b\7\u00ed\2\2\u017a\u0114\3\2\2\2\u017a\u0119")
+        buf.write("N(\2\u016f\u0170\7\u00dc\2\2\u0170\u0171\5\30\r\b\u0171")
+        buf.write("\u017b\3\2\2\2\u0172\u0173\5\60\31\2\u0173\u0174\7\u00f0")
+        buf.write("\2\2\u0174\u0175\7\u00dc\2\2\u0175\u0176\5\30\r\6\u0176")
+        buf.write("\u017b\3\2\2\2\u0177\u017b\5T+\2\u0178\u017b\7\u00f0\2")
+        buf.write("\2\u0179\u017b\7\u00f1\2\2\u017a\u0114\3\2\2\2\u017a\u0119")
         buf.write("\3\2\2\2\u017a\u011f\3\2\2\2\u017a\u0121\3\2\2\2\u017a")
         buf.write("\u0125\3\2\2\2\u017a\u0128\3\2\2\2\u017a\u012f\3\2\2\2")
         buf.write("\u017a\u0136\3\2\2\2\u017a\u0138\3\2\2\2\u017a\u013b\3")
@@ -278,39 +279,39 @@ def serializedATN():
         buf.write("\u01f5\5\30\r#\u0186\u0187\f!\2\2\u0187\u0188\t\b\2\2")
         buf.write("\u0188\u01f5\5\30\r\"\u0189\u018a\f \2\2\u018a\u018b\5")
         buf.write("J&\2\u018b\u018c\5\30\r!\u018c\u01f5\3\2\2\2\u018d\u0193")
-        buf.write("\f\36\2\2\u018e\u0190\7&\2\2\u018f\u0191\7\u00e0\2\2\u0190")
+        buf.write("\f\36\2\2\u018e\u0190\7&\2\2\u018f\u0191\7\u00e4\2\2\u0190")
         buf.write("\u018f\3\2\2\2\u0190\u0191\3\2\2\2\u0191\u0194\3\2\2\2")
-        buf.write("\u0192\u0194\7\u00dd\2\2\u0193\u018e\3\2\2\2\u0193\u0192")
+        buf.write("\u0192\u0194\7\u00e1\2\2\u0193\u018e\3\2\2\2\u0193\u0192")
         buf.write("\3\2\2\2\u0194\u0195\3\2\2\2\u0195\u01f5\5\30\r\37\u0196")
         buf.write("\u0197\f\34\2\2\u0197\u0198\7\'\2\2\u0198\u01f5\5\30\r")
         buf.write("\35\u0199\u019a\f\33\2\2\u019a\u019b\7(\2\2\u019b\u01f5")
         buf.write("\5\30\r\34\u019c\u019d\f\22\2\2\u019d\u019e\t\5\2\2\u019e")
-        buf.write("\u01f5\5\30\r\23\u019f\u01a0\f\21\2\2\u01a0\u01a1\7\u00dc")
+        buf.write("\u01f5\5\30\r\23\u019f\u01a0\f\21\2\2\u01a0\u01a1\7\u00e0")
         buf.write("\2\2\u01a1\u01f5\5\30\r\22\u01a2\u01a3\f\20\2\2\u01a3")
         buf.write("\u01a4\7\3\2\2\u01a4\u01a5\5\30\r\2\u01a5\u01a6\7\4\2")
         buf.write("\2\u01a6\u01a7\5\30\r\21\u01a7\u01f5\3\2\2\2\u01a8\u01a9")
-        buf.write("\f\7\2\2\u01a9\u01aa\7\u00d9\2\2\u01aa\u01ab\5F$\2\u01ab")
-        buf.write("\u01ac\7\u00d8\2\2\u01ac\u01ad\5\30\r\b\u01ad\u01f5\3")
+        buf.write("\f\7\2\2\u01a9\u01aa\7\u00dd\2\2\u01aa\u01ab\5F$\2\u01ab")
+        buf.write("\u01ac\7\u00dc\2\2\u01ac\u01ad\5\30\r\b\u01ad\u01f5\3")
         buf.write("\2\2\2\u01ae\u01af\f\67\2\2\u01af\u01b8\7\25\2\2\u01b0")
         buf.write("\u01b5\5\30\r\2\u01b1\u01b2\7\26\2\2\u01b2\u01b4\5\30")
         buf.write("\r\2\u01b3\u01b1\3\2\2\2\u01b4\u01b7\3\2\2\2\u01b5\u01b3")
         buf.write("\3\2\2\2\u01b5\u01b6\3\2\2\2\u01b6\u01b9\3\2\2\2\u01b7")
         buf.write("\u01b5\3\2\2\2\u01b8\u01b0\3\2\2\2\u01b8\u01b9\3\2\2\2")
-        buf.write("\u01b9\u01ba\3\2\2\2\u01ba\u01f5\7\u00e9\2\2\u01bb\u01bc")
+        buf.write("\u01b9\u01ba\3\2\2\2\u01ba\u01f5\7\u00ed\2\2\u01bb\u01bc")
         buf.write("\f\64\2\2\u01bc\u01f5\5 \21\2\u01bd\u01be\f\62\2\2\u01be")
-        buf.write("\u01bf\7\u00d9\2\2\u01bf\u01c0\7\30\2\2\u01c0\u01c1\7")
+        buf.write("\u01bf\7\u00dd\2\2\u01bf\u01c0\7\30\2\2\u01c0\u01c1\7")
         buf.write("\f\2\2\u01c1\u01f5\5<\37\2\u01c2\u01c3\f\61\2\2\u01c3")
         buf.write("\u01c5\7\31\2\2\u01c4\u01c6\7\32\2\2\u01c5\u01c4\3\2\2")
         buf.write("\2\u01c5\u01c6\3\2\2\2\u01c6\u01c7\3\2\2\2\u01c7\u01c8")
         buf.write("\7\33\2\2\u01c8\u01c9\7\f\2\2\u01c9\u01f5\5<\37\2\u01ca")
-        buf.write("\u01cb\f\60\2\2\u01cb\u01cc\7\u00d9\2\2\u01cc\u01ce\5")
+        buf.write("\u01cb\f\60\2\2\u01cb\u01cc\7\u00dd\2\2\u01cc\u01ce\5")
         buf.write("F$\2\u01cd\u01cf\5\32\16\2\u01ce\u01cd\3\2\2\2\u01ce\u01cf")
         buf.write("\3\2\2\2\u01cf\u01f5\3\2\2\2\u01d0\u01d1\f/\2\2\u01d1")
-        buf.write("\u01d3\7\u00d9\2\2\u01d2\u01d4\7\u00ea\2\2\u01d3\u01d2")
+        buf.write("\u01d3\7\u00dd\2\2\u01d2\u01d4\7\u00ee\2\2\u01d3\u01d2")
         buf.write("\3\2\2\2\u01d3\u01d4\3\2\2\2\u01d4\u01d5\3\2\2\2\u01d5")
-        buf.write("\u01f5\5F$\2\u01d6\u01d7\f.\2\2\u01d7\u01d8\7\u00d9\2")
-        buf.write("\2\u01d8\u01d9\7\25\2\2\u01d9\u01da\7\u00ea\2\2\u01da")
-        buf.write("\u01db\7\u00e9\2\2\u01db\u01f5\5F$\2\u01dc\u01dd\f-\2")
+        buf.write("\u01f5\5F$\2\u01d6\u01d7\f.\2\2\u01d7\u01d8\7\u00dd\2")
+        buf.write("\2\u01d8\u01d9\7\25\2\2\u01d9\u01da\7\u00ee\2\2\u01da")
+        buf.write("\u01db\7\u00ed\2\2\u01db\u01f5\5F$\2\u01dc\u01dd\f-\2")
         buf.write("\2\u01dd\u01f5\5\32\16\2\u01de\u01df\f,\2\2\u01df\u01e0")
         buf.write("\7\34\2\2\u01e0\u01f5\5\"\22\2\u01e1\u01e2\f)\2\2\u01e2")
         buf.write("\u01f5\5$\23\2\u01e3\u01e4\f(\2\2\u01e4\u01f5\5<\37\2")
@@ -319,7 +320,7 @@ def serializedATN():
         buf.write("\f\37\2\2\u01eb\u01ec\5\34\17\2\u01ec\u01ed\t\t\2\2\u01ed")
         buf.write("\u01ee\5F$\2\u01ee\u01f5\3\2\2\2\u01ef\u01f0\f\24\2\2")
         buf.write("\u01f0\u01f1\7\20\2\2\u01f1\u01f2\5\30\r\2\u01f2\u01f3")
-        buf.write("\7\u00e8\2\2\u01f3\u01f5\3\2\2\2\u01f4\u017c\3\2\2\2\u01f4")
+        buf.write("\7\u00ec\2\2\u01f3\u01f5\3\2\2\2\u01f4\u017c\3\2\2\2\u01f4")
         buf.write("\u0180\3\2\2\2\u01f4\u0183\3\2\2\2\u01f4\u0186\3\2\2\2")
         buf.write("\u01f4\u0189\3\2\2\2\u01f4\u018d\3\2\2\2\u01f4\u0196\3")
         buf.write("\2\2\2\u01f4\u0199\3\2\2\2\u01f4\u019c\3\2\2\2\u01f4\u019f")
@@ -332,17 +333,17 @@ def serializedATN():
         buf.write("\u01f4\u01ef\3\2\2\2\u01f5\u01f8\3\2\2\2\u01f6\u01f4\3")
         buf.write("\2\2\2\u01f6\u01f7\3\2\2\2\u01f7\31\3\2\2\2\u01f8\u01f6")
         buf.write("\3\2\2\2\u01f9\u01fa\7\61\2\2\u01fa\u020c\b\16\1\2\u01fb")
-        buf.write("\u01fc\7\62\2\2\u01fc\u01fd\7\u00e0\2\2\u01fd\u01fe\7")
+        buf.write("\u01fc\7\62\2\2\u01fc\u01fd\7\u00e4\2\2\u01fd\u01fe\7")
         buf.write("\63\2\2\u01fe\u020c\b\16\1\2\u01ff\u0200\7\64\2\2\u0200")
         buf.write("\u0201\7\63\2\2\u0201\u020c\b\16\1\2\u0202\u0203\7\65")
         buf.write("\2\2\u0203\u020c\b\16\1\2\u0204\u0205\7&\2\2\u0205\u0206")
-        buf.write("\7\u00e0\2\2\u0206\u0207\7\66\2\2\u0207\u020c\b\16\1\2")
-        buf.write("\u0208\u0209\7\u00dd\2\2\u0209\u020a\7\66\2\2\u020a\u020c")
+        buf.write("\7\u00e4\2\2\u0206\u0207\7\66\2\2\u0207\u020c\b\16\1\2")
+        buf.write("\u0208\u0209\7\u00e1\2\2\u0209\u020a\7\66\2\2\u020a\u020c")
         buf.write("\b\16\1\2\u020b\u01f9\3\2\2\2\u020b\u01fb\3\2\2\2\u020b")
         buf.write("\u01ff\3\2\2\2\u020b\u0202\3\2\2\2\u020b\u0204\3\2\2\2")
         buf.write("\u020b\u0208\3\2\2\2\u020c\33\3\2\2\2\u020d\u020e\7\67")
         buf.write("\2\2\u020e\u0217\b\17\1\2\u020f\u0210\7\62\2\2\u0210\u0211")
-        buf.write("\7\u00e0\2\2\u0211\u0212\78\2\2\u0212\u0217\b\17\1\2\u0213")
+        buf.write("\7\u00e4\2\2\u0211\u0212\78\2\2\u0212\u0217\b\17\1\2\u0213")
         buf.write("\u0214\7\64\2\2\u0214\u0215\78\2\2\u0215\u0217\b\17\1")
         buf.write("\2\u0216\u020d\3\2\2\2\u0216\u020f\3\2\2\2\u0216\u0213")
         buf.write("\3\2\2\2\u0217\35\3\2\2\2\u0218\u0219\79\2\2\u0219\u021d")
@@ -374,23 +375,23 @@ def serializedATN():
         buf.write("\u0255\5,\27\2\u0254\u0252\3\2\2\2\u0255\u0258\3\2\2\2")
         buf.write("\u0256\u0254\3\2\2\2\u0256\u0257\3\2\2\2\u0257\u025a\3")
         buf.write("\2\2\2\u0258\u0256\3\2\2\2\u0259\u0251\3\2\2\2\u0259\u025a")
-        buf.write("\3\2\2\2\u025a\u025b\3\2\2\2\u025b\u025e\7\u00e9\2\2\u025c")
+        buf.write("\3\2\2\2\u025a\u025b\3\2\2\2\u025b\u025e\7\u00ed\2\2\u025c")
         buf.write("\u025d\7L\2\2\u025d\u025f\5\60\31\2\u025e\u025c\3\2\2")
         buf.write("\2\u025e\u025f\3\2\2\2\u025f+\3\2\2\2\u0260\u0262\t\t")
         buf.write("\2\2\u0261\u0260\3\2\2\2\u0261\u0262\3\2\2\2\u0262\u0263")
         buf.write("\3\2\2\2\u0263\u0264\5\60\31\2\u0264\u0265\b\27\1\2\u0265")
         buf.write("\u0278\3\2\2\2\u0266\u0267\5\60\31\2\u0267\u0268\b\27")
-        buf.write("\1\2\u0268\u0269\7\u00ec\2\2\u0269\u026a\b\27\1\2\u026a")
+        buf.write("\1\2\u0268\u0269\7\u00f0\2\2\u0269\u026a\b\27\1\2\u026a")
         buf.write("\u0278\3\2\2\2\u026b\u026c\5\60\31\2\u026c\u026d\5N(\2")
         buf.write("\u026d\u026e\b\27\1\2\u026e\u026f\b\27\1\2\u026f\u0278")
-        buf.write("\3\2\2\2\u0270\u0271\5N(\2\u0271\u0272\7\u00dc\2\2\u0272")
+        buf.write("\3\2\2\2\u0270\u0271\5N(\2\u0271\u0272\7\u00e0\2\2\u0272")
         buf.write("\u0273\5\60\31\2\u0273\u0274\b\27\1\2\u0274\u0275\b\27")
         buf.write("\1\2\u0275\u0276\b\27\1\2\u0276\u0278\3\2\2\2\u0277\u0261")
         buf.write("\3\2\2\2\u0277\u0266\3\2\2\2\u0277\u026b\3\2\2\2\u0277")
         buf.write("\u0270\3\2\2\2\u0278-\3\2\2\2\u0279\u027a\7M\2\2\u027a")
-        buf.write("\u027b\7\u00e2\2\2\u027b\u02a1\b\30\1\2\u027c\u027d\7")
-        buf.write("M\2\2\u027d\u027e\7\u00e1\2\2\u027e\u02a1\b\30\1\2\u027f")
-        buf.write("\u0281\7\u00e5\2\2\u0280\u0282\7N\2\2\u0281\u0280\3\2")
+        buf.write("\u027b\7\u00e6\2\2\u027b\u02a1\b\30\1\2\u027c\u027d\7")
+        buf.write("M\2\2\u027d\u027e\7\u00e5\2\2\u027e\u02a1\b\30\1\2\u027f")
+        buf.write("\u0281\7\u00e9\2\2\u0280\u0282\7N\2\2\u0281\u0280\3\2")
         buf.write("\2\2\u0281\u0282\3\2\2\2\u0282\u0283\3\2\2\2\u0283\u02a1")
         buf.write("\b\30\1\2\u0284\u028a\7O\2\2\u0285\u0287\7P\2\2\u0286")
         buf.write("\u0288\7!\2\2\u0287\u0286\3\2\2\2\u0287\u0288\3\2\2\2")
@@ -407,9 +408,9 @@ def serializedATN():
         buf.write("\3\2\2\2\u02a0\u027f\3\2\2\2\u02a0\u0284\3\2\2\2\u02a0")
         buf.write("\u028d\3\2\2\2\u02a0\u0290\3\2\2\2\u02a0\u0293\3\2\2\2")
         buf.write("\u02a0\u029a\3\2\2\2\u02a0\u029d\3\2\2\2\u02a1/\3\2\2")
-        buf.write("\2\u02a2\u02a3\7\u00ea\2\2\u02a3\u02a4\5\62\32\2\u02a4")
+        buf.write("\2\u02a2\u02a3\7\u00ee\2\2\u02a3\u02a4\5\62\32\2\u02a4")
         buf.write("\u02a5\b\31\1\2\u02a5\u02b0\3\2\2\2\u02a6\u02a7\7\25\2")
-        buf.write("\2\u02a7\u02a8\7\u00ea\2\2\u02a8\u02a9\7\u00e9\2\2\u02a9")
+        buf.write("\2\u02a7\u02a8\7\u00ee\2\2\u02a8\u02a9\7\u00ed\2\2\u02a9")
         buf.write("\u02aa\5\62\32\2\u02aa\u02ab\b\31\1\2\u02ab\u02b0\3\2")
         buf.write("\2\2\u02ac\u02ad\5\62\32\2\u02ad\u02ae\b\31\1\2\u02ae")
         buf.write("\u02b0\3\2\2\2\u02af\u02a2\3\2\2\2\u02af\u02a6\3\2\2\2")
@@ -533,7 +534,7 @@ def serializedATN():
         buf.write("\7f\2\2\u03ac\u03b7\7x\2\2\u03ad\u03b7\7\35\2\2\u03ae")
         buf.write("\u03b7\7\36\2\2\u03af\u03b7\7E\2\2\u03b0\u03b7\7G\2\2")
         buf.write("\u03b1\u03b7\7H\2\2\u03b2\u03b7\7n\2\2\u03b3\u03b7\7\177")
-        buf.write("\2\2\u03b4\u03b7\7\u00b0\2\2\u03b5\u03b7\7\u00eb\2\2\u03b6")
+        buf.write("\2\2\u03b4\u03b7\7\u00b0\2\2\u03b5\u03b7\7\u00ef\2\2\u03b6")
         buf.write("\u0360\3\2\2\2\u03b6\u0362\3\2\2\2\u03b6\u0364\3\2\2\2")
         buf.write("\u03b6\u0366\3\2\2\2\u03b6\u0368\3\2\2\2\u03b6\u036a\3")
         buf.write("\2\2\2\u03b6\u036c\3\2\2\2\u03b6\u036e\3\2\2\2\u03b6\u0370")
@@ -595,44 +596,50 @@ def serializedATN():
         buf.write("\u040a\u040e\b\'\1\2\u040b\u040c\t&\2\2\u040c\u040e\b")
         buf.write("\'\1\2\u040d\u0409\3\2\2\2\u040d\u040b\3\2\2\2\u040eM")
         buf.write("\3\2\2\2\u040f\u0410\5P)\2\u0410\u0411\b(\1\2\u0411\u0418")
-        buf.write("\3\2\2\2\u0412\u0413\7\u00eb\2\2\u0413\u0418\b(\1\2\u0414")
+        buf.write("\3\2\2\2\u0412\u0413\7\u00ef\2\2\u0413\u0418\b(\1\2\u0414")
         buf.write("\u0415\5R*\2\u0415\u0416\b(\1\2\u0416\u0418\3\2\2\2\u0417")
         buf.write("\u040f\3\2\2\2\u0417\u0412\3\2\2\2\u0417\u0414\3\2\2\2")
-        buf.write("\u0418O\3\2\2\2\u0419\u041b\7\u00e2\2\2\u041a\u041c\7")
+        buf.write("\u0418O\3\2\2\2\u0419\u041b\7\u00e6\2\2\u041a\u041c\7")
         buf.write("!\2\2\u041b\u041a\3\2\2\2\u041b\u041c\3\2\2\2\u041c\u041d")
-        buf.write("\3\2\2\2\u041d\u041e\7Q\2\2\u041e\u045d\b)\1\2\u041f\u0421")
+        buf.write("\3\2\2\2\u041d\u041e\7Q\2\2\u041e\u0469\b)\1\2\u041f\u0421")
         buf.write("\7!\2\2\u0420\u041f\3\2\2\2\u0420\u0421\3\2\2\2\u0421")
-        buf.write("\u0422\3\2\2\2\u0422\u0423\7\u00db\2\2\u0423\u0424\7\"")
-        buf.write("\2\2\u0424\u045d\b)\1\2\u0425\u0427\7!\2\2\u0426\u0425")
+        buf.write("\u0422\3\2\2\2\u0422\u0423\7\u00df\2\2\u0423\u0424\7\"")
+        buf.write("\2\2\u0424\u0469\b)\1\2\u0425\u0427\7!\2\2\u0426\u0425")
         buf.write("\3\2\2\2\u0426\u0427\3\2\2\2\u0427\u0428\3\2\2\2\u0428")
-        buf.write("\u0429\7\u00db\2\2\u0429\u042a\7m\2\2\u042a\u045d\b)\1")
-        buf.write("\2\u042b\u042c\7!\2\2\u042c\u042d\7Q\2\2\u042d\u045d\b")
+        buf.write("\u0429\7\u00df\2\2\u0429\u042a\7m\2\2\u042a\u0469\b)\1")
+        buf.write("\2\u042b\u042c\7!\2\2\u042c\u042d\7Q\2\2\u042d\u0469\b")
         buf.write(")\1\2\u042e\u0430\7!\2\2\u042f\u042e\3\2\2\2\u042f\u0430")
         buf.write("\3\2\2\2\u0430\u0432\3\2\2\2\u0431\u0433\7\u00b1\2\2\u0432")
         buf.write("\u0431\3\2\2\2\u0432\u0433\3\2\2\2\u0433\u0434\3\2\2\2")
-        buf.write("\u0434\u0435\7\u00cc\2\2\u0435\u0436\7q\2\2\u0436\u045d")
+        buf.write("\u0434\u0435\7\u00cc\2\2\u0435\u0436\7q\2\2\u0436\u0469")
         buf.write("\b)\1\2\u0437\u0439\7!\2\2\u0438\u0437\3\2\2\2\u0438\u0439")
         buf.write("\3\2\2\2\u0439\u043b\3\2\2\2\u043a\u043c\7\u00b1\2\2\u043b")
         buf.write("\u043a\3\2\2\2\u043b\u043c\3\2\2\2\u043c\u043d\3\2\2\2")
-        buf.write("\u043d\u043e\7\u00cc\2\2\u043e\u043f\7.\2\2\u043f\u045d")
+        buf.write("\u043d\u043e\7\u00cc\2\2\u043e\u043f\7.\2\2\u043f\u0469")
         buf.write("\b)\1\2\u0440\u0442\7\u00cd\2\2\u0441\u0443\7\32\2\2\u0442")
         buf.write("\u0441\3\2\2\2\u0442\u0443\3\2\2\2\u0443\u0444\3\2\2\2")
-        buf.write("\u0444\u0445\7.\2\2\u0445\u045d\b)\1\2\u0446\u0447\7\u00ce")
-        buf.write("\2\2\u0447\u0448\7t\2\2\u0448\u045d\b)\1\2\u0449\u044a")
-        buf.write("\7\u00cf\2\2\u044a\u044b\7\f\2\2\u044b\u045d\b)\1\2\u044c")
-        buf.write("\u044d\7\u00cf\2\2\u044d\u044e\7\u00d0\2\2\u044e\u045d")
+        buf.write("\u0444\u0445\7.\2\2\u0445\u0469\b)\1\2\u0446\u0447\7\u00ce")
+        buf.write("\2\2\u0447\u0448\7t\2\2\u0448\u0469\b)\1\2\u0449\u044a")
+        buf.write("\7\u00cf\2\2\u044a\u044b\7\f\2\2\u044b\u0469\b)\1\2\u044c")
+        buf.write("\u044d\7\u00cf\2\2\u044d\u044e\7\u00d0\2\2\u044e\u0469")
         buf.write("\b)\1\2\u044f\u0450\7\u00d1\2\2\u0450\u0451\7\r\2\2\u0451")
-        buf.write("\u0452\7\u00cd\2\2\u0452\u045d\b)\1\2\u0453\u0459\7\u00d2")
+        buf.write("\u0452\7\u00cd\2\2\u0452\u0469\b)\1\2\u0453\u0459\7\u00d2")
         buf.write("\2\2\u0454\u0456\7\32\2\2\u0455\u0454\3\2\2\2\u0455\u0456")
         buf.write("\3\2\2\2\u0456\u0457\3\2\2\2\u0457\u045a\7b\2\2\u0458")
         buf.write("\u045a\7\u00d3\2\2\u0459\u0455\3\2\2\2\u0459\u0458\3\2")
-        buf.write("\2\2\u045a\u045b\3\2\2\2\u045b\u045d\b)\1\2\u045c\u0419")
-        buf.write("\3\2\2\2\u045c\u0420\3\2\2\2\u045c\u0426\3\2\2\2\u045c")
-        buf.write("\u042b\3\2\2\2\u045c\u042f\3\2\2\2\u045c\u0438\3\2\2\2")
-        buf.write("\u045c\u0440\3\2\2\2\u045c\u0446\3\2\2\2\u045c\u0449\3")
-        buf.write("\2\2\2\u045c\u044c\3\2\2\2\u045c\u044f\3\2\2\2\u045c\u0453")
-        buf.write("\3\2\2\2\u045dQ\3\2\2\2\u045e\u045f\t\'\2\2\u045fS\3\2")
-        buf.write("\2\2\u0460\u0461\7\u00ee\2\2\u0461U\3\2\2\2hYflq{\u0081")
+        buf.write("\2\2\u045a\u045b\3\2\2\2\u045b\u0469\b)\1\2\u045c\u045d")
+        buf.write("\7\u00a9\2\2\u045d\u045e\7j\2\2\u045e\u0469\b)\1\2\u045f")
+        buf.write("\u0461\7\u00d4\2\2\u0460\u0462\7\r\2\2\u0461\u0460\3\2")
+        buf.write("\2\2\u0461\u0462\3\2\2\2\u0462\u0464\3\2\2\2\u0463\u0465")
+        buf.write("\7\u00d5\2\2\u0464\u0463\3\2\2\2\u0464\u0465\3\2\2\2\u0465")
+        buf.write("\u0466\3\2\2\2\u0466\u0467\7\u00d6\2\2\u0467\u0469\b)")
+        buf.write("\1\2\u0468\u0419\3\2\2\2\u0468\u0420\3\2\2\2\u0468\u0426")
+        buf.write("\3\2\2\2\u0468\u042b\3\2\2\2\u0468\u042f\3\2\2\2\u0468")
+        buf.write("\u0438\3\2\2\2\u0468\u0440\3\2\2\2\u0468\u0446\3\2\2\2")
+        buf.write("\u0468\u0449\3\2\2\2\u0468\u044c\3\2\2\2\u0468\u044f\3")
+        buf.write("\2\2\2\u0468\u0453\3\2\2\2\u0468\u045c\3\2\2\2\u0468\u045f")
+        buf.write("\3\2\2\2\u0469Q\3\2\2\2\u046a\u046b\t\'\2\2\u046bS\3\2")
+        buf.write("\2\2\u046c\u046d\7\u00f2\2\2\u046dU\3\2\2\2jYflq{\u0081")
         buf.write("\u008d\u0093\u0098\u00a7\u00ac\u00b9\u00bf\u00c7\u00cb")
         buf.write("\u00e0\u00e9\u00eb\u00f8\u00fe\u0106\u010c\u0112\u0128")
         buf.write("\u012c\u012f\u0133\u013e\u0143\u014a\u0151\u0154\u015c")
@@ -643,7 +650,7 @@ def serializedATN():
         buf.write("\u0309\u030c\u0313\u031a\u032d\u033f\u0346\u0350\u0353")
         buf.write("\u0356\u035e\u037b\u0388\u038c\u0390\u0393\u0397\u03b6")
         buf.write("\u03f9\u0407\u040d\u0417\u041b\u0420\u0426\u042f\u0432")
-        buf.write("\u0438\u043b\u0442\u0455\u0459\u045c")
+        buf.write("\u0438\u043b\u0442\u0455\u0459\u0461\u0464\u0468")
         return buf.getvalue()
 
 
@@ -697,13 +704,15 @@ class DMFParser ( Parser ):
                      "'>='", "'True'", "'true'", "'TRUE'", "'Yes'", "'yes'", 
                      "'YES'", "'False'", "'false'", "'FALSE'", "'No'", "'no'", 
                      "'NO'", "'clicked'", "'dispense'", "'enter'", "'transfer'", 
-                     "'out'", "'prepare'", "'take'", "'readings'", "'index'", 
-                     "'base'", "'refil'", "'+'", "'='", "<INVALID>", "'/'", 
-                     "'interactive'", "':'", "'isn't'", "'local'", "'*'", 
-                     "'not'", "'off'", "'on'", "'-'", "';'", "'toggle'", 
-                     "'until'", "'while'", "']'", "')'", "'maybe'" ]
+                     "'out'", "'prepare'", "'take'", "'readings'", "'write'", 
+                     "'csv'", "'file'", "'index'", "'base'", "'refil'", 
+                     "'now'", "'+'", "'='", "<INVALID>", "'/'", "'interactive'", 
+                     "':'", "'isn't'", "'local'", "'*'", "'not'", "'off'", 
+                     "'on'", "'-'", "';'", "'toggle'", "'until'", "'while'", 
+                     "']'", "')'", "'maybe'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
@@ -1028,33 +1037,37 @@ class DMFParser ( Parser ):
     T__209=210
     T__210=211
     T__211=212
-    ADD=213
-    ASSIGN=214
-    ATTR=215
-    DIV=216
-    INTERACTIVE=217
-    INJECT=218
-    ISNT=219
-    LOCAL=220
-    MUL=221
-    NOT=222
-    OFF=223
-    ON=224
-    SUB=225
-    TERMINATOR=226
-    TOGGLE=227
-    UNTIL=228
-    WHILE=229
-    CLOSE_BRACKET=230
-    CLOSE_PAREN=231
-    MAYBE=232
-    ID=233
-    INT=234
-    FLOAT=235
-    STRING=236
-    EOL_COMMENT=237
-    COMMENT=238
-    WS=239
+    T__212=213
+    T__213=214
+    T__214=215
+    T__215=216
+    ADD=217
+    ASSIGN=218
+    ATTR=219
+    DIV=220
+    INTERACTIVE=221
+    INJECT=222
+    ISNT=223
+    LOCAL=224
+    MUL=225
+    NOT=226
+    OFF=227
+    ON=228
+    SUB=229
+    TERMINATOR=230
+    TOGGLE=231
+    UNTIL=232
+    WHILE=233
+    CLOSE_BRACKET=234
+    CLOSE_PAREN=235
+    MAYBE=236
+    ID=237
+    INT=238
+    FLOAT=239
+    STRING=240
+    EOL_COMMENT=241
+    COMMENT=242
+    WS=243
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -1112,7 +1125,7 @@ class DMFParser ( Parser ):
             self.state = 87
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__13) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 220)) & ~0x3f) == 0 and ((1 << (_la - 220)) & ((1 << (DMFParser.LOCAL - 220)) | (1 << (DMFParser.NOT - 220)) | (1 << (DMFParser.OFF - 220)) | (1 << (DMFParser.ON - 220)) | (1 << (DMFParser.SUB - 220)) | (1 << (DMFParser.TOGGLE - 220)) | (1 << (DMFParser.MAYBE - 220)) | (1 << (DMFParser.ID - 220)) | (1 << (DMFParser.INT - 220)) | (1 << (DMFParser.FLOAT - 220)) | (1 << (DMFParser.STRING - 220)))) != 0):
+            while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__13) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.LOCAL - 221)) | (1 << (DMFParser.NOT - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.SUB - 221)) | (1 << (DMFParser.TOGGLE - 221)) | (1 << (DMFParser.MAYBE - 221)) | (1 << (DMFParser.ID - 221)) | (1 << (DMFParser.INT - 221)) | (1 << (DMFParser.FLOAT - 221)) | (1 << (DMFParser.STRING - 221)))) != 0):
                 self.state = 84
                 self.stat()
                 self.state = 89
@@ -1459,7 +1472,7 @@ class DMFParser ( Parser ):
                 self.state = 127
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 222)) & ~0x3f) == 0 and ((1 << (_la - 222)) & ((1 << (DMFParser.NOT - 222)) | (1 << (DMFParser.OFF - 222)) | (1 << (DMFParser.ON - 222)) | (1 << (DMFParser.SUB - 222)) | (1 << (DMFParser.TOGGLE - 222)) | (1 << (DMFParser.MAYBE - 222)) | (1 << (DMFParser.ID - 222)) | (1 << (DMFParser.INT - 222)) | (1 << (DMFParser.FLOAT - 222)) | (1 << (DMFParser.STRING - 222)))) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.NOT - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.SUB - 221)) | (1 << (DMFParser.TOGGLE - 221)) | (1 << (DMFParser.MAYBE - 221)) | (1 << (DMFParser.ID - 221)) | (1 << (DMFParser.INT - 221)) | (1 << (DMFParser.FLOAT - 221)) | (1 << (DMFParser.STRING - 221)))) != 0):
                     self.state = 126
                     localctx.init = self.expr(0)
 
@@ -1935,7 +1948,7 @@ class DMFParser ( Parser ):
                 self.state = 189
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__13) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 220)) & ~0x3f) == 0 and ((1 << (_la - 220)) & ((1 << (DMFParser.LOCAL - 220)) | (1 << (DMFParser.NOT - 220)) | (1 << (DMFParser.OFF - 220)) | (1 << (DMFParser.ON - 220)) | (1 << (DMFParser.SUB - 220)) | (1 << (DMFParser.TOGGLE - 220)) | (1 << (DMFParser.MAYBE - 220)) | (1 << (DMFParser.ID - 220)) | (1 << (DMFParser.INT - 220)) | (1 << (DMFParser.FLOAT - 220)) | (1 << (DMFParser.STRING - 220)))) != 0):
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__13) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.LOCAL - 221)) | (1 << (DMFParser.NOT - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.SUB - 221)) | (1 << (DMFParser.TOGGLE - 221)) | (1 << (DMFParser.MAYBE - 221)) | (1 << (DMFParser.ID - 221)) | (1 << (DMFParser.INT - 221)) | (1 << (DMFParser.FLOAT - 221)) | (1 << (DMFParser.STRING - 221)))) != 0):
                     self.state = 186
                     self.stat()
                     self.state = 191
@@ -1953,7 +1966,7 @@ class DMFParser ( Parser ):
                 self.state = 197
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__13) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 220)) & ~0x3f) == 0 and ((1 << (_la - 220)) & ((1 << (DMFParser.LOCAL - 220)) | (1 << (DMFParser.NOT - 220)) | (1 << (DMFParser.OFF - 220)) | (1 << (DMFParser.ON - 220)) | (1 << (DMFParser.SUB - 220)) | (1 << (DMFParser.TOGGLE - 220)) | (1 << (DMFParser.MAYBE - 220)) | (1 << (DMFParser.ID - 220)) | (1 << (DMFParser.INT - 220)) | (1 << (DMFParser.FLOAT - 220)) | (1 << (DMFParser.STRING - 220)))) != 0):
+                while (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__0) | (1 << DMFParser.T__2) | (1 << DMFParser.T__4) | (1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__13) | (1 << DMFParser.T__14) | (1 << DMFParser.T__15) | (1 << DMFParser.T__17) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.LOCAL - 221)) | (1 << (DMFParser.NOT - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.SUB - 221)) | (1 << (DMFParser.TOGGLE - 221)) | (1 << (DMFParser.MAYBE - 221)) | (1 << (DMFParser.ID - 221)) | (1 << (DMFParser.INT - 221)) | (1 << (DMFParser.FLOAT - 221)) | (1 << (DMFParser.STRING - 221)))) != 0):
                     self.state = 194
                     self.stat()
                     self.state = 199
@@ -2463,7 +2476,7 @@ class DMFParser ( Parser ):
             self.state = 260
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__23) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__34) | (1 << DMFParser.T__51))) != 0) or ((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (DMFParser.T__79 - 80)) | (1 << (DMFParser.T__80 - 80)) | (1 << (DMFParser.T__81 - 80)) | (1 << (DMFParser.T__82 - 80)) | (1 << (DMFParser.T__83 - 80)) | (1 << (DMFParser.T__84 - 80)) | (1 << (DMFParser.T__85 - 80)) | (1 << (DMFParser.T__86 - 80)) | (1 << (DMFParser.T__89 - 80)) | (1 << (DMFParser.T__95 - 80)) | (1 << (DMFParser.T__101 - 80)) | (1 << (DMFParser.T__108 - 80)) | (1 << (DMFParser.T__109 - 80)) | (1 << (DMFParser.T__112 - 80)) | (1 << (DMFParser.T__115 - 80)) | (1 << (DMFParser.T__119 - 80)) | (1 << (DMFParser.T__126 - 80)) | (1 << (DMFParser.T__131 - 80)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 223)) & ~0x3f) == 0 and ((1 << (_la - 223)) & ((1 << (DMFParser.OFF - 223)) | (1 << (DMFParser.ON - 223)) | (1 << (DMFParser.ID - 223)))) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__23) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__34) | (1 << DMFParser.T__51))) != 0) or ((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (DMFParser.T__79 - 80)) | (1 << (DMFParser.T__80 - 80)) | (1 << (DMFParser.T__81 - 80)) | (1 << (DMFParser.T__82 - 80)) | (1 << (DMFParser.T__83 - 80)) | (1 << (DMFParser.T__84 - 80)) | (1 << (DMFParser.T__85 - 80)) | (1 << (DMFParser.T__86 - 80)) | (1 << (DMFParser.T__89 - 80)) | (1 << (DMFParser.T__95 - 80)) | (1 << (DMFParser.T__101 - 80)) | (1 << (DMFParser.T__108 - 80)) | (1 << (DMFParser.T__109 - 80)) | (1 << (DMFParser.T__112 - 80)) | (1 << (DMFParser.T__115 - 80)) | (1 << (DMFParser.T__119 - 80)) | (1 << (DMFParser.T__126 - 80)) | (1 << (DMFParser.T__131 - 80)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.ID - 221)))) != 0):
                 self.state = 259
                 localctx.loop_name = self.name()
 
@@ -2522,7 +2535,7 @@ class DMFParser ( Parser ):
             self.state = 266
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 222)) & ~0x3f) == 0 and ((1 << (_la - 222)) & ((1 << (DMFParser.NOT - 222)) | (1 << (DMFParser.OFF - 222)) | (1 << (DMFParser.ON - 222)) | (1 << (DMFParser.SUB - 222)) | (1 << (DMFParser.TOGGLE - 222)) | (1 << (DMFParser.MAYBE - 222)) | (1 << (DMFParser.ID - 222)) | (1 << (DMFParser.INT - 222)) | (1 << (DMFParser.FLOAT - 222)) | (1 << (DMFParser.STRING - 222)))) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.NOT - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.SUB - 221)) | (1 << (DMFParser.TOGGLE - 221)) | (1 << (DMFParser.MAYBE - 221)) | (1 << (DMFParser.ID - 221)) | (1 << (DMFParser.INT - 221)) | (1 << (DMFParser.FLOAT - 221)) | (1 << (DMFParser.STRING - 221)))) != 0):
                 self.state = 265
                 self.expr(0)
 
@@ -4681,7 +4694,7 @@ class DMFParser ( Parser ):
                         self.state = 438
                         self._errHandler.sync(self)
                         _la = self._input.LA(1)
-                        if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 222)) & ~0x3f) == 0 and ((1 << (_la - 222)) & ((1 << (DMFParser.NOT - 222)) | (1 << (DMFParser.OFF - 222)) | (1 << (DMFParser.ON - 222)) | (1 << (DMFParser.SUB - 222)) | (1 << (DMFParser.TOGGLE - 222)) | (1 << (DMFParser.MAYBE - 222)) | (1 << (DMFParser.ID - 222)) | (1 << (DMFParser.INT - 222)) | (1 << (DMFParser.FLOAT - 222)) | (1 << (DMFParser.STRING - 222)))) != 0):
+                        if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__12) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__38) | (1 << DMFParser.T__39) | (1 << DMFParser.T__41) | (1 << DMFParser.T__42) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51) | (1 << DMFParser.T__54) | (1 << DMFParser.T__55) | (1 << DMFParser.T__56) | (1 << DMFParser.T__57) | (1 << DMFParser.T__58) | (1 << DMFParser.T__59) | (1 << DMFParser.T__60) | (1 << DMFParser.T__61) | (1 << DMFParser.T__62))) != 0) or ((((_la - 73)) & ~0x3f) == 0 and ((1 << (_la - 73)) & ((1 << (DMFParser.T__72 - 73)) | (1 << (DMFParser.T__74 - 73)) | (1 << (DMFParser.T__75 - 73)) | (1 << (DMFParser.T__76 - 73)) | (1 << (DMFParser.T__79 - 73)) | (1 << (DMFParser.T__80 - 73)) | (1 << (DMFParser.T__81 - 73)) | (1 << (DMFParser.T__82 - 73)) | (1 << (DMFParser.T__83 - 73)) | (1 << (DMFParser.T__84 - 73)) | (1 << (DMFParser.T__85 - 73)) | (1 << (DMFParser.T__86 - 73)) | (1 << (DMFParser.T__88 - 73)) | (1 << (DMFParser.T__89 - 73)) | (1 << (DMFParser.T__90 - 73)) | (1 << (DMFParser.T__91 - 73)) | (1 << (DMFParser.T__92 - 73)) | (1 << (DMFParser.T__93 - 73)) | (1 << (DMFParser.T__94 - 73)) | (1 << (DMFParser.T__95 - 73)) | (1 << (DMFParser.T__96 - 73)) | (1 << (DMFParser.T__97 - 73)) | (1 << (DMFParser.T__98 - 73)) | (1 << (DMFParser.T__99 - 73)) | (1 << (DMFParser.T__100 - 73)) | (1 << (DMFParser.T__101 - 73)) | (1 << (DMFParser.T__102 - 73)) | (1 << (DMFParser.T__103 - 73)) | (1 << (DMFParser.T__104 - 73)) | (1 << (DMFParser.T__105 - 73)) | (1 << (DMFParser.T__106 - 73)) | (1 << (DMFParser.T__107 - 73)) | (1 << (DMFParser.T__108 - 73)) | (1 << (DMFParser.T__109 - 73)) | (1 << (DMFParser.T__110 - 73)) | (1 << (DMFParser.T__111 - 73)) | (1 << (DMFParser.T__112 - 73)) | (1 << (DMFParser.T__113 - 73)) | (1 << (DMFParser.T__114 - 73)) | (1 << (DMFParser.T__115 - 73)) | (1 << (DMFParser.T__116 - 73)) | (1 << (DMFParser.T__117 - 73)) | (1 << (DMFParser.T__118 - 73)) | (1 << (DMFParser.T__119 - 73)) | (1 << (DMFParser.T__120 - 73)) | (1 << (DMFParser.T__121 - 73)) | (1 << (DMFParser.T__122 - 73)) | (1 << (DMFParser.T__125 - 73)) | (1 << (DMFParser.T__126 - 73)) | (1 << (DMFParser.T__131 - 73)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__189 - 154)) | (1 << (DMFParser.T__190 - 154)) | (1 << (DMFParser.T__191 - 154)) | (1 << (DMFParser.T__192 - 154)) | (1 << (DMFParser.T__193 - 154)) | (1 << (DMFParser.T__194 - 154)) | (1 << (DMFParser.T__195 - 154)) | (1 << (DMFParser.T__196 - 154)) | (1 << (DMFParser.T__197 - 154)) | (1 << (DMFParser.T__198 - 154)) | (1 << (DMFParser.T__199 - 154)) | (1 << (DMFParser.T__200 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.NOT - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.SUB - 221)) | (1 << (DMFParser.TOGGLE - 221)) | (1 << (DMFParser.MAYBE - 221)) | (1 << (DMFParser.ID - 221)) | (1 << (DMFParser.INT - 221)) | (1 << (DMFParser.FLOAT - 221)) | (1 << (DMFParser.STRING - 221)))) != 0):
                             self.state = 430
                             localctx._expr = self.expr(0)
                             localctx.args.append(localctx._expr)
@@ -5588,7 +5601,7 @@ class DMFParser ( Parser ):
                 self.state = 585
                 self.compound()
                 pass
-            elif token in [DMFParser.T__9, DMFParser.T__10, DMFParser.T__12, DMFParser.T__18, DMFParser.T__23, DMFParser.T__24, DMFParser.T__26, DMFParser.T__27, DMFParser.T__28, DMFParser.T__30, DMFParser.T__31, DMFParser.T__34, DMFParser.T__38, DMFParser.T__39, DMFParser.T__41, DMFParser.T__42, DMFParser.T__43, DMFParser.T__51, DMFParser.T__54, DMFParser.T__55, DMFParser.T__56, DMFParser.T__57, DMFParser.T__58, DMFParser.T__59, DMFParser.T__60, DMFParser.T__61, DMFParser.T__62, DMFParser.T__72, DMFParser.T__74, DMFParser.T__75, DMFParser.T__76, DMFParser.T__79, DMFParser.T__80, DMFParser.T__81, DMFParser.T__82, DMFParser.T__83, DMFParser.T__84, DMFParser.T__85, DMFParser.T__86, DMFParser.T__88, DMFParser.T__89, DMFParser.T__90, DMFParser.T__91, DMFParser.T__92, DMFParser.T__93, DMFParser.T__94, DMFParser.T__95, DMFParser.T__96, DMFParser.T__97, DMFParser.T__98, DMFParser.T__99, DMFParser.T__100, DMFParser.T__101, DMFParser.T__102, DMFParser.T__103, DMFParser.T__104, DMFParser.T__105, DMFParser.T__106, DMFParser.T__107, DMFParser.T__108, DMFParser.T__109, DMFParser.T__110, DMFParser.T__111, DMFParser.T__112, DMFParser.T__113, DMFParser.T__114, DMFParser.T__115, DMFParser.T__116, DMFParser.T__117, DMFParser.T__118, DMFParser.T__119, DMFParser.T__120, DMFParser.T__121, DMFParser.T__122, DMFParser.T__125, DMFParser.T__126, DMFParser.T__131, DMFParser.T__153, DMFParser.T__154, DMFParser.T__155, DMFParser.T__156, DMFParser.T__157, DMFParser.T__160, DMFParser.T__163, DMFParser.T__164, DMFParser.T__167, DMFParser.T__168, DMFParser.T__169, DMFParser.T__170, DMFParser.T__171, DMFParser.T__172, DMFParser.T__173, DMFParser.T__174, DMFParser.T__189, DMFParser.T__190, DMFParser.T__191, DMFParser.T__192, DMFParser.T__193, DMFParser.T__194, DMFParser.T__195, DMFParser.T__196, DMFParser.T__197, DMFParser.T__198, DMFParser.T__199, DMFParser.T__200, DMFParser.T__201, DMFParser.T__202, DMFParser.T__203, DMFParser.T__204, DMFParser.T__205, DMFParser.T__206, DMFParser.T__207, DMFParser.T__209, DMFParser.T__210, DMFParser.T__211, DMFParser.INTERACTIVE, DMFParser.NOT, DMFParser.OFF, DMFParser.ON, DMFParser.SUB, DMFParser.TOGGLE, DMFParser.MAYBE, DMFParser.ID, DMFParser.INT, DMFParser.FLOAT, DMFParser.STRING]:
+            elif token in [DMFParser.T__9, DMFParser.T__10, DMFParser.T__12, DMFParser.T__18, DMFParser.T__23, DMFParser.T__24, DMFParser.T__26, DMFParser.T__27, DMFParser.T__28, DMFParser.T__30, DMFParser.T__31, DMFParser.T__34, DMFParser.T__38, DMFParser.T__39, DMFParser.T__41, DMFParser.T__42, DMFParser.T__43, DMFParser.T__51, DMFParser.T__54, DMFParser.T__55, DMFParser.T__56, DMFParser.T__57, DMFParser.T__58, DMFParser.T__59, DMFParser.T__60, DMFParser.T__61, DMFParser.T__62, DMFParser.T__72, DMFParser.T__74, DMFParser.T__75, DMFParser.T__76, DMFParser.T__79, DMFParser.T__80, DMFParser.T__81, DMFParser.T__82, DMFParser.T__83, DMFParser.T__84, DMFParser.T__85, DMFParser.T__86, DMFParser.T__88, DMFParser.T__89, DMFParser.T__90, DMFParser.T__91, DMFParser.T__92, DMFParser.T__93, DMFParser.T__94, DMFParser.T__95, DMFParser.T__96, DMFParser.T__97, DMFParser.T__98, DMFParser.T__99, DMFParser.T__100, DMFParser.T__101, DMFParser.T__102, DMFParser.T__103, DMFParser.T__104, DMFParser.T__105, DMFParser.T__106, DMFParser.T__107, DMFParser.T__108, DMFParser.T__109, DMFParser.T__110, DMFParser.T__111, DMFParser.T__112, DMFParser.T__113, DMFParser.T__114, DMFParser.T__115, DMFParser.T__116, DMFParser.T__117, DMFParser.T__118, DMFParser.T__119, DMFParser.T__120, DMFParser.T__121, DMFParser.T__122, DMFParser.T__125, DMFParser.T__126, DMFParser.T__131, DMFParser.T__153, DMFParser.T__154, DMFParser.T__155, DMFParser.T__156, DMFParser.T__157, DMFParser.T__160, DMFParser.T__163, DMFParser.T__164, DMFParser.T__166, DMFParser.T__167, DMFParser.T__168, DMFParser.T__169, DMFParser.T__170, DMFParser.T__171, DMFParser.T__172, DMFParser.T__173, DMFParser.T__174, DMFParser.T__189, DMFParser.T__190, DMFParser.T__191, DMFParser.T__192, DMFParser.T__193, DMFParser.T__194, DMFParser.T__195, DMFParser.T__196, DMFParser.T__197, DMFParser.T__198, DMFParser.T__199, DMFParser.T__200, DMFParser.T__201, DMFParser.T__202, DMFParser.T__203, DMFParser.T__204, DMFParser.T__205, DMFParser.T__206, DMFParser.T__207, DMFParser.T__209, DMFParser.T__212, DMFParser.T__213, DMFParser.T__214, DMFParser.T__215, DMFParser.INTERACTIVE, DMFParser.NOT, DMFParser.OFF, DMFParser.ON, DMFParser.SUB, DMFParser.TOGGLE, DMFParser.MAYBE, DMFParser.ID, DMFParser.INT, DMFParser.FLOAT, DMFParser.STRING]:
                 self.state = 586
                 self.expr(0)
                 pass
@@ -5660,7 +5673,7 @@ class DMFParser ( Parser ):
             self.state = 599
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51))) != 0) or ((((_la - 76)) & ~0x3f) == 0 and ((1 << (_la - 76)) & ((1 << (DMFParser.T__75 - 76)) | (1 << (DMFParser.T__79 - 76)) | (1 << (DMFParser.T__80 - 76)) | (1 << (DMFParser.T__81 - 76)) | (1 << (DMFParser.T__82 - 76)) | (1 << (DMFParser.T__83 - 76)) | (1 << (DMFParser.T__84 - 76)) | (1 << (DMFParser.T__85 - 76)) | (1 << (DMFParser.T__86 - 76)) | (1 << (DMFParser.T__88 - 76)) | (1 << (DMFParser.T__89 - 76)) | (1 << (DMFParser.T__90 - 76)) | (1 << (DMFParser.T__91 - 76)) | (1 << (DMFParser.T__92 - 76)) | (1 << (DMFParser.T__93 - 76)) | (1 << (DMFParser.T__94 - 76)) | (1 << (DMFParser.T__95 - 76)) | (1 << (DMFParser.T__96 - 76)) | (1 << (DMFParser.T__97 - 76)) | (1 << (DMFParser.T__98 - 76)) | (1 << (DMFParser.T__99 - 76)) | (1 << (DMFParser.T__100 - 76)) | (1 << (DMFParser.T__101 - 76)) | (1 << (DMFParser.T__102 - 76)) | (1 << (DMFParser.T__103 - 76)) | (1 << (DMFParser.T__104 - 76)) | (1 << (DMFParser.T__105 - 76)) | (1 << (DMFParser.T__106 - 76)) | (1 << (DMFParser.T__107 - 76)) | (1 << (DMFParser.T__108 - 76)) | (1 << (DMFParser.T__109 - 76)) | (1 << (DMFParser.T__110 - 76)) | (1 << (DMFParser.T__111 - 76)) | (1 << (DMFParser.T__112 - 76)) | (1 << (DMFParser.T__113 - 76)) | (1 << (DMFParser.T__114 - 76)) | (1 << (DMFParser.T__115 - 76)) | (1 << (DMFParser.T__116 - 76)) | (1 << (DMFParser.T__117 - 76)) | (1 << (DMFParser.T__118 - 76)) | (1 << (DMFParser.T__119 - 76)) | (1 << (DMFParser.T__120 - 76)) | (1 << (DMFParser.T__121 - 76)) | (1 << (DMFParser.T__122 - 76)) | (1 << (DMFParser.T__125 - 76)) | (1 << (DMFParser.T__126 - 76)) | (1 << (DMFParser.T__131 - 76)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)) | (1 << (DMFParser.INTERACTIVE - 154)))) != 0) or ((((_la - 223)) & ~0x3f) == 0 and ((1 << (_la - 223)) & ((1 << (DMFParser.OFF - 223)) | (1 << (DMFParser.ON - 223)) | (1 << (DMFParser.MAYBE - 223)) | (1 << (DMFParser.ID - 223)))) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__18) | (1 << DMFParser.T__23) | (1 << DMFParser.T__24) | (1 << DMFParser.T__26) | (1 << DMFParser.T__27) | (1 << DMFParser.T__28) | (1 << DMFParser.T__30) | (1 << DMFParser.T__31) | (1 << DMFParser.T__34) | (1 << DMFParser.T__43) | (1 << DMFParser.T__51))) != 0) or ((((_la - 76)) & ~0x3f) == 0 and ((1 << (_la - 76)) & ((1 << (DMFParser.T__75 - 76)) | (1 << (DMFParser.T__79 - 76)) | (1 << (DMFParser.T__80 - 76)) | (1 << (DMFParser.T__81 - 76)) | (1 << (DMFParser.T__82 - 76)) | (1 << (DMFParser.T__83 - 76)) | (1 << (DMFParser.T__84 - 76)) | (1 << (DMFParser.T__85 - 76)) | (1 << (DMFParser.T__86 - 76)) | (1 << (DMFParser.T__88 - 76)) | (1 << (DMFParser.T__89 - 76)) | (1 << (DMFParser.T__90 - 76)) | (1 << (DMFParser.T__91 - 76)) | (1 << (DMFParser.T__92 - 76)) | (1 << (DMFParser.T__93 - 76)) | (1 << (DMFParser.T__94 - 76)) | (1 << (DMFParser.T__95 - 76)) | (1 << (DMFParser.T__96 - 76)) | (1 << (DMFParser.T__97 - 76)) | (1 << (DMFParser.T__98 - 76)) | (1 << (DMFParser.T__99 - 76)) | (1 << (DMFParser.T__100 - 76)) | (1 << (DMFParser.T__101 - 76)) | (1 << (DMFParser.T__102 - 76)) | (1 << (DMFParser.T__103 - 76)) | (1 << (DMFParser.T__104 - 76)) | (1 << (DMFParser.T__105 - 76)) | (1 << (DMFParser.T__106 - 76)) | (1 << (DMFParser.T__107 - 76)) | (1 << (DMFParser.T__108 - 76)) | (1 << (DMFParser.T__109 - 76)) | (1 << (DMFParser.T__110 - 76)) | (1 << (DMFParser.T__111 - 76)) | (1 << (DMFParser.T__112 - 76)) | (1 << (DMFParser.T__113 - 76)) | (1 << (DMFParser.T__114 - 76)) | (1 << (DMFParser.T__115 - 76)) | (1 << (DMFParser.T__116 - 76)) | (1 << (DMFParser.T__117 - 76)) | (1 << (DMFParser.T__118 - 76)) | (1 << (DMFParser.T__119 - 76)) | (1 << (DMFParser.T__120 - 76)) | (1 << (DMFParser.T__121 - 76)) | (1 << (DMFParser.T__122 - 76)) | (1 << (DMFParser.T__125 - 76)) | (1 << (DMFParser.T__126 - 76)) | (1 << (DMFParser.T__131 - 76)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__207 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or ((((_la - 221)) & ~0x3f) == 0 and ((1 << (_la - 221)) & ((1 << (DMFParser.INTERACTIVE - 221)) | (1 << (DMFParser.OFF - 221)) | (1 << (DMFParser.ON - 221)) | (1 << (DMFParser.MAYBE - 221)) | (1 << (DMFParser.ID - 221)))) != 0):
                 self.state = 591
                 self.param()
                 self.state = 596
@@ -8233,9 +8246,9 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 78, self.RULE_multi_word_name)
         self._la = 0 # Token type
         try:
-            self.state = 1114
+            self.state = 1126
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,101,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,103,self._ctx)
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 1047
@@ -8430,6 +8443,40 @@ class DMFParser ( Parser ):
                 localctx.val="take reading"
                 pass
 
+            elif la_ == 13:
+                self.enterOuterAlt(localctx, 13)
+                self.state = 1114
+                self.match(DMFParser.T__166)
+                self.state = 1115
+                self.match(DMFParser.T__103)
+                localctx.val="current time"
+                pass
+
+            elif la_ == 14:
+                self.enterOuterAlt(localctx, 14)
+                self.state = 1117
+                self.match(DMFParser.T__209)
+                self.state = 1119
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+                if _la==DMFParser.T__10:
+                    self.state = 1118
+                    self.match(DMFParser.T__10)
+
+
+                self.state = 1122
+                self._errHandler.sync(self)
+                _la = self._input.LA(1)
+                if _la==DMFParser.T__210:
+                    self.state = 1121
+                    self.match(DMFParser.T__210)
+
+
+                self.state = 1124
+                self.match(DMFParser.T__211)
+                localctx.val="write to csv file"
+                pass
+
 
         except RecognitionException as re:
             localctx.exception = re
@@ -8480,9 +8527,9 @@ class DMFParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 1116
+            self.state = 1128
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__23) | (1 << DMFParser.T__28) | (1 << DMFParser.T__34) | (1 << DMFParser.T__51))) != 0) or ((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (DMFParser.T__79 - 80)) | (1 << (DMFParser.T__80 - 80)) | (1 << (DMFParser.T__81 - 80)) | (1 << (DMFParser.T__82 - 80)) | (1 << (DMFParser.T__83 - 80)) | (1 << (DMFParser.T__84 - 80)) | (1 << (DMFParser.T__85 - 80)) | (1 << (DMFParser.T__86 - 80)) | (1 << (DMFParser.T__89 - 80)) | (1 << (DMFParser.T__95 - 80)) | (1 << (DMFParser.T__101 - 80)) | (1 << (DMFParser.T__108 - 80)) | (1 << (DMFParser.T__109 - 80)) | (1 << (DMFParser.T__112 - 80)) | (1 << (DMFParser.T__115 - 80)) | (1 << (DMFParser.T__119 - 80)) | (1 << (DMFParser.T__126 - 80)) | (1 << (DMFParser.T__131 - 80)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__209 - 154)) | (1 << (DMFParser.T__210 - 154)) | (1 << (DMFParser.T__211 - 154)))) != 0) or _la==DMFParser.OFF or _la==DMFParser.ON):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & ((1 << DMFParser.T__9) | (1 << DMFParser.T__10) | (1 << DMFParser.T__23) | (1 << DMFParser.T__28) | (1 << DMFParser.T__34) | (1 << DMFParser.T__51))) != 0) or ((((_la - 80)) & ~0x3f) == 0 and ((1 << (_la - 80)) & ((1 << (DMFParser.T__79 - 80)) | (1 << (DMFParser.T__80 - 80)) | (1 << (DMFParser.T__81 - 80)) | (1 << (DMFParser.T__82 - 80)) | (1 << (DMFParser.T__83 - 80)) | (1 << (DMFParser.T__84 - 80)) | (1 << (DMFParser.T__85 - 80)) | (1 << (DMFParser.T__86 - 80)) | (1 << (DMFParser.T__89 - 80)) | (1 << (DMFParser.T__95 - 80)) | (1 << (DMFParser.T__101 - 80)) | (1 << (DMFParser.T__108 - 80)) | (1 << (DMFParser.T__109 - 80)) | (1 << (DMFParser.T__112 - 80)) | (1 << (DMFParser.T__115 - 80)) | (1 << (DMFParser.T__119 - 80)) | (1 << (DMFParser.T__126 - 80)) | (1 << (DMFParser.T__131 - 80)))) != 0) or ((((_la - 154)) & ~0x3f) == 0 and ((1 << (_la - 154)) & ((1 << (DMFParser.T__153 - 154)) | (1 << (DMFParser.T__154 - 154)) | (1 << (DMFParser.T__155 - 154)) | (1 << (DMFParser.T__156 - 154)) | (1 << (DMFParser.T__157 - 154)) | (1 << (DMFParser.T__160 - 154)) | (1 << (DMFParser.T__163 - 154)) | (1 << (DMFParser.T__164 - 154)) | (1 << (DMFParser.T__166 - 154)) | (1 << (DMFParser.T__167 - 154)) | (1 << (DMFParser.T__168 - 154)) | (1 << (DMFParser.T__169 - 154)) | (1 << (DMFParser.T__170 - 154)) | (1 << (DMFParser.T__171 - 154)) | (1 << (DMFParser.T__172 - 154)) | (1 << (DMFParser.T__173 - 154)) | (1 << (DMFParser.T__174 - 154)) | (1 << (DMFParser.T__201 - 154)) | (1 << (DMFParser.T__202 - 154)) | (1 << (DMFParser.T__203 - 154)) | (1 << (DMFParser.T__204 - 154)) | (1 << (DMFParser.T__205 - 154)) | (1 << (DMFParser.T__206 - 154)) | (1 << (DMFParser.T__212 - 154)) | (1 << (DMFParser.T__213 - 154)) | (1 << (DMFParser.T__214 - 154)) | (1 << (DMFParser.T__215 - 154)))) != 0) or _la==DMFParser.OFF or _la==DMFParser.ON):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -8532,7 +8579,7 @@ class DMFParser ( Parser ):
         self.enterRule(localctx, 82, self.RULE_string)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 1118
+            self.state = 1130
             self.match(DMFParser.STRING)
         except RecognitionException as re:
             localctx.exception = re

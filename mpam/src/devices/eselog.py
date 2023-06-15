@@ -11,13 +11,12 @@ from enum import Enum, auto
 from erk.config import ConfigParam
 from os import PathLike
 import logging
-from pathlib import Path
 from quantities.SI import ms, mV
 from quantities.core import Unit, qstr
 import random
 from quantities.temperature import TemperaturePoint, abs_C
 from mpam.exerciser import ComponentConfig
-from argparse import _ArgumentGroup, BooleanOptionalAction
+from argparse import _ArgumentGroup
 from mpam.cmd_line import coord_arg, time_arg
 
 logger = logging.getLogger(__name__)
@@ -30,9 +29,9 @@ class Config:
     file_dir: Final = ConfigParam[Optional[Union[str, PathLike]]](None)
     timestamp_format: Final = ConfigParam('%H:%M:%S')
     timestamp_precision: Final = ConfigParam(ms)
-    write_csv: Final = ConfigParam(True)
     default_samples: Final = ConfigParam(10)
     sample_speed: Final = ConfigParam(650*ms)
+    proxy_factory: Final = ConfigParam[Callable[['ESELog'], 'ESELog.Proxy']]()
     
 class ESELogChannel(Enum):
     E1D1 = auto()
@@ -45,11 +44,8 @@ _MapType = Mapping[_KeyType, Voltage]
     
 
 class ESELog(Sensor):
-    file_name_template: Final[str]
-    file_dir: Final[PathLike]
     timestamp_format: Final[str]
     timestamp_precision: Final[Unit[Time]]
-    write_csv: Final[bool]
     proxy: Proxy
     
     class Sample(Sensor.Sample):
@@ -96,8 +92,8 @@ class ESELog(Sensor):
         temperature: Final[TemperaturePointSample]
         _values: Final[Mapping[tuple[ESELogChannel,OnOff], QuantitySample[Voltage]]]
         
-        def __init__(self, samples: Sequence[ESELog.Sample]) -> None:
-            super().__init__(samples)
+        def __init__(self, sensor: ESELog, samples: Sequence[ESELog.Sample]) -> None:
+            super().__init__(sensor, samples)
             self.ticket = IntSample([s.ticket for s in samples])
             self.temperature = TemperaturePointSample([s.temperature for s in samples])
             self._values = {
@@ -106,6 +102,16 @@ class ESELog(Sensor):
             
         def value(self, channel: ESELogChannel, state: OnOff) -> QuantitySample[Voltage]:
             return self._values[(channel,state)]
+        
+        def __str__(self) -> str:
+            n = self.ticket.count
+            vdesc = ""
+            if n > 0:
+                vals = list[str]()
+                for c in ESELogChannel:
+                    vals.append(f"{self.value(c,OnOff.ON).mean}/{self.value(c,OnOff.OFF).mean}")
+                vdesc = f", {','.join(vals)}"
+            return f"ESELog.Reading[{qstr(n, 'sample')}{vdesc}]"
         
     class Proxy(ABC):
         eseLog: Final[ESELog]
@@ -135,14 +141,17 @@ class ESELog(Sensor):
     def __init__(self, board: Board, *,
                  aiming_laser: Optional[Laser] = None,
                  target: Optional[Pad] = None,
-                 proxy: Optional[Proxy] = None,
+                 proxy_factory: Optional[Callable[[ESELog], Proxy]] = None,
                  ) -> None:
         if aiming_laser is None:
             aiming_laser = Laser(board, state=OnOff.OFF) 
         super().__init__(board, name="ESELog",
                          aiming_laser=aiming_laser, target=target,
                          n_samples = Config.default_samples(),
-                         sample_interval = Config.sample_speed())
+                         sample_interval = Config.sample_speed(),
+                         log_file_dir = Config.file_dir() or ".",
+                         csv_file_template = Config.file_name_template()
+                         )
         if target is None:
             xy = Config.target()
             if xy is not None:
@@ -152,53 +161,12 @@ class ESELog(Sensor):
                     logger.warning(f"{self} Log target at ({xy.col, xy.row}) does not exist, ignoring.")
         aiming_laser.on_state_change(lambda _old, new: logger.info(f"{self}'s laser is now {new}"))
         self.file_name_template = Config.file_name_template()
-        d = Config.file_dir() or "."
-        if isinstance(d, str):
-            d = Path(d)
-        self.file_dir = d
         self.timestamp_format = Config.timestamp_format()
         self.timestamp_precision = Config.timestamp_precision()
-        self.write_csv = Config.write_csv()
-        self.proxy = EmulatedESELog(self) if proxy is None else proxy
+        if proxy_factory is None:
+            proxy_factory = Config.proxy_factory()
+        self.proxy = proxy_factory(self)
         
-        
-    # def _write_file(self, samples: Sequence[Sample], *,
-    #                 timestamp: Optional[Timestamp] = None,
-    #                 force: bool = False,
-    #                 ) -> None:
-    #     if not (self.write_csv or force):
-    #         return
-    #     if len(samples) == 0:
-    #         return
-    #     if timestamp is None:
-    #         timestamp = samples[0].timestamp
-    #     file_name = timestamp.strftime(fmt=self.file_name_template)
-    #     path = os.path.join(self.file_dir, file_name)
-    #     units = mV
-    #
-    #     def for_pairs(fn: Callable[[ESELogChannel, OnOff], _T]) -> Sequence[_T]:
-    #         return [fn(c,s) for c in ESELogChannel for s in OnOff]
-    #
-    #     def header_line() -> Sequence[str]:
-    #         def to_header(c: ESELogChannel, s: OnOff) -> str:
-    #             return f"{c.name}{s.name}".lower()
-    #         return ['ticket', 'timestamp', *for_pairs(to_header)]
-    #
-    #     def sample_line(sample: ESELog.Sample) -> Sequence[Any]:
-    #         def to_value(c: ESELogChannel, s: OnOff) -> float:
-    #             v = sample.value(c, s)
-    #             return v.as_number(units)
-    #         return [sample.ticket, 
-    #                 sample.timestamp.strftime(fmt=self.timestamp_format, precision=self.timestamp_precision), 
-    #                 *for_pairs(to_value)]
-    #
-    #     with open(path, 'w') as f:
-    #         csvwriter = csv.writer(f)
-    #         csvwriter.writerow(header_line())
-    #         for s in samples:
-    #             csvwriter.writerow(sample_line(s))
-    #     logger.info(f"Wrote ESELog CSV file '{path}'")
-    #
 
 
     @property
@@ -209,19 +177,14 @@ class ESELog(Sensor):
              n_samples: Optional[int] = None,                # @UnusedVariable
              speed: Optional[Union[Time, Frequency]] = None, # @UnusedVariable
              force_write: bool = False, 
-             suppress_write: bool = False             
              ) -> Delayed[Reading]:
         n = n_samples or self.n_samples
         interval = "" if n < 2 else f"(every {self.sample_interval}) "
         logger.info(f"Reading {qstr(n, 'sample')} {interval}from {self}.") 
         future = self.proxy.read(n_samples=n_samples, speed=speed)
-        if (not suppress_write) and (force_write or self.write_csv):
-            def write_samples(samples: Sequence[ESELog.Sample]) -> None:
-                self.write_csv_file(samples,
-                                    name_template = self.file_name_template,
-                                    to_dir = self.file_dir,)
-            future.then_call(write_samples)
-        return future.transformed(ESELog.Reading)
+        def make_reading(samples: Sequence[ESELog.Sample]) -> ESELog.Reading:
+            return ESELog.Reading(self, samples)
+        return future.transformed(make_reading)
     
     def reset_component(self)->None:
         super().reset_component()
@@ -303,6 +266,8 @@ class EmulatedESELog(ESELog.Proxy):
             
         self.work_queue.enqueue(worker)
         return future
+    
+Config.proxy_factory.value = EmulatedESELog
 
 class ESELogConfig(ComponentConfig[ESELog]):
     
@@ -328,8 +293,6 @@ class ESELogConfig(ComponentConfig[ESELog]):
                                            help='''
                                            The strftime-like format to use to format timestamps in the CSV file. 
                                            ''')
-        Config.write_csv.add_arg_to(group, '--eselog-write-csv-file', action=BooleanOptionalAction,
-                                    help="Whether to write a CSV file for ESELog reading operations.")
         Config.default_samples.add_arg_to(group, '--eselog-n-samples', type=int, metavar='INT',
                                           help="The default number of samples to take in an ESELog read operation.")
         Config.sample_speed.add_arg_to(group, '--eselog-sample-interval', type=time_arg, metavar='TIME',

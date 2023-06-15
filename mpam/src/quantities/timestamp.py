@@ -7,6 +7,7 @@ from typing import overload, Union, Final, MutableMapping
 from . import core
 from . import dimensions
 from .SI import sec, ns, ms
+from quantities.SI import seconds
 
 
 class Timestamp:
@@ -83,6 +84,10 @@ class Timestamp:
         A :class:`Timestamp` with :attr:`time` equal to zero
         """
         return Timestamp(dimensions.Time.ZERO)
+    
+    @classmethod
+    def from_time_t(cls, time_t: float) -> Timestamp:
+        return Timestamp(time_t*seconds)
     
     def __add__(self, rhs: dimensions.Time) -> Timestamp:
         return Timestamp(self.time+rhs)

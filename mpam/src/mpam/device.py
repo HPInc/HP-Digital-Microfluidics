@@ -43,6 +43,7 @@ from erk.config import ConfigParam
 from os import PathLike
 import os
 import csv
+from pathlib import Path
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
@@ -4852,6 +4853,9 @@ class Laser(BinaryComponent['Laser']):
     ...
 
 class Sensor(BoardComponent, ExternalComponent, ABC):
+
+    
+    
     class Sample(ABC):
         timestamp: Final[Timestamp]
         
@@ -4867,14 +4871,28 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
         def csv_line(self) -> Sequence[Any]: ...
         
     class Reading:
+        sensor: Final[Sensor]
         timestamp: TimestampSample
         
         samples: Final[Sequence[Sensor.Sample]]
         
-        def __init__(self, samples: Sequence[Sensor.Sample]) -> None:
+        def __init__(self, sensor: Sensor, samples: Sequence[Sensor.Sample]) -> None:
+            self.sensor = sensor
             self.samples = samples
             self.timestamp = TimestampSample([s.timestamp for s in samples])
         
+    csv_file_template: str = "reading-%Y-%m-%d_%H_%M_%S.%f.csv"
+    
+    _log_file_dir: PathLike
+    
+    @property
+    def log_file_dir(self) -> PathLike:
+        return self._log_file_dir
+    @log_file_dir.setter
+    def log_file_dir(self, val: Union[str, PathLike]) -> None:
+        if isinstance(val, str):
+            val = Path(val)
+        self._log_file_dir = val
     name: Final[str]
     aiming_laser: Final[Optional[Laser]]
     target: Optional[Pad]
@@ -4886,7 +4904,10 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
                  aiming_laser: Optional[Laser] = None,
                  target: Optional[Pad] = None,
                  n_samples: Optional[int] = None,
-                 sample_interval: Optional[Union[Time, Frequency]] = None) -> None:
+                 sample_interval: Optional[Union[Time, Frequency]] = None,
+                 csv_file_template: Optional[str] = None,
+                 log_file_dir: Optional[Union[str, PathLike]] = None,
+                 ) -> None:
         super().__init__(board)
         self.name = name
         self.aiming_laser = aiming_laser
@@ -4895,6 +4916,11 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
             self._n_samples = n_samples
         if sample_interval is not None:
             self._sample_interval = Time.rate_from(sample_interval)
+        if log_file_dir is not None:
+            # This actually works.  MyPy doesn't like it.
+            self.log_file_dir = log_file_dir    # type: ignore[assignment]
+        if csv_file_template is not None:
+            self.csv_file_template = csv_file_template
         
     def __str__(self) -> str:
         return f"<{self.name} sensor>"

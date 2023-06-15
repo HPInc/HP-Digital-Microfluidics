@@ -3,15 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 import pyglider
 from typing import Union, Optional, Final, Generic, TypeVar, Callable, List,\
-    cast
-from mpam.types import State, OnOff
+    cast, Sequence
+from mpam.types import State, OnOff, MISSING, MissingOr
 from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
-from quantities.dimensions import Voltage
-from quantities.SI import volts
+from quantities.dimensions import Voltage, Time
+from quantities.SI import volts, ms
 import pathlib
 from functools import cached_property
 import logging
+from pyglider import ErrorCode
+from erk.basic import ValOrFn, ensure_val
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,25 @@ def _to_path(p: Optional[Union[str, PathLike]]) -> Optional[PathLike]:
     if isinstance(p, str):
         return Path(p)
     return p
+
+T = TypeVar("T")
+
+def check_error(val: Union[T, ErrorCode], *,
+                desc: Optional[ValOrFn[str]] = None,
+                default: MissingOr[T] = MISSING) -> T:
+    if isinstance(val, ErrorCode):
+        desc = "Call to Glider device" if desc is None else ensure_val(desc, str)
+        msg =f"{desc} returned error code {val}"
+        logger.warning(msg)
+        if default is MISSING:
+            raise ValueError(msg)
+        val = default
+    return val
+
+def print_error(val: Optional[ErrorCode], *,
+                desc: Optional[ValOrFn[str]] = None) -> None:
+    check_error(val, desc=desc, default=None)
+
 
 CT = TypeVar("CT")
 ST = TypeVar("ST")
@@ -166,6 +187,17 @@ class GliderClient:
             self.remote.EnableFan()
         else:
             self.remote.DisableFan()
+            
+    @cached_property
+    def _remote_sensors(self) -> List[pyglider.Sensor]:
+        return self.remote.GetSensors()
+            
+    @cached_property
+    def eselog(self) -> Optional[ESELog]:
+        for s in self._remote_sensors:
+            if isinstance(s, pyglider.ESElog):
+                return ESELog(s)
+        return None
     
     def __init__(self, board_type: pyglider.BoardId, *,
                  dll_dir: Optional[Union[str, PathLike]] = None,
@@ -250,14 +282,42 @@ class GliderClient:
                 self.magnets[name] = m
         return m
     
+    
+    
 class Sensor:
     _remote: Final[pyglider.Sensor]
     @property
     def remote(self) -> pyglider.Sensor:
         return self._remote
     
+    @property
+    def is_available(self) -> bool:
+        val = check_error(self._remote.IsAvailable(),
+                          desc = lambda: f"Call to {self._remote}.IsAvailable()",
+                          default=True)
+        return val
+
+    
     def __init__(self, remote: pyglider.Sensor) -> None:
         self._remote = remote
+        
+    def aim(self, state: OnOff) -> None:
+        self._remote.Aim(state is OnOff.ON)
+        
+    def request_samples(self, num_samples: Optional[int] = None) -> Time:
+        i = check_error(self._remote.RequestSamples() if num_samples is None 
+                        else self._remote.RequestSamples(num_samples),
+                        desc = lambda: f"Call to {self._remote}.RequestSamples({num_samples})",
+                        default=0)
+        return i*ms
+    
+    def read_results(self, *, units: pyglider.Sensor.ResultType = pyglider.Sensor.ResultType.Millivolts,
+                     asynchronous: bool = False) -> Sequence[pyglider.Sensor.SensorResult]:
+        method = self._remote.ReadResultsAsync if asynchronous else self._remote.ReadResultsSync
+        r = check_error(method(units),
+                        desc = lambda: f"Call to {self._remote}.ReadResults{'Async' if asynchronous else 'Sync'}()")
+        return r.results
+        
         
 class ESELog(Sensor):
     @property
@@ -267,3 +327,8 @@ class ESELog(Sensor):
     def __init__(self, remote: pyglider.ESElog) -> None:
         super().__init__(remote)
     
+    def read_results(self, *, units: pyglider.Sensor.ResultType = pyglider.Sensor.ResultType.Millivolts,
+                     asynchronous: bool = False) -> Sequence[pyglider.ESElog.ESElogResult]:
+        results = super().read_results(units=units, asynchronous=asynchronous)
+        assert(all(isinstance(r, pyglider.ESElog.ESElogResult) for r in results))
+        return cast(Sequence[pyglider.ESElog.ESElogResult], results)

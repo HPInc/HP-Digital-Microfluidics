@@ -44,6 +44,7 @@ import logging
 from devices.eselog import ESELog, ESELogChannel
 from itertools import product
 import os
+from quantities import timestamp
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -3306,6 +3307,23 @@ class DMFCompiler(DMFVisitor):
         fn.register((Type.ESELOG, Type.TIME), Type.ESELOG_READING, lambda s,t: read_from_sensor(s, None, t), curry_at=0)
         fn.register((Type.ESELOG, Type.FREQUENCY), Type.ESELOG_READING, lambda s,f: read_from_sensor(s, None, f), curry_at=0)
         
+        def write_to_csv(r: Sensor.Reading, nt: Optional[str] = None, 
+                         ts: Optional[Timestamp] = None) -> Sensor.Reading:
+            s = r.sensor
+            if nt is None:
+                nt = s.csv_file_template
+            d = str(s.log_file_dir)
+            s.write_csv_file(r.samples, name_template=nt, to_dir=d, timestamp=ts)
+            return r
+        for f in ("write csv file", "write to csv file", "write file", "write to file"):
+            fn = BuiltIns[f] = Functions[f"{f}"]
+            fn.register_immediate((Type.ESELOG_READING, Type.STRING, Type.TIMESTAMP), Type.ESELOG_READING, write_to_csv, curry_at=0)
+            fn.register_immediate((Type.ESELOG_READING, Type.STRING), Type.ESELOG_READING, write_to_csv, curry_at=0)
+            fn.register_immediate((Type.ESELOG_READING,), Type.ESELOG_READING, write_to_csv)
+            fn.register_immediate((Type.ESELOG_READING, Type.TIMESTAMP), Type.ESELOG_READING, 
+                                  lambda r,ts: write_to_csv(r, None, ts), 
+                                  curry_at=0)
+            
         
     @classmethod
     def setup_special_vars(cls) -> None:
@@ -3358,8 +3376,6 @@ class DMFCompiler(DMFVisitor):
             
         SpecialVars[name] = MonitorVariable[Optional[Drop]](name, Type.DROP.maybe, getter=get_clicked_drop)
         
-        
-        
         name = "missing"
         def get_none(env: Environment) -> None: # @UnusedVariable
             return None
@@ -3382,7 +3398,11 @@ class DMFCompiler(DMFVisitor):
         # def set_index_base(env: Environment, val: int) -> None:
         #     env.index_base = val
         # SpecialVars[name] = SpecialVariable(Type.INT, getter=get_index_base, setter=set_index_base,
-        #                                     allowed_vals=(0,1))    
+        #                                     allowed_vals=(0,1))
+
+        ct_var = SpecialVariable(Type.TIMESTAMP, getter=lambda _e: timestamp.time_now())    
+        SpecialVars["time now"] = ct_var
+        SpecialVars["current time"] = ct_var
         
     @classmethod
     def setup_attributes(cls) -> None:

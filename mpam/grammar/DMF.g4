@@ -449,6 +449,8 @@ multi_word_name returns[str val]
   | 'transfer' 'out' {$ctx.val="transfer out"}
   | 'prepare' 'to' 'dispense' {$ctx.val="prepare to dispense"}
   | 'take' ('a'? 'reading' | 'readings') {$ctx.val="take reading"}
+  | 'current' 'time' {$ctx.val="current time"}
+  | 'write' 'to'? 'csv'? 'file' {$ctx.val="write to csv file"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
@@ -467,6 +469,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'reading'
   | 'target'
   | 'first' | 'last' | 'value'
+  | 'current' | 'now'
   ;
 
 string : STRING ;
