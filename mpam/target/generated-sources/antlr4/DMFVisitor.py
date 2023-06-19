@@ -147,11 +147,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#paren_expr.
-    def visitParen_expr(self, ctx:DMFParser.Paren_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#neg_expr.
     def visitNeg_expr(self, ctx:DMFParser.Neg_exprContext):
         return self.visitChildren(ctx)
@@ -177,11 +172,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#type_name_expr.
-    def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#unit_expr.
     def visitUnit_expr(self, ctx:DMFParser.Unit_exprContext):
         return self.visitChildren(ctx)
@@ -189,11 +179,6 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#temperature_expr.
     def visitTemperature_expr(self, ctx:DMFParser.Temperature_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#index_expr.
-    def visitIndex_expr(self, ctx:DMFParser.Index_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -217,16 +202,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#name_assign_expr.
-    def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#string_lit_expr.
-    def visitString_lit_expr(self, ctx:DMFParser.String_lit_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#not_expr.
     def visitNot_expr(self, ctx:DMFParser.Not_exprContext):
         return self.visitChildren(ctx)
@@ -242,18 +217,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#magnitude_expr.
-    def visitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#prompt_expr.
     def visitPrompt_expr(self, ctx:DMFParser.Prompt_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#in_dir_expr.
-    def visitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -282,18 +247,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#muldiv_expr.
-    def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#bool_const_expr.
     def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#int_expr.
-    def visitInt_expr(self, ctx:DMFParser.Int_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -312,23 +267,8 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#turn_expr.
-    def visitTurn_expr(self, ctx:DMFParser.Turn_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#cond_expr.
-    def visitCond_expr(self, ctx:DMFParser.Cond_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#macro_expr.
     def visitMacro_expr(self, ctx:DMFParser.Macro_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#mw_name_expr.
-    def visitMw_name_expr(self, ctx:DMFParser.Mw_name_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -339,11 +279,6 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#addsub_expr.
     def visitAddsub_expr(self, ctx:DMFParser.Addsub_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#delta_expr.
-    def visitDelta_expr(self, ctx:DMFParser.Delta_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -372,6 +307,81 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#attr_expr.
+    def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#paren_expr.
+    def visitParen_expr(self, ctx:DMFParser.Paren_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#type_name_expr.
+    def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#index_expr.
+    def visitIndex_expr(self, ctx:DMFParser.Index_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#name_assign_expr.
+    def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#string_lit_expr.
+    def visitString_lit_expr(self, ctx:DMFParser.String_lit_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#magnitude_expr.
+    def visitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#in_dir_expr.
+    def visitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#muldiv_expr.
+    def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#int_expr.
+    def visitInt_expr(self, ctx:DMFParser.Int_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#turn_expr.
+    def visitTurn_expr(self, ctx:DMFParser.Turn_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#cond_expr.
+    def visitCond_expr(self, ctx:DMFParser.Cond_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#mw_name_expr.
+    def visitMw_name_expr(self, ctx:DMFParser.Mw_name_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#delta_expr.
+    def visitDelta_expr(self, ctx:DMFParser.Delta_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#sample_expr.
+    def visitSample_expr(self, ctx:DMFParser.Sample_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#unit_recip_expr.
     def visitUnit_recip_expr(self, ctx:DMFParser.Unit_recip_exprContext):
         return self.visitChildren(ctx)
@@ -379,11 +389,6 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#is_expr.
     def visitIs_expr(self, ctx:DMFParser.Is_exprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by DMFParser#attr_expr.
-    def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext):
         return self.visitChildren(ctx)
 
 
@@ -449,6 +454,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#not_maybe_type.
     def visitNot_maybe_type(self, ctx:DMFParser.Not_maybe_typeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#sample_type.
+    def visitSample_type(self, ctx:DMFParser.Sample_typeContext):
         return self.visitChildren(ctx)
 
 

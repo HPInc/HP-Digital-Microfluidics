@@ -18,7 +18,7 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
     Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc,\
-    SampleType
+    SampleType, SampleableType
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor
@@ -26,7 +26,7 @@ from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr,\
-    not_Missing
+    not_Missing, Sample
 from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from erk.stringutils import map_str, conj_str
@@ -1897,7 +1897,7 @@ class DMFCompiler(DMFVisitor):
     
     def visitPrint_expr(self, ctx:DMFParser.Print_exprContext) -> Executable:
         arg_text = (self.text_of(c) for c in ctx.vals)
-        def print_vals(*vals: Sequence[Any]) -> Delayed[BoundImmediateAction]:
+        def print_vals(*vals: Any) -> Delayed[BoundImmediateAction]:
             def do_print() -> None:
                 print(*vals)
             name = f"print({', '.join(arg_text)})"
@@ -1905,6 +1905,44 @@ class DMFCompiler(DMFVisitor):
         vals = tuple(self.visit(c) for c in ctx.vals)
         sig = Signature.of(tuple(v.return_type for v in vals), Type.ACTION)
         return self.use_callable(print_vals, vals, sig)
+    
+    def visitSample_expr(self, ctx:DMFParser.Sample_exprContext) -> Executable:
+        is_empty = ctx.empty is not None
+        
+        st: SampleType
+        vals: Sequence[Executable]
+        
+        if is_empty:
+            st = ctx.sample_type().type
+            vals = ()
+        else: 
+            vals = tuple(self.visit(c) for c in ctx.vals)
+            val_types = [e.return_type for e in vals]
+            exploded_types = [t.element_type if isinstance(t, SampleType) else t for t in val_types]
+            bounds = Type.upper_bounds(*exploded_types)
+            et = next((t for t in bounds if isinstance(t, SampleableType)), None)
+            if et is None:
+                return self.args_error(vals, ctx.vals, ctx, Type.NO_VALUE, 
+                                       verb = "create a sample from")
+            st = et.sample
+        
+        t = st.element_type
+        rt = rep_types[t]
+        if isinstance(rt, tuple):
+            rt = rt[0]
+        real_rt = rt
+        def make_sample(*vals: Any) -> Delayed[Sample]:
+            exploded: list[Any] = []
+            for v in vals:
+                if isinstance(v, Sample):
+                    exploded.extend(v.values)
+                else:
+                    exploded.append(v)
+            return Delayed.complete(Sample.for_type(real_rt, exploded))
+        sig = Signature.of(tuple(v.return_type for v in vals), st)
+        return self.use_callable(make_sample, vals, sig)
+            
+        ...
         
     # def visitPrint_stat(self, ctx:DMFParser.Print_statContext) -> Executable:
     #     return self.visit(ctx.printing())
@@ -2374,6 +2412,30 @@ class DMFCompiler(DMFVisitor):
         #         return e
         #     func = "#exists" if neg else "#does not exist" 
         #     return self.use_function(func, ctx, (ctx.obj,))
+        if pred_type is Type.BUILT_IN:
+            builtin: MissingOr[Func] = pred.const_val
+            if builtin is MISSING:
+                return self.error(ctx.what, Type.NO_VALUE, f"Internal error: {self.text_of(ctx.pred)} is a built-in, but no Func value")
+            bfn = builtin[(obj.return_type,)]
+            if bfn is None:
+                return self.error(ctx.pred, Type.BOOL,
+                                  f"Not a predicate for {obj.return_type}: {self.text_of(ctx.pred)}")
+            bsig,bdef = bfn
+            if bsig.return_type is not Type.BOOL:    
+                return self.error(ctx.pred, Type.BOOL,
+                                  f"Not a predicate for {obj.return_type}: {self.text_of(ctx.pred)}")
+            def apply_builtin(env: Environment) -> Delayed[MaybeError[bool]]:
+                def after_obj(obj: Any) -> Delayed[Any]:
+                    if isinstance(obj, EvaluationError):
+                        return Delayed.complete(obj)
+                    future: Delayed[MaybeError[bool]] = bdef(obj)
+                    if neg:
+                        future = future.transformed(lambda v: v if isinstance(v, EvaluationError) else not v)
+                    return future
+                first_arg_type = bsig.param_types[0]
+                return obj.evaluate(env, first_arg_type).chain(after_obj)
+            return Executable(Type.BOOL, apply_builtin, (obj, pred))
+            
         if (not isinstance(pred_type, CallableType)
             or len(pred_type.param_types) != 1
             or pred_type.return_type is not Type.BOOL):
@@ -3264,6 +3326,10 @@ class DMFCompiler(DMFVisitor):
         def empty_well(w: Well) -> Delayed[Liquid]:
             return w.empty_well()
         fn.register((Type.WELL,), Type.WELL, empty_well)
+        
+        for st in SampleType.all():
+            fn.register_immediate((st,), Type.BOOL, lambda s: s.count==0)
+        fn.register_immediate((Type.SENSOR_READING,), Type.BOOL, lambda s: s.count==0)
 
         fn = Functions["#prepare to dispense"]
         def prepare_to_dispense(w: Well, what: Optional[Union[Volume,Liquid,Reagent]] = None) -> None:
@@ -3323,6 +3389,12 @@ class DMFCompiler(DMFVisitor):
             fn.register_immediate((Type.ESELOG_READING, Type.TIMESTAMP), Type.ESELOG_READING, 
                                   lambda r,ts: write_to_csv(r, None, ts), 
                                   curry_at=0)
+
+        fn = BuiltIns["add"] = Functions["add"]
+        def add_to_sample(s: Sample, val: Any) -> Sample:
+            return s.add(val)
+        for st in SampleType.all():
+            fn.register_immediate((st, st.element_type), st, add_to_sample, curry_at=0)
             
         
     @classmethod
@@ -3560,6 +3632,7 @@ class DMFCompiler(DMFVisitor):
         Attributes["target"].register_setter(Type.SENSOR, Type.PAD.maybe, set_target)
         
         Attributes["timestamp"].register(Type.SENSOR_READING, Type.TIMESTAMP.sample, lambda r: r.timestamp)
+        Attributes["count"].register(Type.SENSOR_READING, Type.INT, lambda r: r.count)
         Attributes["ticket"].register(Type.ESELOG_READING, Type.INT.sample, lambda r: r.ticket)
         # Heaters grabbed 'temperature'. I should fix that at some point.
         Attributes["temperature"].register(Type.ESELOG_READING, Type.ABS_TEMP.sample, lambda r: r.temperature)

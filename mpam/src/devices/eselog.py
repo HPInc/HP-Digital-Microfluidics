@@ -6,7 +6,7 @@ from typing import Sequence, Optional, Final, Union, Callable, Any, TypeVar,\
 from quantities.dimensions import Voltage, Time, Frequency
 from quantities.timestamp import Timestamp, time_now, sleep_until
 from mpam.types import Delayed, OnOff, XYCoord, AsyncFunctionSerializer,\
-    Postable, IntSample, TemperaturePointSample, QuantitySample
+    Postable, IntSample, TemperaturePointSample, QuantitySample, Sample
 from enum import Enum, auto
 from erk.config import ConfigParam
 from os import PathLike
@@ -94,10 +94,10 @@ class ESELog(Sensor):
         
         def __init__(self, sensor: ESELog, samples: Sequence[ESELog.Sample]) -> None:
             super().__init__(sensor, samples)
-            self.ticket = IntSample([s.ticket for s in samples])
-            self.temperature = TemperaturePointSample([s.temperature for s in samples])
+            self.ticket = Sample.for_type(int, [s.ticket for s in samples])
+            self.temperature = Sample.for_type(TemperaturePoint, [s.temperature for s in samples])
             self._values = {
-                   (c,o): QuantitySample([s.value(c,o) for s in samples]) for c in ESELogChannel for o in OnOff
+                   (c,o): Sample.for_type(Voltage,[s.value(c,o) for s in samples]) for c in ESELogChannel for o in OnOff
                 }
             
         def value(self, channel: ESELogChannel, state: OnOff) -> QuantitySample[Voltage]:

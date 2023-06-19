@@ -127,6 +127,7 @@ expr
   | kind=numbered_type '#' which=expr # numbered_expr
 //  | 'well' '#' which=expr            # well_expr
 //  | 'heater' '#' which=expr			 # heater_expr
+  | 'an'? empty='empty' sample_type				# sample_expr
   | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
   | quant=expr 'as' 'a'? 'string' 'in' dim_unit # unit_string_expr
   | obj=expr ATTR attr existence?      # attr_expr
@@ -149,6 +150,9 @@ expr
   | obj=expr possession ('a' | 'an') attr # has_expr
   | obj=expr ('is' NOT? | ISNT) pred=expr     # is_expr
   | 'not' expr                       # not_expr
+  | 'a'? 'sample' 'containing' vals+=expr 'and' vals+=expr # sample_expr
+  | 'a'? 'sample' 'containing' vals+=expr (',' vals+=expr)*  # sample_expr
+  | 'a'? 'sample' 'containing' vals+=expr (',' vals+=expr)* ',' 'and' vals+=expr # sample_expr
   | lhs=expr 'and' rhs=expr          # and_expr
   | lhs=expr 'or' rhs=expr           # or_expr
   | direction dist=expr              # delta_expr
@@ -157,6 +161,8 @@ expr
   | ('pause' | 'wait') 'for'? duration=expr            # pause_expr
   | (('pause' | 'wait') 'for' 'user' | 'prompt') ( vals+= expr (',' vals+=expr)* )? # prompt_expr
   | 'print' vals+=expr (',' vals+=expr)* # print_expr
+//  | 'a'? 'sample' 'containing' vals+=expr (',' vals+=expr)* (','? 'and' vals+=expr)? # sample_expr
+//  | 'a'? 'sample' 'containing' vals+=expr (',' vals+=expr)* # sample_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr
@@ -263,8 +269,12 @@ value_type returns[Type type]
   ;
   
 not_maybe_type returns[Type type]
-  : sampleable_type 'sample' {$ctx.type=$sampleable_type.type.sample}
+  : sample_type {$ctx.type=$sample_type.type}
   | atomic_type {$ctx.type=$atomic_type.type}
+  ;
+
+sample_type returns [SampleType type]
+  : sampleable_type 'sample' {$ctx.type=$sampleable_type.type.sample}
   ;
 
 atomic_type returns[Type type]
@@ -328,6 +338,7 @@ dim_unit returns[PhysUnit unit]
   | ('tick' | 'ticks') {$ctx.unit=ticks}
   | ('drop' | 'drops') {$ctx.unit=EnvRelativeUnit.DROP}
   | ('V' | 'volt' | 'volts') {$ctx.unit=SI.volts}
+  | ('mV' | 'millivolt' | 'millivolts') {$ctx.unit=SI.millivolts}
   | ('Hz' | 'hz') {$ctx.unit=SI.hertz}
   ;
   
@@ -448,6 +459,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'std' | 'standard' | 'dev' | 'deviation'
   | 'log' | 'dir' | 'directory' | 'folder'
   | 'csv' | 'file' | 'name' | 'template'
+  | 'containing' | 'empty' | 'sample'
   ;
 
 string : STRING ;

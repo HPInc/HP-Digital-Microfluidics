@@ -23,7 +23,7 @@ from weakref import WeakKeyDictionary, finalize
 from matplotlib._color_data import XKCD_COLORS
 
 from erk.numutils import farey
-from quantities.core import CountDim, Quantity, D
+from quantities.core import CountDim, Quantity, D, qstr
 from quantities.dimensions import Molarity, MassConcentration, \
     VolumeConcentration, Volume, Time, Temperature
 from quantities.temperature import TemperaturePoint
@@ -4883,9 +4883,18 @@ class Sample(Generic[_ItemT, _DiffT, _ContT], ABC):
     
     is_empty: bool
     
-    def __init__(self, vals: Sequence[_ItemT]) -> None:
+    def __init__(self, item_type: type[_ItemT], vals: Sequence[_ItemT]) -> None:
         self._vals: Final[list[_ItemT]] = [*vals]
         self.is_empty = len(vals) == 0
+        self.item_type: Final = item_type
+        
+    def __str__(self) -> str:
+        tname = self.item_type.__name__
+        n = self.count
+        desc = ""
+        if not self.is_empty:
+            desc = f", mean = {self.mean}"
+        return f"Sample[{tname}]({qstr(n, 'value')}{desc})"
         
     @overload
     @classmethod
@@ -4910,15 +4919,15 @@ class Sample(Generic[_ItemT, _DiffT, _ContT], ABC):
     @classmethod # type: ignore[misc]
     def for_type(cls, item_type: type[_ItemT], items: Sequence[_ItemT] = ()) -> Sample:
         if issubclass(item_type, Quantity):
-            return QuantitySample(items)
+            return QuantitySample(item_type, items)
         elif issubclass(item_type, int):
-            return IntSample(items) # type: ignore[arg-type]
+            return IntSample(item_type, items) # type: ignore[arg-type]
         elif issubclass(item_type, float):
-            return FloatSample(items)  # type: ignore[arg-type]
+            return FloatSample(item_type, items)  # type: ignore[arg-type]
         elif issubclass(item_type, TemperaturePoint):
-            return TemperaturePointSample(items)  # type: ignore[arg-type]
+            return TemperaturePointSample(item_type, items)  # type: ignore[arg-type]
         elif issubclass(item_type, Timestamp):
-            return TimestampSample(items)  # type: ignore[arg-type]
+            return TimestampSample(item_type, items)  # type: ignore[arg-type]
         assert_never(item_type) # type: ignore
         
     @abstractmethod
@@ -4942,7 +4951,7 @@ class Sample(Generic[_ItemT, _DiffT, _ContT], ABC):
     
     def _invalidate_cached_properties(self) -> None:
         for p in self._cached_properies:
-            if hasattr(self, p):
+            if p in self.__dict__:
                 delattr(self, p)
                 
     def add(self, item: _ItemT) -> Sample[_ItemT, _DiffT, _ContT]:

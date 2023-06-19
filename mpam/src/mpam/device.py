@@ -29,7 +29,7 @@ from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     Callback, MixResult, State, CommunicationScheduler, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
     NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer, Missing, \
-    TimestampSample
+    TimestampSample, Sample
 from quantities.SI import volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -4876,10 +4876,14 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
         
         samples: Final[Sequence[Sensor.Sample]]
         
+        @property
+        def count(self) -> int:
+            return self.timestamp.count
+        
         def __init__(self, sensor: Sensor, samples: Sequence[Sensor.Sample]) -> None:
             self.sensor = sensor
             self.samples = samples
-            self.timestamp = TimestampSample([s.timestamp for s in samples])
+            self.timestamp = Sample.for_type(Timestamp,[s.timestamp for s in samples])
         
     csv_file_template: str = "reading-%Y-%m-%d_%H_%M_%S.%f.csv"
     
