@@ -41,4 +41,4 @@ jobs:
           --disallow-untyped-defs
           --no-implicit-optional
           --exclude mpam.tools.deprecated
-          mpam/{src,tools,dev-tools}
+          mpam/{src,tools,dev-tools,stubs}
