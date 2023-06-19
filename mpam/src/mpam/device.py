@@ -4889,10 +4889,16 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
     def log_file_dir(self) -> PathLike:
         return self._log_file_dir
     @log_file_dir.setter
-    def log_file_dir(self, val: Union[str, PathLike]) -> None:
-        if isinstance(val, str):
-            val = Path(val)
+    def log_file_dir(self, val: PathLike) -> None:
         self._log_file_dir = val
+    @property
+    def log_file_dir_name(self) -> str:
+        return str(self._log_file_dir)
+    @log_file_dir_name.setter
+    def log_file_dir_name(self, val: str) -> None:
+        self.log_file_dir = Path(val)
+        
+        
     name: Final[str]
     aiming_laser: Final[Optional[Laser]]
     target: Optional[Pad]
@@ -4917,8 +4923,9 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
         if sample_interval is not None:
             self._sample_interval = Time.rate_from(sample_interval)
         if log_file_dir is not None:
-            # This actually works.  MyPy doesn't like it.
-            self.log_file_dir = log_file_dir    # type: ignore[assignment]
+            if isinstance(log_file_dir, str):
+                log_file_dir = Path(log_file_dir)
+            self.log_file_dir = log_file_dir    
         if csv_file_template is not None:
             self.csv_file_template = csv_file_template
         

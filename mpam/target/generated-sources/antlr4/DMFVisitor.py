@@ -502,11 +502,6 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by DMFParser#old_attr.
-    def visitOld_attr(self, ctx:DMFParser.Old_attrContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by DMFParser#rel.
     def visitRel(self, ctx:DMFParser.RelContext):
         return self.visitChildren(ctx)
@@ -534,6 +529,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#string.
     def visitString(self, ctx:DMFParser.StringContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#old_attr.
+    def visitOld_attr(self, ctx:DMFParser.Old_attrContext):
         return self.visitChildren(ctx)
 
 

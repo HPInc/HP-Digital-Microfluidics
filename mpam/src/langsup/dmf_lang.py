@@ -3543,6 +3543,20 @@ class DMFCompiler(DMFVisitor):
         def set_target(s: Sensor, p: Optional[Pad]) -> None:
             s.target = p
         Attributes["target"].register(Type.SENSOR, Type.PAD.maybe, lambda s: s.target)
+        
+        def set_log_dir(s: Sensor, d: str) -> None:
+            s.log_file_dir_name = d
+        for a in (f"log {b}" for b in ("dir", "directory", "folder")):
+            Attributes[a].register(Type.SENSOR, Type.STRING, lambda s: s.log_file_dir)
+            Attributes[a].register_setter(Type.SENSOR, Type.STRING, set_log_dir)
+        def set_csv_file_template(s: Sensor, t: str) -> None:
+            s.csv_file_template = t
+        for a in (f"{a} {b}" for a,b in product(("file", "csv file"), ("name", "template"))):
+            Attributes[a].register(Type.SENSOR, Type.STRING, lambda s: s.csv_file_template)
+            Attributes[a].register_setter(Type.SENSOR, Type.STRING, set_csv_file_template)
+        
+        
+        
         Attributes["target"].register_setter(Type.SENSOR, Type.PAD.maybe, set_target)
         
         Attributes["timestamp"].register(Type.SENSOR_READING, Type.TIMESTAMP.sample, lambda r: r.timestamp)
