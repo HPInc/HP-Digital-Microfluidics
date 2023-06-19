@@ -375,6 +375,8 @@ attr
   | min_max 'value'?
   | ('arithmetic'? | 'harmonic' | 'geometric') 'mean'
   | ('std' | 'standard') ('dev' | 'deviation')
+  | 'log' ('dir' | 'directory' | 'folder')
+  | 'csv'? 'file' ('name' | 'template')
   | kwd_names
   | 'drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
   	   | 'fan' | 'capacity' | 'eselog' | 'timestamp' | 'temperature' |'temp' | 'gate'
@@ -384,36 +386,6 @@ attr
   | ID
   ;
 
-old_attr returns[str which]
-  : 'exit' 'pad' {$ctx.which="#exit_pad"}
-  | 'y' ('coord' | 'coordinate') {$ctx.which="#y_coord"}
-  | 'x' ('coord' | 'coordinate') {$ctx.which="#x_coord"}
-  | 'exit' ('dir' | 'direction') {$ctx.which="#exit_dir"}
-  | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
-  | 'fill' 'level' {$ctx.which="#fill_level"}
-  | 'refill' 'level' {$ctx.which="#refill_level"}
-  | 'target' ('temp' | 'temperature') {$ctx.which="#target_temperature"}
-  | 'current' ('temp' | 'temperature') {$ctx.which="#current_temperature"}
-  | 'power' 'supply' {$ctx.which="#power_supply"}
-  | ('min' | 'minimum') 'voltage' {$ctx.which="#min_voltage"}
-  | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
-  | ('min' | 'minimum') ('target' | 'temperature' | 'temp') {$ctx.which="#min_target"}
-  | ('max' | 'maximum') ('target' | 'temperature' | 'temp') {$ctx.which="#max_target"}
-  | 'power' 'mode' {$ctx.which="#power_mode"}
-  | 'heating' 'zone' {$ctx.which="#heating_zone"}
-  | 'n' 'samples' {$ctx.which="#n_samples"}
-  | ('sampling' | 'sample') 'rate' {$ctx.which="#sample_rate"}
-  | ('sampling' | 'sample') 'interval' {$ctx.which="#sample_interval"}
-  | 'first' 'value' {$ctx.which="#first_value"}
-  | 'last' 'value' {$ctx.which="#last_value"}
-  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
-  	   | 'fan' | 'capacity' | 'eselog' | 'target' | 'timestamp' | 'temperature' |'temp' | 'gate'
-  	   | 'dir' | 'direction' | 'row' | 'col' | 'column' | 'voltage' | 'mode'
-  	   | 'first' | 'last' | 'value'
-  	   | ID
-  )
-  	{$ctx.which=$n.text}
-  ;
   
 rel returns[Rel which]
   : '==' {$ctx.which=Rel.EQ}
@@ -463,17 +435,54 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'missing' | 'last' | 'clicked' 
   | 'port' | 'transfer' | 'in' | 'out'
   | 'heating' | 'zone' | 'zones'
-  | 'fill' | 'refil' | 'level'
+  | 'fill' | 'refill' | 'level'
   | 'prepare' | 'to' | 'dispense'
   | 'samples' | 'sampling' | 'rate' | 'interval'
   | 'reading'
   | 'target'
   | 'first' | 'last' | 'value'
   | 'current' | 'now'
+  | 'exit' | 'coord' | 'coordinate' 
+  | 'mode' | min_max
+  | 'arithmetic' | 'harmonic' | 'geometric' | 'mean'
+  | 'std' | 'standard' | 'dev' | 'deviation'
+  | 'log' | 'dir' | 'directory' | 'folder'
+  | 'csv' | 'file' | 'name' | 'template'
   ;
 
 string : STRING ;
   
+old_attr returns[str which]
+  : 'exit' 'pad' {$ctx.which="#exit_pad"}
+  | 'y' ('coord' | 'coordinate') {$ctx.which="#y_coord"}
+  | 'x' ('coord' | 'coordinate') {$ctx.which="#x_coord"}
+  | 'exit' ('dir' | 'direction') {$ctx.which="#exit_dir"}
+  | 'remaining' 'capacity' {$ctx.which="#remaining_capacity"}
+  | 'fill' 'level' {$ctx.which="#fill_level"}
+  | 'refill' 'level' {$ctx.which="#refill_level"}
+  | 'target' ('temp' | 'temperature') {$ctx.which="#target_temperature"}
+  | 'current' ('temp' | 'temperature') {$ctx.which="#current_temperature"}
+  | 'power' 'supply' {$ctx.which="#power_supply"}
+  | ('min' | 'minimum') 'voltage' {$ctx.which="#min_voltage"}
+  | ('max' | 'maximum') 'voltage' {$ctx.which="#max_voltage"}
+  | ('min' | 'minimum') ('target' | 'temperature' | 'temp') {$ctx.which="#min_target"}
+  | ('max' | 'maximum') ('target' | 'temperature' | 'temp') {$ctx.which="#max_target"}
+  | 'power' 'mode' {$ctx.which="#power_mode"}
+  | 'heating' 'zone' {$ctx.which="#heating_zone"}
+  | 'n' 'samples' {$ctx.which="#n_samples"}
+  | ('sampling' | 'sample') 'rate' {$ctx.which="#sample_rate"}
+  | ('sampling' | 'sample') 'interval' {$ctx.which="#sample_interval"}
+  | 'first' 'value' {$ctx.which="#first_value"}
+  | 'last' 'value' {$ctx.which="#last_value"}
+  | n=('drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
+  	   | 'fan' | 'capacity' | 'eselog' | 'target' | 'timestamp' | 'temperature' |'temp' | 'gate'
+  	   | 'dir' | 'direction' | 'row' | 'col' | 'column' | 'voltage' | 'mode'
+  	   | 'first' | 'last' | 'value'
+  	   | ID
+  )
+  	{$ctx.which=$n.text}
+  ;
+
 ADD: '+';
 ASSIGN: '=';
 ATTR: '\'s' | '.';

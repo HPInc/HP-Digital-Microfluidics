@@ -889,15 +889,6 @@ class DMFListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by DMFParser#old_attr.
-    def enterOld_attr(self, ctx:DMFParser.Old_attrContext):
-        pass
-
-    # Exit a parse tree produced by DMFParser#old_attr.
-    def exitOld_attr(self, ctx:DMFParser.Old_attrContext):
-        pass
-
-
     # Enter a parse tree produced by DMFParser#rel.
     def enterRel(self, ctx:DMFParser.RelContext):
         pass
@@ -949,6 +940,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#string.
     def exitString(self, ctx:DMFParser.StringContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#old_attr.
+    def enterOld_attr(self, ctx:DMFParser.Old_attrContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#old_attr.
+    def exitOld_attr(self, ctx:DMFParser.Old_attrContext):
         pass
 
 
