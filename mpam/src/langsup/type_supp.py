@@ -5,7 +5,7 @@ from enum import Enum, auto
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
     Any, Mapping, Union, NoReturn, TypeVar, Generic
 
-from mpam.types import Delayed
+from mpam.types import Delayed, MissingOr, MISSING
 from _collections import defaultdict
 from quantities.core import Unit, qstr
 import typing
@@ -240,12 +240,17 @@ class Type:
         other_reps = other.rep_types
         return all(issubclass(r, other_reps) for r in self.rep_types)
     
-    def _find_conversion_to(self, other: Type) -> _Converter:
+    _in_progress_conversion_searches = set[tuple['Type','Type']]()
+    
+    # We _find_conversion_to() returns MISSING if we're already searching for this conversion.
+    def _find_conversion_to(self, other: Type) -> MissingOr[_Converter]:
         # Called with _class_lock locked
         if self is other or other is Type.NO_VALUE:
             return SpecialValueConverter.IDENTITY
         if other is Type.ANY and self is not Type.NO_VALUE:
             return SpecialValueConverter.IDENTITY
+        if (self, other) in Type._in_progress_conversion_searches:
+            return MISSING
         # if other is Type.NONE:
         #    return to_const(None)
         if isinstance(other, MaybeType):
@@ -255,7 +260,7 @@ class Type:
                 return self._conversion_to(other.if_there_type)
             # Both sides are maybes
             conv = self.if_there_type._conversion_to(other.if_there_type)
-            if conv is SpecialValueConverter.NO_CONVERSION or conv is SpecialValueConverter.IDENTITY:
+            if conv is SpecialValueConverter.NO_CONVERSION or conv is SpecialValueConverter.IDENTITY or conv is MISSING:
                 return conv
             fn = conv
             return lambda v: None if v is None else fn(v)
@@ -288,9 +293,12 @@ class Type:
             # First, we check to see whether we can do the conversion through this type.
             
             to_middle = self._conversion_to(middle)
-            if to_middle is SpecialValueConverter.NO_CONVERSION:
+            if to_middle is SpecialValueConverter.NO_CONVERSION or to_middle is MISSING:
                 return
-            c = compose(to_middle, middle._conversion_to(other))
+            from_middle = middle._conversion_to(other)
+            if from_middle is MISSING:
+                return
+            c = compose(to_middle, from_middle)
             if c is SpecialValueConverter.NO_CONVERSION:
                 return
             # It's possible.  Now we iterate through the current middles
@@ -314,8 +322,15 @@ class Type:
             middles[middle] = c
             
         candidates = {*self._conversions.keys(), *self.direct_supers}
-        for c in candidates:
-            check_and_add(c)
+        
+        # When checking, we need to make sure there are no loops.
+        p = (self, other)
+        try:
+            Type._in_progress_conversion_searches.add(p)
+            for c in candidates:
+                check_and_add(c)
+        finally:
+            Type._in_progress_conversion_searches.remove(p)        
             
         if middles:
             # At this point, middles contains all of the best ways to get to
@@ -345,13 +360,18 @@ class Type:
         return SpecialValueConverter.NO_CONVERSION
           
     
-    def _conversion_to(self, other: Type) -> _Converter:
+    def _conversion_to(self, other: Type) -> MissingOr[_Converter]:
         # Called with _class_lock locked
         vc = self._conversions.get(other, None)
+        if self is other:
+            return SpecialValueConverter.IDENTITY
 
         if vc is None:
             # logger.info(f"--> Looking for conversion from {self} to {other}")
-            vc = self._find_conversion_to(other)
+            maybe_vc = self._find_conversion_to(other)
+            if maybe_vc is MISSING:
+                return MISSING
+            vc = maybe_vc
             # desc = ("ident" if vc is SpecialValueConverter.IDENTITY
             #         else "none" if vc is SpecialValueConverter.NO_CONVERSION
             #         else "complex")
@@ -363,6 +383,7 @@ class Type:
         # Nobody gets to change add converters or reps while we're looking
         with self._class_lock:
             vc = self._conversion_to(other)
+            assert vc is not MISSING
             if vc is SpecialValueConverter.IDENTITY:
                 return lambda v: v
             if vc is SpecialValueConverter.NO_CONVERSION:
@@ -579,7 +600,7 @@ class MaybeType(Type):
     def __repr__(self) -> str:
         return f"Maybe({self.if_there_type})"
     
-    def _find_conversion_to(self, other: Type) -> _Converter:
+    def _find_conversion_to(self, other: Type) -> MissingOr[_Converter]:
         conv = super()._find_conversion_to(other)
         if conv is not SpecialValueConverter.NO_CONVERSION:
             return conv
@@ -588,8 +609,8 @@ class MaybeType(Type):
             raise ConversionError(self, other, None)
         if if_there_conv is SpecialValueConverter.IDENTITY:
             return lambda v : raise_on_none() if v is None else v
-        elif if_there_conv is SpecialValueConverter.NO_CONVERSION:
-            return SpecialValueConverter.NO_CONVERSION
+        elif if_there_conv is SpecialValueConverter.NO_CONVERSION or if_there_conv is MISSING:
+            return if_there_conv
         else:
             fn = if_there_conv
             return lambda v : raise_on_none() if v is None else fn(v)
@@ -710,8 +731,8 @@ class Signature:
             and all(cv is SpecialValueConverter.IDENTITY for cv in cv_params)):
             return SpecialValueConverter.IDENTITY
         # At least something has to convert.
-        def converter(cv: _Converter) -> ValueConverter:
-            assert cv is not SpecialValueConverter.NO_CONVERSION
+        def converter(cv: MissingOr[_Converter]) -> ValueConverter:
+            assert cv is not SpecialValueConverter.NO_CONVERSION and cv is not MISSING
             return (lambda v: v) if cv is SpecialValueConverter.IDENTITY else cv
         param_converters = tuple(converter(cv) for cv in cv_params)
         result_converter = converter(cv_return)
@@ -846,7 +867,7 @@ class CallableType(Type):
             cls.instances[sig] = ct
         return ct
     
-    def _find_conversion_to(self, other: Type) -> _Converter:
+    def _find_conversion_to(self, other: Type) -> MissingOr[_Converter]:
         # If we can find a conversion by normal means, we use it
         cv = super()._find_conversion_to(other)
         if cv is SpecialValueConverter.NO_CONVERSION:
