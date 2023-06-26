@@ -6,7 +6,7 @@ from typing import Mapping, Final, Optional, Sequence
 from serial import Serial
 
 from devices import joey
-from mpam.types import OnOff, State, DummyState, XYCoord
+from mpam.types import OnOff, State, DummyState
 from erk.basic import ComputedDefaultDict, assert_never
 import logging
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser, BoardKwdArgs
@@ -100,29 +100,6 @@ _opendrop: Mapping[int, tuple[int,int]] = {
     241: (16, 5), 242: (16, 6), 243: (16, 7), 244: (16, 8),
 }
 
-v1_shared_pad_cells: Mapping[tuple[str,int], str] = {
-    ('left', 1): 'BC27', ('left', 2): 'B27', ('left', 3): 'AB27', 
-    ('left', 4): 'C28', ('left', 5): 'B28', ('left', 6): 'A28',
-    ('left', 7): 'B29', ('left', 8): 'B30', ('left', 9): 'B31',
-    ('right', 1): 'BC05', ('right', 2): 'B05', ('right', 3): 'AB05', 
-    ('right', 4): 'C04', ('right', 5): 'B04', ('right', 6): 'A04',
-    ('right', 7): 'B03', ('right', 8): 'B02', ('right', 9): 'B01',
-    }
-v1_5_shared_pad_cells: Mapping[tuple[str,int], str] = {
-    ('left', 1): 'B27', ('left', 2): 'B28', ('left', 3): 'B29', 
-    ('left', 4): 'B30', ('left', 5): 'B31', ('left', 6): 'A32',
-    ('right', 1): 'B05', ('right', 2): 'B04', ('right', 3): 'B03', 
-    ('right', 4): 'B02', ('right', 5): 'B01', ('right', 6): 'B00',
-    }
-
-_shared_pad_cells: Mapping[JoeyLayout, Mapping[tuple[str,int], str]] = {
-    JoeyLayout.V1: v1_shared_pad_cells,
-    JoeyLayout.V1_5: v1_5_shared_pad_cells
-} 
-_well_gate_cells: Mapping[XYCoord, str] = {
-    XYCoord(1,19): 'T26', XYCoord(1,13): 'N26', XYCoord(1,7): 'H26', XYCoord(1,1): 'B26',
-    XYCoord(19,19): 'T06', XYCoord(19,13): 'N06', XYCoord(19,7): 'H06', XYCoord(19,1): 'B06'
-    }
 
 class OpenDropVersion(Enum):
     V40 = auto()
@@ -200,7 +177,7 @@ class Board(joey.Board):
         return self._electrodes[pin]
     
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
-        cell = _shared_pad_cells[self._layout].get((group_name, num))  
+        cell = self.shared_pad_cell(group_name, num)
         # print(f"-- shared: {group_name} {num} -- {cell}")
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
 
@@ -209,14 +186,14 @@ class Board(joey.Board):
             row = exit_pad.row
             if row > 10:
                 exit_pad = self.pad_at(exit_pad.column, row-12)
-        cell = _well_gate_cells.get(exit_pad.location, None)
+        cell = self.well_gate_cell(exit_pad)
         # print(f"-- gate: {well} -- {cell}")
         return self._electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
     def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]:
         if self.is_yaminon and y >= 13:
             y = y-12
-        cell = f"{ord('B')+y-1:c}{26-x:02d}"
+        cell = self.pad_cell(x, y)
         # print(f"({x}, {y}): {cell}")
         return self._electrode(cell)
     

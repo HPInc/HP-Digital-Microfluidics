@@ -53,7 +53,7 @@ class Board():
         Enable high voltage
         """
     @staticmethod
-    def Find(boardID: BoardId, *, dll_dir: typing.Optional[os.PathLike] = None, config_dir: typing.Optional[os.PathLike] = None) -> Board: 
+    def Find(boardID: BoardId, *, board_rev: float, dll_dir: typing.Optional[os.PathLike] = None, config_dir: typing.Optional[os.PathLike] = None) -> Board: 
         """
         Find a board of the given type.
         """
@@ -93,6 +93,10 @@ class Board():
         """
         Gets a list containing each sensor object
         """
+    def GetSupportedBoardRevisions(self) -> typing.List[float]: 
+        """
+        Gets a vector of supported board revisions
+        """
     def HeaterNamed(self, name: str) -> typing.Optional[Heater]: 
         """
         Find the heater (if any) with the given name
@@ -116,6 +120,10 @@ class Board():
     def SetHighVoltage(self, volts: float) -> typing.Optional[ErrorCode]: 
         """
         Set the high voltage as a number of volts
+        """
+    def Status(self) -> typing.Optional[ErrorCode]: 
+        """
+        Returns the of board after initialization
         """
     def test(self) -> str: ...
     pass
@@ -258,6 +266,8 @@ class Sensor():
 
         Members:
 
+          Unknown
+
           Raw
 
           Millivolts
@@ -283,7 +293,8 @@ class Sensor():
             """
         Millivolts: pyglider.Sensor.ResultType # value = <ResultType.Millivolts: 2>
         Raw: pyglider.Sensor.ResultType # value = <ResultType.Raw: 1>
-        __members__: dict # value = {'Raw': <ResultType.Raw: 1>, 'Millivolts': <ResultType.Millivolts: 2>}
+        Unknown: pyglider.Sensor.ResultType # value = <ResultType.Unknown: 0>
+        __members__: dict # value = {'Unknown': <ResultType.Unknown: 0>, 'Raw': <ResultType.Raw: 1>, 'Millivolts': <ResultType.Millivolts: 2>}
         pass
     class SensorResult():
         pass

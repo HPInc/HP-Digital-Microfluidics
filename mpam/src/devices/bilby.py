@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import pyglider
-from typing import Mapping, Final, Optional, Sequence, Callable, Union
+from typing import Final, Optional, Sequence, Callable, Union
 
 from devices import joey, glider_client, bilby_task, eselog
 from devices.glider_client import GliderClient
-from mpam.types import OnOff, State, DummyState, Delayed, XYCoord,\
+from mpam.types import OnOff, State, DummyState, Delayed, \
     AsyncFunctionSerializer, Postable
 from mpam import device
 from mpam.device import Pad, Magnet, Well
@@ -13,7 +13,7 @@ from quantities.dimensions import Voltage, Frequency, Time
 from quantities.temperature import TemperaturePoint, abs_C
 import logging
 from erk.errors import ErrorHandler, PRINT
-from devices.joey import HeaterType
+from devices.joey import HeaterType, JoeyLayout
 from erk.basic import assert_never, not_None
 from devices.eselog import ESELog, ESELogChannel, EmulatedESELog
 from quantities.SI import mV
@@ -29,19 +29,6 @@ class Config:
     
     setup_defaults = bilby_task.Config.setup_defaults
 
-_shared_pad_cells: Mapping[tuple[str,int], str] = {
-    ('left', 1): 'BC27', ('left', 2): 'B27', ('left', 3): 'AB27', 
-    ('left', 4): 'C28', ('left', 5): 'B28', ('left', 6): 'A28',
-    ('left', 7): 'B29', ('left', 8): 'B30', ('left', 9): 'B31',
-    ('right', 1): 'BC05', ('right', 2): 'B05', ('right', 3): 'AB05', 
-    ('right', 4): 'C04', ('right', 5): 'B04', ('right', 6): 'A04',
-    ('right', 7): 'B03', ('right', 8): 'B02', ('right', 9): 'B01',
-    }
-
-_well_gate_cells: Mapping[XYCoord, str] = {
-    XYCoord(1,19): 'T26', XYCoord(1,13): 'N26', XYCoord(1,7): 'H26', XYCoord(1,1): 'B26',
-    XYCoord(19,19): 'T06', XYCoord(19,13): 'N06', XYCoord(19,7): 'H06', XYCoord(19,1): 'B06'
-    }
     
 
 class Heater(device.Heater):
@@ -201,7 +188,7 @@ class Board(joey.Board):
     _device: Final[GliderClient]
     
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
-        cell = _shared_pad_cells.get((group_name, num))  
+        cell = self.shared_pad_cell(group_name, num)  
         # print(f"-- shared: {group_name} {num} -- {cell}")
         # state = self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
         state = self._device.electrode(cell)
@@ -209,12 +196,12 @@ class Board(joey.Board):
         return state
 
     def _well_gate_state(self, exit_pad: Pad) -> State[OnOff]:
-        cell = _well_gate_cells.get(exit_pad.location, None)
+        cell = self.well_gate_cell(exit_pad)
         # print(f"-- gate: {well} -- {cell}")
         return self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
     def _pad_state(self, x: int, y: int) -> Optional[glider_client.Electrode]:
-        cell = f"{ord('B')+y-1:c}{26-x:02d}"
+        cell = self.pad_cell(x, y)
         # print(f"({x}, {y}): {cell}")
         return self._device.electrode(cell)
     
@@ -299,8 +286,18 @@ class Board(joey.Board):
         
         dll_dir = Config.dll_dir()
         config_dir = Config.config_dir()
+        
+        revision: float
+        layout = joey.Config.layout()
+        if layout is JoeyLayout.V1:
+            revision = 1.0
+        elif layout is JoeyLayout.V1_5:
+            revision = 1.5
+        else:
+            assert_never(layout)
             
-        self._device = GliderClient(pyglider.BoardId.Wallaby, dll_dir=dll_dir, config_dir=config_dir)
+        self._device = GliderClient(pyglider.BoardId.Wallaby, revision=revision, 
+                                    dll_dir=dll_dir, config_dir=config_dir)
         
         current_voltage = self._device.voltage_level
         if current_voltage is None:

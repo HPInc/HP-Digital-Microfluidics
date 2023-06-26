@@ -200,13 +200,15 @@ class GliderClient:
         return None
     
     def __init__(self, board_type: pyglider.BoardId, *,
+                 revision: float,
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None) -> None:
         if config_dir is None:
             config_dir = pathlib.Path.cwd()
         dll_dir = _to_path(dll_dir)
         config_dir = _to_path(config_dir)
-        self.remote = pyglider.Board.Find(board_type, 
+        self.remote = pyglider.Board.Find(board_type,
+                                          board_rev=revision, 
                                           dll_dir=dll_dir,
                                           config_dir=config_dir)
         # self.remote_electrodes = { e.GetName(): e for e in b.GetElectrodes()}
@@ -214,6 +216,7 @@ class GliderClient:
         # self.electrodes = { k: Electrode(k, v) for k,v in self.remote_electrodes.items()}
         assert self.remote is not None, f"""
         Couldn't instantiate Glider client.  
+        Board type is {board_type} revision {revision}
         DLL dir is {"<search>" if dll_dir is None else dll_dir}
         config_dir is {config_dir}
         """
@@ -302,6 +305,7 @@ class Sensor:
         self._remote = remote
         
     def aim(self, state: OnOff) -> None:
+        logger.info(f"*** calling Aim({state is OnOff.ON})")
         self._remote.Aim(state is OnOff.ON)
         
     def request_samples(self, num_samples: Optional[int] = None) -> Time:

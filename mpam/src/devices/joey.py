@@ -3,7 +3,7 @@ from __future__ import annotations
 from argparse import Namespace, ArgumentParser, _ArgumentGroup,\
     BooleanOptionalAction
 from enum import Enum, auto
-from typing import Optional, Sequence, Final, Union
+from typing import Optional, Sequence, Final, Union, Mapping
 
 from devices.emulated_heater import EmulatedHeater, EmulatedChiller
 from erk.basic import assert_never
@@ -172,11 +172,44 @@ class ExtractionPoint(device.ExtractionPoint):
         return self._pipettor
     
     
+v1_shared_pad_cells: Mapping[tuple[str,int], str] = {
+    ('left', 1): 'BC27', ('left', 2): 'B27', ('left', 3): 'AB27', 
+    ('left', 4): 'C28', ('left', 5): 'B28', ('left', 6): 'A28',
+    ('left', 7): 'B29', ('left', 8): 'B30', ('left', 9): 'B31',
+    ('right', 1): 'BC05', ('right', 2): 'B05', ('right', 3): 'AB05', 
+    ('right', 4): 'C04', ('right', 5): 'B04', ('right', 6): 'A04',
+    ('right', 7): 'B03', ('right', 8): 'B02', ('right', 9): 'B01',
+    }
+v1_5_shared_pad_cells: Mapping[tuple[str,int], str] = {
+    ('left', 1): 'B27', ('left', 2): 'B28', ('left', 3): 'B29', 
+    ('left', 4): 'B30', ('left', 5): 'B31', ('left', 6): 'B32',
+    ('right', 1): 'B05', ('right', 2): 'B04', ('right', 3): 'B03', 
+    ('right', 4): 'B02', ('right', 5): 'B01', ('right', 6): 'B00',
+    }
+
+    
+    
 class Board(device.Board):
     thermocycler: Final[Thermocycler]
     _layout: Final[JoeyLayout]
     _lid: Final[LidType]
     
+    _shared_pad_cells: Final[Mapping[JoeyLayout, Mapping[tuple[str,int], str]]] = {
+        JoeyLayout.V1: v1_shared_pad_cells,
+        JoeyLayout.V1_5: v1_5_shared_pad_cells
+        } 
+    _well_gate_cells: Final[Mapping[XYCoord, str]] = {
+        XYCoord(1,19): 'T26', XYCoord(1,13): 'N26', XYCoord(1,7): 'H26', XYCoord(1,1): 'B26',
+        XYCoord(19,19): 'T06', XYCoord(19,13): 'N06', XYCoord(19,7): 'H06', XYCoord(19,1): 'B06'
+        }
+    
+    def pad_cell(self, x: int, y: int) -> str:
+        return f"{ord('B')+y-1:c}{26-x:02d}"
+    def shared_pad_cell(self, side: str, n: int) -> Optional[str]:
+        return self._shared_pad_cells[self._layout].get((side, n))
+    def well_gate_cell(self, exit_pad: Pad) -> Optional[str]:
+        return self._well_gate_cells.get(exit_pad.location)
+
     @cached_property
     def power_supply(self) -> PowerSupply:
         return self.find_one(PowerSupply,
@@ -500,20 +533,23 @@ class Board(device.Board):
             return tc_channel(row, right_thresholds,
                               Dir.LEFT, step_dir)
 
-
-        tc_channels = (
-                left_tc_channel(19, Dir.DOWN), left_tc_channel(17, Dir.UP),
-                left_tc_channel(15, Dir.DOWN), left_tc_channel(13, Dir.UP),
-                left_tc_channel(7, Dir.DOWN), left_tc_channel(5, Dir.UP),
-                left_tc_channel(3, Dir.DOWN), left_tc_channel(1, Dir.UP),
-                right_tc_channel(19, Dir.DOWN), right_tc_channel(17, Dir.UP),
-                right_tc_channel(15, Dir.DOWN), right_tc_channel(13, Dir.UP),
-                right_tc_channel(7, Dir.DOWN), right_tc_channel(5, Dir.UP),
-                right_tc_channel(3, Dir.DOWN), right_tc_channel(1, Dir.UP),
-            )
-        self.thermocycler = Thermocycler(
-            # heaters = self.temperature_controls,
-            channels = tc_channels)
+        # This isn't quite right.  At the moment (6/26/23), Joey 1.5 on Bilby
+        # doesn't have any heaters.  I should actually figure out where there
+        # are reasonable channels dynamically.
+        if self.find_all(Heater):
+            tc_channels = (
+                    left_tc_channel(19, Dir.DOWN), left_tc_channel(17, Dir.UP),
+                    left_tc_channel(15, Dir.DOWN), left_tc_channel(13, Dir.UP),
+                    left_tc_channel(7, Dir.DOWN), left_tc_channel(5, Dir.UP),
+                    left_tc_channel(3, Dir.DOWN), left_tc_channel(1, Dir.UP),
+                    right_tc_channel(19, Dir.DOWN), right_tc_channel(17, Dir.UP),
+                    right_tc_channel(15, Dir.DOWN), right_tc_channel(13, Dir.UP),
+                    right_tc_channel(7, Dir.DOWN), right_tc_channel(5, Dir.UP),
+                    right_tc_channel(3, Dir.DOWN), right_tc_channel(1, Dir.UP),
+                )
+            self.thermocycler = Thermocycler(
+                # heaters = self.temperature_controls,
+                channels = tc_channels)
 
 
     def update_state(self) -> None:
