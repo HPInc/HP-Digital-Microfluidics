@@ -6,7 +6,7 @@ from typing import Final, Optional, Sequence, Callable, Union
 from devices import joey, glider_client, bilby_task, eselog
 from devices.glider_client import GliderClient
 from mpam.types import OnOff, State, DummyState, Delayed, \
-    AsyncFunctionSerializer, Postable
+    AsyncFunctionSerializer, Postable, Dir
 from mpam import device
 from mpam.device import Pad, Magnet, Well
 from quantities.dimensions import Voltage, Frequency, Time
@@ -200,7 +200,7 @@ class Board(joey.Board):
         # print(f"-- gate: {well} -- {cell}")
         return self._device.electrode(cell) or DummyState(initial_state=OnOff.OFF)
     
-    def _pad_state(self, x: int, y: int) -> Optional[glider_client.Electrode]:
+    def _pad_state(self, x: int, y: int) -> Optional[State[OnOff]]:
         cell = self.pad_cell(x, y)
         # print(f"({x}, {y}): {cell}")
         return self._device.electrode(cell)
@@ -208,7 +208,7 @@ class Board(joey.Board):
     def _pads_matching(self, name: str, fn: Callable[[glider_client.Electrode], Sequence[str]]) -> list[Pad]:
         pads: list[Pad] = []
         for pad in self.pads.values():
-            state = pad.state
+            state = self._pad_state(pad.column, pad.row)
             if state is not None:
                 assert isinstance(state, glider_client.Electrode), f"{state} is not an Electrode"
                 if name in fn(state):
@@ -218,14 +218,14 @@ class Board(joey.Board):
     def _wells_matching(self, name: str, fn: Callable[[glider_client.Electrode], Sequence[str]]) -> list[Well]:
         wells: list[Well] = []
         for well in self.wells:
-            for pad in well.shared_pads:
-                state = pad.state
-                if state is not None:
-                    assert isinstance(state, glider_client.Electrode), f"{state} is not an Electrode"
-                    heater_names = fn(state)
-                    if name in heater_names:
-                        wells.append(well)
-                        break
+            side = "left" if well.exit_dir is Dir.EAST else "right"
+            for i in range(len(well.shared_pads)):
+                state = self._well_pad_state(side, i+1)
+                assert isinstance(state, glider_client.Electrode), f"{state} is not an Electrode"
+                names = fn(state)
+                if name in names:
+                    wells.append(well)
+                    break
         return wells
 
     def _magnets(self) -> Sequence[Magnet]:

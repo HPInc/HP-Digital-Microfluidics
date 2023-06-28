@@ -9,7 +9,8 @@ from devices import joey
 from mpam.types import OnOff, State, DummyState
 from erk.basic import ComputedDefaultDict, assert_never
 import logging
-from mpam.exerciser import PlatformChoiceExerciser, Exerciser, BoardKwdArgs
+from mpam.exerciser import PlatformChoiceExerciser, Exerciser, BoardKwdArgs,\
+    PlatformChoiceTask
 from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
 from devices.joey import JoeyLayout
@@ -247,6 +248,7 @@ class Board(joey.Board):
         
         
     def update_state(self) -> None:
+        logger.info("Updating pads via Opendrop")
         if self._port is None and self._device is not None:
             self._port = Serial(self._device)
         delay = self.off_on_delay
@@ -289,13 +291,15 @@ class PlatformTask(joey.PlatformTask):
     def setup_config_defaults(self) -> None:
         super().setup_config_defaults()
         Config.setup_defaults()
-
-    def add_args_to(self, 
-                    group: _ArgumentGroup, 
-                    parser: ArgumentParser,
-                    *,
-                    exerciser: Exerciser) -> None:
-        super().add_args_to(group, parser, exerciser=exerciser)
+        
+        
+    def _check_and_add_args_to(self, group:_ArgumentGroup, 
+                               parser:ArgumentParser, 
+                               *, processed:set[type[PlatformChoiceTask]], 
+                               exerciser:Exerciser)->None:
+        if not self._args_needed(PlatformTask, processed):
+            return
+        super()._check_and_add_args_to(group, parser, exerciser=exerciser, processed=processed)
         ignored_cp = ConfigParam[str]()
         ignored_cp.add_arg_to(group, '-v1', '--v1', action='store_const', const="v1", 
                               deprecated = ConfigParam.use_instead("--joey-version 1.0"),

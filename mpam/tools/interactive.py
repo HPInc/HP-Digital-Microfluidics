@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from devices import joey, opendrop, wombat, opentrons, manual_pipettor,\
-    bilby_task, eselog
+    bilby_task, eselog, bilby_yaminon_task
 from mpam.exerciser import PlatformChoiceExerciser
 from mpam.exerciser_tasks import DisplayOnly
 from mpam.monitor import Config as monConfig
@@ -14,6 +14,7 @@ if __name__ == '__main__':
                 opendrop.PlatformTask,
                 wombat.PlatformTask,
                 wombat.YaminonPlatformTask,
+                bilby_yaminon_task.PlatformTask,
                 )
     pipettors = (opentrons.PipettorConfig,)
     components = (eselog.ESELogConfig,)

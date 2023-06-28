@@ -2,7 +2,8 @@ from __future__ import annotations
 from devices import joey
 from typing import Optional, Sequence, Union, Callable
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
-from mpam.exerciser import PlatformChoiceExerciser, Exerciser
+from mpam.exerciser import PlatformChoiceExerciser, Exerciser,\
+    PlatformChoiceTask
 from quantities.SI import volts
 from mpam.cmd_line import voltage_arg
 from erk.basic import assert_never
@@ -10,6 +11,7 @@ from erk.config import ConfigParam
 from os import PathLike
 import os
 import sys
+from mpam.types import MISSING, MissingOr
 
 class Config:
     dll_dir = ConfigParam[Optional[Union[str, PathLike]]](None)
@@ -31,12 +33,11 @@ class PlatformTask(joey.PlatformTask):
                  *,
                  aliases: Optional[Sequence[str]] = None) -> None:
         super().__init__(name, description, aliases=aliases)
-    
-    
-    def make_board(self, args: Namespace, *, 
-                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
-                   ) -> joey.Board: # @UnusedVariable
-        dll_dir = Config.dll_dir()
+        
+    def _add_dll_dir(self, 
+                     dll_dir: MissingOr[Optional[Union[str, PathLike]]] = MISSING) -> None:
+        if dll_dir is MISSING:
+            dll_dir = Config.dll_dir()
         if dll_dir is not None:
             to_add: str
             if isinstance(dll_dir, str):
@@ -46,6 +47,12 @@ class PlatformTask(joey.PlatformTask):
             else:
                 assert_never(dll_dir)
             sys.path.append(to_add)
+    
+    
+    def make_board(self, args: Namespace, *, 
+                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+                   ) -> joey.Board: # @UnusedVariable
+        self._add_dll_dir()
         
         from devices import bilby
         
@@ -54,13 +61,14 @@ class PlatformTask(joey.PlatformTask):
     def setup_config_defaults(self) -> None:
         super().setup_config_defaults()
         Config.setup_defaults()
-
-    def add_args_to(self,
-                    group: _ArgumentGroup, 
-                    parser: ArgumentParser,
-                    *,
-                    exerciser: Exerciser) -> None:
-        super().add_args_to(group, parser, exerciser=exerciser)
+        
+    def _check_and_add_args_to(self, group:_ArgumentGroup, 
+                               parser:ArgumentParser, 
+                               *, processed:set[type[PlatformChoiceTask]], 
+                               exerciser:Exerciser)->None:
+        if not self._args_needed(PlatformTask, processed):
+            return
+        super()._check_and_add_args_to(group, parser, exerciser=exerciser, processed=processed)
         def describe_path(for_none: str) -> Callable[[Optional[Union[str, PathLike]]], str]:
             def describe(val: Optional[Union[str, PathLike]]) -> str:
                 if val is None:

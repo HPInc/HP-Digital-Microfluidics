@@ -203,7 +203,9 @@ class Board(device.Board):
         XYCoord(19,19): 'T06', XYCoord(19,13): 'N06', XYCoord(19,7): 'H06', XYCoord(19,1): 'B06'
         }
     
-    def pad_cell(self, x: int, y: int) -> str:
+    def pad_cell(self, x: int, y: int) -> Optional[str]:
+        if x > 19 or x < 1 or y > 19 or y < 1:
+            return None
         return f"{ord('B')+y-1:c}{26-x:02d}"
     def shared_pad_cell(self, side: str, n: int) -> Optional[str]:
         return self._shared_pad_cells[self._layout].get((side, n))
@@ -351,22 +353,8 @@ class Board(device.Board):
                 if state is None:
                     state = DummyState(initial_state=OnOff.OFF)
                 self.pads[loc] = Pad(loc, self, exists=exists, state=state)
-
-    def __init__(self) -> None:
-        from mpam.pipettor import Pipettor # @Reimport
-        
-        logger.info(f"Joey layout version is {Config.layout()}")
-        logger.info(f"Lid type is {Config.lid_type()}")
-        logger.info(f"Heater type is {Config.heater_type()}")
-
-        self._lid = Config.lid_type()
-        self._layout = Config.layout()
-
-        super().__init__(orientation=Orientation.NORTH_POS_EAST_POS,
-                         drop_motion_time=500*ms,
-                         cpt_layout=RCOrder.DOWN_RIGHT)
-        
-        
+                
+    def _add_all_wells(self) -> None:
                 
         sequences: WellOpSeqDict
         if self._layout is JoeyLayout.V1:
@@ -466,6 +454,23 @@ class Board(device.Board):
             self._well(right_group, Dir.LEFT, self.pad_at(19,1), pipettor, right_states, well_shape),
             ))
         
+
+    def __init__(self) -> None:
+        from mpam.pipettor import Pipettor # @Reimport
+        
+        logger.info(f"Joey layout version is {Config.layout()}")
+        logger.info(f"Lid type is {Config.lid_type()}")
+        logger.info(f"Heater type is {Config.heater_type()}")
+
+        self._lid = Config.lid_type()
+        self._layout = Config.layout()
+
+        super().__init__(orientation=Orientation.NORTH_POS_EAST_POS,
+                         drop_motion_time=500*ms,
+                         cpt_layout=RCOrder.DOWN_RIGHT)
+        
+        self._add_all_wells()
+        
         self._add_externals(Magnet, self._magnets())
         self._add_externals(Heater, self._heaters())
         self._add_externals(Chiller, self._chillers())
@@ -483,7 +488,7 @@ class Board(device.Board):
         if Config.default_holes():
             ep_locs.extend(self._extraction_point_locs())
         
-        self._add_extraction_points([to_ep(xy, pipettor) for xy in ep_locs])
+        self._add_extraction_points([to_ep(xy, self.pipettor) for xy in ep_locs])
 
         def tc_channel(row: int,
                        # heaters: tuple[int,int],
@@ -608,11 +613,13 @@ class PlatformTask(PlatformChoiceTask):
     def setup_config_defaults(self) -> None:
         Config.setup_defaults()
         
-    def add_args_to(self, 
-                     group: _ArgumentGroup, 
-                     parser: ArgumentParser,
-                     *,
-                     exerciser: Exerciser) -> None:
+        
+    def _check_and_add_args_to(self, group:_ArgumentGroup, 
+                               parser: ArgumentParser,
+                               *, processed:set[type[PlatformChoiceTask]],
+                               exerciser: Exerciser) -> None:
+        if not self._args_needed(PlatformTask, processed):
+            return
         Config.layout.add_choice_arg_to(group, joey_layout_arg_names,
                                         '--joey-version', 
                                         metavar="VERSION", 
@@ -651,7 +658,7 @@ class PlatformTask(PlatformChoiceTask):
         Config.default_holes.add_arg_to(group, '--default-holes', action=BooleanOptionalAction,
                            help="Whether or not to include default holes in addition to those specified by --hole."
                            )
-        super().add_args_to(group, parser, exerciser=exerciser)
+        super()._check_and_add_args_to(group, parser, processed=processed, exerciser=exerciser)
         self.add_heater_args_to(parser, exerciser=exerciser)
         self.add_power_supply_args_to(parser, exerciser=exerciser)
         self.add_fan_args_to(parser, exerciser=exerciser)

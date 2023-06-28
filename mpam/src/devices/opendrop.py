@@ -204,12 +204,13 @@ class PlatformTask(PlatformChoiceTask):
                    exerciser: PlatformChoiceExerciser, # @UnusedVariable
                    ) -> Board: # @UnusedVariable
         return Board()
-        
-    def add_args_to(self, 
-                     group: _ArgumentGroup, 
-                     parser: ArgumentParser,
-                     *,
-                     exerciser: Exerciser) -> None:
+    
+    def _check_and_add_args_to(self, group:_ArgumentGroup, 
+                               parser:ArgumentParser, 
+                               *, processed:set[type[PlatformChoiceTask]], 
+                               exerciser:Exerciser)-> None:
+        if not self._args_needed(PlatformTask, processed):
+            return
         super().add_args_to(group, parser, exerciser=exerciser)
         Config.device.add_arg_to(group,'-p', '--port',
                                  default_desc="to only run the display",

@@ -442,10 +442,26 @@ class PlatformChoiceTask(Task):
     def run(self, board: Board, system: System, args: Namespace) -> NoReturn: # @UnusedVariable
         assert False, f"PlatformChoiceTask.run() should never be called: {self}"
         
-    def add_args_to(self, group: _ArgumentGroup, # @UnusedVariable
+    def add_args_to(self, group: _ArgumentGroup, 
                     parser:ArgumentParser, # @UnusedVariable
                     *, 
                     exerciser:Exerciser)->None: # @UnusedVariable
+        self._check_and_add_args_to(group, processed=set(), parser=parser, exerciser=exerciser)
+        
+    def _args_needed(self, my_type: type[PlatformChoiceTask],
+                     processed: set[type[PlatformChoiceTask]]) -> bool:
+        if my_type in processed:
+            return False
+        processed.add(my_type)
+        return True
+        
+    @abstractmethod
+    def _check_and_add_args_to(self, group: _ArgumentGroup, # @UnusedVariable
+                               parser:ArgumentParser, # @UnusedVariable
+                               *, 
+                               processed: set[type[PlatformChoiceTask]], # @UnusedVariable
+                               exerciser:Exerciser                               # @UnusedVariable
+                               ) -> None:
         ...
         
     @cache
