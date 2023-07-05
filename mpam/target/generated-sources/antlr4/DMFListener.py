@@ -799,6 +799,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#not_future_type.
+    def enterNot_future_type(self, ctx:DMFParser.Not_future_typeContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#not_future_type.
+    def exitNot_future_type(self, ctx:DMFParser.Not_future_typeContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#not_maybe_type.
     def enterNot_maybe_type(self, ctx:DMFParser.Not_maybe_typeContext):
         pass

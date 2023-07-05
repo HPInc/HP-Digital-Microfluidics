@@ -5,7 +5,7 @@ from enum import Enum, auto
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
     Any, Mapping, Union, NoReturn, TypeVar, Generic
 
-from mpam.types import Delayed, MissingOr, MISSING
+from mpam.types import Delayed, MissingOr, MISSING, Postable
 from _collections import defaultdict
 from quantities.core import Unit, qstr
 import typing
@@ -51,7 +51,7 @@ class NotSampleableError(EvaluationError):
         super().__init__(f"{have.name} is not sampleable.")
         self.have = have 
         
-ValueConverter = Callable[[Any], Any]
+ValueConverter = Callable[[Any], Delayed[Any]]
 
 class SpecialValueConverter(Enum):
     NO_CONVERSION = auto()
@@ -86,6 +86,10 @@ class Type:
     def maybe(self) -> MaybeType:
         return MaybeType(self)
     
+    @cached_property
+    def future(self) -> FutureType:
+        return FutureType(self) 
+
     @property
     def is_sampleable(self) -> bool:
         return False
@@ -93,6 +97,7 @@ class Type:
     @property
     def sample(self) -> SampleType:
         raise NotSampleableError(self)
+    
     
     
     NO_VALUE: ClassVar[Type]
@@ -263,7 +268,7 @@ class Type:
             if conv is SpecialValueConverter.NO_CONVERSION or conv is SpecialValueConverter.IDENTITY or conv is MISSING:
                 return conv
             fn = conv
-            return lambda v: None if v is None else fn(v)
+            return lambda v: Delayed.complete(None if v is None else fn(v))
             
         if other in self.direct_supers:
             # There's no explicit conversion and no prohibited conversion,
@@ -385,7 +390,7 @@ class Type:
             vc = self._conversion_to(other)
             assert vc is not MISSING
             if vc is SpecialValueConverter.IDENTITY:
-                return lambda v: v
+                return lambda v: Delayed.complete(v)
             if vc is SpecialValueConverter.NO_CONVERSION:
                 return None
             return vc
@@ -454,9 +459,15 @@ class Type:
         return Type.NO_VALUE if len(bounds) == 0 else bounds[0]
     
     @classmethod
-    def register_conversion(cls, have: Type, want: Type, converter: Optional[ValueConverter]) -> None:
+    def register_conversion(cls, have: Type, want: Type, converter: Optional[Callable[[Any], Any]]) -> None:
+        cfn = None if converter is None else lambda x : Delayed.complete(converter(x))
+        cls.register_delayed_conversion(have, want, cfn)
+            
+    @classmethod
+    def register_delayed_conversion(cls, have: Type, want: Type, converter: Optional[Callable[[Any], Delayed[Any]]]) -> None:
         with cls._class_lock:
-            have._conversions[want] = SpecialValueConverter.NO_CONVERSION if converter is None else converter 
+            have._conversions[want] = SpecialValueConverter.NO_CONVERSION if converter is None else converter
+         
         
     # @classmethod
     # def value_compatible(cls, have: Union[Type, Sequence[Type]], want: Union[Type, Sequence[Type]]) -> None:
@@ -466,9 +477,9 @@ class Type:
     #         want = (want,)
     #     cls.compatible |= {(h,w) for h in have for w in want}
         
-    def convert_to(self, want: Type, val: Any) -> Any:
+    def convert_to(self, want: Type, val: Any) -> Delayed[Any]:
         if self is want or self is Type.ANY:
-            return val
+            return Delayed.complete(val)
         converter = self.converter_to(want)
         if converter is None:
             raise TypeMismatchError(self, want)
@@ -481,11 +492,13 @@ class Type:
             return True
         return self._conversion_to(want) is not SpecialValueConverter.NO_CONVERSION
     
-    def checked_convert_to(self, want: Type, val: Any) -> MaybeError[Any]:
+    def checked_convert_to(self, want: Type, val: Any) -> Delayed[MaybeError[Any]]:
+        if isinstance(val, EvaluationError):
+            return Delayed.complete(val)
         try:
             return self.convert_to(want, val)
         except EvaluationError as ex:
-            return ex
+            return Delayed.complete(ex)
         
 class SampleableType(Type):
     _all: list[SampleableType] = []
@@ -620,6 +633,75 @@ class MaybeType(Type):
     #         return self.if_there_type < rhs.if_there_type
     #     return super().__lt__(rhs)
     
+class FutureValue(Generic[Val_]):
+    value_type: Final[Type]
+    _postable: Postable[Val_]
+    _future: Delayed[Val_]
+    reset_lock: Final = Lock()
+    
+    @property
+    def future(self) -> Delayed[Val_]:
+        return self._future
+    
+    @property
+    def has_value(self) -> bool:
+        return self._future.has_value
+    
+    def __init__(self, value_type: Type) -> None:
+        self.value_type = value_type
+        self._postable = Postable[Val_]()
+        self._future = self._postable
+        
+    def __str__(self) -> str:
+        future = self.future
+        has_val, val = future.peek()
+        desc = val if has_val else "<no value>"
+        return f"Future[{self.value_type.name}]({desc})"
+    
+    def reset(self) -> None:
+        with self.reset_lock:
+            if self.has_value:
+                self._postable = Postable[Val_]()
+                self._future = self._postable
+        
+    def assign(self, val: Val_) -> Val_:
+        with self.reset_lock:
+            if self.has_value:
+                self._future = Delayed.complete(val)
+            else:
+                self._postable.post(val)
+        return val 
+
+    
+            
+class FutureType(Type):
+    value_type: Final[Type]
+    
+    @cached_property
+    def future(self)->FutureType:
+        return self
+    
+    def __init__(self, value_type: Type) -> None:
+        super().__init__(f"FUTURE({value_type.name})")
+        self.value_type = value_type
+    
+    def __repr__(self) -> str:
+        return f"Future({self.value_type})"
+    
+    def _find_conversion_to(self, other:Type)->MissingOr[_Converter]:
+        conv = super()._find_conversion_to(other)
+        if conv is not SpecialValueConverter.NO_CONVERSION:
+            return conv
+        def value_future(fv: FutureValue[Any]) -> Delayed[Any]:
+            return fv.future
+        value_conv = self.value_type._conversion_to(other)
+        if value_conv is SpecialValueConverter.NO_CONVERSION or value_conv is MISSING:
+            return value_conv
+        if value_conv is SpecialValueConverter.IDENTITY:
+            return value_future
+        else:
+            return lambda fv: value_future(fv).chain(value_conv)
+    
 class SampleType(Type):
     element_type: Final[Type]
     
@@ -733,11 +815,12 @@ class Signature:
         # At least something has to convert.
         def converter(cv: MissingOr[_Converter]) -> ValueConverter:
             assert cv is not SpecialValueConverter.NO_CONVERSION and cv is not MISSING
-            return (lambda v: v) if cv is SpecialValueConverter.IDENTITY else cv
+            return (lambda v: Delayed.complete(v)) if cv is SpecialValueConverter.IDENTITY else cv
         param_converters = tuple(converter(cv) for cv in cv_params)
         result_converter = converter(cv_return)
-        def convert(fn: CallableValue) -> ConvertedCallableValue:
-            return ConvertedCallableValue(fn, other, param_converters, result_converter)
+        def convert(fn: CallableValue) -> Delayed[ConvertedCallableValue]:
+            cv = ConvertedCallableValue(fn, other, param_converters, result_converter)
+            return Delayed.complete(cv)
         return convert
 
 
@@ -771,7 +854,7 @@ class CallableValue(ABC):
         got = len(args)
         assert want == got, f"Functional object expected {qstr(want, 'argument')}, got {got}., "
         
-    def __call__(self, args: Sequence[Any]) -> Delayed[Any]:
+    def __call__(self, *args: Any) -> Delayed[Any]:
         return self.apply(args)
     
 class ConvertedCallableValue(CallableValue):

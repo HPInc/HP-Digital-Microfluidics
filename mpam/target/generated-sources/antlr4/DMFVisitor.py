@@ -452,6 +452,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#not_future_type.
+    def visitNot_future_type(self, ctx:DMFParser.Not_future_typeContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#not_maybe_type.
     def visitNot_maybe_type(self, ctx:DMFParser.Not_maybe_typeContext):
         return self.visitChildren(ctx)

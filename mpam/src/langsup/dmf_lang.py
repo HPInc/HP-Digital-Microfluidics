@@ -18,7 +18,7 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
     Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc,\
-    SampleType, SampleableType
+    SampleType, SampleableType, FutureType, FutureValue
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor
@@ -89,7 +89,7 @@ class ErrorToPropagate(CompilationError):
         self.error = error
         
 def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
-    def check(*args: Sequence[Any]) -> MaybeError[Val_]:
+    def check(*args: Any) -> MaybeError[Val_]:
         first = args[0]
         if isinstance(first, EvaluationError):
             return first
@@ -97,12 +97,11 @@ def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
     return check
 
 def error_check_delayed(fn: Callable[..., Delayed[Val_]]) -> Callable[..., Delayed[MaybeError[Val_]]]:
-    def check(*args: Sequence[Any]) -> Delayed[MaybeError[Val_]]:
+    def check(*args: Any) -> Delayed[MaybeError[Val_]]:
         first = args[0]
         if isinstance(first, EvaluationError):
             return Delayed.complete(first)
-        # Well, *that's* a kludge
-        return fn(*args).transformed(lambda x: x)
+        return fn(*args)
     return check
 
 class ControlTransfer(EvaluationError): ...
@@ -369,13 +368,13 @@ class ComposedCallable(CallableValue):
         elif second_kind is CallableTypeKind.MONITOR:
             def inject(v: Any) -> Delayed[MaybeError[Any]]:
                 injected = provided_type.checked_convert_to(required_type, v)
-                return (error_check_delayed(lambda i: second.apply((i,)))(injected)
+                return (injected.chain(error_check_delayed(lambda i: second.apply((i,))))
                         .transformed(error_check(to_const(v))))
                 # return second.apply((injected,)).transformed(error_check(to_const(v)))
         elif second_kind is CallableTypeKind.TRANSFORM:
             def inject(v: Any) -> Delayed[MaybeError[Any]]:
                 injected = provided_type.checked_convert_to(required_type, v)
-                return error_check_delayed(lambda i: second.apply((i,)))(injected)                
+                return injected.chain(error_check_delayed(lambda i: second.apply((i,))))                
                 # return second.apply((injected,))
         else:
             assert_never(second_kind)
@@ -939,7 +938,7 @@ class Executable:
         return f"Executable({e}{self.return_type}{c_or_f}"
     
     
-    def evaluate(self, env: Environment, required: Optional[Type] = None) -> Delayed[Any]:
+    def evaluate(self, env: Environment, required: Optional[Type] = None) -> Delayed[MaybeError[Any]]:
         if self.contains_error:
             raise EvaluationError(f"attempting to evaluate {self}")
         future: Delayed[Any]
@@ -950,10 +949,10 @@ class Executable:
             future = fn(env)
         if required is not None and required is not self.return_type:
             req_type = required
-            def convert(val: Any) -> Any:
-                return self.return_type.checked_convert_to(req_type, val=val)
+            def convert(val: MaybeError[Any]) -> Delayed[MaybeError[Any]]: 
+                return self.return_type.checked_convert_to(req_type, val=val) 
                 # return Conversions.convert(have=self.return_type, want=req_type, val=val)
-            future = future.transformed(convert)
+            future = future.chain(convert)
         # if required is not None: 
         #     check = rep_types.get(required, None)
         #     if check is not None:
@@ -961,7 +960,7 @@ class Executable:
         return future
     
     def check_and_eval(self, maybe_error: MaybeError, 
-                       env: Environment, required: Optional[Type] = None) -> Delayed[Any]:
+                       env: Environment, required: Optional[Type] = None) -> Delayed[MaybeError[Any]]:
         if isinstance(maybe_error, EvaluationError):
             return Delayed.complete(maybe_error)
         return self.evaluate(env, required)
@@ -1223,9 +1222,9 @@ class StepIterLoopType(LoopType):
         var_scope = env if self.new_var else not_None(env.find_scope(var_name))
         
         
-        def note_next(val: Any, val_type: Type) -> None:
+        def note_next(val: Any) -> None:
             nonlocal next_val
-            next_val = val_type.convert_to(var_type, val) # @UnusedVariable
+            next_val = val # @UnusedVariable
 
         def set_stop(val: Any) -> None:
             nonlocal stop_val
@@ -1235,18 +1234,24 @@ class StepIterLoopType(LoopType):
             nonlocal step_val
             step_val = val # @UnusedVariable
 
-        def test(ignored: None) -> bool:
+        def test(_ignored: None) -> Delayed[MaybeError[bool]]:
             nonlocal running
             if not running:
-                return False
-            running = self.rel.test(var_type.convert_to(cmp_type, next_val), stop_val)
-            if running:
-                var_scope.define(var_name, next_val)
-            return running
+                return Delayed.complete(False)
+            def with_converted(nv: Any) -> bool:
+                nonlocal running
+                running = self.rel.test(nv, stop_val)
+                if running:
+                    var_scope.define(var_name, next_val)
+                return running
+            return (var_type.convert_to(cmp_type, next_val) 
+                    .transformed(error_check(with_converted)))
             
         def increment() -> Delayed[MaybeError[None]]:
-            return (inc(var_type.convert_to(inc_var_type, var_scope[var_name]), step_val)
-                    .transformed(error_check(lambda v: note_next(v, inc_ret_type)))
+            return (var_type.checked_convert_to(inc_var_type, var_scope[var_name])
+                    .chain(error_check_delayed(lambda v: inc(v, step_val)))
+                    .chain(error_check_delayed(lambda v: inc_ret_type.checked_convert_to(var_type, v)))
+                    .transformed(error_check(note_next))
                     )
 
         initialize: Delayed[MaybeError[None]]
@@ -1256,15 +1261,17 @@ class StepIterLoopType(LoopType):
                 yield(Delayed.complete(EvaluationError(f"'repeat with' loop has no initial value, and loop variable {var_name} has not yet been assigned.")))
             initialize = Delayed.complete(None)
         else:
-            initialize = self.start_exec.evaluate(env, var_type).transformed(error_check(lambda v: note_next(v, var_type)))
+            initialize = (self.start_exec.evaluate(env, var_type)
+                          .transformed(error_check(note_next))
+                          )
         yield (initialize
                .chain(lambda v: self.stop_exec.check_and_eval(v, env, cmp_type)).transformed(error_check(set_stop))
                .chain(lambda v: self.step_exec.check_and_eval(v, env, inc_sig.param_types[1])).transformed(error_check(set_step))
-               .transformed(error_check(test))
+               .chain(error_check_delayed(test))
                )
         
         while running:
-            yield (increment().transformed(error_check(test)))
+            yield (increment().chain(error_check_delayed(test)))
 
     
 class DMFInterpreter:
@@ -1452,6 +1459,8 @@ class DMFCompiler(DMFVisitor):
 
     def type_name_var(self, t_or_ctx: Union[DMFParser.Value_typeContext, Type], n: Optional[int] = None) -> str:
         t = t_or_ctx if isinstance(t_or_ctx, Type) else cast(Type, t_or_ctx.type)
+        if isinstance(t, FutureType):
+            t = t.value_type
         if isinstance(t, MaybeType):
             t = t.if_there_type
         # t: Type = cast(Type, ctx.type)
@@ -1735,25 +1744,28 @@ class DMFCompiler(DMFVisitor):
                     ...
             spec = special
             setter = lambda env,val: spec.set(env, val)
-            new_decl = False
         else:
             vt = self.current_types.lookup(name)
             if vt is MISSING:
-                new_decl = True
                 var_type = value.return_type
                 if var_type < Type.BINARY_STATE:
                     var_type = Type.BINARY_STATE
                 if not self.current_types.is_top_level:
                     self.print_warning(ctx, lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}")
+                setter = lambda env, val: env.define(name, val)
+                if not value.contains_error:
+                    self.current_types.define(name, var_type)
+            elif isinstance(vt, FutureType):
+                var_type = vt.value_type
+                def do_assignment(env: Environment, val: Any) -> None:
+                    fv: FutureValue = env[name]
+                    fv.assign(val)
+                setter = do_assignment
             else:
                 var_type = vt
-                new_decl = False
-            def do_assignment(env: Environment, val: Any) -> None:
-                if new_decl:
-                    env.define(name, val)
-                else:
+                def do_assignment(env: Environment, val: Any) -> None:
                     env[name] = val
-            setter = do_assignment
+                setter = do_assignment
         if e := self.type_check(var_type, value.return_type, ctx, 
                                 lambda want,have,text: 
                                     f"variable '{name}' has type {have}.  Expression has type {want}: {text}",
@@ -1761,8 +1773,6 @@ class DMFCompiler(DMFVisitor):
                 return e
         returned_type = var_type
         # print(f"Compiling assignment: {name} : {returned_type}")
-        if new_decl and not value.contains_error:
-            self.current_types.define(name, returned_type)
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val: Any) -> Any:
                 if not isinstance(val, EvaluationError):
@@ -1827,6 +1837,7 @@ class DMFCompiler(DMFVisitor):
         n: Optional[int] = ctx.n
         init_ctx: Optional[DMFParser.ExprContext] = ctx.init
         has_local_kwd = ctx.LOCAL() is not None
+        target_ctx: Optional[DMFParser.ExprContext] = ctx.target
         
         if name_ctx is None:
             assert var_type is not None
@@ -1838,6 +1849,15 @@ class DMFCompiler(DMFVisitor):
 
         assert init_ctx is not None or var_type is not None
         value = self.visit(init_ctx) if init_ctx is not None else None
+        
+        assert target_ctx is None or isinstance(var_type, FutureType)
+        target = self.visit(target_ctx) if target_ctx is not None else None
+        
+        if isinstance(var_type, FutureType):
+            if value is not None:
+                return self.not_yet_implemented("initializations in future-typed variables", ctx)
+            vt = var_type.value_type
+            value = Executable(var_type, lambda _env: Delayed.complete(FutureValue(vt)), ())
             
         # if we have a "type n = init" form and "type n" already defined, we just assign rather than
         # shadowing
@@ -1879,6 +1899,18 @@ class DMFCompiler(DMFVisitor):
                                 return_type=var_type):
             return e
         
+        decl_type = var_type 
+        injection = None
+        if target is not None:
+            assert isinstance(var_type, FutureType)
+            def get_future(env: Environment) -> Delayed[Any]:
+                fv: FutureValue = env[name]
+                return fv.future
+            who = Executable(var_type.value_type, get_future, ())
+            injection = self.build_injection(ctx, name_ctx, who, target_ctx, target)
+            decl_type = injection.return_type
+            real_inj = injection
+        
         real_val = value
         def run(env: Environment) -> Delayed[Any]:
             def do_assignment(val: Any) -> Any:
@@ -1889,8 +1921,11 @@ class DMFCompiler(DMFVisitor):
                 else:
                     env.define(name, val)
                 return val
-            return real_val.evaluate(env, var_type).transformed(do_assignment)
-        return Executable(var_type, run, (value,))
+            future = real_val.evaluate(env, var_type).transformed(do_assignment)
+            if injection is not None:
+                future = future.chain(error_check_delayed(lambda _: real_inj.evaluate(env)))
+            return future
+        return Executable(decl_type, run, (value,))
 
     def visitDecl_stat(self, ctx:DMFParser.Decl_statContext) -> Executable:
         return self.visit(ctx.declaration())
@@ -2296,12 +2331,21 @@ class DMFCompiler(DMFVisitor):
         var_type = self.current_types.lookup(name)
         if var_type is MISSING:
             return self.error(ctx.name(), Type.NO_VALUE, f"Undefined variable: {name}")
+        if isinstance(var_type, FutureType):
+            val_type = var_type.value_type
+            is_future = True
+        else:
+            val_type = var_type
+            is_future = False
         def run(env: Environment) -> Delayed[Any]:
             val = env.lookup(name)
             if val is MISSING:
                 return Delayed.complete(UninitializedVariableError(f"Uninitialized variable: {name}"))
+            if is_future:
+                assert isinstance(val, FutureValue)
+                return val.future
             return Delayed.complete(val)
-        return Executable(var_type, run)
+        return Executable(val_type, run)
 
     def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
         val = ctx.bool_val().val
@@ -2566,37 +2610,48 @@ class DMFCompiler(DMFVisitor):
         who = self.visit(ctx.who)
         self.set_injected_type_annotation(cast(DMFParser.ExprContext, ctx.what), who.return_type)
         what = self.visit(ctx.what)
+        return self.build_injection(ctx, ctx.who, who, ctx.what, what)
+        
+    def build_injection(self,
+                        whole_ctx: ParserRuleContext, 
+                        who_ctx: ParserRuleContext, who: Executable,
+                        what_ctx: ParserRuleContext, what: Executable) -> Executable:
         # logger.info(f"Injecting {self.text_of(ctx.who)} into {self.text_of(ctx.what)}")
         if what.return_type is Type.BUILT_IN:
             func: MissingOr[Func] = what.const_val
             if func is MISSING:
-                return self.error(ctx.what, Type.NO_VALUE, f"Internal error: {self.text_of(ctx.what)} is a built-in, but no Func value")
-            return self.use_function(func, ctx, (ctx.who,))
+                return self.error(what_ctx, Type.NO_VALUE, f"Internal error: {self.text_of(what_ctx)} is a built-in, but no Func value")
+            return self.use_function(func, whole_ctx, (who_ctx,))
         target_type = what.return_type.as_func_type
         if (target_type is None
             or (target_kind := target_type.kind) is CallableTypeKind.GENERAL):
-            return self.error(ctx.what, Type.NO_VALUE, 
-                              f"Not an injection target ({what.return_type.name}): {self.text_of(ctx.what)}")
+            return self.error(what_ctx, Type.NO_VALUE, 
+                              f"Not an injection target ({what.return_type.name}): {self.text_of(what_ctx)}")
         injected_type = who.return_type
         # if injected_type <= Type.MOTION:
         #     injected_type = Type.MOTION
         # if injected_type <= Type.TWIDDLE_OP:
         #     injected_type = Type.TWIDDLE_OP
 
-        do_injection: Callable[[Any, CallableValue, Type], Delayed[Any]]
+        do_injection: Callable[[Any, CallableValue, Type], Delayed[MaybeError[Any]]]
         if target_kind is CallableTypeKind.TRANSFORM:
             required_type = target_type.param_types[0]
-            do_injection = lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
+            do_injection = lambda v, fn, t: (t.checked_convert_to(required_type, v)
+                                             .chain(error_check_delayed(fn)))
+            # do_injection = lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
         elif target_kind is CallableTypeKind.MONITOR:
             required_type = target_type.param_types[0]
-            do_injection = (lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
-                            .transformed(to_const(v)))
+            do_injection = lambda v, fn, t: (t.checked_convert_to(required_type, v)
+                                             .chain(error_check_delayed(fn))
+                                             .transformed(to_const(v)))
+            # do_injection = (lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
+            #                 .transformed(to_const(v)))
         elif target_kind is CallableTypeKind.ACTION:
             required_type = Type.ANY
             do_injection = lambda v, fn, _: fn.apply(()).transformed(to_const(v)) 
         else:
             assert_never(target_kind)
-        
+            
         can_pass = self.compatible(injected_type, required_type)
         lhs_type = injected_type.as_func_type
         can_chain = (lhs_type is not None
@@ -2624,18 +2679,18 @@ class DMFCompiler(DMFVisitor):
             return Executable(chain_type, chain, (who, what))
         elif lhs_type is not None:
             return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else lhs_type.return_type
-            e = self.type_check(required_type, lhs_type.return_type, ctx.who,
+            e = self.type_check(required_type, lhs_type.return_type, who_ctx,
                                 (lambda want,have,text:
                                  f"Injecting form '{text}' returns {have}, not compatible with "
-                                 +f"{want}: {self.text_of(ctx.what)}"),
+                                 +f"{want}: {self.text_of(what_ctx)}"),
                                 return_type=return_type)
             return not_None(e)
         else:
             return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else injected_type 
-            e = self.type_check(required_type, injected_type, ctx.who,
+            e = self.type_check(required_type, injected_type, who_ctx,
                                 (lambda want,have,text:
                                  f"Injected value ({have}) '{text}' not compatible with "
-                                 +f"{want}: {self.text_of(ctx.what)}"),
+                                 +f"{want}: {self.text_of(what_ctx)}"),
                                 return_type=return_type)
             return not_None(e)
         
@@ -2866,13 +2921,18 @@ class DMFCompiler(DMFVisitor):
         seen = set[str]()
         saw_duplicate = False
         saw_untyped = any(t is Type.ERROR for t in types)
+        saw_future = False
         for i,n in enumerate(names):
             if n in seen:
                 self.error(ctxts[i], Type.IGNORE, lambda txt: f"Duplicate parameter: '{txt}'")
                 saw_duplicate = True
             else:
                 seen.add(n)
-        if not saw_duplicate and not saw_untyped:
+        for i,t in enumerate(types):
+            if isinstance(t, FutureType):
+                self.not_yet_implemented("future-typed parameters", ctxts[i])
+                saw_future = True
+        if not saw_duplicate and not saw_untyped and not saw_future:
             return None
         macro_type = CallableType.find(types, Type.NO_VALUE)
         return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
@@ -2894,6 +2954,9 @@ class DMFCompiler(DMFVisitor):
         
         if e := self.check_macro_params(param_names, param_types, param_contexts):
             return e
+        
+        if isinstance(return_type, FutureType):
+            return self.not_yet_implemented("future-valued macros", ctx)
         
         # Unfortunately, you can't put parens around multiple with clauses until
         # Python 3.10.

@@ -40,7 +40,13 @@ interactive
 //  ;
   
 declaration returns [Optional[Type] type, str pname, int n]
-  : LOCAL name ASSIGN init=expr
+  : LOCAL? 'future' not_future_type name INJECT target=expr
+    {$ctx.pname=$name.text}
+    {$ctx.type=$not_future_type.type.future}
+  | LOCAL? 'future' not_future_type INT INJECT target=expr
+    {$ctx.n=$INT.int}
+    {$ctx.type=$not_future_type.type.future}
+  | LOCAL name ASSIGN init=expr
   	{$ctx.pname=$name.text}
   	{$ctx.type=None} 
   | LOCAL? value_type INT ASSIGN init=expr? 
@@ -96,8 +102,9 @@ loop_header
   
 step_first_and_dir returns [bool is_down]
   : ASSIGN expr 'down' {$ctx.is_down=True}
-  | ASSIGN expr {$ctx.is_down=False}
+  | ASSIGN expr 'up'? {$ctx.is_down=False}
   | 'down' {$ctx.is_down=True}
+  | 'up'? {$ctx.is_down=False}
   ;
   
 loop
@@ -263,11 +270,16 @@ no_arg_action returns[str which]
   ;
   
 value_type returns[Type type]
+  : FUTURE not_future_type {$ctx.type=$not_future_type.type.future}
+  | '(' FUTURE ')' not_future_type {$ctx.type=$not_future_type.type.future}
+  | not_future_type {$ctx.type=$not_future_type.type}
+  ;
+  
+not_future_type returns[Type type]
   : MAYBE not_maybe_type {$ctx.type=$not_maybe_type.type.maybe}
   | '(' MAYBE ')' not_maybe_type {$ctx.type=$not_maybe_type.type.maybe}
   | not_maybe_type {$ctx.type=$not_maybe_type.type}
   ;
-  
 not_maybe_type returns[Type type]
   : sample_type {$ctx.type=$sample_type.type}
   | atomic_type {$ctx.type=$atomic_type.type}
@@ -499,6 +511,7 @@ ADD: '+';
 ASSIGN: '=';
 ATTR: '\'s' | '.';
 DIV: '/';
+FUTURE: 'future';
 INTERACTIVE: 'interactive';
 INJECT: ':';
 ISNT: 'isn\'t';
