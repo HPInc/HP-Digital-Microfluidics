@@ -610,7 +610,7 @@ class Path:
                      after: WaitableType) -> None:
             def pass_through(drop: Drop) -> Delayed[Drop]:
                 future = Postable[Drop]()
-                barrier.pass_through(drop)
+                barrier.pass_through()
                 future.post(drop)
                 return future
             op: Operation[Drop, Drop] = Drop.WaitAt(barrier) if wait else DropComputeOp(pass_through)

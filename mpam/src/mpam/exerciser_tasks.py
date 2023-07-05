@@ -283,8 +283,8 @@ class Mix(Task):
         pause_after: Time = args.pause_after
         
         print(n_drops)        
-        pre_barrier = Barrier[Drop](n_drops)
-        post_barrier = Barrier[Drop](n_drops)
+        pre_barrier = Barrier(n_drops)
+        post_barrier = Barrier(n_drops)
         
         well: Well = board.wells[2]
         well.contains(Liquid(unknown_reagent, n_drops*drops))
@@ -404,8 +404,8 @@ class Dilute(Task):
         
         trigger = Trigger()
         
-        pre_barrier = Barrier[Drop](n_drops)
-        post_barrier = Barrier[Drop](n_drops)
+        pre_barrier = Barrier(n_drops)
+        post_barrier = Barrier(n_drops)
 
         lead_path = Path.dispense_from(reagent_well) \
             .to_row(lead_pad.row) \

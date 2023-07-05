@@ -1137,7 +1137,7 @@ class OpScheduler(Generic[T]):
         :class:`Delayed` value returned by :func:`schedule_for` is the object
         for which the operation was scheduled.
         """
-        barrier: Barrier[CS]    ; "The :class:`Barrier` to wait at"
+        barrier: Barrier    ; "The :class:`Barrier` to wait at"
         def __init__(self, barrier: Barrier):
             """
             Initialize the object
@@ -1177,7 +1177,7 @@ class OpScheduler(Generic[T]):
         :func:`schedule_for` is the object for which the operation was
         scheduled.
         """
-        barrier: Barrier[CS]    ; "The :class:`Barrier` to reach"
+        barrier: Barrier    ; "The :class:`Barrier` to reach"
         def __init__(self, barrier: Barrier):
             """
             Initialize the object
@@ -1206,7 +1206,7 @@ class OpScheduler(Generic[T]):
                 will be posted unless ``post_result`` is ``False``
             """
             future = Postable[CS]()
-            self.barrier.pass_through(obj)
+            self.barrier.pass_through()
             if post_result:
                 future.post(obj)
             return future
@@ -2009,7 +2009,7 @@ class Trigger:
 
     :class:`Trigger` objects are thread safe
     """
-    waiting: list[tuple[Any,Postable]]
+    waiting: list[Callable[[], Any]]
     """
     The list of actions waiting to be executed
 
@@ -2033,7 +2033,7 @@ class Trigger:
         self.waiting = []
         self.lock = RLock()
 
-    def wait(self, val: Any, future: Postable) -> None:
+    def wait(self, val: T, future: Postable[T]) -> None:
         """
         When the :class:`Trigger` next fires, post a value to a future.
 
@@ -2041,8 +2041,7 @@ class Trigger:
             val: the value to post
             future: the :class:`Delayed` object to post to
         """
-        with self.lock:
-            self.waiting.append((val, future))
+        self.on_trigger(lambda: future.post(val))
 
     def on_trigger(self, fn: Callable[[], Any]) -> None:
         """
@@ -2051,9 +2050,8 @@ class Trigger:
         Args:
             fn: the function (taking no arguments) to call
         """
-        future = Postable[None]()
-        future.then_call(lambda _: fn())
-        self.wait(None, future)
+        with self.lock:
+            self.waiting.append(fn)
 
     def fire(self) -> int:
         """
@@ -2069,8 +2067,8 @@ class Trigger:
         with self.lock:
             self.waiting = []
         val = len(waiting)
-        for v,f in waiting:
-            f.post(v)
+        for fn in waiting:
+            fn()
         return val
 
     def reset(self) -> None:
@@ -2116,8 +2114,9 @@ class SingleFireTrigger(Trigger):
             else:
                 super().wait(val, future)
 
+BarrierAction = Union[tuple[T,Postable[T]], Callable[[], Any]]
 
-class Barrier(Trigger, Generic[T]):
+class Barrier(Trigger):
 
     """
     A :class:`Trigger` that fires when a certain number of :attr:`T` objects
@@ -2161,7 +2160,7 @@ class Barrier(Trigger, Generic[T]):
     def __str__(self) -> str:
         name = (self.name+", ") if self.name is not None else ""
         return f"Barrier({name}{self.required}, {self.waiting_for})"
-    def reach(self, val: T, future: Optional[Postable[T]] = None) -> int:
+    def reach(self, action: Optional[BarrierAction[T]] = None) -> int:
         """
         Note that an object reached the :class:`Barrier`.  If this is the last
         one, :func:`fire` the :class:`Barrier`, unpausing any paused objects.
@@ -2176,14 +2175,22 @@ class Barrier(Trigger, Generic[T]):
             the number of objects that had previously reached the
             :class:`Barrier`
         """
+        
+        val: Any = None
+        if isinstance(action, tuple):
+            val, future = action
+            action = lambda: future.post(val)
         with self.lock:
             wf = self.waiting_for
             ab = self.required - wf
-            assert wf > 0, f"{val} reached un-waiting barrier {self}"
+            def assert_msg() -> str:
+                who = "object" if val is None else val
+                return f"{who} reached un-waiting barrier {self}"
+            assert wf > 0, assert_msg()
             self.waiting_for = wf-1
             if wf > 1:
-                if future is not None:
-                    self.wait(val, future)
+                if action is not None:
+                    self.on_trigger(action)
                 return ab
         # If we get here, we're the last one to reach, so we fire the trigger
         # and process this future.
@@ -2192,8 +2199,8 @@ class Barrier(Trigger, Generic[T]):
         # lock), so there will be a problem if somebody else calls reset()
         # before we call fire().
         self.fire()
-        if future is not None:
-            future.post(val)
+        if action is not None:
+            action()
         return ab
 
     def pause(self, val: T, future: Postable[T]) -> int:
@@ -2208,9 +2215,9 @@ class Barrier(Trigger, Generic[T]):
             the number of objects that had previously reached the
             :class:`Barrier`
         """
-        return self.reach(val, future)
+        return self.reach((val, future))
 
-    def pass_through(self, val: T) -> int:
+    def pass_through(self) -> int:
         """
         Reach the :class:`Barrier` without pausing there.  Equivalent to calling
         :func:`reach` without a ``future`` parameter.
@@ -2221,7 +2228,7 @@ class Barrier(Trigger, Generic[T]):
             the number of objects that had previously reached the
             :class:`Barrier`
         """
-        return self.reach(val)
+        return self.reach()
 
     def reset(self, required: Optional[int] = None) -> None:
         """

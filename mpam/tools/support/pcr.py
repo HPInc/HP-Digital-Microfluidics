@@ -550,7 +550,7 @@ class CombSynth(PCRTask):
 
     phase_5_mix: PlacedMixSequence
 
-    phase_barrier: Barrier[Drop]
+    phase_barrier: Barrier
 
     thermocycler: Thermocycler
 
@@ -779,7 +779,7 @@ class CombSynth(PCRTask):
             pads = sorted(mix.pads, key=down_then_left)
             ep = self.phase_1_ep
             result = c1.my_reagent("R1")
-            passed_by = Barrier[Drop](n)
+            passed_by = Barrier(n)
             ready_for_next: WaitableType = NO_WAIT
             for pad, frag in zip(pads, c1.fragments):
                 if pad is mix.lead_drop_pad:
@@ -810,8 +810,8 @@ class CombSynth(PCRTask):
         if c2 is not None:
             rdiluted = c2.my_reagent("R1[diluted]")
             result = c2.my_reagent("R2")
-            in_pos = Barrier[Drop](2)
-            passed_by = Barrier[Drop](2)
+            in_pos = Barrier(2)
+            passed_by = Barrier(2)
 
             paths.append((c2.lead_drop,
                           Path.empty().reach(in_pos)
@@ -852,7 +852,7 @@ class CombSynth(PCRTask):
             rmixed = c4.my_reagent("R3[mixed]")
             result = c4.my_reagent("R4")
 
-            mix_done = Barrier[Drop](2)
+            mix_done = Barrier(2)
 
             paths.append((c4.lead_drop,
                           Path.start(self.phase_4_mix.as_process(n_shuttles=n_shuttles, result=rmixed))
@@ -944,7 +944,7 @@ class CombSynth(PCRTask):
 
             return path
 
-        in_pos = Barrier[Drop](len(tuple(x for x in tcycling if x is not None)))
+        in_pos = Barrier(len(tuple(x for x in tcycling if x is not None)))
         c1,c2,c3,c4,c5 = tcycling
         # print(f"Tcycle channels: {channels_used}")
         if c1 is not None:

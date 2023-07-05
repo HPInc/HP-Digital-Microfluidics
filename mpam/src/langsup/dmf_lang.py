@@ -2039,7 +2039,7 @@ class DMFCompiler(DMFVisitor):
             local_env = env.new_child()
             if len(stat_execs) == 1:
                 return stat_execs[0].evaluate(local_env)
-            barrier = Barrier[Any](required = len(stat_execs))
+            barrier = Barrier(required = len(stat_execs))
             error: MaybeError[None] = None
             trigger_future = Postable[MaybeError[None]]()
             barrier.wait(None, trigger_future)
@@ -2065,7 +2065,7 @@ class DMFCompiler(DMFVisitor):
                 def reach_barrier(maybe_error: MaybeError[None]) -> None:
                     if isinstance(maybe_error, EvaluationError):
                         note_error(maybe_error)
-                    barrier.reach(maybe_error)
+                    barrier.reach()
                 for se in stat_execs:
                     se.evaluate(local_env).then_call(reach_barrier)
             return future

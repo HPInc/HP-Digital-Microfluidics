@@ -654,11 +654,11 @@ class Blob(OpScheduler['Blob']):
             if npads == 1:
                 return modifier.schedule_for(first).transformed(to_const(None))
             future = Postable[None]()
-            barrier = Barrier[BinaryComponent](npads)
+            barrier = Barrier(npads)
             barrier.wait(None, future)
             with first.board.system.batched():
                 for p in pads:
-                    p.schedule(modifier).then_call(lambda _: barrier.pass_through(p))
+                    p.schedule(modifier).then_call(lambda _: barrier.pass_through())
             return future
         
         def after_delay(self, after:WaitableType, 
