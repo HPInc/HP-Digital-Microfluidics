@@ -665,11 +665,19 @@ class FutureValue(Generic[Val_]):
                 self._future = self._postable
         
     def assign(self, val: Val_) -> Val_:
+        postable: Optional[Postable[Val_]] = None
         with self.reset_lock:
-            if self.has_value:
-                self._future = Delayed.complete(val)
-            else:
-                self._postable.post(val)
+            # We don't want to post within the lock (because that will lock out
+            # assignments while the consequences run), but we also don't want to
+            # race with another thread, who might post on the same Postable.  So
+            # what we do is we grab the Postable but reset _future to a complete
+            # one, so anybody racing with us will see that we have a value (and
+            # replace it) and ignore the Postable.
+            if not self.has_value:
+                postable = self._postable;
+            self._future = Delayed.complete(val)
+        if postable is not None:
+            postable.post(val)
         return val 
 
     
@@ -1118,31 +1126,32 @@ class Func:
         self.overloads[sig.param_types] = (sig,definition)
         if isinstance(curry_at, int):
             curry_at=(curry_at,)
+        has_extra_arg = isinstance(definition, (ExtraArgFunc, ExtraArgDelayedFunc))
         for curry_pos in curry_at:
-            pos = curry_pos
-            outer_param_types = list(param_types)
-            inner_param_type = outer_param_types.pop(0)
-            inner_return_type = return_type
-            outer_return_type = CallableType.find((inner_param_type,), inner_return_type)
-            has_extra_arg = isinstance(definition, (ExtraArgFunc, ExtraArgDelayedFunc))
-            if has_extra_arg:
-                pos += 1
-            # curry_name = f"{self.name}/{'x'.join(str(t) for t in outer_param_types)}"
-            def outer_fn(*outer_args: Sequence[Any]) -> CallableValue:
-                args = list(outer_args)
-                def inner_fn(inner_arg: Any) -> Delayed[Any]:
-                    # We need to copy in case we're called again
-                    local_args = list(args)
-                    local_args.insert(pos, inner_arg)
-                    return definition(*local_args)
-                adapted_fn = AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn)
-                return adapted_fn
-            if has_extra_arg:
-                self.register(outer_param_types, outer_return_type, ExtraArgFunc(outer_fn),
-                              curry_for=inner_param_type)
-            else:
-                self.register_immediate(outer_param_types, outer_return_type, outer_fn, 
-                                        curry_for=inner_param_type)
+            def register_curry(pos: int) -> None:
+                outer_param_types = list(param_types)
+                inner_param_type = outer_param_types.pop(pos)
+                inner_return_type = return_type
+                outer_return_type = CallableType.find((inner_param_type,), inner_return_type)
+                if has_extra_arg:
+                    pos += 1
+                # curry_name = f"{self.name}/{'x'.join(str(t) for t in outer_param_types)}"
+                def outer_fn(*outer_args: Any) -> CallableValue:
+                    args = list(outer_args)
+                    def inner_fn(inner_arg: Any) -> Delayed[Any]:
+                        # We need to copy in case we're called again
+                        local_args = list(args)
+                        local_args.insert(pos, inner_arg)
+                        return definition(*local_args)
+                    adapted_fn = AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn)
+                    return adapted_fn
+                if has_extra_arg:
+                    self.register(outer_param_types, outer_return_type, ExtraArgFunc(outer_fn),
+                                  curry_for=inner_param_type)
+                else:
+                    self.register_immediate(outer_param_types, outer_return_type, outer_fn, 
+                                            curry_for=inner_param_type)
+            register_curry(curry_pos)
         return self
         
     def register_immediate(self, param_types: Sequence[Type], return_type: Type, 

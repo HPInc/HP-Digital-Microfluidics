@@ -227,7 +227,7 @@ class Environment(Scope[str, Any]):
     @property
     def monitor(self) -> Optional[BoardMonitor]:
         system = self.board.system
-        print(f"Monitor used is {system.monitor}")
+        # print(f"Monitor used is {system.monitor}")
         return system.monitor
     
     def __init__(self, parent: Optional[Scope[str, Any]], 
@@ -1600,7 +1600,7 @@ class DMFCompiler(DMFVisitor):
             func = Functions[func]
         arg_execs = [self.visit(arg) for arg in arg_ctxts]
         arg_types = [ae.return_type for ae in arg_execs]
-        will_inject = self.get_injected_type_annotation(ctx)
+        will_inject: Optional[Type] = self.get_injected_type_annotation(ctx)
         if will_inject is None:
             desc = func[arg_types]
         else:
@@ -1707,7 +1707,7 @@ class DMFCompiler(DMFVisitor):
     def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext) -> Executable:
         name_ctx = cast(DMFParser.NameContext, ctx.which)
         type_ctx = cast(Optional[DMFParser.Value_typeContext], ctx.value_type())
-        n = None if ctx.n is None else int(cast(Token, ctx.n).text)
+        n: Optional[int] = None if ctx.n is None else int(cast(Token, ctx.n).text)
 
         if type_ctx is None:
             name: str = cast(str, name_ctx.val)
@@ -1751,6 +1751,8 @@ class DMFCompiler(DMFVisitor):
                 if var_type < Type.BINARY_STATE:
                     var_type = Type.BINARY_STATE
                 if not self.current_types.is_top_level:
+                    if n is not None:
+                        return self.do_declaration(ctx, var_type = var_type, n = n, init_ctx = ctx.what)
                     self.print_warning(ctx, lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}")
                 setter = lambda env, val: env.define(name, val)
                 if not value.contains_error:
@@ -1832,17 +1834,27 @@ class DMFCompiler(DMFVisitor):
     #     return self.visit(ctx.assignment())
     
     def visitDeclaration(self, ctx:DMFParser.DeclarationContext) -> Executable:
-        name_ctx : Optional[DMFParser.NameContext] = ctx.name()
-        var_type: Optional[Type] = ctx.type
-        n: Optional[int] = ctx.n
-        init_ctx: Optional[DMFParser.ExprContext] = ctx.init
-        has_local_kwd = ctx.LOCAL() is not None
-        target_ctx: Optional[DMFParser.ExprContext] = ctx.target
+        return self.do_declaration(ctx, name_ctx = ctx.name(),
+                                   var_type = ctx.type,
+                                   n = ctx.n,
+                                   init_ctx = ctx.init,
+                                   has_local_kwd = ctx.LOCAL() is not None,
+                                   target_ctx = ctx.target)
+        
+    def do_declaration(self, ctx: ParserRuleContext, *,
+                       name_ctx: Optional[DMFParser.NameContext] = None,
+                       var_type: Optional[Type] = None,
+                       n : Optional[int] = None,
+                       init_ctx: Optional[DMFParser.ExprContext] = None,
+                       has_local_kwd: bool = False,
+                       target_ctx: Optional[DMFParser.ExprContext] = None 
+                       ) -> Executable:
         
         if name_ctx is None:
             assert var_type is not None
             assert n is not None
             name = self.type_name_var(var_type, n)
+            # logger.info(f"Declaring {name}: {self.text_of(ctx)}")
         else:
             name = cast(str, name_ctx.val)
             # name = self.text_of(name_ctx)
@@ -1851,7 +1863,6 @@ class DMFCompiler(DMFVisitor):
         value = self.visit(init_ctx) if init_ctx is not None else None
         
         assert target_ctx is None or isinstance(var_type, FutureType)
-        target = self.visit(target_ctx) if target_ctx is not None else None
         
         if isinstance(var_type, FutureType):
             if value is not None:
@@ -1901,8 +1912,10 @@ class DMFCompiler(DMFVisitor):
         
         decl_type = var_type 
         injection = None
-        if target is not None:
+        if target_ctx is not None:
             assert isinstance(var_type, FutureType)
+            self.set_injected_type_annotation(target_ctx, var_type.value_type)
+            target = self.visit(target_ctx)
             def get_future(env: Environment) -> Delayed[Any]:
                 fv: FutureValue = env[name]
                 return fv.future
@@ -2675,7 +2688,7 @@ class DMFCompiler(DMFVisitor):
                     return comp
                 def after_first(first: CallableValue) -> Delayed[MaybeError[CallableValue]]:
                     return what.evaluate(env, target_type).transformed(error_check(lambda second: combine(first, second)))
-                return who.evaluate(env, injected_type).chain(error_check_delayed(after_first))
+                return who.evaluate(env, lhs_type).chain(error_check_delayed(after_first))
             return Executable(chain_type, chain, (who, what))
         elif lhs_type is not None:
             return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else lhs_type.return_type
@@ -3458,6 +3471,12 @@ class DMFCompiler(DMFVisitor):
             return s.add(val)
         for st in SampleType.all():
             fn.register_immediate((st, st.element_type), st, add_to_sample, curry_at=0)
+            
+        # fn = BuiltIns["curried"] = Functions["curried"]
+        # def curried(i: int, s: str) -> str:
+        #     return f"{i} -- {s}"
+        # fn.register_immediate((Type.INT, Type.STRING), Type.STRING, curried, curry_at=(0,1))
+        
             
         
     @classmethod

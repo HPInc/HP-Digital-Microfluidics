@@ -49,7 +49,7 @@ declaration returns [Optional[Type] type, str pname, int n]
   | LOCAL name ASSIGN init=expr
   	{$ctx.pname=$name.text}
   	{$ctx.type=None} 
-  | LOCAL? value_type INT ASSIGN init=expr? 
+  | LOCAL value_type INT ASSIGN init=expr
   	{$ctx.type=$value_type.type}
   	{$ctx.n=$INT.int}
   | LOCAL value_type INT
