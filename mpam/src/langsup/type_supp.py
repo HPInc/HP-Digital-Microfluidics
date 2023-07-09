@@ -621,7 +621,7 @@ class MaybeType(Type):
         def raise_on_none() -> NoReturn:
             raise ConversionError(self, other, None)
         if if_there_conv is SpecialValueConverter.IDENTITY:
-            return lambda v : raise_on_none() if v is None else v
+            return lambda v : raise_on_none() if v is None else Delayed.complete(v)
         elif if_there_conv is SpecialValueConverter.NO_CONVERSION or if_there_conv is MISSING:
             return if_there_conv
         else:
