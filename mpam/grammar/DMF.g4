@@ -21,23 +21,12 @@ interactive
   : compound EOF  # compound_interactive
   | loop EOF # loop_interactive
   | declaration TERMINATOR? EOF # decl_interactive
-//  | assignment TERMINATOR? EOF # assignment_interactive
-//  | printing TERMINATOR? EOF # print_interactive
+  | macro_declaration EOF # macro_def_interactive
   | expr TERMINATOR? EOF # expr_interactive
   | EOF # empty_interactive
-//  | pad_op EOF # pad_op_interactive 
   ;
 
 
-//top_level_stat
-//  : assignment TERMINATOR                        # assignment_tls
-//  | which=name ASSIGN macro_header body=compound # macro_def_tls
-//  ;
-  
-//assignment
-//  : which=name (':' value_type)? ASSIGN what=expr           # name_assignment
-////  | obj=expr ATTR attr ASSIGN what=expr   # attr_assignment
-//  ;
   
 declaration returns [Optional[Type] type, str pname, int n]
   : LOCAL? 'future' not_future_type name INJECT target=expr
@@ -60,21 +49,10 @@ declaration returns [Optional[Type] type, str pname, int n]
   	{$ctx.pname=$name.text}
   ;
   
-//printing : 'print' vals+=expr (',' vals+=expr)* ;
-  
-//pad_op
-//  : 'turn'? which=expr (ON | OFF)
-//  | 'turn' (ON|OFF) which=expr
-//  | TOGGLE which=expr   
-//  ;
   
 stat
   : declaration TERMINATOR # decl_stat
-//  | assignment TERMINATOR  # assign_stat
-//  | which=name ASSIGN macro_header body=compound # macro_def_stat
-//  | pad_op TERMINATOR    # pad_op_stat
-//  | ('pause' | 'wait') 'for'? duration=expr TERMINATOR           # pause_stat
-//  | printing TERMINATOR                           # print_stat
+  | macro_declaration            # macro_def_stat
   | 'if' tests+=expr bodies+=compound 
      ('else' 'if' tests+=expr bodies+=compound)*
      ('else' else_body=compound)?              # if_stat
@@ -97,7 +75,6 @@ loop_header
   | 'with' var=name 'in' seq=expr # seq_iter_loop_header
   | 'with' var=name first=step_first_and_dir 'to' bound=expr ('by' step=expr)? # step_iter_loop_header
   | 'with' var=param first=step_first_and_dir 'to' bound=expr ('by' step=expr)? # step_iter_loop_header
-//  | 'with' var=name first=step_first_and_dir 'to' bound=expr ('by' step=expr)? # step_iter_loop_header
   ;
   
 step_first_and_dir returns [bool is_down]
@@ -109,7 +86,6 @@ step_first_and_dir returns [bool is_down]
   
 loop
   : ('[' loop_name=name ']')? 'repeat' header=loop_header body=compound
-//  : 'repeat' header=loop_header body=compound
   ;
   
 exit
@@ -132,8 +108,6 @@ expr
   | '-' rhs=expr                     # neg_expr
   | dist=expr direction              # delta_expr
   | kind=numbered_type '#' which=expr # numbered_expr
-//  | 'well' '#' which=expr            # well_expr
-//  | 'heater' '#' which=expr			 # heater_expr
   | 'an'? empty='empty' sample_type				# sample_expr
   | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
   | quant=expr 'as' 'a'? 'string' 'in' dim_unit # unit_string_expr
@@ -168,8 +142,6 @@ expr
   | ('pause' | 'wait') 'for'? duration=expr            # pause_expr
   | (('pause' | 'wait') 'for' 'user' | 'prompt') ( vals+= expr (',' vals+=expr)* )? # prompt_expr
   | 'print' vals+=expr (',' vals+=expr)* # print_expr
-//  | 'a'? 'sample' 'containing' vals+=expr (',' vals+=expr)* (','? 'and' vals+=expr)? # sample_expr
-//  | 'a'? 'sample' 'containing' vals+=expr (',' vals+=expr)* # sample_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr
@@ -177,15 +149,9 @@ expr
   | first=expr 'if' cond=expr 'else' second=expr  # cond_expr
   | macro_def                        # macro_expr
   | no_arg_action                    # action_expr
-//  | 'turn'? (ON | OFF)               # twiddle_expr
-//  | 'toggle' 'state'?                # twiddle_expr
-//  | 'remove' ('from' 'the'? 'board')? # remove_expr
-
   | 'the'? value_type                # type_name_expr
   | value_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
-//  | 'reagent' STRING                 # reagent_expr
-//  | name  '(' (args+=expr (',' args+=expr)*)? ')' # function_expr
   | name                             # name_expr
   | multi_word_name                  # mw_name_expr
   | which=name ASSIGN what=expr    # name_assign_expr
@@ -242,12 +208,21 @@ axis returns [bool verticalp]
   | ('col' | 'column') {$ctx.verticalp=False}
   ;
   
+  
+macro_declaration
+  : macro_def
+  ;
+  
 macro_def
-  : macro_header (compound | expr)
+  : macro_header (compound | ':' expr)
   ;
   
 macro_header
-  : 'macro' '(' (param (',' param)*)? ')' ('->' ret_type=value_type)?
+  : ('macro' | 'define' | 'def') called=name? '(' (param (',' param)*)? ')' ('->' ret_type=value_type)?
+  | 'lambda' ('(' (param (',' param)*)? ')')? ('->' ret_type=value_type)?
+  | 'action' called=name?
+  | ('function' | 'func') called=name? ('(' (param (',' param)*)? ')')? ('->' ret_type=value_type)
+  | ('procedure' | 'proc') called=name? ('(' (param (',' param)*)? ')')?
   ;
   
 param returns[Type type, str pname, int n, bool deprecated]
@@ -339,7 +314,6 @@ component_type returns[Type type]
   | 'fan' {$ctx.type=Type.FAN}
   | 'sensor' {$ctx.type=Type.SENSOR}
   | 'eselog' {$ctx.type=Type.ESELOG}
-//  | 'board' {$ctx.Type=Type.BOARD}
   ;
   
 dim_unit returns[PhysUnit unit]
@@ -405,7 +379,6 @@ attr
   	   | 'fan' | 'capacity' | 'eselog' | 'timestamp' | 'temperature' |'temp' | 'gate'
   	   | 'dir' | 'direction' | 'row' | 'col' | 'column' | 'voltage' | 'mode'
   	   | 'value'
-//  | atomic_type
   | ID
   ;
 
@@ -435,7 +408,6 @@ multi_word_name returns[str val]
   | 'the'? 'interactive' 'reagent' {$ctx.val="interactive reagent"}
   | 'the'? 'interactive' 'volume' {$ctx.val="interactive volume"}
   | 'the' 'board' {$ctx.val="the board"}
-//  | 'the'? 'index' 'base' {$ctx.val="index base"}
   | 'the'? 'last'? 'clicked' 'pad'{$ctx.val="clicked pad"}
   | 'the'? 'last'? 'clicked' 'drop'{$ctx.val="clicked drop"}
   | 'dispense' 'a'? 'drop' {$ctx.val="dispense drop"}

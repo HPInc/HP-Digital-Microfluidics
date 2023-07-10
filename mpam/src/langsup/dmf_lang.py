@@ -612,15 +612,24 @@ class MacroValue(CallableValue):
     param_names: Final[Sequence[str]]
     body: Final[Executable]
     static_env: Final[Environment]
+    name: Final[Optional[str]]
     
-    def __init__(self, mt: CallableType, env: Environment, param_names: Sequence[str], body: Executable) -> None:
-        super().__init__(mt.sig)
+    def __init__(self, *,
+                 macro_type: CallableType, 
+                 env: Environment, 
+                 param_names: Sequence[str], 
+                 body: Executable,
+                 name: Optional[str] = None) -> None:
+        super().__init__(macro_type.sig)
         self.static_env = env
         self.param_names = param_names
         self.body = body
+        self.name = name
         
     def apply(self, args:Sequence[Any])->Delayed[Any]:
         bindings = dict(zip(self.param_names, args))
+        if self.name is not None:
+            bindings[self.name] = self
         local_env = self.static_env.new_child(bindings)
         def unwrap_return(val: MaybeError[Any]) -> MaybeError[Any]:
             return val.value if isinstance(val, MacroReturn) else val
@@ -1663,6 +1672,8 @@ class DMFCompiler(DMFVisitor):
     def visitDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext) -> Executable:
         return self.visit(ctx.declaration())
 
+    def visitMacro_def_interactive(self, ctx:DMFParser.Macro_def_interactiveContext) -> Executable:
+        return self.visit(ctx.macro_declaration())
 
     def exprAsStatement(self, ctx: DMFParser.ExprContext) -> Executable:
         ex = self.visit(ctx)
@@ -1752,7 +1763,7 @@ class DMFCompiler(DMFVisitor):
                     var_type = Type.BINARY_STATE
                 if not self.current_types.is_top_level:
                     if n is not None:
-                        return self.do_declaration(ctx, var_type = var_type, n = n, init_ctx = ctx.what)
+                        return self.do_variable_declaration(ctx, var_type = var_type, n = n, init_ctx = ctx.what)
                     self.print_warning(ctx, lambda text: f"Undeclared variable '{name}' assigned to in local scope: {text}")
                 setter = lambda env, val: env.define(name, val)
                 if not value.contains_error:
@@ -1833,23 +1844,34 @@ class DMFCompiler(DMFVisitor):
     # def visitAssign_stat(self, ctx:DMFParser.Assign_statContext) -> Executable:
     #     return self.visit(ctx.assignment())
     
+    def visitMacro_declaration(self, ctx:DMFParser.Macro_declarationContext) -> Executable:
+        macro_ctx: DMFParser.Macro_defContext = ctx.macro_def()
+        name_ctx: Optional[DMFParser.NameContext] = macro_ctx.macro_header().called
+        if name_ctx is None:
+            return self.error(ctx, Type.NO_VALUE, "Declared functions must have names.")
+        name = cast(str, name_ctx.val)
+        value = self.visit(macro_ctx)
+        var_type = value.return_type
+        return self.do_declaration(ctx, name, var_type, value, name_ctx=name_ctx)
+
+    
     def visitDeclaration(self, ctx:DMFParser.DeclarationContext) -> Executable:
-        return self.do_declaration(ctx, name_ctx = ctx.name(),
-                                   var_type = ctx.type,
-                                   n = ctx.n,
-                                   init_ctx = ctx.init,
-                                   has_local_kwd = ctx.LOCAL() is not None,
-                                   target_ctx = ctx.target)
+        return self.do_variable_declaration(ctx, name_ctx = ctx.name(),
+                                            var_type = ctx.type,
+                                            n = ctx.n,
+                                            init_ctx = ctx.init,
+                                            has_local_kwd = ctx.LOCAL() is not None,
+                                            target_ctx = ctx.target)
         
-    def do_declaration(self, ctx: ParserRuleContext, *,
-                       name_ctx: Optional[DMFParser.NameContext] = None,
-                       var_type: Optional[Type] = None,
-                       n : Optional[int] = None,
-                       init_ctx: Optional[DMFParser.ExprContext] = None,
-                       has_local_kwd: bool = False,
-                       target_ctx: Optional[DMFParser.ExprContext] = None 
-                       ) -> Executable:
         
+    def do_variable_declaration(self, ctx: ParserRuleContext, *,
+                                name_ctx: Optional[DMFParser.NameContext] = None,
+                                var_type: Optional[Type] = None,
+                                n : Optional[int] = None,
+                                init_ctx: Optional[DMFParser.ExprContext] = None,
+                                has_local_kwd: bool = False,
+                                target_ctx: Optional[DMFParser.ExprContext] = None 
+                                ) -> Executable:
         if name_ctx is None:
             assert var_type is not None
             assert n is not None
@@ -1861,24 +1883,40 @@ class DMFCompiler(DMFVisitor):
 
         assert init_ctx is not None or var_type is not None
         value = self.visit(init_ctx) if init_ctx is not None else None
-        
-        assert target_ctx is None or isinstance(var_type, FutureType)
-        
-        if isinstance(var_type, FutureType):
-            if value is not None:
-                return self.not_yet_implemented("initializations in future-typed variables", ctx)
-            vt = var_type.value_type
-            value = Executable(var_type, lambda _env: Delayed.complete(FutureValue(vt)), ())
-            
-        # if we have a "type n = init" form and "type n" already defined, we just assign rather than
-        # shadowing
-        just_assign = not has_local_kwd and value is not None and self.current_types.lookup(name) is not MISSING
-
         if var_type is None:
             assert value is not None
             var_type = value.return_type
             if var_type < Type.BINARY_STATE:
                 var_type = Type.BINARY_STATE     
+        if isinstance(var_type, FutureType):
+            if value is not None:
+                return self.not_yet_implemented("initializations in future-typed variables", ctx)
+            vt = var_type.value_type
+            value = Executable(var_type, lambda _env: Delayed.complete(FutureValue(vt)), ())
+        if target_ctx is not None:
+            assert isinstance(var_type, FutureType)
+            self.set_injected_type_annotation(target_ctx, var_type.value_type)
+            target = self.visit(target_ctx)
+            target_pair = (target, target_ctx)
+        else:
+            target_pair = None
+        
+        return self.do_declaration(ctx, name, var_type, value, 
+                                   target_pair = target_pair, 
+                                   has_local_kwd = has_local_kwd, 
+                                   name_ctx=name_ctx)
+        
+    def do_declaration(self, ctx: ParserRuleContext,
+                       name: str, var_type: Type,
+                       value: Optional[Executable] = None,
+                       *,
+                       target_pair: Optional[tuple[Executable, ParserRuleContext]] = None,
+                       has_local_kwd: bool = False,
+                       name_ctx: ParserRuleContext) -> Executable:
+        # if we have a "type n = init" form and "type n" already defined, we just assign rather than
+        # shadowing
+        just_assign = not has_local_kwd and value is not None and self.current_types.lookup(name) is not MISSING
+
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
             return self.error(ctx, var_type, 
@@ -1912,10 +1950,9 @@ class DMFCompiler(DMFVisitor):
         
         decl_type = var_type 
         injection = None
-        if target_ctx is not None:
+        if target_pair is not None:
             assert isinstance(var_type, FutureType)
-            self.set_injected_type_annotation(target_ctx, var_type.value_type)
-            target = self.visit(target_ctx)
+            target, target_ctx=target_pair
             def get_future(env: Environment) -> Delayed[Any]:
                 fv: FutureValue = env[name]
                 return fv.future
@@ -1942,6 +1979,9 @@ class DMFCompiler(DMFVisitor):
 
     def visitDecl_stat(self, ctx:DMFParser.Decl_statContext) -> Executable:
         return self.visit(ctx.declaration())
+    
+    def visitMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext) -> Executable:
+        return self.visit(ctx.macro_declaration())
     
     def visitPrint_expr(self, ctx:DMFParser.Print_exprContext) -> Executable:
         arg_text = (self.text_of(c) for c in ctx.vals)
@@ -2930,12 +2970,17 @@ class DMFCompiler(DMFVisitor):
     
     def check_macro_params(self, names: Sequence[str],
                            types: Sequence[Type], 
-                           ctxts: Sequence[DMFParser.ParamContext]) -> Optional[Executable]:
+                           ctxts: Sequence[DMFParser.ParamContext],
+                           macro_name: Optional[str]) -> Optional[Executable]:
         seen = set[str]()
         saw_duplicate = False
         saw_untyped = any(t is Type.ERROR for t in types)
         saw_future = False
+        saw_macro_name = False
         for i,n in enumerate(names):
+            if n == macro_name:
+                self.error(ctxts[i], Type.IGNORE, lambda txt: f"Parameter with same name as macro: '{txt}'")
+                saw_macro_name = True
             if n in seen:
                 self.error(ctxts[i], Type.IGNORE, lambda txt: f"Duplicate parameter: '{txt}'")
                 saw_duplicate = True
@@ -2945,7 +2990,7 @@ class DMFCompiler(DMFVisitor):
             if isinstance(t, FutureType):
                 self.not_yet_implemented("future-typed parameters", ctxts[i])
                 saw_future = True
-        if not saw_duplicate and not saw_untyped and not saw_future:
+        if not saw_duplicate and not saw_untyped and not saw_future and not saw_macro_name:
             return None
         macro_type = CallableType.find(types, Type.NO_VALUE)
         return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
@@ -2953,6 +2998,8 @@ class DMFCompiler(DMFVisitor):
     def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
         header: DMFParser.Macro_headerContext = ctx.macro_header()
         param_contexts: Sequence[DMFParser.ParamContext] = header.param()
+        name_ctx: Optional[DMFParser.NameContext] = header.called
+        name: Optional[str] = None if name_ctx is None else name_ctx.val
         
         for pc in param_contexts:
             if cast(bool, pc.deprecated):
@@ -2963,31 +3010,43 @@ class DMFCompiler(DMFVisitor):
         param_types = tuple(pdef[1] for pdef in param_defs)
         
         return_type_context: Optional[DMFParser.Value_typeContext] = header.ret_type
+        
         return_type = Type.NO_VALUE if return_type_context is None else cast(Type, return_type_context.type)
         
-        if e := self.check_macro_params(param_names, param_types, param_contexts):
+        if e := self.check_macro_params(param_names, param_types, param_contexts, name):
             return e
         
         if isinstance(return_type, FutureType):
             return self.not_yet_implemented("future-valued macros", ctx)
         
+        macro_type = CallableType.find(param_types, return_type)
         # Unfortunately, you can't put parens around multiple with clauses until
         # Python 3.10.
-        with self.current_types.push(dict(param_defs)), \
-             self.control_stack.enter_macro(return_type): 
+        new_bindings = dict(param_defs)
+        if name is not None:
+            new_bindings[name] = macro_type
+        with self.current_types.push(new_bindings): 
             body: Executable
             if ctx.compound() is not None:
-                body = self.visit(ctx.compound())
+                with self.control_stack.enter_macro(return_type):
+                    body = self.visit(ctx.compound())
+                body_type = body.return_type
+                if return_type is not Type.NO_VALUE and body_type is not Type.MACRO_RETURN:
+                    return self.error(ctx, macro_type, "Macro does not return a value.")
             else:
                 body = self.visit(ctx.expr())
+                if return_type is Type.NO_VALUE:
+                    # There was no return type specified, so we use the one from the expr
+                    return_type = body.return_type
+                    macro_type = CallableType.find(param_types, return_type)
         
-        body_type = body.return_type
-        macro_type = CallableType.find(param_types, return_type)
-        if return_type is not Type.NO_VALUE and body_type is not Type.MACRO_RETURN:
-            return self.error(ctx, macro_type, "Macro does not return a value.")
         
         def run(env: Environment) -> Delayed[MacroValue]: # @UnusedVariable
-            return Delayed.complete(MacroValue(macro_type, env, param_names, body))
+            return Delayed.complete(MacroValue(macro_type=macro_type, 
+                                               env=env, 
+                                               param_names=param_names, 
+                                               body=body,
+                                               name=name))
         return Executable(macro_type, run, (body,))
 
     def visitUnit_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:

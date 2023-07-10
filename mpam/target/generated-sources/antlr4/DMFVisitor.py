@@ -37,6 +37,11 @@ class DMFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by DMFParser#macro_def_interactive.
+    def visitMacro_def_interactive(self, ctx:DMFParser.Macro_def_interactiveContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by DMFParser#expr_interactive.
     def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext):
         return self.visitChildren(ctx)
@@ -54,6 +59,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#decl_stat.
     def visitDecl_stat(self, ctx:DMFParser.Decl_statContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#macro_def_stat.
+    def visitMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext):
         return self.visitChildren(ctx)
 
 
@@ -424,6 +434,11 @@ class DMFVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by DMFParser#axis.
     def visitAxis(self, ctx:DMFParser.AxisContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by DMFParser#macro_declaration.
+    def visitMacro_declaration(self, ctx:DMFParser.Macro_declarationContext):
         return self.visitChildren(ctx)
 
 

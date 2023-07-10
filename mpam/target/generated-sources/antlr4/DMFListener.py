@@ -52,6 +52,15 @@ class DMFListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by DMFParser#macro_def_interactive.
+    def enterMacro_def_interactive(self, ctx:DMFParser.Macro_def_interactiveContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#macro_def_interactive.
+    def exitMacro_def_interactive(self, ctx:DMFParser.Macro_def_interactiveContext):
+        pass
+
+
     # Enter a parse tree produced by DMFParser#expr_interactive.
     def enterExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext):
         pass
@@ -85,6 +94,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#decl_stat.
     def exitDecl_stat(self, ctx:DMFParser.Decl_statContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#macro_def_stat.
+    def enterMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#macro_def_stat.
+    def exitMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext):
         pass
 
 
@@ -751,6 +769,15 @@ class DMFListener(ParseTreeListener):
 
     # Exit a parse tree produced by DMFParser#axis.
     def exitAxis(self, ctx:DMFParser.AxisContext):
+        pass
+
+
+    # Enter a parse tree produced by DMFParser#macro_declaration.
+    def enterMacro_declaration(self, ctx:DMFParser.Macro_declarationContext):
+        pass
+
+    # Exit a parse tree produced by DMFParser#macro_declaration.
+    def exitMacro_declaration(self, ctx:DMFParser.Macro_declarationContext):
         pass
 
 
