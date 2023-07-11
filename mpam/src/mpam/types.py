@@ -28,10 +28,11 @@ from quantities.dimensions import Molarity, MassConcentration, \
     VolumeConcentration, Volume, Time, Temperature
 from quantities.temperature import TemperaturePoint
 from functools import cached_property
-from quantities.SI import sec, deg_C
+from quantities.SI import sec, deg_C, ms, second
 from erk.basic import assert_never
 from quantities.timestamp import Timestamp
 import statistics
+from erk.worker_pool import WorkerPool
 
 
 logger = logging.getLogger(__name__)
@@ -1957,6 +1958,8 @@ class _CompleteDelayed(Delayed[T]):
         fn(self._constant)
         return self
     
+    then_call = when_value
+    
     
 
 # MyPy complains about the variance mismatch between Postable and Delayed,
@@ -1992,6 +1995,35 @@ class Postable(Delayed[Tcontra]): # type: ignore [type-var]
     """
 
     def _define_in_concrete(self) -> None: ...
+    
+    WorkerType = tuple[Any, Callable[[Any], Any]]
+    _cached_work_pool: Optional[WorkerPool[tuple[Any, Callable[[Any], Any]]]] = None
+    _wp_lock: Final = Lock()
+    
+    @classmethod
+    def _work_pool(cls) -> WorkerPool[WorkerType]:
+        wp = cls._cached_work_pool
+        if wp is not None: 
+            return wp
+        with cls._wp_lock:
+            wp = cls._cached_work_pool
+            if wp is not None:
+                return wp
+            def dispatch(pair: Postable.WorkerType) -> None:
+                val, fn = pair
+                fn(val)
+            wp = WorkerPool[Postable.WorkerType](task_handler = dispatch,
+                                                 min_workers = 2,
+                                                 max_workers = 10,
+                                                 monitor_polling_interval = 100*ms,
+                                                 worker_polling_interval = 1*second,
+                                                 max_up_to_date_workers = 2,
+                                                 min_worker_lifetime = 1*second,
+                                                 min_worker_creation_interval = 1*second)
+            # logger.info(f"Starting {wp}")
+            wp.start()
+            cls._cached_work_pool = wp
+            return wp
 
     # The logic here is a bit tricky, but I think it works.
     # We're racing against when_value().  If we see that there's
@@ -2025,8 +2057,10 @@ class Postable(Delayed[Tcontra]): # type: ignore [type-var]
         lock = self._maybe_lock
         if lock is not None:
             with lock:
+                # logger.info(f"Posting {val}")
+                wp = self._work_pool()
                 for fn in self._callbacks:
-                    fn(val)
+                    wp.add_task((val, fn))
                 # Just in case this object gets stuck somewhere.
                 # The callbacks are never going to be needed again
                 del self._callbacks
