@@ -1841,7 +1841,7 @@ class Delayed(Generic[Tco]):
         return self
 
     def post_transformed_to(self, other: Postable[V],
-                            transform: Callable[[T], V]) -> Delayed[Tco]:
+                            transform: Callable[[Tco], V]) -> Delayed[Tco]:
         """
         When a value is asserted, transform it and post it to another
         :class:`Delayed` object.
@@ -1911,9 +1911,53 @@ class Delayed(Generic[Tco]):
 
 class _CompleteDelayed(Delayed[T]):
     def _define_in_concrete(self)->None: ...
-
+    
     def __init__(self, val: T) -> None:
         self._val = (True, val)
+        self._constant: Final[T] = val
+        
+    def wait(self) -> None:
+        pass
+    
+    @property
+    def value(self) -> T:
+        return self._constant
+    
+    def chain(self, fn: Callable[[T], Delayed[V]]) -> Delayed[V]:
+        return fn(self._constant)
+    
+    def transformed(self, fn:Callable[[T], V]) -> Delayed[V]:
+        return Delayed.complete(fn(self._constant))
+    
+    def monitor(self, fn: Callable[[T], Any]) -> _CompleteDelayed[T]:
+        fn(self._constant)
+        return self
+    
+    def to_const(self, val:V) -> Delayed[V]:
+        return Delayed.complete(val)
+    
+    def then_trigger(self, trigger:Trigger) -> _CompleteDelayed[T]:
+        trigger.fire()
+        return self
+    
+    def post_to(self, other: Postable[T]) -> _CompleteDelayed[T]:
+        other.post(self._constant)
+        return self
+    
+    def post_val_to(self, other: Postable[V], value: V) -> _CompleteDelayed[T]:
+        other.post(value)
+        return self
+    
+    def post_transformed_to(self, other: Postable[V], 
+                            transform: Callable[[T], V]) -> _CompleteDelayed[T]:
+        other.post(transform(self._constant))
+        return self
+    
+    def when_value(self, fn: Callable[[T], Any]) -> _CompleteDelayed[T]:
+        fn(self._constant)
+        return self
+    
+    
 
 # MyPy complains about the variance mismatch between Postable and Delayed,
 # although only with Python 3.10.

@@ -248,7 +248,7 @@ class Board(joey.Board):
         
         
     def update_state(self) -> None:
-        logger.info("Updating pads via Opendrop")
+        # logger.info("Updating pads via Opendrop")
         if self._port is None and self._device is not None:
             self._port = Serial(self._device)
         delay = self.off_on_delay

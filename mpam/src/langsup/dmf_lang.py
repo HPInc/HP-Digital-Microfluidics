@@ -3643,7 +3643,9 @@ class DMFCompiler(DMFVisitor):
             Attributes[a].register(Type.WELL, Type.DIR, lambda well: well.exit_dir)
         Attributes["well"].register(Type.PAD, Type.WELL.maybe, lambda p: p.well)
         Attributes["well"].register(Type.WELL_PAD, Type.WELL, lambda wp: wp.well)
-        Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop) 
+        Attributes["drop"].register(Type.PAD, Type.DROP.maybe, lambda p: p.drop)
+        for a in ("extraction point", "extraction port", "hole"):
+            Attributes[a].register(Type.PAD, Type.EXTRACTION_POINT.maybe, lambda p: p.extraction_point) 
         # Attributes["magnitude"].register((Type.TIME, Type.VOLUME), Type.FLOAT, lambda q: q.magnitude)
         Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
         Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))

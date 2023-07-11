@@ -374,6 +374,7 @@ attr
   | ('std' | 'standard') ('dev' | 'deviation')
   | 'log' ('dir' | 'directory' | 'folder')
   | 'csv'? 'file' ('name' | 'template')
+  | 'extraction' ('point' | 'port')
   | kwd_names
   | 'drop' | 'pad' | 'well' | 'volume' | 'reagent' | 'heater' | 'chiller' | 'magnet' | 'state'
   	   | 'fan' | 'capacity' | 'eselog' | 'timestamp' | 'temperature' |'temp' | 'gate'
