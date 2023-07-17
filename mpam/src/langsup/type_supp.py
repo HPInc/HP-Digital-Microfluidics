@@ -14,13 +14,30 @@ from threading import RLock, Lock
 import logging
 from erk.stringutils import conj_str
 from abc import ABC, abstractmethod
-from erk.basic import ComputedDefaultDict
+from erk.basic import ComputedDefaultDict, not_None
+from itertools import product
 
 logger = logging.getLogger(__name__)
 
 Val_ = TypeVar("Val_")
 class EvaluationError(RuntimeError): ...
 MaybeError = Union[Val_, EvaluationError]
+
+def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
+    def check(*args: Any) -> MaybeError[Val_]:
+        first = args[0]
+        if isinstance(first, EvaluationError):
+            return first
+        return fn(*args)
+    return check
+
+def error_check_delayed(fn: Callable[..., Delayed[Val_]]) -> Callable[..., Delayed[MaybeError[Val_]]]:
+    def check(*args: Any) -> Delayed[MaybeError[Val_]]:
+        first = args[0]
+        if isinstance(first, EvaluationError):
+            return Delayed.complete(first)
+        return fn(*args)
+    return check
 
 
 class TypeMismatchError(RuntimeError):
@@ -72,7 +89,7 @@ class Type:
     direct_subs: Final[list[Type]]
     all_subs: Final[list[Type]]
     rep_types: _RepTypes
-    as_func_type: Final[Optional[CallableType]]
+    as_func_type: Final[Optional[FunctionType]]
     
     _conversions: Final[dict[Type, _Converter]]
     is_control: bool
@@ -169,7 +186,7 @@ class Type:
     #     funcs = self.upper_bounds(*candidates)
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
-                 as_func_type: Optional[CallableType] = None,
+                 as_func_type: Optional[FunctionType] = None,
                  rep_types: TypeRepSpec = (),
                  is_control: Optional[bool] = None):
         self.name = name
@@ -394,6 +411,10 @@ class Type:
             if vc is SpecialValueConverter.NO_CONVERSION:
                 return None
             return vc
+        
+    def is_identity_conversion_to(self, other: Type) -> bool:
+        with self._class_lock:
+            return self._conversion_to(other) is SpecialValueConverter.IDENTITY
 
     _known_bounds: Final = dict[tuple['Type',...], Sequence['Type']]()
     
@@ -512,7 +533,7 @@ class SampleableType(Type):
         return SampleType(self)
     
     def __init__(self, name: str, supers: Optional[Sequence[Type]] = None, *, 
-                 as_func_type: Optional[CallableType] = None,
+                 as_func_type: Optional[FunctionType] = None,
                  rep_types: TypeRepSpec = (),
                  is_control: Optional[bool] = None):
         super().__init__(name, supers, 
@@ -831,7 +852,105 @@ class Signature:
             return Delayed.complete(cv)
         return convert
 
+class FunctionValue(ABC):
+    @abstractmethod
+    def callable_for(self, callable_type: CallableType) -> Optional[CallableValue]: # @UnusedVariable
+        ...
 
+class FunctionType(Type, ABC):
+    @property
+    @abstractmethod
+    def callable_types(self) -> Sequence[CallableType]: ...
+    
+    def callable_type_for(self, arg_types: Sequence[Type]) -> Optional[CallableType]:
+        best: Optional[CallableType] = None
+        best_sig: Signature
+        for ct in self.callable_types:
+            sig = ct.sig
+            if sig.callable_using(arg_types):
+                if best is None or sig.narrower_than(best_sig):
+                    best = ct
+                    best_sig = sig
+                else:
+                    def error_msg() -> str:
+                        return f"{self} has two non-dominating types for {arg_types}: {best} and {ct}"
+                    assert best_sig.narrower_than(sig), error_msg()
+        return best 
+                    
+    def chained_callable_type_for(self, arg_type: Type) -> Optional[CallableType]:
+        t = self.callable_type_for((arg_type,))
+        if t is None:
+            t = self.callable_type_for(())
+        return t
+
+    def sig_for(self, arg_types: Sequence[Type]) -> Optional[Signature]:
+        t = self.callable_type_for(arg_types)
+        return None if t is None else t.sig
+
+    def chained_to(self, rhs: FunctionType) -> Optional[ChainedFunctionType]:
+        type_pairs: list[tuple[CallableType, CallableType]] = []
+        for ft in self.callable_types:
+            gt = rhs.chained_callable_type_for(ft.return_type)
+            if gt is not None:
+                type_pairs.append((ft,gt))
+        return None if len(type_pairs) == 0 else ChainedFunctionType(type_pairs)
+    
+_Chainer = Callable[['CallableValue', 'CallableValue'], 'CallableValue']
+class ChainedFunctionType(FunctionType):
+    callable_types: Final[Sequence[CallableType]]
+    chainers: Final[Sequence[tuple[CallableType, CallableType, _Chainer]]]
+    
+    def __init__(self, type_pairs: Sequence[(tuple[CallableType, CallableType])]) -> None:
+        def for_pair(ft: CallableType, gt: CallableType) -> tuple[CallableType, 
+                                                                  tuple[CallableType,
+                                                                        CallableType,
+                                                                        _Chainer]]:
+            gt_kind = gt.kind
+            assert gt.callable_using((ft.return_type,)) or gt_kind is CallableTypeKind.ACTION
+            ft_ret = ft.return_type
+            pass_through = (gt.return_type is Type.NO_VALUE)
+            ct_ret = ft_ret if pass_through else gt.return_type
+            ct = CallableType.find(ft.param_types, ct_ret)
+            
+            def chainer(lhs: CallableValue, rhs: CallableValue) -> CallableValue:
+                adapted_rhs = gt.to_chain_target(ft_ret, rhs)
+                def chained_fn(*args: Any) -> Delayed[Any]:
+                    def call_rhs(lhs_val: Any) -> Delayed[MaybeError[Any]]:
+                        return adapted_rhs.apply((lhs_val,))
+                    return (lhs.apply(args)
+                            .chain(error_check_delayed(call_rhs)))
+                return AdaptedDelayedCallableValue(ct.sig, chained_fn)
+            return (ct, (ft,gt,chainer))
+        ct_and_recs = {(t, rec) for t,rec in (for_pair(ft, gt) for ft,gt in type_pairs)}
+        self.callable_types = [ct for ct,rec in ct_and_recs]
+        self.chainers = [rec for t,rec in ct_and_recs]
+        
+    
+    def chain_values(self, lhs: FunctionValue, rhs: FunctionValue) -> FunctionValue:
+        def convert(lhs_t: CallableType, rhs_t: CallableType, chainer: _Chainer) -> CallableValue:
+            lhs_v = not_None(lhs.callable_for(lhs_t), desc=lambda: f"{lhs} has no CallableValue for {lhs_t}")
+            rhs_v = not_None(rhs.callable_for(rhs_t), desc=lambda: f"{rhs} has no CallableValue for {rhs_t}")
+            return chainer(lhs_v, rhs_v)
+        
+        callables = [convert(ft,gt,chainer) for ft,gt,chainer in self.chainers]
+        return OverloadedFunction.create(callables)
+
+class OverloadedFunction(FunctionValue):
+    supported: Final[Mapping[CallableType, CallableValue]]
+    
+    def __init__(self, callables: Sequence[CallableValue]) -> None:
+        self.supported = {c.callable_type: c for c in callables}
+        
+    def callable_for(self, callable_type: CallableType) -> Optional[CallableValue]:
+        return self.supported.get(callable_type)
+        
+    @classmethod
+    def create(cls, callables: Sequence[CallableValue]) -> Union[CallableValue, OverloadedFunction]:
+        if len(callables) == 1:
+            return callables[0]
+        else:
+            return OverloadedFunction(callables)
+    
 class CallableTypeKind(Enum):
     GENERAL = auto()
     ACTION = auto()
@@ -848,11 +967,18 @@ class CallableTypeKind(Enum):
                 return CallableTypeKind.MONITOR
         return CallableTypeKind.TRANSFORM if n_args == 1 else CallableTypeKind.GENERAL
     
-class CallableValue(ABC):
+class CallableValue(FunctionValue):
     sig: Final[Signature]
+    
+    @cached_property
+    def callable_type(self) -> CallableType:
+        return CallableType.from_sig(self.sig)
     
     def __init__(self, sig: Signature) -> None:
         self.sig = sig
+        
+    def callable_for(self, callable_type: CallableType) -> Optional[CallableValue]:
+        return None if callable_type is not self.callable_type else self
     
     @abstractmethod
     def apply(self, args: Sequence[Any]) -> Delayed[Any]: ... # @UnusedVariable
@@ -894,11 +1020,21 @@ class AdaptedImmediateCallableValue(AdaptedDelayedCallableValue):
     def __init__(self, sig: Signature, fn: Callable[..., Any]) -> None:
         super().__init__(sig, lambda *args: Delayed.complete(fn(*args)))
 
-class CallableType(Type):
+class CallableType(FunctionType):
     instances = dict[Signature, 'CallableType']()
     
     sig: Final[Signature]
     with_self_sig: Final[Signature]
+    
+    @property
+    def callable_types(self) -> Sequence[CallableType]:
+        return (self,)
+    
+    def callable_type_for(self, arg_types: Sequence[Type]) -> Optional[CallableType]:
+        return self if self.callable_using(arg_types) else None
+    
+    def callable_using(self, arg_types: Sequence[Type]) -> bool:
+        return self.sig.callable_using(arg_types)
     
     @property
     def param_types(self) -> Sequence[Type]:
@@ -953,10 +1089,14 @@ class CallableType(Type):
         ct = cls.instances.get(sig, None)
         if ct is None:
             if name is None:
-                name = f"Macro[({','.join(t.name for t in param_types)}),{return_type.name}]"
+                name = f"Function[({','.join(t.name for t in param_types)})->{return_type.name}]"
             ct = CallableType(name, param_types, return_type)
             cls.instances[sig] = ct
         return ct
+    
+    @classmethod
+    def from_sig(cls, sig: Signature, *, name: Optional[str] = None) -> CallableType:
+        return cls.find(sig.param_types, sig.return_type, name=name)
     
     def _find_conversion_to(self, other: Type) -> MissingOr[_Converter]:
         # If we can find a conversion by normal means, we use it
@@ -982,6 +1122,30 @@ class CallableType(Type):
     
     def __hash__(self)->int:
         return hash(self.sig)
+    
+    
+    def to_chain_target(self, lhs_type: Type, rhs: CallableValue) -> CallableValue:
+        kind = self.kind
+        assert kind is not CallableTypeKind.GENERAL
+        pass_value = kind is not CallableTypeKind.TRANSFORM
+        needed_type = Type.ANY if kind is CallableTypeKind.ACTION else self.param_types[0]
+        assert lhs_type.can_convert_to(needed_type)
+        if not pass_value and lhs_type.is_identity_conversion_to(needed_type):
+            return rhs
+        return_type = lhs_type if pass_value else self.return_type
+        sig = Signature.of((needed_type,), return_type)
+        
+        def call(lhs: Any) -> Delayed[MaybeError[Any]]:
+            future = (lhs_type.convert_to(needed_type, lhs)
+                      .chain(error_check_delayed(lambda v: rhs.apply((v,))))
+                      )
+            if pass_value:
+                future = future.transformed(error_check(lambda: lhs))
+            return future
+        return AdaptedDelayedCallableValue(sig, call)
+        
+            
+
     
 Type.ACTION = CallableType.find((), Type.NO_VALUE, name="Action")        
 

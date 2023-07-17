@@ -284,7 +284,7 @@ atomic_type returns[Type type]
   
 sampleable_type returns[Type type]
   : 'int'  {$ctx.type=Type.INT}
-  | 'float' {$ctx.type=Type.FLOAT}
+  | ('float' | 'real') {$ctx.type=Type.FLOAT}
   | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
   | 'timestamp' {$ctx.type=Type.TIMESTAMP}
   | quantity_type {$ctx.type=$quantity_type.type}

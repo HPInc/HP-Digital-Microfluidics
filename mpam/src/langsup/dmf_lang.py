@@ -18,7 +18,8 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
     Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc,\
-    SampleType, SampleableType, FutureType, FutureValue
+    SampleType, SampleableType, FutureType, FutureValue, error_check,\
+    error_check_delayed, FunctionValue
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor
@@ -88,21 +89,6 @@ class ErrorToPropagate(CompilationError):
     def __init__(self, error: Executable) -> None:
         self.error = error
         
-def error_check(fn: Callable[..., Val_]) -> Callable[..., MaybeError[Val_]]:
-    def check(*args: Any) -> MaybeError[Val_]:
-        first = args[0]
-        if isinstance(first, EvaluationError):
-            return first
-        return fn(*args)
-    return check
-
-def error_check_delayed(fn: Callable[..., Delayed[Val_]]) -> Callable[..., Delayed[MaybeError[Val_]]]:
-    def check(*args: Any) -> Delayed[MaybeError[Val_]]:
-        first = args[0]
-        if isinstance(first, EvaluationError):
-            return Delayed.complete(first)
-        return fn(*args)
-    return check
 
 class ControlTransfer(EvaluationError): ...
 
@@ -2669,22 +2655,44 @@ class DMFCompiler(DMFVisitor):
                         whole_ctx: ParserRuleContext, 
                         who_ctx: ParserRuleContext, who: Executable,
                         what_ctx: ParserRuleContext, what: Executable) -> Executable:
-        # logger.info(f"Injecting {self.text_of(ctx.who)} into {self.text_of(ctx.what)}")
         if what.return_type is Type.BUILT_IN:
             func: MissingOr[Func] = what.const_val
             if func is MISSING:
                 return self.error(what_ctx, Type.NO_VALUE, f"Internal error: {self.text_of(what_ctx)} is a built-in, but no Func value")
             return self.use_function(func, whole_ctx, (who_ctx,))
-        target_type = what.return_type.as_func_type
-        if (target_type is None
-            or (target_kind := target_type.kind) is CallableTypeKind.GENERAL):
+        injected_type = who.return_type
+
+        rhs_type = what.return_type.as_func_type
+        if rhs_type is None:
             return self.error(what_ctx, Type.NO_VALUE, 
                               f"Not an injection target ({what.return_type.name}): {self.text_of(what_ctx)}")
-        injected_type = who.return_type
-        # if injected_type <= Type.MOTION:
-        #     injected_type = Type.MOTION
-        # if injected_type <= Type.TWIDDLE_OP:
-        #     injected_type = Type.TWIDDLE_OP
+
+        # logger.info(f"Injecting {self.text_of(ctx.who)} into {self.text_of(ctx.what)}")
+        
+        
+        # First we see if we can chain the two together into a bigger function.
+        # This involves checking to see whether any of the function types (if
+        # there are any) on the LHS can return something that can be taken by the right-hand-side.
+        # If so, we wind up with a (possibly-overloaded) function for the whole thing.
+        lhs_type = injected_type.as_func_type
+        if lhs_type is not None:
+            chain_type = lhs_type.chained_to(rhs_type)
+            if chain_type is not None:
+                real_chain_type = chain_type
+                def chain(env: Environment) -> Delayed[Any]:
+                    def combine(first: FunctionValue, second: FunctionValue) -> FunctionValue:
+                        return real_chain_type.chain_values(first, second)
+                    def after_first(first: FunctionValue) -> Delayed[MaybeError[FunctionValue]]:
+                        return (what.evaluate(env, rhs_type)
+                                .transformed(error_check(lambda second: combine(first, second))))
+                    return who.evaluate(env, lhs_type).chain(error_check_delayed(after_first))
+                return Executable(chain_type, chain, (who, what))
+            
+        ...
+            
+            
+    def rest(self) -> None:
+        pass_type = target_func_type.type_for((injected_type,))
 
         do_injection: Callable[[Any, CallableValue, Type], Delayed[MaybeError[Any]]]
         if target_kind is CallableTypeKind.TRANSFORM:
@@ -2706,7 +2714,6 @@ class DMFCompiler(DMFVisitor):
             assert_never(target_kind)
             
         can_pass = self.compatible(injected_type, required_type)
-        lhs_type = injected_type.as_func_type
         can_chain = (lhs_type is not None
                      and self.compatible(lhs_type.return_type, required_type))
         
