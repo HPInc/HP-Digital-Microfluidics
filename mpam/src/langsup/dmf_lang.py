@@ -522,8 +522,9 @@ TwiddleBinaryValue.TOGGLE = TwiddleBinaryValue(BinaryComponent.Toggle)
 class InjectableStatementValue(CallableValue):
     _default_sig: ClassVar[Signature] = Type.ACTION.sig
     
-    def __init__(self, sig: Optional[Signature] = None) -> None:
-        super().__init__(sig or self._default_sig)
+    def __init__(self, sig: Optional[Signature] = None,
+                 name: Optional[str] = None) -> None:
+        super().__init__(sig or self._default_sig, name=name)
     
     @abstractmethod
     def invoke(self) -> Delayed[MaybeError[None]]: ...
@@ -533,20 +534,16 @@ class InjectableStatementValue(CallableValue):
         return self.invoke()
     
 class BoundDelayedAction(InjectableStatementValue):
-    name: Final[str]
     def __init__(self, fn: Callable[[], Delayed[MaybeError[Any]]], *, 
                  name: Optional[str] = None) -> None:
-        super().__init__()
+        super().__init__(name=name)
         self.fn = fn
         if name is None:
             name = f"BoundDelayedAction[{fn}]"
-        self.name = name
         
     def invoke(self)->Delayed[MaybeError[None]]:
         return self.fn().transformed(error_check(to_const(None)))
     
-    def __str__(self) -> str:
-        return self.name
     
 class BoundImmediateAction(BoundDelayedAction):
     def __init__(self, fn: Callable[[], Any], *,
@@ -598,7 +595,6 @@ class MacroValue(CallableValue):
     param_names: Final[Sequence[str]]
     body: Final[Executable]
     static_env: Final[Environment]
-    name: Final[Optional[str]]
     
     def __init__(self, *,
                  macro_type: CallableType, 
@@ -606,11 +602,10 @@ class MacroValue(CallableValue):
                  param_names: Sequence[str], 
                  body: Executable,
                  name: Optional[str] = None) -> None:
-        super().__init__(macro_type.sig)
+        super().__init__(macro_type.sig, name=name)
         self.static_env = env
         self.param_names = param_names
         self.body = body
-        self.name = name
         
     def apply(self, args:Sequence[Any])->Delayed[Any]:
         bindings = dict(zip(self.param_names, args))
@@ -622,8 +617,11 @@ class MacroValue(CallableValue):
         return self.body.evaluate(local_env).transformed(unwrap_return)
     
     def __str__(self) -> str:
-        params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
-        return f"macro({params})->{self.sig.return_type}"
+        if self.name is not None:
+            return self.name
+        params = ", ".join(f"{n}: {t.name}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
+        return f"macro({params})->{self.sig.return_type.name}"
+    
     
 class WellGateValue(NamedTuple):
     pad: WellGate
@@ -942,16 +940,11 @@ class Executable:
         else:
             fn = self.func
             future = fn(env)
-        if required is not None and required is not self.return_type:
+        if required is not None and not (my_rt:=self.return_type).is_identity_conversion_to(required):
             req_type = required
             def convert(val: MaybeError[Any]) -> Delayed[MaybeError[Any]]: 
-                return self.return_type.checked_convert_to(req_type, val=val) 
-                # return Conversions.convert(have=self.return_type, want=req_type, val=val)
+                return my_rt.checked_convert_to(req_type, val=val) 
             future = future.chain(convert)
-        # if required is not None: 
-        #     check = rep_types.get(required, None)
-        #     if check is not None:
-        #         assert isinstance(val, check), f"Expected {check}, got {val}"
         return future
     
     def check_and_eval(self, maybe_error: MaybeError, 
@@ -2541,9 +2534,7 @@ class DMFCompiler(DMFVisitor):
                     future = future.transformed(lambda v: v if isinstance(v, EvaluationError) else not v)
                 return future
             def after_obj(obj: Any) -> Delayed[Any]:
-                if isinstance(obj, EvaluationError):
-                    return Delayed.complete(obj)
-                return pred.evaluate(env, pred_type).chain(lambda func: inject(obj, func))
+                return pred.check_and_eval(obj, env, pred_type).chain(lambda func: inject(obj, func))
             return obj.evaluate(env, first_arg_type).chain(after_obj)
         return Executable(Type.BOOL, run, (obj, pred))
 
@@ -2600,17 +2591,15 @@ class DMFCompiler(DMFVisitor):
         if e:=self.type_check(Type.DIR, direction, ctx.d, return_type=Type.DELTA):
             return e
         def run(env: Environment) -> Delayed[MaybeError[DeltaValue]]:
-                def combine(n: int, d: MaybeError[Dir]) -> MaybeError[DeltaValue]:
-                    if isinstance(d, EvaluationError):
-                        return d
+                def combine(n: int, d: Dir) -> DeltaValue:
                     return DeltaValue(n, d)
-                def after_n(n: MaybeError[int]) -> Delayed[MaybeError[DeltaValue]]:
-                    if isinstance(n, EvaluationError):
-                        return Delayed.complete(n)
+                def after_n(n: int) -> Delayed[MaybeError[DeltaValue]]:
                     real_n = n
-                    return direction.evaluate(env, Type.DIR).transformed(lambda d: combine(real_n,d))
+                    return (direction
+                            .evaluate(env, Type.DIR)
+                            .transformed(error_check(lambda d: combine(real_n,d))))
                 future: Delayed[MaybeError[int]] = dist.evaluate(env, Type.INT)
-                return future.chain(after_n)
+                return future.chain(error_check_delayed(after_n))
         return Executable(Type.DELTA, run, (dist, direction))
 
 
@@ -2678,81 +2667,47 @@ class DMFCompiler(DMFVisitor):
         if lhs_type is not None:
             chain_type = lhs_type.chained_to(rhs_type)
             if chain_type is not None:
+                sig = Signature.of((lhs_type, rhs_type), chain_type)
                 real_chain_type = chain_type
-                def chain(env: Environment) -> Delayed[Any]:
-                    def combine(first: FunctionValue, second: FunctionValue) -> FunctionValue:
-                        return real_chain_type.chain_values(first, second)
-                    def after_first(first: FunctionValue) -> Delayed[MaybeError[FunctionValue]]:
-                        return (what.evaluate(env, rhs_type)
-                                .transformed(error_check(lambda second: combine(first, second))))
-                    return who.evaluate(env, lhs_type).chain(error_check_delayed(after_first))
-                return Executable(chain_type, chain, (who, what))
-            
-        ...
-            
-            
-    def rest(self) -> None:
-        pass_type = target_func_type.type_for((injected_type,))
+                def combine(lhs: FunctionValue, rhs: FunctionValue) -> Delayed[FunctionValue]:
+                    return Delayed.complete(real_chain_type.chain_values(lhs, rhs))
+                return self.use_callable(combine, (who,what), sig)
 
-        do_injection: Callable[[Any, CallableValue, Type], Delayed[MaybeError[Any]]]
-        if target_kind is CallableTypeKind.TRANSFORM:
-            required_type = target_type.param_types[0]
-            do_injection = lambda v, fn, t: (t.checked_convert_to(required_type, v)
-                                             .chain(error_check_delayed(fn)))
-            # do_injection = lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
-        elif target_kind is CallableTypeKind.MONITOR:
-            required_type = target_type.param_types[0]
-            do_injection = lambda v, fn, t: (t.checked_convert_to(required_type, v)
-                                             .chain(error_check_delayed(fn))
-                                             .transformed(to_const(v)))
-            # do_injection = (lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
-            #                 .transformed(to_const(v)))
-        elif target_kind is CallableTypeKind.ACTION:
-            required_type = Type.ANY
-            do_injection = lambda v, fn, _: fn.apply(()).transformed(to_const(v)) 
-        else:
-            assert_never(target_kind)
-            
-        can_pass = self.compatible(injected_type, required_type)
-        can_chain = (lhs_type is not None
-                     and self.compatible(lhs_type.return_type, required_type))
+        # If that's not possible, we see if we can pass the lhs value into the function.
+        target_extractor = rhs_type.chained_target_converter_for(injected_type)
+        if target_extractor is not None:
+            sig = Signature.of((injected_type, rhs_type), target_extractor.sig.return_type)
+            te = target_extractor
+            def inject(lhs: Any, rhs: FunctionValue) -> Delayed[MaybeError[Any]]:
+                target = te.extract(rhs)
+                return target.apply((lhs,))
+            return self.use_callable(inject, (who,what), sig)
         
-        if can_pass and not can_chain:
-            return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else injected_type 
-            def run(env: Environment) -> Delayed[Any]:
-                def after_who(who: Any) -> Delayed[Any]:
-                    return what.evaluate(env, target_type).chain(error_check_delayed(lambda func: do_injection(who, func, required_type)))
-                return who.evaluate(env).chain(error_check_delayed(after_who))
-            # print(f"Injection returns {inj_type.return_type}: {self.text_of(ctx)}")
-            return Executable(return_type, run, (who, what))
-        elif can_chain:
-            assert lhs_type is not None
-            chain_type = ComposedCallable.composed_type(lhs_type, target_type)
-            
-            def chain(env: Environment) -> Delayed[Any]:
-                def combine(first: CallableValue, second: CallableValue) -> CallableValue:
-                    comp = ComposedCallable(first, second)
-                    return comp
-                def after_first(first: CallableValue) -> Delayed[MaybeError[CallableValue]]:
-                    return what.evaluate(env, target_type).transformed(error_check(lambda second: combine(first, second)))
-                return who.evaluate(env, lhs_type).chain(error_check_delayed(after_first))
-            return Executable(chain_type, chain, (who, what))
-        elif lhs_type is not None:
-            return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else lhs_type.return_type
-            e = self.type_check(required_type, lhs_type.return_type, who_ctx,
-                                (lambda want,have,text:
-                                 f"Injecting form '{text}' returns {have}, not compatible with "
-                                 +f"{want}: {self.text_of(what_ctx)}"),
-                                return_type=return_type)
-            return not_None(e)
-        else:
-            return_type = target_type.return_type if target_kind is CallableTypeKind.TRANSFORM else injected_type 
-            e = self.type_check(required_type, injected_type, who_ctx,
-                                (lambda want,have,text:
-                                 f"Injected value ({have}) '{text}' not compatible with "
-                                 +f"{want}: {self.text_of(what_ctx)}"),
-                                return_type=return_type)
-            return not_None(e)
+        # Otherwise, this isn't a valid injection.  If the rhs only has one
+        # callable and the lhs either isn't a callable or returns one, we can
+        # give a better error message.
+        if (rhs_callable := rhs_type.as_callable) is not None:
+            required_type = rhs_callable.param_types[0]
+            if lhs_type is not None and (lhs_callable := lhs_type.as_callable) is not None:
+                return_type = (rhs_callable.return_type if rhs_callable.kind is CallableTypeKind.TRANSFORM
+                               else lhs_callable.return_type) 
+                e = self.type_check(required_type, lhs_callable.return_type, who_ctx,
+                                    (lambda want,have,text:
+                                     f"Injecting form '{text}' returns {have}, not compatible with "
+                                     +f"{want}: {self.text_of(what_ctx)}"),
+                                    return_type=return_type)
+                return not_None(e)
+            elif lhs_type is None:
+                return_type = (rhs_callable.return_type if rhs_callable.kind is CallableTypeKind.TRANSFORM
+                               else injected_type) 
+                e = self.type_check(required_type, injected_type, who_ctx,
+                                    (lambda want,have,text:
+                                     f"Injected value ({have}) '{text}' not compatible with "
+                                     +f"{want}: {self.text_of(what_ctx)}"),
+                                    return_type=return_type)
+                return not_None(e)
+        msg = f"Can't inject {injected_type.name} '{self.text_of(who_ctx)}' into {rhs_type.name} '{self.text_of(what_ctx)}'"
+        return self.error(whole_ctx, Type.NO_VALUE, msg)
         
             
     
@@ -2899,34 +2854,29 @@ class DMFCompiler(DMFVisitor):
         f_type = func_exec.return_type.as_func_type
         if f_type is None:
             return self.error(fc, Type.NO_VALUE, lambda text: f"Not callable ({func_exec.return_type.name}): {text}")
-        ret_type = f_type.return_type
-        param_types = f_type.param_types
-        if len(param_types) != len(arg_execs):
-            np = len(param_types)
-            na = len(arg_execs)
-            return self.error(ctx, ret_type, 
-                              lambda text: f"Wrong number of arguments to macro.  Expected {np}, got {na}: {text}")
-        for i in range(len(param_types)):
-            if not self.compatible(arg_execs[i].return_type, param_types[i]):
-                ac = ctx.args[i]
-                ae = arg_execs[i]
-                pt = param_types[i]
-                return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
-            
-        # def catch_return(val: MaybeError[Any]) -> Any:
-        #     if isinstance(val, MacroReturn):
-        #         return val.value
-        #     # Either it's a fall-off-the-end value, which should only be allowed
-        #     # if it's okay, or it's some other error, which we should propagate.
-        #     return val
-        
-        def dispatch(fn: CallableValue, *args: Sequence[Any]) -> Delayed[Any]:
-            return fn.apply(args)
-        
-        # fn_exec = Executable(f_type, lambda env: Delayed.complete(env[f_name]), ())
-        
-        return self.use_callable(dispatch, [func_exec, *arg_execs], f_type.with_self_sig)
-        
+        arg_types = [e.return_type for e in arg_execs]
+        c_type = f_type.callable_type_for(arg_types)
+        if c_type is not None:
+            ct = c_type
+            def dispatch(fn: FunctionValue, *args: Sequence[Any]) -> Delayed[Any]:
+                return fn.checked_callable_for(ct).apply(args)
+            return self.use_callable(dispatch, [func_exec, *arg_execs], c_type.with_self_sig)
+        only = f_type.as_callable
+        if only is not None:
+            ret_type = only.return_type
+            param_types = only.param_types
+            if len(param_types) != len(arg_execs):
+                np = len(param_types)
+                na = len(arg_execs)
+                return self.error(ctx, ret_type, 
+                                  lambda text: f"Wrong number of arguments to macro.  Expected {np}, got {na}: {text}")
+            for i in range(len(param_types)):
+                if not self.compatible(arg_execs[i].return_type, param_types[i]):
+                    ac = ctx.args[i]
+                    ae = arg_execs[i]
+                    pt = param_types[i]
+                    return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
+        return self.error(ctx, Type.NO_VALUE, lambda txt: f"Ill-formed function call: {txt}")
 
 
     def visitTo_expr(self, ctx:DMFParser.To_exprContext) -> Executable:
