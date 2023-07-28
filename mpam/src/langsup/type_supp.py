@@ -49,6 +49,19 @@ class TypeMismatchError(RuntimeError):
         self.have = have
         self.want = want
         
+class OverloadShadowError(RuntimeError):
+    full: Final[FunctionType]
+    shadowed: Final[CallableType]
+    shadowing: Final[CallableType]
+    
+    def __init__(self, full: FunctionType,
+                 shadowing: CallableType,
+                 shadowed: CallableType) -> None:
+        super().__init__(f"{shadowing} shadows {shadowed} in {full}")
+        self.full = full
+        self.shadowed = shadowed
+        self.shadowing = shadowing
+        
         
 class ConversionError(EvaluationError):
     have: Final[Type]
@@ -877,7 +890,7 @@ class FunctionValue(ABC):
                         desc = lambda: f"No callable branch for {callable_type}")
         
 
-class FunctionType(Type, ABC):
+class FunctionType(Type):
     callable_types: Final[Sequence[CallableType]]
     
     @property
@@ -958,8 +971,31 @@ class FunctionType(Type, ABC):
                 cv = SpecialValueConverter.IDENTITY
         return cv
 
-    
-    
+    # def with_overload(self, other: FunctionType) -> FunctionType:
+    #     new_cts: list[CallableType] = []
+    #     for mine in self.callable_types:
+    #         theirs = other.callable_type_for(mine.param_types)
+    #         if theirs is None:
+    #             # We have a case that they don't completely shadow
+    #             new_cts.append(mine)
+    #         else:
+    #             # They have a form that completely shadows one of mine.  This is
+    #             # a problem unless both have identical param types, return
+    #             # functions and the two return types can themselves overload.
+    #             my_rt = mine.return_type
+    #             their_rt = theirs.return_type
+    #             if (isinstance(my_rt, FunctionType)
+    #                 and isinstance(their_rt, FunctionType)
+    #                 and mine.param_types == theirs.param_types
+    #                 ):
+    #                 try:
+    #                     new_rt = (my_rt.with_overload(their_rt)
+    #                               or their_rt.with_overload(my_rt))
+    #             if new_rt is None:
+    #                 return None
+    #             new_ct = CallableType.find(theirs.param_types, new_rt)
+    #
+
 class ChainedTargetExtractor:
     sig: Final[Signature]
     to_extract: Final[CallableType]
@@ -1057,7 +1093,8 @@ class OverloadedFunction(FunctionValue):
         self.supported = {c.callable_type: c for c in callables}
         
     def callable_for(self, callable_type: CallableType) -> Optional[CallableValue]:
-        return self.supported.get(callable_type)
+        cv = self.supported.get(callable_type)
+        return cv and cv.in_function(self)
         
     @classmethod
     def create(cls, callables: Sequence[CallableValue], *,
@@ -1098,6 +1135,9 @@ class CallableValue(FunctionValue):
     def callable_for(self, callable_type: CallableType) -> Optional[CallableValue]:
         return None if callable_type.sig is not self.sig else self
     
+    def in_function(self, function: FunctionValue) -> CallableValue:
+        return self
+    
     def checked_callable_for(self, callable_type: CallableType) -> CallableValue:
         return self
     
@@ -1116,6 +1156,8 @@ class CallableValue(FunctionValue):
         if self.name is not None:
             return self.name
         return f"lambda {self.sig}"
+    
+
 
     
     
@@ -1282,7 +1324,30 @@ class CallableType(FunctionType):
             
 
     
-Type.ACTION = CallableType.find((), Type.NO_VALUE)        
+Type.ACTION = CallableType.find((), Type.NO_VALUE)     
+
+class CurriedCallableType(CallableType):
+    options: Final[Mapping[CallableType, set[FunctionType]]]
+    
+    def __init__(self, options: Mapping[CallableType, set[FunctionType]]) -> None:
+        self.options = options.copy()
+#
+#
+#     def __init__(self, full: CallableType, positions: Sequence[int]) -> None:
+#         result_params: list[Type] = []
+#         my_params: list[Type] = []
+#         for i,p in enumerate(full.param_types):
+#             if i in positions:
+#                 result_params.append(p)
+#             else:
+#                 my_params.append(p)
+#         rt = CallableType.find(result_params, full.return_type)
+#         super.__init__(my_params, rt, name=f"full.name[open@{positions}]")
+#
+#
+
+        
+        
 
 
 

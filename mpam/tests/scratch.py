@@ -1,29 +1,33 @@
 from __future__ import annotations
 
-from mpam.types import Sample
-from quantities.SI import volts
-from quantities.dimensions import Voltage
-from quantities.timestamp import Timestamp, time_now
+from typing import List, Set
+import time
 
+def test_membership_in_list(lst: List[int], val: int) -> bool:
+    return val in lst
 
-Voltage.default_units=volts
+def test_membership_in_set(s: Set[int], val: int) -> bool:
+    return val in s
 
-vs = [20*volts, 30*volts, 40*volts, 2*volts, 50*volts]
+def benchmark(function, collection, test_val, repetitions=100000):
+    start_time = time.time()
+    for _ in range(repetitions):
+        function(collection, test_val)
+    end_time = time.time()
+    return end_time - start_time
 
-s = Sample.for_type(Voltage, vs)
+# For a small collection:
+small_list = list(range(10))
+small_set = set(small_list)
+test_val = 5
 
-atts = ("count", "values", *Sample._cached_properies)
+print(f"List time: {benchmark(test_membership_in_list, small_list, test_val)}")
+print(f"Set time: {benchmark(test_membership_in_set, small_set, test_val)}")
 
-for a in sorted(atts):
-    print(f"{a}: {getattr(s, a)}")
-    
-print("------------")
-s.add(5*volts)
+# Now for a larger collection:
+large_list = list(range(100000))
+large_set = set(large_list)
+test_val = 99999  # Worst-case scenario for list, as it's at the end.
 
-for a in sorted(atts):
-    print(f"{a}: {getattr(s, a)}")
-    
-s2 = Sample.for_type(Timestamp, (time_now(), time_now(), time_now()))
-print("------------")
-for a in sorted(atts):
-    print(f"{a}: {getattr(s2, a)}")
+print(f"List time: {benchmark(test_membership_in_list, large_list, test_val)}")
+print(f"Set time: {benchmark(test_membership_in_set, large_set, test_val)}")

@@ -319,6 +319,8 @@ component_type returns[Type type]
 dim_unit returns[PhysUnit unit]
   : ('s' | 'sec' | 'secs' | 'second' | 'seconds') {$ctx.unit=SI.sec}
   | ('ms' | 'millisecond' | 'milliseconds') {$ctx.unit=SI.ms}
+  | ('minute' | 'minutes' | 'min' | 'mins') {$ctx.unit=SI.minutes}
+  | ('hour' | 'hours' | 'hr' | 'hrs') {$ctx.unit=SI.hours}
   | ('uL' | 'ul' | 'microliter' | 'microlitre' | 'microliters' | 'microlitres') {$ctx.unit=SI.uL}
   | ('mL' | 'ml' | 'milliliter' | 'millilitre' | 'milliliters' | 'millilitres') {$ctx.unit=SI.mL}
   | ('tick' | 'ticks') {$ctx.unit=ticks}
@@ -418,6 +420,7 @@ multi_word_name returns[str val]
   | 'prepare' 'to' 'dispense' {$ctx.val="prepare to dispense"}
   | 'take' ('a'? 'reading' | 'readings') {$ctx.val="take reading"}
   | 'current' 'time' {$ctx.val="current time"}
+  | 'time' 'now' {$ctx.val="current time"}
   | 'write' 'to'? 'csv'? 'file' {$ctx.val="write to csv file"}
   ;
 
