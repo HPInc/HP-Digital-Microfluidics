@@ -218,7 +218,7 @@ macro_def
   ;
   
 macro_header
-  : ('macro' | 'define' | 'def') called=name? '(' (param (',' param)*)? ')' ('->' ret_type=value_type)?
+  : ('macro' | 'define' | 'def') called=name? ('(' (param (',' param)*)? ')')? ('->' ret_type=value_type)?
   | 'lambda' ('(' (param (',' param)*)? ')')? ('->' ret_type=value_type)?
   | 'action' called=name?
   | ('function' | 'func') called=name? ('(' (param (',' param)*)? ')')? ('->' ret_type=value_type)

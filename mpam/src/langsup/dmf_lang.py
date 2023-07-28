@@ -565,7 +565,7 @@ class PauseValue(InjectableStatementValue):
         return f"Pause({self.duration})"
         
     def invoke(self)->Delayed[None]:
-        print(f"Pausing for {self.duration}")
+        # print(f"Pausing for {self.duration}")
         return self.board.delayed(lambda : None, after=self.duration)
     
 class PromptValue(InjectableStatementValue):
@@ -2884,13 +2884,19 @@ class DMFCompiler(DMFVisitor):
         which = self.visit(ctx.which)
         if axis is None:
             # This is a to-pad motion
-            if not self.compatible(which.return_type, Type.PAD):
-                if self.compatible(which.return_type, Type.INT):
-                    return self.error(ctx, Type.MOTION, f"Did you forget 'row' or 'column'?: {self.text_of(ctx)}")
-                return self.error(ctx, Type.MOTION, f"'to' expr without 'row' or 'column' takes a PAD: {self.text_of(ctx)}")
-            def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
-                return (which.evaluate(env, Type.PAD)
-                        .transformed(error_check(lambda pad: ToPadValue(pad))))
+            if self.compatible(which.return_type, Type.PAD):
+                def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
+                    return (which.evaluate(env, Type.PAD)
+                            .transformed(error_check(lambda pad: ToPadValue(pad))))
+            elif self.compatible(which.return_type, Type.WELL):
+                def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
+                    return (which.evaluate(env, Type.WELL)
+                            .transformed(error_check(lambda well: ToPadValue(well.exit_pad))))
+            elif self.compatible(which.return_type, Type.INT):
+                return self.error(ctx, Type.MOTION, f"Did you forget 'row' or 'column'?: {self.text_of(ctx)}")
+            else:
+                return self.error(ctx, Type.MOTION, 
+                                  f"'to' expr without 'row' or 'column' takes a PAD or WELL: {self.text_of(ctx)}")
         else:
             if not self.compatible(which.return_type, Type.INT):
                 return self.error(ctx.which, Type.MOTION, 
@@ -3623,7 +3629,7 @@ class DMFCompiler(DMFVisitor):
             d.reagent= r
         Attributes["reagent"].register_setter(Type.DROP, Type.REAGENT, set_drop_reagent)
         def set_well_reagent(w: Well, r: Reagent) -> None:
-            w.contains(Liquid(r, w.volume))
+            w.contains(r);
         Attributes["reagent"].register_setter(Type.WELL, Type.REAGENT, set_well_reagent)
         
         def set_drop_liquid(d: Drop, liq: Liquid) -> None:

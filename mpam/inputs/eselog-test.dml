@@ -1,0 +1,127 @@
+// Until the mixing primitives are added to the language, we have to do 
+// it the clunky old way.  
+
+define mix(pad center, dir to_d1, dir to_d2) -> drop {
+  [[
+     (center + to_d1)'s drop : unsafe_walk(to_d1 turned around);
+     (center + to_d2)'s drop : unsafe_walk(to_d2 turned around);
+  ]]
+  return center's drop;
+}
+
+// Protocol parameters.  The "templates" give the names of the CSV files
+// that are written, with the "%" parts getting timestamp elements 
+// substituted in.
+
+  well reagent_well   = well #3;
+  well dna_well       = well #4;
+  well waste_well      = well #8;
+volume initial_fill    = 10uL;
+volume required_volume = 5uL;
+  time mix_time        = 1 minute;
+  time rest_time       = 3 minutes;
+   pad hole_loc        = (6,4);
+   pad mix_loc         = (4,2);
+   pad sensor_loc      = (2,2);
+string blank_template  = "ESElog (%Y-%m-%d_%H_%M) blank.csv";
+string final_template  = "ESElog (%Y-%m-%d_%H_%M) final.csv";
+eselog ese             = the board's eselog;
+
+
+// A minute is a long time to wait when simulating.
+define speed_up {
+  mix_time = 5 seconds;
+  rest_time = 5 seconds;
+}
+
+
+// Identify the well's reagent, set the
+// desired fill level, and ask the user to 
+// top it off if there's less than the minimum
+// volume (e.g., 1 drop or however much we need
+// in order to dispense) in the well.
+   
+define prep_well(well w, reagent r) -> well 
+{
+  w's reagent = r;
+  w's fill level = initial_fill;
+  if w's volume < required_volume {
+    w : fill;
+  }
+  return w;  
+}
+
+// Walk a drop in a circle (actually, 
+// a square).
+
+define circle(drop) {
+  drop : right 4 : up 4 : left 4 : down 4;
+}
+
+define protocol {
+  // Grab the current time for the CSV 
+  // file names.
+  timestamp experiment_time = current time;
+
+  // Set up the wells
+  prep_well(reagent_well, reagent "R");
+  prep_well(dna_well, reagent "DNA");
+
+  // Dispense a drop of reagent and walk
+  // it to the sensor.
+  drop A = reagent_well 
+             : dispense drop
+             : to sensor_loc
+             ;
+             
+  // Take a reading and write it to a CSV file.
+  // If the timestamp is omitted, the current time
+  // will be used.
+  ese : take a reading
+      : write csv file(blank_template, experiment_time)
+      ; 
+                        
+  // Move the drop to the right of the mixing
+  // location.
+  A : to mix_loc + right;
+  
+  // Dispense a drop of DNA and walk it to the left
+  // of the mixing pad, avoiding dead zones.
+  drop B = dna_well
+             : dispense drop
+             : to row 2
+             : to mix_loc + left;
+             
+  // Combine the two drops into one big drop. 
+  drop AB = mix(mix_loc, left, right);
+
+  // Walk around to mix.
+  print "Mixing for ", mix_time;
+  repeat for mix_time {
+    AB : circle; 
+  }
+  
+  // Sit.
+  print "Pausing for ", rest_time;
+  wait for rest_time;
+
+  // Walk around again to mix some more.
+  print "Mixing for ", mix_time;
+  repeat for mix_time {
+    AB : circle;
+  }
+  
+  // Move the drop to the sensor location.
+  AB : to sensor_loc;
+  
+  // Take a second reading and write it to a CSV file.
+  ese : take a reading
+      : write csv file(final_template, experiment_time)
+      ; 
+      
+  // Move the drop into the waste well, avoiding dead pads.
+  AB : to column 19
+     : to waste_well
+     : enter well
+     ;                        
+}
