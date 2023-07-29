@@ -3625,6 +3625,7 @@ class DMFCompiler(DMFVisitor):
         
     @classmethod
     def setup_attributes(cls) -> None:
+        Attributes["name"].register(Type.REAGENT, Type.STRING, lambda r: r.name)
         Attributes["gate"].register(Type.WELL, Type.WELL_GATE, lambda well: well.gate)
         Attributes["exit pad"].register(Type.WELL, Type.PAD, lambda well: well.exit_pad)
         def set_state(c: BinaryComponent, s: OnOff) -> None:

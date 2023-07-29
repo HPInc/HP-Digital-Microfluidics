@@ -13,8 +13,9 @@ define mix(pad center, dir to_d1, dir to_d2) -> drop {
 // that are written, with the "%" parts getting timestamp elements 
 // substituted in.
 
-  well reagent_well   = well #3;
-  well dna_well       = well #4;
+  well buffer_well     = well #3;
+  well sample_well     = well #4;
+  well recorder_well   = well #7;
   well waste_well      = well #8;
 volume initial_fill    = 10uL;
 volume required_volume = 5uL;
@@ -23,15 +24,14 @@ volume required_volume = 5uL;
    pad hole_loc        = (6,4);
    pad mix_loc         = (4,2);
    pad sensor_loc      = (2,2);
-string blank_template  = "ESElog (%Y-%m-%d_%H_%M) blank.csv";
-string final_template  = "ESElog (%Y-%m-%d_%H_%M) final.csv";
+string template_prefix  = "ESElog (%Y-%m-%d_%H_%M)";
 eselog ese             = the board's eselog;
 
 
 // A minute is a long time to wait when simulating.
 define speed_up {
-  mix_time = 5 seconds;
-  rest_time = 5 seconds;
+  mix_time = 3 seconds;
+  rest_time = 2 seconds;
 }
 
 
@@ -58,19 +58,23 @@ define circle(drop) {
   drop : right 4 : up 4 : left 4 : down 4;
 }
 
-define protocol {
-  // Grab the current time for the CSV 
-  // file names.
-  timestamp experiment_time = current time;
+define csv_file_for(string phase) -> string
+{
+  return template_prefix+" "+phase+".csv";
+}
 
-  // Set up the wells
-  prep_well(reagent_well, reagent "R");
-  prep_well(dna_well, reagent "DNA");
+define combine_and_measure(well w, 
+                           timestamp experiment_time)
+{
+  string r_name = w's reagent's name;
+  print "Combining", recorder_well's reagent's name, 
+        "and", r_name;
 
   // Dispense a drop of reagent and walk
   // it to the sensor.
-  drop A = reagent_well 
+  drop A = recorder_well 
              : dispense drop
+             : to row 2
              : to sensor_loc
              ;
              
@@ -78,16 +82,17 @@ define protocol {
   // If the timestamp is omitted, the current time
   // will be used.
   ese : take a reading
-      : write csv file(blank_template, experiment_time)
+      : write csv file(csv_file_for("Blank ("+r_name+")"), 
+                                    experiment_time)
       ; 
-                        
+
   // Move the drop to the right of the mixing
   // location.
   A : to mix_loc + right;
-  
+
   // Dispense a drop of DNA and walk it to the left
   // of the mixing pad, avoiding dead zones.
-  drop B = dna_well
+  drop B = w
              : dispense drop
              : to row 2
              : to mix_loc + left;
@@ -116,7 +121,8 @@ define protocol {
   
   // Take a second reading and write it to a CSV file.
   ese : take a reading
-      : write csv file(final_template, experiment_time)
+      : write csv file(csv_file_for(w's reagent's name), 
+                       experiment_time)
       ; 
       
   // Move the drop into the waste well, avoiding dead pads.
@@ -124,4 +130,28 @@ define protocol {
      : to waste_well
      : enter well
      ;                        
+}                           
+
+define protocol {
+  // Grab the current time for the CSV 
+  // file names.
+  timestamp experiment_time = current time;
+
+  // Set up the wells
+  prep_well(buffer_well, reagent "Buffer");
+  prep_well(sample_well, reagent "Sample");
+  prep_well(recorder_well, reagent "Recorder");
+  waste_well's reagent = waste;
+  
+  combine_and_measure(buffer_well, experiment_time);
+  
+  // Ignore this.  For some reason, when simulating with
+  // a fast clock speed, without a pause, the system thinks 
+  // that only half the drop goes into the well.  (The rest 
+  // goes in after the second combination.) I don't know 
+  // what happens for real, so to be on the safe side, I've 
+  // added a pause.
+  pause for 1 tick;
+  
+  combine_and_measure(sample_well, experiment_time);
 }
