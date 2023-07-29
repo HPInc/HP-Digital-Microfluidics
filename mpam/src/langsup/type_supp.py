@@ -1327,10 +1327,26 @@ class CallableType(FunctionType):
 Type.ACTION = CallableType.find((), Type.NO_VALUE)     
 
 class CurriedCallableType(CallableType):
-    options: Final[Mapping[CallableType, set[FunctionType]]]
+    options: Final[Mapping[CallableType, set[int]]]
     
-    def __init__(self, options: Mapping[CallableType, set[FunctionType]]) -> None:
-        self.options = options.copy()
+    def __init__(self, options: Mapping[CallableType, set[int]]) -> None:
+        my_options: dict[CallableType, set[int]]
+        my_params: list[Type]
+        my_return: FunctionType
+        if len(options) == 1:
+            (ct,params), = options.items()
+            my_options = {ct: params}
+            their_params = ct.param_types
+            my_params = [t for i,t in enumerate(their_params) if i not in params]
+            remaining_params = [t for i,t in enumerate(their_params) if i in params]
+            my_return = CallableType.find(remaining_params, ct.return_type)
+        else:
+            my_options = {}
+            for ct,params in options.items():
+                my_options[ct] = params
+            
+        super().__init__(my_params, my_return)
+        self.options = my_options
 #
 #
 #     def __init__(self, full: CallableType, positions: Sequence[int]) -> None:
