@@ -226,10 +226,10 @@ macro_header
   ;
   
 param returns[Type type, str pname, int n, bool deprecated]
-  : ('a' | 'an')? value_type {$ctx.type=$value_type.type} 
-  | value_type {$ctx.type=$value_type.type} INT {$ctx.n=$INT.int} 
-  | value_type name {$ctx.type=$value_type.type} {$ctx.pname=$name.text}
-  | name ':' value_type {$ctx.type=$value_type.type} {$ctx.pname=$name.text} {$ctx.deprecated=True}
+  : ('a' | 'an' INJECTABLE?)? value_type {$ctx.type=$value_type.type} 
+  | INJECTABLE? value_type {$ctx.type=$value_type.type} INT {$ctx.n=$INT.int} 
+  | INJECTABLE? value_type name {$ctx.type=$value_type.type} {$ctx.pname=$name.text}
+  | INJECTABLE? name ':' value_type {$ctx.type=$value_type.type} {$ctx.pname=$name.text} {$ctx.deprecated=True}
   ;
   
 no_arg_action returns[str which]
@@ -490,6 +490,7 @@ DIV: '/';
 FUTURE: 'future';
 INTERACTIVE: 'interactive';
 INJECT: ':';
+INJECTABLE: 'injectable';
 ISNT: 'isn\'t';
 LOCAL: 'local';
 MUL: '*';

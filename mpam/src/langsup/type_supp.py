@@ -14,7 +14,7 @@ from threading import RLock, Lock
 import logging
 from erk.stringutils import conj_str
 from abc import ABC, abstractmethod
-from erk.basic import ComputedDefaultDict
+from erk.basic import ComputedDefaultDict, not_None
 
 logger = logging.getLogger(__name__)
 
@@ -893,12 +893,36 @@ class AdaptedDelayedCallableValue(CallableValue):
 class AdaptedImmediateCallableValue(AdaptedDelayedCallableValue):
     def __init__(self, sig: Signature, fn: Callable[..., Any]) -> None:
         super().__init__(sig, lambda *args: Delayed.complete(fn(*args)))
+        
+class BoundInjectionValue(CallableValue):
+    bound_args: Final[tuple[Any, ...]]
+    full_callable: Final[CallableValue]
+    injection_pos: Final[int]
+
+    def __init__(self, full_type: CallableType, full: CallableValue,
+                 *args: Any) -> None:
+        as_injection = not_None(full_type.as_injection)
+        super().__init__(as_injection.sig)
+        self.bound_args = args
+        self.full_callable = full
+        self.injection_pos = not_None(full_type.injectable_pos)
+        
+    def __str__(self) -> str:
+        return f"({self.full_callable})({', '.join(str(a) for a in self.bound_args)})"
+    
+    def apply(self, args:Sequence[Any]) -> Delayed[Any]:
+        assert len(args)==1
+        full_args = list(self.bound_args)
+        full_args.insert(self.injection_pos, args[0])
+        return self.full_callable.apply(full_args)
 
 class CallableType(Type):
-    instances = dict[Signature, 'CallableType']()
+    instances = dict[tuple[Signature, Optional[int]], 'CallableType']()
     
     sig: Final[Signature]
     with_self_sig: Final[Signature]
+    injectable_pos: Final[Optional[int]]
+    as_injection: Final[Optional[CallableType]]
     
     @property
     def param_types(self) -> Sequence[Type]:
@@ -921,11 +945,24 @@ class CallableType(Type):
                  param_types: Sequence[Type],
                  return_type: Type,
                  *,
+                 injectable_pos: Optional[int] = None,
                  supers: Optional[Sequence[Type]] = None,
-                 rep_types: TypeRepSpec=(CallableValue,)):
+                 rep_types: TypeRepSpec=(CallableValue,),
+                 as_self: Optional[CallableType] = None,
+                 ):
         super().__init__(name, supers, as_func_type = self, rep_types = rep_types)
         self.sig = Signature.of(param_types, return_type)
-        self.with_self_sig = Signature.of((self, *param_types), return_type)
+        self.injectable_pos = injectable_pos
+        self.with_self_sig = Signature.of((as_self or self, *param_types), return_type)
+        as_inj: Optional[CallableType] = None
+        if injectable_pos is not None:
+            bound_params = [*param_types]
+            inj_type = bound_params.pop(injectable_pos)
+            bound_return = CallableType.find((inj_type,), return_type)
+            # We don't use find() here because we're going to assert the self type.  
+            # This should only be used in injections.
+            as_inj = CallableType(f"{name} as injection", bound_params, bound_return, as_self=self)
+        self.as_injection = as_inj
         
     def set_rep_type(self, rep_types:TypeRepSpec)->None:
         rep_types = _trs_to_tuple(rep_types)
@@ -948,14 +985,22 @@ class CallableType(Type):
         return True
         
     @classmethod
-    def find(cls, param_types: Sequence[Type], return_type: Type, *, name: Optional[str] = None) -> CallableType:
+    def find(cls, param_types: Sequence[Type], return_type: Type, *, 
+             name: Optional[str] = None,
+             injectable_pos: Optional[int] = None) -> CallableType:
         sig = Signature.of(param_types, return_type)
-        ct = cls.instances.get(sig, None)
+        key = (sig, injectable_pos)
+        ct = cls.instances.get(key, None)
         if ct is None:
+            def pdesc(i: int, t: Type) -> str:
+                if i == injectable_pos:
+                    return f"injectable {t.name}"
+                else:
+                    return t.name
             if name is None:
-                name = f"Macro[({','.join(t.name for t in param_types)}),{return_type.name}]"
-            ct = CallableType(name, param_types, return_type)
-            cls.instances[sig] = ct
+                name = f"Macro[({','.join(pdesc(i,t) for i,t in enumerate(param_types))}),{return_type.name}]"
+            ct = CallableType(name, param_types, return_type, injectable_pos=injectable_pos)
+            cls.instances[key] = ct
         return ct
     
     def _find_conversion_to(self, other: Type) -> MissingOr[_Converter]:

@@ -18,7 +18,8 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
     Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc,\
-    SampleType, SampleableType, FutureType, FutureValue
+    SampleType, SampleableType, FutureType, FutureValue,\
+    BoundInjectionValue
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor
@@ -636,6 +637,8 @@ class MacroValue(CallableValue):
         return self.body.evaluate(local_env).transformed(unwrap_return)
     
     def __str__(self) -> str:
+        if self.name is not None:
+            return self.name
         params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
         return f"macro({params})->{self.sig.return_type}"
     
@@ -2894,29 +2897,31 @@ class DMFCompiler(DMFVisitor):
             return self.error(fc, Type.NO_VALUE, lambda text: f"Not callable ({func_exec.return_type.name}): {text}")
         ret_type = f_type.return_type
         param_types = f_type.param_types
-        if len(param_types) != len(arg_execs):
-            np = len(param_types)
-            na = len(arg_execs)
+        
+        n_args = len(arg_execs)
+        ip = f_type.injectable_pos
+        
+        if n_args == f_type.arity:
+            def dispatch(fn: CallableValue, *args: Any) -> Delayed[Any]:
+                return fn.apply(args)
+        elif n_args == f_type.arity-1 and ip is not None:
+            full_ftype = f_type
+            f_type = not_None(f_type.as_injection)
+            param_types = f_type.param_types
+            def dispatch(fn: CallableValue, *args: Any) -> Delayed[Any]:
+                val = BoundInjectionValue(full_ftype, fn, *args)
+                return Delayed.complete(val)
+        else:
+            np = f"{f_type.arity}" if ip is None else f"{f_type.arity-1} or {f_type.arity}" 
             return self.error(ctx, ret_type, 
-                              lambda text: f"Wrong number of arguments to macro.  Expected {np}, got {na}: {text}")
+                              lambda text: f"Wrong number of arguments to macro.  Expected {np}, got {n_args}: {text}")
+
         for i in range(len(param_types)):
             if not self.compatible(arg_execs[i].return_type, param_types[i]):
                 ac = ctx.args[i]
                 ae = arg_execs[i]
                 pt = param_types[i]
                 return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
-            
-        # def catch_return(val: MaybeError[Any]) -> Any:
-        #     if isinstance(val, MacroReturn):
-        #         return val.value
-        #     # Either it's a fall-off-the-end value, which should only be allowed
-        #     # if it's okay, or it's some other error, which we should propagate.
-        #     return val
-        
-        def dispatch(fn: CallableValue, *args: Sequence[Any]) -> Delayed[Any]:
-            return fn.apply(args)
-        
-        # fn_exec = Executable(f_type, lambda env: Delayed.complete(env[f_name]), ())
         
         return self.use_callable(dispatch, [func_exec, *arg_execs], f_type.with_self_sig)
         
@@ -2983,6 +2988,7 @@ class DMFCompiler(DMFVisitor):
         saw_untyped = any(t is Type.ERROR for t in types)
         saw_future = False
         saw_macro_name = False
+        n_injectable = 0
         for i,n in enumerate(names):
             if n == macro_name:
                 self.error(ctxts[i], Type.IGNORE, lambda txt: f"Parameter with same name as macro: '{txt}'")
@@ -2996,7 +3002,13 @@ class DMFCompiler(DMFVisitor):
             if isinstance(t, FutureType):
                 self.not_yet_implemented("future-typed parameters", ctxts[i])
                 saw_future = True
-        if not saw_duplicate and not saw_untyped and not saw_future and not saw_macro_name:
+        for c in ctxts:
+            if c.INJECTABLE() is not None:
+                if n_injectable == 1:
+                    self.not_yet_implemented("multiple injectable parameters", c)
+                n_injectable += 1
+        if (not saw_duplicate and not saw_untyped and not saw_future 
+            and not saw_macro_name and n_injectable < 2):
             return None
         macro_type = CallableType.find(types, Type.NO_VALUE)
         return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
@@ -3014,6 +3026,11 @@ class DMFCompiler(DMFVisitor):
         param_defs = tuple(self.param_def(pc) for pc in param_contexts)
         param_names = tuple(pdef[0] for pdef in param_defs)
         param_types = tuple(pdef[1] for pdef in param_defs)
+        injectable_pos: Optional[int] = None
+        if len(param_contexts) > 1:
+            for i,c in enumerate(param_contexts):
+                if c.INJECTABLE() is not None:
+                    injectable_pos = i
         
         return_type_context: Optional[DMFParser.Value_typeContext] = header.ret_type
         
@@ -3025,7 +3042,7 @@ class DMFCompiler(DMFVisitor):
         if isinstance(return_type, FutureType):
             return self.not_yet_implemented("future-valued macros", ctx)
         
-        macro_type = CallableType.find(param_types, return_type)
+        macro_type = CallableType.find(param_types, return_type, injectable_pos=injectable_pos)
         # Unfortunately, you can't put parens around multiple with clauses until
         # Python 3.10.
         new_bindings = dict(param_defs)
@@ -3044,7 +3061,7 @@ class DMFCompiler(DMFVisitor):
                 if return_type is Type.NO_VALUE:
                     # There was no return type specified, so we use the one from the expr
                     return_type = body.return_type
-                    macro_type = CallableType.find(param_types, return_type)
+                    macro_type = CallableType.find(param_types, return_type, injectable_pos=injectable_pos)
         
         
         def run(env: Environment) -> Delayed[MacroValue]: # @UnusedVariable

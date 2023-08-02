@@ -113,3 +113,8 @@ test_loop_if_exit = macro(pad) {
 debug = macro() {
   well #1 : prepare to dispense(3 drops);
 };
+
+define inj_test(injectable int x, int y) -> int 
+{
+  return 2*x+y;
+}
