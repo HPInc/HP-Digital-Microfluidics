@@ -782,7 +782,7 @@ class Operation(Generic[T, V], ABC):
         T: the type of the object used to schedule the :class:`Operation`
         V: the type of the value produced by the operation
     '''
-
+    
     @abstractmethod
     def _schedule_for(self, obj: T, *,                # @UnusedVariable
                       post_result: bool = True,       # @UnusedVariable

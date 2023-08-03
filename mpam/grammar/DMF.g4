@@ -139,9 +139,16 @@ expr
   | direction dist=expr              # delta_expr
   | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
+  | ('pause' | 'wait') 'until' condition=expr	# pause_until_expr
   | ('pause' | 'wait') 'for'? duration=expr            # pause_expr
   | (('pause' | 'wait') 'for' 'user' | 'prompt') ( vals+= expr (',' vals+=expr)* )? # prompt_expr
   | 'print' vals+=expr (',' vals+=expr)* # print_expr
+  | 'accept' 'merge' 'from' from_dir=expr	# accept_expr
+  | 'merge' 'into' to_dir=expr				# merge_expr
+  | 'mix' 'with' to_dir=expr 				# mix_expr
+  | 'split' 'to'? to_dir=expr 'as' var=name	# split_expr
+  | 'split' 'to'? to_dir=expr				# split_expr
+  | 'become' result=expr			 # become_expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr
@@ -226,7 +233,8 @@ macro_header
   ;
   
 param returns[Type type, str pname, int n, bool deprecated]
-  : ('a' | 'an' INJECTABLE?)? value_type {$ctx.type=$value_type.type} 
+  : 'a' value_type {$ctx.type=$value_type.type} 
+  | 'an'? INJECTABLE? value_type {$ctx.type=$value_type.type}
   | INJECTABLE? value_type {$ctx.type=$value_type.type} INT {$ctx.n=$INT.int} 
   | INJECTABLE? value_type name {$ctx.type=$value_type.type} {$ctx.pname=$name.text}
   | INJECTABLE? name ':' value_type {$ctx.type=$value_type.type} {$ctx.pname=$name.text} {$ctx.deprecated=True}
@@ -425,6 +433,7 @@ multi_word_name returns[str val]
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
+  | 'F' | 'C'
   | 'on' | 'off'
   | 'per'
   | 'min' | 'max' | 'minimum' | 'maximum'

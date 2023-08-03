@@ -1303,6 +1303,8 @@ class Func:
         mismatch = False
         def match_len(pts: Sequence[Type]) -> int:
             for i,pt in enumerate(pts):
+                if i >= len(arg_types):
+                    return i
                 at = arg_types[i]
                 if not at<=pt:
                     return i

@@ -1,29 +1,27 @@
 from __future__ import annotations
+from typing import Generic, TypeVar, Any, Callable, Final
+from enum import Enum, auto
 
-from mpam.types import Sample
-from quantities.SI import volts
-from quantities.dimensions import Voltage
-from quantities.timestamp import Timestamp, time_now
+T = TypeVar("T")
 
-
-Voltage.default_units=volts
-
-vs = [20*volts, 30*volts, 40*volts, 2*volts, 50*volts]
-
-s = Sample.for_type(Voltage, vs)
-
-atts = ("count", "values", *Sample._cached_properies)
-
-for a in sorted(atts):
-    print(f"{a}: {getattr(s, a)}")
+class Obj(Generic[T]):
+    has_value: bool = False
     
-print("------------")
-s.add(5*volts)
-
-for a in sorted(atts):
-    print(f"{a}: {getattr(s, a)}")
+    def when_value(self, fn: Callable[[T], Any]) -> None:
+        if self.has_value:
+            ...
+            
+            
+class State(Enum):
+    NO_VAL = auto()
+    HAS_VAL = auto()
+    HAS_ERROR = auto()
     
-s2 = Sample.for_type(Timestamp, (time_now(), time_now(), time_now()))
-print("------------")
-for a in sorted(atts):
-    print(f"{a}: {getattr(s2, a)}")
+class Obj2(Generic[T]):
+    has_error_val: Final = State.HAS_ERROR
+    state: State = State.NO_VAL
+    
+    def when_value(self, fn: Callable[[T], Any]) -> None:
+        if self.state is self.has_error_val:
+            ...
+            

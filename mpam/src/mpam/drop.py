@@ -14,7 +14,6 @@ from erk.stringutils import map_str
 from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
     ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad,\
     BinaryComponent
-from mpam.exceptions import NoSuchPad, NotAtWell
 from mpam.types import Liquid, Dir, Delayed, \
     OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
     StaticOperation, Reagent, Callback, T, MixResult, Postable, \
@@ -717,7 +716,13 @@ class MotionOp(CSOperation['Drop', 'Drop'], ABC):
             for i in range(steps):
                 next_pad = last_pad.neighbor(direction)
                 if next_pad is None or next_pad.broken:
-                    raise NoSuchPad(board.orientation.neighbor(direction, last_pad.location))
+                    np = board.orientation.neighbor(direction, last_pad.location)
+                    xy = (np.col, np.row)
+                    logger.error(f"Cannot move {direction.name} to {xy}")
+                    future.post(last_pad.checked_drop)
+                    # We're done and can't be called again
+                    yield None
+                    return
                 if not allow_unsafe:
                     while not next_pad.safe_except(last_pad):
                         # logger.debug(f"unsafe:{i} of {steps}|{drop}|lp:{last_pad}|np:{next_pad}")
@@ -1064,7 +1069,8 @@ class Drop(OpScheduler['Drop']):
             future = Postable[None]()
             if self.well is None:
                 if not isinstance(drop.pad, Pad) or drop.pad.well is None:
-                    raise NotAtWell(f"{drop} not at a well")
+                    logger.error(f"{drop} is not at a well")
+                    return Delayed.complete(None)
                 well = drop.pad.well
             else:
                 well = self.well

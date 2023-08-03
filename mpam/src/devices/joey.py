@@ -625,7 +625,7 @@ class PlatformTask(PlatformChoiceTask):
                                         metavar="VERSION", 
                                         help="The version of the Joey layout.")
         Config.lid_type.add_choice_arg_to(group, LidType,
-                                        '--lid_type', 
+                                        '--lid-type', 
                                         metavar="TYPE", 
                                         help="The type of lid used.")
         Config.lid_type.add_arg_to(group, '--glass', action='store_const', 

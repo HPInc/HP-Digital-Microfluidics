@@ -8,7 +8,7 @@ from typing import Final, NamedTuple, Sequence, Literal, Union, Optional, \
 from mpam.device import TemperatureControl, Pad
 from mpam.drop import Drop
 from mpam.paths import Path
-from mpam.processes import MultiDropProcessType, FinishFunction, PairwiseMix,\
+from mpam.processes import MultiDropProcessType, PairwiseMix,\
     MultiDropProcessRun
 from mpam.types import Delayed, Dir, Postable
 from quantities.dimensions import Time

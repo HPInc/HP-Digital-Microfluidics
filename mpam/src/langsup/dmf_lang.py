@@ -22,7 +22,8 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
     BoundInjectionValue
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
-    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor
+    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor,\
+    TemperatureMode
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -32,8 +33,9 @@ from quantities.core import Unit, Dimensionality
 from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from erk.stringutils import map_str, conj_str
 import math
-from functools import reduce
-from erk.basic import LazyPattern, not_None, assert_never, to_const
+from functools import reduce, cached_property
+from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn,\
+    ensure_val
 from re import Match
 from threading import RLock
 import re
@@ -46,6 +48,8 @@ from devices.eselog import ESELog, ESELogChannel
 from itertools import product
 import os
 from quantities import timestamp
+from mpam.processes import MultiDropProcessType, MultiDropProcessRun
+from mpam.exceptions import NoSuchPad
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -402,14 +406,14 @@ class ComposedCallable(CallableValue):
     
 class MotionValue(CallableValue):
     @abstractmethod
-    def move(self, drop: Drop) -> Delayed[Drop]: ... # @UnusedVariable
+    def move(self, drop: Drop) -> Delayed[MaybeError[Drop]]: ... # @UnusedVariable
     
     _sig: ClassVar[Signature] = Signature.of((Type.DROP,), Type.DROP)
     
     def __init__(self) -> None:
         super().__init__(self._sig)
     
-    def apply(self, args:Sequence[Any])->Delayed[Drop]:
+    def apply(self, args:Sequence[Any])->Delayed[MaybeError[Drop]]:
         self.check_arity(args)
         drop = args[0]
         assert isinstance(drop, Drop)
@@ -480,9 +484,17 @@ class ToPadValue(MotionValue):
         super().__init__()
         self.dest = pad
         
+    def __str__(self) -> str:
+        return f"ToPad({self.dest})"
+        
+        
     def move(self, drop:Drop)->Delayed[Drop]:
         path = Path.to_pad(self.dest)
         return path.schedule_for(drop)
+
+class ToWellValue(ToPadValue):
+    def __init__(self, well: Well) -> None:
+        super().__init__(well.exit_pad)
 
 class ToRowColValue(MotionValue):
     dest: Final[int]
@@ -493,6 +505,10 @@ class ToRowColValue(MotionValue):
         self.dest = dest
         self.verticalp = verticalp
         
+    def __str__(self) -> str:
+        which = "Row" if self.verticalp else "Col"
+        return f"To{which}({self.dest})"
+
     def move(self, drop:Drop)->Delayed[Drop]:
         if self.verticalp:
             path = Path.to_row(self.dest)
@@ -500,6 +516,219 @@ class ToRowColValue(MotionValue):
             path = Path.to_col(self.dest)
         return path.schedule_for(drop)
     
+class ChangeReagentValue(MotionValue):
+    reagent: Final[Reagent]
+    
+    def __init__(self, reagent: Reagent) -> None:
+        super().__init__()
+        self.reagent = reagent
+        
+    def __str__(self) -> str:
+        return f"ChangeReagent({self.reagent})"
+
+    def move(self, drop: Drop) -> Delayed[Drop]:
+        drop.reagent = self.reagent
+        return Delayed.complete(drop)
+    
+class TwoDropProcessType(MultiDropProcessType):
+    to_second: Final[Dir]
+    
+    def __init__(self, to_second: Dir) -> None:
+        super().__init__(n_drops=2)
+        self.to_second = to_second
+    
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:
+        board = lead_drop_pad.board
+        o = board.orientation
+        xy = o.neighbor(self.to_second, lead_drop_pad.location, steps=2)
+        other = board.pads.get(xy)
+        if other is None or not other.exists:
+            raise NoSuchPad(xy)
+        return (other,)
+    
+    def middle_pad(self, first: Pad) -> Pad:
+        to_second = self.to_second
+        middle = not_None(first.neighbor(to_second))
+        return middle
+        
+
+class MergeProcessType(TwoDropProcessType):
+    
+    def create_run(self, *, 
+                   futures: Mapping[Pad, Postable[Drop]], 
+                   pads: tuple[Pad, ...]) -> MergeProcessRun:
+        return MergeProcessRun(self, futures, pads)
+    
+
+class MergeProcessRun(MultiDropProcessRun[MergeProcessType]):
+    def iterator(self) -> Iterator[bool]:
+        first, second = self.pads
+        middle = self.process_type.middle_pad(first)
+        system = first.board.system
+        with system.batched():
+            first.schedule(Pad.TurnOn, post_result=False)
+            middle.schedule(Pad.TurnOn, post_result=False)
+            second.schedule(Pad.TurnOff, post_result=False)
+        yield True
+        middle.schedule(Pad.TurnOff, post_result=False)
+        yield False
+        
+    def post_to_futures(self) -> None:
+        drop = self.pads[0].checked_drop
+        for future in self.futures.values():
+            future.post(drop)
+
+class MixProcessType(TwoDropProcessType):
+    
+    def create_run(self, *, 
+                   futures: Mapping[Pad, Postable[Drop]], 
+                   pads: tuple[Pad, ...]) -> MixProcessRun:
+        return MixProcessRun(self, futures, pads)
+    
+class MixProcessRun(MultiDropProcessRun[MixProcessType]):
+    def iterator(self) -> Iterator[bool]:
+        first, second = self.pads
+        middle = self.process_type.middle_pad(first)
+        system = first.board.system
+        with system.batched():
+            first.schedule(Pad.TurnOff, post_result=False)
+            middle.schedule(Pad.TurnOn, post_result=False)
+            second.schedule(Pad.TurnOff, post_result=False)
+        yield True
+        with system.batched():
+            first.schedule(Pad.TurnOn, post_result=False)
+            middle.schedule(Pad.TurnOff, post_result=False)
+            second.schedule(Pad.TurnOn, post_result=False)
+        yield False
+        
+class SplitProcessType(MultiDropProcessType):
+    to_new: Final[Dir]
+    new_drop_future: Final[Optional[Postable[Drop]]]
+    
+    def __init__(self, to_new: Dir, new_drop_futrue: Optional[Postable[Drop]]) -> None:
+        super().__init__(n_drops=1)
+        self.to_new = to_new
+        self.new_drop_future = new_drop_futrue
+        
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]: # @UnusedVariable
+        return ()
+
+    def create_run(self, *, 
+                   futures: Mapping[Pad, Postable[Drop]], 
+                   pads: tuple[Pad, ...]) -> SplitProcessRun:
+        return SplitProcessRun(self, futures, pads)
+
+    def middle_new(self, first: Pad) -> tuple[Pad, Pad]:
+        to_new = self.to_new
+        middle = not_None(first.neighbor(to_new))
+        new = not_None(middle.neighbor(to_new))
+        return (middle, new)
+
+
+class SplitProcessRun(MultiDropProcessRun[SplitProcessType]):
+    def iterator(self) -> Iterator[bool]:
+        first, = self.pads
+        middle,second = self.process_type.middle_new(first)
+        system = first.board.system
+        while not middle.safe_except(first):
+            yield True
+        while not middle.reserve():
+            yield True
+        while not second.safe_except(middle):
+            yield True
+        while not second.reserve():
+            yield True
+        with system.batched():
+            first.schedule(Pad.TurnOn, post_result=False)
+            middle.schedule(Pad.TurnOn, post_result=False)
+            second.schedule(Pad.TurnOn, post_result=False)
+        yield True
+        middle.schedule(Pad.TurnOff, post_result=False)
+        yield True
+        middle.unreserve()
+        second.unreserve()
+        yield False
+        
+    def finish(self) -> bool:
+        future = self.process_type.new_drop_future
+        if future is not None:
+            first, = self.pads
+            _middle, second = self.process_type.middle_new(first)
+            future.post(second.checked_drop)
+        return True
+
+        
+    
+class AcceptMergeValue(MotionValue):
+    from_dir: Final[Dir]
+    
+    def __init__(self, from_dir: Dir) -> None:
+        super().__init__()
+        self.from_dir = from_dir
+    
+    def __str__(self) -> str:
+        return f"AcceptMergeFrom({self.from_dir})"
+    
+    def move(self, drop: Drop) -> Delayed[Drop]:
+        path = Path.start(MergeProcessType(self.from_dir))
+        return path.schedule_for(drop)
+    
+class JoinValue(MotionValue):
+    def move(self, drop: Drop) -> Delayed[MaybeError[Drop]]:
+        path = Path.join()
+        return path.schedule_for(drop)
+    
+class MergeIntoValue(JoinValue):
+    to_dir: Final[Dir]
+    
+    def __init__(self, to_dir: Dir) -> None:
+        super().__init__()
+        self.to_dir = to_dir
+    
+    def __str__(self) -> str:
+        return f"MergeInto({self.to_dir})"
+    
+class MixWithValue(MotionValue):
+    to_dir: Final[Dir]
+    
+    def __init__(self, to_dir: Dir) -> None:
+        super().__init__()
+        self.to_dir = to_dir
+    
+    def __str__(self) -> str:
+        return f"MixWith({self.to_dir})"
+    
+    def move(self, drop: Drop) -> Delayed[Drop]:
+        d = self.to_dir
+        if d is Dir.SOUTH or d is Dir.EAST:
+            path = Path.start(MixProcessType(d))
+        else:
+            path = Path.join()
+        return path.schedule_for(drop)
+
+# For MergeInto, we need to think about the case in which, say we're accepting a
+# merge from the south, but the one who's there now thinks it's merging east.
+# Theoretically, we should first handle an accept merge from its west and then
+# wait for a merge into the north.  I'm not sure what we have to do to allow a
+# join pad to discriminate among its processes.
+
+class SplitToValue(MotionValue):
+    to_dir: Final[Dir]
+    new_drop_future: Final[Optional[Postable[Drop]]]
+    
+    def __init__(self, to_dir: Dir, 
+                 new_drop_future: Optional[Postable[Drop]]) -> None:
+        super().__init__()
+        self.to_dir = to_dir
+        self.new_drop_future = new_drop_future
+    
+    def __str__(self) -> str:
+        return f"SplitTo({self.to_dir})"
+    
+    def move(self, drop: Drop) -> Delayed[Drop]:
+        path = Path.start(SplitProcessType(self.to_dir, self.new_drop_future))
+        return path.schedule_for(drop)
+
 class TwiddleBinaryValue(CallableValue):
     op: Final[BinaryComponent.ModifyState]
     
@@ -585,6 +814,46 @@ class PauseValue(InjectableStatementValue):
     def invoke(self)->Delayed[None]:
         # print(f"Pausing for {self.duration}")
         return self.board.delayed(lambda : None, after=self.duration)
+    
+class PauseUntilValue(InjectableStatementValue):
+    env: Final[Environment]
+    condition: Final[Executable]
+    _desc: Final[ValOrFn[str]]
+    
+    @cached_property
+    def desc(self) -> str:
+        return ensure_val(self._desc, str)
+    
+    def __init__(self, env: Environment,
+                 condition: Executable,
+                 desc: ValOrFn[str]) -> None:
+        super().__init__()
+        self.env = env
+        self.condition = condition
+        self._desc = desc
+        
+    def __str(self) -> str:
+        return f"PauseUntil(\"{self.desc}\")"
+    
+    def invoke(self) -> Delayed[MaybeError[None]]:
+        env = self.env
+        condition = self.condition
+        board = env.board
+        future = Postable[MaybeError[None]]()
+        def check_condition(check: Callable[[MaybeError[bool]], None]) -> Callable[[], None]:
+            def fn() -> None:
+                (condition.evaluate(env, Type.BOOL)
+                 .transformed(check))
+            return fn
+        def with_val(b: MaybeError[bool]) -> None:
+            if isinstance(b, EvaluationError):
+                future.post(b)
+            elif b:
+                future.post(None)
+            else:
+                board.after_tick(check_condition(with_val))
+        check_condition(with_val)()
+        return future
     
 class PromptValue(InjectableStatementValue):
     prompt: Final[Optional[str]]
@@ -1600,6 +1869,15 @@ class DMFCompiler(DMFVisitor):
                             return Delayed.complete(ex)
                 return future.chain(chain_call)
         return Executable(sig.return_type, run, arg_execs)
+    
+    def use_immediate_callable(self, fn: Callable[..., Any],
+                               arg_execs: Sequence[Executable],
+                               sig: Signature, 
+                               *,
+                               extra_args: Sequence[Any] = ()) -> Executable:
+        def delayed(*args: Any) -> Delayed[Any]:
+            return Delayed.complete(fn(*args))
+        return self.use_callable(delayed, arg_execs, sig, extra_args=extra_args)
     
     def use_function(self, func: Union[Func, str],
                      ctx: ParserRuleContext,
@@ -2933,13 +3211,11 @@ class DMFCompiler(DMFVisitor):
         if axis is None:
             # This is a to-pad motion
             if self.compatible(which.return_type, Type.PAD):
-                def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
-                    return (which.evaluate(env, Type.PAD)
-                            .transformed(error_check(lambda pad: ToPadValue(pad))))
+                return self.use_immediate_callable(ToPadValue, (which,),
+                                                   Signature.of((Type.PAD,), Type.MOTION))
             elif self.compatible(which.return_type, Type.WELL):
-                def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
-                    return (which.evaluate(env, Type.WELL)
-                            .transformed(error_check(lambda well: ToPadValue(well.exit_pad))))
+                return self.use_immediate_callable(ToWellValue, (which,),
+                                                   Signature.of((Type.WELL,), Type.MOTION))
             elif self.compatible(which.return_type, Type.INT):
                 return self.error(ctx, Type.MOTION, f"Did you forget 'row' or 'column'?: {self.text_of(ctx)}")
             else:
@@ -2950,10 +3226,88 @@ class DMFCompiler(DMFVisitor):
                 return self.error(ctx.which, Type.MOTION, 
                                   f"Row or column name not an int ({which.return_type.name}): {self.text_of(ctx.which)}")
             verticalp = cast(bool, axis.verticalp)
-            def run(env: Environment) -> Delayed[MaybeError[MotionValue]]:
-                return (which.evaluate(env, Type.INT)
-                        .transformed(error_check(lambda n: ToRowColValue(n, verticalp))))
-        return Executable(Type.MOTION, run, (which,))
+            return self.use_immediate_callable(ToRowColValue, (which,),
+                                               Signature.of((Type.INT,), Type.MOTION), 
+                                               extra_args=(verticalp,))
+    
+    def visitBecome_expr(self, ctx:DMFParser.Become_exprContext) -> Executable:
+        result = self.visit(ctx.result)
+        if (e:=self.type_check(Type.REAGENT, result.return_type, ctx.result)) is not None:
+            return e
+        
+        return self.use_immediate_callable(ChangeReagentValue, 
+                                           (result,),
+                                           Signature.of((Type.REAGENT,), Type.MOTION))
+        
+    def visitAccept_expr(self, ctx:DMFParser.Accept_exprContext) -> Executable:
+        from_dir = self.visit(ctx.from_dir)
+        if (e:=self.type_check(Type.DIR, from_dir.return_type, ctx.from_dir)) is not None:
+            return e
+        
+        return self.use_immediate_callable(AcceptMergeValue, 
+                                           (from_dir,),
+                                           Signature.of((Type.DIR,), Type.MOTION))
+        
+    def visitMerge_expr(self, ctx:DMFParser.Merge_exprContext) -> Executable:
+        to_dir = self.visit(ctx.to_dir)
+        if (e:=self.type_check(Type.DIR, to_dir.return_type, ctx.to_dir)) is not None:
+            return e
+        
+        return self.use_immediate_callable(MergeIntoValue, 
+                                           (to_dir,),
+                                           Signature.of((Type.DIR,), Type.MOTION))
+        
+    def visitMix_expr(self, ctx:DMFParser.Mix_exprContext) -> Executable:
+        to_dir = self.visit(ctx.to_dir)
+        if (e:=self.type_check(Type.DIR, to_dir.return_type, ctx.to_dir)) is not None:
+            return e
+        
+        return self.use_immediate_callable(MixWithValue, 
+                                           (to_dir,),
+                                           Signature.of((Type.DIR,), Type.MOTION))
+        
+    def visitSplit_expr(self, ctx:DMFParser.Split_exprContext) -> Executable:
+        to_dir = self.visit(ctx.to_dir)
+        if (e:=self.type_check(Type.DIR, to_dir.return_type, ctx.to_dir)) is not None:
+            return e
+        
+        name_ctx: Optional[DMFParser.NameContext] = ctx.var
+        setter: Optional[Callable[[Environment, Drop], None]] = None
+        if name_ctx is not None:
+            name = cast(str, name_ctx.val)
+            vt = self.current_types.lookup(name)
+            if vt is MISSING:
+                return self.error(ctx, 
+                                  Type.MOTION,
+                                  lambda text: f"Undeclared variable '{name}' used as target of drop split: {text}")
+            if isinstance(vt, FutureType):
+                var_type = vt.value_type
+                def do_assignment(env: Environment, drop: Drop) -> None:
+                    fv: FutureValue[Drop] = env[name]
+                    fv.assign(drop)
+                setter = do_assignment
+            else:
+                var_type = vt
+                def do_assignment(env: Environment, drop: Drop) -> None:
+                    env[name] = drop
+                setter = do_assignment
+            if e := self.type_check(var_type, Type.DROP, ctx,
+                                    lambda want,have,text:
+                                        f"variable '{name}' has type {want}. Cannot take {have}: {text}"):
+                return e
+
+        def run(env: Environment, d: Dir) -> SplitToValue:
+            future: Optional[Postable[Drop]] = None
+            if setter is not None:
+                fn = setter
+                future = Postable[Drop]()
+                future.when_value(lambda d: fn(env, d))
+            return SplitToValue(d, future)
+        
+        return self.use_callable(WithEnv(run),
+                                 (to_dir,),
+                                 Signature.of((Type.DIR,), Type.MOTION))
+        
     
     def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
         mulp = ctx.MUL() is not None
@@ -3105,6 +3459,20 @@ class DMFCompiler(DMFVisitor):
             return (duration.evaluate(env, Type.DELAY)
                     .transformed(error_check(lambda d: PauseValue(d, env.board))))
         return Executable(Type.ACTION, run, (duration,))
+    
+    def visitPause_until_expr(self, ctx:DMFParser.Pause_until_exprContext) -> Executable:
+        condition = self.visit(ctx.condition)
+        if e:=self.type_check(Type.BOOL, condition, ctx.condition,
+                              lambda want,have,text: # @UnusedVariable
+                                f"Condition ({have}) must be boolean: {text}",
+                                return_type=Type.ACTION):
+            return e
+        def run(env: Environment) -> Delayed[MaybeError[PauseUntilValue]]:
+            action =PauseUntilValue(env, condition,
+                                    lambda: self.text_of(ctx.condition)
+                                    )
+            return Delayed.complete(action)
+        return Executable(Type.ACTION, run, (condition,))
     
     def visitPrompt_expr(self, ctx:DMFParser.Prompt_exprContext) -> Executable:
         def run(env: Environment, *vals: Sequence[Any]) -> Delayed[PromptValue]:
@@ -3554,12 +3922,30 @@ class DMFCompiler(DMFVisitor):
         for st in SampleType.all():
             fn.register_immediate((st, st.element_type), st, add_to_sample, curry_at=0)
             
+        # fn = BuiltIns["become"] = Functions["become"]
+        # def change_reagent(d: Union[Liquid, Drop], r: Reagent) -> None:
+        #     d.reagent = r
+        # fn.register_immediate((Type.LIQUID, Type.REAGENT), Type.NO_VALUE, change_reagent, curry_at=0)
+        # fn.register_immediate((Type.DROP, Type.REAGENT), Type.NO_VALUE, change_reagent, curry_at=0)
+            
         # fn = BuiltIns["curried"] = Functions["curried"]
         # def curried(i: int, s: str) -> str:
         #     return f"{i} -- {s}"
         # fn.register_immediate((Type.INT, Type.STRING), Type.STRING, curried, curry_at=(0,1))
         
-            
+        fn = BuiltIns["ready"] = Functions["ready"]
+        def heater_ready(tc : TemperatureControl) -> bool:
+            mode = tc.mode
+            return mode is TemperatureMode.HOT or mode is TemperatureMode.COLD
+        fn.register_immediate((Type.TEMP_CONTROL,), Type.BOOL, heater_ready)
+        
+        fn = BuiltIns["ambient"] = Functions["ambient"]
+        def heater_ambient(tc : TemperatureControl) -> bool:
+            mode = tc.mode
+            return mode is TemperatureMode.AMBIENT
+        fn.register_immediate((Type.TEMP_CONTROL,), Type.BOOL, heater_ambient)
+        
+        
         
     @classmethod
     def setup_special_vars(cls) -> None:
