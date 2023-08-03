@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping,\
-    NamedTuple, Iterable
+    NamedTuple, Iterable, Mapping, TypeVar, Generic
 
 from mpam.device import Pad, Board
 from mpam.drop import Drop
@@ -14,8 +14,38 @@ from _collections import defaultdict
 import sys
 from erk.basic import not_None
 
+PT = TypeVar("PT", bound='MultiDropProcessType')
 
 
+class MultiDropProcessRun(Generic[PT], ABC):
+    futures: Final[Mapping[Pad, Postable[Drop]]]
+    pads: Final[tuple[Pad, ...]]
+    
+    
+    def __init__(self, process_type: PT,
+                 futures: Mapping[Pad, Postable[Drop]],
+                 pads: tuple[Pad, ...]) -> None:
+        self.process_type: Final[PT] = process_type
+        self.futures = futures
+        self.pads = pads
+    
+    
+    # Yields False if the the process is done (except for calling finished() and
+    # posting results), True if it should be called again after the next tick.
+    @abstractmethod
+    def iterator(self) -> Iterator[bool]: 
+        ...
+
+    # returns True if the futures should be posted.
+    def finish(self) -> bool:
+        return True
+        
+    def post_to_futures(self) -> None:
+        for pad, future in self.futures.items():
+            drop = not_None(pad.drop, desc=lambda: f"{pad}.drop")
+            # print(f"Finished with {drop} at {pad}.")
+            future.post(drop)
+    
 
 FinishFunction = Callable[[MutableMapping[Pad, Postable[Drop]]], bool]
 
@@ -25,25 +55,21 @@ class MultiDropProcessType(ABC):
     def __init__(self, n_drops: int) -> None:
         self.n_drops = n_drops
 
-    # returns None if the iterator still has work to do.  Otherwise, returns a function that will
-    # be called after the last tick.  This function returns True if the passed-in futures should
-    # be posted.
-    @abstractmethod
-    def iterator(self, pads: tuple[Pad, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
-        ...
-
-    # # returns True if the futures should be posted.
-    # def finish(self, drops: Sequence[Drop],                  # @UnusedVariable
-    #            futures: dict[Drop, Delayed[Drop]]) -> bool:  # @UnusedVariable
-    #     return True
-
     @abstractmethod
     def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:  # @UnusedVariable
+        ...
+        
+    @abstractmethod
+    def create_run(self, *,
+                   futures: Mapping[Pad, Postable[Drop]],
+                   pads: tuple[Pad,...]) -> MultiDropProcessRun:
         ...
 
     def start(self, lead_drop: Drop, future: Postable[Drop]) -> None:
         process = MultiDropProcess(self, lead_drop, future)
         process.start()
+        
+
 
 
 class MultiDropProcess:
@@ -118,24 +144,17 @@ class MultiDropProcess:
             cb()
 
     def iterator(self, board: Board, drops: Sequence[Drop]) -> Iterator[Optional[Ticks]]:
-        process_type = self.process_type
         futures = self.futures
         pads = tuple(drop.on_board_pad for drop in drops)
-        # drops = tuple(not_None(d) for d in drops)
-        i = process_type.iterator(pads=pads)
+        
+        r = self.process_type.create_run(futures=futures, pads=pads)
+        i = r.iterator()
         one_tick = 1*tick
-        while True:
-            finish = next(i)
-            if finish is not None:
-                break
+        while next(i):
             yield one_tick
-        real_finish = finish
         def do_post() -> None:
-            if real_finish(futures):
-                for pad, future in futures.items():
-                    drop = not_None(pad.drop, desc=lambda: f"{pad}.drop")
-                    # print(f"Finished with {drop} at {pad}.")
-                    future.post(drop)
+            if r.finish():
+                r.post_to_futures()
         board.after_tick(do_post)
         yield None
 
@@ -364,7 +383,44 @@ class Transform(Enum):
         if self.y_neg:
             y = -y
         return (y,x) if self.swap else (x,y)
+    
+class DropCombinationRun(MultiDropProcessRun['DropCombinationProcessType']):
+    @property
+    def result(self) -> Optional[Reagent]:
+        return self.process_type.result
+    
+    @property
+    def mix_seq(self) -> MixSequence:
+        return self.process_type.mix_seq
+    
+    @property
+    def n_shuttles(self) -> int:
+        return self.process_type.n_shuttles
+    
+        
+    # returns the finish function when done
+    def iterator(self) -> Iterator[bool]:  # @UnusedVariable
+        pads = self.pads
+        i = self.mix_seq.iterator(pads, self.n_shuttles)
+        while next(i):
+            yield True
+        yield False
 
+    def finish(self) -> bool:
+        result = self.result
+        pads = self.pads
+        fully_mixed = { pads[i] for i in self.mix_seq.fully_mixed }
+        for pad in pads:
+            if pad in fully_mixed:
+                if result is not None:
+                    pad.checked_drop.reagent = result
+            else:
+                pad.checked_drop.reagent = waste_reagent
+        return True
+
+        
+        
+        
 
 class DropCombinationProcessType(MultiDropProcessType):
     mix_seq: Final[MixSequence]
@@ -386,6 +442,11 @@ class DropCombinationProcessType(MultiDropProcessType):
         self.mix_seq = mix_seq
         self.result = result
         self.n_shuttles = n_shuttles
+        
+    def create_run(self, *, 
+                   futures: Mapping[Pad, Postable[Drop]], 
+                   pads: tuple[Pad,...]) -> DropCombinationRun:
+        return DropCombinationRun(self, futures, pads)
 
     def secondary_pads(self, lead_drop_pad: Pad)->Sequence[Pad]:
         board = lead_drop_pad.board
@@ -395,26 +456,6 @@ class DropCombinationProcessType(MultiDropProcessType):
                      for x,y in self.mix_seq.locations
                      if x!=0 or y!=0)
 
-    # returns the finish function when done
-    def iterator(self, pads: tuple[Pad, ...]) -> Iterator[Optional[FinishFunction]]:  # @UnusedVariable
-        i = self.mix_seq.iterator(pads, self.n_shuttles)
-        while next(i):
-            yield None
-        result = self.result
-        fully_mixed = { pads[i] for i in self.mix_seq.fully_mixed }
-        def finish(futures: MutableMapping[Pad, Postable[Drop]]) -> bool:  # @UnusedVariable
-            printed = False
-            for pad in pads:
-                if pad in fully_mixed:
-                    if not printed:
-                        # print(f"Result is {drop.reagent}")
-                        printed = True
-                    if result is not None:
-                        pad.checked_drop.reagent = result
-                else:
-                    pad.checked_drop.reagent = waste_reagent
-            return True
-        yield finish
 
 class PlacedMixSequence:
     mix_seq: Final[MixSequence]

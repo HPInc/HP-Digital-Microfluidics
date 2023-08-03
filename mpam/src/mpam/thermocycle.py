@@ -3,18 +3,20 @@ from __future__ import annotations
 from _collections import deque, defaultdict
 from threading import Lock
 from typing import Final, NamedTuple, Sequence, Literal, Union, Optional, \
-    Iterator, Any, Callable
+    Iterator, Any, Callable, Mapping
 
 from mpam.device import TemperatureControl, Pad
 from mpam.drop import Drop
 from mpam.paths import Path
-from mpam.processes import MultiDropProcessType, FinishFunction, PairwiseMix
+from mpam.processes import MultiDropProcessType, FinishFunction, PairwiseMix,\
+    MultiDropProcessRun
 from mpam.types import Delayed, Dir, Postable
 from quantities.dimensions import Time
 from quantities.temperature import TemperaturePoint, absolute_zero
 from quantities.timestamp import time_now, Timestamp
 from erk.basic import not_None
 from enum import Enum, auto
+from functools import cached_property
 
 
 class ChannelEndpoint(NamedTuple):
@@ -170,58 +172,29 @@ class Rendezvous:
             return val
         
 
+class ThermocycleRun(MultiDropProcessRun['ThermocycleProcessType']):
+    @cached_property
+    def thermocycler(self) -> Thermocycler:
+        return self.process_type.thermocycler
+    
+    @cached_property
+    def phases(self) -> Sequence[ThermocyclePhase]:
+        return self.process_type.phases
 
-class ThermocycleProcessType(MultiDropProcessType):
-    thermocycler: Final[Thermocycler]
-    phases: Final[Sequence[ThermocyclePhase]]
-    n_iterations: Final[int]
-    channels: Final[Sequence[int]]
-    shuttle_dir: Final[ShuttleDir]
+    @cached_property
+    def n_iterations(self) -> int:
+        return self.process_type.n_iterations
+
+    @cached_property
+    def channels(self) -> Sequence[int]:
+        return self.process_type.channels
+
+    @cached_property
+    def shuttle_dir(self) -> ShuttleDir:
+        return self.process_type.shuttle_dir
     
-    class FindLeadResult(NamedTuple):
-        index_in_seq: int
-        end: ChannelEnd
-        channel: Channel
     
-    
-    def __init__(self,
-                 thermocycler: Thermocycler, 
-                 *,
-                 channels: Sequence[int],
-                 phases: Sequence[ThermocyclePhase],
-                 n_iterations: int,
-                 shuttle_dir: ShuttleDir = ShuttleDir.FULL) -> None:
-        super().__init__(len(channels))
-        self.thermocycler = thermocycler
-        self.channels = channels
-        self.phases = phases
-        self.n_iterations = n_iterations
-        self.shuttle_dir = shuttle_dir
-        # print(f"Thermocycling over {channels}")
-        
-    def find_lead(self, lead_drop_pad: Pad) -> FindLeadResult:
-        for index,c in enumerate(self.thermocycler.channels[i] for i in self.channels):
-            if c[0].threshold is lead_drop_pad:
-                return self.FindLeadResult(index, 0, c)
-            if c[1].threshold is lead_drop_pad:
-                return self.FindLeadResult(index, 1, c)
-        raise ValueError(f"{lead_drop_pad} is not a threshold pad for any of channels {self.channels}")
-        
-    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:
-        end = self.find_lead(lead_drop_pad).end
-        channels = (self.thermocycler.channels[i] for i in self.channels)
-        
-        return tuple(c[end].threshold for c in channels if c[end].threshold is not lead_drop_pad)
-    
-    def pads(self, end: ChannelEnd) -> Sequence[Pad]:
-        tc = self.thermocycler
-        return tuple(tc.channels[i][end].threshold for i in self.channels)
-    
-    # returns None if the iterator still has work to do.  Otherwise, returns a function that will 
-    # be called after the last tick.  This function returns True if the passed-in futures should 
-    # be posted.
-   
-    def iterator(self, pads: tuple[Pad, ...])->Iterator[Optional[FinishFunction]]:
+    def iterator(self) -> Iterator[bool]:
         tc = self.thermocycler
         shuttle_dir = self.shuttle_dir
         channels_used = set(self.channels)
@@ -229,10 +202,11 @@ class ThermocycleProcessType(MultiDropProcessType):
         channels = tuple(tc.channels[i] for i in channels_used)
         # maybe_drops = tuple(drops[i] if i in channels_used else None for )
 
+        pads = self.pads
         lead_pad = pads[0]
         board = lead_pad.board
         system = board.system
-        flr = self.find_lead(lead_pad)
+        flr = self.process_type.find_lead(lead_pad)
         this_end: ChannelEnd = flr.end
         other_end: ChannelEnd = 1 if this_end == 0 else 0
         
@@ -276,7 +250,7 @@ class ThermocycleProcessType(MultiDropProcessType):
                 rendezvous.reset()
                 all_channels(lambda bc: bc.step_out(this_end, rendezvous))
                 while not rendezvous.ready:
-                    yield None
+                    yield True
                 in_zone = False
                 if len(downs) > 0:
                     these_heaters.change_to(downs.popleft())
@@ -288,18 +262,18 @@ class ThermocycleProcessType(MultiDropProcessType):
                     # BUG: MyPy 0.931 (9457).  MyPy incorrectly thinks that
                     # rendezvous.ready says Literal[True], even after the
                     # reset() call. https://github.com/python/mypy/issues/9457
-                    yield None  # type: ignore[unreachable]
+                    yield True# type: ignore[unreachable]
                 (this_end, other_end) = (other_end, this_end)
                 (these_heaters, those_heaters) = (those_heaters, these_heaters)
 
             current_temp = target
             if not in_zone:
                 while not these_heaters.ready:
-                    yield None
+                    yield True
                 rendezvous.reset()
                 all_channels(lambda bc: bc.step_in(this_end, rendezvous))
                 while not rendezvous.ready:
-                    yield None
+                    yield True
                 in_zone = True
                 start_clock(time_now())
                 step_no = -1
@@ -348,18 +322,69 @@ class ThermocycleProcessType(MultiDropProcessType):
                                     .then_process(reached_rendezvous) \
                                     .schedule_for(drops[0])
                 while not rendezvous.ready:
-                    yield None
+                    yield True
                 # assert False
         rendezvous.reset()
         all_channels(lambda bc: bc.step_out(this_end, rendezvous))
         # print("Done with thermocycle")
         while not rendezvous.ready:
-            yield None
-        # print("Rendezvous ready")
+            yield True
+        print("Rendezvous ready")
         these_heaters.change_to(None)
         while not these_heaters.ready or not those_heaters.ready:
-            yield None
-        # print("Heaters ready")
-        yield lambda _: True
-                    
+            yield True
+        yield False
+    
 
+
+class ThermocycleProcessType(MultiDropProcessType):
+    thermocycler: Final[Thermocycler]
+    phases: Final[Sequence[ThermocyclePhase]]
+    n_iterations: Final[int]
+    channels: Final[Sequence[int]]
+    shuttle_dir: Final[ShuttleDir]
+    
+    class FindLeadResult(NamedTuple):
+        index_in_seq: int
+        end: ChannelEnd
+        channel: Channel
+    
+    
+    def __init__(self,
+                 thermocycler: Thermocycler, 
+                 *,
+                 channels: Sequence[int],
+                 phases: Sequence[ThermocyclePhase],
+                 n_iterations: int,
+                 shuttle_dir: ShuttleDir = ShuttleDir.FULL) -> None:
+        super().__init__(len(channels))
+        self.thermocycler = thermocycler
+        self.channels = channels
+        self.phases = phases
+        self.n_iterations = n_iterations
+        self.shuttle_dir = shuttle_dir
+        # print(f"Thermocycling over {channels}")
+        
+    def create_run(self, *, 
+                   futures: Mapping[Pad, Postable[Drop]], 
+                   pads: tuple[Pad, ...]) -> ThermocycleRun:
+        return ThermocycleRun(self, futures, pads)
+        
+    def find_lead(self, lead_drop_pad: Pad) -> FindLeadResult:
+        for index,c in enumerate(self.thermocycler.channels[i] for i in self.channels):
+            if c[0].threshold is lead_drop_pad:
+                return self.FindLeadResult(index, 0, c)
+            if c[1].threshold is lead_drop_pad:
+                return self.FindLeadResult(index, 1, c)
+        raise ValueError(f"{lead_drop_pad} is not a threshold pad for any of channels {self.channels}")
+        
+    def secondary_pads(self, lead_drop_pad: Pad) -> Sequence[Pad]:
+        end = self.find_lead(lead_drop_pad).end
+        channels = (self.thermocycler.channels[i] for i in self.channels)
+        
+        return tuple(c[end].threshold for c in channels if c[end].threshold is not lead_drop_pad)
+    
+    def pads(self, end: ChannelEnd) -> Sequence[Pad]:
+        tc = self.thermocycler
+        return tuple(tc.channels[i][end].threshold for i in self.channels)
+    
