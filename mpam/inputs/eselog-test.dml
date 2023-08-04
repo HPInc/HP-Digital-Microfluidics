@@ -1,6 +1,7 @@
 // Until the mixing primitives are added to the language, we have to do 
 // it the clunky old way.  
 
+/*
 define mix(pad center, dir to_d1, dir to_d2) -> drop {
   [[
      (center + to_d1)'s drop : unsafe_walk(to_d1 turned around);
@@ -8,6 +9,7 @@ define mix(pad center, dir to_d1, dir to_d2) -> drop {
   ]]
   return center's drop;
 }
+*/
 
 // Protocol parameters.  The "templates" give the names of the CSV files
 // that are written, with the "%" parts getting timestamp elements 
@@ -96,9 +98,13 @@ define combine_and_measure(well w,
              : dispense drop
              : to row 2
              : to mix_loc + left;
-             
-  // Combine the two drops into one big drop. 
-  drop AB = mix(mix_loc, left, right);
+  
+  drop AB;
+  [[
+      AB = A : accept merge from left : left;
+      B : merge into right;
+  ]]
+  
 
   // Walk around to mix.
   print "Mixing for ", mix_time;
