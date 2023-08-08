@@ -1,0 +1,9 @@
+// Take a reading and write it to a CSV file.
+
+define measure()
+{
+  eselog ese = the board's eselog;
+  ese : take a reading
+      : write csv file
+      ; 
+}
