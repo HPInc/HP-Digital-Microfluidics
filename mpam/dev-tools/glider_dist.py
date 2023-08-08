@@ -7,12 +7,17 @@ import logging
 import os
 import re
 import sys
+from erk.basic import ValOrFn, ensure_val
 
 logger = logging.getLogger(__name__)
 
 dll_files = [ 
     "WallabyHAL.dll",
     "pyglider.pyd",
+    "SDL2.dll",
+    "SDL2_ttf.dll",
+    "libfreetype-6.dll",
+    "zlib1.dll"
     ]
 
 config_files = [
@@ -31,6 +36,8 @@ class Config:
     build_root: Final = ConfigParam[str](".")
     dll_dir: Final = ConfigParam[str]("x64/Debug")
     config_dir: Final = ConfigParam[str]("WallabyHAL")
+    python_root: Final = ConfigParam[str]()
+    python_dll: Final = ConfigParam[str]("python310.dll")
     
 
 def create_zip(files: list[str], archive_name: str) -> None:
@@ -59,9 +66,9 @@ def is_relative_to_dir(path: str) -> bool:
 
     return True
 
-def ensure_relative_to_dir(dir_path: str, path: str) -> str:
+def ensure_relative_to_dir(dir_path: ValOrFn[str], path: str) -> str:
     if is_relative_to_dir(path):
-        return os.path.join(dir_path, path)
+        return os.path.join(ensure_val(dir_path,str), path)
     return path            
             
 if __name__ == '__main__':
@@ -90,6 +97,14 @@ if __name__ == '__main__':
                                   The directory in which the configuration files are found.  Relative to the
                                   root directory (--root).
                                   ''')
+    Config.python_root.add_arg_to(parser, "--python-root", metavar="DIR",
+                                 help = '''
+                                  The root directory of the Python distribution.
+                                  ''')
+    Config.python_dll.add_arg_to(parser, "--python-dll", metavar="FILE",
+                                 help = '''
+                                  The Python DLL.  Relative to --python-root.
+                                  ''')
     
     ns: Namespace = parser.parse_args()
     ConfigParam.set_namespace(ns)
@@ -113,8 +128,12 @@ if __name__ == '__main__':
         sys.exit(-1)
     logger.info(f"Config dir: {config_dir}")
     
+    python_dll = os.path.realpath(ensure_relative_to_dir(lambda: Config.python_root(), 
+                                                         Config.python_dll()))
+    
     files = [*(os.path.join(dll_dir, f) for f in dll_files),
-             *(os.path.join(config_dir, f) for f in config_files),]
+             *(os.path.join(config_dir, f) for f in config_files),
+             python_dll]
     
     create_zip(files, zipf)
     
