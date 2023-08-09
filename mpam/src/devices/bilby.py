@@ -148,10 +148,10 @@ class ESELogProxy(ESELog.Proxy):
             values = {
                 (ESELogChannel.E1D1, OnOff.ON): r.e1d1_valueOn*mV,
                 (ESELogChannel.E1D1, OnOff.OFF): r.e1d1_valueOff*mV,
-                (ESELogChannel.E1D2, OnOff.ON): r.e1d1_valueOn*mV,
-                (ESELogChannel.E1D2, OnOff.OFF): r.e1d1_valueOff*mV,
-                (ESELogChannel.E2D2, OnOff.ON): r.e1d1_valueOn*mV,
-                (ESELogChannel.E2D2, OnOff.OFF): r.e1d1_valueOff*mV,
+                (ESELogChannel.E1D2, OnOff.ON): r.e1d2_valueOn*mV,
+                (ESELogChannel.E1D2, OnOff.OFF): r.e1d2_valueOff*mV,
+                (ESELogChannel.E2D2, OnOff.ON): r.e2d2_valueOn*mV,
+                (ESELogChannel.E2D2, OnOff.OFF): r.e2d2_valueOff*mV,
                 }
             return ESELog.Sample(ticket = r.ticket,
                                  time = Timestamp.from_time_t(r.time),
