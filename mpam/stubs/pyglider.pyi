@@ -722,39 +722,39 @@ class Magnet():
 class ESElog(Sensor):
     class ESElogResult(Sensor.SensorResult):
         @property
-        def e1d1_valueOff(self) -> int:
+        def e1d1_valueOff(self) -> float:
             """
-            :type: int
-            """
-        @property
-        def e1d1_valueOn(self) -> int:
-            """
-            :type: int
+            :type: float
             """
         @property
-        def e1d2_valueOff(self) -> int:
+        def e1d1_valueOn(self) -> float:
             """
-            :type: int
-            """
-        @property
-        def e1d2_valueOn(self) -> int:
-            """
-            :type: int
+            :type: float
             """
         @property
-        def e2d2_valueOff(self) -> int:
+        def e1d2_valueOff(self) -> float:
             """
-            :type: int
-            """
-        @property
-        def e2d2_valueOn(self) -> int:
-            """
-            :type: int
+            :type: float
             """
         @property
-        def temperature(self) -> int:
+        def e1d2_valueOn(self) -> float:
             """
-            :type: int
+            :type: float
+            """
+        @property
+        def e2d2_valueOff(self) -> float:
+            """
+            :type: float
+            """
+        @property
+        def e2d2_valueOn(self) -> float:
+            """
+            :type: float
+            """
+        @property
+        def temperature(self) -> float:
+            """
+            :type: float
             """
         @property
         def ticket(self) -> int:
