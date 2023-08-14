@@ -1368,7 +1368,7 @@ class BaseDim(NamedDim, metaclass=BaseDimMeta):
     
     @classmethod
     def _base_unit(cls: type[BD],
-                   unit: type[U], 
+                   unit: type[U], # @UnusedVariable
                    abbr: str, *, singular: Optional[str]=None,
                    ) -> U:
         return cast(U, cls.dim().base_unit(abbr, singular=singular))

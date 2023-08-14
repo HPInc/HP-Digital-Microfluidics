@@ -1,6 +1,6 @@
-grammar DMF;
+grammar dml;
 
-import pathLexer;
+import commonLexer;
 
 options {
 	language = Python3;

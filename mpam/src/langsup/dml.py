@@ -11,9 +11,9 @@ from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext
     Token
 from antlr4.tree.Tree import TerminalNode
 
-from DMFLexer import DMFLexer
-from DMFParser import DMFParser
-from DMFVisitor import DMFVisitor
+from dmlLexer import dmlLexer
+from dmlParser import dmlParser
+from dmlVisitor import dmlVisitor
 from langsup.type_supp import Type, CallableType, Signature, Attr,\
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
@@ -1260,32 +1260,32 @@ WithEnv = ExtraArgFunc[Environment]
 WithEnvDelayed = ExtraArgDelayedFunc[Environment]
 
 class LoopType(ABC):
-    compiler: Final[DMFCompiler]
+    compiler: Final[DMLCompiler]
     
-    def __init__(self, compiler: DMFCompiler) -> None:
+    def __init__(self, compiler: DMLCompiler) -> None:
         self.compiler = compiler
     
     @classmethod
-    def for_context(cls, header: DMFParser.Loop_headerContext, *, compiler: DMFCompiler) -> LoopType:
+    def for_context(cls, header: dmlParser.Loop_headerContext, *, compiler: DMLCompiler) -> LoopType:
         def not_implemented(kind: str) -> NoReturn:
             error = compiler.not_yet_implemented(kind, header)
             raise ErrorToPropagate(error)
 
-        if isinstance(header, DMFParser.N_times_loop_headerContext):
+        if isinstance(header, dmlParser.N_times_loop_headerContext):
             return NTimesLoopType(header, compiler=compiler)
-        if isinstance(header, DMFParser.Duration_loop_headerContext):
+        if isinstance(header, dmlParser.Duration_loop_headerContext):
             return ForDurationLoopType(header, compiler=compiler)
-        if isinstance(header, DMFParser.Test_loop_headerContext):
+        if isinstance(header, dmlParser.Test_loop_headerContext):
             return BoolTestLoopType(header, compiler=compiler)
-        if isinstance(header, DMFParser.Seq_iter_loop_headerContext):
+        if isinstance(header, dmlParser.Seq_iter_loop_headerContext):
             not_implemented("'With var in' loops")
-        if isinstance(header, DMFParser.Step_iter_loop_headerContext):
+        if isinstance(header, dmlParser.Step_iter_loop_headerContext):
             return StepIterLoopType(header, compiler=compiler)
         
         assert_never(header)
         
     # Override to push variables into the subcontext
-    def compile_body(self, body: DMFParser.CompoundContext) -> Executable:
+    def compile_body(self, body: dmlParser.CompoundContext) -> Executable:
         return self.compiler.visit(body)
     
     # Override to add a new environment for control variables
@@ -1302,7 +1302,7 @@ class LoopType(ABC):
 class NTimesLoopType(LoopType):
     n_exec: Final[Executable]
     
-    def __init__(self, header: DMFParser.N_times_loop_headerContext, *, compiler: DMFCompiler) -> None:
+    def __init__(self, header: dmlParser.N_times_loop_headerContext, *, compiler: DMLCompiler) -> None:
         super().__init__(compiler)
         self.n_exec = self.compiler.visit(header.n)
         if e := compiler.type_check(Type.INT, self.n_exec, header,
@@ -1332,10 +1332,10 @@ class BoolTestLoopType(LoopType):
     continue_on: Final[bool]
     cond_exec: Final[Executable]
     
-    def __init__(self, header: DMFParser.Test_loop_headerContext, *, compiler: DMFCompiler) -> None:
+    def __init__(self, header: dmlParser.Test_loop_headerContext, *, compiler: DMLCompiler) -> None:
         super().__init__(compiler)
         self.continue_on = header.WHILE() is not None
-        cond_ctx = cast(DMFParser.ExprContext, header.cond)
+        cond_ctx = cast(dmlParser.ExprContext, header.cond)
         cond_exec = self.compiler.visit(cond_ctx)
         if e := compiler.type_check(Type.BOOL, cond_exec, header,
                                     lambda want,have,text:
@@ -1361,7 +1361,7 @@ class BoolTestLoopType(LoopType):
 class ForDurationLoopType(LoopType):
     duration_exec: Final[Executable]
     
-    def __init__(self, header: DMFParser.Duration_loop_headerContext, *, compiler: DMFCompiler) -> None:
+    def __init__(self, header: dmlParser.Duration_loop_headerContext, *, compiler: DMLCompiler) -> None:
         super().__init__(compiler)
         duration_exec = self.compiler.visit(header.duration)
         if e := compiler.type_check(Type.TIME, duration_exec, header,
@@ -1399,19 +1399,19 @@ class StepIterLoopType(LoopType):
     cmp_type: Final[Type]
     inc_sig: Final[Signature]
     
-    def __init__(self, header: DMFParser.Step_iter_loop_headerContext, *, compiler: DMFCompiler) -> None:
+    def __init__(self, header: dmlParser.Step_iter_loop_headerContext, *, compiler: DMLCompiler) -> None:
         super().__init__(compiler)
         
         def raise_error(msg: str, ret_type: Type = Type.NO_VALUE) -> NoReturn:
             raise ErrorToPropagate(compiler.error(header, ret_type, f"{msg}: {compiler.text_of(header)}"))
         
-        sfd = cast(DMFParser.Step_first_and_dirContext, header.first)
+        sfd = cast(dmlParser.Step_first_and_dirContext, header.first)
         self.downp = cast(bool, sfd.is_down)
         start_ctx: Optional[ParserRuleContext] = sfd.expr()
         self.start_exec = None if start_ctx is None else compiler.visit(start_ctx) 
         self.stop_exec = compiler.visit(header.bound)
         step: Optional[Executable] = None
-        step_ctx: Optional[DMFParser.ExprContext] = header.step
+        step_ctx: Optional[dmlParser.ExprContext] = header.step
         if (step_ctx):
             step = compiler.visit(step_ctx)
         else:
@@ -1420,14 +1420,14 @@ class StepIterLoopType(LoopType):
         self.step_exec = step
         
         # No idea why one of the mypy tests on GitHub (only on 3.9) is complaining about "Redundant cast to Union[Any,Any]"
-        var_ctx = cast(Union[DMFParser.ParamContext, DMFParser.NameContext], header.var) # type: ignore [redundant-cast] 
+        var_ctx = cast(Union[dmlParser.ParamContext, dmlParser.NameContext], header.var) # type: ignore [redundant-cast] 
         
-        if isinstance(var_ctx, DMFParser.ParamContext):
+        if isinstance(var_ctx, dmlParser.ParamContext):
             var_name, var_type = compiler.param_def(var_ctx)
             new_var = True
             if cast(bool, var_ctx.deprecated):
                 compiler.decl_deprecated(var_ctx)
-        elif isinstance(var_ctx, DMFParser.NameContext):
+        elif isinstance(var_ctx, dmlParser.NameContext):
             var_name = cast(str, var_ctx.val)
             vt = compiler.current_types.lookup(var_name)
             if vt is not MISSING:
@@ -1479,7 +1479,7 @@ class StepIterLoopType(LoopType):
         else:
             return (self.start_exec, self.stop_exec, self.step_exec)
     
-    def compile_body(self, body:DMFParser.CompoundContext)->Executable:
+    def compile_body(self, body:dmlParser.CompoundContext)->Executable:
         if self.new_var:
             with self.compiler.current_types.push({self.var_name: self.var_type}):
                 return self.compiler.visit(body)
@@ -1555,7 +1555,7 @@ class StepIterLoopType(LoopType):
             yield (increment().chain(error_check_delayed(test)))
 
     
-class DMFInterpreter:
+class DMLInterpreter:
     globals: Final[Environment]
     namespace: Final[TypeMap]
     
@@ -1578,8 +1578,8 @@ class DMFInterpreter:
             print(f"Loading macro file '{file_name}'")
             parser = self.get_parser(FileStream(file_name, encoding, errors))
             tree = parser.macro_file()
-            assert isinstance(tree, DMFParser.Macro_fileContext)
-            compiler = DMFCompiler(global_types = self.namespace, interactive = False)
+            assert isinstance(tree, dmlParser.Macro_fileContext)
+            compiler = DMLCompiler(global_types = self.namespace, interactive = False)
             executable = compiler.visit(tree)
             assert isinstance(executable, Executable)
             if executable.contains_error:
@@ -1597,8 +1597,8 @@ class DMFInterpreter:
                  cache_as: Optional[str] = None) -> Delayed[tuple[Type, Any]]:
         parser = self.get_parser(InputStream(expr))
         tree = parser.interactive()
-        assert isinstance(tree, DMFParser.InteractiveContext)
-        compiler = DMFCompiler(global_types = self.namespace, interactive=True)
+        assert isinstance(tree, dmlParser.InteractiveContext)
+        compiler = DMLCompiler(global_types = self.namespace, interactive=True)
         executable = compiler.visit(tree)
         assert isinstance(executable, Executable)
         if executable.contains_error:
@@ -1613,14 +1613,14 @@ class DMFInterpreter:
             return (t, val)
         return future.transformed(munge_result)
     
-    def get_parser(self, input_stream: InputStream) -> DMFParser:
-        lexer = DMFLexer(input_stream)
+    def get_parser(self, input_stream: InputStream) -> dmlParser:
+        lexer = dmlLexer(input_stream)
         stream = CommonTokenStream(lexer)
-        parser = DMFParser(stream)
+        parser = dmlParser(stream)
         return parser
     
 
-class DMFCompiler(DMFVisitor):
+class DMLCompiler(dmlVisitor):
     global_types: Final[TypeMap]
     current_types: Final[ScopeStack[str, Type]]
     control_stack: Final[ControlScopeStack]
@@ -1710,7 +1710,7 @@ class DMFCompiler(DMFVisitor):
             msg = msg(arg_types, [self.text_of(a) for a in arg_ctxts], self.text_of(whole))
         return self.error(whole, return_type, msg, value=value)
 
-    def decl_deprecated(self, pc: DMFParser.ParamContext) -> Executable:
+    def decl_deprecated(self, pc: dmlParser.ParamContext) -> Executable:
         return self.error(pc, cast(Type,pc.type), 
                           lambda text: f"'NAME: TYPE' declarations are deprecated.  Use 'TYPE NAME': {text}")
 
@@ -1738,7 +1738,7 @@ class DMFCompiler(DMFVisitor):
         val = self.escape_re.value.sub(repl_escape, val)
         return val
 
-    def type_name_var(self, t_or_ctx: Union[DMFParser.Value_typeContext, Type], n: Optional[int] = None) -> str:
+    def type_name_var(self, t_or_ctx: Union[dmlParser.Value_typeContext, Type], n: Optional[int] = None) -> str:
         t = t_or_ctx if isinstance(t_or_ctx, Type) else cast(Type, t_or_ctx.type)
         if isinstance(t, FutureType):
             t = t.value_type
@@ -1828,7 +1828,7 @@ class DMFCompiler(DMFVisitor):
     
     def not_an_attr_error(self,
                           ctx: ParserRuleContext, 
-                          attr_ctx: DMFParser.AttrContext) -> Executable:
+                          attr_ctx: dmlParser.AttrContext) -> Executable:
         attr_text = self.text_of(attr_ctx)
         return self.error(ctx, Type.NO_VALUE,
                           lambda text: f"'{attr_text}' is not an attribute: {text})")
@@ -1924,9 +1924,9 @@ class DMFCompiler(DMFVisitor):
         return self.use_function(func, ctx, (quant_ctx,))
     
     def visit(self, tree: Any) -> Executable:
-        return cast(Executable, DMFVisitor.visit(self, tree))
+        return cast(Executable, dmlVisitor.visit(self, tree))
 
-    def visitMacro_file(self, ctx:DMFParser.Macro_fileContext) -> Executable:
+    def visitMacro_file(self, ctx:dmlParser.Macro_fileContext) -> Executable:
         stats: Sequence[Executable] = [self.visit(tls) for tls in ctx.stat()] 
         def run(env: Environment) -> Delayed[None]:
             if len(stats) == 0:
@@ -1940,29 +1940,29 @@ class DMFCompiler(DMFVisitor):
         return Executable(Type.NO_VALUE, run, stats)
 
 
-    def visitCompound_interactive(self, ctx:DMFParser.Compound_interactiveContext) -> Executable:
+    def visitCompound_interactive(self, ctx:dmlParser.Compound_interactiveContext) -> Executable:
         return self.visit(ctx.compound())
     
-    def visitLoop_interactive(self, ctx:DMFParser.LoopContext) -> Executable:
+    def visitLoop_interactive(self, ctx:dmlParser.LoopContext) -> Executable:
         return self.visit(ctx.loop())
 
 
-    # def visitAssignment_interactive(self, ctx:DMFParser.Assignment_interactiveContext) -> Executable:
+    # def visitAssignment_interactive(self, ctx:dmlParser.Assignment_interactiveContext) -> Executable:
     #     return self.visit(ctx.assignment())
 
-    def visitDecl_interactive(self, ctx:DMFParser.Decl_interactiveContext) -> Executable:
+    def visitDecl_interactive(self, ctx:dmlParser.Decl_interactiveContext) -> Executable:
         return self.visit(ctx.declaration())
 
-    def visitMacro_def_interactive(self, ctx:DMFParser.Macro_def_interactiveContext) -> Executable:
+    def visitMacro_def_interactive(self, ctx:dmlParser.Macro_def_interactiveContext) -> Executable:
         return self.visit(ctx.macro_declaration())
 
-    def exprAsStatement(self, ctx: DMFParser.ExprContext) -> Executable:
+    def exprAsStatement(self, ctx: dmlParser.ExprContext) -> Executable:
         ex = self.visit(ctx)
         rt = ex.return_type
         if (isinstance(rt, CallableType) 
             and rt.kind is CallableTypeKind.ACTION 
-            and not isinstance(ctx, (DMFParser.Name_assign_exprContext,
-                                     DMFParser.Attr_assign_exprContext))):
+            and not isinstance(ctx, (dmlParser.Name_assign_exprContext,
+                                     dmlParser.Attr_assign_exprContext))):
             def doit(fn: InjectableStatementValue) -> Delayed[MaybeError[None]]:
                 # logger.info(f"Invoking {ex.return_type}: {fn}")
                 return fn.apply(())
@@ -1973,32 +1973,32 @@ class DMFCompiler(DMFVisitor):
             return Executable(Type.NO_VALUE, run, (ex,))
         return ex
 
-    def visitExpr_interactive(self, ctx:DMFParser.Expr_interactiveContext) -> Executable:
+    def visitExpr_interactive(self, ctx:dmlParser.Expr_interactiveContext) -> Executable:
         return self.exprAsStatement(ctx.expr())
     
-    def visitEmpty_interactive(self, ctx:DMFParser.Empty_interactiveContext) -> Executable: # @UnusedVariable
+    def visitEmpty_interactive(self, ctx:dmlParser.Empty_interactiveContext) -> Executable: # @UnusedVariable
         return Executable.constant(Type.IGNORE, None)
 
     
-    # def visitAssignment_tls(self, ctx:DMFParser.Assignment_tlsContext) -> Executable:
+    # def visitAssignment_tls(self, ctx:dmlParser.Assignment_tlsContext) -> Executable:
     #     return self.visit(ctx.assignment())
     #
-    # def visitMacro_def_tls(self, ctx:DMFParser.Macro_def_tlsContext) -> Executable:
+    # def visitMacro_def_tls(self, ctx:dmlParser.Macro_def_tlsContext) -> Executable:
     #     return 0
 
     injected_type_annotation: Final = "_injected_type_"
     
-    def get_injected_type_annotation(self, ctx: DMFParser.ExprContext) -> Optional[Type]:
+    def get_injected_type_annotation(self, ctx: dmlParser.ExprContext) -> Optional[Type]:
         return getattr(ctx, self.injected_type_annotation, None)
 
-    def set_injected_type_annotation(self, ctx: DMFParser.ExprContext, t: Type) -> None:
+    def set_injected_type_annotation(self, ctx: dmlParser.ExprContext, t: Type) -> None:
         setattr(ctx, self.injected_type_annotation, t)
     
 
 
-    def visitName_assign_expr(self, ctx:DMFParser.Name_assign_exprContext) -> Executable:
-        name_ctx = cast(DMFParser.NameContext, ctx.which)
-        type_ctx = cast(Optional[DMFParser.Value_typeContext], ctx.value_type())
+    def visitName_assign_expr(self, ctx:dmlParser.Name_assign_exprContext) -> Executable:
+        name_ctx = cast(dmlParser.NameContext, ctx.which)
+        type_ctx = cast(Optional[dmlParser.Value_typeContext], ctx.value_type())
         n: Optional[int] = None if ctx.n is None else int(cast(Token, ctx.n).text)
 
         if type_ctx is None:
@@ -2075,7 +2075,7 @@ class DMFCompiler(DMFVisitor):
             return value.evaluate(env, var_type).transformed(do_assignment)
         return Executable(returned_type, run, (value,))
     
-    def visitAttr_assign_expr(self, ctx:DMFParser.Attr_assign_exprContext) -> Executable:
+    def visitAttr_assign_expr(self, ctx:dmlParser.Attr_assign_exprContext) -> Executable:
         obj = self.visit(ctx.obj)
         value = self.visit(ctx.what)
         # attr_name: str = ctx.attr().which
@@ -2122,12 +2122,12 @@ class DMFCompiler(DMFVisitor):
         return Executable(value.return_type, run, (obj, value))
 
 
-    # def visitAssign_stat(self, ctx:DMFParser.Assign_statContext) -> Executable:
+    # def visitAssign_stat(self, ctx:dmlParser.Assign_statContext) -> Executable:
     #     return self.visit(ctx.assignment())
     
-    def visitMacro_declaration(self, ctx:DMFParser.Macro_declarationContext) -> Executable:
-        macro_ctx: DMFParser.Macro_defContext = ctx.macro_def()
-        name_ctx: Optional[DMFParser.NameContext] = macro_ctx.macro_header().called
+    def visitMacro_declaration(self, ctx:dmlParser.Macro_declarationContext) -> Executable:
+        macro_ctx: dmlParser.Macro_defContext = ctx.macro_def()
+        name_ctx: Optional[dmlParser.NameContext] = macro_ctx.macro_header().called
         if name_ctx is None:
             return self.error(ctx, Type.NO_VALUE, "Declared functions must have names.")
         name = cast(str, name_ctx.val)
@@ -2136,7 +2136,7 @@ class DMFCompiler(DMFVisitor):
         return self.do_declaration(ctx, name, var_type, value, name_ctx=name_ctx)
 
     
-    def visitDeclaration(self, ctx:DMFParser.DeclarationContext) -> Executable:
+    def visitDeclaration(self, ctx:dmlParser.DeclarationContext) -> Executable:
         return self.do_variable_declaration(ctx, name_ctx = ctx.name(),
                                             var_type = ctx.type,
                                             n = ctx.n,
@@ -2146,12 +2146,12 @@ class DMFCompiler(DMFVisitor):
         
         
     def do_variable_declaration(self, ctx: ParserRuleContext, *,
-                                name_ctx: Optional[DMFParser.NameContext] = None,
+                                name_ctx: Optional[dmlParser.NameContext] = None,
                                 var_type: Optional[Type] = None,
                                 n : Optional[int] = None,
-                                init_ctx: Optional[DMFParser.ExprContext] = None,
+                                init_ctx: Optional[dmlParser.ExprContext] = None,
                                 has_local_kwd: bool = False,
-                                target_ctx: Optional[DMFParser.ExprContext] = None 
+                                target_ctx: Optional[dmlParser.ExprContext] = None 
                                 ) -> Executable:
         if name_ctx is None:
             assert var_type is not None
@@ -2258,13 +2258,13 @@ class DMFCompiler(DMFVisitor):
             return future
         return Executable(decl_type, run, (value,))
 
-    def visitDecl_stat(self, ctx:DMFParser.Decl_statContext) -> Executable:
+    def visitDecl_stat(self, ctx:dmlParser.Decl_statContext) -> Executable:
         return self.visit(ctx.declaration())
     
-    def visitMacro_def_stat(self, ctx:DMFParser.Macro_def_statContext) -> Executable:
+    def visitMacro_def_stat(self, ctx:dmlParser.Macro_def_statContext) -> Executable:
         return self.visit(ctx.macro_declaration())
     
-    def visitPrint_expr(self, ctx:DMFParser.Print_exprContext) -> Executable:
+    def visitPrint_expr(self, ctx:dmlParser.Print_exprContext) -> Executable:
         arg_text = (self.text_of(c) for c in ctx.vals)
         def print_vals(*vals: Any) -> Delayed[BoundImmediateAction]:
             def do_print() -> None:
@@ -2275,7 +2275,7 @@ class DMFCompiler(DMFVisitor):
         sig = Signature.of(tuple(v.return_type for v in vals), Type.ACTION)
         return self.use_callable(print_vals, vals, sig)
     
-    def visitSample_expr(self, ctx:DMFParser.Sample_exprContext) -> Executable:
+    def visitSample_expr(self, ctx:dmlParser.Sample_exprContext) -> Executable:
         is_empty = ctx.empty is not None
         
         st: SampleType
@@ -2313,13 +2313,13 @@ class DMFCompiler(DMFVisitor):
             
         ...
         
-    # def visitPrint_stat(self, ctx:DMFParser.Print_statContext) -> Executable:
+    # def visitPrint_stat(self, ctx:dmlParser.Print_statContext) -> Executable:
     #     return self.visit(ctx.printing())
     #
-    # def visitPrint_interactive(self, ctx:DMFParser.Print_statContext) -> Executable:
+    # def visitPrint_interactive(self, ctx:dmlParser.Print_statContext) -> Executable:
     #     return self.visit(ctx.printing())
 
-    # def visitPause_stat(self, ctx:DMFParser.Pause_statContext) -> Executable:
+    # def visitPause_stat(self, ctx:dmlParser.Pause_statContext) -> Executable:
     #     duration = self.visit(ctx.duration)
     #     if e:=self.type_check(Type.DELAY, duration, ctx.duration,
     #                           lambda want,have,text: # @UnusedVariable
@@ -2335,15 +2335,15 @@ class DMFCompiler(DMFVisitor):
     #     return Executable(Type.PAUSE, run, (duration,))
     
 
-    def visitExpr_stat(self, ctx:DMFParser.Expr_statContext) -> Executable:
+    def visitExpr_stat(self, ctx:dmlParser.Expr_statContext) -> Executable:
         return self.exprAsStatement(ctx.expr())
 
-    def visitCompound_stat(self, ctx:DMFParser.Compound_statContext) -> Executable:
+    def visitCompound_stat(self, ctx:dmlParser.Compound_statContext) -> Executable:
         return self.visit(ctx.compound())
 
 
-    def visitBlock(self, ctx:DMFParser.BlockContext) -> Executable:
-        stat_contexts: Sequence[DMFParser.StatContext] = ctx.stat()
+    def visitBlock(self, ctx:dmlParser.BlockContext) -> Executable:
+        stat_contexts: Sequence[dmlParser.StatContext] = ctx.stat()
         with self.current_types.push():
             stat_execs = tuple(self.visit(sc) for sc in stat_contexts)
             
@@ -2381,8 +2381,8 @@ class DMFCompiler(DMFVisitor):
 
     _par_block_error_lock = RLock()
 
-    def visitPar_block(self, ctx:DMFParser.Par_blockContext) -> Executable:
-        stat_contexts: Sequence[DMFParser.StatContext] = ctx.stat()
+    def visitPar_block(self, ctx:dmlParser.Par_blockContext) -> Executable:
+        stat_contexts: Sequence[dmlParser.StatContext] = ctx.stat()
         with self.current_types.push():
             stat_execs = tuple(self.visit(sc) for sc in stat_contexts)
             
@@ -2440,12 +2440,12 @@ class DMFCompiler(DMFVisitor):
             return future
         return Executable(ret_type, run, stat_execs)
     
-    def visitIf_stat(self, ctx:DMFParser.If_statContext) -> Executable:
-        test_ctxts: Sequence[DMFParser.ExprContext] = ctx.tests
+    def visitIf_stat(self, ctx:dmlParser.If_statContext) -> Executable:
+        test_ctxts: Sequence[dmlParser.ExprContext] = ctx.tests
         tests = [self.visit(ctx) for ctx in test_ctxts]
-        body_ctxts: Sequence[DMFParser.CompoundContext] = ctx.bodies
+        body_ctxts: Sequence[dmlParser.CompoundContext] = ctx.bodies
         bodies = [self.visit(ctx) for ctx in body_ctxts]
-        else_ctxt = cast(Optional[DMFParser.CompoundContext], ctx.else_body)
+        else_ctxt = cast(Optional[dmlParser.CompoundContext], ctx.else_body)
         else_body = self.visit(else_ctxt) if else_ctxt is not None else None
         
         for t,c in zip(tests, test_ctxts):
@@ -2495,35 +2495,35 @@ class DMFCompiler(DMFVisitor):
         return Executable(result_type, run, children)
     
     
-    # def visitN_times_loop_header(self, ctx:DMFParser.N_times_loop_headerContext) -> Executable:
+    # def visitN_times_loop_header(self, ctx:dmlParser.N_times_loop_headerContext) -> Executable:
     #     return self.not_yet_implemented("n-times loop", ctx)
     #
-    # def visitDuration_loop_header(self, ctx:DMFParser.Duration_loop_headerContext) -> Executable:
+    # def visitDuration_loop_header(self, ctx:dmlParser.Duration_loop_headerContext) -> Executable:
     #     return self.not_yet_implemented("duration loop", ctx)
     #
-    # def visitWhile_loop_header(self, ctx:DMFParser.While_loop_headerContext) -> Executable:
+    # def visitWhile_loop_header(self, ctx:dmlParser.While_loop_headerContext) -> Executable:
     #     return self.not_yet_implemented("while loop", ctx)
     #
-    # def visitUntil_loop_header(self, ctx:DMFParser.Until_loop_headerContext) -> Executable:
+    # def visitUntil_loop_header(self, ctx:dmlParser.Until_loop_headerContext) -> Executable:
     #     return self.not_yet_implemented("until loop", ctx)
     #
-    # def visitSeq_iter_loop_header(self, ctx:DMFParser.Seq_iter_loop_headerContext) -> Executable:
+    # def visitSeq_iter_loop_header(self, ctx:dmlParser.Seq_iter_loop_headerContext) -> Executable:
     #     return self.not_yet_implemented("sequence iteration loop", ctx)
     #
-    # def visitStep_iter_loop_header(self, ctx:DMFParser.Step_iter_loop_headerContext) -> Executable:
+    # def visitStep_iter_loop_header(self, ctx:dmlParser.Step_iter_loop_headerContext) -> Executable:
     #     return self.not_yet_implemented("step iteration loop", ctx)
     
-    def visitLoop_stat(self, ctx:DMFParser.Loop_statContext) -> Executable:
+    def visitLoop_stat(self, ctx:dmlParser.Loop_statContext) -> Executable:
         return self.visit(ctx.loop())
 
-    def visitLoop(self, ctx:DMFParser.LoopContext) -> Executable:
-        header = cast(DMFParser.Loop_headerContext, ctx.header)
-        body = cast(DMFParser.CompoundContext, ctx.body)
+    def visitLoop(self, ctx:dmlParser.LoopContext) -> Executable:
+        header = cast(dmlParser.Loop_headerContext, ctx.header)
+        body = cast(dmlParser.CompoundContext, ctx.body)
         try:
             loop_type = LoopType.for_context(header, compiler=self)
         except ErrorToPropagate as ex:
             return ex.error
-        name_ctx: Optional[DMFParser.NameContext] = ctx.loop_name
+        name_ctx: Optional[dmlParser.NameContext] = ctx.loop_name
         name = None if name_ctx is None else cast(str, name_ctx.val)
         with self.control_stack.enter_loop(name=name):
             body_exec = loop_type.compile_body(body)
@@ -2562,11 +2562,11 @@ class DMFCompiler(DMFVisitor):
         return Executable(return_type, run, (*loop_type.based_on(), body_exec))
     
 
-    def visitExit_stat(self, ctx:DMFParser.Exit_statContext) -> Executable:
+    def visitExit_stat(self, ctx:dmlParser.Exit_statContext) -> Executable:
         return self.visit(ctx.exit())
     
-    def visitExit(self, ctx:DMFParser.ExitContext) -> Executable:
-        name_ctx: Optional[DMFParser.NameContext] = ctx.loop_name
+    def visitExit(self, ctx:dmlParser.ExitContext) -> Executable:
+        name_ctx: Optional[dmlParser.NameContext] = ctx.loop_name
         name = None if name_ctx is None else cast(str, name_ctx.val)
         if not self.control_stack.in_loop:
             return self.error(ctx, Type.NO_VALUE, "Loop exit statement not within loop")
@@ -2579,11 +2579,11 @@ class DMFCompiler(DMFVisitor):
             ret_type = LoopExitType.for_level(n)
         return Executable.constant(ret_type, LoopExit(name))
         
-    def visitReturn_stat(self, ctx:DMFParser.Return_statContext) -> Executable:
+    def visitReturn_stat(self, ctx:dmlParser.Return_statContext) -> Executable:
         return self.visit(ctx.ret())
     
-    def visitRet(self, ctx:DMFParser.RetContext) -> Executable:
-        value_ctx: Optional[DMFParser.ExprContext] = ctx.expr()
+    def visitRet(self, ctx:dmlParser.RetContext) -> Executable:
+        value_ctx: Optional[dmlParser.ExprContext] = ctx.expr()
         return_type = self.control_stack.return_type
         if return_type is None:
             return self.error(ctx, Type.NO_VALUE, "Return statement not within macro")
@@ -2612,23 +2612,23 @@ class DMFCompiler(DMFVisitor):
         
     
         
-    def visitParen_expr(self, ctx:DMFParser.Paren_exprContext) -> Executable:
+    def visitParen_expr(self, ctx:dmlParser.Paren_exprContext) -> Executable:
         return self.visit(ctx.expr())
 
 
-    def visitNeg_expr(self, ctx:DMFParser.Neg_exprContext) -> Executable:
+    def visitNeg_expr(self, ctx:dmlParser.Neg_exprContext) -> Executable:
         return self.use_function("NEGATE", ctx, (ctx.rhs,))
 
 
-    def visitInt_expr(self, ctx:DMFParser.Int_exprContext) -> Executable:
+    def visitInt_expr(self, ctx:dmlParser.Int_exprContext) -> Executable:
         val: int = int(ctx.INT().getText())
         return Executable.constant(Type.INT, val)
 
-    def visitFloat_expr(self, ctx:DMFParser.Float_exprContext) -> Executable:
+    def visitFloat_expr(self, ctx:dmlParser.Float_exprContext) -> Executable:
         val: float = float(ctx.FLOAT().getText())
         return Executable.constant(Type.FLOAT, val)
 
-    def visitType_name_expr(self, ctx:DMFParser.Type_name_exprContext) -> Executable:
+    def visitType_name_expr(self, ctx:dmlParser.Type_name_exprContext) -> Executable:
         n = None if ctx.n is None else int(cast(Token, ctx.n).text)
         name = self.type_name_var(ctx.value_type(), n)
         var_type = self.current_types.lookup(name)
@@ -2642,17 +2642,17 @@ class DMFCompiler(DMFVisitor):
         return Executable(var_type, run)
     
     
-    def visitIndex_expr(self, ctx:DMFParser.Index_exprContext) -> Executable:
+    def visitIndex_expr(self, ctx:dmlParser.Index_exprContext) -> Executable:
         return self.use_function("INDEX", ctx, (ctx.who, ctx.which))
 
-    def visitMacro_expr(self, ctx:DMFParser.Macro_exprContext) -> Executable:
+    def visitMacro_expr(self, ctx:dmlParser.Macro_exprContext) -> Executable:
         return self.visit(ctx.macro_def())
 
-    def visitAction_expr(self, ctx:DMFParser.Action_exprContext) -> Executable:
+    def visitAction_expr(self, ctx:dmlParser.Action_exprContext) -> Executable:
         which: str = ctx.no_arg_action().which
         return self.use_function(which, ctx, ())
 
-    def visitName_expr(self, ctx:DMFParser.Name_exprContext) -> Executable:
+    def visitName_expr(self, ctx:dmlParser.Name_exprContext) -> Executable:
         name: str = ctx.name().val
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
@@ -2681,7 +2681,7 @@ class DMFCompiler(DMFVisitor):
             return Delayed.complete(val)
         return Executable(val_type, run)
 
-    def visitBool_const_expr(self, ctx:DMFParser.Bool_const_exprContext) -> Executable:
+    def visitBool_const_expr(self, ctx:dmlParser.Bool_const_exprContext) -> Executable:
         val = ctx.bool_val().val
         return Executable.constant(Type.BOOL, val)
     
@@ -2692,18 +2692,18 @@ class DMFCompiler(DMFVisitor):
         "t": "\t",
         }
     
-    def visitString_lit_expr(self, ctx:DMFParser.String_lit_exprContext) -> Executable:
+    def visitString_lit_expr(self, ctx:dmlParser.String_lit_exprContext) -> Executable:
         val = self.string_text(ctx.string())
         return Executable.constant(Type.STRING, val)
         
 
-    def visitAddsub_expr(self, ctx:DMFParser.Addsub_exprContext) -> Executable:
+    def visitAddsub_expr(self, ctx:dmlParser.Addsub_exprContext) -> Executable:
         addp = ctx.ADD() is not None
         func = "ADD" if addp else "SUBTRACT"
         return self.use_function(func, ctx, (ctx.lhs, ctx.rhs))
             
 
-    def visitRel_expr(self, ctx:DMFParser.Rel_exprContext) -> Executable:
+    def visitRel_expr(self, ctx:dmlParser.Rel_exprContext) -> Executable:
         lhs = self.visit(ctx.lhs)
         rhs = self.visit(ctx.rhs)
         rel: Rel = ctx.rel().which
@@ -2721,7 +2721,7 @@ class DMFCompiler(DMFVisitor):
         return Executable(Type.BOOL, run, (lhs,rhs))
     
     
-    def visitHas_expr(self, ctx:DMFParser.Has_exprContext) -> Executable:
+    def visitHas_expr(self, ctx:dmlParser.Has_exprContext) -> Executable:
         obj = self.visit(ctx.obj)
         # attr_name: str = ctx.attr().which
         attr_name: str = self.text_of(ctx.attr())
@@ -2753,7 +2753,7 @@ class DMFCompiler(DMFVisitor):
             # return obj.evaluate(env, ot).chain(extractor).transformed(check)
         return Executable(Type.BOOL, run, (obj,))
     
-    def visitExistence_expr(self, ctx:DMFParser.Existence_exprContext) -> Executable:
+    def visitExistence_expr(self, ctx:dmlParser.Existence_exprContext) -> Executable:
         val = self.visit(ctx.val)
         polarity: bool = ctx.existence().polarity
         test = (lambda v: v is not None) if polarity else (lambda v: v is None) 
@@ -2766,7 +2766,7 @@ class DMFCompiler(DMFVisitor):
         return Executable(Type.BOOL, run, (val,))
     
         
-    def visitIs_expr(self, ctx:DMFParser.Is_exprContext) -> Executable:
+    def visitIs_expr(self, ctx:dmlParser.Is_exprContext) -> Executable:
         neg = ctx.NOT() is not None or ctx.ISNT() is not None
         obj = self.visit(ctx.obj)
         pred = self.visit(ctx.pred)
@@ -2842,16 +2842,16 @@ class DMFCompiler(DMFVisitor):
             return obj.evaluate(env, first_arg_type).chain(after_obj)
         return Executable(Type.BOOL, run, (obj, pred))
 
-    def visitNot_expr(self, ctx:DMFParser.Not_exprContext) -> Executable:
+    def visitNot_expr(self, ctx:dmlParser.Not_exprContext) -> Executable:
         return self.use_function("NOT", ctx, (ctx.expr(),))
     
-    def visitAnd_expr(self, ctx:DMFParser.And_exprContext) -> Executable:
+    def visitAnd_expr(self, ctx:dmlParser.And_exprContext) -> Executable:
         return self.use_function("AND", ctx, (ctx.lhs, ctx.rhs))
     
-    def visitOr_expr(self, ctx:DMFParser.Or_exprContext) -> Executable:
+    def visitOr_expr(self, ctx:dmlParser.Or_exprContext) -> Executable:
         return self.use_function("OR", ctx, (ctx.lhs, ctx.rhs))
     
-    def visitCond_expr(self, ctx:DMFParser.Cond_exprContext) -> Executable:
+    def visitCond_expr(self, ctx:dmlParser.Cond_exprContext) -> Executable:
         first = self.visit(ctx.first)
         cond = self.visit(ctx.cond)
         second = self.visit(ctx.second)
@@ -2874,7 +2874,7 @@ class DMFCompiler(DMFVisitor):
             return cond.evaluate(env, Type.BOOL).chain(branch)
         return Executable(result_type, run, (first, cond, second))
 
-    def visitDelta_expr(self, ctx:DMFParser.Delta_exprContext) -> Executable:
+    def visitDelta_expr(self, ctx:dmlParser.Delta_exprContext) -> Executable:
         dist = self.visit(ctx.dist)
         direction: Dir = ctx.direction().d
         if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
@@ -2887,7 +2887,7 @@ class DMFCompiler(DMFVisitor):
             return dist.evaluate(env, Type.INT).transformed(to_delta)
         return Executable(Type.DELTA, run, (dist,))
 
-    def visitIn_dir_expr(self, ctx:DMFParser.In_dir_exprContext) -> Executable: 
+    def visitIn_dir_expr(self, ctx:dmlParser.In_dir_exprContext) -> Executable: 
         dist = self.visit(ctx.dist)
         direction = self.visit(ctx.d)
         if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
@@ -2910,14 +2910,14 @@ class DMFCompiler(DMFVisitor):
 
 
     
-    def visitDir_expr(self, ctx:DMFParser.Dir_exprContext) -> Executable:
+    def visitDir_expr(self, ctx:dmlParser.Dir_exprContext) -> Executable:
         direction: Dir = ctx.direction().d
         return Executable.constant(Type.DIR, direction)
     
-    def visitTurn_expr(self, ctx:DMFParser.Turn_exprContext) -> Executable:
+    def visitTurn_expr(self, ctx:dmlParser.Turn_exprContext) -> Executable:
         return self.use_function("TURNED", ctx, (ctx.start_dir,), extra_args=(ctx.turn().t,))
     
-    def visitN_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
+    def visitN_rc_expr(self, ctx:dmlParser.N_rc_exprContext) -> Executable:
         dist = self.visit(ctx.dist)
         direction: Dir = ctx.rc().d
         if e:=self.type_check(Type.INT, dist, ctx.dist, return_type=Type.DELTA):
@@ -2931,18 +2931,18 @@ class DMFCompiler(DMFVisitor):
 
         return Executable(Type.DELTA, run, (dist,))
 
-    def visitConst_rc_expr(self, ctx:DMFParser.N_rc_exprContext) -> Executable:
+    def visitConst_rc_expr(self, ctx:dmlParser.N_rc_exprContext) -> Executable:
         direction: Dir = ctx.rc().d
         n = int(cast(Token, ctx.INT()).getText())
         return Executable.constant(Type.DELTA, DeltaValue(n, direction))
 
     
-    def visitCoord_expr(self, ctx:DMFParser.Coord_exprContext) -> Executable:
+    def visitCoord_expr(self, ctx:dmlParser.Coord_exprContext) -> Executable:
         return self.use_function("COORD", ctx, (ctx.x, ctx.y))
 
-    def visitInjection_expr(self, ctx:DMFParser.Injection_exprContext) -> Executable:
+    def visitInjection_expr(self, ctx:dmlParser.Injection_exprContext) -> Executable:
         who = self.visit(ctx.who)
-        self.set_injected_type_annotation(cast(DMFParser.ExprContext, ctx.what), who.return_type)
+        self.set_injected_type_annotation(cast(dmlParser.ExprContext, ctx.what), who.return_type)
         what = self.visit(ctx.what)
         return self.build_injection(ctx, ctx.who, who, ctx.what, what)
         
@@ -3030,7 +3030,7 @@ class DMFCompiler(DMFVisitor):
         
             
     
-    def visitAttr_expr(self, ctx:DMFParser.Attr_exprContext) -> Executable:
+    def visitAttr_expr(self, ctx:dmlParser.Attr_exprContext) -> Executable:
         obj = self.visit(ctx.obj)
         existence_check = ctx.existence() is not None 
         
@@ -3083,9 +3083,9 @@ class DMFCompiler(DMFVisitor):
         return Executable(rt, run, (obj,))
 
     
-    def visitNumbered_expr(self, ctx:DMFParser.Numbered_exprContext) -> Executable:
+    def visitNumbered_expr(self, ctx:dmlParser.Numbered_exprContext) -> Executable:
         which = self.visit(ctx.which)
-        kind_ctx = cast(DMFParser.Numbered_typeContext, ctx.kind)
+        kind_ctx = cast(dmlParser.Numbered_typeContext, ctx.kind)
         kind = cast(NumberedItem, kind_ctx.kind)
         
         def find_component(cpt_type: type[EC],
@@ -3141,30 +3141,30 @@ class DMFCompiler(DMFVisitor):
 
 
 
-    def visitDrop_expr(self, ctx:DMFParser.Drop_exprContext) -> Executable:
+    def visitDrop_expr(self, ctx:dmlParser.Drop_exprContext) -> Executable:
         # loc_exec = self.visit(ctx.loc)
-        vol: Optional[DMFParser.ExprContext] = ctx.vol
+        vol: Optional[dmlParser.ExprContext] = ctx.vol
         
         if vol is None:
             return self.use_function("FIND_DROP", ctx, (ctx.loc,))
         else:
             return self.use_function("NEW_DROP", ctx, (ctx.vol, ctx.loc))
         
-    def visitReagent_lit_expr(self, ctx:DMFParser.Reagent_lit_exprContext) -> Executable:
+    def visitReagent_lit_expr(self, ctx:dmlParser.Reagent_lit_exprContext) -> Executable:
         reagent = ctx.reagent().r
         return Executable.constant(Type.REAGENT, reagent)
         
-    def visitReagent_expr(self, ctx:DMFParser.Reagent_exprContext) -> Executable:
+    def visitReagent_expr(self, ctx:dmlParser.Reagent_exprContext) -> Executable:
         return self.use_function("FIND_REAGENT", ctx, (ctx.which,))
     
-    def visitLiquid_expr(self, ctx:DMFParser.Liquid_exprContext) -> Executable:
+    def visitLiquid_expr(self, ctx:dmlParser.Liquid_exprContext) -> Executable:
         return self.use_function("LIQUID", ctx, (ctx.vol, ctx.which))
 
 
-    def visitFunction_expr(self, ctx:DMFParser.Function_exprContext) -> Executable:
+    def visitFunction_expr(self, ctx:dmlParser.Function_exprContext) -> Executable:
         arg_execs = tuple(self.visit(arg) for arg in ctx.args)
-        fc = cast(DMFParser.ExprContext, ctx.func)
-        if isinstance(fc, DMFParser.Name_exprContext):
+        fc = cast(dmlParser.ExprContext, ctx.func)
+        if isinstance(fc, dmlParser.Name_exprContext):
             func_name = self.text_of(fc.name())
             builtin = BuiltIns.get(func_name, None)
             if builtin is not None:
@@ -3205,8 +3205,8 @@ class DMFCompiler(DMFVisitor):
         
 
 
-    def visitTo_expr(self, ctx:DMFParser.To_exprContext) -> Executable:
-        axis: Optional[DMFParser.AxisContext] = ctx.axis()
+    def visitTo_expr(self, ctx:dmlParser.To_exprContext) -> Executable:
+        axis: Optional[dmlParser.AxisContext] = ctx.axis()
         which = self.visit(ctx.which)
         if axis is None:
             # This is a to-pad motion
@@ -3230,7 +3230,7 @@ class DMFCompiler(DMFVisitor):
                                                Signature.of((Type.INT,), Type.MOTION), 
                                                extra_args=(verticalp,))
     
-    def visitBecome_expr(self, ctx:DMFParser.Become_exprContext) -> Executable:
+    def visitBecome_expr(self, ctx:dmlParser.Become_exprContext) -> Executable:
         result = self.visit(ctx.result)
         if (e:=self.type_check(Type.REAGENT, result.return_type, ctx.result)) is not None:
             return e
@@ -3239,7 +3239,7 @@ class DMFCompiler(DMFVisitor):
                                            (result,),
                                            Signature.of((Type.REAGENT,), Type.MOTION))
         
-    def visitAccept_expr(self, ctx:DMFParser.Accept_exprContext) -> Executable:
+    def visitAccept_expr(self, ctx:dmlParser.Accept_exprContext) -> Executable:
         from_dir = self.visit(ctx.from_dir)
         if (e:=self.type_check(Type.DIR, from_dir.return_type, ctx.from_dir)) is not None:
             return e
@@ -3248,7 +3248,7 @@ class DMFCompiler(DMFVisitor):
                                            (from_dir,),
                                            Signature.of((Type.DIR,), Type.MOTION))
         
-    def visitMerge_expr(self, ctx:DMFParser.Merge_exprContext) -> Executable:
+    def visitMerge_expr(self, ctx:dmlParser.Merge_exprContext) -> Executable:
         to_dir = self.visit(ctx.to_dir)
         if (e:=self.type_check(Type.DIR, to_dir.return_type, ctx.to_dir)) is not None:
             return e
@@ -3257,7 +3257,7 @@ class DMFCompiler(DMFVisitor):
                                            (to_dir,),
                                            Signature.of((Type.DIR,), Type.MOTION))
         
-    def visitMix_expr(self, ctx:DMFParser.Mix_exprContext) -> Executable:
+    def visitMix_expr(self, ctx:dmlParser.Mix_exprContext) -> Executable:
         to_dir = self.visit(ctx.to_dir)
         if (e:=self.type_check(Type.DIR, to_dir.return_type, ctx.to_dir)) is not None:
             return e
@@ -3266,12 +3266,12 @@ class DMFCompiler(DMFVisitor):
                                            (to_dir,),
                                            Signature.of((Type.DIR,), Type.MOTION))
         
-    def visitSplit_expr(self, ctx:DMFParser.Split_exprContext) -> Executable:
+    def visitSplit_expr(self, ctx:dmlParser.Split_exprContext) -> Executable:
         to_dir = self.visit(ctx.to_dir)
         if (e:=self.type_check(Type.DIR, to_dir.return_type, ctx.to_dir)) is not None:
             return e
         
-        name_ctx: Optional[DMFParser.NameContext] = ctx.var
+        name_ctx: Optional[dmlParser.NameContext] = ctx.var
         setter: Optional[Callable[[Environment, Drop], None]] = None
         if name_ctx is not None:
             name = cast(str, name_ctx.val)
@@ -3309,19 +3309,19 @@ class DMFCompiler(DMFVisitor):
                                  Signature.of((Type.DIR,), Type.MOTION))
         
     
-    def visitMuldiv_expr(self, ctx:DMFParser.Muldiv_exprContext)->Executable:
+    def visitMuldiv_expr(self, ctx:dmlParser.Muldiv_exprContext)->Executable:
         mulp = ctx.MUL() is not None
         func = "MULTIPLY" if mulp else "DIVIDE"
         return self.use_function(func, ctx, (ctx.lhs, ctx.rhs))
 
-    def visitDirection(self, ctx:DMFParser.DirectionContext) -> Executable:
-        return DMFVisitor.visitDirection(self, ctx) # type: ignore [no-any-return]
+    def visitDirection(self, ctx:dmlParser.DirectionContext) -> Executable:
+        return dmlVisitor.visitDirection(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitAxis(self, ctx:DMFParser.AxisContext) -> Executable:
-        return DMFVisitor.visitAxis(self, ctx) # type: ignore [no-any-return]
+    def visitAxis(self, ctx:dmlParser.AxisContext) -> Executable:
+        return dmlVisitor.visitAxis(self, ctx) # type: ignore [no-any-return]
 
-    def param_def(self, ctx: DMFParser.ParamContext) -> tuple[str, Type]:
+    def param_def(self, ctx: dmlParser.ParamContext) -> tuple[str, Type]:
         param_type: Optional[Type] = cast(Optional[Type], ctx.type)
         if param_type is None:
             param_type = Type.ERROR
@@ -3335,7 +3335,7 @@ class DMFCompiler(DMFVisitor):
     
     def check_macro_params(self, names: Sequence[str],
                            types: Sequence[Type], 
-                           ctxts: Sequence[DMFParser.ParamContext],
+                           ctxts: Sequence[dmlParser.ParamContext],
                            macro_name: Optional[str]) -> Optional[Executable]:
         seen = set[str]()
         saw_duplicate = False
@@ -3367,10 +3367,10 @@ class DMFCompiler(DMFVisitor):
         macro_type = CallableType.find(types, Type.NO_VALUE)
         return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
 
-    def visitMacro_def(self, ctx:DMFParser.Macro_defContext) -> Executable:
-        header: DMFParser.Macro_headerContext = ctx.macro_header()
-        param_contexts: Sequence[DMFParser.ParamContext] = header.param()
-        name_ctx: Optional[DMFParser.NameContext] = header.called
+    def visitMacro_def(self, ctx:dmlParser.Macro_defContext) -> Executable:
+        header: dmlParser.Macro_headerContext = ctx.macro_header()
+        param_contexts: Sequence[dmlParser.ParamContext] = header.param()
+        name_ctx: Optional[dmlParser.NameContext] = header.called
         name: Optional[str] = None if name_ctx is None else name_ctx.val
         
         for pc in param_contexts:
@@ -3386,7 +3386,7 @@ class DMFCompiler(DMFVisitor):
                 if c.INJECTABLE() is not None:
                     injectable_pos = i
         
-        return_type_context: Optional[DMFParser.Value_typeContext] = header.ret_type
+        return_type_context: Optional[dmlParser.Value_typeContext] = header.ret_type
         
         return_type = Type.NO_VALUE if return_type_context is None else cast(Type, return_type_context.type)
         
@@ -3426,29 +3426,29 @@ class DMFCompiler(DMFVisitor):
                                                name=name))
         return Executable(macro_type, run, (body,))
 
-    def visitUnit_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
+    def visitUnit_expr(self, ctx:dmlParser.Unit_exprContext) -> Executable:
         unit: Unit = ctx.dim_unit().unit
         return self.unit_exec(unit, ctx, ctx.amount)
     
-    def visitUnit_recip_expr(self, ctx:DMFParser.Unit_recip_exprContext) -> Executable:
+    def visitUnit_recip_expr(self, ctx:dmlParser.Unit_recip_exprContext) -> Executable:
         unit: Unit = ctx.dim_unit().unit
         return self.unit_recip_exec(unit, ctx, ctx.amount)
     
-    def visitMagnitude_expr(self, ctx:DMFParser.Magnitude_exprContext) -> Executable:
+    def visitMagnitude_expr(self, ctx:dmlParser.Magnitude_exprContext) -> Executable:
         if ctx.dim_unit() is None:
             return self.error(ctx, Type.FLOAT, lambda text: f"'magnitude' requires 'in <unit>': {text}")
         return self.unit_mag_exec(ctx.dim_unit().unit, ctx, ctx.quant)
 
-    def visitUnit_string_expr(self, ctx:DMFParser.Unit_exprContext) -> Executable:
+    def visitUnit_string_expr(self, ctx:dmlParser.Unit_exprContext) -> Executable:
         return self.unit_string_exec(ctx.dim_unit().unit, ctx, ctx.quant)
     
-    def visitTemperature_expr(self, ctx:DMFParser.Temperature_exprContext) -> Executable:
+    def visitTemperature_expr(self, ctx:dmlParser.Temperature_exprContext) -> Executable:
         return self.use_function("TEMP_C", ctx, (ctx.amount,))
     
-    # def visitDrop_vol_expr(self, ctx:DMFParser.Drop_vol_exprContext) -> Executable:
+    # def visitDrop_vol_expr(self, ctx:dmlParser.Drop_vol_exprContext) -> Executable:
     #     return self.use_function("DROP_VOL", ctx, (ctx.amount,))
         
-    def visitPause_expr(self, ctx:DMFParser.Pause_exprContext) -> Executable:
+    def visitPause_expr(self, ctx:dmlParser.Pause_exprContext) -> Executable:
         duration = self.visit(ctx.duration)
         if e:=self.type_check(Type.DELAY, duration, ctx.duration,
                               lambda want,have,text: # @UnusedVariable
@@ -3460,7 +3460,7 @@ class DMFCompiler(DMFVisitor):
                     .transformed(error_check(lambda d: PauseValue(d, env.board))))
         return Executable(Type.ACTION, run, (duration,))
     
-    def visitPause_until_expr(self, ctx:DMFParser.Pause_until_exprContext) -> Executable:
+    def visitPause_until_expr(self, ctx:dmlParser.Pause_until_exprContext) -> Executable:
         condition = self.visit(ctx.condition)
         if e:=self.type_check(Type.BOOL, condition, ctx.condition,
                               lambda want,have,text: # @UnusedVariable
@@ -3474,7 +3474,7 @@ class DMFCompiler(DMFVisitor):
             return Delayed.complete(action)
         return Executable(Type.ACTION, run, (condition,))
     
-    def visitPrompt_expr(self, ctx:DMFParser.Prompt_exprContext) -> Executable:
+    def visitPrompt_expr(self, ctx:dmlParser.Prompt_exprContext) -> Executable:
         def run(env: Environment, *vals: Sequence[Any]) -> Delayed[PromptValue]:
             return Delayed.complete(PromptValue(vals, board=env.board))
         vals = tuple(self.visit(c) for c in ctx.vals)
@@ -3483,24 +3483,24 @@ class DMFCompiler(DMFVisitor):
             
             
                 
-    def visitMacro_header(self, ctx:DMFParser.Macro_headerContext) -> Executable:
-        return DMFVisitor.visitMacro_header(self, ctx) # type: ignore [no-any-return]
+    def visitMacro_header(self, ctx:dmlParser.Macro_headerContext) -> Executable:
+        return dmlVisitor.visitMacro_header(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitParam(self, ctx:DMFParser.ParamContext) -> Executable:
-        return DMFVisitor.visitParam(self, ctx) # type: ignore [no-any-return]
+    def visitParam(self, ctx:dmlParser.ParamContext) -> Executable:
+        return dmlVisitor.visitParam(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitValue_type(self, ctx:DMFParser.Value_typeContext) -> Executable:
-        return DMFVisitor.visitValue_type(self, ctx) # type: ignore [no-any-return]
+    def visitValue_type(self, ctx:dmlParser.Value_typeContext) -> Executable:
+        return dmlVisitor.visitValue_type(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitName(self, ctx:DMFParser.NameContext) -> Executable:
-        return DMFVisitor.visitName(self, ctx) # type: ignore [no-any-return]
+    def visitName(self, ctx:dmlParser.NameContext) -> Executable:
+        return dmlVisitor.visitName(self, ctx) # type: ignore [no-any-return]
 
 
-    def visitKwd_names(self, ctx:DMFParser.Kwd_namesContext) -> Executable:
-        return DMFVisitor.visitKwd_names(self, ctx) # type: ignore [no-any-return]
+    def visitKwd_names(self, ctx:dmlParser.Kwd_namesContext) -> Executable:
+        return dmlVisitor.visitKwd_names(self, ctx) # type: ignore [no-any-return]
     
     @classmethod
     def setup_function_table(cls) -> None:
@@ -4221,7 +4221,7 @@ class DMFCompiler(DMFVisitor):
                 
         setup_sample_atts()
         
-DMFCompiler.setup_attributes()
-DMFCompiler.setup_function_table()
-DMFCompiler.setup_special_vars()
+DMLCompiler.setup_attributes()
+DMLCompiler.setup_function_table()
+DMLCompiler.setup_special_vars()
 

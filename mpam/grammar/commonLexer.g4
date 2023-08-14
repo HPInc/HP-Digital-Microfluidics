@@ -1,4 +1,4 @@
-lexer grammar pathLexer;
+lexer grammar commonLexer;
 
 options {
 	language = Python3;

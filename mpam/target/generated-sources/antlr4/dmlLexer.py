@@ -1,4 +1,4 @@
-# Generated from DMF.g4 by ANTLR 4.9.2
+# Generated from dml.g4 by ANTLR 4.9.2
 from antlr4 import *
 from io import StringIO
 import sys
@@ -1084,7 +1084,7 @@ def serializedATN():
         return buf.getvalue()
 
 
-class DMFLexer(Lexer):
+class dmlLexer(Lexer):
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
@@ -1475,7 +1475,7 @@ class DMFLexer(Lexer):
                   "HEX", "ESC_SEQ", "STRING", "EOL_COMMENT", "COMMENT", 
                   "WS" ]
 
-    grammarFileName = "DMF.g4"
+    grammarFileName = "dml.g4"
 
     def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)

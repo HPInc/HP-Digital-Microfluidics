@@ -1,12 +1,12 @@
 from __future__ import annotations
-from langsup.dmf_lang import DMFInterpreter
 from mpam.device import Board
 from typing import Final, Any, Optional
 from erk.config import ConfigParam
-from langsup import dmf_lang
+from langsup import dml
 from mpam.types import Delayed, Postable
 from argparse import _ArgumentGroup, ArgumentParser
 from erk.stringutils import conj_str
+from langsup.type_supp import Type
 
 class Config:
     dml_dirs: Final = ConfigParam[list[str]]([])
@@ -14,36 +14,36 @@ class Config:
     dml_encoding: Final = ConfigParam('ascii')
 
 class DMLInterpreter:
-    interp: Final[DMFInterpreter]
+    interp: Final[dml.DMLInterpreter]
     cache_val_as: Final[Optional[str]]
     
     def __init__(self, *, 
                  board: Board, 
                  errors: str='strict',
                  cache_val_as: Optional[str] = None) -> None:
-        self.interp = DMFInterpreter(Config.dml_file_names(),
-                                     dirs=Config.dml_dirs(), 
-                                     board=board, 
-                                     encoding=Config.dml_encoding(), 
-                                     errors=errors)
+        self.interp = dml.DMLInterpreter(Config.dml_file_names(),
+                                         dirs=Config.dml_dirs(), 
+                                         board=board, 
+                                         encoding=Config.dml_encoding(), 
+                                         errors=errors)
         self.cache_val_as = cache_val_as
         
     
-    def evaluate(self, expr: str) -> Delayed[tuple[dmf_lang.Type, Any]]:
+    def evaluate(self, expr: str) -> Delayed[tuple[Type, Any]]:
         expr = expr.strip()
-        val = Postable[tuple[dmf_lang.Type, Any]]()
+        val = Postable[tuple[Type, Any]]()
         (self.interp.evaluate(expr, cache_as=self.cache_val_as)
          .then_call(lambda pair: val.post(pair)))
         return val
     
-    def eval_and_print(self, expr: str) -> Delayed[tuple[dmf_lang.Type, Any]]:
+    def eval_and_print(self, expr: str) -> Delayed[tuple[Type, Any]]:
         print(f"Interactive cmd: {expr}")
-        def on_val(pair: tuple[dmf_lang.Type, Any]) -> None:
+        def on_val(pair: tuple[Type, Any]) -> None:
             ret_type, val = pair
-            if ret_type is dmf_lang.Type.ERROR:
+            if ret_type is Type.ERROR:
                 # assert isinstance(val, dmf_lang.EvaluationError)
                 print(f"  Caught exception ({type(val).__name__}): {val}")
-            elif ret_type is dmf_lang.Type.NO_VALUE:
+            elif ret_type is Type.NO_VALUE:
                 print(f"  Interactive command returned without value.")
             else:
                 print(f"  Interactive cmd val ({ret_type.name}): {val}")
