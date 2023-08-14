@@ -167,10 +167,11 @@ class Exerciser(ABC):
 
         def prepare_and_run() -> None:
             interval = Config.clock_interval()
+            system.clock.update_interval = interval
             if Config.start_clock():
-                system.clock.start(interval)
+                system.clock.start()
             else:
-                system.clock.update_interval = interval
+                system.clock.pause()
             task.run(board, system, args)
 
         def do_run() -> None:

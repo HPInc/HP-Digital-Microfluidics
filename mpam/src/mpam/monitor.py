@@ -1176,7 +1176,7 @@ class BoardMonitor:
         pause_run.on_clicked(toggle_running)
         def update_pr_label() -> None:
             pause_run.label.set_text(pr_label())
-        def pr_cb(old: bool, new: bool) -> None: # @UnusedVariable
+        def pr_cb(old: OnOff, new: OnOff) -> None: # @UnusedVariable
             self.in_display_thread(lambda: update_pr_label())
         clock.on_state_change(pr_cb)
 
@@ -1186,7 +1186,7 @@ class BoardMonitor:
         step.label.set_fontsize("small")
         def update_step_active() -> None:
             step.set_active(not clock.running)
-        def step_cb(old: bool, new: bool) -> None: # @UnusedVariable
+        def step_cb(old: OnOff, new: OnOff) -> None: # @UnusedVariable
             self.in_display_thread(lambda: update_step_active())
         clock.on_state_change(step_cb)
         def do_step(event: Any) -> None: # @UnusedVariable

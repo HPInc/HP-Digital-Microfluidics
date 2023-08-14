@@ -5159,6 +5159,7 @@ class Board(SystemComponent):
         mpam.pipettor.Pipettor._add_external_to(self, pipettor)
         
         component_groups: dict[type[ExternalComponent], list[ExternalComponent]] = defaultdict(list)
+        component_groups[Clock] = [Clock(self)]
         for factory in Config.component_factories():
             component = factory.for_board(self)
             component_groups[factory.component_group()].append(component)
@@ -5446,31 +5447,35 @@ class UserOperation(Worker):
     def end(self) -> None:
         self.__exit__(None, None, None)
 
-class Clock:
-    system: Final[System]
-    engine: Final[Engine]
-    clock_thread: Final[ClockThread]
+class Clock(BinaryComponent['Clock'], ExternalComponent):
+    system: System
+    engine: Engine
+    clock_thread: ClockThread
+    update_interval: MonitoredProperty[Time] = MonitoredProperty()
 
-    on_interval_change: Final[ChangeCallbackList[Time]]
-    on_state_change: Final[ChangeCallbackList[bool]]
+    on_interval_change: ChangeCallbackList[Time] = update_interval.callback_list
 
-    def __init__(self, system: System) -> None:
+    def __init__(self, board: Board) -> None:
+        BinaryComponent.__init__(self, board, state=OnOff.OFF)
+        
+    def join_system(self, system:System)->None:
+        super().join_system(system)
         self.system = system
         self.engine = system.engine
         self.clock_thread = system.engine.clock_thread
-        self.on_interval_change = ChangeCallbackList[Time]()
-        self.on_state_change = ChangeCallbackList[bool]()
-
-    @property
-    def update_interval(self) -> Time:
-        return self.clock_thread.update_interval
-
-    @update_interval.setter
-    def update_interval(self, interval: Time) -> None:
-        old = self.clock_thread.update_interval
-        if old != interval:
+        self.update_interval = self.clock_thread.update_interval
+        def change_update_interval(interval: Time) -> None:
             self.clock_thread.update_interval = interval
-            self.on_interval_change.process(old, interval)
+        self.on_interval_change(lambda _old, new: change_update_interval(new))
+        def change_state(new_state: OnOff) -> None:
+            thread = self.clock_thread
+            if new_state:
+                thread.start_clock(self.update_interval)
+            else:
+                thread.pause_clock()
+        self.on_state_change(lambda _old, new: change_state(new))
+        self.current_state = OnOff.ON
+        system.clock = self
 
     @property
     def update_rate(self) -> Frequency:
@@ -5537,18 +5542,14 @@ class Clock:
         ct.wake_up()
 
     def start(self, interval: Optional[Union[Time,Frequency]] = None) -> None:
-        assert not self.running, "Clock.start() called while clock is running"
         if isinstance(interval, Frequency):
             interval = 1/interval
         if interval is not None:
             self.update_interval = interval
-        self.on_state_change.process(False, True)
-        self.clock_thread.start_clock(interval)
+        self.current_state = OnOff.ON
 
     def pause(self) -> None:
-        assert self.running, "Clock.pause() called while clock is not running"
-        self.on_state_change.process(True, False)
-        self.clock_thread.pause_clock()
+        self.current_state = OnOff.OFF
 
 class Batch:
     system: Final[System]
@@ -5643,7 +5644,6 @@ class System:
     def __init__(self, *, board: Board) -> None:
         self.board = board
         self.engine = Engine(default_clock_interval=board.drop_motion_time)
-        self.clock = Clock(self)
         self._batch = None
         self._batch_lock = Lock()
         self._cpts_lock = Lock()
