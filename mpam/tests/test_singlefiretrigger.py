@@ -1,9 +1,13 @@
-from devices import joey, dummy_pipettor
+from devices import joey
 from mpam.exerciser import Exerciser
 from mpam.device import System
 from mpam.paths import Path
 from mpam.types import Reagent, SingleFireTrigger, Postable
-from quantities.SI import ms, s, minute, uL
+from quantities.SI import ms, s, uL
+from mpam import monitor
+from quantities.dimensions import FlowRate
+from devices.joey import HeaterType
+from devices.dummy_pipettor import Config as dp_conf
 
 # Graphical representation of the relevant parts of the board and how
 # they should look throughout the run.
@@ -73,21 +77,17 @@ def test_singlefiretrigger(system: System) -> None:
 
 
 Exerciser.setup_logging(levels='debug')
+with (dp_conf.dip_time >> 400*ms
+      and dp_conf.short_transit_time >> 1*ms
+      and dp_conf.long_transit_time >> 1*ms
+      and dp_conf.get_tip_time >> 1*ms
+      and dp_conf.drop_tip_time >> 800*ms
+      and dp_conf.flow_rate >> (1*uL/s).a(FlowRate)
+      and joey.Config.heater_type >> HeaterType.TSRs
+      and monitor.Config.highlight_reservations >> True
+      ):
 
-pipettor = dummy_pipettor.DummyPipettor(
-    name="Dummy",
-    dip_time=100 * ms,
-    short_transit_time=1 * ms,
-    long_transit_time=1 * ms,
-    get_tip_time=1 * ms,
-    drop_tip_time=100 * ms,
-    flow_rate=(1 * uL / s).a(dummy_pipettor.FlowRate))
-
-system = System(
-    board=joey.Board(
-        pipettor=pipettor,
-        heater_type = joey.HeaterType.TSRs))
-system.run_monitored(test_singlefiretrigger,
-                     min_time=3 * minute,
-                     config_params = {"highlight_reservations": True})
-system.stop()
+    system = System(
+        board=joey.Board())
+    system.run_monitored(test_singlefiretrigger)
+    system.stop()

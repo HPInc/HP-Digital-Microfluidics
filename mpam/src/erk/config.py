@@ -147,7 +147,7 @@ class CPBindings:
         self._use_stack.append(_TemporaryOverride(self))
         return self
     
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> Literal[False]:
         if not self._use_stack:
             logger.error("Exiting CPBindings that wasn't entered")
         else:

@@ -49,8 +49,8 @@ class PlatformTask(joey.PlatformTask):
             sys.path.append(to_add)
     
     
-    def make_board(self, args: Namespace, *, 
-                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+    def make_board(self, args: Namespace, *,            # @UnusedVariable
+                   exerciser: PlatformChoiceExerciser,  # @UnusedVariable
                    ) -> joey.Board: # @UnusedVariable
         self._add_dll_dir()
         

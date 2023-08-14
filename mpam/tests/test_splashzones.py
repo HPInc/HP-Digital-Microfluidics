@@ -1,10 +1,13 @@
-from devices import joey, dummy_pipettor
+from devices import joey
 from mpam.exerciser import Exerciser
 from mpam.device import System
 from mpam.paths import Path
 from mpam.types import Reagent
-from quantities.SI import ms, s, minute, uL
+from quantities.SI import ms, s, uL
 from devices.joey import HeaterType
+from devices.dummy_pipettor import Config as dp_conf
+from quantities.dimensions import FlowRate
+from mpam import device, monitor
 
 
 # splash_radius = 2
@@ -88,17 +91,18 @@ def test_splashzones(system: System) -> None:
 
 Exerciser.setup_logging(levels='debug')
 
-system = System(
-    board=joey.Board(
-        heater_type=HeaterType.TSRs,
-        pipettor=dummy_pipettor.DummyPipettor(
-            name="Dummy",
-            dip_time=400 * ms,
-            short_transit_time=1 * ms,
-            long_transit_time=1 * ms,
-            get_tip_time=1 * ms,
-            drop_tip_time=800 * ms,
-            flow_rate=(1*uL/s).a(dummy_pipettor.FlowRate)),
-        extraction_point_splash_radius=splash_radius))
-system.run_monitored(test_splashzones, min_time=3 * minute, config_params = {"highlight_reservations": True})
-system.stop()
+with (dp_conf.dip_time >> 400*ms
+      and dp_conf.short_transit_time >> 1*ms
+      and dp_conf.long_transit_time >> 1*ms
+      and dp_conf.get_tip_time >> 1*ms
+      and dp_conf.drop_tip_time >> 800*ms
+      and dp_conf.flow_rate >> (1*uL/s).a(FlowRate)
+      and device.Config.extraction_point_splash_radius >> splash_radius
+      and joey.Config.heater_type >> HeaterType.TSRs
+      and monitor.Config.highlight_reservations >> True
+      ):
+
+    system = System(
+        board=joey.Board())
+    system.run_monitored(test_splashzones)
+    system.stop()

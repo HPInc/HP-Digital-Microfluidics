@@ -1168,7 +1168,7 @@ class BoardMonitor:
             return "Pause" if clock.running else "Run"
         pause_run = Button(fig.add_subplot(grid[0,0]), pr_label())
         pause_run.label.set_fontsize("small")
-        def toggle_running(event: Any) -> None: # @UnusedVariable
+        def toggle_running(_event: Any) -> None:
             if clock.running:
                 clock.pause()
             else:
@@ -1176,7 +1176,7 @@ class BoardMonitor:
         pause_run.on_clicked(toggle_running)
         def update_pr_label() -> None:
             pause_run.label.set_text(pr_label())
-        def pr_cb(old: OnOff, new: OnOff) -> None: # @UnusedVariable
+        def pr_cb(_old: OnOff, _new: OnOff) -> None:
             self.in_display_thread(lambda: update_pr_label())
         clock.on_state_change(pr_cb)
 
@@ -1186,7 +1186,7 @@ class BoardMonitor:
         step.label.set_fontsize("small")
         def update_step_active() -> None:
             step.set_active(not clock.running)
-        def step_cb(old: OnOff, new: OnOff) -> None: # @UnusedVariable
+        def step_cb(_old: OnOff, _new: OnOff) -> None:
             self.in_display_thread(lambda: update_step_active())
         clock.on_state_change(step_cb)
         def do_step(event: Any) -> None: # @UnusedVariable
@@ -1202,7 +1202,7 @@ class BoardMonitor:
         speed.label.set_fontsize("small")
         def update_speed(new: Time) -> None:
             speed.set_val(f"{new.as_number(ms):g}")
-        def interval_cb(old: Time, new: Time) -> None:   # @UnusedVariable
+        def interval_cb(_old: Time, new: Time) -> None:
             self.in_display_thread(lambda: update_speed(new))
         def new_speed(s: str) -> None:
             ns = int(s)*ms

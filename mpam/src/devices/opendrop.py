@@ -200,8 +200,8 @@ class PlatformTask(PlatformChoiceTask):
         super().__init__(name, description, aliases=aliases)
     
     
-    def make_board(self, args: Namespace, *, 
-                   exerciser: PlatformChoiceExerciser, # @UnusedVariable
+    def make_board(self, args: Namespace, *,            # @UnusedVariable
+                   exerciser: PlatformChoiceExerciser,  # @UnusedVariable
                    ) -> Board: # @UnusedVariable
         return Board()
     

@@ -176,7 +176,7 @@ class ESELog(Sensor):
     def read(self, *,
              n_samples: Optional[int] = None,                # @UnusedVariable
              speed: Optional[Union[Time, Frequency]] = None, # @UnusedVariable
-             force_write: bool = False, 
+             force_write: bool = False,                      # @UnusedVariable
              ) -> Delayed[Reading]:
         n = n_samples or self.n_samples
         interval = "" if n < 2 else f"(every {self.sample_interval}) "
