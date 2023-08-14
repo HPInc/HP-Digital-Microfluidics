@@ -232,7 +232,7 @@ class Exerciser(ABC):
         
 
     def add_common_args_to(self, parser: ArgumentParser, *,
-                           task: Task) -> None:
+                           task: Task) -> None:          # @UnusedVariable
         group = parser.add_argument_group(title="common options")
         self.add_device_specific_common_args(group, parser)
         
@@ -521,7 +521,7 @@ class PlatformChoiceTask(Task):
         kwds[kwd] = val
 
 
-    def board_kwd_args(self, args: Namespace, *,
+    def board_kwd_args(self, args: Namespace, *, # @UnusedVariable
                        announce: bool = False) -> BoardKwdArgs: # @UnusedVariable
         kwds: BoardKwdArgs = {}
         

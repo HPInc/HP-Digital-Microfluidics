@@ -848,9 +848,9 @@ class Operation(Generic[T, V], ABC):
 
     @abstractmethod
     def after_delay(self,
-                    after: WaitableType,
-                    fn: Callable[[], V2],
-                    *, obj: T) -> Delayed[V2]:
+                    after: WaitableType,        # @UnusedVariable
+                    fn: Callable[[], V2],       # @UnusedVariable
+                    *, obj: T) -> Delayed[V2]:  # @UnusedVariable
         ...
 
     def then(self,
@@ -1050,7 +1050,7 @@ class ComputeOp(Generic[T, V], Operation[T, V]):
         T: the type of the object used to schedule the :class:`Operation`
         V: the type of the value produced by the operation
     """
-    def __init__(self, function: Callable[[T],Delayed[V]], * scheduler: CommunicationScheduler) -> None:
+    def __init__(self, function: Callable[[T],Delayed[V]]) -> None: 
         """
         Initialize the :class:`ComputeOp`
 
@@ -1789,7 +1789,7 @@ class Delayed(Generic[Tco]):
         return self.transformed(call_and_post)
     
     def to_const(self, val: V) -> Delayed[V]:
-        def ignore_arg(v: Any) -> V:
+        def ignore_arg(_v: Any) -> V:
             return val
         return self.transformed(ignore_arg)
 
@@ -4949,24 +4949,29 @@ class Sample(Generic[_ItemT, _DiffT, _ContT], ABC):
         
     @overload
     @classmethod
-    def for_type(cls, item_type: type[TemperaturePoint], 
-                 items: Sequence[TemperaturePoint] = ()) -> TemperaturePointSample: ...
+    def for_type(cls, item_type: type[TemperaturePoint],    # @UnusedVariable
+                 items: Sequence[TemperaturePoint] = ()     # @UnusedVariable
+                 ) -> TemperaturePointSample: ...
     @overload
     @classmethod
-    def for_type(cls, item_type: type[Timestamp], 
-                 items: Sequence[Timestamp] = ()) -> TimestampSample: ...
+    def for_type(cls, item_type: type[Timestamp],    # @UnusedVariable 
+                 items: Sequence[Timestamp] = ()     # @UnusedVariable
+                 ) -> TimestampSample: ...
     @overload
     @classmethod
-    def for_type(cls, item_type: type[int], 
-                 items: Sequence[int] = ()) -> IntSample: ...
+    def for_type(cls, item_type: type[int],    # @UnusedVariable 
+                 items: Sequence[int] = ()     # @UnusedVariable
+                 ) -> IntSample: ...
     @overload
     @classmethod
-    def for_type(cls, item_type: type[float], 
-                 items: Sequence[float] = ()) -> FloatSample: ...
+    def for_type(cls, item_type: type[float],    # @UnusedVariable 
+                 items: Sequence[float] = ()     # @UnusedVariable
+                 ) -> FloatSample: ...
     @overload
     @classmethod
-    def for_type(cls, item_type: type[D], 
-                 items: Sequence[D] = ()) -> QuantitySample[D]: ...
+    def for_type(cls, item_type: type[D],    # @UnusedVariable 
+                 items: Sequence[D] = ()     # @UnusedVariable
+                 ) -> QuantitySample[D]: ...
     @classmethod # type: ignore[misc]
     def for_type(cls, item_type: type[_ItemT], items: Sequence[_ItemT] = ()) -> Sample:
         if issubclass(item_type, Quantity):

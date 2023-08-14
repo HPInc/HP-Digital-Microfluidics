@@ -1,4 +1,4 @@
-# Generated from pathLexer.g4 by ANTLR 4.9.2
+# Generated from commonLexer.g4 by ANTLR 4.9.2
 from antlr4 import *
 from io import StringIO
 import sys
@@ -73,7 +73,7 @@ def serializedATN():
         return buf.getvalue()
 
 
-class pathLexer(Lexer):
+class commonLexer(Lexer):
 
     atn = ATNDeserializer().deserialize(serializedATN())
 
@@ -101,7 +101,7 @@ class pathLexer(Lexer):
                   "FLOAT", "STRING_CHAR", "HEX", "ESC_SEQ", "STRING", "EOL_COMMENT", 
                   "COMMENT", "WS" ]
 
-    grammarFileName = "pathLexer.g4"
+    grammarFileName = "commonLexer.g4"
 
     def __init__(self, input=None, output:TextIO = sys.stdout):
         super().__init__(input, output)

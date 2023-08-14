@@ -61,8 +61,8 @@ class MultiDropProcessType(ABC):
         
     @abstractmethod
     def create_run(self, *,
-                   futures: Mapping[Pad, Postable[Drop]],
-                   pads: tuple[Pad,...]) -> MultiDropProcessRun:
+                   futures: Mapping[Pad, Postable[Drop]],           # @UnusedVariable
+                   pads: tuple[Pad,...]) -> MultiDropProcessRun:    # @UnusedVariable
         ...
 
     def start(self, lead_drop: Drop, future: Postable[Drop]) -> None:
