@@ -163,7 +163,10 @@ class MotionInference:
             else:
                 blob = pad.blob
                 # update_drops.add(blob)
-                assert blob.total_volume >= volume, f"Removed {volume} at {pad} from a blob containing {blob.contents}"
+                if blob.total_volume < volume:
+                    logger.info(f"Removed {volume} at {pad} from a blob containing {blob.contents}")
+                    volume = blob.total_volume
+                # assert blob.total_volume >= volume, f"Removed {volume} at {pad} from a blob containing {blob.contents}"
                 blob.contents.volume -= volume
                 if blob.unpinned and blob.total_volume.is_zero:
                     blobs_to_delete.append(blob)

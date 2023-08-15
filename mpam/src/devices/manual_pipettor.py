@@ -79,7 +79,7 @@ class ManualPipettor(Pipettor):
             loc = target.target
             vol = target.volume
             rounding = Config.rounding()
-            if rounding >= 0:
+            if rounding > 0:
                 n = vol.as_number(uL)
                 n = math.ceil(n/rounding)*rounding
                 vol = n*uL
