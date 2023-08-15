@@ -139,6 +139,7 @@ expr
   | direction dist=expr              # delta_expr
   | direction                        # dir_expr
   | 'to' axis? which=expr            # to_expr
+  | no_arg_action                    # action_expr
   | ('pause' | 'wait') 'until' condition=expr	# pause_until_expr
   | ('pause' | 'wait') 'for'? duration=expr            # pause_expr
   | (('pause' | 'wait') 'for' 'user' | 'prompt') ( vals+= expr (',' vals+=expr)* )? # prompt_expr
@@ -155,7 +156,6 @@ expr
   | who=expr INJECT what=expr        # injection_expr
   | first=expr 'if' cond=expr 'else' second=expr  # cond_expr
   | macro_def                        # macro_expr
-  | no_arg_action                    # action_expr
   | 'the'? value_type                # type_name_expr
   | value_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
@@ -250,6 +250,8 @@ no_arg_action returns[str which]
   | 'reset' ('heaters' | 'heating' 'zones') {$ctx.which="RESET HEATERS"}
   | 'reset' 'chillers' {$ctx.which="RESET CHILLERS"}
   | 'reset' 'all' {$ctx.which="RESET ALL"}
+  | 'pause' 'the'? 'clock' {$ctx.which="PAUSE CLOCK"}
+  | ('start' | 'restart' | 'resume') 'the'? 'clock' {$ctx.which="START CLOCK"}
   ;
   
 value_type returns[Type type]
@@ -375,8 +377,8 @@ attr
   | 'power'? 'mode'
   | 'heating' 'zone'
   | 'n' 'samples'
-  | ('sampling' | 'sample') 'rate'
-  | ('sampling' | 'sample') 'interval'
+  | ('sampling' | 'sample' | 'update') 'rate'
+  | ('sampling' | 'sample' | 'update') 'interval'
   | 'first' 'value'?
   | 'last' 'value'?
   | min_max 'value'?
@@ -430,6 +432,7 @@ multi_word_name returns[str val]
   | 'current' 'time' {$ctx.val="current time"}
   | 'time' 'now' {$ctx.val="current time"}
   | 'write' 'to'? 'csv'? 'file' {$ctx.val="write to csv file"}
+  | 'the' 'clock' {$ctx.val="the clock"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
@@ -457,6 +460,8 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'log' | 'dir' | 'directory' | 'folder'
   | 'csv' | 'file' | 'name' | 'template'
   | 'containing' | 'empty' | 'sample'
+  | 'board' | 'clock'
+  | 'start' | 'restart' | 'resume' | 'pause'
   ;
 
 string : STRING ;

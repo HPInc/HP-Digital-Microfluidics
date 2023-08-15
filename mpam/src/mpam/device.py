@@ -156,6 +156,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
     """
     broken: bool                #: Is the :class:`BinaryComponent` broken?
     live: bool                  #: Is the :class:`BinaryComponent` live?
+    default_wait: WaitableType = NO_WAIT
 
     def __init__(self, board: Board, *,
                  state: Union[State[OnOff], OnOff],
@@ -268,7 +269,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                 finish: Optional[Callback] = None if not post_result else (lambda : future.post(old))
                 return finish
 
-            obj.board.schedule(cb)
+            obj.board.schedule(cb, after = obj.default_wait)
             return future
 
         def __init__(self, mod: Modifier[OnOff]) -> None:
@@ -5452,6 +5453,7 @@ class Clock(BinaryComponent['Clock'], ExternalComponent):
     engine: Engine
     clock_thread: ClockThread
     update_interval: MonitoredProperty[Time] = MonitoredProperty()
+    default_wait: WaitableType = Time.ZERO
 
     on_interval_change: ChangeCallbackList[Time] = update_interval.callback_list
 

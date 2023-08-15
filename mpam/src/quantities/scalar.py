@@ -1,5 +1,6 @@
 from quantities.core import Scalar
 
+each = Scalar(1).as_unit("each")
 pair = pairs = Scalar(2).as_unit("pair")
 dozen = Scalar(12).as_unit("dozen")
 score = Scalar(20).as_unit("score")

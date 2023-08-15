@@ -161,6 +161,7 @@ class Type:
     SENSOR_READING: ClassVar[Type]
     ESELOG: ClassVar[Type]
     ESELOG_READING: ClassVar[Type]
+    CLOCK: ClassVar[Type]
     
     
     # @cached_property
@@ -581,6 +582,7 @@ Type.SENSOR = Type("SENSOR")
 Type.SENSOR_READING = Type("SENSOR_READING")
 Type.ESELOG = Type("ESELOG", [Type.SENSOR])
 Type.ESELOG_READING = Type("ESELOG_READING", [Type.SENSOR_READING])
+Type.CLOCK = Type("CLOCK", [Type.BINARY_CPT])
 
 class LoopExitType(Type):
     nested_levels: Final[int]

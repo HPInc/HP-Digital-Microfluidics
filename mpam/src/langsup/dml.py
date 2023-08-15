@@ -23,7 +23,7 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor,\
-    TemperatureMode
+    TemperatureMode, Clock
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
@@ -970,7 +970,7 @@ def unit_func(unit: PhysUnit) -> Func:
 UnitFuncs = ByNameCache[PhysUnit, Func](unit_func)
 
 def unit_recip_func(unit: PhysUnit) -> Func:
-    return unit_adaptor(unit, str(unit), 
+    return unit_adaptor(unit, f"per {unit}",
                         lambda qt,nt: ((nt,), qt),
                         lambda unit: lambda n: n/unit)
 
@@ -3945,6 +3945,18 @@ class DMLCompiler(dmlVisitor):
             return mode is TemperatureMode.AMBIENT
         fn.register_immediate((Type.TEMP_CONTROL,), Type.BOOL, heater_ambient)
         
+        fn = BuiltIns["running"] = Functions["running"]
+        fn.register_immediate((Type.CLOCK,), Type.BOOL, lambda c: c.running)
+
+        fn = BuiltIns["paused"] = Functions["paused"]
+        fn.register_immediate((Type.CLOCK,), Type.BOOL, lambda c: not c.running)
+        
+        fn = Functions["PAUSE CLOCK"]
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.system.clock.pause()))
+
+        fn = Functions["START CLOCK"]
+        fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.system.clock.start()))
+
         
         
     @classmethod
@@ -4004,10 +4016,10 @@ class DMLCompiler(dmlVisitor):
         SpecialVars["missing"] = Constant(Type.MISSING, None)
         SpecialVars["none"] = Constant(Type.MISSING, None)
         
-        name = "the board"
         def get_board(env: Environment) -> Board:
             return env.board
-        SpecialVars[name] = SpecialVariable[Board](Type.BOARD, getter=get_board)
+        for name in ("board", "the board"):
+            SpecialVars[name] = SpecialVariable[Board](Type.BOARD, getter=get_board)
         
         SpecialVars["AC"] = Constant(Type.POWER_MODE, PowerMode.AC)
         SpecialVars["DC"] = Constant(Type.POWER_MODE, PowerMode.DC)
@@ -4025,6 +4037,11 @@ class DMLCompiler(dmlVisitor):
         ct_var = SpecialVariable(Type.TIMESTAMP, getter=lambda _e: timestamp.time_now())    
         SpecialVars["time now"] = ct_var
         SpecialVars["current time"] = ct_var
+        
+        def get_clock(env: Environment) -> Clock:
+            return env.board.system.clock
+        for name in ("clock", "the clock"):
+            SpecialVars[name] = SpecialVariable[Clock](Type.CLOCK, getter=get_clock)
         
     @classmethod
     def setup_attributes(cls) -> None:
@@ -4220,6 +4237,19 @@ class DMLCompiler(dmlVisitor):
                 
                 
         setup_sample_atts()
+        
+        Attributes["clock"].register(Type.BOARD, Type.CLOCK,
+                                     lambda b: b.system.clock)
+        def set_update_interval(c: Clock, t: Time) -> None:
+            c.update_interval = t
+        for a in ("interval", "update interval"):
+            Attributes[a].register(Type.CLOCK, Type.TIME, lambda c: c.update_interval,
+                                   setter=set_update_interval)
+        def set_update_rate(c: Clock, f: Frequency) -> None:
+            c.update_rate = f
+        for a in ("rate", "update rate"):
+            Attributes[a].register(Type.CLOCK, Type.FREQUENCY, lambda c: c.update_rate,
+                                   setter=set_update_rate)
         
 DMLCompiler.setup_attributes()
 DMLCompiler.setup_function_table()
