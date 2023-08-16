@@ -5052,11 +5052,13 @@ class Config:
     fan_can_toggle: Final = ConfigParam(True)
     
     component_factories: Final = ConfigParam[list[ComponentFactory]]([])
+    owns_externals: Final = ConfigParam(True)
     
     
 
 class Board(SystemComponent):
     pads: Final[dict[XYCoord, Pad]]
+    _owns_externals: Final[bool]
     
     _well_list: Final[list[Well]]
     @property
@@ -5131,12 +5133,33 @@ class Board(SystemComponent):
         
     @abstractmethod
     def _add_pads(self) -> None: ...
+    
+    def _add_all_externals(self) -> None:
+            import mpam
+            pipettor_cp = mpam.pipettor.Config.pipettor
+            pipettor = pipettor_cp() if pipettor_cp.has_value else ensure_val(self.default_pipettor(), 
+                                                                              mpam.pipettor.Pipettor) # type: ignore [type-abstract]
+            
+            mpam.pipettor.Pipettor._add_external_to(self, pipettor)
+            
+            component_groups: dict[type[ExternalComponent], list[ExternalComponent]] = defaultdict(list)
+            component_groups[Clock] = [Clock(self)]
+            for factory in Config.component_factories():
+                component = factory.for_board(self)
+                component_groups[factory.component_group()].append(component)
+            
+            for group,components in component_groups.items():
+                group._add_externals_to(self, components)
+
+    def _finish_init(self) -> None:
+        ...
 
     def __init__(self, *,
                  orientation: Orientation,
                  drop_motion_time: Time,
                  cpt_layout: Optional[RCOrder] = None) -> None:
         super().__init__()
+        self._owns_externals = Config.owns_externals()
         self._change_journal = ChangeJournal()
         self.pads = dict[XYCoord, Pad]()
         self._external_components = []
@@ -5152,21 +5175,9 @@ class Board(SystemComponent):
         self._lock = Lock()
         self._reserved_well_gates = []
         self._add_pads()
-        import mpam
-        pipettor_cp = mpam.pipettor.Config.pipettor
-        pipettor = pipettor_cp() if pipettor_cp.has_value else ensure_val(self.default_pipettor(), 
-                                                                          mpam.pipettor.Pipettor) # type: ignore [type-abstract]
-        
-        mpam.pipettor.Pipettor._add_external_to(self, pipettor)
-        
-        component_groups: dict[type[ExternalComponent], list[ExternalComponent]] = defaultdict(list)
-        component_groups[Clock] = [Clock(self)]
-        for factory in Config.component_factories():
-            component = factory.for_board(self)
-            component_groups[factory.component_group()].append(component)
-        
-        for group,components in component_groups.items():
-            group._add_externals_to(self, components)
+        if self._owns_externals:
+            self._add_all_externals()
+        self._finish_init()
         
         
         
@@ -5224,36 +5235,6 @@ class Board(SystemComponent):
         for ep in eps:
             self._add_extraction_point(ep)
             
-    
-
-    # def _add_temperature_control(self, temperature_control: Union[Heater,Chiller]) -> int:
-    #     if isinstance(temperature_control, Heater):
-    #         return self._add_heater(temperature_control)
-    #     elif isinstance(temperature_control, Chiller):
-    #         return self._add_chiller(temperature_control)
-    #     else:
-    #         assert_never(temperature_control)
-    #
-    # def _add_temperature_controls(self, temperature_controls: Sequence[Union[Heater,Chiller]], *, order: Optional[RCOrder] = None) -> None:
-    #     if order is None:
-    #         order = self.component_layout
-    #     temperature_controls = self.sorted(temperature_controls, get_pads=TemperatureControl.pads_for_sort, order=order)
-    #     for tc in temperature_controls:
-    #         self._add_temperature_control(tc)
-
-    # def _add_magnet(self, magnet: Magnet) -> int:
-    #     magnets = self._magnet_list
-    #     n = len(magnets)
-    #     magnet.number = n+1
-    #     magnets.append(magnet)
-    #     return n
-    #
-    # def _add_magnets(self, magnets: Sequence[Magnet], *, order: Optional[RCOrder] = None) -> None:
-    #     if order is None:
-    #         order = self.component_layout
-    #     magnets = self.sorted(magnets, get_pads = lambda m: m.pads, order=order)
-    #     for m in magnets:
-    #         self._add_magnet(m)
 
     def replace_change_journal(self) -> ChangeJournal:
         with self._lock:

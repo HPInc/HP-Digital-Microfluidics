@@ -201,25 +201,23 @@ class Board(joey.Board):
     
     def __init__(self, 
                  ) -> None:
-        od_version = Config.od_version()
-        logger.info(f"Opendrop version is {od_version}",)
-            
-        if od_version is OpenDropVersion.V40:
+        self._od_version = Config.od_version()
+        logger.info(f"Opendrop version is {self._od_version}")
+        if self._od_version is OpenDropVersion.V40:
             n_state_bytes = 128
-        elif od_version is OpenDropVersion.V41:
+        elif self._od_version is OpenDropVersion.V41:
             n_state_bytes = 32
         else:
-            assert_never(od_version)
+            assert_never(self._od_version)
         self._states = bytearray(n_state_bytes)
         self._last_states = bytearray(n_state_bytes)
-        self._od_version = Config.od_version()
-        logger.info("is_yaminon = %s", Config.is_yaminon())
         self.is_yaminon = Config.is_yaminon()
+        logger.info("is_yaminon = %s", self.is_yaminon)
         self._electrodes = ComputedDefaultDict[int, Electrode](lambda pin: self.make_electrode(pin))
         logger.info("double_write = %s", Config.double_write())
         self._double_write = Config.double_write()
         super().__init__()
-        if Config.is_yaminon():
+        if self.is_yaminon:
             for x, y in ((i, j) for i in range(1, 20) for j in range(1, 10)):
                 y2 = y+12
                 remove = False

@@ -78,13 +78,13 @@ def test_singlefiretrigger(system: System) -> None:
 
 Exerciser.setup_logging(levels='debug')
 with (dp_conf.dip_time >> 400*ms
-      and dp_conf.short_transit_time >> 1*ms
-      and dp_conf.long_transit_time >> 1*ms
-      and dp_conf.get_tip_time >> 1*ms
-      and dp_conf.drop_tip_time >> 800*ms
-      and dp_conf.flow_rate >> (1*uL/s).a(FlowRate)
-      and joey.Config.heater_type >> HeaterType.TSRs
-      and monitor.Config.highlight_reservations >> True
+      & dp_conf.short_transit_time >> 1*ms
+      & dp_conf.long_transit_time >> 1*ms
+      & dp_conf.get_tip_time >> 1*ms
+      & dp_conf.drop_tip_time >> 800*ms
+      & dp_conf.flow_rate >> (1*uL/s).a(FlowRate)
+      & joey.Config.heater_type >> HeaterType.TSRs
+      & monitor.Config.highlight_reservations >> True
       ):
 
     system = System(

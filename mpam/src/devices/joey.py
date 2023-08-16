@@ -122,35 +122,9 @@ class Config:
 
     
 class Well(device.Well):
-    _pipettor: Final[Pipettor]
-
-    def __init__(self,
-                 *, board:Board,
-                 group:DispenseGroup,
-                 exit_pad:device.Pad,
-                 shared_pads: Sequence[WellPad],
-                 gate:WellGate,
-                 capacity:Volume,
-                 dispensed_volume:Volume,
-                 exit_dir:Dir,
-                 is_voidable:bool=False,
-                 shape:Optional[WellShape]=None,
-                 pipettor: Pipettor)-> None:
-        super().__init__(board=board,
-                         group=group,
-                         exit_pad=exit_pad,
-                         gate=gate,
-                         shared_pads=shared_pads,
-                         capacity=capacity,
-                         dispensed_volume=dispensed_volume,
-                         exit_dir=exit_dir,
-                         is_voidable=is_voidable,
-                         shape=shape)
-        self._pipettor = pipettor
-
     @property
-    def pipettor(self)->Optional[Pipettor]:
-        return self._pipettor
+    def pipettor(self)->Pipettor:
+        return self.board.pipettor
 
 
 
@@ -161,15 +135,13 @@ class ArmPos(Enum):
 
 
 class ExtractionPoint(device.ExtractionPoint):
-    _pipettor: Final[Pipettor]
 
-    def __init__(self, pad: device.Pad, pipettor: Pipettor, *, splash_radius: Optional[int] = None) -> None:
+    def __init__(self, pad: device.Pad, *, splash_radius: Optional[int] = None) -> None:
         super().__init__(pad, splash_radius=splash_radius)
-        self._pipettor = pipettor
 
     @property
-    def pipettor(self) -> Optional[Pipettor]:
-        return self._pipettor
+    def pipettor(self) -> Pipettor  :
+        return self.board.pipettor
     
     
 v1_shared_pad_cells: Mapping[tuple[str,int], str] = {
@@ -190,7 +162,7 @@ v1_5_shared_pad_cells: Mapping[tuple[str,int], str] = {
     
     
 class Board(device.Board):
-    thermocycler: Final[Thermocycler]
+    thermocycler: Thermocycler
     _layout: Final[JoeyLayout]
     _lid: Final[LidType]
     
@@ -243,7 +215,7 @@ class Board(device.Board):
     def _dispensed_volume(self) -> Volume:
         return self._layout.pad_area*self._lid.height
 
-    def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad, pipettor: Pipettor,
+    def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad,
               shared_states: Sequence[State[OnOff]], shape: WellShape) -> Well:
 
         if self._layout is JoeyLayout.V1:
@@ -272,9 +244,7 @@ class Board(device.Board):
                     dispensed_volume=self._dispensed_volume(),
                     # dispensed_volume=1*uL,
                     exit_dir=exit_dir,
-                    shape = shape,
-                    pipettor = pipettor
-                    )
+                    shape = shape)
         
     def _heaters(self) -> Sequence[Heater]:
         heater_type = Config.heater_type()
@@ -441,55 +411,57 @@ class Board(device.Board):
         left_states = tuple(self._well_pad_state('left', n+1) for n in range(n_shared_pads))
         right_states = tuple(self._well_pad_state('right', n+1) for n in range(n_shared_pads))
 
-        pipettor = self.pipettor
-
         self._add_wells((
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,19), pipettor, left_states, well_shape),
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,13), pipettor, left_states, well_shape),
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,7), pipettor, left_states, well_shape),
-            self._well(left_group, Dir.RIGHT, self.pad_at(1,1), pipettor, left_states, well_shape),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,19), pipettor, right_states, well_shape),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,13), pipettor, right_states, well_shape),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,7), pipettor, right_states, well_shape),
-            self._well(right_group, Dir.LEFT, self.pad_at(19,1), pipettor, right_states, well_shape),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,19), left_states, well_shape),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,13), left_states, well_shape),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,7), left_states, well_shape),
+            self._well(left_group, Dir.RIGHT, self.pad_at(1,1), left_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,19), right_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,13), right_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,7), right_states, well_shape),
+            self._well(right_group, Dir.LEFT, self.pad_at(19,1), right_states, well_shape),
             ))
         
-
-    def __init__(self) -> None:
-        from mpam.pipettor import Pipettor # @Reimport
-        
-        logger.info(f"Joey layout version is {Config.layout()}")
-        logger.info(f"Lid type is {Config.lid_type()}")
-        logger.info(f"Heater type is {Config.heater_type()}")
-
-        self._lid = Config.lid_type()
-        self._layout = Config.layout()
-
-        super().__init__(orientation=Orientation.NORTH_POS_EAST_POS,
-                         drop_motion_time=500*ms,
-                         cpt_layout=RCOrder.DOWN_RIGHT)
-        
-        self._add_all_wells()
-        
+    def _add_all_externals(self)->None:
+        super()._add_all_externals()
         self._add_externals(Magnet, self._magnets())
         self._add_externals(Heater, self._heaters())
         self._add_externals(Chiller, self._chillers())
         self._add_external(PowerSupply, self._power_supply())
         self._add_external(Fan, self._fan())
 
-        def to_ep(xy: Union[XYCoord,Pad,tuple[int,int]], pipettor: Pipettor) -> ExtractionPoint:
+
+    def __init__(self) -> None:
+        logger.info(f"Joey layout version is {Config.layout()}")
+        logger.info(f"Lid type is {Config.lid_type()}")
+        logger.info(f"Heater type is {Config.heater_type()}")
+
+        self._layout = Config.layout()
+
+        super().__init__(orientation=Orientation.NORTH_POS_EAST_POS,
+                         drop_motion_time=500*ms,
+                         cpt_layout=RCOrder.DOWN_RIGHT)
+        
+        self._lid = Config.lid_type()
+        self._add_all_wells()
+        
+        def to_ep(xy: Union[XYCoord,Pad,tuple[int,int]]) -> ExtractionPoint:
             if isinstance(xy, tuple):
                 xy = self.pad_at(*xy)
             elif isinstance(xy, XYCoord):
                 xy = self.pad_array[xy]
-            return ExtractionPoint(xy, pipettor)
+            return ExtractionPoint(xy)
         
         ep_locs = list[Union[XYCoord,Pad,tuple[int,int]]](Config.holes())
         if Config.default_holes():
             ep_locs.extend(self._extraction_point_locs())
         
-        self._add_extraction_points([to_ep(xy, self.pipettor) for xy in ep_locs])
-
+        self._add_extraction_points([to_ep(xy) for xy in ep_locs])
+        
+    def _finish_init(self) -> None:
+        super()._finish_init()
+        if not self._owns_externals:
+            return
         def tc_channel(row: int,
                        # heaters: tuple[int,int],
                        thresholds: tuple[int,int],

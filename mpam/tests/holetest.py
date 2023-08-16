@@ -53,9 +53,9 @@ class Driver(Exerciser):
         if args.ot_ip is not None:
             assert args.ot_config is not None, f"Opentrons IP address given, but no config file"
             with (opentrons.Config.robot_ip >> args.ot_ip
-                  and opentrons.Config.configuration >> args.ot_config
-                  and opentrons.Config.reagents >> args.ot_reagents
-                  and opentrons.Config.board_def >> args.ot_joey_labware):
+                  & opentrons.Config.configuration >> args.ot_config
+                  & opentrons.Config.reagents >> args.ot_reagents
+                  & opentrons.Config.board_def >> args.ot_joey_labware):
                 pipettor = OT2()
                 with mpam.pipettor.Config.pipettor >> pipettor:
                     return joey.Board()

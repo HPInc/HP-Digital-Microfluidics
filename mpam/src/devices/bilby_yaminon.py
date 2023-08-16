@@ -4,14 +4,18 @@ from devices import bilby, wombat
 
 from typing import Final
 from mpam.device import System
+from mpam import device
 
 class Board(bilby.Board):
     _yaminon: Final[wombat.Board]
     
     def __init__(self) -> None:
-        with wombat.Config.is_yaminon >> True:
+        with (wombat.Config.is_yaminon >> True
+              & device.Config.owns_externals >> False
+              ):
             self._yaminon = wombat.Board()
         super().__init__()
+        self._yaminon.pipettor = self.pipettor
         
     def _add_pads(self)->None:
         self.pads.update(self._yaminon.pads)
