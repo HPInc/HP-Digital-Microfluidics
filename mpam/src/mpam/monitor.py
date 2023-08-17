@@ -1205,9 +1205,9 @@ class BoardMonitor:
         def interval_cb(_old: Time, new: Time) -> None:
             self.in_display_thread(lambda: update_speed(new))
         def new_speed(s: str) -> None:
-            ns = int(s)*ms
+            ns = float(s)*ms
             logger.info(f"Setting tick to {ns}")
-            clock.update_interval=int(s)*ms
+            clock.update_interval=ns
         clock.on_interval_change(interval_cb)
         speed.on_submit(new_speed)
         units = self.label("ms", grid[0,4], fontsize="small")

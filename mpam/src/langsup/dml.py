@@ -29,7 +29,7 @@ from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr,\
     not_Missing, Sample
-from quantities.core import Unit, Dimensionality
+from quantities.core import Unit, Dimensionality, NamedDim
 from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from erk.stringutils import map_str, conj_str
 import math
@@ -87,6 +87,20 @@ class UnknownUnitDimensionError(CompilationError):
         super().__init__(f"Unit {unit} has unknown dimensionality {dim}.")
         self.unit = unit
         self.dimensionality = dim
+        
+class NoDimensionTypeError(CompilationError):
+    dimensionality: Final[Dimensionality]
+    
+    def __init__(self, dim: Dimensionality) -> None:
+        super().__init__(f"No DML type corresponds to {dim}.")
+        self.dimensionality = dim
+        
+class NoReciprocalTypeError(CompilationError):
+    base_type: Final[Type]
+    
+    def __init__(self, base_type: Type) -> None:
+        super().__init__(f"No reciprocal type for {base_type}.")
+        self.base_type = base_type
         
 class ErrorToPropagate(CompilationError):
     error: Final[Executable]
@@ -958,7 +972,8 @@ def unit_adaptor(unit: PhysUnit,
         try:
             qtype, ntype = DimensionToType[dim]
         except KeyError:
-            raise UnknownUnitDimensionError(unit)
+            raise NoDimensionTypeError(dim)
+            # raise UnknownUnitDimensionError(unit)
         arg_types, ret_type = types_fn(qtype, ntype)
         func.register_immediate(arg_types, ret_type, fn(unit))
     return func
@@ -970,9 +985,21 @@ def unit_func(unit: PhysUnit) -> Func:
 
 UnitFuncs = ByNameCache[PhysUnit, Func](unit_func)
 
+def recip_type(t: Type) -> Type:
+    for r in t.rep_types:
+        if issubclass(r, NamedDim):
+            dim = r.dim()
+            recip = dim**-1
+            rtp = DimensionToType.get(recip, None)
+            if rtp is not None:
+                return rtp[0]
+    raise NoReciprocalTypeError(t)
+
+DimRecipTypes = ByNameCache[Type, Type](recip_type)
+
 def unit_recip_func(unit: PhysUnit) -> Func:
     return unit_adaptor(unit, f"per {unit}",
-                        lambda qt,nt: ((nt,), qt),
+                        lambda qt,nt: ((Type.FLOAT,), DimRecipTypes[qt]),
                         lambda unit: lambda n: n/unit)
 
 UnitRecipFuncs = ByNameCache[PhysUnit, Func](unit_recip_func)
@@ -1168,6 +1195,7 @@ rep_types: Mapping[Type, Union[typing.Type, Tuple[typing.Type,...]]] = {
         Type.VOLTAGE: Voltage,
         Type.POWER_MODE: PowerMode,
         Type.MISSING: type(None),
+        Type.FREQUENCY: Frequency,
    }
 
 for t,reps in rep_types.items():
@@ -1914,7 +1942,7 @@ class DMLCompiler(dmlVisitor):
     def unit_exec(self, unit: PhysUnit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
         func = UnitFuncs[unit]
         return self.use_function(func, ctx, (size_ctx,))
-
+    
     def unit_recip_exec(self, unit: PhysUnit, ctx: ParserRuleContext, size_ctx: ParserRuleContext) -> Executable:
         func = UnitRecipFuncs[unit]
         return self.use_function(func, ctx, (size_ctx,))
@@ -1926,9 +1954,15 @@ class DMLCompiler(dmlVisitor):
     def unit_string_exec(self, unit: PhysUnit, ctx: ParserRuleContext, quant_ctx: ParserRuleContext) -> Executable:
         func = UnitStringFuncs[unit]
         return self.use_function(func, ctx, (quant_ctx,))
-    
+        
     def visit(self, tree: Any) -> Executable:
-        return cast(Executable, dmlVisitor.visit(self, tree))
+        try:
+            return cast(Executable, dmlVisitor.visit(self, tree))
+        except CompilationError as ex:
+            if isinstance(tree, ParserRuleContext):
+                return self.error(tree, Type.NO_VALUE, str(ex))
+            raise
+        
 
     def visitMacro_file(self, ctx:dmlParser.Macro_fileContext) -> Executable:
         stats: Sequence[Executable] = [self.visit(tls) for tls in ctx.stat()] 
