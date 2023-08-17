@@ -462,6 +462,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'containing' | 'empty' | 'sample'
   | 'board' | 'clock'
   | 'start' | 'restart' | 'resume' | 'pause'
+  | 'mix' | 'split' | 'accept' | 'merge'
   ;
 
 string : STRING ;

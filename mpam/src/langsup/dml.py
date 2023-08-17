@@ -50,6 +50,7 @@ import os
 from quantities import timestamp
 from mpam.processes import MultiDropProcessType, MultiDropProcessRun
 from mpam.exceptions import NoSuchPad
+from os.path import isfile
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -1575,19 +1576,22 @@ class DMLInterpreter:
             return f
         for file_name in file_names:
             file_name=find_file(file_name)
-            print(f"Loading macro file '{file_name}'")
-            parser = self.get_parser(FileStream(file_name, encoding, errors))
-            tree = parser.macro_file()
-            assert isinstance(tree, dmlParser.Macro_fileContext)
-            compiler = DMLCompiler(global_types = self.namespace, interactive = False)
-            executable = compiler.visit(tree)
-            assert isinstance(executable, Executable)
-            if executable.contains_error:
-                print(f"Macro file '{file_name}' contained error, not loading.")
+            if isfile(file_name):
+                print(f"Loading macro file '{file_name}'")
+                parser = self.get_parser(FileStream(file_name, encoding, errors))
+                tree = parser.macro_file()
+                assert isinstance(tree, dmlParser.Macro_fileContext)
+                compiler = DMLCompiler(global_types = self.namespace, interactive = False)
+                executable = compiler.visit(tree)
+                assert isinstance(executable, Executable)
+                if executable.contains_error:
+                    print(f"Macro file '{file_name}' contained error, not loading.")
+                else:
+                    val = executable.evaluate(self.globals).value
+                    if isinstance(val, EvaluationError):
+                        print(f"Exception caught while loading '{file_name}': {val}")
             else:
-                val = executable.evaluate(self.globals).value
-                if isinstance(val, EvaluationError):
-                    print(f"Exception caught while loading '{file_name}': {val}")
+                print(f"Macro file '{file_name}' does not exist.")
         
     def set_global(self, name: str, val: Any, vtype: Type) -> None:
         self.namespace[name] = vtype
