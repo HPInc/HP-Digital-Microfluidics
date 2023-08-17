@@ -30,8 +30,12 @@ class Board(bilby.Board):
         
         
     def finish_update(self)->None:
-        # We don't propagate up, because we only want to infer drop motion once.
+        # It's safe to call both, because inferring drop motion on super()
+        # (Bilby) won't do anything (because no pads journal to it).  It's
+        # necessary because changes to heater/chiller/magnet state will leave
+        # callbacks to post results.
         self._yaminon.finish_update()
+        super().finish_update()
         
     def join_system(self, system: System)->None:
         super().join_system(system)
