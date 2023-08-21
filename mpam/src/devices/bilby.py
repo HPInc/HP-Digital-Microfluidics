@@ -1,23 +1,25 @@
 from __future__ import annotations
 
 import pyglider
-from typing import Final, Optional, Sequence, Callable, Union
+from typing import Final, Optional, Sequence, Callable, Union, Mapping
 
 from devices import joey, glider_client, bilby_task, eselog
 from devices.glider_client import GliderClient
 from mpam.types import OnOff, State, DummyState, Delayed, \
-    AsyncFunctionSerializer, Postable, Dir
+    AsyncFunctionSerializer, Postable, Dir, MISSING
 from mpam import device
 from mpam.device import Pad, Magnet, Well
-from quantities.dimensions import Voltage, Frequency, Time
+from quantities.dimensions import Voltage, Frequency, Time, Temperature
 from quantities.temperature import TemperaturePoint, abs_C
 import logging
 from erk.errors import ErrorHandler, PRINT
 from devices.joey import HeaterType, JoeyLayout
-from erk.basic import assert_never, not_None
+from erk.basic import assert_never, not_None, map_unless_None
 from devices.eselog import ESELog, ESELogChannel, EmulatedESELog
-from quantities.SI import mV
+from quantities.SI import mV, deg_C
 from quantities.timestamp import Timestamp, time_now, time_in, sleep_until
+from functools import cached_property
+from erk.stringutils import conj_str
 
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,8 @@ class Config:
     dll_dir = bilby_task.Config.dll_dir
     config_dir = bilby_task.Config.config_dir
     voltage = bilby_task.Config.voltage
+    thermal_state_tolerance = bilby_task.Config.thermal_state_tolerance
+    remember_thermal_state_decisions = bilby_task.Config.remember_thermal_state_decisions
     
     setup_defaults = bilby_task.Config.setup_defaults
 
@@ -33,19 +37,32 @@ class Config:
 
 class Heater(device.Heater):
     remote: Final[glider_client.Heater]
+    from_remote: Final = dict[glider_client.Heater, 'Heater']()
+
+    
     def __init__(self, remote: glider_client.Heater, board: Board, *,
                  pads: Sequence[Pad],
                  wells: Sequence[Well]):
         super().__init__(board, locations=(*pads, *wells),
                          limit = 120*abs_C)
-        self.remote = remote 
+        self.remote = remote
+        self.from_remote[remote] = self 
         def update_target(old: Optional[TemperaturePoint], new: Optional[TemperaturePoint]) -> None: # @UnusedVariable
             # We indirect through the board so that MakeItSo will be called.
             # This puts heater target changes synchronous with the clock.  I'm
             # not sure that's right, but it does allow the clock to be paused.
             # Note that this means that thermocycling needs to be not completely
             # asynchronous.
-            self.board.communicate(lambda: self.remote.set_heating_target(new)) 
+            current_ts = board.current_thermal_state
+            if current_ts is None:
+                board.communicate(lambda: self.remote.set_heating_target(new))
+            elif self in current_ts.target and current_ts.target[self] == new:
+                # We're already there.  Nothing to do.
+                pass
+            else:
+                # We let the board take care of it
+                board.set_thermal_state(self, new)
+            
         update_target_key = f"Update Target for {self}"
         self.on_target_change(update_target, key = update_target_key)
         
@@ -183,9 +200,34 @@ class ESELogProxy(ESELog.Proxy):
     def reset(self) -> None:
         ...
 
-
+class ThermalState:
+    board: Final[Board]
+    remote: Final[glider_client.ThermalState]
+    target: Final[Mapping[Heater, Optional[TemperaturePoint]]]
+    from_remote: Final[dict[glider_client.ThermalState, ThermalState]] = {}
+    
+    @cached_property
+    def name(self) -> str:
+        return self.remote.name
+    
+    @cached_property
+    def number(self) -> int:
+        return self.remote.number
+    
+    def __init__(self, remote: glider_client.ThermalState, *,
+                 board: Board) -> None:
+        self.board = board
+        self.remote = remote
+        self.target = {Heater.from_remote[h]: t for h,t in remote.target.items()}
+        self.from_remote[remote] = self
+        
+    def __repr__(self) -> str:
+        return f"<ThermalState {self.number} using {self.remote}>"
+        
 class Board(joey.Board):
     _device: Final[GliderClient]
+    thermal_states: Final[Optional[Sequence[ThermalState]]]
+    current_thermal_state: Optional[ThermalState] = None
     
     def _well_pad_state(self, group_name: str, num: int) -> State[OnOff]:
         cell = self.shared_pad_cell(group_name, num)  
@@ -240,10 +282,15 @@ class Board(joey.Board):
     
     def _heaters(self) -> Sequence[Heater]:
         heater_type = joey.Config.heater_type()
-        if heater_type is HeaterType.TSRs:
+        if self._layout is JoeyLayout.V1_5:
+            # For the moment, at least, v1.5 only has RTDs in bilby
+            gt = pyglider.Heater.HeaterType.RTD
+        elif heater_type is HeaterType.TSRs:
             gt = pyglider.Heater.HeaterType.TSR
         elif heater_type is HeaterType.Paddles:
             gt = pyglider.Heater.HeaterType.Paddle
+        elif heater_type is HeaterType.RTDs:
+            gt = pyglider.Heater.HeaterType.RTD
         else:
             assert_never(heater_type)
             
@@ -323,8 +370,146 @@ class Board(joey.Board):
             self.infer_drop_motion()
             
         self.power_supply.voltage = Config.voltage()
+        thermal_states: Optional[Sequence[ThermalState]] = None
+        tstates = self._device.thermal_states
+        if tstates is not None:
+            thermal_states = [ThermalState(ts, board=self) for ts in tstates]
+            self.current_thermal_state = map_unless_None(self._device.current_thermal_state,
+                                                         ThermalState.from_remote)
+        self.thermal_states = thermal_states
         
     def update_state(self) -> None:
         self._device.update_state()
         super().update_state()
+        
+    @cached_property
+    def _ts_tolerance(self) -> Temperature:
+        return Config.thermal_state_tolerance()
+    
+    @cached_property
+    def _remember_ts_choice(self) -> bool:
+        return Config.remember_thermal_state_decisions()
+    
+    @cached_property
+    def _ts_options(self) -> dict[tuple[Heater, Optional[TemperaturePoint]],
+                                  Union[ThermalState, Sequence[ThermalState], None]]:
+        return {}
+    
+    def thermal_state_for(self, heater: Heater, 
+                          target: Optional[TemperaturePoint]) -> Delayed[Optional[ThermalState]]:
+        options = self._ts_options
+        key = (heater, target)
+        states = options.get(key, None)
+        if isinstance(states, ThermalState):
+            return Delayed.complete(states)
+        if states is None:
+            my_tstates = not_None(self.thermal_states, desc=lambda: f"{self}.thermal_states")
+            best: list[ThermalState]
+            
+            if target is None:
+                best = [ts for ts in my_tstates if ts.target.get(heater, MISSING) is None]
+            else:
+                best_delta = 1000*deg_C
+                best = []
+                for ts in my_tstates:
+                    t = ts.target.get(heater, None)
+                    if t is not None:
+                        if t >= self.ambient_temperature:
+                            delta = abs(t-target)
+                            if delta < best_delta:
+                                best = [ts]
+                                best_delta = delta
+                            elif delta == best_delta:
+                                if len(ts.target) == 1:
+                                    # If this state only affects this one target 
+                                    # and it's the closest, there's no choice.
+                                    best = [ts]
+                                else:
+                                    best.append(ts) 
+            options[key] = best
+            states = best
+        if len(states) == 0:
+            return Delayed.complete(None)
+        if len(states) == 1:
+            only_ts = states[0]
+            delta = (0*deg_C if target is None 
+                     else abs(not_None(only_ts.target[heater])-not_None(target)))
+            if delta <= self._ts_tolerance:
+                options[key] = only_ts
+                return Delayed.complete(only_ts)
+            msg = f'''
+            Heater #{heater.number} was requested to set its target to {target}.  The closest
+            thermal state to this is #{only_ts.number}, whose target for heater #{heater.number}
+            is {only_ts.target[heater]}, which is not within {self._ts_tolerance}.  Do you want
+            to apply it anyway?
+            
+            (You can change the tolerance by specifying --thermal-state-tolerance).
+            '''
+            # msg = textwrap.fill(msg, 40)
+            def on_answer(s: str) -> Optional[ThermalState]:
+                # logger.info(f"Got back '{s}'")
+                if s == "Yes":
+                    if self._remember_ts_choice:
+                        options[key] = only_ts
+                    return only_ts
+                else:
+                    return None
+            return (self
+                    .system.prompt_and_wait(msg,
+                                            title="Thermal state confirmation", 
+                                            options=("Yes", "No"))
+                    .transformed(on_answer))
+        
+        def to_state_desc(ts: ThermalState) -> str:
+            def htdesc(h: Heater, t: Optional[TemperaturePoint]) -> str:
+                if t is None: 
+                    return f"turns heater #{h.number} off"
+                else:
+                    return f"sets heater #{h.number} to {t}"
+            return f'''
+            thermal state #{ts} (which also
+            {conj_str([htdesc(h,t) for h,t in ts.target.items() if h is not heater])})
+            '''
+        states = sorted(states, key = lambda ts: ts.number)
 
+        msg = f'''
+            Heater #{heater.number} was requested to set its target to {target}.  
+            There are {len(states)} that are closest to that target:
+            {conj_str([to_state_desc(ts) for ts in states])}.  Which, if any,
+            would you like to use.
+        '''
+        # msg = textwrap.fill(msg, 40)
+        from_string = { f"#{ts.number}": ts for ts in states }
+        def on_choice(s: str) -> Optional[ThermalState]:
+            ts = from_string.get(s, None)
+            if ts is not None and self._remember_ts_choice:
+                options[key] = ts
+            return ts
+        buttons = ["None", *("f{ts.number} for ts in states")]
+        return (self.system
+                .prompt_and_wait(msg,
+                                 title = "Thermal state selection", 
+                                 options = buttons)
+                .transformed(on_choice)
+                )
+            
+    def set_thermal_state(self, heater: Heater, target: Optional[TemperaturePoint]) -> None:
+        def with_thermal_state(thermal_state: Optional[ThermalState]) -> None:
+            # At this point, we either have the one to set or we have None, indicating
+            # that we will never get there.  I'm not sure what to do in that case,
+            # but I'm leaning toward not doing anything. 
+            if thermal_state is None:
+                return
+            # There are three things to do here.  (1) Note the ThermalState
+            # we're going to, (2) tell the device to go there, and (3) reset the
+            # targets for all of the heaters in the state.  Since we're setting
+            # to the exact temperature of our current state's target for each
+            # heater, we won't get any further calls.
+            self.current_thermal_state = thermal_state
+            ts_remote = thermal_state.remote
+            self.communicate(lambda: self._device.set_thermal_state(ts_remote))
+            for h,t in thermal_state.target.items():
+                h.target = t
+        (self.thermal_state_for(heater, target)
+         .then_call(with_thermal_state))
+        ...

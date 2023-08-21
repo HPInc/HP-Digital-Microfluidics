@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import pyglider
 from typing import Union, Optional, Final, Generic, TypeVar, Callable, List,\
-    cast, Sequence
+    cast, Sequence, Mapping
 from mpam.types import State, OnOff, MISSING, MissingOr
 from os import PathLike
 from quantities.temperature import TemperaturePoint, abs_C
@@ -13,7 +13,7 @@ import pathlib
 from functools import cached_property
 import logging
 from pyglider import ErrorCode
-from erk.basic import ValOrFn, ensure_val
+from erk.basic import ValOrFn, ensure_val, map_unless_None
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +115,7 @@ class Magnet(BinState[pyglider.Magnet, pyglider.Magnet.MagnetState]):
 class Heater:
     name: Final[str]
     remote: Final[pyglider.Heater]
+    from_remote: Final = dict[pyglider.Heater, 'Heater']()
     
     @cached_property
     def is_heater(self) -> bool:
@@ -129,6 +130,7 @@ class Heater:
     def __init__(self, name: str, remote: pyglider.Heater) -> None:
         self.name = name
         self.remote = remote
+        self.from_remote[remote] = self
         # htype = self.remote.GetType()
         # print(f"{self}'s type is {htype} ({id(htype)})")
         
@@ -155,11 +157,68 @@ class Heater:
         # print(f"Setting target for {self.name} to {target}")
         self.remote.SetTargetTemperatureChilling(temp)
         
+        
+class ThermalState:
+    remote: Final[pyglider.ThermalState]
+    target: Final[Mapping[Heater, Optional[TemperaturePoint]]]
+    from_remote: Final = dict[pyglider.ThermalState, 'ThermalState']()
+    
+    @cached_property
+    def name(self) -> str:
+        return self.remote.GetName()
+    
+    @cached_property
+    def number(self) -> int:
+        return self.remote.GetNumber()
+    
+    @property
+    def is_default(self) -> bool:
+        return self.number == 0
+    
+    @property
+    def status(self) -> pyglider.ThermalState.ThermalStateStatus:
+        return self.remote.GetStatus()
+    
+    @property
+    def is_transitioning(self) -> bool:
+        return self.status is pyglider.ThermalState.ThermalStateStatus.Transitioning
+    
+    @property
+    def is_ready(self) -> bool:
+        return self.status is pyglider.ThermalState.ThermalStateStatus.Ready
+
+    @property
+    def is_available(self) -> bool:
+        return self.status is pyglider.ThermalState.ThermalStateStatus.Available
+    
+    @property
+    def is_unavailable(self) -> bool:
+        return self.status is pyglider.ThermalState.ThermalStateStatus.Unavailable
+    
+    def __init__(self, remote: pyglider.ThermalState) -> None:
+        self.remote = remote
+        self.from_remote[remote] = self
+        targets = dict[Heater, Optional[TemperaturePoint]]()
+        self.target = targets
+        
+        for target in remote.GetTargets():
+            heater = Heater.from_remote[target.heater]
+            target_temp = target.target
+            targets[heater] = None if target_temp == 0 else target_temp*abs_C 
+        
+    def __repr__(self) -> str:
+        return f"<ThermalState {self.name}>"
+    
+    
+    
+    
+        
 class GliderClient:
     remote: Final[pyglider.Board]
     electrodes: Final[dict[str, Electrode]]
     heaters: Final[dict[str, Heater]]
     magnets: Final[dict[str, Magnet]]
+    thermal_states: Final[Optional[Sequence[ThermalState]]]
     # remote_electrodes: Final[dict[str, pyglider.Electrode]]
     
     _voltage_level: Optional[Voltage] = None 
@@ -199,6 +258,11 @@ class GliderClient:
                 return ESELog(s)
         return None
     
+    @property
+    def current_thermal_state(self) -> Optional[ThermalState]:
+        return map_unless_None(self.remote.GetCurrentThermalState(),
+                               ThermalState.from_remote)
+            
     def __init__(self, board_type: pyglider.BoardId, *,
                  revision: float,
                  dll_dir: Optional[Union[str, PathLike]] = None,
@@ -223,6 +287,8 @@ class GliderClient:
         self.electrodes = {}
         self.heaters = {n: Heater(n, h) for h,n in ((ph, ph.GetName()) for ph in self.remote.GetHeaters()) }
         self.magnets = {n: Magnet(n, h) for h,n in ((pm, pm.GetName()) for pm in self.remote.GetMagnets()) }
+        thermal_states = tuple(ThermalState(ts) for ts in self.remote.GetThermalStates())
+        self.thermal_states = None if len(thermal_states) == 0 else thermal_states
         n = self.remote.GetHighVoltage()
         if isinstance(n, pyglider.ErrorCode):
             logger.error(f"Error {n} returned trying to read voltage level.")
@@ -285,6 +351,8 @@ class GliderClient:
                 self.magnets[name] = m
         return m
     
+    def set_thermal_state(self, thermal_state: ThermalState) -> None:
+        self.remote.SetThermalState(thermal_state.remote)
     
     
 class Sensor:

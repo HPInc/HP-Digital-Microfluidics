@@ -761,7 +761,7 @@ class TwiddleBinaryValue(CallableValue):
         self.check_arity(args)
         bc = args[0]
         assert isinstance(bc, BinaryComponent)
-        return self.op.schedule_for(bc).transformed(to_const(None))
+        return self.op.schedule_for(bc).to_const(None)
     
     def __str__(self) -> str:
         if self is TwiddleBinaryValue.ON:
@@ -889,7 +889,7 @@ class PromptValue(InjectableStatementValue):
         return f"Prompt({self.prompt})"
         
     def invoke(self)->Delayed[None]:
-        return self.system.prompt_and_wait(prompt=self.prompt)
+        return self.system.prompt_and_wait(prompt=self.prompt).to_const(None)
     
     
 
@@ -3000,27 +3000,20 @@ class DMLCompiler(dmlVisitor):
             return self.error(what_ctx, Type.NO_VALUE, 
                               f"Not an injection target ({what.return_type.name}): {self.text_of(what_ctx)}")
         injected_type = who.return_type
-        # if injected_type <= Type.MOTION:
-        #     injected_type = Type.MOTION
-        # if injected_type <= Type.TWIDDLE_OP:
-        #     injected_type = Type.TWIDDLE_OP
 
         do_injection: Callable[[Any, CallableValue, Type], Delayed[MaybeError[Any]]]
         if target_kind is CallableTypeKind.TRANSFORM:
             required_type = target_type.param_types[0]
             do_injection = lambda v, fn, t: (t.checked_convert_to(required_type, v)
                                              .chain(error_check_delayed(fn)))
-            # do_injection = lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
         elif target_kind is CallableTypeKind.MONITOR:
             required_type = target_type.param_types[0]
             do_injection = lambda v, fn, t: (t.checked_convert_to(required_type, v)
                                              .chain(error_check_delayed(fn))
-                                             .transformed(to_const(v)))
-            # do_injection = (lambda v, fn, t: error_check_delayed(lambda x: fn.apply((t.checked_convert_to(required_type, x),)))(v)
-            #                 .transformed(to_const(v)))
+                                             .to_const(v))
         elif target_kind is CallableTypeKind.ACTION:
             required_type = Type.ANY
-            do_injection = lambda v, fn, _: fn.apply(()).transformed(to_const(v)) 
+            do_injection = lambda v, fn, _: fn.apply(()).to_const(v) 
         else:
             assert_never(target_kind)
             

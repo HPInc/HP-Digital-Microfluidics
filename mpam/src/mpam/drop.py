@@ -8,7 +8,7 @@ from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
     Sequence, Mapping, NamedTuple, cast, Any, ClassVar
 import logging
 
-from erk.basic import not_None, ComputedDefaultDict, Count, to_const
+from erk.basic import not_None, ComputedDefaultDict, Count
 from erk.errors import FIX_BY, PRINT
 from erk.stringutils import map_str
 from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
@@ -654,7 +654,7 @@ class Blob(OpScheduler['Blob']):
                 return Delayed.complete(None)
             first = pads[0]
             if npads == 1:
-                return modifier.schedule_for(first).transformed(to_const(None))
+                return modifier.schedule_for(first).to_const(None)
             future = Postable[None]()
             barrier = Barrier(npads)
             barrier.wait(None, future)

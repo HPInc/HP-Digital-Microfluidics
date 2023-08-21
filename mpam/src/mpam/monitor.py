@@ -39,7 +39,7 @@ from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C, TemperaturePoint
 from quantities.timestamp import time_now, Timestamp
 from weakref import WeakKeyDictionary
-from erk.stringutils import match_width, conj_str
+from erk.stringutils import match_width, conj_str, unwrap_text
 import traceback
 from argparse import _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
@@ -898,43 +898,42 @@ class InputBox(TextBox):
             return
         TextBox._keypress(self, event)
         
-class NonBlockingDialog:
-    root: Final[tkinter.Tk]
-    window: Final[tkinter.Toplevel]
+class NonBlockingDialog(tkinter.Toplevel):
     def __init__(self, root: tkinter.Tk, *, 
                  message: Optional[str],
                  buttons: Sequence[str],
                  on_click: Callable[[str], Any],
-                 title: str = "User Action Required") -> None:
-        self.root = root
+                 title: Optional[str] = None) -> None:
+        super().__init__(root)
+        if title is None:
+            title = "User Action Required"
         self.on_click: Final = on_click
-        self.window = tkinter.Toplevel(root)
-        self.window.title(title)  # this line sets the window's title
-        self.window.attributes('-topmost', 1)
+        self.title(title)  # this line sets the window's title
+        self.attributes('-topmost', 1)
 
         title_font = tkinter.font.Font(size=14, weight="bold")
-        title_label = tkinter.Label(self.window, text=title, font=title_font)
-        title_label.pack()
+        title_label = tkinter.Label(self, text=title, font=title_font)
+        title_label.pack(padx=20, pady=10)
         
-        tkinter.Frame(self.window, height=2, bg="black").pack(fill='x')
+        # tkinter.Frame(self.window, height=2, bg="black").pack(fill='x')
 
-        if message is not None:        
-            label = tkinter.Label(self.window, text=message, wraplength=200)
-            label.pack()
+        if message is not None:
+            message = unwrap_text(message)
+            label = tkinter.Label(self, text=message, wraplength=300)
+            label.pack(padx=20, pady=10)
+            
+        button_frame = tkinter.Frame(self)
+        button_frame.pack(padx=20, pady=10)
 
         for button_text in buttons:
-            button = tkinter.Button(self.window, text=button_text, command=lambda: self.button_clicked(button_text))
-            button.pack(pady=5)
+            def make_cb(text: str) -> Callable[[], None]:
+                def cb() -> None:
+                    (self.on_click)(text)
+                    self.destroy()
+                return cb
+            button = tkinter.Button(button_frame, text=button_text, command=make_cb(button_text))
+            button.pack(padx=20, side=tkinter.LEFT)
             
-        self.window.update_idletasks()  # update window size
-        width = max(self.window.winfo_width(), len(title) * 8)  # adjust width to title        
-        x = root.winfo_rootx() + (root.winfo_width() - self.window.winfo_width()) // 2
-        y = root.winfo_rooty() + (root.winfo_height() - self.window.winfo_height()) // 2
-        self.window.geometry(f"{width}x{self.window.winfo_height()}+{x}+{y}")  # adjust width and position
-
-    def button_clicked(self, text: str) -> None:
-        (self.on_click)(text)
-        self.window.destroy()
         
 
 class BoardMonitor:
@@ -1329,11 +1328,13 @@ class BoardMonitor:
         
     def prompt_user(self, *,
                     message: str,
+                    title: Optional[str] = None,
                     on_click: Callable[[str], None],
                     buttons: Sequence[str]) -> None:
         def open_dialog_box() -> None:
             root = self.figure.canvas._tkcanvas.master
-            NonBlockingDialog(root, message=message, on_click=on_click, buttons=buttons)
+            NonBlockingDialog(root, message=message, title=title, 
+                              on_click=on_click, buttons=buttons)
         self.in_display_thread(open_dialog_box)
 
     def in_display_thread(self, cb: Callback) -> None:

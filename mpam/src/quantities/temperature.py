@@ -81,6 +81,11 @@ class TemperaturePoint:
     def __hash__(self) -> int:
         return hash(self.absolute)
     
+    def __eq__(self, rhs: object) -> bool:
+        if not isinstance(rhs, TemperaturePoint): 
+            return False
+        return self.absolute == rhs.absolute
+    
     def __lt__(self, rhs: TemperaturePoint) -> bool:
         return self.absolute < rhs.absolute
 

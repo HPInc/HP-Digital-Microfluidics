@@ -14,7 +14,8 @@ __all__ = [
     "ErrorCode",
     "Heater",
     "Magnet",
-    "Sensor"
+    "Sensor",
+    "ThermalState"
 ]
 
 
@@ -73,6 +74,7 @@ class Board():
         """
         Gets the number of rows for the board
         """
+    def GetCurrentThermalState(self) -> typing.Optional[ThermalState]: ...
     def GetElectrodes(self) -> typing.List[Electrode]: 
         """
         Gets a list containing each electrode object on the board
@@ -96,6 +98,10 @@ class Board():
     def GetSupportedBoardRevisions(self) -> typing.List[float]: 
         """
         Gets a vector of supported board revisions
+        """
+    def GetThermalStates(self) -> typing.List[ThermalState]: 
+        """
+        Get a list containing each supported thermal state
         """
     def HeaterNamed(self, name: str) -> typing.Optional[Heater]: 
         """
@@ -121,9 +127,14 @@ class Board():
         """
         Set the high voltage as a number of volts
         """
+    def SetThermalState(self, new_state: ThermalState) -> typing.Optional[ThermalState]: ...
     def Status(self) -> typing.Optional[ErrorCode]: 
         """
         Returns the of board after initialization
+        """
+    def ThermalStateNamed(self, name: str) -> typing.Optional[ThermalState]: 
+        """
+        Find the thermal state (if any) with the given name
         """
     def test(self) -> str: ...
     pass
@@ -569,6 +580,8 @@ class Heater():
 
           Peltier
 
+          RTD
+
           Unknown
         """
         def __eq__(self, other: object) -> bool: ...
@@ -592,9 +605,10 @@ class Heater():
             """
         Paddle: pyglider.Heater.HeaterType # value = <HeaterType.Paddle: 0>
         Peltier: pyglider.Heater.HeaterType # value = <HeaterType.Peltier: 2>
+        RTD: pyglider.Heater.HeaterType # value = <HeaterType.RTD: 3>
         TSR: pyglider.Heater.HeaterType # value = <HeaterType.TSR: 1>
         Unknown: pyglider.Heater.HeaterType # value = <HeaterType.Unknown: 255>
-        __members__: dict # value = {'Paddle': <HeaterType.Paddle: 0>, 'TSR': <HeaterType.TSR: 1>, 'Peltier': <HeaterType.Peltier: 2>, 'Unknown': <HeaterType.Unknown: 255>}
+        __members__: dict # value = {'Paddle': <HeaterType.Paddle: 0>, 'TSR': <HeaterType.TSR: 1>, 'Peltier': <HeaterType.Peltier: 2>, 'RTD': <HeaterType.RTD: 3>, 'Unknown': <HeaterType.Unknown: 255>}
         pass
     def GetCoolingRate(self) -> float: 
         """
@@ -802,4 +816,67 @@ class ESElog(Sensor):
     OnDelayLED2Param: pyglider.ConfigParam.ForUShort
     StartModeParam: pyglider.ConfigParam.ForUInt
     TriggerDelayParam: pyglider.ConfigParam.ForUShort
+    pass
+class ThermalState():
+    class ThermalStateStatus():
+        """
+        Members:
+
+          Unavailable
+
+          Available
+
+          Transitioning
+
+          Ready
+
+          Unknown
+        """
+        def __eq__(self, other: object) -> bool: ...
+        def __getstate__(self) -> int: ...
+        def __hash__(self) -> int: ...
+        def __index__(self) -> int: ...
+        def __init__(self, value: int) -> None: ...
+        def __int__(self) -> int: ...
+        def __ne__(self, other: object) -> bool: ...
+        def __repr__(self) -> str: ...
+        def __setstate__(self, state: int) -> None: ...
+        @property
+        def name(self) -> str:
+            """
+            :type: str
+            """
+        @property
+        def value(self) -> int:
+            """
+            :type: int
+            """
+        Available: pyglider.ThermalState.ThermalStateStatus # value = <ThermalStateStatus.Available: 1>
+        Ready: pyglider.ThermalState.ThermalStateStatus # value = <ThermalStateStatus.Ready: 3>
+        Transitioning: pyglider.ThermalState.ThermalStateStatus # value = <ThermalStateStatus.Transitioning: 2>
+        Unavailable: pyglider.ThermalState.ThermalStateStatus # value = <ThermalStateStatus.Unavailable: 0>
+        Unknown: pyglider.ThermalState.ThermalStateStatus # value = <ThermalStateStatus.Unknown: 255>
+        __members__: dict # value = {'Unavailable': <ThermalStateStatus.Unavailable: 0>, 'Available': <ThermalStateStatus.Available: 1>, 'Transitioning': <ThermalStateStatus.Transitioning: 2>, 'Ready': <ThermalStateStatus.Ready: 3>, 'Unknown': <ThermalStateStatus.Unknown: 255>}
+        pass
+    class ThermalStateTarget():
+        @property
+        def heater(self) -> Heater:
+            """
+            :type: Heater
+            """
+        @property
+        def target(self) -> float:
+            """
+            :type: float
+            """
+        @property
+        def targetActual(self) -> float:
+            """
+            :type: float
+            """
+        pass
+    def GetName(self) -> str: ...
+    def GetNumber(self) -> int: ...
+    def GetStatus(self) -> ThermalState.ThermalStateStatus: ...
+    def GetTargets(self) -> typing.List[ThermalState.ThermalStateTarget]: ...
     pass

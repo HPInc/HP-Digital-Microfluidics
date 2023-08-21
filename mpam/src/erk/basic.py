@@ -1,12 +1,13 @@
 from __future__ import annotations
 from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast,\
-    NoReturn, Any
+    NoReturn, Any, Mapping
 from threading import Lock
 from re import Pattern
 import re
 
 _T = TypeVar('_T')
 _H = TypeVar('_H', bound=Hashable)
+_V = TypeVar('_V')
 
 _ValTuple = tuple[bool, _T]
 
@@ -81,6 +82,12 @@ def not_None(x: Optional[_T], *,
 def if_not_None(x: Optional[_T], fn: Callable[[_T], Any]) -> None:
     if x is not None:
         fn(x)
+        
+def call_unless_None(obj: Optional[_T], fn: Callable[[_T], _V]) -> Optional[_V]:
+    return None if obj is None else fn(obj)
+
+def map_unless_None(obj: Optional[_T], m: Mapping[_T, _V]) -> Optional[_V]:
+    return None if obj is None else m[obj]
 
 
 def always(val: _T) -> Callable[[], _T]:
@@ -88,7 +95,7 @@ def always(val: _T) -> Callable[[], _T]:
 
 def to_const(val: _T) -> Callable[[Any], _T]:
     return lambda _: val
-        
+
 class ComputedDefaultDict(dict[_H,_T]):
     def __init__(self, factory: Callable[[_H], _T]):
         self.factory = factory

@@ -2,7 +2,7 @@ volume initial_fill    = 10uL;
   time mix_time        = 5 seconds;
   time incubation_time = 1 hour;
   temp incubation_temp = 50C;
-heater incubator       = heater #2;
+heater incubator       = heater #4;
 
 def speed_up {
   incubation_time = 3 seconds;

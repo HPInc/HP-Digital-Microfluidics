@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, Final, Mapping, Union, cast, Sequence, Any
 from erk.basic import LazyPattern
+import textwrap
 
 _camel_case_re = LazyPattern('(?:^[a-z]|[A-z])[a-z0-9_]*')
 
@@ -102,6 +103,12 @@ def match_width(string: str, *, repeating: str = "-") -> str:
     if part > 0:
         val += repeating[0:part]
     return val
+
+def unwrap_text(text: str) -> str:
+    dedented_text = textwrap.dedent(text).strip()
+    paragraphs = dedented_text.split('\n\n')
+    unwrapped_paragraphs = [' '.join(p.splitlines()) for p in paragraphs]
+    return '\n\n'.join(unwrapped_paragraphs)
     
 
 if __name__ == '__main__':

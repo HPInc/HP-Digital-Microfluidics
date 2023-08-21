@@ -420,6 +420,9 @@ class Quantity:
     def __sub__(self: D, rhs: D) -> D:
         self._ensure_dim_match(rhs, "-")
         return self.same_dim(self.magnitude-rhs.magnitude)
+    
+    def __abs__(self: D) -> D:
+        return -self if self < 0 else self
 
     def __eq__(self, rhs: object) -> bool:
         if isinstance(rhs, int) and rhs == 0:

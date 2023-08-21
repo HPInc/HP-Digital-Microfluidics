@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
 class HeaterType(Enum):
     TSRs = auto()
     Paddles = auto()
+    RTDs = auto()
     
     @classmethod
     def from_name(cls, name: str) -> HeaterType:
@@ -99,7 +100,7 @@ lid_type_arg_names = {
     }
 
 class Config:
-    heater_type: Final = ConfigParam(HeaterType.TSRs)
+    heater_type: Final = ConfigParam[HeaterType](HeaterType.TSRs)
     layout: Final = ConfigParam(JoeyLayout.V1)
     holes: Final = ConfigParam[Sequence[XYCoord]]([])
     default_holes: Final = ConfigParam(True)
@@ -255,7 +256,8 @@ class Board(device.Board):
                                   return_rate = 10*deg_C_per_sec,
                                   noise_sd = 0.05*deg_C)
         regions: Sequence[Sequence[GridRegion]]
-        if heater_type is HeaterType.TSRs:
+        if (heater_type is HeaterType.TSRs
+            or heater_type is HeaterType.RTDs):
             regions = ([GridRegion(XYCoord(1,13),3,7)],
                        [GridRegion(XYCoord(1,1),3,7)],
                        [GridRegion(XYCoord(9,13),3,7)],
@@ -639,12 +641,21 @@ class PlatformTask(PlatformChoiceTask):
                            *, exerciser:Exerciser)->None:
         group = self.heater_group(parser)
         Config.heater_type.add_choice_arg_to(group, (HeaterType,
-                                                     { "tsr": HeaterType.TSRs,
+                                                     { 
+                                                       "tsr": HeaterType.TSRs,
                                                        "TSR": HeaterType.TSRs,
+                                                       "tsrs": HeaterType.TSRs,
+                                                       "TSRs": HeaterType.TSRs,
                                                        "paddle": HeaterType.Paddles,
+                                                       "paddles": HeaterType.Paddles,
                                                        "PADDLE": HeaterType.Paddles,
+                                                       "rtd": HeaterType.RTDs,
+                                                       "RTD": HeaterType.RTDs,
+                                                       "rtds": HeaterType.RTDs,
+                                                       "RTDs": HeaterType.RTDs,
                                                       }), 
                                              '--heaters', metavar="TYPE",
+                                             
                                              help = "The type of heater to use.")
         super().add_heater_args_to(parser, exerciser=exerciser)
 

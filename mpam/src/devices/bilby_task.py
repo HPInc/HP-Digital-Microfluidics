@@ -1,11 +1,12 @@
 from __future__ import annotations
 from devices import joey
 from typing import Optional, Sequence, Union, Callable
-from argparse import Namespace, _ArgumentGroup, ArgumentParser
+from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
+    BooleanOptionalAction
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser,\
     PlatformChoiceTask
-from quantities.SI import volts
-from mpam.cmd_line import voltage_arg
+from quantities.SI import volts, deg_C
+from mpam.cmd_line import voltage_arg, rel_temperature_arg
 from erk.basic import assert_never
 from erk.config import ConfigParam
 from os import PathLike
@@ -17,6 +18,8 @@ class Config:
     dll_dir = ConfigParam[Optional[Union[str, PathLike]]](None)
     config_dir = ConfigParam[Optional[Union[str, PathLike]]](None)
     voltage = ConfigParam(60*volts)
+    thermal_state_tolerance = ConfigParam(0*deg_C)
+    remember_thermal_state_decisions = ConfigParam(True)
 
     _defaults_set_up = False
     @classmethod
@@ -96,5 +99,18 @@ class PlatformTask(joey.PlatformTask):
                                    The voltage to set.  A value of 0V disables
                                    the high voltage.  Any other value enables it.
                                    ''')
+        Config.thermal_state_tolerance.add_arg_to(group, "--thermal-state-tolerance", 
+                                                  type=rel_temperature_arg, metavar="TEMP", 
+                                  help=f'''
+                                   When choosing a thermal state to use, the allowed tolerance
+                                   to use without prompting the user for confirmation.
+                                   ''')
+        Config.remember_thermal_state_decisions.add_arg_to(group, "--remember-thermal-state-decisions",
+                                                           action=BooleanOptionalAction,
+                                  help=f'''
+                                   Whether to remember (and not prompt again for) the choice of
+                                   a thermal state when asking for a target temperature for a heater
+                                   ''')
+
         
 

@@ -5,8 +5,10 @@ from _collections import defaultdict
 from erk.stringutils import conj_str
 import re
 from argparse import ArgumentTypeError
-from quantities.dimensions import Time, Volume, Voltage, Frequency
-from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz
+from quantities.dimensions import Time, Volume, Voltage, Frequency, Temperature,\
+    TemperatureUnit
+from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz,\
+    deg_C, deg_K
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from quantities import temperature
 from quantities.prefixes import kilo, milli
@@ -14,6 +16,7 @@ from mpam.types import logging_levels, logging_formats, LoggingSpec,\
     LoggingLevel, XYCoord
 from re import Pattern
 from erk.network import canonicalize_ip_addr
+from quantities.US import deg_F
 
 Q_ = TypeVar("Q_", bound = Quantity)
 
@@ -128,23 +131,45 @@ def volume_arg(arg: str) -> Union[Volume,float]:
         return float(m.group(1))
     return ArgUnits.parse_arg(Volume, arg, default = "30uL' or '2drops")
 
-temperature_arg_scales: Final[Mapping[str, temperature.Scale]] = {
+abs_temperature_arg_scales: Final[Mapping[str, temperature.Scale]] = {
     "C": abs_C,
     "K": abs_K,
     "F": abs_F,
     }
 
-temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(temperature_arg_scales)})")
+abs_temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(abs_temperature_arg_scales)})")
 
-def temperature_arg(arg: str) -> TemperaturePoint:
-    m = temperature_arg_re.fullmatch(arg)
+def abs_temperature_arg(arg: str) -> TemperaturePoint:
+    m = abs_temperature_arg_re.fullmatch(arg)
     if m is None:
         raise ArgumentTypeError(f"""
                     {arg} not parsable as a temperature value.
                     Requires a number followed immediately by units, e.g. '40C' or '200F'""")
     n = float(m.group(1))
     ustr = m.group(2)
-    unit = temperature_arg_scales.get(ustr, None)
+    unit = abs_temperature_arg_scales.get(ustr, None)
+    if unit is None:
+        raise ValueError(f"{ustr} is not a known temperature unit")
+    val = n*unit
+    return val
+
+rel_temperature_arg_scales: Final[Mapping[str, TemperatureUnit]] = {
+    "C": deg_C,
+    "K": deg_K,
+    "F": deg_F,
+    }
+
+rel_temperature_arg_re: Final[Pattern] = re.compile(f"(\\d+(?:.\\d+)?)({'|'.join(rel_temperature_arg_scales)})")
+
+def rel_temperature_arg(arg: str) -> Temperature:
+    m = rel_temperature_arg_re.fullmatch(arg)
+    if m is None:
+        raise ArgumentTypeError(f"""
+                    {arg} not parsable as a temperature value.
+                    Requires a number followed immediately by units, e.g. '2C' or '0.5F'""")
+    n = float(m.group(1))
+    ustr = m.group(2)
+    unit = rel_temperature_arg_scales.get(ustr, None)
     if unit is None:
         raise ValueError(f"{ustr} is not a known temperature unit")
     val = n*unit

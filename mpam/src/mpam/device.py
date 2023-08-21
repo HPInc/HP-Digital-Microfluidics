@@ -3306,30 +3306,6 @@ class TemperatureControl(ABC, BinaryComponent['TemperatureControl'], ExternalCom
     or the minimum `.TemperaturePoint` this :class:`TemperatureControl` can chill to, if known
     """
     
-    # max_heat_temperature: Final[Optional[TemperaturePoint]]
-    # """
-    # The maximum `.TemperaturePoint` this :class:`TemperatureControl` can heat to, or
-    # ``None`` if this :class:`TemperatureControl` only chills
-    # """
-    # @property
-    # def can_heat(self) -> bool:
-    #     """
-    #     Can this :class:`TemperatureControl` heat (as opposed to only chilling)?
-    #     """
-    #     return self.max_heat_temperature is not None
-    #
-    # min_chill_temperature: Final[Optional[TemperaturePoint]]
-    # """
-    # The minimum `.TemperaturePoint` this :class:`TemperatureControl` can chill to, or
-    # ``None`` if this :class:`TemperatureControl` only heats
-    # """
-    # @property
-    # def can_chill(self) -> bool:
-    #     """
-    #     Can this :class:`TemperatureControl` chill (as opposed to only heating)?
-    #     """
-    #     return self.min_chill_temperature is not None
-    
     _lock: Final[RLock]
     """
     An internal lock guarding changes
@@ -4985,7 +4961,7 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
         prompt = f"Aim {what} at pad ({target.column}, {target.row})"
         system = self.board.system
         def do_prompt(_ignored: Optional[Any]=None) -> Delayed[None]:
-            return system.prompt_and_wait(prompt)
+            return system.prompt_and_wait(prompt).to_const(None)
         if laser is None:
             return do_prompt()
         future = (laser.schedule(Laser.TurnOn)
@@ -5759,28 +5735,30 @@ class System:
         return val
     
     def prompt_and_wait(self, prompt: Optional[str] = None, *,
-                        future: Optional[Postable[None]]=None 
-                        ) -> Delayed[None]:
+                        future: Optional[Postable[str]]=None,
+                        options: Optional[Sequence[str]] = None,
+                        title: Optional[str] = None
+                        ) -> Delayed[str]:
         if future is None:
-            future = Postable[None]()
+            future = Postable[str]()
+        if options is None or len(options) == 0:
+            options = ("Done")
         nn_future = future
-        if self.monitor is not None:
-            real_monitor = self.monitor
+        monitor = self.monitor
+        if monitor is not None:
             def doit() -> None:
-                selected = Postable[str]()
                 def on_click(which: str) -> None:
-                    selected.post(which)
+                    future.post(which)
                 msg = prompt if prompt is not None else  "I hope you know what to do."
-                real_monitor.prompt_user(message=msg, on_click=on_click, buttons=["Done"])  
-                selected.wait()
-                nn_future.post(None)
+                monitor.prompt_user(message=msg, on_click=on_click, buttons=options, title=title)  
+                future.wait()
         else:
             def doit() -> None:
                 if prompt is not None:
                     print(prompt)
                 print("Hit <RETURN> to continue.")
                 input()
-                nn_future.post(None)
+                nn_future.post(options[0])
         self.terminal_interaction.enqueue(doit)
         return future
     
