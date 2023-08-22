@@ -23,13 +23,13 @@ from langsup.type_supp import Type, CallableType, Signature, Attr,\
 from mpam.device import Pad, Board, BinaryComponent, Well,\
     WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
     Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor,\
-    TemperatureMode, Clock
+    TemperatureMode, Clock, ExternalComponent
 from mpam.drop import Drop, DropStatus
 from mpam.paths import Path
 from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
     Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr,\
     not_Missing, Sample
-from quantities.core import Unit, Dimensionality, NamedDim
+from quantities.core import Unit, Dimensionality, NamedDim, Quantity
 from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from erk.stringutils import map_str, conj_str
 import math
@@ -485,7 +485,7 @@ class UnsafeWalkValue(MotionValue):
 class RemoveDropValue(MotionValue):
     def move(self, drop:Drop)->Delayed[Drop]:
         if drop.status is not DropStatus.ON_BOARD:
-            print(f"{drop} is not on board.  Cannot remove")
+            print(f"{Type.DROP.format_val(drop)} is not on board.  Cannot remove")
         else:
             if drop.status is DropStatus.ON_BOARD:
                 drop.pad.drop = None
@@ -847,7 +847,7 @@ class PauseUntilValue(InjectableStatementValue):
         self.condition = condition
         self._desc = desc
         
-    def __str(self) -> str:
+    def __str__(self) -> str:
         return f"PauseUntil(\"{self.desc}\")"
     
     def invoke(self) -> Delayed[MaybeError[None]]:
@@ -880,7 +880,12 @@ class PromptValue(InjectableStatementValue):
         prompt: Optional[str] = None
         if len(vals) > 0:
             output = io.StringIO()
-            print(*vals, file=output, end="")
+            def to_str(v: Any) -> str:
+                if isinstance(v, str):
+                    return v
+                else:
+                    return Type.format_default(v)
+            print(*[to_str(v) for v in vals], file=output, end="")
             prompt = output.getvalue()
             output.close()
         self.prompt = prompt
@@ -931,7 +936,8 @@ class WellGateValue(NamedTuple):
     well: Well
     
     def __str__(self) -> str:
-        return str(self.pad)
+        return Type.WELL_GATE.format_val(self.pad)
+        # return str(self.pad)
         # if isinstance(pad.loc, Well):
         #     return str(pad)
         # else:
@@ -2306,7 +2312,12 @@ class DMLCompiler(dmlVisitor):
         arg_text = (self.text_of(c) for c in ctx.vals)
         def print_vals(*vals: Any) -> Delayed[BoundImmediateAction]:
             def do_print() -> None:
-                print(*vals)
+                def to_str(v: Any) -> str:
+                    if isinstance(v, str):
+                        return v
+                    else:
+                        return Type.format_default(v)
+                print(*(to_str(v) for v in vals))
             name = f"print({', '.join(arg_text)})"
             return Delayed.complete(BoundImmediateAction(do_print, name = name))
         vals = tuple(self.visit(c) for c in ctx.vals)
@@ -3773,7 +3784,8 @@ class DMLCompiler(dmlVisitor):
         fn.register_all_immediate([((Type.ANY,) * 10, Type.NO_VALUE) for n in range(1, 8)],
                                                   print)
         fn = Functions["STRING"]
-        fn.register_immediate((Type.ANY,), Type.STRING, str)
+        fn.register_immediate((Type.ANY,), Type.STRING, 
+                              lambda v: v if isinstance(v, str) else Type.format_default(v))
         fn = Functions["#is on"]
         fn.register_immediate((Type.BINARY_CPT,), Type.BOOL, lambda c: c.current_state is OnOff.ON)
         fn = Functions["#is off"]
@@ -4093,6 +4105,7 @@ class DMLCompiler(dmlVisitor):
             d.pad = p
             d.status = DropStatus.ON_BOARD
         Attributes["pad"].register(Type.DROP, Type.PAD, lambda drop: drop.pad, setter=set_pad)
+        Attributes["pad"].register(Type.EXTRACTION_POINT, Type.PAD, lambda ep: ep.pad)
         for a in ("row", "y coord", "y coordinate"):
             Attributes[a].register(Type.PAD, Type.INT, lambda pad: pad.row)
         for a in ("col", "column", "x coord", "x coordinate"):
@@ -4108,7 +4121,9 @@ class DMLCompiler(dmlVisitor):
         Attributes["magnitude"].register(Type.TICKS, Type.INT, lambda q: q.magnitude)
         Attributes["length"].register(Type.STRING, Type.INT, lambda s: len(s))
         Attributes["number"].register(Type.WELL, Type.INT, lambda w : w.number)
-        Attributes["number"].register((Type.HEATER, Type.CHILLER), Type.INT, lambda h : h.number)
+        Attributes["number"].register((Type.HEATER, Type.CHILLER, Type.MAGNET, Type.EXTRACTION_POINT,
+                                       Type.SENSOR), 
+                                      Type.INT, lambda h : h.number)
         
         Attributes["volume"].register([Type.LIQUID, Type.WELL], Type.VOLUME, lambda d: d.volume)
         Attributes["volume"].register(Type.DROP, Type.VOLUME, lambda d: d.blob_volume)
@@ -4282,7 +4297,83 @@ class DMLCompiler(dmlVisitor):
             Attributes[a].register(Type.CLOCK, Type.FREQUENCY, lambda c: c.update_rate,
                                    setter=set_update_rate)
         
+    @classmethod    
+    def setup_printing(cls) -> None:
+        def print_liquid(liquid: Liquid, **options: Any) -> str:
+            r = Type.REAGENT.format_val(liquid.reagent, **options)
+            v = Type.VOLUME.format_val(liquid.volume, **options)
+            return f"{v} of {r}"
+        Type.register_default_formatter(Liquid, print_liquid)
+        def print_pad(pad: Pad, **options: Any) -> str:
+            x = Type.INT.format_val(pad.column, **options)
+            y = Type.INT.format_val(pad.row, **options)
+            return f"({x},{y})"
+        Type.register_default_formatter(Pad, print_pad)
+        
+        def print_well(well: Well, **options: Any) -> str:
+            i = Type.INT.format_val(well.number, **options)
+            return f"well #{i}"
+        Type.register_default_formatter(Well, print_well)
+        
+        def print_gate(gate: WellGate, **options: Any) -> str:
+            w = Type.WELL.format_val(gate.well, **options)
+            return f"{w}'s gate"
+        Type.register_default_formatter(WellGate, print_gate)
+        
+        def print_well_pad(pad: WellPad, **options: Any) -> str:
+            w = Type.WELL.format_val(pad.well, **options)
+            n = Type.INT.format_val(pad.index, **options)
+            return f"{w}[{n}]"
+        Type.register_default_formatter(WellPad, print_well_pad)
+
+        def print_drop(drop: Drop, **options: Any) -> str:
+            st = drop.status
+            drop_vol = Type.VOLUME.format_val(drop.display_volume, **options)
+            r = Type.REAGENT.format_val(drop.reagent, **options)
+            if st is DropStatus.ON_BOARD:
+                pad = Type.PAD.format_val(drop.pad, **options)
+                drop_loc = f"@ {pad}"
+                blob = drop.blob
+                if not blob.is_singleton:
+                    total = Type.VOLUME.format_val(blob.total_volume, **options)
+                    drop_vol = f"{drop_vol} (of {total})"
+            else:
+                drop_loc = "(off board)"
+            return f"{drop_vol} of {r} {drop_loc}"
+        Type.register_default_formatter(Drop, print_drop)
+        
+        def print_dir(d: Dir) -> str:
+            return d.name.lower()
+        Type.register_default_formatter(Dir, print_dir)
+        
+        
+        def register_external(ec: type[ExternalComponent], kind: str) -> None:
+            def print_ext(c: ExternalComponent, **options: Any) -> str:
+                n = Type.INT.format_val(c.number, *options)
+                return f"{kind} #{n}"
+            Type.register_default_formatter(ec, print_ext)
+
+        register_external(Heater, "heater")
+        register_external(Chiller, "chiller")
+        register_external(Magnet, "magnet")
+        register_external(Sensor, "sensor")
+
+        Type.register_default_formatter(Board, to_const("the board")) # type: ignore [type-abstract]  
+        Type.register_default_formatter(ESELog, to_const("the eselog")) 
+        
+        def print_ep(ep: ExtractionPoint, **options: Any) -> str:
+            n = Type.INT.format_val(ep.number, **options)
+            pad = Type.PAD.format_val(ep.pad, **options)
+            return f"extraction port #{n} @ {pad}"
+        Type.register_default_formatter(ExtractionPoint, print_ep)
+        
+        Type.register_default_formatter(str, repr)
+        Type.register_default_formatter(int, lambda i: format(i, ","))
+        Type.register_default_formatter(float, lambda i: format(i, ","))
+        Type.register_default_formatter(Quantity, lambda i: format(i, ","))
+        
+        
 DMLCompiler.setup_attributes()
 DMLCompiler.setup_function_table()
 DMLCompiler.setup_special_vars()
-
+DMLCompiler.setup_printing()

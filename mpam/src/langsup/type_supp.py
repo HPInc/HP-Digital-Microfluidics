@@ -14,11 +14,15 @@ from threading import RLock, Lock
 import logging
 from erk.stringutils import conj_str
 from abc import ABC, abstractmethod
-from erk.basic import ComputedDefaultDict, not_None
+from erk.basic import ComputedDefaultDict, not_None, partial_order_sort
+from erk.formatting import Formatter, FormatFunction, RegisterableFormatFunction
 
 logger = logging.getLogger(__name__)
 
 Val_ = TypeVar("Val_")
+K_ = TypeVar("K_")
+V_ = TypeVar("V_")
+T_ = TypeVar("T_")
 class EvaluationError(RuntimeError): ...
 MaybeError = Union[Val_, EvaluationError]
 
@@ -49,7 +53,65 @@ class NotSampleableError(EvaluationError):
     
     def __init__(self, have: Type) -> None:
         super().__init__(f"{have.name} is not sampleable.")
-        self.have = have 
+        self.have = have
+        
+TF_ = TypeVar('TF_', bound='TypeFormatter')
+class TypeFormatter(Formatter):
+    _type: Final[Type]
+    _cache_attr: Final[str]
+    
+    def __init__(self, for_type: Type, *,
+                 name: Optional[str] = None,
+                 attr: Optional[str] = None):
+        if name is None:
+            name = f"{for_type}_formatter"
+        super().__init__(name=name, attr=attr)
+        self._type = for_type
+        self._cache_attr = f"{self._attr}__cached"
+        
+    def _lookup_cached(self: TF_, val: T_) -> Optional[FormatFunction[T_, TF_]]:
+        cls = self._mutable(type(val))
+        fn: Optional[FormatFunction[T_, TF_]] = cls.__dict__.get(self._cache_attr, None)
+        return fn
+
+    
+    def _cache(self: TF_, val: T_, fn: FormatFunction[T_, TF_]) -> None:
+        self._add_to_class(type(val), fn, self._cache_attr)
+    
+    def _lose_cache(self, cls: type[T_]) -> None:
+        attr = self._cache_attr
+        if attr in cls.__dict__:
+            delattr(cls, attr)
+                
+        
+        
+    def format_function_for(self: TF_, val: T_)->Optional[FormatFunction[T_, TF_]]:
+        fn = super().format_function_for(val)
+        if fn is not None:
+            return fn
+        fn = self._lookup_cached(val)
+        if fn is not None:
+            return fn
+        for st in self._type.ordered_supers:
+            f = st._maybe_formatter
+            if f is not None and (fn := f.format_function_for(val)) is not None:
+                self._cache(val, fn)
+                return fn
+        return None
+    
+    def register_formatter(self:TF_, cls:type[T_],
+                           fn: RegisterableFormatFunction[T_, TF_] 
+                           )-> None:
+        super().register_formatter(cls, fn)
+        self._lose_cache(cls)
+        for st in self._type.all_subs:
+            f = st._maybe_formatter
+            if f is not None:
+                f._lose_cache(cls)
+                
+                
+                
+        
         
 ValueConverter = Callable[[Any], Delayed[Any]]
 
@@ -78,7 +140,7 @@ class Type:
     is_control: bool
     
     _class_lock: Final = RLock()
-    
+
     conversions: ClassVar[dict[tuple[Type,Type], Callable[[Any],Any]]] = {}
     compatible: ClassVar[set[tuple[Type,Type]]] = set()
     
@@ -98,7 +160,20 @@ class Type:
     def sample(self) -> SampleType:
         raise NotSampleableError(self)
     
+    @cached_property
+    def ordered_supers(self) -> Sequence[Type]:
+        def subsumes(t1: Type, t2: Type) -> bool:
+            return t1 in t2.all_supers
+        return partial_order_sort(self.all_supers, subsumes)
     
+    @cached_property
+    def formatter(self) -> TypeFormatter:
+        return TypeFormatter(self)
+    
+    @property
+    def _maybe_formatter(self) -> Optional[TypeFormatter]:
+        tf: Optional[TypeFormatter] = self.__dict__.get('formatter', None)
+        return tf
     
     NO_VALUE: ClassVar[Type]
     ANY: ClassVar[Type]
@@ -500,6 +575,22 @@ class Type:
             return self.convert_to(want, val)
         except EvaluationError as ex:
             return Delayed.complete(ex)
+        
+    def format_val(self, val: Any, **options: Any) -> str:
+        return self.formatter.format(val, **options)
+    
+    def register_formatter(self, cls: type[T_],
+                           fn: RegisterableFormatFunction[T_, TypeFormatter]) -> None:
+        self.formatter.register_formatter(cls, fn)
+        
+    @classmethod
+    def register_default_formatter(self, cls: type[T_],
+                                   fn: RegisterableFormatFunction[T_, TypeFormatter]) -> None:
+        Type.NO_VALUE.register_formatter(cls, fn)
+
+    @classmethod
+    def format_default(cls, val: Any, **options: Any) -> str:
+        return Type.NO_VALUE.format_val(val, **options)
         
 class SampleableType(Type):
     _all: list[SampleableType] = []
@@ -1110,9 +1201,6 @@ Type.OFF = Type("OFF", [Type.BINARY_STATE, Type.TWIDDLE_OP])
 #     def __hash__(self)->int:
 #         return hash(self.sig)
     
-K_ = TypeVar("K_")
-V_ = TypeVar("V_")
-T_ = TypeVar("T_")
 class ByNameCache(dict[K_,V_]):
     def __init__(self, factory: Callable[[K_], V_]):
         self.factory = factory

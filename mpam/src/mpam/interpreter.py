@@ -46,7 +46,7 @@ class DMLInterpreter:
             elif ret_type is Type.NO_VALUE:
                 print(f"  Interactive command returned without value.")
             else:
-                print(f"  Interactive cmd val ({ret_type.name}): {val}")
+                print(f"  Interactive cmd val ({ret_type.name}): {ret_type.format_val(val)}")
         return self.evaluate(expr).then_call(on_val)
     
     @classmethod

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast,\
-    NoReturn, Any, Mapping
+    NoReturn, Any, Mapping, Sequence
 from threading import Lock
 from re import Pattern
 import re
@@ -108,4 +108,30 @@ class ComputedDefaultDict(dict[_H,_T]):
 def assert_never(value: NoReturn) -> NoReturn:
     assert False, f'Unhandled value: {value} ({type(value).__name__})'
 
+def partial_order_sort(items: Sequence[_T], subsumes: Callable[[_T, _T], bool]) -> list[_T]:
+    # Create a mapping of items to their dependencies
+    dependencies = {item: set[_T]() for item in items}
+    for i, item in enumerate(items):
+        for other_item in items[i + 1:]:
+            if subsumes(item, other_item):
+                dependencies[other_item].add(item)
+            elif subsumes(other_item, item):
+                dependencies[item].add(other_item)
+
+    # Create a function to perform a depth-first search on the items
+    def dfs(item: _T, seen: set[_T], result: list[_T]) -> None:
+        if item in seen:
+            return
+        seen.add(item)
+        for dependency in dependencies[item]:
+            dfs(dependency, seen, result)
+        result.append(item)
+
+    # Perform a depth-first search on all items
+    seen = set[_T]()
+    result = list[_T]()
+    for item in items:
+        dfs(item, seen, result)
+
+    return result
 

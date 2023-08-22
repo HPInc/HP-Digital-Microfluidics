@@ -5742,7 +5742,7 @@ class System:
         if future is None:
             future = Postable[str]()
         if options is None or len(options) == 0:
-            options = ("Done")
+            options = ("Done",)
         nn_future = future
         monitor = self.monitor
         if monitor is not None:
