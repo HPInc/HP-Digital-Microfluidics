@@ -28,6 +28,7 @@ config_files = [
     "WallabyHeaters15.csv",
     "WallabyMagnets.csv",
     "WallabyMagnets15.csv",
+    "WallabyThermalStates.csv"
     ]
 
 class Config:
