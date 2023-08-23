@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TypeVar, Optional, Callable,\
-    Union, cast, Any
+    Union, cast, Any, ClassVar
 from inspect import signature
 from functools import cached_property
 import random
@@ -49,6 +49,8 @@ class Formatter:
             
     def __repr__(self) -> str:
         return f"<Formatter {self.name}>"
+    
+    default_formatter: ClassVar[Formatter]
     
     def get_unbound_func(self: F_, val: Tca_, attr: str) -> Optional[FormatFunction[Tca_, F_]]:
         for cls in type(val).mro():
@@ -128,3 +130,4 @@ class Formatter:
         self._add_to_class(cls, wrapped_fn, self._attr)
         
     
+Formatter.default_formatter = Formatter(name="default")

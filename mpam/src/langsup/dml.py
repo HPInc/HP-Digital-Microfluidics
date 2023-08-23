@@ -42,7 +42,6 @@ import re
 from quantities.temperature import TemperaturePoint, abs_C
 from quantities.SI import deg_C
 from quantities.timestamp import Timestamp, time_in, time_now
-import io
 import logging
 from devices.eselog import ESELog, ESELogChannel
 from itertools import product
@@ -341,6 +340,8 @@ class CSPush:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: # @UnusedVariable
         self.stack.top = self.old
 
+def to_str(val: Any) -> str:
+    return val if isinstance(val, str) else Type.format_default(val)
     
 class ComposedCallable(CallableValue):
     first: Final[CallableValue]
@@ -877,18 +878,8 @@ class PromptValue(InjectableStatementValue):
     def __init__(self, vals: Sequence[Any], board: Board) -> None:
         super().__init__()
         self.system = board.system
-        prompt: Optional[str] = None
-        if len(vals) > 0:
-            output = io.StringIO()
-            def to_str(v: Any) -> str:
-                if isinstance(v, str):
-                    return v
-                else:
-                    return Type.format_default(v)
-            print(*[to_str(v) for v in vals], file=output, end="")
-            prompt = output.getvalue()
-            output.close()
-        self.prompt = prompt
+        self.prompt = (None if len(vals) == 0 
+                       else " ".join([to_str(v) for v in vals]))
         
     def __str__(self) -> str:
         return f"Prompt({self.prompt})"
@@ -2312,11 +2303,6 @@ class DMLCompiler(dmlVisitor):
         arg_text = (self.text_of(c) for c in ctx.vals)
         def print_vals(*vals: Any) -> Delayed[BoundImmediateAction]:
             def do_print() -> None:
-                def to_str(v: Any) -> str:
-                    if isinstance(v, str):
-                        return v
-                    else:
-                        return Type.format_default(v)
                 print(*(to_str(v) for v in vals))
             name = f"print({', '.join(arg_text)})"
             return Delayed.complete(BoundImmediateAction(do_print, name = name))
@@ -3580,8 +3566,10 @@ class DMLCompiler(dmlVisitor):
                                    ((Type.VOLTAGE, Type.VOLTAGE), Type.VOLTAGE)
                                    ], lambda x,y: x+y)
         fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, d.dist))
-        fn.register_all_immediate([((Type.STRING, Type.NUMBER), Type.STRING),
-                                   ], lambda x,y: x+str(y))
+        fn.register_all_immediate([((Type.STRING, Type.ANY), Type.STRING),
+                                   ], lambda x,y: x+to_str(y))
+        fn.register_all_immediate([((Type.ANY, Type.STRING), Type.STRING),
+                                   ], lambda x,y: to_str(x)+y)
         fn.register_immediate((Type.SCALED_REAGENT, Type.SCALED_REAGENT), Type.REAGENT,
                               lambda x,y: x.mix_with(y)
                               )

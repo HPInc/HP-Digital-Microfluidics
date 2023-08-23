@@ -145,6 +145,8 @@ class DummyPipettor(Pipettor):
         reagent = transfer.reagent
 
         total_volume = transfer.total_volume
+        
+        ustr = self.user_str
 
         self.move_to(ArmPos.TIPS)
         self.down()
@@ -156,17 +158,17 @@ class DummyPipettor(Pipettor):
                 x.on_insufficient.expect_true(source.max_volume >= x.volume,
                                               lambda: (f"{source.name} has "
                                                        + f"{'at most ' if source.exact_volume is None else ''}"
-                                                       + f"{source.max_volume} of {source.reagent}. "
-                                                       + f"{x.volume} needed."))
+                                                       + f"{ustr(source.max_volume)} of {ustr(source.reagent)}. "
+                                                       + f"{ustr(x.volume)} needed."))
                 if source.max_volume < x.volume:
                     extra = 100*uL
-                    logger.info(f"Adding {extra} to {source.name}")
+                    logger.info(f"Adding {ustr(extra)} to {source.name}")
                     source += extra
                 source -= x.volume
             self.move_to(ArmPos.REAGENTS)
             self.down()
             self.xfer(total_volume)
-            logging.info(f"Aspirating {total_volume} of {reagent} from {source.name}.")
+            logging.info(f"Aspirating {ustr(total_volume)} of {ustr(reagent)} from {source.name}.")
             self.up()
         self.move_to(ArmPos.BOARD)
         for x in transfer.targets:
@@ -174,9 +176,9 @@ class DummyPipettor(Pipettor):
             x.in_position(reagent, x.volume)
             self.xfer(x.volume)
             if transfer.xfer_dir is XferDir.EMPTY:
-                logging.info(f"Aspirating {x.volume} of {reagent} from {x.target}.")
+                logging.info(f"Aspirating {ustr(x.volume)} of {ustr(reagent)} from {ustr(x.target)}.")
             else:
-                logging.info(f"Dispensing {x.volume} of {reagent} to {x.target}.")
+                logging.info(f"Dispensing {ustr(x.volume)} of {ustr(reagent)} to {ustr(x.target)}.")
             x.finished(reagent, x.volume)
             self.up()
         # Since we do pretend to do the whole thing each time, this shouldn't do anything.
@@ -186,15 +188,15 @@ class DummyPipettor(Pipettor):
             if reagent is waste_reagent:
                 self.move_to(ArmPos.WASTE)
                 self.xfer(total_volume)
-                logging.info(f"Dumping {total_volume} of {reagent} to trash.")
+                logging.info(f"Dumping {ustr(total_volume)} of {ustr(reagent)} to trash.")
             else:
                 self.move_to(ArmPos.PRODUCTS if transfer.is_product else ArmPos.REAGENTS)
                 self.down()
                 self.xfer(total_volume)
-                logging.info(f"Dispensing {total_volume} of {reagent} to {self.arm_pos}.")
+                logging.info(f"Dispensing {ustr(total_volume)} of {ustr(reagent)} to {self.arm_pos}.")
                 self.up()
                 if transfer.is_product:
-                    loc = ProductLocation(reagent, f"Product well {self.next_product}")
+                    loc = ProductLocation(reagent, f"Product well {ustr(self.next_product)}")
                     self.next_product += 1
                     for x in transfer.targets:
                         assert isinstance(x, EmptyTarget)

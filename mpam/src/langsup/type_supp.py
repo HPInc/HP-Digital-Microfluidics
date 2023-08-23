@@ -170,6 +170,8 @@ class Type:
     def formatter(self) -> TypeFormatter:
         return TypeFormatter(self)
     
+    default_formatter: ClassVar[TypeFormatter]
+    
     @property
     def _maybe_formatter(self) -> Optional[TypeFormatter]:
         tf: Optional[TypeFormatter] = self.__dict__.get('formatter', None)
@@ -591,6 +593,7 @@ class Type:
     @classmethod
     def format_default(cls, val: Any, **options: Any) -> str:
         return Type.NO_VALUE.format_val(val, **options)
+    
         
 class SampleableType(Type):
     _all: list[SampleableType] = []
@@ -674,6 +677,8 @@ Type.SENSOR_READING = Type("SENSOR_READING")
 Type.ESELOG = Type("ESELOG", [Type.SENSOR])
 Type.ESELOG_READING = Type("ESELOG_READING", [Type.SENSOR_READING])
 Type.CLOCK = Type("CLOCK", [Type.BINARY_CPT])
+
+Type.default_formatter = Type.NO_VALUE.formatter
 
 class LoopExitType(Type):
     nested_levels: Final[int]

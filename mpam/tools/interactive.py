@@ -5,6 +5,8 @@ from devices import joey, opendrop, wombat, opentrons, manual_pipettor,\
 from mpam.exerciser import PlatformChoiceExerciser
 from mpam.exerciser_tasks import DisplayOnly
 from mpam.monitor import Config as monConfig
+from mpam import pipettor
+from langsup import type_supp
 
 
 if __name__ == '__main__':
@@ -27,4 +29,5 @@ if __name__ == '__main__':
                                                  pipettors=pipettors,
                                                  components=components,
                                                  default_pipettor=default_pipettor)
+    pipettor.Config.value_formatter(type_supp.Type.default_formatter)
     exerciser.parse_args_and_run()

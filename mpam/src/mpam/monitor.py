@@ -934,6 +934,11 @@ class NonBlockingDialog(tkinter.Toplevel):
             button = tkinter.Button(button_frame, text=button_text, command=make_cb(button_text))
             button.pack(padx=20, side=tkinter.LEFT)
             
+        self.update_idletasks()
+        x = root.winfo_x() + root.winfo_width() // 2 - self.winfo_width() // 2
+        y = root.winfo_y() + root.winfo_height() // 2 - self.winfo_height() // 2
+        self.geometry(f"+{int(x)}+{int(y)}")            
+            
         
 
 class BoardMonitor:

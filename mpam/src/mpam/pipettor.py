@@ -18,6 +18,7 @@ from mpam.engine import Worker
 from erk.stringutils import map_str
 import math
 from erk.config import ConfigParam
+from erk.formatting import Formatter
 
 logger = logging.getLogger(__name__)
 
@@ -463,6 +464,11 @@ class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
     def delayed(self, function: Callable[[], T], *,
                 after: WaitableType) -> Delayed[T]:
         return self.sys_cpt.delayed(function, after=after)
+    
+    def user_str(self, val: Any) -> str:
+        if isinstance(val, str):
+            return val
+        return Config.value_formatter().format(val)
 
 
     class Supply(CSOperation['Pipettor', Liquid]):
@@ -554,4 +560,5 @@ class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
         
 class Config:
     pipettor = ConfigParam[Pipettor]()
+    value_formatter = ConfigParam(Formatter.default_formatter)
 

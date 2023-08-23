@@ -66,6 +66,8 @@ class ManualPipettor(Pipettor):
         reagent = transfer.reagent
         sources = self.sources_for(reagent)
         
+        ustr = self.user_str
+        
         not_ad_hoc = [s for s in sources if s not in self._ad_hoc_sources]
         if len(not_ad_hoc) == 0:
             sdesc = ""
@@ -85,11 +87,11 @@ class ManualPipettor(Pipettor):
                 vol = n*uL
             target.in_position(reagent, vol)
             if transfer.xfer_dir is XferDir.FILL:
-                msg = f"Please add {vol:g} of {reagent}{sdesc} to {loc}."
+                msg = f"Please add {ustr(vol)} of {ustr(reagent)}{sdesc} to {ustr(loc)}."
                 self._adjust_source(vol, sources)
             else:
                 product = "product " if transfer.is_product else ""
-                msg = f"Please remove {vol:g} of {product}{reagent} from {loc}"
+                msg = f"Please remove {ustr(vol)} of {product}{ustr(reagent)} from {ustr(loc)}"
             self.system.prompt_and_wait(prompt = msg).wait()
             target.finished(reagent, vol)
         for target in transfer.targets:
