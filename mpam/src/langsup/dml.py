@@ -33,9 +33,8 @@ from quantities.core import Unit, Dimensionality, NamedDim, Quantity
 from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from erk.stringutils import map_str, conj_str
 import math
-from functools import reduce, cached_property
-from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn,\
-    ensure_val
+from functools import reduce
+from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn
 from re import Match
 from threading import RLock
 import re
@@ -782,8 +781,9 @@ TwiddleBinaryValue.TOGGLE = TwiddleBinaryValue(BinaryComponent.Toggle)
 class InjectableStatementValue(CallableValue):
     _default_sig: ClassVar[Signature] = Type.ACTION.sig
     
-    def __init__(self, sig: Optional[Signature] = None) -> None:
-        super().__init__(sig or self._default_sig)
+    def __init__(self, sig: Optional[Signature] = None, *,
+                 desc: Optional[ValOrFn[str]] = None) -> None:
+        super().__init__(sig or self._default_sig, desc=desc)
     
     @abstractmethod
     def invoke(self) -> Delayed[MaybeError[None]]: ...
@@ -820,12 +820,9 @@ class PauseValue(InjectableStatementValue):
     board: Final[Board]
     
     def __init__(self, duration: DelayType, board: Board) -> None:
-        super().__init__()
+        super().__init__(desc=lambda: str(self.duration))
         self.duration = duration
         self.board = board
-        
-    def __str__(self) -> str:
-        return f"Pause({self.duration})"
         
     def invoke(self)->Delayed[None]:
         # print(f"Pausing for {self.duration}")
@@ -834,19 +831,13 @@ class PauseValue(InjectableStatementValue):
 class PauseUntilValue(InjectableStatementValue):
     env: Final[Environment]
     condition: Final[Executable]
-    _desc: Final[ValOrFn[str]]
-    
-    @cached_property
-    def desc(self) -> str:
-        return ensure_val(self._desc, str)
     
     def __init__(self, env: Environment,
                  condition: Executable,
                  desc: ValOrFn[str]) -> None:
-        super().__init__()
+        super().__init__(desc=desc)
         self.env = env
         self.condition = condition
-        self._desc = desc
         
     def __str__(self) -> str:
         return f"PauseUntil(\"{self.desc}\")"
@@ -875,15 +866,15 @@ class PromptValue(InjectableStatementValue):
     prompt: Final[Optional[str]]
     system: Final[System]
     
+    
+    
     def __init__(self, vals: Sequence[Any], board: Board) -> None:
-        super().__init__()
+        prompt = (None if len(vals) == 0 
+                  else " ".join([to_str(v) for v in vals]))
+        super().__init__(desc=prompt or "")
         self.system = board.system
-        self.prompt = (None if len(vals) == 0 
-                       else " ".join([to_str(v) for v in vals]))
-        
-    def __str__(self) -> str:
-        return f"Prompt({self.prompt})"
-        
+        self.prompt = prompt
+                
     def invoke(self)->Delayed[None]:
         return self.system.prompt_and_wait(prompt=self.prompt).to_const(None)
     
@@ -919,7 +910,7 @@ class MacroValue(CallableValue):
     def __str__(self) -> str:
         if self.name is not None:
             return self.name
-        params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types)) # @UnusedVariable
+        params = ", ".join(f"{n}: {t}" for n,t in zip(self.param_names, self.sig.param_types))
         return f"macro({params})->{self.sig.return_type}"
     
 class WellGateValue(NamedTuple):
@@ -996,21 +987,21 @@ DimRecipTypes = ByNameCache[Type, Type](recip_type)
 
 def unit_recip_func(unit: PhysUnit) -> Func:
     return unit_adaptor(unit, f"per {unit}",
-                        lambda qt,nt: ((Type.FLOAT,), DimRecipTypes[qt]),
+                        lambda qt,_nt: ((Type.FLOAT,), DimRecipTypes[qt]),
                         lambda unit: lambda n: n/unit)
 
 UnitRecipFuncs = ByNameCache[PhysUnit, Func](unit_recip_func)
 
 def unit_mag_func(unit: PhysUnit) -> Func:
     return unit_adaptor(unit, f"'s magnitude in {unit}",
-                        lambda qt,nt: ((qt,), Type.FLOAT), # @UnusedVariable
+                        lambda qt,_nt: ((qt,), Type.FLOAT), 
                         lambda unit: lambda d: d.as_number(unit))
 
 UnitMagFuncs = ByNameCache[PhysUnit, Func](unit_mag_func)
 
 def unit_string_func(unit: PhysUnit) -> Func:
     return unit_adaptor(unit, f"as string in {unit}",
-                        lambda qt,nt: ((qt,), Type.STRING), # @UnusedVariable
+                        lambda qt,_nt: ((qt,), Type.STRING), 
                         lambda unit: lambda d: f"{d.in_units(unit):g}") 
 
 UnitStringFuncs = ByNameCache[PhysUnit, Func](unit_string_func)
@@ -2357,7 +2348,7 @@ class DMLCompiler(dmlVisitor):
     # def visitPause_stat(self, ctx:dmlParser.Pause_statContext) -> Executable:
     #     duration = self.visit(ctx.duration)
     #     if e:=self.type_check(Type.DELAY, duration, ctx.duration,
-    #                           lambda want,have,text: # @UnusedVariable
+    #                           lambda _want,have,text:
     #                             f"Delay ({have} must be time or ticks: {text}",
     #                           return_type=Type.PAUSE):
     #         return e
@@ -2386,7 +2377,7 @@ class DMLCompiler(dmlVisitor):
         
         for i in range(len(stat_execs)):
             if ret_type.is_control:
-                self.print_warning(stat_contexts[i], lambda txt: f"Statement is unreachable, ignoring: {txt}") # @UnusedVariable
+                self.print_warning(stat_contexts[i], lambda txt: f"Statement is unreachable, ignoring: {txt}")
                 stat_execs = stat_execs[:i]
                 break
             rt = stat_execs[i].return_type
@@ -2688,7 +2679,9 @@ class DMLCompiler(dmlVisitor):
         return self.use_function(which, ctx, ())
 
     def visitName_expr(self, ctx:dmlParser.Name_exprContext) -> Executable:
-        name: str = ctx.name().val
+        return self.name_as_expr(ctx.name())
+    def name_as_expr(self, ctx: dmlParser.NameContext) -> Executable:
+        name = cast(str, ctx.val)
         builtin = BuiltIns.get(name, None)
         if builtin is not None:
             return Executable.constant(Type.BUILT_IN, builtin)
@@ -2699,7 +2692,7 @@ class DMLCompiler(dmlVisitor):
             return Executable(special.var_type, lambda env: Delayed.complete(real_special.get(env)))
         var_type = self.current_types.lookup(name)
         if var_type is MISSING:
-            return self.error(ctx.name(), Type.NO_VALUE, f"Undefined variable: {name}")
+            return self.error(ctx, Type.NO_VALUE, f"Undefined variable: {name}")
         if isinstance(var_type, FutureType):
             val_type = var_type.value_type
             is_future = True
@@ -3190,20 +3183,46 @@ class DMLCompiler(dmlVisitor):
 
 
     def visitFunction_expr(self, ctx:dmlParser.Function_exprContext) -> Executable:
-        arg_execs = tuple(self.visit(arg) for arg in ctx.args)
-        fc = cast(dmlParser.ExprContext, ctx.func)
-        if isinstance(fc, dmlParser.Name_exprContext):
+        # There's a weird corner case, where if we see "foo(a, b)", with "foo" a
+        # name and exactly two arguments, it will be parsed as if "(a,b)" is a
+        # coordinate and "foo" is a prefix.  This may be correct, but if it
+        # isn't, we need to change it so the argument list has the two arguments
+        # to the coord, and we have to do it before we visit the args, because
+        # the coord rule will probably fail.
+        arg_ctxts: Sequence[dmlParser.ExprContext] = ctx.args
+        fc = cast(Optional[dmlParser.ExprContext], ctx.func)
+        pfc = cast(Optional[dmlParser.NameContext], ctx.prefix_func)
+        fctx = fc if fc is not None else pfc
+        assert fctx is not None
+        func_name: Optional[str] = None
+        if pfc is not None:
+            func_name = self.text_of(pfc)
+            assert len(arg_ctxts) == 1
+            ac = arg_ctxts[0]
+            if isinstance(ac, dmlParser.Coord_exprContext):
+                # For now, I'm just going to say that you can't use the
+                # prefix notation for coordinates without enclosing them in
+                # parens.
+                arg_ctxts = (cast(dmlParser.ExprContext, ac.x), 
+                             cast(dmlParser.ExprContext, ac.y))  
+        elif isinstance(fc, dmlParser.Name_exprContext):
             func_name = self.text_of(fc.name())
+        if func_name is not None:
             builtin = BuiltIns.get(func_name, None)
             if builtin is not None:
-                return self.use_function(builtin, ctx, ctx.args)
-        func_exec = self.visit(fc)
+                return self.use_function(builtin, ctx, arg_ctxts)
+        if pfc is not None:
+            func_exec = self.name_as_expr(pfc)
+        else:
+            assert fc is not None
+            func_exec = self.visit(fc)
         f_type = func_exec.return_type.as_func_type
         if f_type is None:
-            return self.error(fc, Type.NO_VALUE, lambda text: f"Not callable ({func_exec.return_type.name}): {text}")
+            return self.error(fctx, Type.NO_VALUE, lambda text: f"Not callable ({func_exec.return_type.name}): {text}")
         ret_type = f_type.return_type
         param_types = f_type.param_types
         
+        arg_execs = tuple(self.visit(arg) for arg in arg_ctxts)
         n_args = len(arg_execs)
         ip = f_type.injectable_pos
         
@@ -3224,7 +3243,7 @@ class DMLCompiler(dmlVisitor):
 
         for i in range(len(param_types)):
             if not self.compatible(arg_execs[i].return_type, param_types[i]):
-                ac = ctx.args[i]
+                ac = arg_ctxts[i]
                 ae = arg_execs[i]
                 pt = param_types[i]
                 return self.error(ac, ret_type, f"Argument {i+1} not {pt.name} ({ae.return_type.name}): {self.text_of(ac)}")
@@ -3393,7 +3412,7 @@ class DMLCompiler(dmlVisitor):
             and not saw_macro_name and n_injectable < 2):
             return None
         macro_type = CallableType.find(types, Type.NO_VALUE)
-        return self.error_val(macro_type, lambda env: Delayed.complete(None)) # @UnusedVariable
+        return self.error_val(macro_type, lambda _env: Delayed.complete(None))
 
     def visitMacro_def(self, ctx:dmlParser.Macro_defContext) -> Executable:
         header: dmlParser.Macro_headerContext = ctx.macro_header()
@@ -3479,7 +3498,7 @@ class DMLCompiler(dmlVisitor):
     def visitPause_expr(self, ctx:dmlParser.Pause_exprContext) -> Executable:
         duration = self.visit(ctx.duration)
         if e:=self.type_check(Type.DELAY, duration, ctx.duration,
-                              lambda want,have,text: # @UnusedVariable
+                              lambda _want,have,text:
                                 f"Delay ({have} must be time or ticks: {text}",
                               return_type=Type.ACTION):
             return e
@@ -3491,7 +3510,7 @@ class DMLCompiler(dmlVisitor):
     def visitPause_until_expr(self, ctx:dmlParser.Pause_until_exprContext) -> Executable:
         condition = self.visit(ctx.condition)
         if e:=self.type_check(Type.BOOL, condition, ctx.condition,
-                              lambda want,have,text: # @UnusedVariable
+                              lambda _want,have,text:
                                 f"Condition ({have}) must be boolean: {text}",
                                 return_type=Type.ACTION):
             return e
@@ -3987,6 +4006,30 @@ class DMLCompiler(dmlVisitor):
 
         fn = Functions["START CLOCK"]
         fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.system.clock.start()))
+        
+        fn = BuiltIns["require"] = Functions["require"]
+        def ensure_well(w: Well, liquid: Union[Liquid, Volume], 
+                        top_to: Optional[Volume] = None) -> Delayed[Well]:
+            logger.info("In ensure_well()")
+            r = w.reagent if isinstance(liquid, Volume) else liquid.reagent
+            v = liquid if isinstance(liquid, Volume) else liquid.volume
+            empty_first = w.reagent is not r and not w.empty
+            f1: Delayed[Any] 
+            if empty_first:
+                f1 = w.empty_well() 
+            else:
+                f1 = Delayed.complete(None)
+            then_have = Volume.ZERO if empty_first else w.volume
+            if v > then_have:
+                if top_to is None:
+                    top_to = v
+                f1 = f1.chain(lambda _ : add_liquid_to_well(w, Liquid(r, top_to-then_have)))
+            return f1.to_const(w)
+        fn.register((Type.WELL, Type.LIQUID), Type.WELL, ensure_well, curry_at=0)
+        fn.register((Type.WELL, Type.VOLUME), Type.WELL, ensure_well, curry_at=0)
+        fn.register((Type.WELL, Type.LIQUID, Type.VOLUME), Type.WELL, ensure_well, curry_at=0)
+        fn.register((Type.WELL, Type.VOLUME, Type.VOLUME), Type.WELL, ensure_well, curry_at=0)
+            
 
         
         
@@ -4360,6 +4403,21 @@ class DMLCompiler(dmlVisitor):
         Type.register_default_formatter(float, lambda i: format(i, ","))
         Type.register_default_formatter(Quantity, lambda i: format(i, ","))
         
+        def print_built_in(fn: Func) -> str:
+            name = fn.name
+            if name.startswith("#"):
+                name = name[1:]
+            return name
+        Type.register_default_formatter(Func, print_built_in)
+        
+        def print_pause_for(p: PauseValue) -> str:
+            d = Type.DELAY.format_val(p.duration)
+            return f"pause for {d}"
+        Type.register_default_formatter(PauseValue, print_pause_for)
+
+        def print_pause_until(p: PauseUntilValue) -> str:
+            return f"pause until ({p.desc})"
+        Type.register_default_formatter(PauseUntilValue, print_pause_until)
         
 DMLCompiler.setup_attributes()
 DMLCompiler.setup_function_table()

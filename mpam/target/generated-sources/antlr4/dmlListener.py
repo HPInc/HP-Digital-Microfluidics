@@ -718,15 +718,6 @@ class dmlListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by dmlParser#mw_name_expr.
-    def enterMw_name_expr(self, ctx:dmlParser.Mw_name_exprContext):
-        pass
-
-    # Exit a parse tree produced by dmlParser#mw_name_expr.
-    def exitMw_name_expr(self, ctx:dmlParser.Mw_name_exprContext):
-        pass
-
-
     # Enter a parse tree produced by dmlParser#delta_expr.
     def enterDelta_expr(self, ctx:dmlParser.Delta_exprContext):
         pass
@@ -1057,6 +1048,24 @@ class dmlListener(ParseTreeListener):
 
     # Exit a parse tree produced by dmlParser#old_attr.
     def exitOld_attr(self, ctx:dmlParser.Old_attrContext):
+        pass
+
+
+    # Enter a parse tree produced by dmlParser#attr_sep.
+    def enterAttr_sep(self, ctx:dmlParser.Attr_sepContext):
+        pass
+
+    # Exit a parse tree produced by dmlParser#attr_sep.
+    def exitAttr_sep(self, ctx:dmlParser.Attr_sepContext):
+        pass
+
+
+    # Enter a parse tree produced by dmlParser#inject_sep.
+    def enterInject_sep(self, ctx:dmlParser.Inject_sepContext):
+        pass
+
+    # Exit a parse tree produced by dmlParser#inject_sep.
+    def exitInject_sep(self, ctx:dmlParser.Inject_sepContext):
         pass
 
 

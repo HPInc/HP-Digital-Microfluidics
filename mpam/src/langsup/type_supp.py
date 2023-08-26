@@ -14,7 +14,8 @@ from threading import RLock, Lock
 import logging
 from erk.stringutils import conj_str
 from abc import ABC, abstractmethod
-from erk.basic import ComputedDefaultDict, not_None, partial_order_sort
+from erk.basic import ComputedDefaultDict, not_None, partial_order_sort, ValOrFn,\
+    ensure_val
 from erk.formatting import Formatter, FormatFunction, RegisterableFormatFunction
 
 logger = logging.getLogger(__name__)
@@ -948,9 +949,25 @@ class CallableTypeKind(Enum):
     
 class CallableValue(ABC):
     sig: Final[Signature]
+    _desc: Final[Optional[ValOrFn[str]]]
     
-    def __init__(self, sig: Signature) -> None:
+    @cached_property
+    def desc(self) -> Optional[str]:
+        d = self._desc
+        return None if d is None else ensure_val(d, str)
+    
+    def __init__(self, sig: Signature, *, desc: Optional[ValOrFn[str]]=None) -> None:
         self.sig = sig
+        self._desc = desc
+        
+    def __str__(self) -> str:
+        return self.__repr__() if self.desc is None else self.desc
+    
+    def __repr__(self) -> str:
+        d = self.desc
+        if d is None:
+            return super().__repr__()
+        return f"#<{type(self).__name__} {id(self)} {d}>"
     
     @abstractmethod
     def apply(self, args: Sequence[Any]) -> Delayed[Any]: ... # @UnusedVariable
@@ -969,8 +986,10 @@ class ConvertedCallableValue(CallableValue):
     
     def __init__(self, cv: CallableValue, sig: Signature,
                  param_converters: Sequence[ValueConverter],
-                 result_converter: ValueConverter) -> None:
-        super().__init__(sig)
+                 result_converter: ValueConverter,
+                 *,
+                 desc: Optional[ValOrFn[str]] = None) -> None:
+        super().__init__(sig, desc=desc)
         self.cv = cv
         self.param_converters = param_converters
         self.result_converter: Final[ValueConverter] = result_converter
@@ -981,16 +1000,18 @@ class ConvertedCallableValue(CallableValue):
         return future.transformed(self.result_converter)
     
 class AdaptedDelayedCallableValue(CallableValue):
-    def __init__(self, sig: Signature, fn: Callable[..., Delayed[Any]]) -> None:
-        super().__init__(sig)
+    def __init__(self, sig: Signature, fn: Callable[..., Delayed[Any]], *,
+                 desc: Optional[ValOrFn[str]] = None) -> None:
+        super().__init__(sig, desc=desc)
         self.fn = fn
         
     def apply(self, args:Sequence[Any])->Delayed[Any]:
         return self.fn(*args)
 
 class AdaptedImmediateCallableValue(AdaptedDelayedCallableValue):
-    def __init__(self, sig: Signature, fn: Callable[..., Any]) -> None:
-        super().__init__(sig, lambda *args: Delayed.complete(fn(*args)))
+    def __init__(self, sig: Signature, fn: Callable[..., Any], *, 
+                 desc: Optional[ValOrFn[str]] = None) -> None:
+        super().__init__(sig, lambda *args: Delayed.complete(fn(*args)), desc=desc)
         
 class BoundInjectionValue(CallableValue):
     bound_args: Final[tuple[Any, ...]]
@@ -998,9 +1019,10 @@ class BoundInjectionValue(CallableValue):
     injection_pos: Final[int]
 
     def __init__(self, full_type: CallableType, full: CallableValue,
-                 *args: Any) -> None:
+                 *args: Any,
+                 desc: Optional[ValOrFn[str]] = None) -> None:
         as_injection = not_None(full_type.as_injection)
-        super().__init__(as_injection.sig)
+        super().__init__(as_injection.sig, desc=desc)
         self.bound_args = args
         self.full_callable = full
         self.injection_pos = not_None(full_type.injectable_pos)
@@ -1283,7 +1305,13 @@ class Func:
                         local_args = list(args)
                         local_args.insert(pos, inner_arg)
                         return definition(*local_args)
-                    adapted_fn = AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn)
+                    
+                    def to_desc() -> str:
+                        fd = Type.format_default(self)
+                        ad = ", ".join([Type.format_default(a) for a in args])
+                        return f"({fd})({ad})"
+                    adapted_fn = AdaptedDelayedCallableValue(outer_return_type.sig, inner_fn,
+                                                             desc=to_desc)
                     return adapted_fn
                 if has_extra_arg:
                     self.register(outer_param_types, outer_return_type, ExtraArgFunc(outer_fn),

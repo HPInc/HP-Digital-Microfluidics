@@ -407,11 +407,6 @@ class dmlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dmlParser#mw_name_expr.
-    def visitMw_name_expr(self, ctx:dmlParser.Mw_name_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by dmlParser#delta_expr.
     def visitDelta_expr(self, ctx:dmlParser.Delta_exprContext):
         return self.visitChildren(ctx)
@@ -594,6 +589,16 @@ class dmlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by dmlParser#old_attr.
     def visitOld_attr(self, ctx:dmlParser.Old_attrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dmlParser#attr_sep.
+    def visitAttr_sep(self, ctx:dmlParser.Attr_sepContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dmlParser#inject_sep.
+    def visitInject_sep(self, ctx:dmlParser.Inject_sepContext):
         return self.visitChildren(ctx)
 
 

@@ -29,7 +29,7 @@ from erk.basic import Count
 from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
     TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate,\
-    TempControllable, TemperatureControl, WellShape
+    TempControllable, TemperatureControl, WellShape, Sensor
 from mpam.drop import Drop, DropStatus
 from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
     ColorAllocator, Liquid, unknown_reagent, waste_reagent
@@ -185,6 +185,7 @@ class PadMonitor(ClickableMonitor):
     board_monitor: Final[BoardMonitor]
     square: Final[Rectangle]
     magnet: Final[Optional[Annotation]]
+    sensors: Final[Annotation]
     tc_monitor: Final[Optional[TCMonitor]]
     port: Final[Optional[Patch]]
     origin: Final[tuple[float, float]]
@@ -242,6 +243,18 @@ class PadMonitor(ClickableMonitor):
                             edgecolor='black')
                 self.port = ep
                 board_monitor.plot.add_patch(ep)
+                
+            s = plot.annotate(text='S', xy=(0,0),
+                              xytext=(0.5, 0.5),
+                              xycoords=square,
+                              horizontalalignment='center',
+                              fontsize='x-small',
+                              color='darkslateblue')
+            self.sensors = s
+            self.note_sensors(pad.sensors)
+            pad.on_sensors_change(lambda _old, new: self.note_sensors(new))
+                
+            
 
         pad.on_state_change(lambda _,new: board_monitor.in_display_thread(lambda : self.note_state(new)))
         pad.on_drop_change(lambda old,new: board_monitor.in_display_thread(lambda : self.note_drop_change(old, new)))
@@ -318,7 +331,10 @@ class PadMonitor(ClickableMonitor):
             magnet.set_color('darkslateblue')
             magnet.set_weight('normal')
             magnet.set_bbox(None)
-
+            
+    def note_sensors(self, sensors: Sequence[Sensor]) -> None:
+        is_target = len(sensors) > 0
+        self.sensors.set_visible(is_target)
 
     def drop_radius(self, drop: Drop) -> float:
         square_width: int = self.square.get_width()

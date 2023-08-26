@@ -29,10 +29,10 @@ interactive
 
   
 declaration returns [Optional[Type] type, str pname, int n]
-  : LOCAL? 'future' not_future_type name INJECT target=expr
+  : LOCAL? 'future' not_future_type name inject_sep target=expr
     {$ctx.pname=$name.text}
     {$ctx.type=$not_future_type.type.future}
-  | LOCAL? 'future' not_future_type INT INJECT target=expr
+  | LOCAL? 'future' not_future_type INT inject_sep target=expr
     {$ctx.n=$INT.int}
     {$ctx.type=$not_future_type.type.future}
   | LOCAL name ASSIGN init=expr
@@ -109,11 +109,11 @@ expr
   | dist=expr direction              # delta_expr
   | kind=numbered_type '#' which=expr # numbered_expr
   | 'an'? empty='empty' sample_type				# sample_expr
-  | quant=expr ATTR 'magnitude' 'in' dim_unit # magnitude_expr
+  | quant=expr attr_sep'magnitude' 'in' dim_unit # magnitude_expr
   | quant=expr 'as' 'a'? 'string' 'in' dim_unit # unit_string_expr
-  | obj=expr ATTR attr existence?      # attr_expr
-  | obj=expr ATTR MAYBE? attr             # attr_expr
-  | obj=expr ATTR '(' MAYBE ')' attr             # attr_expr
+  | obj=expr attr_sep attr existence?      # attr_expr
+  | obj=expr attr_sep MAYBE? attr             # attr_expr
+  | obj=expr attr_sep '(' MAYBE ')' attr             # attr_expr
   | val=expr existence                   # existence_expr
   | start_dir=expr 'turned' turn          # turn_expr
   | dist=expr 'in' ('dir' | 'direction') d=expr # in_dir_expr
@@ -153,16 +153,17 @@ expr
   | who=expr '[' which=expr ']'      # index_expr
   | 'drop' ('@' | 'at') loc=expr     # drop_expr 
   | vol=expr ('@' | 'at') loc=expr   # drop_expr
-  | who=expr INJECT what=expr        # injection_expr
+  | who=expr inject_sep what=expr        # injection_expr
   | first=expr 'if' cond=expr 'else' second=expr  # cond_expr
   | macro_def                        # macro_expr
   | 'the'? value_type                # type_name_expr
   | value_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
   | name                             # name_expr
-  | multi_word_name                  # mw_name_expr
+  | prefix_func=name '¯\\_(ツ)_/¯' args+=expr             # function_expr
+//  | multi_word_name                  # mw_name_expr
   | which=name ASSIGN what=expr    # name_assign_expr
-  | obj=expr ATTR attr ASSIGN what=expr  # attr_assign_expr
+  | obj=expr attr_sep attr ASSIGN what=expr  # attr_assign_expr
   | ptype=value_type n=INT ASSIGN what=expr # name_assign_expr
   | string # string_lit_expr
   | INT                              # int_expr
@@ -235,8 +236,10 @@ macro_header
 param returns[Type type, str pname, int n, bool deprecated]
   : 'a' value_type {$ctx.type=$value_type.type} 
   | 'an'? INJECTABLE? value_type {$ctx.type=$value_type.type}
-  | INJECTABLE? value_type {$ctx.type=$value_type.type} INT {$ctx.n=$INT.int} 
-  | INJECTABLE? value_type name {$ctx.type=$value_type.type} {$ctx.pname=$name.text}
+  | 'a' value_type {$ctx.type=$value_type.type} INT {$ctx.n=$INT.int} 
+  | 'an'? INJECTABLE? value_type {$ctx.type=$value_type.type} INT {$ctx.n=$INT.int} 
+  | 'a' value_type name {$ctx.type=$value_type.type} {$ctx.pname=$name.text}
+  | 'an'? INJECTABLE? value_type name {$ctx.type=$value_type.type} {$ctx.pname=$name.text}
   | INJECTABLE? name ':' value_type {$ctx.type=$value_type.type} {$ctx.pname=$name.text} {$ctx.deprecated=True}
   ;
   
@@ -497,14 +500,17 @@ old_attr returns[str which]
   )
   	{$ctx.which=$n.text}
   ;
+  
+attr_sep: '\'s' | '.';
+inject_sep: ':' | '|';
 
 ADD: '+';
 ASSIGN: '=';
-ATTR: '\'s' | '.';
+//ATTR: '\'s' | '.';
 DIV: '/';
 FUTURE: 'future';
 INTERACTIVE: 'interactive';
-INJECT: ':';
+//INJECT: ':' | '|';
 INJECTABLE: 'injectable';
 ISNT: 'isn\'t';
 LOCAL: 'local';

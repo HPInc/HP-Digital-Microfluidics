@@ -783,7 +783,7 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad, TempControllable):
     """
     The :class:`.ChangeCallbackList` monitoring :attr:`reserved`
     """
-
+    
     @property
     def well(self) -> Optional[Well]:
         """
@@ -871,6 +871,13 @@ class Pad(BinaryComponent['Pad'], DropLoc, LocatedPad, TempControllable):
     """
     Has the :class:`Pad` been reserved?
     """
+    
+    _sensors: MonitoredProperty[Sequence[Sensor]] = MonitoredProperty(default=())
+    @property
+    def sensors(self) -> Sequence[Sensor]:
+        return self._sensors
+    
+    on_sensors_change: ChangeCallbackList[Sequence[Sensor]] = _sensors.callback_list
 
     def __init__(self, loc: XYCoord, board: Board,
                  state: State[OnOff], *, exists: bool = True) -> None:
@@ -4882,7 +4889,8 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
         
     name: Final[str]
     aiming_laser: Final[Optional[Laser]]
-    target: Optional[Pad]
+    target: MonitoredProperty[Optional[Pad]] = MonitoredProperty(default=None)
+    on_target_change: ChangeCallbackList[Optional[Pad]] = target.callback_list
     _n_samples: MissingOr[int] = MISSING
     _sample_interval: MissingOr[Time] = MISSING
     
@@ -4898,6 +4906,12 @@ class Sensor(BoardComponent, ExternalComponent, ABC):
         super().__init__(board)
         self.name = name
         self.aiming_laser = aiming_laser
+        def update_pads(old: Optional[Pad], new: Optional[Pad]) -> None:
+            if old is not None:
+                old._sensors = tuple(s for s in old.sensors if s is not self)
+            if new is not None:
+                new._sensors = (*new._sensors, self)
+        self.on_target_change(update_pads)
         self.target = target
         if n_samples is not None:
             self._n_samples = n_samples
