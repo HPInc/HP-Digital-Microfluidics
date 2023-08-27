@@ -33,7 +33,7 @@ from quantities.core import Unit, Dimensionality, NamedDim, Quantity
 from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from erk.stringutils import map_str, conj_str
 import math
-from functools import reduce
+from functools import reduce, cached_property
 from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn
 from re import Match
 from threading import RLock
@@ -423,6 +423,13 @@ class MotionValue(CallableValue):
     @abstractmethod
     def move(self, drop: Drop) -> Delayed[MaybeError[Drop]]: ... # @UnusedVariable
     
+    @abstractmethod
+    def _format(self) -> str: ...
+    
+    @cached_property
+    def formatted(self) -> str:
+        return self._format()
+    
     _sig: ClassVar[Signature] = Signature.of((Type.DROP,), Type.DROP)
     
     def __init__(self) -> None:
@@ -433,6 +440,41 @@ class MotionValue(CallableValue):
         drop = args[0]
         assert isinstance(drop, Drop)
         return self.move(drop)
+    
+class AdaptedMotionValue(MotionValue):
+    fn: Final[CallableValue]
+    takes_drop: Final[bool]
+    returns_drop: Final[bool]
+    
+    def __init__(self, fn: CallableValue) -> None:
+        super().__init__()
+        self.fn = fn
+        sig = fn.sig
+        arity = sig.arity
+        assert arity <= 1
+        self.takes_drop = arity == 1
+        rt = sig.return_type
+        assert rt is Type.NO_VALUE or rt is Type.DROP
+        self.returns_drop = rt is Type.DROP
+        
+    def __str__(self) -> str:
+        return f"Adapted[{self.fn}]"
+    
+    def _format(self) -> str:
+        return Type.format_default(self.fn)
+    
+    def move(self, drop:Drop) -> Delayed[MaybeError[Drop]]:
+        args = (drop,) if self.takes_drop else ()
+        if self.returns_drop:
+            f: Delayed[MaybeError[Drop]] = self.fn.apply(args)
+            return f
+        else:
+            f2: Delayed[MaybeError[None]] = self.fn.apply(args)
+            def check(v: MaybeError[None]) -> MaybeError[Drop]:
+                return v if isinstance(v, EvaluationError) else drop
+            return f2.transformed(check)
+        
+        ...
         
     
 class DeltaValue(MotionValue):
@@ -446,6 +488,11 @@ class DeltaValue(MotionValue):
         
     def __str__(self) -> str:
         return f"Delta({self.dist}, {self.direction})"
+    
+    def _format(self) -> str:
+        d = Type.DIR.format_val(self.direction)
+        n = Type.INT.format_val(self.dist)
+        return f"{n} {d}"
         
     def move(self, drop:Drop)->Delayed[Drop]:
         path = Path.walk(self.direction, steps = self.dist)
@@ -475,6 +522,10 @@ class UnsafeWalkValue(MotionValue):
     def __str__(self) -> str:
         return f"UnsafeWalk({self.delta.dist}, {self.delta.direction})"
     
+    def _format(self) -> str:
+        delta = Type.DELTA.format_val(self.delta)
+        return f"{delta} (unsafe)"
+    
     def move(self, drop:Drop)->Delayed[Drop]:
         delta = self.delta
         path = Path.walk(delta.direction, steps = delta.dist, allow_unsafe = True)
@@ -483,6 +534,10 @@ class UnsafeWalkValue(MotionValue):
     
     
 class RemoveDropValue(MotionValue):
+    
+    def _format(self) -> str:
+        return "remove from board"
+    
     def move(self, drop:Drop)->Delayed[Drop]:
         if drop.status is not DropStatus.ON_BOARD:
             print(f"{Type.DROP.format_val(drop)} is not on board.  Cannot remove")
@@ -501,15 +556,25 @@ class ToPadValue(MotionValue):
         
     def __str__(self) -> str:
         return f"ToPad({self.dest})"
-        
+    
+    def _format(self) -> str:
+        pad = Type.PAD.format_val(self.dest)
+        return f"to {pad}"
         
     def move(self, drop:Drop)->Delayed[Drop]:
         path = Path.to_pad(self.dest)
         return path.schedule_for(drop)
 
 class ToWellValue(ToPadValue):
+    well: Final[Well]
     def __init__(self, well: Well) -> None:
         super().__init__(well.exit_pad)
+        self.well = well
+        
+    def _format(self) -> str:
+        well = Type.WELL.format_val(self.well)
+        return f"to {well}"
+        
 
 class ToRowColValue(MotionValue):
     dest: Final[int]
@@ -523,6 +588,11 @@ class ToRowColValue(MotionValue):
     def __str__(self) -> str:
         which = "Row" if self.verticalp else "Col"
         return f"To{which}({self.dest})"
+    
+    def _format(self) -> str:
+        n = Type.INT.format_val(self.dest)
+        kind = "row" if self.verticalp else "column"
+        return f"to {kind} {n}"
 
     def move(self, drop:Drop)->Delayed[Drop]:
         if self.verticalp:
@@ -540,6 +610,10 @@ class ChangeReagentValue(MotionValue):
         
     def __str__(self) -> str:
         return f"ChangeReagent({self.reagent})"
+    
+    def _format(self) -> str:
+        r = Type.REAGENT.format_val(self.reagent)
+        return f"become {r}"
 
     def move(self, drop: Drop) -> Delayed[Drop]:
         drop.reagent = self.reagent
@@ -684,6 +758,10 @@ class AcceptMergeValue(MotionValue):
     def __str__(self) -> str:
         return f"AcceptMergeFrom({self.from_dir})"
     
+    def _format(self) -> str:
+        d = Type.DIR.format_val(self.from_dir)
+        return f"accept merge from {d}"
+    
     def move(self, drop: Drop) -> Delayed[Drop]:
         path = Path.start(MergeProcessType(self.from_dir))
         return path.schedule_for(drop)
@@ -703,6 +781,10 @@ class MergeIntoValue(JoinValue):
     def __str__(self) -> str:
         return f"MergeInto({self.to_dir})"
     
+    def _format(self) -> str:
+        d = Type.DIR.format_val(self.to_dir)
+        return f"merge into {d}"
+    
 class MixWithValue(MotionValue):
     to_dir: Final[Dir]
     
@@ -713,6 +795,10 @@ class MixWithValue(MotionValue):
     def __str__(self) -> str:
         return f"MixWith({self.to_dir})"
     
+    def _format(self) -> str:
+        d = Type.DIR.format_val(self.to_dir)
+        return f"mix with {d}"
+
     def move(self, drop: Drop) -> Delayed[Drop]:
         d = self.to_dir
         if d is Dir.SOUTH or d is Dir.EAST:
@@ -740,6 +826,10 @@ class SplitToValue(MotionValue):
     def __str__(self) -> str:
         return f"SplitTo({self.to_dir})"
     
+    def _format(self) -> str:
+        d = Type.DIR.format_val(self.to_dir)
+        return f"split to {d}"
+
     def move(self, drop: Drop) -> Delayed[Drop]:
         path = Path.start(SplitProcessType(self.to_dir, self.new_drop_future))
         return path.schedule_for(drop)
@@ -1206,6 +1296,18 @@ Type.register_conversion(Type.ON, Type.TWIDDLE_OP, to_const(TwiddleBinaryValue.O
 Type.register_conversion(Type.OFF, Type.TWIDDLE_OP, to_const(TwiddleBinaryValue.OFF))
 for st in SampleType.all():
     Type.register_conversion(st, st.element_type, lambda s: s.mean)
+
+def convert_to_motion(fn: CallableValue) -> Delayed[MissingOr[MotionValue]]:
+    sig = fn.sig
+    if sig.arity > 1:
+        return Delayed.complete(MISSING)
+    if sig.arity == 1 and sig.param_types[0] is not Type.DROP:
+        return Delayed.complete(MISSING)
+    rt = sig.return_type
+    if rt is not Type.DROP and rt is not Type.NO_VALUE:
+        return Delayed.complete(MISSING)
+    return Delayed.complete(AdaptedMotionValue(fn))
+Type.MOTION.from_callable = convert_to_motion
 
 
 class Executable:
@@ -4410,6 +4512,15 @@ class DMLCompiler(dmlVisitor):
             return name
         Type.register_default_formatter(Func, print_built_in)
         
+        def print_composed(cc: ComposedCallable) -> str:
+            prefix = Type.format_default(cc.first)
+            last = Type.format_default(cc.second)
+            if isinstance(cc.second, ComposedCallable):
+                return f"{prefix} : ({last})"
+            else:
+                return f"{prefix} : {last}"
+        Type.register_default_formatter(ComposedCallable, print_composed)
+
         def print_pause_for(p: PauseValue) -> str:
             d = Type.DELAY.format_val(p.duration)
             return f"pause for {d}"
@@ -4418,6 +4529,27 @@ class DMLCompiler(dmlVisitor):
         def print_pause_until(p: PauseUntilValue) -> str:
             return f"pause until ({p.desc})"
         Type.register_default_formatter(PauseUntilValue, print_pause_until)
+        
+        def print_motion(m: MotionValue) -> str:
+            return m.formatted
+        Type.register_default_formatter(MotionValue, print_motion) # type: ignore[type-abstract]
+        
+        # def print_delta(delta: DeltaValue) -> str:
+        #     d = Type.DIR.format_val(delta.direction)
+        #     n = Type.INT.format_val(delta.dist)
+        #     return f"{n} {d}"
+        # Type.register_default_formatter(DeltaValue, print_delta)
+        #
+        # def print_to_pad(motion: ToPadValue) -> str:
+        #     pad = Type.PAD.format_val(motion.dest)
+        #     return f"to {pad}"
+        # Type.register_default_formatter(ToPadValue, print_to_pad)
+        #
+        # def print_to_well(motion: ToWellValue) -> str:
+        #     well = Type.WELL.format_val(not_None(motion.dest.well))
+        #     return f"to {well}"
+        # Type.register_default_formatter(ToWellValue, print_to_well)
+        
         
 DMLCompiler.setup_attributes()
 DMLCompiler.setup_function_table()

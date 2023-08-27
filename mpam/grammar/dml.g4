@@ -283,7 +283,7 @@ atomic_type returns[Type type]
   | 'state' {$ctx.type=Type.BINARY_STATE}
   | 'binary' {$ctx.type=Type.BINARY_CPT}
   | 'delta' {$ctx.type=Type.DELTA}
-  | 'motion' {$ctx.type=Type.MOTION}
+  | ('motion' | 'path') {$ctx.type=Type.MOTION}
   | 'delay' {$ctx.type=Type.DELAY}
   | 'bool' {$ctx.type=Type.BOOL}
   | ('direction' | 'dir') {$ctx.type=Type.DIR}

@@ -145,6 +145,8 @@ class Type:
     conversions: ClassVar[dict[tuple[Type,Type], Callable[[Any],Any]]] = {}
     compatible: ClassVar[set[tuple[Type,Type]]] = set()
     
+    from_callable: _Converter = SpecialValueConverter.NO_CONVERSION
+    
     @cached_property
     def maybe(self) -> MaybeType:
         return MaybeType(self)
@@ -546,8 +548,7 @@ class Type:
     def register_delayed_conversion(cls, have: Type, want: Type, converter: Optional[Callable[[Any], Delayed[Any]]]) -> None:
         with cls._class_lock:
             have._conversions[want] = SpecialValueConverter.NO_CONVERSION if converter is None else converter
-         
-        
+            
     # @classmethod
     # def value_compatible(cls, have: Union[Type, Sequence[Type]], want: Union[Type, Sequence[Type]]) -> None:
     #     if isinstance(have, Type):
@@ -1127,6 +1128,10 @@ class CallableType(Type):
         # If we can find a conversion by normal means, we use it
         cv = super()._find_conversion_to(other)
         if cv is SpecialValueConverter.NO_CONVERSION:
+            from_me = other.from_callable
+            if from_me is not SpecialValueConverter.NO_CONVERSION:
+                return from_me
+            
             # If not and the the other is a CallableType that can use a (straight)
             # CallableValue, we try to create a converter.
             if isinstance(other, CallableType) and CallableValue in other.rep_types:
