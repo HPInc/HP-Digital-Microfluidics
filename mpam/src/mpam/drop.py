@@ -303,6 +303,7 @@ class Blob(OpScheduler['Blob']):
     pull_key: Final[str] = "Pull to blob"
     attachment_attr: Final[str] = "_attached_blob"
     attached_to_well: bool = False
+    dead: bool = False
 
     @property
     def has_inner_well_pad(self) -> bool:
@@ -374,6 +375,8 @@ class Blob(OpScheduler['Blob']):
 
     def __repr__(self) -> str:
         status = "pinned" if self.pinned else "unpinned"
+        if self.dead:
+            status = "DEAD! "+status
         if self.total_volume.is_zero:
             cdesc = "empty"
         else:
@@ -432,6 +435,8 @@ class Blob(OpScheduler['Blob']):
         if well.volume.is_positive:
             desired = self.n_display_pads*well.dispensed_volume-self.total_volume
             # The only way we go down is when we partition, and that's a new blob.
+            if desired.is_negative:
+                logger.critical(f"Bad blob: {self}")
             assert not desired.is_negative
             if desired.is_positive:
                 # At this point, either we're doing an initial pull or we've already
@@ -477,8 +482,9 @@ class Blob(OpScheduler['Blob']):
 
     def die(self) -> None:
         self.pads.clear()
-        # if self.has_gate and self.well is not None:
-        #     self.detach_from_well()
+        self.dead = True
+        if self.attached_to_well:
+            self.detach_from_well()
 
     def mix_in(self, liquid: Liquid, mix_result: Optional[MixResult] = None) -> None:
         if liquid.volume.is_positive:
