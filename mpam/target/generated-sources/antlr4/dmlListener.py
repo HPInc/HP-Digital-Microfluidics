@@ -1006,6 +1006,15 @@ class dmlListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by dmlParser#future.
+    def enterFuture(self, ctx:dmlParser.FutureContext):
+        pass
+
+    # Exit a parse tree produced by dmlParser#future.
+    def exitFuture(self, ctx:dmlParser.FutureContext):
+        pass
+
+
     # Enter a parse tree produced by dmlParser#name.
     def enterName(self, ctx:dmlParser.NameContext):
         pass

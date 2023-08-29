@@ -29,10 +29,10 @@ interactive
 
   
 declaration returns [Optional[Type] type, str pname, int n]
-  : LOCAL? 'future' not_future_type name inject_sep target=expr
+  : LOCAL? future not_future_type name inject_sep target=expr
     {$ctx.pname=$name.text}
     {$ctx.type=$not_future_type.type.future}
-  | LOCAL? 'future' not_future_type INT inject_sep target=expr
+  | LOCAL? future not_future_type INT inject_sep target=expr
     {$ctx.n=$INT.int}
     {$ctx.type=$not_future_type.type.future}
   | LOCAL name ASSIGN init=expr
@@ -258,8 +258,8 @@ no_arg_action returns[str which]
   ;
   
 value_type returns[Type type]
-  : FUTURE not_future_type {$ctx.type=$not_future_type.type.future}
-  | '(' FUTURE ')' not_future_type {$ctx.type=$not_future_type.type.future}
+  : future not_future_type {$ctx.type=$not_future_type.type.future}
+  | '(' future')' not_future_type {$ctx.type=$not_future_type.type.future}
   | not_future_type {$ctx.type=$not_future_type.type}
   ;
   
@@ -412,6 +412,8 @@ bool_val returns[bool val]
   : ('True' | 'true' | 'TRUE' | 'Yes' | 'yes' | 'YES') {$ctx.val=True}
   | ('False' | 'false' | 'FALSE' | 'No' | 'no' | 'NO') {$ctx.val=False}
   ;
+  
+future : 'future' | 'eventual';
 
 name returns[str val]
   : multi_word_name {$ctx.val=$multi_word_name.val}
@@ -508,7 +510,8 @@ ADD: '+';
 ASSIGN: '=';
 //ATTR: '\'s' | '.';
 DIV: '/';
-FUTURE: 'future';
+//FUTURE: 'future';
+//EVENTUAL: 'eventual';
 INTERACTIVE: 'interactive';
 //INJECT: ':' | '|';
 INJECTABLE: 'injectable';

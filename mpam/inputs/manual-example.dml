@@ -35,8 +35,8 @@ voltage reading_target = 75V;
 //} 
 
 
-define shuttle(an injectable drop) {
-    repeat n_shuttles times {
+define shuttle(an injectable drop, int n) {
+    repeat n times {
        the drop : east : west;
     }
  }
@@ -81,16 +81,16 @@ define rp {
     // the other with a drop of D.
     // Shuttle each (walk back and forth)
     // to mix.
-    future drop d2;
+    (eventual) drop d2;
     [[
        d1 : split to south as d2
           : to pComb2
           : accept merge from right
-          : shuttle
+          : shuttle(n_shuttles)
           ;
        d2 : to pComb3
           : accept merge from right
-          : shuttle
+          : shuttle(n_shuttles)
           ;
        C_well : dispense drop
               : to pComb2 + 2 right

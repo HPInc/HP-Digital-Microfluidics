@@ -567,6 +567,11 @@ class dmlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dmlParser#future.
+    def visitFuture(self, ctx:dmlParser.FutureContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dmlParser#name.
     def visitName(self, ctx:dmlParser.NameContext):
         return self.visitChildren(ctx)
