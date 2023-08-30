@@ -121,7 +121,8 @@ expr
   | dist=expr rc[0]           # n_rc_expr
   | amount=expr dim_unit             # unit_expr
   | amount=expr 'per' dim_unit             # unit_recip_expr
-  | amount=expr 'C'					 # temperature_expr
+  | amount=expr 'C'					 # temperature_expr_C
+  | amount=expr 'F'					 # temperature_expr_F
   | 'the'? (reagent 'reagent'?)		 # reagent_lit_expr
   | ('the' | 'a')? 'reagent' 'named'? which=expr # reagent_expr
   | vol=expr 'of' which=expr       # liquid_expr
@@ -280,8 +281,8 @@ sample_type returns [SampleType type]
 atomic_type returns[Type type]
   : 'drop' {$ctx.type=Type.DROP}
   | 'string' {$ctx.type=Type.STRING}
-  | 'state' {$ctx.type=Type.BINARY_STATE}
-  | 'binary' {$ctx.type=Type.BINARY_CPT}
+  | 'binary'? 'state' {$ctx.type=Type.BINARY_STATE}
+  | 'binary' ('cpt' | 'component') {$ctx.type=Type.BINARY_CPT}
   | 'delta' {$ctx.type=Type.DELTA}
   | ('motion' | 'path') {$ctx.type=Type.MOTION}
   | 'delay' {$ctx.type=Type.DELAY}
@@ -296,8 +297,8 @@ atomic_type returns[Type type]
   ;
   
 sampleable_type returns[Type type]
-  : 'int'  {$ctx.type=Type.INT}
-  | ('float' | 'real') {$ctx.type=Type.FLOAT}
+  : ('int' | 'integer') {$ctx.type=Type.INT}
+  | ('float' | 'real' 'number'?) {$ctx.type=Type.FLOAT}
   | ('temp' | 'temperature') 'point'? {$ctx.type=Type.ABS_TEMP}
   | 'timestamp' {$ctx.type=Type.TIMESTAMP}
   | quantity_type {$ctx.type=$quantity_type.type}
@@ -370,6 +371,7 @@ attr
   | 'x' ('coord' | 'coordinate')
   | 'exit' ('dir' | 'direction')
   | 'remaining' 'capacity'
+  | 'number'
   | 'fill' 'level'
   | 'refill' 'level'
   | 'target' ('temp' | 'temperature')
@@ -436,8 +438,13 @@ multi_word_name returns[str val]
   | 'take' ('a'? 'reading' | 'readings') {$ctx.val="take reading"}
   | 'current' 'time' {$ctx.val="current time"}
   | 'time' 'now' {$ctx.val="current time"}
+  | 'time' 'since' {$ctx.val="current since"}
+  | 'time' 'until' {$ctx.val="current until"}
   | 'write' 'to'? 'csv'? 'file' {$ctx.val="write to csv file"}
   | 'the' 'clock' {$ctx.val="the clock"}
+  | 'in' 'H:M:S' {$ctx.val="in hr_min_sec"}
+  | 'in' 'H:M' {$ctx.val="in hr_min"}
+  | 'in' 'M:S' {$ctx.val="in min_sec"}
   ;
 
 kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
@@ -455,6 +462,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'prepare' | 'to' | 'dispense'
   | 'samples' | 'sampling' | 'rate' | 'interval'
   | 'reading'
+  | 'number'
   | 'target'
   | 'first' | 'last' | 'value'
   | 'current' | 'now'
@@ -468,6 +476,9 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'board' | 'clock'
   | 'start' | 'restart' | 'resume' | 'pause'
   | 'mix' | 'split' | 'accept' | 'merge'
+  | 'remaining'
+  | 'hr_min_sec' | 'min_sec' | 'hr_min'
+  | 'cpt' | 'component'
   ;
 
 string : STRING ;

@@ -74,7 +74,7 @@ fps = feet_per_second = foot_per_second = (ft/s).as_unit("fps")
 mph = miles_per_hour = mile_per_hour = (mi/hr).as_unit("mph")
 
 # temperature
-deg_F = degrees_F = degree_F = (1.8*SI.deg_C).as_unit("°F")
+deg_F = degrees_F = degree_F = ((5.0/9)*SI.deg_C).as_unit("°F")
 degrees_Fahrenheit = degree_Fahrenheit = deg_F
 
 # work

@@ -38,7 +38,7 @@ from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn
 from re import Match
 from threading import RLock
 import re
-from quantities.temperature import TemperaturePoint, abs_C
+from quantities.temperature import TemperaturePoint, abs_C, abs_F
 from quantities.SI import deg_C
 from quantities.timestamp import Timestamp, time_in, time_now
 import logging
@@ -49,6 +49,7 @@ from quantities import timestamp
 from mpam.processes import MultiDropProcessType, MultiDropProcessRun
 from mpam.exceptions import NoSuchPad
 from os.path import isfile
+from quantities.US import deg_F
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor
@@ -1450,18 +1451,22 @@ class NTimesLoopType(LoopType):
 class BoolTestLoopType(LoopType):
     continue_on: Final[bool]
     cond_exec: Final[Executable]
+    is_timestamp: Final[bool]
     
     def __init__(self, header: dmlParser.Test_loop_headerContext, *, compiler: DMLCompiler) -> None:
         super().__init__(compiler)
         self.continue_on = header.WHILE() is not None
         cond_ctx = cast(dmlParser.ExprContext, header.cond)
         cond_exec = self.compiler.visit(cond_ctx)
-        if e := compiler.type_check(Type.BOOL, cond_exec, header,
+        if e := compiler.type_check((Type.BOOL, Type.TIMESTAMP), cond_exec, header,
                                     lambda want,have,text:
                                       f"While/until loop condition must be of type {want}, was {have}: {text}"
                                       ):
             cond_exec = e
+        self.is_timestamp = cond_exec.return_type <= Type.TIMESTAMP
+        
         self.cond_exec = cond_exec
+        
         
     def based_on(self)->Sequence[Executable]:
         return (self.cond_exec,)
@@ -1469,13 +1474,34 @@ class BoolTestLoopType(LoopType):
     def test(self, env: Environment) -> Iterator[Delayed[MaybeError[bool]]]:
         running = True
         
-        def check(b: bool) -> bool:
-            nonlocal running
-            running = b == self.continue_on
-            return running
+        if self.is_timestamp:
+            end_at: Timestamp
+            
+            def check_ts() -> bool:
+                nonlocal running
+                now = timestamp.time_now()
+                running = now < end_at
+                # logger.info(f"{now} >= {end_at}: {running")
+                return running
+            
+            def note_end(ts: Timestamp) -> bool:
+                nonlocal end_at;
+                end_at = ts
+                return check_ts()
+                
+            yield (self.cond_exec.evaluate(env, Type.TIMESTAMP)
+                   .transformed(error_check(note_end)))
+            while running:
+                yield Delayed.complete(check_ts())
+        else:
         
-        while running:
-            yield self.cond_exec.evaluate(env, Type.BOOL).transformed(error_check(check))
+            def check(b: bool) -> bool:
+                nonlocal running
+                running = b == self.continue_on
+                return running
+            
+            while running:
+                yield self.cond_exec.evaluate(env, Type.BOOL).transformed(error_check(check))
         
 class ForDurationLoopType(LoopType):
     duration_exec: Final[Executable]
@@ -3591,8 +3617,11 @@ class DMLCompiler(dmlVisitor):
     def visitUnit_string_expr(self, ctx:dmlParser.Unit_exprContext) -> Executable:
         return self.unit_string_exec(ctx.dim_unit().unit, ctx, ctx.quant)
     
-    def visitTemperature_expr(self, ctx:dmlParser.Temperature_exprContext) -> Executable:
+    def visitTemperature_expr_C(self, ctx:dmlParser.Temperature_expr_CContext) -> Executable:
         return self.use_function("TEMP_C", ctx, (ctx.amount,))
+    
+    def visitTemperature_expr_F(self, ctx:dmlParser.Temperature_expr_FContext) -> Executable:
+        return self.use_function("TEMP_F", ctx, (ctx.amount,))
     
     # def visitDrop_vol_expr(self, ctx:dmlParser.Drop_vol_exprContext) -> Executable:
     #     return self.use_function("DROP_VOL", ctx, (ctx.amount,))
@@ -3684,7 +3713,9 @@ class DMLCompiler(dmlVisitor):
                                    ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
                                    ((Type.REL_TEMP, Type.ABS_TEMP), Type.ABS_TEMP),
                                    ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
-                                   ((Type.VOLTAGE, Type.VOLTAGE), Type.VOLTAGE)
+                                   ((Type.VOLTAGE, Type.VOLTAGE), Type.VOLTAGE),
+                                   ((Type.TIMESTAMP, Type.TIME), Type.TIMESTAMP),
+                                   ((Type.TIME, Type.TIMESTAMP), Type.TIMESTAMP),
                                    ], lambda x,y: x+y)
         fn.register_immediate((Type.PAD, Type.DELTA), Type.PAD, lambda p,d: add_delta(p, d.direction, d.dist))
         fn.register_all_immediate([((Type.STRING, Type.ANY), Type.STRING),
@@ -3711,7 +3742,9 @@ class DMLCompiler(dmlVisitor):
                                    ((Type.REL_TEMP, Type.REL_TEMP), Type.REL_TEMP),
                                    ((Type.ABS_TEMP, Type.REL_TEMP), Type.ABS_TEMP),
                                    ((Type.ABS_TEMP, Type.ABS_TEMP), Type.REL_TEMP),
-                                   ((Type.VOLTAGE, Type.VOLTAGE), Type.VOLTAGE)
+                                   ((Type.VOLTAGE, Type.VOLTAGE), Type.VOLTAGE),
+                                   ((Type.TIMESTAMP, Type.TIMESTAMP), Type.TIME),
+                                   ((Type.TIMESTAMP, Type.TIME), Type.TIME),
                                    ], lambda x,y: x-y)
         
          
@@ -3867,6 +3900,11 @@ class DMLCompiler(dmlVisitor):
         fn.postfix_op("C")
         fn.register_immediate((Type.NUMBER,), Type.AMBIG_TEMP, 
                               lambda n: AmbiguousTemp(absolute=n*abs_C, relative=n*deg_C))
+        
+        fn = Functions["TEMP_F"]
+        fn.postfix_op("F")
+        fn.register_immediate((Type.NUMBER,), Type.AMBIG_TEMP, 
+                              lambda n: AmbiguousTemp(absolute=n*abs_F, relative=n*deg_F))
         
         fn = Functions["RESET PADS"]
         fn.register((), Type.NO_VALUE, WithEnv(lambda env: env.board.reset_pads()))
@@ -4131,6 +4169,18 @@ class DMLCompiler(dmlVisitor):
         fn.register((Type.WELL, Type.VOLUME), Type.WELL, ensure_well, curry_at=0)
         fn.register((Type.WELL, Type.LIQUID, Type.VOLUME), Type.WELL, ensure_well, curry_at=0)
         fn.register((Type.WELL, Type.VOLUME, Type.VOLUME), Type.WELL, ensure_well, curry_at=0)
+        
+        fn = BuiltIns["time until"] = Functions["time until"]
+        fn.register_immediate((Type.TIMESTAMP,), Type.TIME, lambda ts: timestamp.time_until(ts))
+        fn = BuiltIns["time since"] = Functions["time since"]
+        fn.register_immediate((Type.TIMESTAMP,), Type.TIME, lambda ts: timestamp.time_since(ts))
+        
+        fn = BuiltIns["in hr_min_sec"] = Functions["in hr_min_sec"]
+        fn.register_immediate((Type.TIME,), Type.STRING, lambda t: str(t.in_HMS()))
+        fn = BuiltIns["in min_sec"] = Functions["in min_sec"]
+        fn.register_immediate((Type.TIME,), Type.STRING, lambda t: str(t.in_MS()))
+        fn = BuiltIns["in hr_min"] = Functions["in hr_min"]
+        fn.register_immediate((Type.TIME,), Type.STRING, lambda t: str(t.in_HM()))
             
 
         
@@ -4399,7 +4449,7 @@ class DMLCompiler(dmlVisitor):
                 Attributes["count"].register(st, Type.INT, lambda s: s.count)
                 for a in ("first", "first value"):
                     Attributes[a].register(st, t.maybe, lambda s: None if s.is_empty else s.first)
-                for a in ("last", "lastvalue"):
+                for a in ("last", "last value"):
                     Attributes[a].register(st, t.maybe, lambda s: None if s.is_empty else s.last)
                 for a in ("min", "minimum", "min value", "minimum value"):
                     Attributes[a].register(st, t.maybe, lambda s: None if s.is_empty else s.min)

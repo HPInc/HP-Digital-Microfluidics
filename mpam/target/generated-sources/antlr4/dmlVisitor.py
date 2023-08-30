@@ -187,11 +187,6 @@ class dmlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by dmlParser#temperature_expr.
-    def visitTemperature_expr(self, ctx:dmlParser.Temperature_exprContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by dmlParser#mix_expr.
     def visitMix_expr(self, ctx:dmlParser.Mix_exprContext):
         return self.visitChildren(ctx)
@@ -379,6 +374,16 @@ class dmlVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by dmlParser#pause_until_expr.
     def visitPause_until_expr(self, ctx:dmlParser.Pause_until_exprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dmlParser#temperature_expr_C.
+    def visitTemperature_expr_C(self, ctx:dmlParser.Temperature_expr_CContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by dmlParser#temperature_expr_F.
+    def visitTemperature_expr_F(self, ctx:dmlParser.Temperature_expr_FContext):
         return self.visitChildren(ctx)
 
 

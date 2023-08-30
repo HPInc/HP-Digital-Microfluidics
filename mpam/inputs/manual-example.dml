@@ -41,6 +41,28 @@ define shuttle(an injectable drop, int n) {
     }
  }
 
+define incubate { 
+    incubator's target = incubation_temp;
+    wait until incubator is ready;
+
+    print "Incubating at", incubation_temp, 
+				"for", (incubation_time : in H:M:S)+".";
+    
+    
+    timestamp end_at = time now + incubation_time;
+    
+    time pause_length = 1 s;
+    
+    repeat until end_at {
+       time remaining = time until(end_at);
+       print time now+":", (remaining : in M:S), "left.";
+       
+       time t = remaining if remaining < pause_length else pause_length;
+       wait for t;
+    }
+    incubator : off;
+} 
+
 define rp {
    // Set up the wells
    A_well : require(1 drop of A);
@@ -101,11 +123,7 @@ define rp {
               : merge into left
               ;  
     ]]
-    incubator's target = incubation_temp;
-    wait until incubator is ready;
-    print "Incubating";
-    wait for incubation_time; 
-    incubator : off;
+    incubate;
     
     define finish_up(injectable drop d) {
       d : to e's target;
@@ -127,5 +145,5 @@ define rp {
        d1 : finish_up;
     ]]
     
-    print "Done";
+    prompt "Finished at", time now;
  }
