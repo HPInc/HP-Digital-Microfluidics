@@ -11,7 +11,7 @@ from langsup.type_supp import Type
 class Config:
     dml_dirs: Final = ConfigParam[list[str]]([])
     dml_file_names: Final = ConfigParam[list[str]]([])
-    dml_encoding: Final = ConfigParam('ascii')
+    dml_encoding: Final = ConfigParam('utf8')
 
 class DMLInterpreter:
     interp: Final[dml.DMLInterpreter]

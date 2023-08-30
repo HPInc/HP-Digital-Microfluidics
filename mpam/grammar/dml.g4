@@ -514,7 +514,7 @@ old_attr returns[str which]
   	{$ctx.which=$n.text}
   ;
   
-attr_sep: '\'s' | '.';
+attr_sep: '\'s' | '.' | '’s';
 inject_sep: ':' | '|';
 
 ADD: '+';

@@ -1705,7 +1705,7 @@ class DMLInterpreter:
     namespace: Final[TypeMap]
     
     def __init__(self, file_names: Sequence[str], *, board: Board, 
-                 encoding: str='ascii', 
+                 encoding: str='UTF-8', 
                  errors: str='strict',
                  dirs: Sequence[str]=[],
                  ) -> None:

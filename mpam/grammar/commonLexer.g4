@@ -26,7 +26,7 @@ fragment EXPT : [eE] '-'? INT;
 FLOAT : INT '.' INT EXPT? | INT EXPT;
 
 fragment STRING_CHAR
-  : ~["\\\r\n]
+  : ~["“”\\\r\n]
   | ESC_SEQ
   ;
 
@@ -37,7 +37,8 @@ fragment ESC_SEQ
   | '\\' 'u' HEX HEX HEX HEX
   ;
 
-STRING : '"' STRING_CHAR* '"' ;
+fragment DQ : '"' | '“' | '”';
+STRING : DQ STRING_CHAR* DQ ;
 
 EOL_COMMENT : '//' .*? '\r'? '\n' -> skip ;
 COMMENT : '/*' .*? '*/' -> skip ;
