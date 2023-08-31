@@ -6,7 +6,6 @@
 
 // Protocol parameters
 
-
 reagent A = reagent "A";
 reagent B = reagent "B";
 reagent C = reagent "C";
@@ -75,8 +74,6 @@ define incubate {
     }
     incubator : off;
 }
-
-
 
 // The protocol
 
@@ -171,5 +168,4 @@ define run_protocol {
     ]]
     
     prompt "Finished at", time now;
-
 }
