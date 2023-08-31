@@ -52,7 +52,8 @@ declaration returns [Optional[Type] type, str pname, int n]
   
 stat
   : declaration TERMINATOR # decl_stat
-  | macro_declaration            # macro_def_stat
+  | m=macro_declaration {not $m.need_term}?            # macro_def_stat
+  | m=macro_declaration {$m.need_term}? TERMINATOR           # macro_def_stat
   | 'if' tests+=expr bodies+=compound 
      ('else' 'if' tests+=expr bodies+=compound)*
      ('else' else_body=compound)?              # if_stat
@@ -218,12 +219,13 @@ axis returns [bool verticalp]
   ;
   
   
-macro_declaration
-  : macro_def
+macro_declaration returns [bool need_term]
+  : macro_def {$ctx.need_term=$macro_def.need_term}
   ;
   
-macro_def
-  : macro_header (compound | ':' expr)
+macro_def returns [bool bool need_term]
+  : macro_header compound {$ctx.need_term=False}
+  | macro_header ':' expr {$ctx.need_term=True}
   ;
   
 macro_header
