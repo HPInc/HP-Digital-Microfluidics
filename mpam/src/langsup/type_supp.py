@@ -1536,7 +1536,8 @@ class Rel(Enum):
         if self is Rel.EQ or self is Rel.NE:
             return candidates[0]
         ok_types = (Type.INT, Type.FLOAT, Type.TIME, Type.TICKS, Type.VOLUME, 
-                    Type.ABS_TEMP, Type.REL_TEMP, Type.VOLTAGE)
+                    Type.ABS_TEMP, Type.REL_TEMP, Type.VOLTAGE, Type.FREQUENCY,
+                    Type.TIMESTAMP)
         for t in candidates:
             for ok in ok_types:
                 if t <= ok:

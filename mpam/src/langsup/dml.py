@@ -2873,7 +2873,6 @@ class DMLCompiler(dmlVisitor):
             return (lhs.evaluate(env, ub_t)
                     .chain(lambda x: (rhs.check_and_eval(x, env, ub_t)
                                       .transformed(error_check(lambda y: rel.test(x, y))))))
-            # return future.chain(second)
         return Executable(Type.BOOL, run, (lhs,rhs))
     
     
@@ -4554,6 +4553,7 @@ class DMLCompiler(dmlVisitor):
         Type.register_default_formatter(int, lambda i: format(i, ","))
         Type.register_default_formatter(float, lambda i: format(i, ","))
         Type.register_default_formatter(Quantity, lambda i: format(i, ","))
+        Type.register_default_formatter(bool, lambda b: "true" if b else "false")
         
         def print_built_in(fn: Func) -> str:
             name = fn.name

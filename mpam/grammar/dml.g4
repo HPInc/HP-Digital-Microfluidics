@@ -343,7 +343,7 @@ dim_unit returns[PhysUnit unit]
   | ('drop' | 'drops') {$ctx.unit=EnvRelativeUnit.DROP}
   | ('V' | 'volt' | 'volts') {$ctx.unit=SI.volts}
   | ('mV' | 'millivolt' | 'millivolts') {$ctx.unit=SI.millivolts}
-  | ('Hz' | 'hz') {$ctx.unit=SI.hertz}
+  | ('Hz' | 'hz' | 'hertz') {$ctx.unit=SI.hertz}
   ;
   
 numbered_type returns[NumberedItem kind]
