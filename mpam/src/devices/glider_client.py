@@ -180,6 +180,10 @@ class ThermalState:
         return self.remote.GetStatus()
     
     @property
+    def expected_transition_time(self) -> Time:
+        return self.remote.GetExpectedTransitionTimeInMS()*ms
+    
+    @property
     def is_transitioning(self) -> bool:
         return self.status is pyglider.ThermalState.ThermalStateStatus.Transitioning
     
@@ -265,6 +269,7 @@ class GliderClient:
             
     def __init__(self, board_type: pyglider.BoardId, *,
                  revision: float,
+                 use_thermal_states: bool = True,
                  dll_dir: Optional[Union[str, PathLike]] = None,
                  config_dir: Optional[Union[str, PathLike]] = None) -> None:
         if config_dir is None:
@@ -272,7 +277,8 @@ class GliderClient:
         dll_dir = _to_path(dll_dir)
         config_dir = _to_path(config_dir)
         self.remote = pyglider.Board.Find(board_type,
-                                          board_rev=revision, 
+                                          board_rev=revision,
+                                          use_thermal_states=use_thermal_states, 
                                           dll_dir=dll_dir,
                                           config_dir=config_dir)
         # self.remote_electrodes = { e.GetName(): e for e in b.GetElectrodes()}

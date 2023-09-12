@@ -20,6 +20,7 @@ class Config:
     voltage = ConfigParam(60*volts)
     thermal_state_tolerance = ConfigParam(0*deg_C)
     remember_thermal_state_decisions = ConfigParam(True)
+    use_thermal_states = ConfigParam(True)
 
     _defaults_set_up = False
     @classmethod
@@ -109,8 +110,12 @@ class PlatformTask(joey.PlatformTask):
                                                            action=BooleanOptionalAction,
                                   help=f'''
                                    Whether to remember (and not prompt again for) the choice of
-                                   a thermal state when asking for a target temperature for a heater
+                                   a thermal state when asking for a target temperature for a heater.
                                    ''')
+        Config.use_thermal_states.add_arg_to(group, "--thermal-states", action=BooleanOptionalAction,
+                                             help=f'''
+                                             Whether to use thermal states (if the board has them).
+                                             ''')
 
         
 

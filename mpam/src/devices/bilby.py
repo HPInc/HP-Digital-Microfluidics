@@ -30,6 +30,7 @@ class Config:
     voltage = bilby_task.Config.voltage
     thermal_state_tolerance = bilby_task.Config.thermal_state_tolerance
     remember_thermal_state_decisions = bilby_task.Config.remember_thermal_state_decisions
+    use_thermal_states = bilby_task.Config.use_thermal_states
     
     setup_defaults = bilby_task.Config.setup_defaults
 
@@ -214,6 +215,10 @@ class ThermalState:
     def number(self) -> int:
         return self.remote.number
     
+    @cached_property
+    def transition_time(self) -> Time:
+        return self.remote.expected_transition_time
+    
     def __init__(self, remote: glider_client.ThermalState, *,
                  board: Board) -> None:
         self.board = board
@@ -333,6 +338,7 @@ class Board(joey.Board):
         
         dll_dir = Config.dll_dir()
         config_dir = Config.config_dir()
+        use_thermal_states = Config.use_thermal_states()
         
         revision: float
         layout = joey.Config.layout()
@@ -344,7 +350,8 @@ class Board(joey.Board):
             assert_never(layout)
             
         self._device = GliderClient(pyglider.BoardId.Wallaby, revision=revision, 
-                                    dll_dir=dll_dir, config_dir=config_dir)
+                                    dll_dir=dll_dir, config_dir=config_dir,
+                                    use_thermal_states=use_thermal_states)
         
         current_voltage = self._device.voltage_level
         if current_voltage is None:

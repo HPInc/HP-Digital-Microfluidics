@@ -54,7 +54,7 @@ class Board():
         Enable high voltage
         """
     @staticmethod
-    def Find(boardID: BoardId, *, board_rev: float, dll_dir: typing.Optional[os.PathLike] = None, config_dir: typing.Optional[os.PathLike] = None) -> Board: 
+    def Find(boardID: BoardId, *, board_rev: float, use_thermal_states: bool = True, dll_dir: typing.Optional[os.PathLike] = None, config_dir: typing.Optional[os.PathLike] = None) -> Board: 
         """
         Find a board of the given type.
         """
@@ -875,6 +875,7 @@ class ThermalState():
             :type: float
             """
         pass
+    def GetExpectedTransitionTimeInMS(self) -> int: ...
     def GetName(self) -> str: ...
     def GetNumber(self) -> int: ...
     def GetStatus(self) -> ThermalState.ThermalStateStatus: ...
