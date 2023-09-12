@@ -1,3 +1,0 @@
-[submodule "mpam/extern/release-binaries"]
-	path = mpam/extern/release-binaries
-	url = git@github.azc.ext.hp.com:DMFSoftware/release-binaries.git
