@@ -8,21 +8,14 @@ def speed_up {
   incubation_time = 3 seconds;
 }
 
-define prep_well(well w, reagent r) -> well 
-{
-  w's reagent = r;
-  w's fill level = initial_fill;
-  w : fill;
-  return w;  
-}
 
 define prep_wells() 
 {
   // or whatever the actual reagents are.
-  prep_well(well #3, reagent "R3");
-  prep_well(well #4, reagent "R4"); 
-  prep_well(well #7, reagent "R7"); 
-  prep_well(well #8, reagent "R8"); 
+  well #3 : require(1 drop of reagent "R3", initial_fill);
+  well #4 : require(1 drop of reagent "R4", initial_fill);
+  well #7 : require(1 drop of reagent "R7", initial_fill);
+  well #8 : require(1 drop of reagent "R8", initial_fill);
 }
 
 define walk_circle(injectable drop, direction hdir)
@@ -60,14 +53,22 @@ define make_small_drop(well top, well bottom) -> drop
 define make_big_drop -> drop
 {
   drop A;
-  drop B;
+  future drop B;
   [[
       A = make_small_drop(well #3, well #4)
           : accept merge from south
-          : walk_circle(east);
-      B = make_small_drop(well #7, well #8)
+          : split to south as B
+          : walk_circle(east)
+          : accept merge from south
+          ;
+      make_small_drop(well #7, well #8)
           : south 2 : west 12
           : merge into north;
+      B : east 8 : north 2
+        : walk_circle(east)
+        : south 2 : west 8
+        : merge into north
+        ;
   ]]
   return A; 
 }
@@ -75,66 +76,6 @@ define make_big_drop -> drop
 define dna_comb
 {
    prep_wells();
-   
-   drop C = make_big_drop();
-   
-   // Get the heater moving toward the
-   // correct temperature.
-   
-   incubator's target = incubation_temp;
-   
-   // split into 4 drops and move into position.
-   
-   // "future" drops hold off doing anything until
-   // the variable is assigned to explicitly or
-   // implicitly, as in a "split" operation.
-   future drop lower_right;
-   future drop upper_right;
-   future drop upper_left;
-   drop lower_left = C;
-   
-   [[
-      lower_left : split to south as lower_right
-                 : split to north as upper_left
-//                 : down 2 : east 5;
-                 : east 5 : down 2;
-      lower_right : east 7
-                  : split to north as upper_right;
-      upper_right : north 2;
-      upper_left : east 5;
-   ]]
-   
-   wait until incubator is ready;
-   wait for incubation_time;
-   incubator : off;
-   wait until incubator is ambient;
-   
-   // Merge the drops back together 
-   // at the extraction point.
-   
-   [[
-      lower_left
-        : west 3 : up 2
-        : accept merge from north    // drop 4
-        : accept merge from south;   // drop 2/3
-      upper_left 
-        : west 3 
-        : merge into south; // C
-      lower_right
-        : accept merge from north    // drop 3
-        : west 5
-        : merge into north; // C
-      upper_right
-        : south 2
-        : merge into south; // drop 2
-   ]]
-   
-   C : transfer out;
-}
-
-define dna_comb_no_load
-{
-   //prep_wells();
    
    drop C = make_big_drop();
    
