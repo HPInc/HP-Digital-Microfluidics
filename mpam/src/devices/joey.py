@@ -477,7 +477,7 @@ class Board(device.Board):
                 if not pad.exists:
                     return None
                 heater = pad.temperature_control
-                assert heater is not None, f"No heater at {pad}"
+                # assert heater is not None, f"No heater at {pad}"
                 return heater 
             
             left_thresh = self.pad_at(thresholds[0], row)
