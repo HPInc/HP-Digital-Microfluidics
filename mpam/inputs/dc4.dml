@@ -57,14 +57,14 @@ define make_big_drop -> drop
   [[
       A = make_small_drop(well #3, well #4)
           : accept merge from south
-          : split to south as B
+          : split to east as B
           : walk_circle(east)
           : accept merge from south
           ;
       make_small_drop(well #7, well #8)
           : south 2 : west 12
           : merge into north;
-      B : east 8 : north 2
+      B : south 2 : east 6 : north 2
         : walk_circle(east)
         : south 2 : west 8
         : merge into north
