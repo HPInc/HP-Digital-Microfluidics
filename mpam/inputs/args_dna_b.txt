@@ -1,0 +1,14 @@
+hybrid
+--od-version=4.1
+--joey-version=1.5
+--clock-speed=500ms
+--trace-clicks
+--lid-type=plastic
+--no-default-holes
+--heaters=tsr
+--hole=6,4
+--hole=6,16
+--dll-dir=../../../glider_2023-09-13-00
+--config-dir=../../../glider_2023-09-13-00
+--macro-dir=../inputs
+--macro-file=dc4.dml
