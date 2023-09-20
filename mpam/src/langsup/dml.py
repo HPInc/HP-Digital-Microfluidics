@@ -4366,6 +4366,11 @@ class DMLCompiler(dmlVisitor):
         for a in ("target", "target temp", "target temperature"):
             Attributes[a].register(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, lambda h: h.target)
             Attributes[a].register_setter(Type.TEMP_CONTROL, Type.ABS_TEMP.maybe, set_tc_target)
+            
+        def set_tolerance(tc: TemperatureControl, t: Temperature) -> None:
+            tc.tolerance = t
+        Attributes["tolerance"].register(Type.TEMP_CONTROL, Type.REL_TEMP, lambda h: h.tolerance,
+                                         setter = set_tolerance)
         
         for a in (f"{a} {b}" for a,b in product(("max", "maximum"), ("target", "temperature", "temp"))):
             Attributes[a].register(Type.HEATER, Type.ABS_TEMP, lambda h: h.max_target)
