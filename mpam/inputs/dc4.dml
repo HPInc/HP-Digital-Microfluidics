@@ -105,7 +105,12 @@ define dna_comb
       upper_left : east 5;
    ]]
    
-   wait until incubator is ready;
+   incubator : on;
+   
+   // hack until glider updates the reading of temperatures when using thermal states,
+   // or thermal state status is used to determine readiness
+   wait 5 minutes;
+   
    wait for incubation_time;
    incubator : off;
    wait until incubator is ambient;
