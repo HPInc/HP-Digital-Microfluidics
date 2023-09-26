@@ -3,19 +3,23 @@ volume initial_fill    = 10uL;
   time incubation_time = 1 hour;
   temp incubation_temp = 50C;
 heater incubator       = (9,6)'s heater;
+  time heat_wait_time = 5 minutes;
+  time update_interval = 10 seconds;
 
 def speed_up {
-  incubation_time = 3 seconds;
+  incubation_time = 10 seconds;
+  heat_wait_time = 10 seconds;
+  update_interval = 2 seconds;
 }
 
 
 define prep_wells() 
 {
   // or whatever the actual reagents are.
-  well #3 : require(1 drop of reagent "R3", initial_fill);
-  well #4 : require(1 drop of reagent "R4", initial_fill);
-  well #7 : require(1 drop of reagent "R7", initial_fill);
-  well #8 : require(1 drop of reagent "R8", initial_fill);
+  well #3 : require(2 drop of reagent "R3", initial_fill);
+  well #4 : require(2 drop of reagent "R4", initial_fill);
+  well #7 : require(2 drop of reagent "R7", initial_fill);
+  well #8 : require(2 drop of reagent "R8", initial_fill);
 }
 
 define walk_circle(injectable drop, direction hdir)
@@ -73,15 +77,41 @@ define make_big_drop -> drop
   return A; 
 }
 
+define countdown(time total, time interval) {
+  timestamp end_at = time now + total;
+  
+  repeat until end_at {
+     time remaining = time until(end_at);
+     print time now+":", (remaining : in M:S), "left.";
+     time t = remaining if remaining < interval else interval;
+     wait for t;
+  }
+}
+
 define dna_comb
 {
    prep_wells();
+   
+   future drop Y;
+   [[
+      make_big_drop()
+         : split north as Y
+         : north 2
+         : east 4
+         : merge into east
+         ;
+      Y : north 2 : east 6
+        : accept merge from west
+        ;
+   ]]
+   
    
    drop C = make_big_drop();
    
    // Get the heater moving toward the
    // correct temperature.
    
+   print "Heating", incubator, "to ", incubation_temp; 
    incubator's target = incubation_temp;
    
    // split into 4 drops and move into position.
@@ -90,28 +120,31 @@ define dna_comb
    // the variable is assigned to explicitly or
    // implicitly, as in a "split" operation.
    future drop lower_right;
-   future drop upper_right;
    future drop upper_left;
    drop lower_left = C;
+   drop upper_right = Y;
    
    [[
       lower_left : split to south as lower_right
-                 : split to north as upper_left
 //                 : down 2 : east 5;
                  : east 5 : down 2;
-      lower_right : east 7
-                  : split to north as upper_right;
-      upper_right : north 2;
-      upper_left : east 5;
+      lower_right : east 7;
+      upper_right : split west as upper_left
+                  : east;
+      upper_left : east;
    ]]
    
+//   wait until incubator is ready;
    incubator : on;
-   
    // hack until glider updates the reading of temperatures when using thermal states,
    // or thermal state status is used to determine readiness
-   wait 5 minutes;
-   
-   wait for incubation_time;
+   print "Waiting for", heat_wait_time, "in lieu of trusting the board to report its temperature.";
+   countdown(heat_wait_time, update_interval);
+   print "Assuming the heater is at", incubation_temp+".";
+   print "Incubating for", incubation_time+".";
+   countdown(incubation_time, update_interval);
+
+   prompt "Hit OK when you're ready to transfer fluid off the board.";
    incubator : off;
    wait until incubator is ambient;
    
