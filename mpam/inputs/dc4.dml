@@ -144,9 +144,9 @@ define dna_comb
    print "Incubating for", incubation_time+".";
    countdown(incubation_time, update_interval);
 
-   prompt "Hit OK when you're ready to transfer fluid off the board.";
    incubator : off;
    wait until incubator is ambient;
+   prompt "Hit OK when you're ready to transfer fluid off the board.";
    
    // Merge the drops back together 
    // at the extraction point.
