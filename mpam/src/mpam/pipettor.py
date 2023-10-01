@@ -8,9 +8,9 @@ import logging
 from erk.errors import ErrorHandler, PRINT
 from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
     ProductLocation, ExternalComponent
-from mpam.types import Reagent, OpScheduler, Callback, \
+from mpam.types import Reagent, OpScheduler, \
     Liquid, Delayed, AsyncFunctionSerializer, T, XferDir, \
-    unknown_reagent, MixResult, Postable, WaitableType, NO_WAIT, \
+    unknown_reagent, MixResult, Postable, WaitableType, \
     CSOperation, MonitoredProperty, ChangeCallbackList
 from quantities.SI import uL
 from quantities.dimensions import Volume
@@ -456,10 +456,6 @@ class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
 
     def system_shutdown(self) -> None:
         pass
-
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: WaitableType = NO_WAIT) -> None:
-        self.sys_cpt.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: WaitableType) -> Delayed[T]:

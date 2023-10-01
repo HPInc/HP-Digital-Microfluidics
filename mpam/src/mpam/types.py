@@ -16,7 +16,7 @@ import random
 from threading import Event, Lock, RLock, Thread
 from typing import Union, Literal, Generic, TypeVar, Optional, Callable, Any, \
     cast, Final, ClassVar, Mapping, overload, Hashable, Tuple, Sequence, \
-    Generator, Protocol, Iterable
+    Generator, Protocol, Iterable, runtime_checkable
 import typing
 from weakref import WeakKeyDictionary, finalize
 
@@ -29,7 +29,7 @@ from quantities.dimensions import Molarity, MassConcentration, \
 from quantities.temperature import TemperaturePoint
 from functools import cached_property
 from quantities.SI import sec, deg_C
-from erk.basic import assert_never
+from erk.basic import assert_never, ComputedDefaultDict, not_None
 from quantities.timestamp import Timestamp
 import statistics
 
@@ -713,31 +713,75 @@ def not_Missing(x: MissingOr[T], *,
     assert x is not MISSING, error_msg()
     return x
 
+@runtime_checkable
+class CanDelay(Protocol):
+    def call_after(self, after: DelayType, fn: Callback) -> None: ... # @UnusedVariable
+    
+class DelayScheduler:
+    checked_classes: Final = ComputedDefaultDict[type, bool](lambda t: isinstance(t, CanDelay))
+    
+    @classmethod
+    def for_obj(cls, obj: Any) -> Optional[CanDelay]:
+        obj_type = type(obj)
+        return cast(CanDelay, obj) if cls.checked_classes[obj_type] else None
+    
+    @classmethod
+    def call_and_ignore(cls,
+                        after: WaitableType,
+                        fn: Callable[[], V],
+                        *, obj: Any) -> None:
+        match after:
+            case NoWait.SINGLETON | Time.ZERO | Ticks.ZERO:
+                fn()
+            case Time() | Ticks():
+                assert after > 0
+                can_delay = not_None(cls.for_obj(obj),
+                                     desc = lambda: f"{after} ({type(after)}) doesn't support call_after().")
+                can_delay.call_after(after, fn)
+            case Trigger():
+                after.on_trigger(fn)
+            case Delayed():
+                after.when_value(lambda _: fn())
+            case _:
+                assert_never(after)
+                
+    @classmethod
+    def call_and_return(cls,
+                        after: WaitableType,
+                        fn: Callable[[], V],
+                        *, obj: Any) -> Delayed[V]:
+        match after:
+            case NoWait.SINGLETON | Time.ZERO | Ticks.ZERO:
+                return Delayed.complete(fn())
+        future = Postable[V]()
+        def run_then_post() -> None:
+            future.post(fn())
+            
+        cls.call_and_ignore(after, run_then_post, obj=obj)
+        return future
+
+    @classmethod
+    def call_and_chain(cls,
+                        after: WaitableType,
+                        fn: Callable[[], Delayed[V]],
+                        *, obj: Any) -> Delayed[V]:
+        match after:
+            case NoWait.SINGLETON | Time.ZERO | Ticks.ZERO:
+                return fn()
+        future = Postable[V]()
+        def run_then_post() -> None:
+            fn().post_to(future)
+        cls.call_and_ignore(after, run_then_post, obj=obj)
+        return future
+
+    
+        
 
 class CommunicationScheduler(Protocol):
     """
     A :class:`typing.Protocol` that matches classes that define
-    :func:`schedule_communication` and :func:`delayed`
+    :func:`delayed`
     """
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,  # @UnusedVariable
-                               after: WaitableType = NO_WAIT) -> None:  # @UnusedVariable
-        """
-        Schedule communication of ``cb`` after optional delay ``after``
-
-        This is typically implemented by delegating and will result in calling
-        :func:`SystemComponent.schedule`, which will call
-        :func:`System.on_tick` if ``after`` is a :class:`Ticks` value and
-        :func:`System.communicate` if ``after`` is a :class:`.Time` value.  If
-        ``after`` is ``None``, it is up to the :class:`SystemComponent` to
-        determine whether it should be interpreted as zero ticks or zero
-        seconds.
-
-        Args:
-            cb: the callback function to schedule.
-        Keyword Args:
-            after: An optional delay before scheduling.
-        """
-        ...
     def delayed(self, function: Callable[[], T], *, # @UnusedVariable
                 after: WaitableType) -> Delayed[T]: # @UnusedVariable
         """
@@ -840,18 +884,24 @@ class Operation(Generic[T, V], ABC):
             return future
 
         real_obj = obj
-        future = Postable[V]()
-        def cb() -> None:
-            self._schedule_for(real_obj, post_result=post_result).post_to(future)
-        self.after_delay(after, cb, obj=obj)
-        return future
-
+        def cb() -> Delayed[V]:
+            return self._schedule_for(real_obj, post_result=post_result)
+        return DelayScheduler.call_and_chain(after, cb, obj=obj)
+    
     @abstractmethod
     def after_delay(self,
-                    after: WaitableType,        # @UnusedVariable
-                    fn: Callable[[], V2],       # @UnusedVariable
-                    *, obj: T) -> Delayed[V2]:  # @UnusedVariable
+                    after: WaitableType,        
+                    fn: Callable[[], V2],       
+                    *, obj: T) -> Delayed[V2]:
         ...
+        # match after:
+        #     case NoWait.SINGLETON | Time.ZERO | Ticks.ZERO:
+        #         return Delayed.complete(fn())
+        #     case Time() | Ticks():
+        #         cd = DelayScheduler.for_obj(obj)
+                
+
+            
 
     def then(self,
              op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
@@ -1344,11 +1394,9 @@ class StaticOperation(Generic[V], ABC):
             a :class:`Delayed`\[:attr:`V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        future = Postable[V]()
-        def cb() -> None:
-            self._schedule(post_result=post_result).post_to(future)
-        self.scheduler.delayed(cb, after=after)
-        return future
+        def cb() -> Delayed[V]:
+            return self._schedule(post_result=post_result)
+        return DelayScheduler.call_and_chain(after, cb, obj=self.scheduler)
 
     def then(self, op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                              Callable[[], Operation[V, V2]],

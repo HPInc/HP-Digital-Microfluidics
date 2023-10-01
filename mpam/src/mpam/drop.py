@@ -17,7 +17,7 @@ from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
 from mpam.types import Liquid, Dir, Delayed, \
     OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
     StaticOperation, Reagent, Callback, T, MixResult, Postable, \
-    CSOperation, WaitableType, NO_WAIT, ComputeOp, V2, Operation, OnOff, Barrier
+    CSOperation, WaitableType, ComputeOp, V2, Operation, OnOff, Barrier
 from quantities.core import qstr
 from quantities.dimensions import Volume
 
@@ -839,10 +839,6 @@ class Drop(OpScheduler['Drop']):
             place = f"{st.name}: "
 
         return f"Drop[{place}{self.pad}{liquid}]"
-
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: WaitableType = NO_WAIT) -> None:
-        self.pad.schedule_communication(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: WaitableType) -> Delayed[T]:

@@ -77,18 +77,6 @@ class BoardComponent:
         """
         self.board = board
 
-    def schedule_communication(self, cb: Callable[[], Optional[Callback]], *,
-                               after: WaitableType = NO_WAIT) -> None:
-        """
-        Schedule communication of ``cb`` after optional delay ``after`` by
-        delegating to :attr:`board`
-
-        Args:
-            cb: the callback function to schedule
-        Keyword Args:
-            after: an optional delay before scheduling
-        """
-        self.board.schedule(cb, after=after)
 
     def delayed(self, function: Callable[[], T], *,
                 after: WaitableType) -> Delayed[T]:
@@ -5246,7 +5234,7 @@ class Board(SystemComponent):
     
     def remove_pad_at(self, x: int, y: int) -> None:
         xy = XYCoord(x, y)
-        self.pads[xy] = Pad(xy, self, DummyState(initial_state=OnOff.OFF), 
+        self.pads[xy] = Pad(xy, self, DummyState(initial_state=OnOff.OFF),
                             exists = False)
 
     @cached_property

@@ -7,7 +7,7 @@ import logging.config
 import pathlib
 from threading import Event
 from typing import Final, Union, Optional, Sequence, Any, Callable, \
-    NoReturn
+    NoReturn, TypeVar
 
 from matplotlib.gridspec import SubplotSpec
 
@@ -83,14 +83,22 @@ class Task(ABC):
     def available_wells(self, exerciser: Exerciser) -> Sequence[int]:
         return exerciser.available_wells()
     
+_N = TypeVar('_N')
 class _DeferredSubtaskParser(ArgumentParser):
     def __init__(self, *,
                  finish: Callable[[ArgumentParser], Any], 
                  **kwargs: Any) -> None:
         self.finish = finish
         self.parser = ArgumentParser(**kwargs)
-    def parse_known_args(self, args: Optional[Sequence[str]]=None, 
-                         namespace: Optional[Namespace]=None) -> tuple[Namespace, list[str]]:
+    # 10/23: MyPy 1.5.1 Thinks there's a clash between this and the superclass
+    # definition, and even with GPT-4's help I've been unable to find a set of
+    # overloads that satisfies it.  Since this will only be used as an
+    # ArgumentParser and only passes its arguments to another ArgumentParser, this should be safe.
+    
+    def parse_known_args(self, args: Optional[Sequence[str]] = None,        # type: ignore[override] 
+                        namespace: Union[Optional[Namespace], _N, None] = None) -> tuple[Union[Namespace, _N], list[str]]:
+    # def parse_known_args(self, args: Optional[Sequence[str]] = None,
+    #                      namespace: Union[Namespace, _N, None] = None) -> tuple[Namespace|_N, list[str]]:
         self.finish(self.parser)
         return self.parser.parse_known_args(args, namespace)
     
