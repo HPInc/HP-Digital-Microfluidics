@@ -9,9 +9,10 @@ from erk.errors import ErrorHandler, PRINT
 from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
     ProductLocation, ExternalComponent
 from mpam.types import Reagent, OpScheduler, \
-    Liquid, Delayed, AsyncFunctionSerializer, T, XferDir, \
-    unknown_reagent, MixResult, Postable, WaitableType, \
-    CSOperation, MonitoredProperty, ChangeCallbackList
+    Liquid, Delayed, AsyncFunctionSerializer, XferDir, \
+    unknown_reagent, MixResult, Postable, \
+    Operation, MonitoredProperty, ChangeCallbackList, CanDelay, Callback,\
+    DelayType
 from quantities.SI import uL
 from quantities.dimensions import Volume
 from mpam.engine import Worker
@@ -372,7 +373,7 @@ class PipettorSysCpt(SystemComponent):
     def system_shutdown(self) -> None:
         self.pipettor.system_shutdown()
 
-class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
+class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC, CanDelay):
     sys_cpt: Final[PipettorSysCpt]
     OpFunc = Callable[[], None]
     name: Final[str]
@@ -456,10 +457,11 @@ class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
 
     def system_shutdown(self) -> None:
         pass
+    
+    
+    def delay_by(self, after:DelayType, fn:Callback)->None:
+        self.sys_cpt.delay_by(after, fn)
 
-    def delayed(self, function: Callable[[], T], *,
-                after: WaitableType) -> Delayed[T]:
-        return self.sys_cpt.delayed(function, after=after)
     
     def user_str(self, val: Any) -> str:
         if isinstance(val, str):
@@ -467,7 +469,7 @@ class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
         return Config.value_formatter().format(val)
 
 
-    class Supply(CSOperation['Pipettor', Liquid]):
+    class Supply(Operation['Pipettor', Liquid]):
         reagent: Final[Reagent]
         volume: Final[Volume]
         target: Final[PipettingTarget]
@@ -501,7 +503,7 @@ class Pipettor(OpScheduler['Pipettor'], ExternalComponent, ABC):
                                     on_unknown=self.on_no_source, on_insufficient=self.on_insufficient)
             return future
 
-    class Extract(CSOperation['Pipettor', Liquid]):
+    class Extract(Operation['Pipettor', Liquid]):
         volume: Final[Optional[Volume]]
         reagent: Final[Optional[Reagent]]
         target: Final[PipettingTarget]

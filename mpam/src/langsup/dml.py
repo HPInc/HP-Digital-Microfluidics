@@ -917,7 +917,7 @@ class PauseValue(InjectableStatementValue):
         
     def invoke(self)->Delayed[None]:
         # print(f"Pausing for {self.duration}")
-        return self.board.delayed(lambda : None, after=self.duration)
+        return self.board.delay_by_and_return(self.duration, lambda : None)
     
 class PauseUntilValue(InjectableStatementValue):
     env: Final[Environment]

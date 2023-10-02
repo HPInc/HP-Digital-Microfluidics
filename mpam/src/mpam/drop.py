@@ -17,7 +17,8 @@ from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
 from mpam.types import Liquid, Dir, Delayed, \
     OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
     StaticOperation, Reagent, Callback, T, MixResult, Postable, \
-    CSOperation, WaitableType, ComputeOp, V2, Operation, OnOff, Barrier
+    Operation, WaitableType, ComputeOp, OnOff, Barrier,\
+    DelayScheduler
 from quantities.core import qstr
 from quantities.dimensions import Volume
 
@@ -669,13 +670,6 @@ class Blob(OpScheduler['Blob']):
                     p.schedule(modifier).then_call(lambda _: barrier.pass_through())
             return future
         
-        def after_delay(self, after:WaitableType, 
-                        fn:Callable[[], V2], 
-                        *, obj: Blob) -> Delayed[V2]:
-            pads = self._binary_components(obj)
-            assert len(pads) != 0, f"Blob {obj} has no pads to use to delay"
-            return pads[0].delayed(fn, after=after)
-        
     TurnOn: ClassVar[SetPadStates]
     TurnOff: ClassVar[SetPadStates]
     
@@ -690,7 +684,7 @@ class DropStatus(Enum):
     OFF_BOARD = auto()
 
 
-class MotionOp(CSOperation['Drop', 'Drop'], ABC):
+class MotionOp(Operation['Drop', 'Drop'], ABC):
     allow_unsafe: Final[bool]
 
     def __init__(self, *, allow_unsafe: bool):
@@ -842,7 +836,7 @@ class Drop(OpScheduler['Drop']):
 
     def delayed(self, function: Callable[[], T], *,
                 after: WaitableType) -> Delayed[T]:
-        return self.pad.delayed(function, after=after)
+        return DelayScheduler.call_and_return(after, function, obj=self.pad)
 
 
     class AppearAt(StaticOperation['Drop']):
@@ -907,7 +901,7 @@ class Drop(OpScheduler['Drop']):
                 liquid.reagent, liquid.volume, mix_result=self.mix_result)
             return self.extraction_point.schedule(op, post_result=post_result)
 
-    class TeleportOut(CSOperation['Drop', None]):
+    class TeleportOut(Operation['Drop', None]):
         volume: Final[Optional[Volume]]
         product_loc: Final[Optional[Postable[ProductLocation]]]
 
@@ -1061,7 +1055,7 @@ class Drop(OpScheduler['Drop']):
             run_group(None)
             return future
 
-    class EnterWell(CSOperation['Drop',None]):
+    class EnterWell(Operation['Drop',None]):
         well: Final[Optional[Well]]
         empty_wrong_reagent: Final[bool]
 
@@ -1132,8 +1126,4 @@ class Drop(OpScheduler['Drop']):
 
 
 class DropComputeOp(ComputeOp[Drop,Drop]):
-    def after_delay(self,
-                    after: WaitableType,
-                    fn: Callable[[], V2],
-                    *, obj: Drop) -> Delayed[V2]:
-        return obj.delayed(fn, after=after)
+    ...

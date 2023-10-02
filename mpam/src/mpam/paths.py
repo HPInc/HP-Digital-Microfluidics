@@ -11,7 +11,7 @@ from mpam.drop import Drop, DropComputeOp
 from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
 from mpam.types import StaticOperation, Operation, Delayed, \
     schedule, Dir, Reagent, Liquid, XYCoord, Barrier, T, \
-    WaitableType, Callback, Postable, NO_WAIT, CSOperation, \
+    WaitableType, Callback, Postable, NO_WAIT, \
     Trigger
 from quantities.dimensions import Volume
 import logging
@@ -50,9 +50,9 @@ class Path:
                                         post_result=post_result if is_last else True)
 
     class EndStep(Step):
-        op: Final[CSOperation[Drop, None]]
+        op: Final[Operation[Drop, None]]
 
-        def __init__(self, op: CSOperation[Drop, None], after: WaitableType) -> None:
+        def __init__(self, op: Operation[Drop, None], after: WaitableType) -> None:
             super().__init__(after=after)
             self.op = op
 
@@ -188,7 +188,7 @@ class Path:
         def extended(self, path: Path.Middle) -> Path.Start:
             return self+path
 
-    class Middle(CSOperation[Drop, Drop]):
+    class Middle(Operation[Drop, Drop]):
         middle_steps: Final[tuple[Path.MiddleStep, ...]]
 
         def __init__(self, middle: tuple[Path.MiddleStep, ...]) -> None:
@@ -311,7 +311,7 @@ class Path:
         def extended(self, path: Path.Middle) -> Path.Middle:
             return self+path
 
-    class End(CSOperation[Drop, None]):
+    class End(Operation[Drop, None]):
         middle_steps: Final[tuple[Path.MiddleStep,...]]
         last_step: Final[Path.EndStep]
 

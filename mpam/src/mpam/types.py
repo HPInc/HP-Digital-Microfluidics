@@ -715,7 +715,21 @@ def not_Missing(x: MissingOr[T], *,
 
 @runtime_checkable
 class CanDelay(Protocol):
-    def call_after(self, after: DelayType, fn: Callback) -> None: ... # @UnusedVariable
+    def delay_by(self, after: DelayType, fn: Callback) -> None: # @UnusedVariable
+        ...
+    def delay_by_and_return(self, after: DelayType, fn: Callable[[], V]) -> Delayed[V]:
+        future = Postable[V]()
+        def run_then_post() -> None:
+            future.post(fn())
+        self.delay_by(after, run_then_post)
+        return future
+    def delay_by_and_chain(self, after: DelayType, fn: Callable[[], Delayed[V]]) -> Delayed[V]:
+        future = Postable[V]()
+        def run_then_post() -> None:
+            fn().post_to(future)
+        self.delay_by(after, run_then_post)
+        return future
+        
     
 class DelayScheduler:
     checked_classes: Final = ComputedDefaultDict[type, bool](lambda t: isinstance(t, CanDelay))
@@ -725,6 +739,7 @@ class DelayScheduler:
         obj_type = type(obj)
         return cast(CanDelay, obj) if cls.checked_classes[obj_type] else None
     
+        
     @classmethod
     def call_and_ignore(cls,
                         after: WaitableType,
@@ -737,7 +752,7 @@ class DelayScheduler:
                 assert after > 0
                 can_delay = not_None(cls.for_obj(obj),
                                      desc = lambda: f"{after} ({type(after)}) doesn't support call_after().")
-                can_delay.call_after(after, fn)
+                can_delay.delay_by(after, fn)
             case Trigger():
                 after.on_trigger(fn)
             case Delayed():
@@ -776,31 +791,6 @@ class DelayScheduler:
 
     
         
-
-class CommunicationScheduler(Protocol):
-    """
-    A :class:`typing.Protocol` that matches classes that define
-    :func:`delayed`
-    """
-    def delayed(self, function: Callable[[], T], *, # @UnusedVariable
-                after: WaitableType) -> Delayed[T]: # @UnusedVariable
-        """
-        Call a function after n optional delay.
-
-        This is typically implemented by delegating and will result in a call to
-        :func:`System.delayed`.
-
-        Args:
-            function: the function to call
-        Keyword Args:
-            after: an optional delay before calling
-        Returns:
-            A :class:`Delayed` object to which the value returned by the function will be posted.
-        """
-        ...
-
-
-CS = TypeVar('CS', bound=CommunicationScheduler)    ; "A generic type variable representing a :class:`CommunicationScheduler`"
 
 class Operation(Generic[T, V], ABC):
     '''
@@ -888,21 +878,6 @@ class Operation(Generic[T, V], ABC):
             return self._schedule_for(real_obj, post_result=post_result)
         return DelayScheduler.call_and_chain(after, cb, obj=obj)
     
-    @abstractmethod
-    def after_delay(self,
-                    after: WaitableType,        
-                    fn: Callable[[], V2],       
-                    *, obj: T) -> Delayed[V2]:
-        ...
-        # match after:
-        #     case NoWait.SINGLETON | Time.ZERO | Ticks.ZERO:
-        #         return Delayed.complete(fn())
-        #     case Time() | Ticks():
-        #         cd = DelayScheduler.for_obj(obj)
-                
-
-            
-
     def then(self,
              op: Union[Operation[V, V2], StaticOperation[V2], # type: ignore [type-var]
                        Callable[[], Operation[V, V2]],
@@ -990,35 +965,6 @@ class Operation(Generic[T, V], ABC):
         return self.then_call(fn2)
 
 
-class CSOperation(Operation[CS, V]):
-    '''
-    An operation that can be scheduled for an object of type :attr:`CS` and returns a delayed value of type :attr:`V`
-
-    The basic notion is that if `op` is an :class:`Operation`\[:attr:`CS`, :attr:`V`] and `t` is a :attr:`CS`, in ::
-
-        dv: Delayed[V] = op.schedule_for(t)
-
-    the call will return immediately, and `dv` will obtain a value of type :attr:`V` at some point
-    in the future, when the operation has completed.
-
-    If :attr:`CS` is a subclass of :class:`OpScheduler`, the same effect can be
-    obtained by calling its :func:`~OpScheduler.schedule` method::
-
-        dv: Delayed[V] = t.schedule(op)
-
-    Note:
-        :class:`Operation`\[:attr:`CS`, :attr:`V`] is an abstract base class.
-        The actual implementation class must implement :func:`_schedule_for`.
-
-    Args:
-        CS: the type of the object used to schedule the :class:`Operation`
-        V: the type of the value produced by the operation
-    '''
-    def after_delay(self,
-                    after: WaitableType,
-                    fn: Callable[[], V2],
-                    *, obj: CS) -> Delayed[V2]:
-        return obj.delayed(fn, after=after)
 
 
 class CombinedOperation(Generic[T, V, V3], Operation[T, V3]):
@@ -1084,12 +1030,6 @@ class CombinedOperation(Generic[T, V, V3], Operation[T, V3]):
         return self.first._schedule_for(obj) \
                     .then_schedule(self.second, after=self.after, post_result=post_result)
 
-    def after_delay(self,
-                    after: WaitableType,
-                    fn: Callable[[], V2],
-                    *, obj: T) -> Delayed[V2]:
-        return self.first.after_delay(after, fn, obj=obj)
-
 
 class ComputeOp(Generic[T, V], Operation[T, V]):
     """
@@ -1134,12 +1074,6 @@ class ComputeOp(Generic[T, V], Operation[T, V]):
         assert post_result == True
         return self.function(obj)
 
-    def after_delay(self,
-                    after: WaitableType,
-                    fn: Callable[[], V2],
-                    *, obj: T) -> Delayed[V2]:
-        raise NotImplementedError('"after_delay" not supported for "ComputeOp"')
-
 
 class OpScheduler(Generic[T]):
     """
@@ -1157,8 +1091,8 @@ class OpScheduler(Generic[T]):
     Args:
         CS: A subclass of :class:`OpScheduler`
     """
-    def schedule(self: CS,
-                 op: Union[Operation[CS, V], Callable[[],Operation[CS, V]]],
+    def schedule(self: T,
+                 op: Union[Operation[T, V], Callable[[],Operation[T, V]]],
                  after: WaitableType = NO_WAIT,
                  post_result: bool = True,
                  ) -> Delayed[V]:
@@ -1179,7 +1113,7 @@ class OpScheduler(Generic[T]):
             op = op()
         return op.schedule_for(self, after=after, post_result=post_result)
 
-    class WaitAt(CSOperation[CS,CS]):
+    class WaitAt(Operation[T,T]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits at a
         :class:`Barrier`.  The operation completes when the appropriate number
@@ -1197,9 +1131,9 @@ class OpScheduler(Generic[T]):
             """
             self.barrier = barrier
 
-        def _schedule_for(self, obj: CS, *,
+        def _schedule_for(self, obj: T, *,
                           post_result: bool = True,  # @UnusedVariable
-                          ) -> Delayed[CS]:
+                          ) -> Delayed[T]:
             """
             Implement :func:`Operation.schedule_for` by pausing at :attr:`barrier`.
 
@@ -1214,11 +1148,11 @@ class OpScheduler(Generic[T]):
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted
             """
-            future = Postable[CS]()
+            future = Postable[T]()
             self.barrier.pause(obj, future)
             return future
 
-    class Reach(Operation[CS,CS]):
+    class Reach(Operation[T,T]):
         """
         An :class:`Operation` during which the :attr:`CS` object reaches a
         :class:`Barrier` but does not pause there.  The operation completes
@@ -1237,9 +1171,9 @@ class OpScheduler(Generic[T]):
             """
             self.barrier = barrier
 
-        def _schedule_for(self, obj: CS, *,
+        def _schedule_for(self, obj: T, *,
                           post_result: bool = True,  # @UnusedVariable
-                          ) -> Delayed[CS]:
+                          ) -> Delayed[T]:
             """
             Implement :func:`Operation.schedule_for` by reaching, but not
             pausing at :attr:`barrier`.
@@ -1255,13 +1189,13 @@ class OpScheduler(Generic[T]):
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted unless ``post_result`` is ``False``
             """
-            future = Postable[CS]()
+            future = Postable[T]()
             self.barrier.pass_through()
             if post_result:
                 future.post(obj)
             return future
 
-    class WaitFor(CSOperation[CS,CS]):
+    class WaitFor(Operation[T,T]):
         """
         An :class:`Operation` during which the :attr:`CS` object waits for a
         :class:`WaitableType` to be satisfied.
@@ -1280,9 +1214,9 @@ class OpScheduler(Generic[T]):
         scheduled.
         """
         waitable: WaitableType  ; "What to wait for"
-        def _schedule_for(self, obj: CS, *,
+        def _schedule_for(self, obj: T, *,
                           post_result: bool = True,  # @UnusedVariable
-                          ) -> Delayed[CS]:
+                          ) -> Delayed[T]:
             """
             Implement :func:`Operation.schedule_for` by waiting for :attr:`waitable`.
 
@@ -1304,21 +1238,9 @@ class OpScheduler(Generic[T]):
                 a :class:`Delayed`\[:attr:`CS`] future object to which ``obj``
                 will be posted
             """
-            future = Postable[CS]()
-
-            waitable = self.waitable
-
-            def cb() -> None:
-                if isinstance(waitable, Delayed):
-                    waitable.when_value(lambda _: future.post(obj))
-                elif isinstance(waitable, Trigger):
-                    waitable.wait(obj, future)
-                else:
-                    assert isinstance(waitable, Time) or isinstance(waitable, Ticks)
-                    wait_future = obj.delayed(lambda: obj, after=waitable)
-                    wait_future.post_to(future)
-            cb()
-            return future
+            return DelayScheduler.call_and_return(self.waitable, 
+                                                  lambda: obj,
+                                                  obj = obj)
 
         def __init__(self, waitable: WaitableType) -> None:
             """
@@ -1355,9 +1277,9 @@ class StaticOperation(Generic[V], ABC):
         V: The type of the value that is the result of the :class:`StaticOperation`
     '''
 
-    scheduler: Final[CommunicationScheduler]
+    scheduler: Final[Any]
 
-    def __init__(self, *, scheduler: CommunicationScheduler) -> None:
+    def __init__(self, *, scheduler: Any) -> None:
         self.scheduler = scheduler
 
     @abstractmethod

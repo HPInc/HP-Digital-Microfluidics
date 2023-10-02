@@ -26,10 +26,10 @@ from mpam.exceptions import PadBrokenError
 from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
     OpScheduler, Orientation, TickNumber, tick, Ticks, \
     unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
-    Callback, MixResult, State, CommunicationScheduler, Postable, \
+    Callback, MixResult, State, Postable, \
     MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
-    NO_WAIT, CSOperation, Trigger, AsyncFunctionSerializer, Missing, \
-    TimestampSample, Sample
+    NO_WAIT, Trigger, AsyncFunctionSerializer, Missing, \
+    TimestampSample, Sample, Operation, CanDelay
 from quantities.SI import volts, deg_C
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
@@ -58,7 +58,7 @@ T = TypeVar('T')            #: A generic type variable
 Modifier = Callable[[T],T]  #: A :class:`Callable` that returns a value of the same type as its argument
 
 
-class BoardComponent:
+class BoardComponent(CanDelay):
     """
     A component of a :class:`Board`.  A :class:`BoardComponent` implements the
     :class:`.CommunicationScheduler` protocol by delegating to its
@@ -76,21 +76,10 @@ class BoardComponent:
             board: the containing :class:`Board`
         """
         self.board = board
+        
+    def delay_by(self, after: DelayType, fn: Callback)->None:
+        self.board.delay_by(after, fn)
 
-
-    def delayed(self, function: Callable[[], T], *,
-                after: WaitableType) -> Delayed[T]:
-        """
-        Call a function after n optional delay by delegating to :attr:`board`
-
-        Args:
-            function: the function to call
-        Keyword Args:
-            after: an optional delay before calling
-        Returns:
-            A :class:`Delayed` object to which the value returned by the function will be posted.
-        """
-        return self.board.delayed(function, after=after)
 
     def user_operation(self, *, desc: Optional[Any] = None) -> UserOperation:
         """
@@ -208,7 +197,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
             return f"{tname}(--no value--)"
 
 
-    class ModifyState(CSOperation[BC, OnOff]):
+    class ModifyState(Operation[BC, OnOff]):
         """
         An :class:`~.Operation` that modifies the :attr:`~BinaryComponent.state`
         of a :class:`BinaryComponent`.
@@ -473,7 +462,7 @@ class PipettingTarget(ABC):
         """
         ...
 
-class DropLoc(ABC, CommunicationScheduler):
+class DropLoc(ABC):
     """
     A location that can hold a :class:`.Drop` and participate in a :class:`.Blob`.
 
@@ -2989,7 +2978,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
         # print(f"Need to empty well ({resulting_volume:g} > {self.max_fill:g}")
         return self.empty_well().transformed(lambda _: self)
 
-    class TransitionTo(CSOperation['Well','Well']):
+    class TransitionTo(Operation['Well','Well']):
         """
         An :class:`.Operation` that requests that a :class:`Well` transition to
         a new :class:`WellState`.  Typically called from
@@ -3573,7 +3562,7 @@ class TemperatureControl(ABC, BinaryComponent['TemperatureControl'], ExternalCom
         """
         return Delayed.complete(None)
 
-    class SetTemperature(CSOperation['TemperatureControl','TemperatureControl']):
+    class SetTemperature(Operation['TemperatureControl','TemperatureControl']):
         """
         A :class:`~.Operation` that modifies the :attr:`~TemperatureControl.target` of a
         :class:`TemperatureControl`.  The :class:`~.Operation` is considered complete (and
@@ -4176,7 +4165,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         self._splash_zone = set(p for p in zone if p.exists)
         self._splash_border = [p for p in border if p.exists]
 
-    class TransferIn(CSOperation['ExtractionPoint', 'Drop']):
+    class TransferIn(Operation['ExtractionPoint', 'Drop']):
         """
         A :class:`~.Operation` to transfer in :class:`.Liquid` via an :class:`ExtractionPoint`.
 
@@ -4263,7 +4252,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                                          ).post_to(future)
             return future
 
-    class TransferOut(CSOperation['ExtractionPoint', 'Liquid']):
+    class TransferOut(Operation['ExtractionPoint', 'Liquid']):
         """
         A :class:`~.Operation` to remove :class:`.Liquid` via an :class:`ExtractionPoint`.
 
@@ -4347,7 +4336,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             return future
 
 
-class SystemComponent(ABC):
+class SystemComponent(ABC, CanDelay):
     """
     A component of a :class:`System`.  Primary examples are :class:`Board` and
     :class:`.Pipettor`.
@@ -4473,7 +4462,7 @@ class SystemComponent(ABC):
 
     # def add_monitor(self, cb: Callback) -> None:
     #     self._monitor_callbacks.append(cb)
-
+    
     def finish_update(self) -> None:
         # This is assumed to only be called in the DevComm thread, so
         # no locking is necessary.
@@ -4564,10 +4553,9 @@ class SystemComponent(ABC):
     def on_tick(self, cb: Callable[[], Optional[Callback]], *, delta: Ticks = Ticks.ZERO) -> None:
         req = self.make_request(cb)
         self.system.on_tick(req, delta=delta)
-
-    def delayed(self, function: Callable[[], T], *,
-                after: WaitableType) -> Delayed[T]:
-        return self.system.delayed(function, after=after)
+        
+    def delay_by(self, after:DelayType, fn:Callback)->None:
+        self.system.delay_by(after, fn)
 
     def schedule(self, cb: Callable[[], Optional[Callback]], *,
                  after: WaitableType = NO_WAIT) -> None:
@@ -5574,7 +5562,7 @@ class Batch:
                 self.system._batch = self.nested
         return False
 
-class System:
+class System(CanDelay):
     board: Board
     engine: Engine
     clock: Clock
@@ -5674,31 +5662,22 @@ class System:
         else:
             self.call_after(delta, lambda: self.on_tick(req))
 
-    def delayed(self, function: Callable[[], T], *,
-                after: WaitableType) -> Delayed[T]:
-        if after is NO_WAIT:
-            return Delayed.complete(function())
-        future = Postable[T]()
-        def run_then_post() -> None:
-            future.post(function())
-        if isinstance(after, Time):
-            if after > Time.ZERO:
-                self.call_after(after, run_then_post)
-            else:
-                return Delayed.complete(function())
-        elif isinstance(after, Ticks):
-            if after > Ticks.ZERO:
-                self.before_tick(run_then_post, delta = after)
-            else:
-                return Delayed.complete(function())
-        elif isinstance(after, Trigger):
-            after.on_trigger(run_then_post)
-        elif isinstance(after, Delayed):
-            after.when_value(lambda _: run_then_post())
-        else:
-            assert_never(after)
-        return future
-
+    
+    def delay_by(self, after:DelayType, fn:Callback)->None:
+        match after:
+            case Time():
+                if after > 0:
+                    self.call_after(after, fn)
+                else:
+                    fn()
+            case Ticks():
+                if after > 0:
+                    self.before_tick(fn, delta=after)
+                else:
+                    fn()
+            case _:
+                assert_never(after) 
+    
     def batched(self) -> Batch:
         with self._batch_lock:
             self._batch = Batch(self, nested=self._batch)
