@@ -1,0 +1,242 @@
+volume initial_fill    = 10uL;
+  time mix_time        = 5 seconds;
+  time incubation_time = 1 hour;
+  temp incubation_temp = 50C;
+heater incubator       = (9,6)'s heater;
+  time heat_wait_time = 5 minutes;
+  time update_interval = 10 seconds;
+  time pause_time = 10 minutes;
+
+def speed_up {
+  incubation_time = 10 seconds;
+  heat_wait_time = 10 seconds;
+  update_interval = 2 seconds;
+  pause_time = 10 seconds;
+}
+
+define prep_wells() 
+{
+  // or whatever the actual reagents are.
+  well #3 : require(2 drop of reagent "R3", initial_fill);
+  well #4 : require(2 drop of reagent "R4", initial_fill);
+  well #7 : require(2 drop of reagent "R7", initial_fill);
+  well #8 : require(2 drop of reagent "R8", initial_fill);
+}
+
+define walk_circle(injectable drop, direction hdir)
+{
+   repeat for mix_time
+   {
+     drop : down 2
+          : 4 in direction hdir
+          : north 4
+          : 4 in direction hdir turned around
+          : south 2;
+   }
+}
+
+define make_small_drop(well top, well bottom) -> drop
+{
+  direction out = top's exit direction;
+
+  drop d;
+  [[
+     d = top : dispense drop 
+             : out
+             : south
+             : 2 in direction out
+             : south 2
+             : accept merge from south
+             : walk_circle(out);
+     bottom : dispense drop 
+            : 2 in direction out : north: out 
+            : merge into north;  
+  ]]
+  return d;
+}
+
+define dispense_and_walk_dna (well top) 
+{
+	direction out = top's exit direction;
+	drop d;
+	d = top : dispense drop
+		    : 2 in direction out
+		    : 1 north
+		    : 11 in direction out
+		    : 2 north
+		    ;
+	//wait for a fixed time on board
+	print "Waiting for", pause_time, "to allow time for drop to settle.";
+    countdown(pause_time, update_interval);
+	//move drop to extraction port, and extract, while 
+	d : 2 south
+	  : 8 left
+	  : 2 north
+	  ;
+	  
+	d : transfer out;
+}
+
+define dispense_and_walk_pbs (well top) 
+{
+	direction out = top's exit direction;
+	drop d;
+	d = top : dispense drop
+		    : 2 in direction out
+		    : 1 south
+		    : 11 in direction out
+		    : 2 south
+		    ;
+	//wait for a fixed time on board
+	print "Waiting for", pause_time, "to allow time for drop to settle.";
+    countdown(pause_time, update_interval);
+	//move drop to extraction port, and extract, while 
+	d : 2 north
+	  : 8 left 
+	  : 2 north
+	  ;
+	 
+	d : transfer out;
+}
+
+define make_big_drop -> drop
+{
+  drop A;
+  future drop B;
+  [[
+      A = make_small_drop(well #3, well #4)
+          : accept merge from south
+          : split to east as B
+          : walk_circle(east)
+          : accept merge from south
+          ;
+      make_small_drop(well #7, well #8)
+          : south 2 : west 12
+          : merge into north;
+      B : south 2 : east 6 : north 2
+        : walk_circle(east)
+        : south 2 : west 8
+        : merge into north
+        ;
+  ]]
+  return A; 
+}
+
+define countdown(time total, time interval) {
+  timestamp end_at = time now + total;
+  
+  repeat until end_at {
+     time remaining = time until(end_at);
+     print time now+":", (remaining : in M:S), "left.";
+     time t = remaining if remaining < interval else interval;
+     wait for t;
+  }
+}
+
+define dna_comb
+{
+   prep_wells();
+   
+   future drop Y;
+   [[
+      make_big_drop()
+         : split north as Y
+         : north 2
+         : east 4
+         : merge into east
+         ;
+      Y : north 2 : east 6
+        : accept merge from west
+        ;
+   ]]
+   
+   
+   drop C = make_big_drop();
+   
+   // Get the heater moving toward the
+   // correct temperature.
+   
+   print "Heating", incubator, "to ", incubation_temp; 
+   incubator's target = incubation_temp;
+   
+   // split into 4 drops and move into position.
+   
+   // "future" drops hold off doing anything until
+   // the variable is assigned to explicitly or
+   // implicitly, as in a "split" operation.
+   future drop lower_right;
+   future drop upper_left;
+   drop lower_left = C;
+   drop upper_right = Y;
+   
+   [[
+      lower_left : split to south as lower_right
+//                 : down 2 : east 5;
+                 : east 5 : down 2;
+      lower_right : east 7;
+      upper_right : split west as upper_left
+                  : east;
+      upper_left : east;
+   ]]
+   
+//   wait until incubator is ready;
+   incubator : on;
+   // hack until glider updates the reading of temperatures when using thermal states,
+   // or thermal state status is used to determine readiness
+   print "Waiting for", heat_wait_time, "in lieu of trusting the board to report its temperature.";
+   countdown(heat_wait_time, update_interval);
+   print "Assuming the heater is at", incubation_temp+".";
+   print "Incubating for", incubation_time+".";
+   countdown(incubation_time, update_interval);
+
+   incubator : off;
+   wait until incubator is ambient;
+   prompt "Hit OK when you're ready to transfer fluid off the board.";
+   
+   // Merge the drops back together 
+   // at the extraction point.
+   
+   [[
+      lower_left
+        : west 3 : up 2
+        : accept merge from north    // drop 4
+        : accept merge from south;   // drop 2/3
+      upper_left 
+        : west 3 
+        : merge into south; // C
+      lower_right
+        : accept merge from north    // drop 3
+        : west 5
+        : merge into north; // C
+      upper_right
+        : south 2
+        : merge into south; // drop 2
+   ]]
+   
+   C : transfer out;
+}
+
+define dna_walk
+{
+	//prep wells
+	//well #3 will have PBS
+	//well #4 will have DNA to walk
+	well #3 : require(2 drop of reagent "PBS", initial_fill);
+	well #4 : require(2 drop of reagent "DNA", initial_fill);
+	
+	//Dispense and walk DNA drop, then wait 10 min before moving to extract 
+	dispense_and_walk_dna(well#4); //1
+	//repeat 9 more times 
+	dispense_and_walk_dna(well#4); //2
+	dispense_and_walk_dna(well#4); //3
+	dispense_and_walk_dna(well#4); //4
+	dispense_and_walk_dna(well#4); //5
+	dispense_and_walk_dna(well#4); //6
+	dispense_and_walk_dna(well#4); //7
+	dispense_and_walk_dna(well#4); //8
+	dispense_and_walk_dna(well#4); //9
+	dispense_and_walk_dna(well#4); //10
+	
+	//Now let's do one PBS drop to look for cross contamination
+	dispense_and_walk_pbs(well#3); //1
+}
