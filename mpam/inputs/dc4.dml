@@ -5,7 +5,7 @@ volume initial_fill    = 10uL;
 heater incubator       = (9,6)'s heater;
   time heat_wait_time = 5 minutes;
   time update_interval = 10 seconds;
-  time pause_time = 10 minutes;
+  time pause_time = 6 minutes;
   int dna_drops_to_dispense = 10;
 
 def speed_up {
@@ -120,17 +120,17 @@ define dispense_and_walk_pbs (well top)
 	drop d;
 	d = top : dispense drop
 		    : 2 in direction out
-		    : 1 south
+		    : 5 south
 		    : 11 in direction out
-		    : 2 south
+		    : 2 north
 		    ;
 	//wait for a fixed time on board
 	print "Waiting for", pause_time, "to allow time for drop to settle.";
     countdown(pause_time, update_interval);
 	//move drop to extraction port, and extract, while 
-	d : 2 north
+	d : 2 south
 	  : 8 left 
-	  : 2 south
+	  : 2 north
 	  ;
 	 
 	d : transfer out;
