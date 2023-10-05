@@ -1,16 +1,21 @@
 from __future__ import annotations
 
-from argparse import Namespace, ArgumentParser, _ArgumentGroup,\
+from argparse import Namespace, ArgumentParser, _ArgumentGroup, \
     BooleanOptionalAction
 from enum import Enum, auto
+from functools import cached_property
+import logging
 from typing import Optional, Sequence, Final, Union, Mapping
 
 from devices.emulated_heater import EmulatedHeater, EmulatedChiller
 from erk.basic import assert_never
+from erk.cmd_line import coord_arg
+from erk.config import ConfigParam
+from erk.grid import Dir, XYCoord, GridRegion, Orientation, RCOrder
 from erk.stringutils import conj_str
 from mpam.device import WellOpSeqDict, WellState, \
     WellShape, WellPad, Pad, Magnet, DispenseGroup, \
-    WellGate, TemperatureControl, PowerSupply, PowerMode, Fan,\
+    WellGate, TemperatureControl, PowerSupply, PowerMode, Fan, \
     Heater, Chiller, StateDefs
 import mpam.device as device
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
@@ -18,18 +23,13 @@ from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
 from mpam.paths import Path
 from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import XYCoord, Orientation, GridRegion, Dir, State, \
-    OnOff, DummyState, RCOrder, deg_C_per_sec
+from mpam.types import State, \
+    OnOff, DummyState, deg_C_per_sec
 from quantities.SI import uL, ms, volts, deg_C, mm
-
-
+from quantities.US import mil
 from quantities.dimensions import Volume, Distance, Area
 from quantities.temperature import abs_C
-from quantities.US import mil
-import logging
-from erk.config import ConfigParam
-from mpam.cmd_line import coord_arg
-from functools import cached_property
+
 
 logger = logging.getLogger(__name__)
 

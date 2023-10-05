@@ -5,7 +5,7 @@ options {
 }
 
 @header {
-from mpam.types import Dir 
+from erk.grid import Dir 
 }
 
 fragment ALPHA: [a-zA-Z];

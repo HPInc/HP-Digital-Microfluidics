@@ -9,12 +9,14 @@ else:
 	from typing.io import TextIO
 
 
-from mpam.types import Dir, OnOff, Turn, ticks, unknown_reagent, waste_reagent
+from mpam.types import OnOff, unknown_reagent, waste_reagent
+from erk.grid import Dir, Turn
+from quantities.ticks import ticks
 from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit, NumberedItem
 from quantities import SI
 
 
-from mpam.types import Dir 
+from erk.grid import Dir 
 
 
 def serializedATN():

@@ -5,14 +5,16 @@ from typing import Optional, Final, Sequence
 
 from serial import Serial
 
+from erk.config import ConfigParam
+from erk.grid import XYCoord, Dir, Orientation
 from mpam import device
 from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
     WellShape, Pad, WellGate, WellPad, StateDefs
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
-from mpam.types import OnOff, XYCoord, Orientation, Dir, State
+from mpam.types import OnOff, State
 from quantities.SI import uL, ms
-from erk.config import ConfigParam
+
 
 class Config:
     device = ConfigParam[Optional[str]](None)

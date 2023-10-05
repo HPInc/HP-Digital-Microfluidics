@@ -1,22 +1,23 @@
 from __future__ import annotations
 
 from _collections import deque, defaultdict
+from enum import Enum, auto
+from functools import cached_property
 from threading import Lock
 from typing import Final, NamedTuple, Sequence, Literal, Union, Optional, \
     Iterator, Any, Callable, Mapping
 
+from erk.basic import not_None
+from erk.grid import Dir
+from erk.sched import Delayed, Postable
 from mpam.device import TemperatureControl, Pad
 from mpam.drop import Drop
 from mpam.paths import Path
-from mpam.processes import MultiDropProcessType, PairwiseMix,\
+from mpam.processes import MultiDropProcessType, PairwiseMix, \
     MultiDropProcessRun
-from mpam.types import Delayed, Dir, Postable
 from quantities.dimensions import Time
 from quantities.temperature import TemperaturePoint, absolute_zero
 from quantities.timestamp import time_now, Timestamp
-from erk.basic import not_None
-from enum import Enum, auto
-from functools import cached_property
 
 
 class ChannelEndpoint(NamedTuple):

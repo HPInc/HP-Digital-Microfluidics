@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from _collections import defaultdict, deque
+from argparse import _ArgumentGroup
 from enum import Enum, auto
+import fileinput
 import json
+import logging
 import random
+import re
+from tempfile import NamedTemporaryFile
 from threading import Thread, Event, Condition, RLock
 import traceback
 from typing import Union, Final, Any, cast, Optional, Callable, NamedTuple, \
@@ -15,22 +20,17 @@ from aiohttp.web_response import Response
 from aiohttp.web_runner import GracefulExit
 import requests
 
+from erk.afs import AsyncFunctionSerializer
+from erk.config import ConfigParam
+from mpam import exerciser
 from mpam.device import System, Board, PipettingTarget, ProductLocation
-from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget,\
+from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget, \
     PipettingSource
-from mpam.types import Reagent, XferDir, AsyncFunctionSerializer
+from mpam.types import Reagent, XferDir
 from quantities.SI import seconds, uL, ml, ul
 from quantities.dimensions import Time, Volume
 from quantities.timestamp import time_now
 
-from mpam import exerciser
-from argparse import _ArgumentGroup
-
-import fileinput
-from tempfile import NamedTemporaryFile
-import logging
-import re
-from erk.config import ConfigParam
 
 logger = logging.getLogger(__name__)
 

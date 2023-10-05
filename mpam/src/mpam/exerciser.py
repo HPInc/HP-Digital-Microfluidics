@@ -3,6 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from argparse import Namespace, ArgumentParser, \
     _SubParsersAction, _ArgumentGroup
+from functools import cache
+from importlib import import_module
 import logging.config
 import pathlib
 from threading import Event
@@ -11,24 +13,23 @@ from typing import Final, Union, Optional, Sequence, Any, Callable, \
 
 from matplotlib.gridspec import SubplotSpec
 
+from erk.basic import ValOrFn, PathOrStr
+from erk.cmd_line import time_arg, ip_addr_arg, ip_subnet_arg, units_arg, \
+    logging_spec_arg, voltage_arg
+from erk.config import ConfigParam
+from erk.logspec import LoggingSpec, logging_levels, logging_formats, \
+    LoggingLevel
 from erk.stringutils import conj_str
-from mpam.device import Board, System, PowerMode, EC, ExternalComponent,\
+from mpam import device, pipettor
+from mpam.device import Board, System, PowerMode, EC, ExternalComponent, \
     BoardComponent, ComponentFactory
 from mpam.monitor import BoardMonitor
-from mpam.types import PathOrStr, logging_levels, logging_formats, LoggingSpec,\
-    LoggingLevel, OnOff
+from mpam.pipettor import Pipettor
+from mpam.types import OnOff
 from quantities.SI import ms, minutes, hr, days, uL, secs, \
     volts, deg_C, V
 from quantities.core import set_default_units, UnitExpr, UEorSeq
 from quantities.dimensions import Time
-from mpam.pipettor import Pipettor
-from erk.basic import ValOrFn
-from importlib import import_module
-from mpam.cmd_line import time_arg, units_arg, logging_spec_arg, ip_addr_arg,\
-    ip_subnet_arg, voltage_arg
-from erk.config import ConfigParam
-from mpam import device, pipettor
-from functools import cache
 
 
 # import logging

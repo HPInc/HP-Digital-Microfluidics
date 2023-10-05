@@ -1,22 +1,23 @@
 from __future__ import annotations
 
+from _collections import defaultdict
 from _collections_abc import Iterable, Iterator
+from abc import ABC, abstractmethod
 from enum import Enum, auto
+from functools import cached_property
+import logging
+from threading import RLock, Lock
 from typing import Final, Optional, Sequence, ClassVar, Callable, \
     Any, Mapping, Union, NoReturn, TypeVar, Generic
-
-from mpam.types import Delayed, MissingOr, MISSING, Postable
-from _collections import defaultdict
-from quantities.core import Unit, qstr
 import typing
-from functools import cached_property
-from threading import RLock, Lock
-import logging
-from erk.stringutils import conj_str
-from abc import ABC, abstractmethod
-from erk.basic import ComputedDefaultDict, not_None, partial_order_sort, ValOrFn,\
-    ensure_val
+
+from erk.basic import ComputedDefaultDict, not_None, partial_order_sort, ValOrFn, \
+    ensure_val, MissingOr, MISSING
 from erk.formatting import Formatter, FormatFunction, RegisterableFormatFunction
+from erk.sched import Delayed, Postable
+from erk.stringutils import conj_str
+from quantities.core import Unit, qstr
+
 
 logger = logging.getLogger(__name__)
 

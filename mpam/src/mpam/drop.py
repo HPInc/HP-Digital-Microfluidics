@@ -3,26 +3,32 @@ from __future__ import annotations
 from _collections import defaultdict
 from abc import ABC, abstractmethod
 from enum import Enum, auto
+import logging
 import math
 from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
-    Sequence, Mapping, NamedTuple, cast, Any, ClassVar
-import logging
+    Sequence, Mapping, NamedTuple, cast, Any, ClassVar, TypeVar
 
-from erk.basic import not_None, ComputedDefaultDict, Count
+from erk.basic import not_None, ComputedDefaultDict, Count, Callback
 from erk.errors import FIX_BY, PRINT
+from erk.grid import Dir, XYCoord
+from erk.sched import OpScheduler, Operation, Delayed, Postable, Barrier, \
+    WaitableType, DelayScheduler, StaticOperation, ComputeOp
 from erk.stringutils import map_str
 from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
-    ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad,\
+    ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad, \
     BinaryComponent
-from mpam.types import Liquid, Dir, Delayed, \
-    OpScheduler, XYCoord, unknown_reagent, Ticks, tick, \
-    StaticOperation, Reagent, Callback, T, MixResult, Postable, \
-    Operation, WaitableType, ComputeOp, OnOff, Barrier,\
-    DelayScheduler
+from mpam.types import Liquid, \
+    unknown_reagent, \
+    Reagent, MixResult, \
+    OnOff
 from quantities.core import qstr
 from quantities.dimensions import Volume
+from quantities.ticks import Ticks, tick
+
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 
 # if TYPE_CHECKING:
@@ -834,8 +840,8 @@ class Drop(OpScheduler['Drop']):
 
         return f"Drop[{place}{self.pad}{liquid}]"
 
-    def delayed(self, function: Callable[[], T], *,
-                after: WaitableType) -> Delayed[T]:
+    def delayed(self, function: Callable[[], _T], *,
+                after: WaitableType) -> Delayed[_T]:
         return DelayScheduler.call_and_return(after, function, obj=self.pad)
 
 

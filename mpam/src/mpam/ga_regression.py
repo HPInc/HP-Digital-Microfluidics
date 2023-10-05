@@ -1,17 +1,20 @@
 from __future__ import annotations
-from argparse import ArgumentParser, Namespace, ArgumentTypeError
-from typing import Final, Sequence, NamedTuple, Optional, TextIO, TypeVar,\
-    Generic, Type, Mapping, Any
-import math
-from random import randint, choice
-from erk.stringutils import map_str
-import random
-from mpam.types import Dir, XYCoord, Orientation
-from sys import stdout
-from contextlib import redirect_stdout
-import os.path
-from quantities.timestamp import time_now
+
 from abc import ABC, abstractmethod
+from argparse import ArgumentParser, Namespace, ArgumentTypeError
+from contextlib import redirect_stdout
+import math
+import os.path
+from random import randint, choice
+import random
+from sys import stdout
+from typing import Final, Sequence, NamedTuple, Optional, TextIO, TypeVar, \
+    Generic, Type, Mapping, Any
+
+from erk.grid import XYCoord, Dir, Orientation
+from erk.stringutils import map_str
+from quantities.timestamp import time_now
+
 
 class Mix(NamedTuple):
     drop: XYCoord

@@ -1,15 +1,70 @@
 from __future__ import annotations
-from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast,\
-    NoReturn, Any, Mapping, Sequence
-from threading import Lock
+
+from enum import Enum, auto
 from re import Pattern
 import re
+from threading import Lock
+from typing import TypeVar, Generic, Optional, Callable, Hashable, Union, cast, \
+    NoReturn, Any, Mapping, Sequence, Final, Protocol
+import pathlib
+
 
 _T = TypeVar('_T')
+_Tco = TypeVar('_Tco', covariant=True)
 _H = TypeVar('_H', bound=Hashable)
 _V = TypeVar('_V')
 
-_ValTuple = tuple[bool, _T]
+Callback = Callable[[], Any]
+PathOrStr = Union[str, pathlib.Path]
+
+class Missing(Enum):
+    """
+    A singleton type to use for optional values when ``None`` is a possible non-
+    default value.  Should be used via the type alias :attr:`MissingOr` and the
+    constant :attr:`MISSING`, as in ::
+
+        def foo(arg: MissingOr[Optional[A]] = MISSING) -> None:
+            if arg is MISSING:
+                ...
+            else:
+                # arg is deduced to be an Optional[A] here
+                ...
+    """
+    SINGLETON = auto()
+    def __repr__(self) -> str:
+        return "MISSING"
+    
+    # All Missing values (i.e., MISSING) are considered False
+    def __bool__(self) -> bool:
+        return False
+    
+
+MISSING: Final[Missing] = Missing.SINGLETON
+"""
+The singleton :class:`Missing` value.
+"""
+MissingOr = Union[Missing, _T]
+"""
+Either the given type ``T`` or :attr:`MISSING`.  If the value is not the
+constant :attr:`MISSING`, MyPy will deduce it to be ``T``.
+
+Args:
+    T: the type (if not :attr:`MISSING`)
+"""
+
+def not_Missing(x: MissingOr[_T], *, 
+                desc: Optional[Union[str, Callable[[], str]]] = None) -> _T:
+    def error_msg() -> str:
+        nonlocal desc
+        if desc is None:
+            desc = "argument to not_MISSING"
+        elif not isinstance(desc, str):
+            desc = desc()
+        return f"{desc} is None"
+    assert x is not MISSING, error_msg()
+    return x
+
+
 
 class Lazy(Generic[_T]):
     _val: _T
@@ -135,3 +190,15 @@ def partial_order_sort(items: Sequence[_T], subsumes: Callable[[_T, _T], bool]) 
 
     return result
 
+_OTcontra = TypeVar("_OTcontra", contravariant=True)
+
+class Gettable(Protocol[_OTcontra, _Tco]):
+    """
+    A protocol specifying that calling ``__get__()`` on some object will return
+    a value.
+
+    Args:
+        OTcontra: the (contravariant) type of the object
+        Tco: the (covariant) type of the value returned
+    """
+    def __get__(self, obj: _OTcontra, objtype: type[_OTcontra]) -> _Tco: ... # @UnusedVariable

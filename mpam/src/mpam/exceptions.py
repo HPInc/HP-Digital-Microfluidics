@@ -1,6 +1,9 @@
 from __future__ import annotations
+
 from typing import Final, TYPE_CHECKING
-from mpam.types import XYCoord
+
+from erk.grid import XYCoord
+
 
 if TYPE_CHECKING:
     from mpam.device import Pad, Well, BinaryComponent

@@ -3,17 +3,22 @@ from __future__ import annotations
 from argparse import Namespace, _ArgumentGroup, ArgumentParser, \
     ArgumentTypeError
 from collections import deque
+import logging
 from random import sample
 import random
 from re import Pattern
 import re
 from typing import Sequence, Union, Optional, Final, NamedTuple, Callable
-import logging
 
 from devices import joey
+from devices.dummy_pipettor import DummyPipettor
 from erk.basic import not_None
+from erk.color import Color
+from erk.grid import Dir
+from erk.sched import Barrier, WaitableType, NO_WAIT, Postable, \
+    SingleFireTrigger, Delayed, schedule
 from erk.stringutils import map_str
-from mpam.device import Board, System, Pad, Well, ExtractionPoint,\
+from mpam.device import Board, System, Pad, Well, ExtractionPoint, \
     ProductLocation
 from mpam.dilution import dilution_sequences
 from mpam.drop import Drop
@@ -24,11 +29,10 @@ from mpam.paths import Path, Schedulable
 from mpam.processes import PlacedMixSequence, Transform
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
-from mpam.types import Reagent, Liquid, Dir, Color, waste_reagent, Barrier, \
-    schedule, Delayed, Postable, WaitableType, NO_WAIT, SingleFireTrigger
+from mpam.types import Reagent, Liquid, waste_reagent
 from quantities.SI import second, seconds
 from quantities.temperature import abs_C
-from devices.dummy_pipettor import DummyPipettor
+
 
 logger = logging.getLogger(__name__)
 

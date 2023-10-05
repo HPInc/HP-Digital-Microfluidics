@@ -1,18 +1,20 @@
 from __future__ import annotations
 
+from _collections import defaultdict
 from abc import ABC, abstractmethod
+from enum import Enum
+import sys
 from threading import Lock
-from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping,\
+from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping, \
     NamedTuple, Iterable, Mapping, TypeVar, Generic
 
+from erk.basic import not_None, Callback
+from erk.sched import Postable, Delayed, Operation, DelayType
 from mpam.device import Pad, Board
 from mpam.drop import Drop
-from mpam.types import Delayed, Callback, Ticks, tick, \
-    DelayType, Reagent, waste_reagent, OnOff, Postable, Operation
-from enum import Enum
-from _collections import defaultdict
-import sys
-from erk.basic import not_None
+from mpam.types import Reagent, waste_reagent, OnOff
+from quantities.ticks import Ticks, tick
+
 
 PT = TypeVar("PT", bound='MultiDropProcessType')
 

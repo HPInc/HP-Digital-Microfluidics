@@ -1,22 +1,26 @@
 from __future__ import annotations
-from typing import Final, Optional, Mapping, Sequence, TypeVar, Union, NoReturn
-from quantities.core import Quantity, UnitExpr
+
 from _collections import defaultdict
-from erk.stringutils import conj_str
-import re
 from argparse import ArgumentTypeError
-from quantities.dimensions import Time, Volume, Voltage, Frequency, Temperature,\
-    TemperatureUnit
-from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz,\
-    deg_C, deg_K
-from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
-from quantities import temperature
-from quantities.prefixes import kilo, milli
-from mpam.types import logging_levels, logging_formats, LoggingSpec,\
-    LoggingLevel, XYCoord
 from re import Pattern
+import re
+from typing import Final, Optional, Mapping, Sequence, TypeVar, Union, NoReturn
+
+from erk.grid import XYCoord
+from erk.logspec import logging_levels, logging_formats, LoggingSpec, \
+    LoggingLevel
 from erk.network import canonicalize_ip_addr
+from erk.stringutils import conj_str
+from quantities import temperature
+from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz, \
+    deg_C, deg_K
 from quantities.US import deg_F
+from quantities.core import Quantity, UnitExpr
+from quantities.dimensions import Time, Volume, Voltage, Frequency, Temperature, \
+    TemperatureUnit
+from quantities.prefixes import kilo, milli
+from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
+
 
 Q_ = TypeVar("Q_", bound = Quantity)
 

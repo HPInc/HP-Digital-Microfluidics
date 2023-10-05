@@ -3,18 +3,19 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 import heapq
+import logging
 from threading import Thread, Condition, Event, Lock, Timer
+import traceback
 from types import TracebackType
 from typing import Optional, Literal, Protocol, Any, Sequence, \
     Iterable, Final, Union, Callable, NamedTuple
-import logging
 
-from mpam.types import TickNumber, ticks, Ticks
+from erk.stringutils import match_width
 from quantities.SI import sec, ms
 from quantities.dimensions import Time
+from quantities.ticks import Ticks, TickNumber, ticks
 from quantities.timestamp import time_now, time_in, Timestamp
-import traceback
-from erk.stringutils import match_width
+
 
 logger = logging.getLogger(__name__)
 

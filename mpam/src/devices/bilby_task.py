@@ -1,18 +1,20 @@
 from __future__ import annotations
-from devices import joey
-from typing import Optional, Sequence, Union, Callable
-from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
+
+from argparse import Namespace, _ArgumentGroup, ArgumentParser, \
     BooleanOptionalAction
-from mpam.exerciser import PlatformChoiceExerciser, Exerciser,\
-    PlatformChoiceTask
-from quantities.SI import volts, deg_C
-from mpam.cmd_line import voltage_arg, rel_temperature_arg
-from erk.basic import assert_never
-from erk.config import ConfigParam
 from os import PathLike
 import os
 import sys
-from mpam.types import MISSING, MissingOr
+from typing import Optional, Sequence, Union, Callable
+
+from devices import joey
+from erk.basic import assert_never, MissingOr, MISSING
+from erk.config import ConfigParam
+from mpam.exerciser import PlatformChoiceExerciser, Exerciser, \
+    PlatformChoiceTask
+from quantities.SI import volts, deg_C
+from erk.cmd_line import voltage_arg, rel_temperature_arg
+
 
 class Config:
     dll_dir = ConfigParam[Optional[Union[str, PathLike]]](None)

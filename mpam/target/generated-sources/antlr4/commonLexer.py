@@ -8,7 +8,7 @@ else:
     from typing.io import TextIO
 
 
-from mpam.types import Dir 
+from erk.grid import Dir 
 
 
 

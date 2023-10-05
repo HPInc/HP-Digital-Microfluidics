@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from argparse import _ArgumentGroup, ArgumentParser, \
+    BooleanOptionalAction
+import logging
 import math
 from numbers import Number
 import random
 from re import Pattern, Match
 import re
 from threading import RLock, Event, Lock
+import tkinter
+import traceback
 from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
     ClassVar, MutableMapping, Any
-import logging
+from weakref import WeakKeyDictionary
 
 import clipboard
 from matplotlib import pyplot
@@ -25,27 +30,25 @@ from matplotlib.path import Path
 from matplotlib.text import Annotation
 from matplotlib.widgets import Button, TextBox
 
-from erk.basic import Count
+from erk.basic import Count, Callback
+from erk.cmd_line import time_arg
+from erk.color import ColorAllocator, Color
+from erk.config import ConfigParam
+from erk.grid import XYCoord, Orientation
+from erk.stringutils import match_width, conj_str, unwrap_text
 from mpam import paths
 from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
-    TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate,\
+    TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate, \
     TempControllable, TemperatureControl, WellShape, Sensor
 from mpam.drop import Drop, DropStatus
-from mpam.types import Orientation, XYCoord, OnOff, Reagent, Callback, Color, \
-    ColorAllocator, Liquid, unknown_reagent, waste_reagent
+from mpam.types import OnOff, Reagent, \
+    Liquid, unknown_reagent, waste_reagent
 from quantities.SI import ms, sec
 from quantities.core import Unit, UEorSeq
 from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C, TemperaturePoint
 from quantities.timestamp import time_now, Timestamp
-from weakref import WeakKeyDictionary
-from erk.stringutils import match_width, conj_str, unwrap_text
-import traceback
-from argparse import _ArgumentGroup, ArgumentParser,\
-    BooleanOptionalAction
-from erk.config import ConfigParam
-from mpam.cmd_line import time_arg
-import tkinter
+
 
 logger = logging.getLogger(__name__)
 
@@ -975,7 +978,6 @@ class BoardMonitor:
     click_handler: Final[ClickHandler]
     interactive_reagent: Reagent = unknown_reagent
     interactive_volume: Volume
-    # config_params: Final[ConfigParams]
     last_clicked: Optional[BinaryComponent] = None
 
     _control_widgets: Final[Any]
@@ -1017,9 +1019,6 @@ class BoardMonitor:
                  control_fraction: Optional[float] = None) -> None:
         # print(f"Creating {self}.")
         self.board = board
-        # self.config_params = ConfigParams(defaults = self.default_cmd_line_args,
-        #                                   cmd_line = cmd_line_args,
-        #                                   from_code = from_code)
         self.interactive_volume = board.drop_size
         self.drop_map = WeakKeyDictionary[Drop, DropMonitor]()
         self.lock = RLock()

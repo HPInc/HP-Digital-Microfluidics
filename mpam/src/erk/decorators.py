@@ -1,8 +1,11 @@
 from __future__ import annotations
-from typing import Generic, TypeVar, Optional, Final, Callable, overload, Union
+
 import random
 from threading import Lock
-from mpam.types import MISSING, MissingOr
+from typing import Generic, TypeVar, Optional, Final, Callable, overload, Union
+
+from erk.basic import MissingOr, MISSING
+
 
 Obj_ = TypeVar("Obj_")
 T_ = TypeVar("T_")

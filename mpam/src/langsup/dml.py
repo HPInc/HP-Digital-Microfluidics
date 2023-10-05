@@ -2,8 +2,17 @@ from __future__ import annotations
 
 from _collections import defaultdict
 from abc import ABC, abstractmethod
+from functools import reduce, cached_property
+from itertools import product
+import logging
+import math
+import os
+from os.path import isfile
+from re import Match
+import re
+from threading import RLock
 from typing import Optional, TypeVar, Generic, Hashable, NamedTuple, Final, \
-    Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple,\
+    Callable, Any, cast, Sequence, Union, Mapping, ClassVar, List, Tuple, \
     TYPE_CHECKING, overload, Iterator, NoReturn
 import typing
 
@@ -11,45 +20,41 @@ from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext
     Token
 from antlr4.tree.Tree import TerminalNode
 
+from devices.eselog import ESELog, ESELogChannel
 from dmlLexer import dmlLexer
 from dmlParser import dmlParser
 from dmlVisitor import dmlVisitor
-from langsup.type_supp import Type, CallableType, Signature, Attr,\
-    Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit,\
-    NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError,\
-    Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc,\
-    SampleType, SampleableType, FutureType, FutureValue,\
+from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn, \
+    MissingOr, MISSING, not_Missing
+from erk.grid import Dir, Turn
+from erk.sample import Sample
+from erk.sched import Delayed, Postable, DelayType, Barrier
+from erk.stringutils import map_str, conj_str
+from langsup.type_supp import Type, CallableType, Signature, Attr, \
+    Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit, \
+    NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError, \
+    Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc, \
+    SampleType, SampleableType, FutureType, FutureValue, \
     BoundInjectionValue
-from mpam.device import Pad, Board, BinaryComponent, Well,\
-    WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller,\
-    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor,\
+from mpam.device import Pad, Board, BinaryComponent, Well, \
+    WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller, \
+    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor, \
     TemperatureMode, Clock, ExternalComponent
 from mpam.drop import Drop, DropStatus
+from mpam.exceptions import NoSuchPad
 from mpam.paths import Path
-from mpam.types import unknown_reagent, Liquid, Dir, Delayed, OnOff, Barrier, \
-    Ticks, DelayType, Turn, Reagent, Mixture, Postable, MISSING, MissingOr,\
-    not_Missing, Sample
+from mpam.processes import MultiDropProcessType, MultiDropProcessRun
+from mpam.types import unknown_reagent, Liquid, OnOff, \
+    Reagent, Mixture
+from quantities import timestamp
+from quantities.SI import deg_C
+from quantities.US import deg_F
 from quantities.core import Unit, Dimensionality, NamedDim, Quantity
 from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
-from erk.stringutils import map_str, conj_str
-import math
-from functools import reduce, cached_property
-from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn
-from re import Match
-from threading import RLock
-import re
 from quantities.temperature import TemperaturePoint, abs_C, abs_F
-from quantities.SI import deg_C
+from quantities.ticks import Ticks
 from quantities.timestamp import Timestamp, time_in, time_now
-import logging
-from devices.eselog import ESELog, ESELogChannel
-from itertools import product
-import os
-from quantities import timestamp
-from mpam.processes import MultiDropProcessType, MultiDropProcessRun
-from mpam.exceptions import NoSuchPad
-from os.path import isfile
-from quantities.US import deg_F
+
 
 if TYPE_CHECKING:
     from mpam.monitor import BoardMonitor

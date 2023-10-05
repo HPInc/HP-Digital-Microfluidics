@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
 import math
+
+from erk.grid import XYCoord, Orientation
 from mpam.ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
     Regression
-from mpam.types import XYCoord, Orientation
 
 
 class DilutionCandidate(Candidate['DilutionCandidate']):    

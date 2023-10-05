@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+from random import Random
 import random
 from typing import Sequence, Optional, Union, Final
 
-from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode,\
+from erk.grid import GridRegion
+from erk.sched import Delayed
+from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode, \
     Heater, Chiller
-from mpam.types import GridRegion, Delayed
 from quantities.SI import deg_C, sec
 from quantities.dimensions import Temperature, HeatingRate
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp, time_now
-from random import Random
+
 
 class TemperatureControlEmulator:
     last_read_time: Timestamp

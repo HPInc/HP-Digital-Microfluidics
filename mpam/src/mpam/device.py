@@ -5,9 +5,14 @@ from __future__ import annotations
 
 from _collections import defaultdict
 from abc import ABC, abstractmethod
+import csv
 from enum import Enum, auto
+from functools import cached_property
 import itertools
 import logging
+from os import PathLike
+import os
+from pathlib import Path
 import random
 from threading import Event, Lock, Thread, RLock
 from types import TracebackType
@@ -17,33 +22,34 @@ from typing import Optional, Final, Mapping, Callable, Literal, \
 
 from matplotlib.gridspec import SubplotSpec
 
-from erk.basic import not_None, assert_never, ValOrFn, ensure_val
+from erk.afs import AsyncFunctionSerializer
+from erk.basic import not_None, assert_never, ValOrFn, ensure_val, Callback, \
+    Missing, MISSING, MissingOr
+from erk.config import ConfigParam
 from erk.errors import ErrorHandler, PRINT
+from erk.grid import XYCoord, RCOrder, Dir, Orientation
+from erk.monitored import MonitoredProperty, ChangeCallbackList
+from erk.network import local_ipv4_addr
+from erk.sample import TimestampSample, Sample
+from erk.sched import DelayType, Delayed, CanDelay, OpScheduler, WaitableType, \
+    NO_WAIT, Operation, Postable, Trigger
+from erk.stringutils import map_str
 from mpam.engine import DevCommRequest, TimerFunc, ClockCallback, \
     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest, \
     ClockCommRequest, TimerDeltaRequest, IdleBarrier
 from mpam.exceptions import PadBrokenError
-from mpam.types import XYCoord, Dir, OnOff, Delayed, Liquid, DelayType, \
-    OpScheduler, Orientation, TickNumber, tick, Ticks, \
-    unknown_reagent, waste_reagent, Reagent, ChangeCallbackList, \
-    Callback, MixResult, State, Postable, \
-    MonitoredProperty, DummyState, MissingOr, MISSING, RCOrder, WaitableType, \
-    NO_WAIT, Trigger, AsyncFunctionSerializer, Missing, \
-    TimestampSample, Sample, Operation, CanDelay
+from mpam.types import OnOff, Liquid, \
+    unknown_reagent, waste_reagent, Reagent, \
+    MixResult, State, \
+    DummyState
 from quantities.SI import volts, deg_C
+from quantities.US import deg_F
 from quantities.core import Unit
 from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
 from quantities.temperature import TemperaturePoint, abs_F
+from quantities.ticks import Ticks, tick, TickNumber
 from quantities.timestamp import time_now, Timestamp
-from erk.stringutils import map_str
-from quantities.US import deg_F
-from erk.network import local_ipv4_addr
-from functools import cached_property
-from erk.config import ConfigParam
-from os import PathLike
-import os
-import csv
-from pathlib import Path
+
 
 if TYPE_CHECKING:
     from mpam.drop import Drop, Blob
