@@ -2,7 +2,7 @@ from quantities import dimensions, prefixes
 import math
 
 # angle
-radians = dimensions.Angle(1).as_unit("rad")
+radians = dimensions.Angle.from_float(1).as_unit("rad")
 """
 Base :class:`~quantities.core.Unit` (``rad``) of
 :class:`~quantities.dimensions.Angle`
@@ -12,7 +12,7 @@ Aliases include :attr:`rad` and :attr:`radian`.
 """ 
 radian = radians    #: alias of :attr:`radians`
 rad = radians       #: alias of :attr:`radians`
-steradians = dimensions.SolidAngle(1).as_unit("sr")
+steradians = dimensions.SolidAngle.from_float(1).as_unit("sr")
 """
 Base :class:`~quantities.core.Unit` (``wr``) of
 :class:`~quantities.dimensions.SolidAngle`

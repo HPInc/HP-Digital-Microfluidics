@@ -415,7 +415,7 @@ class Velocity(DerivedDim):
     """
     A :class`.Quantity` representing velocity (:class:`Distance`\ ``/``:class:`Time`)
     """
-    derived = Distance/Time
+    derivation = Distance/Time
 
     @overload    # type: ignore[override]
     def __pow__(self, _rhs: Literal[0]) -> Scalar: ...
@@ -545,7 +545,7 @@ class Acceleration(DerivedDim):
     """
     A :class`.Quantity` representing acceleration (:class:`Velocity`\ ``/``:class:`Time`)
     """
-    derived = Velocity/Time
+    derivation = Velocity/Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Acceleration: ...
@@ -744,7 +744,7 @@ class Force(DerivedDim):
     """
     A :class`.Quantity` representing force (:class:`Mass`\ ``*``:class:`Acceleration`)
     """
-    derived = Mass*Acceleration
+    derivation = Mass*Acceleration
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Force: ...
@@ -844,7 +844,7 @@ class Work(DerivedDim):
     """
     A :class`.Quantity` representing work (:class:`Force`\ ``*``:class:`Distance`)
     """
-    derived = Force*Distance
+    derivation = Force*Distance
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Work: ...
@@ -976,7 +976,7 @@ class Area(DerivedDim):
     """
     A :class`.Quantity` representing area (:class:`Distance`\ ``**2``)
     """
-    derived = Distance**2
+    derivation = Distance**2
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Area: ...
@@ -1080,7 +1080,7 @@ class Pressure(DerivedDim):
     """
     A :class`.Quantity` representing pressure (:class:`Force`\ ``/``:class:`Area`)
     """
-    derived = Force/Area
+    derivation = Force/Area
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Pressure: ...
@@ -1176,7 +1176,7 @@ class Power(DerivedDim):
     """
     A :class`.Quantity` representing power (:class:`Work`\ ``/``:class:`Time`)
     """
-    derived = Work/Time
+    derivation = Work/Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Power: ...
@@ -1371,7 +1371,7 @@ class Illuminance(DerivedDim):
     """
     A :class`.Quantity` representing illuminance (:class:`LumInt`\ ``/``:class:`Area`)
     """
-    derived = LumInt/Area
+    derivation = LumInt/Area
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Illuminance: ...
@@ -1558,7 +1558,7 @@ class Charge(DerivedDim):
     """
     A :class`.Quantity` representing charge (:class:`Current`\ ``*``:class:`Time`)
     """
-    derived = Current*Time
+    derivation = Current*Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Charge: ...
@@ -1668,7 +1668,7 @@ class Voltage(DerivedDim):
 
     :class:`Emf`, :class:`EMF`, and :class:`ElecPotential` are aliases.
     """
-    derived = Work/Charge
+    derivation = Work/Charge
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Voltage: ...
@@ -1782,7 +1782,7 @@ class Flux(DerivedDim):
 
     :class:`MagneticFlux` is an alias.
     """
-    derived = Voltage*Time
+    derivation = Voltage*Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Flux: ...
@@ -1902,7 +1902,7 @@ class FluxDensity(DerivedDim):
 
     :class:`MagneticInduction` is an alias.
     """
-    derived = Flux/Area
+    derivation = Flux/Area
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> FluxDensity: ...
@@ -1980,7 +1980,7 @@ class Capacitance(DerivedDim):
     """
     A :class`.Quantity` representing capacitance (:class:`Charge`\ ``/``:class:`Voltage`)
     """
-    derived = Charge/Voltage
+    derivation = Charge/Voltage
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Capacitance: ...
@@ -2076,7 +2076,7 @@ class Resistance(DerivedDim):
     """
     A :class`.Quantity` representing resistance (:class:`Voltage`\ ``/``:class:`Current`)
     """
-    derived = Voltage/Current
+    derivation = Voltage/Current
 
     @overload    # type: ignore[override]
     def __pow__(self, _rhs: Literal[-1]) -> Conductance: ...
@@ -2293,7 +2293,7 @@ class Conductance(DerivedDim):
     """
     A :class`.Quantity` representing conductance (:class:`Current`\ ``/``:class:`Voltage`)
     """
-    derived = Current/Voltage
+    derivation = Current/Voltage
 
     @overload    # type: ignore[override]
     def __pow__(self, _rhs: Literal[-1]) -> Resistance: ...
@@ -2423,7 +2423,7 @@ class Inductance(DerivedDim):
     """
     A :class`.Quantity` representing inductance (:class:`Resistance`\ ``*``:class:`Time`)
     """
-    derived = Resistance*Time
+    derivation = Resistance*Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Inductance: ...
@@ -2519,7 +2519,7 @@ class IonizingRadDose(DerivedDim):
     """
     A :class`.Quantity` representing ionizing radiation dose (:class:`Work`\ ``/``:class:`Mass`)
     """
-    derived = Work/Mass
+    derivation = Work/Mass
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> IonizingRadDose: ...
@@ -2793,7 +2793,7 @@ class DataRate(DerivedDim):
     """
     A :class`.Quantity` representing data rate (:class:`Storage`\ ``/``:class:`Time`)
     """
-    derived = Storage/Time
+    derivation = Storage/Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> DataRate: ...
@@ -2877,7 +2877,7 @@ class Volume(DerivedDim):
     """
     A :class`.Quantity` representing volume (:class:`Distance`\ ``**3``)
     """
-    derived = Distance**3
+    derivation = Distance**3
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> Volume: ...
@@ -2993,7 +2993,7 @@ class FlowRate(DerivedDim):
     """
     A :class`.Quantity` representing flow rate (:class:`Volume`\ ``/``:class:`Time`)
     """
-    derived = Volume/Time
+    derivation = Volume/Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> FlowRate: ...
@@ -3089,7 +3089,7 @@ class HeatingRate(DerivedDim):
     """
     A :class`.Quantity` representing heating rate (:class:`Temperature`\ ``/``:class:`Time`)
     """
-    derived = Temperature/Time
+    derivation = Temperature/Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> HeatingRate: ...
@@ -3420,7 +3420,7 @@ class PriceRate(DerivedDim):
 
     :class:`Salary` is an alias.
     """
-    derived = Money/Time
+    derivation = Money/Time
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> PriceRate: ...
@@ -3592,7 +3592,7 @@ class VolumeConcentration(DerivedDim):
     """
     A :class`.Quantity` representing volume concentration (:class:`Volume_of_Substance`\ ``/``:class:`Volume`)
     """
-    derived = Volume_of_Substance/Volume
+    derivation = Volume_of_Substance/Volume
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> VolumeConcentration: ...
@@ -3665,7 +3665,7 @@ class VolumeConcentrationUnit(Unit[VolumeConcentration], VolumeConcentrationUnit
         
 
 class DIM_time2(DerivedDim):
-    derived = Time**2
+    derivation = Time**2
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> DIM_time2: ...
@@ -3762,7 +3762,7 @@ class DIM_time2Unit(Unit[DIM_time2], DIM_time2UnitExpr):
         
 
 class DIM_dist1_mass1(DerivedDim):
-    derived = Distance*Mass
+    derivation = Distance*Mass
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> DIM_dist1_mass1: ...
@@ -3856,7 +3856,7 @@ class Density(DerivedDim):
 
     :class:`MassConcentration` is an alias.
     """
-    derived = Mass/Volume
+    derivation = Mass/Volume
 
     @overload    # type: ignore[override]
     def __pow__(self, _rhs: Literal[-1]) -> SpecificVolume: ...
@@ -3974,7 +3974,7 @@ class MolarConcentration(DerivedDim):
 
     :class:`Molarity` is an alias.
     """
-    derived = Amount/Volume
+    derivation = Amount/Volume
 
     @overload    # type: ignore[override]
     def __mul__(self, _rhs: float) -> MolarConcentration: ...
@@ -4052,7 +4052,7 @@ class SpecificVolume(DerivedDim):
     """
     A :class`.Quantity` representing specific volume (:class:`Volume`\ ``/``:class:`Mass`)
     """
-    derived = Volume/Mass
+    derivation = Volume/Mass
 
     @overload    # type: ignore[override]
     def __pow__(self, _rhs: Literal[-1]) -> Density: ...
@@ -4168,7 +4168,7 @@ class Frequency(DerivedDim):
 
     :class:`Radioactivity` is an alias.
     """
-    derived = Scalar/Time
+    derivation = Scalar/Time
 
     @overload    # type: ignore[override]
     def __pow__(self, _rhs: Literal[-2]) -> DIM_time2: ...

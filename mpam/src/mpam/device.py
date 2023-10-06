@@ -2132,7 +2132,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
             * :attr:`contents` is not :attr:`~.Liquid.inexact`
         """
         c = self.contents
-        return c is None or self.is_voidable and c.volume==Volume.ZERO and not c.inexact
+        return c is None or self.is_voidable and c.volume == 0 and not c.inexact
 
     @property
     def gate_on(self) -> bool:
@@ -3891,7 +3891,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                         :class:`.Liquid` with what's already there.
             last: ``True`` if this is the last transfer in a transfer request.
         """
-        if volume > Volume.ZERO:
+        if volume > 0:
             got = Liquid(reagent, volume)
             self.pad.liquid_added(got, mix_result=mix_result)
         if last:
@@ -4489,7 +4489,7 @@ class SystemComponent(ABC, CanDelay):
     def communicate(self, cb: Callable[[], Optional[Callback]], delta: Time=Time.ZERO) -> None:
         req = self.make_request(cb)
         sys = self.system
-        if delta > Time.ZERO:
+        if delta > 0:
             self.call_after(delta, lambda : sys.communicate(req))
         else:
             sys.communicate(req)
@@ -5455,7 +5455,7 @@ class Clock(BinaryComponent['Clock'], ExternalComponent):
     def before_tick(self, fn: ClockCallback, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.before_tick() called with both tick and delta specified"
-            delta = max(Ticks.ZERO, tick-self.next_tick)
+            delta = (tick-self.next_tick).max_with(0)
         elif delta is None:
             delta = Ticks.ZERO
         self.system.before_tick(fn, delta=delta)
@@ -5463,7 +5463,7 @@ class Clock(BinaryComponent['Clock'], ExternalComponent):
     def after_tick(self, fn: ClockCallback, tick: Optional[TickNumber] = None, delta: Optional[Ticks] = None) -> None:
         if tick is not None:
             assert delta is None, "Clock.after_tick() called with both tick and delta specified"
-            delta = max(Ticks.ZERO, tick-self.next_tick)
+            delta = (tick-self.next_tick).max_with(0)
         elif delta is None:
             delta = Ticks.ZERO
         self.system.after_tick(fn, delta=delta)

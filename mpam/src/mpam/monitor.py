@@ -809,7 +809,7 @@ class ClickHandler:
             else:
                 max_volume = Volume.ZERO
             volume = min(pad.board.drop_size, max_volume)
-            if volume > Volume.ZERO:
+            if volume > 0:
                 change_journal.note_removal(pad, volume)
         else:
             reagent = monitor.interactive_reagent

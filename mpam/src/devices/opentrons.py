@@ -148,7 +148,7 @@ class Listener(Thread):
             xfers,v = wv
             v = body["volume"]
             r = self.current_reagent 
-            while v >= Volume.ZERO:
+            while v >= 0:
                 assert xfers, f"Finished transfer with {v} unaccounted for."
                 first = xfers[0]
                 if v < first.volume:

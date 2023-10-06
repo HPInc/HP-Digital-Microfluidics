@@ -394,7 +394,7 @@ class {restr}:
                     def base_expr(bd: Dimensionality, e: int) -> str:
                         return bd.name if e==1 else f"({bd.name}**{e})"
                     expr = "*".join(base_expr(Dimensionality.bases[b], e) for b,e in d.exponents)
-            print(f"{indent}derived = {expr}")
+            print(f"{indent}derivation = {expr}")
             print()
         elif d.restriction:
             d2,r = d.restriction

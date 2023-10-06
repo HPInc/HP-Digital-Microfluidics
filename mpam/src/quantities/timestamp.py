@@ -8,6 +8,7 @@ from . import core
 from . import dimensions
 from .SI import sec, ns, ms
 from quantities.SI import seconds
+from quantities.core import ZeroOr
 
 
 class Timestamp:
@@ -89,10 +90,10 @@ class Timestamp:
     def from_time_t(cls, time_t: float) -> Timestamp:
         return Timestamp(time_t*seconds)
     
-    def __add__(self, rhs: dimensions.Time) -> Timestamp:
+    def __add__(self, rhs: ZeroOr[dimensions.Time]) -> Timestamp:
         return Timestamp(self.time+rhs)
     
-    def __radd__(self, lhs: dimensions.Time) -> Timestamp:
+    def __radd__(self, lhs: ZeroOr[dimensions.Time]) -> Timestamp:
         return Timestamp(lhs+self.time)
     
     # def __iadd__(self, rhs: dimensions.Time) -> Timestamp:
@@ -103,8 +104,8 @@ class Timestamp:
     @overload
     def __sub__(self, rhs: Timestamp) -> dimensions.Time: ...  # @UnusedVariable
     @overload
-    def __sub__(self, rhs: dimensions.Time) -> Timestamp: ...  # @UnusedVariable
-    def __sub__(self, rhs: Union[Timestamp, dimensions.Time]) -> Union[dimensions.Time, Timestamp]:
+    def __sub__(self, rhs: ZeroOr[dimensions.Time]) -> Timestamp: ...  # @UnusedVariable
+    def __sub__(self, rhs: Union[Timestamp, ZeroOr[dimensions.Time]]) -> Union[dimensions.Time, Timestamp]:
         if isinstance(rhs, Timestamp):
             return self.time-rhs.time
         else:

@@ -11,8 +11,13 @@ from abc import abstractmethod, ABC
 from _collections import defaultdict
 import random
 from random import Random
+from functools import cached_property
+from enum import Enum, auto
 
 logger = logging.getLogger(__name__)
+
+class _DirectCreation(Enum):
+    INST = auto()
 
 ExptFormatter = Callable[[int],str] 
 """
@@ -114,6 +119,14 @@ class Dimensionality(Generic[D], DimLike):
     _default_units: Optional[Tuple[UnitExpr[D], ...]]
     _unrestricted: Optional[Dimensionality[D]] = None
     _restriction: Optional[Any] = None
+    
+    @cached_property
+    def ZERO(self) -> D:
+        return self.quant_class(0.0, self, _dc = _DirectCreation.INST) # type: ignore[arg-type]
+
+    @cached_property
+    def INF(self) -> D:
+        return self.make_quantity(math.inf)
 
     def __init__(self, expts: BaseExpTuple, name: Optional[str] = None) -> None:
         self.exponents = expts      # a tuple of sorted base/expt tuples
@@ -183,7 +196,9 @@ class Dimensionality(Generic[D], DimLike):
         
     
     def make_quantity(self, mag: float) -> D:
-        return self.quant_class(mag, self) # type: ignore[arg-type]
+        if mag == 0:
+            return self.ZERO
+        return self.quant_class(mag, self, _dc = _DirectCreation.INST) # type: ignore[arg-type]
 
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format
@@ -331,6 +346,7 @@ class DimensionalityError(Exception):
 class DimMismatchError(Exception):
     def __init__(self, lhs: Dimensionality, op: str, rhs: Union[Dimensionality, str]) -> None:
         super().__init__(f"{lhs} {op} {rhs}")
+        
 
 class Quantity:
     '''
@@ -360,7 +376,7 @@ class Quantity:
         return self.magnitude < math.inf and self.magnitude > -math.inf
     
     # def __init__(self, mag: float, dim: Dimensionality[D]) -> None:
-    def __init__(self: D, mag: float, dim: Dimensionality[D]) -> None:
+    def __init__(self: D, mag: float, dim: Dimensionality[D], *, _dc: _DirectCreation) -> None:
         self._dimensionality = dim
         self.magnitude = mag
 
@@ -413,14 +429,24 @@ class Quantity:
     def __neg__(self: D) -> D:
         return self.same_dim(-self.magnitude)
     
-    def __add__(self: D, rhs: D) -> D:
+    def __add__(self: D, rhs: ZeroOr[D]) -> D:
+        if rhs == 0:
+            return self
         self._ensure_dim_match(rhs, "+")
         return self.same_dim(self.magnitude+rhs.magnitude)
+    
+    def __radd__(self: D, _lhs: Literal[0]) -> D:
+        return self
 
-    def __sub__(self: D, rhs: D) -> D:
+    def __sub__(self: D, rhs: ZeroOr[D]) -> D:
+        if rhs == 0:
+            return self
         self._ensure_dim_match(rhs, "-")
         return self.same_dim(self.magnitude-rhs.magnitude)
     
+    def __rsub__(self: D, _lhs: Literal[0]) -> D:
+        return -self
+
     def __abs__(self: D) -> D:
         return -self if self < 0 else self
 
@@ -482,7 +508,7 @@ class Quantity:
             mag = random.normalvariate(mu = 0.0, sigma = sd.magnitude)
         else:
             mag = rng.gauss(mu = 0.0, sigma = sd.magnitude)
-        q = sd.dimensionality.make_quantity(mag)
+        q = sd.same_dim(mag)
         return q
 
     
@@ -631,6 +657,40 @@ class Quantity:
         if len(used) == 0:
             used.append((last, 0))
         return _DecomposedQuantity[D](used, q)
+    
+    def _convert_zero(self: D, q: ZeroOr[D]) -> D:
+        return self.dimensionality.ZERO if q == 0 else q
+
+    def max_with(self: D, *others: ZeroOr[D]) -> D:
+        if len(others) == 1:
+            return max(self, self._convert_zero(others[0]))
+        converted = [self._convert_zero(o) for o in others]
+        return max(self, *converted)
+    
+    def min_with(self: D, *others: ZeroOr[D]) -> D:
+        if len(others) == 1:
+            return min(self, self._convert_zero(others[0]))
+        converted = [self._convert_zero(o) for o in others]
+        return min(self, *converted)
+    
+    def clipped_to(self: D, low: Optional[ZeroOr[D]], high: Optional[ZeroOr[D]]) -> D:
+        if low is None:
+            if high is None:
+                return self
+            return self.min_with(high)
+        if high is None:
+            return self.max_with(low)
+        if low == 0:
+            low = self.dimensionality.ZERO
+        if high == 0:
+            high = self.dimensionality.ZERO
+        if low > high:
+            low, high = high, low
+        if self < low:
+            return low
+        if self > high:
+            return high
+        return self
     
 
 class UnknownDimQuant(Quantity):
@@ -1176,18 +1236,14 @@ class Prefix:
     
 class NamedDimMeta(type, DimLike):
     @property
-    def ZERO(self: Type[T]) -> T:
-        val: T = getattr(self, "_zero")
-        return val
-    
+    def ZERO(self: type[ND]) -> ND:  # type: ignore [misc]
+        return self.dim().ZERO
+
     @property
-    def INF(self: Type[T]) -> T:
-        val: T = getattr(self, "_infinity")
-        return val
+    def INF(self: Type[ND]) -> ND:    # type: ignore [misc]
+        return self.dim().INF
     
     def __init__(self, name: str, base: tuple[Type, ...], dct: Mapping) -> None:  # @UnusedVariable 
-        self._zero = self(0.0)
-        self._infinity = self(math.inf)
         self._restriction_classes: dict[Any, type[BaseDim]] = {}
 
     def as_dimensionality(self: type[ND]) -> Dimensionality[ND]: # type: ignore[misc]
@@ -1231,10 +1287,11 @@ class NamedDim(Quantity, metaclass=NamedDimMeta):
     # lookup and set using get/setattr
     _dim_key: Final = "_dim" 
     
-    def __init__(self: ND, mag: float, dim: Optional[Dimensionality[ND]] = None) -> None:
+    def __init__(self: ND, mag: float, dim: Optional[Dimensionality[ND]] = None,
+                 *, _dc: _DirectCreation) -> None:
         if dim is None:
             dim = type(self).dim()
-        super().__init__(mag, dim)
+        super().__init__(mag, dim, _dc=_dc)
         
     def __repr__(self) -> str:
         return f"{type(self).__name__}[{self.magnitude}]"
@@ -1249,14 +1306,6 @@ class NamedDim(Quantity, metaclass=NamedDimMeta):
     def as_dimensionality(cls: type[ND]) -> Dimensionality[ND]:
         return cls.dim()
         
-    # @classmethod
-    # def default_units(cls: type[ND], units: Union[UnitExpr[ND], Sequence[UnitExpr[ND]]]) -> None:
-    #     if isinstance(units, UnitExpr):
-    #         units = (units,)
-    #     elif not isinstance(units, tuple):
-    #         units = tuple(units)
-    #     cls.dim().default_units = units
-    
     @classmethod
     def unit(cls: type[ND], abbr: str, quant: Union[ND, UnitExpr[ND]]) -> Unit[ND]:
         if isinstance(quant, UnitExpr):
@@ -1301,7 +1350,7 @@ class DerivedDimMeta(NamedDimMeta):
         if name == "DerivedDim":
             return
         # cls._this_class = cls
-        d: Optional[Dimensionality] = getattr(cls, "derived", None)
+        d: Optional[Dimensionality] = getattr(cls, "derivation", None)
         if d is None:
             raise NameError(f"DerivedDim {name} does not define 'derived'")
         if not isinstance(d, Dimensionality):
@@ -1352,11 +1401,6 @@ class BaseDimMeta(NamedDimMeta):
         self.dim = my_dim
         super().__init__(name, base, dct)
 
-# class UnitFunc(Protocol[U]):
-#     def __call__(self, abbr: str, quant: Union[D,UnitExpr[D]], 
-#                  *, check: Optional[Dimensionality[D]] = None,
-#                  singular: Optional[str] = None) -> U:
-        ...    
 
 class BaseDim(NamedDim, metaclass=BaseDimMeta): 
     # _dim: ClassVar[BaseDimension[BD]]
@@ -1515,7 +1559,7 @@ class Scalar(NamedDim):
         return float(self.magnitude)
     
     def __pow__(self:D, _rhs: int) -> Scalar:
-        return Scalar(self.magnitude**_rhs)
+        return Scalar.from_float(self.magnitude**_rhs)
     
     @overload   
     def __mul__(self, _rhs: Union[float, Scalar]) -> Scalar: ...
@@ -1539,7 +1583,7 @@ class Scalar(NamedDim):
     
     @classmethod
     def from_float(cls, magnitude: float) -> Scalar:
-        return Scalar(magnitude, cls.dim())
+        return cls.dim().make_quantity(magnitude)
     
 Scalar.dim().quant_class = Scalar
 
@@ -1554,7 +1598,7 @@ class ScalarUnitExpr(UnitExpr[Scalar]):
     def __mul__(self, rhs: Union[float, UnitExpr]) -> Union[Scalar, UnitExpr]:
         return super().__mul__(rhs)
     
-Scalar.unit_expr = Scalar(1).as_unit_expr((),())
+Scalar.unit_expr = Scalar.from_float(1).as_unit_expr((),())
         
 class ScalarUnit(Unit[Scalar], ScalarUnitExpr):
     ...

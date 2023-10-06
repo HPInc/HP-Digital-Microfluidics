@@ -268,7 +268,7 @@ class PipettingSource:
         return self.bounds[1]
 
     def _clip(self, v: Volume) -> Volume:
-        return min(max(v, Volume.ZERO), self.capacity)
+        return v.clipped_to(0, self.capacity)
 
 
     @property

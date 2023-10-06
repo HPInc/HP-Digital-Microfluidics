@@ -61,17 +61,17 @@ class TemperaturePoint:
         """
         self.absolute = absolute
         
-    def __add__(self, rhs: dimensions.Temperature) -> TemperaturePoint:
+    def __add__(self, rhs: ZeroOr[dimensions.Temperature]) -> TemperaturePoint:
         return TemperaturePoint(self.absolute+rhs)
     
-    def __radd__(self, lhs: dimensions.Temperature) -> TemperaturePoint:
+    def __radd__(self, lhs: ZeroOr[dimensions.Temperature]) -> TemperaturePoint:
         return TemperaturePoint(lhs+self.absolute)
 
     @overload    
     def __sub__(self, rhs: TemperaturePoint) -> dimensions.Temperature: ...  # @UnusedVariable
     @overload
-    def __sub__(self, rhs: dimensions.Temperature) -> TemperaturePoint: ...  # @UnusedVariable
-    def __sub__(self, rhs: Union[TemperaturePoint, dimensions.Temperature]) -> Union[dimensions.Temperature,
+    def __sub__(self, rhs: ZeroOr[dimensions.Temperature]) -> TemperaturePoint: ...  # @UnusedVariable
+    def __sub__(self, rhs: Union[TemperaturePoint, ZeroOr[dimensions.Temperature]]) -> Union[dimensions.Temperature,
                                                                                      TemperaturePoint]:
         if isinstance(rhs, TemperaturePoint):
             return self.absolute-rhs.absolute

@@ -888,7 +888,7 @@ class Liquid:
         return self
 
     def __isub__(self, rhs: Volume) -> Liquid:
-        self.volume = max(self.volume-rhs, Volume.ZERO)
+        self.volume = (self.volume-rhs).max_with(0)
         return self
 
     def mix_with(self, other: Liquid, *, result: Optional[MixResult] = None) -> Liquid:
@@ -985,11 +985,11 @@ class Liquid:
         v = my_v + their_v
         if isinstance(result, Reagent):
             r = result
-        elif my_r is their_r or their_v == Volume.ZERO:
+        elif my_r is their_r or their_v == 0:
             r = my_r
         elif my_r is waste_reagent or their_r is waste_reagent:
             r = waste_reagent if result is None else Reagent.find(result)
-        elif my_v == Volume.ZERO:
+        elif my_v == 0:
             r = their_r
         else:
             ratio = my_v.ratio(their_v)
@@ -1096,7 +1096,7 @@ class Liquid:
         inexact = first.inexact
         for i, (liquid, frac) in enumerate(ls[1:]):
             v2 = liquid.volume * frac
-            if v2 == Volume.ZERO:
+            if v2 == 0:
                 continue
             r2 = liquid.reagent
             if liquid.inexact:
