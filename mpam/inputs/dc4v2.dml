@@ -5,15 +5,13 @@ volume initial_fill    = 10uL;
 heater incubator       = (9,6)'s heater;
   time heat_wait_time = 5 minutes;
   time update_interval = 10 seconds;
-  time pause_time = 6 minutes;
-  int dna_drops_to_dispense = 10;
+  time pause_time = 10 minutes;
 
 def speed_up {
   incubation_time = 10 seconds;
   heat_wait_time = 10 seconds;
   update_interval = 2 seconds;
-  pause_time = 1 seconds;
-  dna_drops_to_dispense = 1;
+  pause_time = 10 seconds;
 }
 
 define prep_wells() 
@@ -57,6 +55,49 @@ define make_small_drop(well top, well bottom) -> drop
   return d;
 }
 
+define dispense_and_walk_dna (well top) 
+{
+	direction out = top's exit direction;
+	drop d;
+	d = top : dispense drop
+		    : 2 in direction out
+		    : 1 north
+		    : 11 in direction out
+		    : 2 north
+		    ;
+	//wait for a fixed time on board
+	print "Waiting for", pause_time, "to allow time for drop to settle.";
+    countdown(pause_time, update_interval);
+	//move drop to extraction port, and extract, while 
+	d : 2 south
+	  : 8 left
+	  : 2 north
+	  ;
+	  
+	d : transfer out;
+}
+
+define dispense_and_walk_pbs (well top) 
+{
+	direction out = top's exit direction;
+	drop d;
+	d = top : dispense drop
+		    : 2 in direction out
+		    : 1 south
+		    : 11 in direction out
+		    : 2 south
+		    ;
+	//wait for a fixed time on board
+	print "Waiting for", pause_time, "to allow time for drop to settle.";
+    countdown(pause_time, update_interval);
+	//move drop to extraction port, and extract, while 
+	d : 2 north
+	  : 8 left 
+	  : 2 north
+	  ;
+	 
+	d : transfer out;
+}
 
 define make_big_drop -> drop
 {
@@ -92,49 +133,6 @@ define countdown(time total, time interval) {
   }
 }
 
-define dispense_and_walk_dna (well top) 
-{
-	direction out = top's exit direction;
-	drop d;
-	d = top : dispense drop
-		    : 2 in direction out
-		    : 1 north
-		    : 11 in direction out
-		    : 2 north
-		    ;
-	//wait for a fixed time on board
-	print "Waiting for", pause_time, "to allow time for drop to settle.";
-    countdown(pause_time, update_interval);
-	//move drop to extraction port, and extract, while 
-	d : 2 south
-	  : 8 left
-	  : 2 north
-	  ;
-	  
-	d : transfer out;
-}
-
-define dispense_and_walk_pbs (well top) 
-{
-	direction out = top's exit direction;
-	drop d;
-	d = top : dispense drop
-		    : 2 in direction out
-		    : 5 south
-		    : 11 in direction out
-		    : 2 north
-		    ;
-	//wait for a fixed time on board
-	print "Waiting for", pause_time, "to allow time for drop to settle.";
-    countdown(pause_time, update_interval);
-	//move drop to extraction port, and extract, while 
-	d : 2 south
-	  : 8 left 
-	  : 2 north
-	  ;
-	 
-	d : transfer out;
-}
 define dna_comb
 {
    prep_wells();
@@ -225,14 +223,20 @@ define dna_walk
 	//well #4 will have DNA to walk
 	well #3 : require(2 drop of reagent "PBS", initial_fill);
 	well #4 : require(2 drop of reagent "DNA", initial_fill);
-		
+	
 	//Dispense and walk DNA drop, then wait 10 min before moving to extract 
-	repeat with int iter = 1 to dna_drops_to_dispense {
-		print "Dispensing DNA drop ",iter,".";
-		dispense_and_walk_dna(well#4);
-	}
+	dispense_and_walk_dna(well#4); //1
+	//repeat 9 more times 
+	dispense_and_walk_dna(well#4); //2
+	dispense_and_walk_dna(well#4); //3
+	dispense_and_walk_dna(well#4); //4
+	dispense_and_walk_dna(well#4); //5
+	dispense_and_walk_dna(well#4); //6
+	dispense_and_walk_dna(well#4); //7
+	dispense_and_walk_dna(well#4); //8
+	dispense_and_walk_dna(well#4); //9
+	dispense_and_walk_dna(well#4); //10
 	
 	//Now let's do one PBS drop to look for cross contamination
-	print "Dispensing PBS drop 1.";
-	dispense_and_walk_pbs(well#3); 
+	dispense_and_walk_pbs(well#3); //1
 }
