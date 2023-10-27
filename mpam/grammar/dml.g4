@@ -160,6 +160,8 @@ expr
   | who=expr inject_sep what=expr        # injection_expr
   | first=expr 'if' cond=expr 'else' second=expr  # cond_expr
   | macro_def                        # macro_expr
+  | (('loop' ('iteration'|'iter') 'number'?) | ('iteration' 'number'))
+    ('for' loop_name=name 'loop'?)	 # loop_iter_expr
   | 'the'? value_type                # type_name_expr
   | value_type n=INT                 # type_name_expr
   | val=bool_val                     # bool_const_expr
@@ -483,6 +485,7 @@ kwd_names : 's' | 'ms' | 'x' | 'y' | 'a' | 'an' | 'n'
   | 'remaining'
   | 'hr_min_sec' | 'min_sec' | 'hr_min'
   | 'cpt' | 'component'
+  | 'loop' | 'iteration' | 'iter'
   ;
 
 string : STRING ;

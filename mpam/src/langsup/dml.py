@@ -1386,26 +1386,30 @@ WithEnvDelayed = ExtraArgDelayedFunc[Environment]
 
 class LoopType(ABC):
     compiler: Final[DMLCompiler]
+    name: Final[Optional[str]]
     
-    def __init__(self, compiler: DMLCompiler) -> None:
+    def __init__(self, compiler: DMLCompiler, *, name: Optional[str]) -> None:
         self.compiler = compiler
+        self.name = name
     
     @classmethod
-    def for_context(cls, header: dmlParser.Loop_headerContext, *, compiler: DMLCompiler) -> LoopType:
+    def for_context(cls, header: dmlParser.Loop_headerContext, *, 
+                    compiler: DMLCompiler,
+                    name: Optional[str]) -> LoopType:
         def not_implemented(kind: str) -> NoReturn:
             error = compiler.not_yet_implemented(kind, header)
             raise ErrorToPropagate(error)
 
         if isinstance(header, dmlParser.N_times_loop_headerContext):
-            return NTimesLoopType(header, compiler=compiler)
+            return NTimesLoopType(header, compiler=compiler, name=name)
         if isinstance(header, dmlParser.Duration_loop_headerContext):
-            return ForDurationLoopType(header, compiler=compiler)
+            return ForDurationLoopType(header, compiler=compiler, name=name)
         if isinstance(header, dmlParser.Test_loop_headerContext):
-            return BoolTestLoopType(header, compiler=compiler)
+            return BoolTestLoopType(header, compiler=compiler, name=name)
         if isinstance(header, dmlParser.Seq_iter_loop_headerContext):
             not_implemented("'With var in' loops")
         if isinstance(header, dmlParser.Step_iter_loop_headerContext):
-            return StepIterLoopType(header, compiler=compiler)
+            return StepIterLoopType(header, compiler=compiler, name=name)
         
         assert_never(header)
         
@@ -1427,8 +1431,10 @@ class LoopType(ABC):
 class NTimesLoopType(LoopType):
     n_exec: Final[Executable]
     
-    def __init__(self, header: dmlParser.N_times_loop_headerContext, *, compiler: DMLCompiler) -> None:
-        super().__init__(compiler)
+    def __init__(self, header: dmlParser.N_times_loop_headerContext, *, 
+                 compiler: DMLCompiler,
+                 name: Optional[str]) -> None:
+        super().__init__(compiler, name=name)
         self.n_exec = self.compiler.visit(header.n)
         if e := compiler.type_check(Type.INT, self.n_exec, header,
                                     lambda want,have,text:
@@ -1458,8 +1464,10 @@ class BoolTestLoopType(LoopType):
     cond_exec: Final[Executable]
     is_timestamp: Final[bool]
     
-    def __init__(self, header: dmlParser.Test_loop_headerContext, *, compiler: DMLCompiler) -> None:
-        super().__init__(compiler)
+    def __init__(self, header: dmlParser.Test_loop_headerContext, *, 
+                 compiler: DMLCompiler,
+                 name: Optional[str]) -> None:
+        super().__init__(compiler, name=name)
         self.continue_on = header.WHILE() is not None
         cond_ctx = cast(dmlParser.ExprContext, header.cond)
         cond_exec = self.compiler.visit(cond_ctx)
@@ -1511,8 +1519,10 @@ class BoolTestLoopType(LoopType):
 class ForDurationLoopType(LoopType):
     duration_exec: Final[Executable]
     
-    def __init__(self, header: dmlParser.Duration_loop_headerContext, *, compiler: DMLCompiler) -> None:
-        super().__init__(compiler)
+    def __init__(self, header: dmlParser.Duration_loop_headerContext, *, 
+                 compiler: DMLCompiler,
+                 name: Optional[str]) -> None:
+        super().__init__(compiler, name=name)
         duration_exec = self.compiler.visit(header.duration)
         if e := compiler.type_check(Type.TIME, duration_exec, header,
                                     lambda want,have,text:
@@ -1549,8 +1559,10 @@ class StepIterLoopType(LoopType):
     cmp_type: Final[Type]
     inc_sig: Final[Signature]
     
-    def __init__(self, header: dmlParser.Step_iter_loop_headerContext, *, compiler: DMLCompiler) -> None:
-        super().__init__(compiler)
+    def __init__(self, header: dmlParser.Step_iter_loop_headerContext, *, 
+                 compiler: DMLCompiler,
+                 name: Optional[str]) -> None:
+        super().__init__(compiler, name=name)
         
         def raise_error(msg: str, ret_type: Type = Type.NO_VALUE) -> NoReturn:
             raise ErrorToPropagate(compiler.error(header, ret_type, f"{msg}: {compiler.text_of(header)}"))
@@ -2678,12 +2690,12 @@ class DMLCompiler(dmlVisitor):
     def visitLoop(self, ctx:dmlParser.LoopContext) -> Executable:
         header = cast(dmlParser.Loop_headerContext, ctx.header)
         body = cast(dmlParser.CompoundContext, ctx.body)
-        try:
-            loop_type = LoopType.for_context(header, compiler=self)
-        except ErrorToPropagate as ex:
-            return ex.error
         name_ctx: Optional[dmlParser.NameContext] = ctx.loop_name
         name = None if name_ctx is None else cast(str, name_ctx.val)
+        try:
+            loop_type = LoopType.for_context(header, compiler=self, name=name)
+        except ErrorToPropagate as ex:
+            return ex.error
         with self.control_stack.enter_loop(name=name):
             body_exec = loop_type.compile_body(body)
             

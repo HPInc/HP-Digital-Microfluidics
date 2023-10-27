@@ -429,6 +429,11 @@ class dmlVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by dmlParser#loop_iter_expr.
+    def visitLoop_iter_expr(self, ctx:dmlParser.Loop_iter_exprContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by dmlParser#is_expr.
     def visitIs_expr(self, ctx:dmlParser.Is_exprContext):
         return self.visitChildren(ctx)
