@@ -122,7 +122,7 @@ class Currency(Denomination, Money.CurrencyProxy):
     
     def __init__(self, abbr: str, *, 
                  exchange_rate: Optional[Money] = None):
-        quant = Money(1, currency_proxy = self)
+        quant = Money.dim().make_quantity(1, currency_proxy=self)
         super().__init__(abbr, quant, currency = self)
         if exchange_rate is not None:
             self.set_exchange_rate(exchange_rate)

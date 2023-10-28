@@ -1,19 +1,9 @@
 from __future__ import annotations
-from quantities.dimensions import Time, Volume
-from quantities.SI import seconds
+from quantities.currency.usd import quarters, dollars
+from quantities.currency.gpb import pound, GBP
 
-t = 5*seconds*seconds
 
-a = Time.ZERO
-b = Time.ZERO
-c = Volume.ZERO
+GBP.set_exchange_rate(1.5*dollars)
+q = 4*quarters + 1*pound
 
-print(a, b, c)
-print(a is b)
-print(a is c)
-print(a is 10*seconds - 10*seconds)
-print(t+0)
-print(t-0)
-print(0+t)
-print(0-t)
-
+print(q)

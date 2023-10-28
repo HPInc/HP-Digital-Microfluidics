@@ -195,10 +195,10 @@ class Dimensionality(Generic[D], DimLike):
         return quant.in_units(units).__format__(format_spec) 
         
     
-    def make_quantity(self, mag: float) -> D:
+    def make_quantity(self, mag: float, **kwds: Any) -> D:
         if mag == 0:
             return self.ZERO
-        return self.quant_class(mag, self, _dc = _DirectCreation.INST) # type: ignore[arg-type]
+        return self.quant_class(mag, self, _dc = _DirectCreation.INST, **kwds) # type: ignore[arg-type]
 
     def description(self, *, exponent_fmt: Optional[ExptFormatter] = None) -> str:
         if exponent_fmt is None: exponent_fmt = Exponents.default_format

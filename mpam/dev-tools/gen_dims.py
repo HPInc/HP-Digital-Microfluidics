@@ -128,9 +128,10 @@ money.extra_code(f'''
     
 
     def __init__(self, mag: float, dim: Optional[Dimensionality[Money]] = None, *,
-                 currency_proxy: Optional[CurrencyProxy] = None) -> None:
+                 currency_proxy: Optional[CurrencyProxy] = None,
+                 _dc: _DirectCreation) -> None:
         self.currency_proxy = currency_proxy
-        super().__init__(mag, dim)
+        super().__init__(mag, dim, _dc=_dc)
                 
     def __repr__(self) -> str:
         cp = self.currency_proxy
@@ -151,7 +152,7 @@ money.extra_code(f'''
         return cp.format_str(self, format_spec)
         
     def same_dim(self, magnitude: float)-> Money:
-        return Money(magnitude, dim=self.dimensionality, currency_proxy=self.currency_proxy)
+        return Money.dim().make_quantity(magnitude, currency_proxy=self.currency_proxy)
     
     def _force_magnitude(self) -> None:
         cp = self.currency_proxy
@@ -260,8 +261,10 @@ emitter = Emitter(extras=extras, restrictions=restrictions)
 emitter.at_top(f'''
 import time
 from abc import ABC, abstractmethod
-from typing import Protocol, Sequence, ClassVar, Callable, Iterable
-from quantities.core import Dimensionality, _BoundQuantity, _DecomposedQuantity, T
+from typing import Protocol, Sequence, ClassVar, Callable, Iterable, TypeVar
+from quantities.core import Dimensionality, _BoundQuantity, _DecomposedQuantity, _DirectCreation
+
+T = TypeVar('T')
 ''')
 emitter.emit()
 
