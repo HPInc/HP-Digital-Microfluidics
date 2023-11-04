@@ -1,0 +1,398 @@
+/****************************
+ *
+ * Cell-Free Translation
+ *
+ ****************************/
+
+// The amount to actually transfer into wells to avoid having
+// to do a transfer each time.  If you don't care, remove this argument
+// from the require() calls. 
+volume initial_fill = 10uL;
+
+// The number of times to circle when circling
+int n_circles = 5;
+
+// The length of the square when circling to mix
+
+int circle_side = 3;
+
+// The extraction port to use
+extraction port ep = extraction port #1;
+
+// The temperature to use when incubating at room temperature.  Can be
+// a temperature (e.g., `25C`) or `none` to use whatever temperature the board
+// is at
+maybe temperature room_temp = none;
+
+// A wait time to use when incubating at a temperature other than room
+// temperature to ensure that the zone is there.  Set this when you don't trust
+// the board to accurately report its temperature, otherwise, set it to `none`.
+maybe time wait_in_lieu_of_ready = 6 minutes;
+
+// Set in speed_up to shorten incubation times and other stuff when testing.
+bool testing = false;
+
+
+/****************************
+ *
+ * speed_up
+ *
+ * Call before running other functions to shorten the amount 
+ * of time they take when doing debugging simulations. 
+ *
+ ****************************/
+def speed_up {
+  testing = true;
+  n_circles = 2;
+  wait_in_lieu_of_ready = none;
+}
+
+/****************************
+ *
+ * circle_clockwise(int n, direction d) -> path
+ *
+ * Returns a path to walk a drop in a clockwise square
+ * with side length `n`, starting in direction `d`.
+ *
+ ****************************/
+define circle_clockwise(int n, direction d) -> path {
+    return n in dir d
+         : n in dir d turned clockwise
+         : n in dir d turned around
+         : n in dir d turned counterclockwise;
+}
+
+/****************************
+ *
+ * circle_counterclockwise(int n, direction d) -> path
+ *
+ * Returns a path to walk a drop in a counterclockwise square
+ * with side length `n`, starting in direction `d`.
+ *
+ ****************************/
+define circle_counterclockwise(int n, direction d) -> path {
+    return n in dir d
+         : n in dir d turned counterclockwise
+         : n in dir d turned around
+         : n in dir d turned clockwise;
+}
+
+/****************************
+ *
+ * countdown(time total, time interval)
+ *
+ * delays for `total` while printing out the remaining time
+ * every `interval`.  This can be useful to give progress feedback
+ * for long delays (e.g., for incubation).
+ *
+ ****************************/
+define countdown(time total, time interval) {
+  timestamp end_at = time now + total;
+  
+  repeat until end_at {
+     time remaining = time until(end_at);
+     print time now+":", (remaining : in M:S), "left.";
+     time t = remaining if remaining < interval else interval;
+     wait for t;
+  }
+}
+
+
+/****************************
+ *
+ * incubate(heater incubator,
+ *          maybe temperature incubation_temp,
+ *          time incubation_time)
+ *
+ * Incubate for `incubation_time` using `incubator`.
+ * If `incubation_temp` is `none` (or `missing`), the
+ * current temperature is used, otherwise `incubator` is
+ * set to `incubation_temp` first.  In that case, if `wait_in_lieu_of_ready`, 
+ * defined above, is a time value, the function waits for that long,
+ * otherwise, it waits until the heater's reported temperature is
+ * `incubation_temp`
+ *
+ ****************************/
+
+define incubate(heater incubator,
+                maybe temperature incubation_temp,
+                time incubation_time)
+ { 
+    time pause_length = 1 minute;
+    if testing {
+       incubation_time = 5 seconds;
+       pause_length = 1 second;
+    }
+    
+    string tdesc = str(incubation_temp);
+    
+    if incubation_temp exists {
+        incubator’s target = incubation_temp;
+        if wait_in_lieu_of_ready exists {
+            print "Waiting for", wait_in_lieu_of_ready, 
+                  "in lieu of trusting the board to report its temperature";
+            countdown(wait_in_lieu_of_ready, pause_length);
+        } else {
+            wait until incubator is ready;
+        }
+    } else {
+        tdesc = "room temperature";
+    }
+    
+
+    print "Incubating at", tdesc, "for", (incubation_time : in H:M:S)+".";
+    countdown(incubation_time, pause_length);
+    incubator : off;
+}
+
+
+/****************************
+ *
+ * combine_incubate_extract (reagent r1, reagent r2,
+ *                           time incubation_time,
+ *                           maybe temperature incubation_temp)
+ *
+ * The common part of the In Vitro Transcription and In Vitro Translation
+ * routines.  Combines two reagents `r1` and `r2`, held in well #3 and well #4,
+ * walks them to mix, incubates them for `incubation_time` at `incubation_temp`
+ * and then extracts them using `ep` (defined above).
+ *
+ ****************************/
+define combine_incubate_extract (reagent r1, reagent r2,
+                                 time incubation_time,
+                                 maybe temperature incubation_temp)
+{
+  // Fill the wells if needed.
+  well r1_well = well #3 : require(1 drop of r1, initial_fill);
+  well r2_well = well #4 : require(1 drop of r2, initial_fill);
+  
+  // The pad the incubation will occur at
+  pad incubation_pad = (3, 6);
+
+  // The heater to use.
+  heater incubator = heater#1;
+  	  
+  // The combined drop
+  drop d1;
+  
+  // Form the combined drop by dispensing from the two wells
+  // and merging the two drops together. 
+  [[
+     d1 = r1_well : dispense drop
+          : 2 right : down : right
+          : accept merge from south
+          ;
+     r2_well : dispense drop
+          : 2 right : up 3 : right
+          : merge into north
+          ;
+  ]]
+  
+  // The path to walk to mix
+  path circle = circle_clockwise(circle_side, right);
+  
+  // For the specified number of circles, walk the drop along
+  // the path
+  repeat n_circles times {
+    d1 : circle;
+  }
+  
+  // Move the drop to the incubation pad
+  d1 : to incubation_pad;
+  
+  // Incubate at the desired temperature for the desired time
+  incubate(incubator, incubation_temp, incubation_time);
+  
+  // Move the drop to the extraction port and extract.
+  d1 : to ep : transfer out;
+}
+
+
+/****************************
+ *
+ * transcription
+ * 
+ * In Vitro Transcription, defined in terms of combine_incubate_extract().
+ *
+ ****************************/
+define transcription {
+  combine_incubate_extract(reagent "cDNA Template",
+                           reagent "Reaction Mix",
+                           3 hours, 40 C);
+}
+
+/****************************
+ *
+ * transcription
+ * 
+ * In Vitro Translation, defined in terms of combine_incubate_extract().
+ *
+ ****************************/
+define translation {
+  combine_incubate_extract(reagent "Purified mRNA",
+                           reagent "Reaction Mix",
+                           10 hours, room_temp);
+}
+
+/****************************
+ *
+ * alpha_screen_finish(injectable drop d, timestamp start_time, int n,
+ *                     well waste_well)
+ * 
+ * The last part of the ALPHA screen.  Takes a 2x drop, splits it, extracts one
+ * half, and uses the ESELog to analyze the other.  `start_time` is the time of the run
+ * and `n` is the reading number to use on the CSV file (i.e., 1 or 2).  `waste_well`
+ * is used to dispose of the analyzed drop.
+ *
+ ****************************/
+define alpha_screen_finish(injectable drop d, timestamp start_time, int n,
+                           well waste_well) 
+{
+  /*******************************
+   * read_and_dispose(drop rd)
+   *
+   * A local function that analyzes a drop and then walks it
+   * to the waste well.  We use a function so that it can be
+   * more easily used as an injection target in a parallel block.  
+   *******************************/
+  define read_and_dispose(drop rd) {
+    // Grab the ESELog
+    eselog e = the board's eselog;
+
+    // Compute the name template for the CSV file to write.
+    string file_name = "run-%Y-%m-%d_%H_%M_%S-drop-"+n+".csv";
+  
+    // Walk the drop to the ESELog's target
+    rd : to e's target;
+    
+    // Take the reading and write it to the CSV file
+    e : take a reading
+      : write to csv file(file_name, start_time)
+      ;
+      
+    // Walk the drop to the waste well.
+    rd : to column waste_well's exit pad's column 
+       : to waste_well 
+       : enter well;
+  }
+
+  // A future drop that will hold the split-out portion of `d`
+  future drop d2;
+  [[  
+      // Split out half as d2, then move to ep and transfer out.
+      d : split to south as d2
+        : to ep
+        : transfer out;
+        
+      // Once d2 has a value, call read_and_dispose (above) on it.
+      d2 : read_and_dispose;
+  ]]
+}
+
+/****************************
+ *
+ * alpha_screen
+ * 
+ * The ALPHA screen process.
+ *
+ ****************************/
+define alpha_screen {
+  // Initialize wells for the three reagents.
+  well s_well = well #3 : require(2 drops of reagent "Sample", initial_fill);
+  well ab_well = well #4 : require(1 drop of reagent "Acceptor Beads", initial_fill);
+  well db_well = well #7 : require(1 drop of reagent "Donor Beads", initial_fill);
+  
+  // Identify the waste well.
+  well waste_well = well #8;
+  waste_well's reagent = waste;
+
+  // Two pads, one on each side of the board, that will be used for mixing.
+  pad pLeft = (5, 6);
+  pad pRight = (12, 6);
+  
+  // Parameters to define mixing and incubation.
+  time mix_time = 10 seconds if not testing else 5 seconds;
+  time incubation_time_1 = 1 hour;
+  time incubation_time_2 = 1 hour;
+  
+  // The start time will be used in the CSV file names
+  timestamp start_time = time now;
+
+  // Dispense one drop and move it out of the way so that
+  // we have room to dispense another drop behind it.
+  drop d_samp_1 = s_well : dispense drop : right 2;
+  drop dsa;
+  drop dsd;
+  
+  // In parallel:
+  [[
+      // dsd is a merge of the first sample drop and a drop of db.
+      // It moves to the right side of the board.
+      dsd = d_samp_1 : to pRight
+                     : accept merge from right;
+                     
+      // dsa is a merge of the second sample drop and a drop of ab.
+      // It stays on the left side of the board.
+      dsa = s_well : dispense drop 
+                   : to pLeft
+                   : accept merge from left;
+                   
+      // Dispense a drop of ab and move it up to merge into dsa 
+  	  ab_well : dispense drop 
+  	          : to pLeft + 2 left
+  	          : merge into right;
+  	          
+  	  // Dispense a drop of db and merge it into dsd.
+      db_well : dispense drop
+              : to pRight + 2 right
+              : merge into left;
+  ]]
+  
+  // Grab a circular (square) path
+  path circle = circle_clockwise(circle_side, right);
+  
+  // Walk both dsa and dsd (in parallel) along that path 
+  // for `mix_time`.
+  repeat for mix_time [[
+    dsa : circle;
+    dsd : circle;     
+  ]]
+  
+  // Incubate the two drops at room temperature.
+  incubate(heater #1, room_temp, incubation_time_1);
+  
+  future drop dsa_2;
+  future drop dsd_2;
+  drop dc1;
+  drop dc2;
+  // Split the two drops in half and move half of each to 
+  // merge with the stationary half of the other.
+  [[
+     dc1 = dsa : split to down as dsa_2
+               : accept merge from right;
+     dc2 = dsd : split to down as dsd_2
+               : accept merge from left;
+     dsa_2 : right 2
+           : to pRight + 2 left
+           : merge into right;
+     dsd_2 : down 2 : left 4
+           : to pLeft + 2 right
+           : merge into left;
+  ]]
+  
+  // Incubate again for the second incubation time.
+  incubate(heater #1, room_temp, incubation_time_2);
+
+  // Call `alpha_screen_finish` on each of the two drops, in
+  // sequences to split them in half, analyze one of the resulting drops
+  // and extract the other.  
+  dc1 : alpha_screen_finish(start_time, 1, waste_well);
+  dc2 : left 5
+      : alpha_screen_finish(start_time, 2, waste_well);
+}
+
+// For debugging.
+define test {
+    speed_up;
+    alpha_screen;
+}
