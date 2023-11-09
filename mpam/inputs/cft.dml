@@ -17,7 +17,7 @@ int n_circles = 5;
 int circle_side = 3;
 
 // The extraction port to use
-extraction port ep = extraction port #1;
+extraction port ep = extraction port #2;
 
 // The temperature to use when incubating at room temperature.  Can be
 // a temperature (e.g., `25C`) or `none` to use whatever temperature the board
@@ -167,7 +167,7 @@ define combine_incubate_extract (reagent r1, reagent r2,
   well r2_well = well #4 : require(1 drop of r2, initial_fill);
   
   // The pad the incubation will occur at
-  pad incubation_pad = (3, 6);
+  pad incubation_pad = (9, 6);
 
   // The heater to use.
   heater incubator = heater#1;
@@ -263,15 +263,18 @@ define alpha_screen_finish(injectable drop d, timestamp start_time, int n,
     string file_name = "run-%Y-%m-%d_%H_%M_%S-drop-"+n+".csv";
   
     // Walk the drop to the ESELog's target
-    rd : to e's target;
-    
+    rd : to row 2
+       : to column e's target's column 
+       : to e's target;
+       
     // Take the reading and write it to the CSV file
     e : take a reading
       : write to csv file(file_name, start_time)
       ;
       
     // Walk the drop to the waste well.
-    rd : to column waste_well's exit pad's column 
+    rd : to row 2
+       : to column waste_well's exit pad's column 
        : to waste_well 
        : enter well;
   }
