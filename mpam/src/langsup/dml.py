@@ -4439,6 +4439,8 @@ class DMLCompiler(dmlVisitor):
         
         Attributes["target"].register_setter(Type.SENSOR, Type.PAD.maybe, set_target)
         
+        Attributes["laser"].register(Type.ESELOG, Type.BINARY_CPT, lambda e: e.aiming_laser)
+        
         Attributes["timestamp"].register(Type.SENSOR_READING, Type.TIMESTAMP.sample, lambda r: r.timestamp)
         Attributes["count"].register(Type.SENSOR_READING, Type.INT, lambda r: r.count)
         Attributes["ticket"].register(Type.ESELOG_READING, Type.INT.sample, lambda r: r.ticket)

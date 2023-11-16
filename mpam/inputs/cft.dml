@@ -29,6 +29,15 @@ maybe temperature room_temp = none;
 // the board to accurately report its temperature, otherwise, set it to `none`.
 maybe time wait_in_lieu_of_ready = 6 minutes;
 
+// The time to wait when exciting the drop.
+maybe time excitation_time = 1 second;
+
+// The hardcoded eselog target
+maybe pad eselog_target = (2,2); 
+
+       
+
+
 // Set in speed_up to shorten incubation times and other stuff when testing.
 bool testing = false;
 
@@ -258,6 +267,10 @@ define alpha_screen_finish(injectable drop d, timestamp start_time, int n,
   define read_and_dispose(drop rd) {
     // Grab the ESELog
     eselog e = the board's eselog;
+    
+    if eselog_target exists {
+      e's target = eselog_target;
+    }
 
     // Compute the name template for the CSV file to write.
     string file_name = "run-%Y-%m-%d_%H_%M_%S-drop-"+n+".csv";
@@ -268,9 +281,15 @@ define alpha_screen_finish(injectable drop d, timestamp start_time, int n,
        : to e's target;
        
     // Take the reading and write it to the CSV file
+    e's laser: on;
+    if excitation_time exists {
+      print "Exciting drop for", excitation_time;
+      countdown(excitation_time, 10 seconds);
+    }
     e : take a reading
       : write to csv file(file_name, start_time)
       ;
+    e's laser: off;
       
     // Walk the drop to the waste well.
     rd : to row 2
