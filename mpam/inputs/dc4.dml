@@ -217,7 +217,29 @@ define dna_comb
    
    C : transfer out;
 }
+define heat_only
+{
+   // Get the heater moving toward the
+   // correct temperature.
+   
+   print "Heating", incubator, "to ", incubation_temp; 
+   incubator's target = incubation_temp;
+   
+//   wait until incubator is ready;
+   incubator : on;
+   // hack until glider updates the reading of temperatures when using thermal states,
+   // or thermal state status is used to determine readiness
+   print "Waiting for", heat_wait_time, "in lieu of trusting the board to report its temperature.";
+   countdown(heat_wait_time, update_interval);
+   print "Assuming the heater is at", incubation_temp+".";
+   print "Incubating for", incubation_time+".";
+   countdown(incubation_time, update_interval);
 
+   incubator : off;
+   wait until incubator is ambient;
+   prompt "Hit OK when you're ready to transfer fluid off the board.";
+   
+}
 define dna_walk
 {
 	//prep wells
