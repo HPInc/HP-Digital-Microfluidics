@@ -7,7 +7,7 @@
 // The amount to actually transfer into wells to avoid having
 // to do a transfer each time.  If you don't care, remove this argument
 // from the require() calls. 
-volume initial_fill = 10uL;
+volume initial_fill = 3uL;
 
 // The number of times to circle when circling
 int n_circles = 5;
@@ -274,6 +274,7 @@ define alpha_screen_finish(injectable drop d, timestamp start_time, int n,
 
     // Compute the name template for the CSV file to write.
     string file_name = "run-%Y-%m-%d_%H_%M_%S-drop-"+n+".csv";
+    print "Using ESElog to read drop #"+n;
   
     // Walk the drop to the ESELog's target
     rd : to row 2
@@ -281,7 +282,6 @@ define alpha_screen_finish(injectable drop d, timestamp start_time, int n,
        : to e's target;
        
     // Take the reading and write it to the CSV file
-    e's laser: on;
     if excitation_time exists {
       print "Exciting drop for", excitation_time;
       countdown(excitation_time, 10 seconds);
@@ -289,26 +289,20 @@ define alpha_screen_finish(injectable drop d, timestamp start_time, int n,
     e : take a reading
       : write to csv file(file_name, start_time)
       ;
-    e's laser: off;
       
     // Walk the drop to the waste well.
     rd : to row 2
        : to column waste_well's exit pad's column 
        : to waste_well 
        : enter well;
+    n = n+1;
   }
 
   // A future drop that will hold the split-out portion of `d`
-  future drop d2;
-  [[  
-      // Split out half as d2, then move to ep and transfer out.
-      d : split to south as d2
-        : to ep
-        : transfer out;
-        
-      // Once d2 has a value, call read_and_dispose (above) on it.
-      d2 : read_and_dispose;
-  ]]
+  drop d2;
+  d : split to south as d2;
+  d2 : read_and_dispose;
+  d : read_and_dispose;
 }
 
 /****************************
@@ -406,11 +400,14 @@ define alpha_screen {
   incubate(heater #1, room_temp, incubation_time_2);
 
   // Call `alpha_screen_finish` on each of the two drops, in
-  // sequences to split them in half, analyze one of the resulting drops
-  // and extract the other.  
+  // sequences to split them in half and analyze each of the
+  // smaller drops.
+  local e = the board's eselog;
+  e's laser: on;
   dc1 : alpha_screen_finish(start_time, 1, waste_well);
   dc2 : left 5
-      : alpha_screen_finish(start_time, 2, waste_well);
+      : alpha_screen_finish(start_time, 3, waste_well);
+  e's laser: off;
 }
 
 def empty_well_to(injectable well w, well ww) {
@@ -488,7 +485,7 @@ def empty_wells_to(well ww) {
   // away, it thinks there is one drop less in the well
   // so we don't prompt to take out the full volume.
   // This is a bug.
-  pause for 4 ticks;
+  pause for 1 tick;
   ww : empty;
 }
 
