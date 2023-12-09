@@ -4336,7 +4336,8 @@ class DMLCompiler(dmlVisitor):
                                         setter=set_drop_liquid)
         
         def set_well_contents(w: Well, liq: Liquid) -> None:
-            w.contains(liq)
+            #w.contains(liq)
+            w.contents = liq
         Attributes["contents"].register(Type.WELL, Type.LIQUID.maybe, lambda w: Liquid(w.reagent, w.volume),
                                         setter=set_well_contents)
         
