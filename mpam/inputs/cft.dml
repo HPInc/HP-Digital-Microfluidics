@@ -413,6 +413,89 @@ define alpha_screen {
       : alpha_screen_finish(start_time, 2, waste_well);
 }
 
+def empty_well_to(injectable well w, well ww) {
+  // Ignore the waste well and empty wells
+  if w == ww  or w's volume == 0 drops {
+    return;
+  }
+  print "Emptying", w, "to", ww;
+  
+  int wc = ww's exit pad's column;
+  
+  // If there's less than one drop of reagent in the
+  // well, we pretend that there's a full drop so 
+  // that the system doesn't decide to transfer more
+  // in.
+  def round_up_last_drop {
+    if w's volume < 1 drop {
+      w's contents = 1 drop of w's reagent;
+    }
+  }
+  
+  def walk_drops {
+    // If we're on the same side as the waste well
+    // we wind up in a deadlock if we try to walk
+    // several drops in parallel, so we just do
+    // it one at a time.
+    if w's exit pad's column == wc {
+      repeat while w's volume > 0 drops {
+        round_up_last_drop;
+        w : dispense drop
+          : to ww
+          : enter well;        
+      }
+      return;
+    }  
+
+    // If we're on opposite sides and
+    // there's anything left in the well, we
+    // dispense one drop then, in parallel,
+    // walk that drop into the waste well and
+    // call walk_drops recursively.  It would
+    // be cleaner to use a repeat loop, but
+    // that's not possible if you want to 
+    // do the walks in parallel.
+    if w's volume > 0 drops {
+      round_up_last_drop;
+      drop d = w : dispense drop;
+      [[
+        d : to row 2
+          : to col wc
+          : to ww
+          : enter well;
+        walk_drops;
+      ]]
+    }
+  }
+  
+  // We want to make sure that we don't refill
+  // while we're emptying, so we temporarily, 
+  // set the refill level to zero and restore it
+  // when we're done.
+  local rl = w's refill level;
+  w's refill level = 0 drops;
+  // This does the actual work.
+  walk_drops;
+  w's refill level = rl;
+} 
+
+def empty_wells_to(well ww) {
+  well #3 : empty_well_to(ww);
+  well #4 : empty_well_to(ww);
+  well #7 : empty_well_to(ww);
+  well #8 : empty_well_to(ww);
+  // For some reason, if we start the empty right
+  // away, it thinks there is one drop less in the well
+  // so we don't prompt to take out the full volume.
+  // This is a bug.
+  pause for 4 ticks;
+  ww : empty;
+}
+
+def empty_wells {
+  empty_wells_to(well #8);
+}
+
 // For debugging.
 define test {
     speed_up;
