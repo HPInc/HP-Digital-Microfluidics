@@ -15,10 +15,10 @@ from typing import (Union, Generic, TypeVar, Optional, Callable,
 from erk.basic import MissingOr, MISSING
 from erk.monitored import MonitoredProperty, ChangeCallbackList
 from erk.numutils import farey
-from quantities.SI import sec, deg_C
-from quantities.dimensions import (Molarity, MassConcentration, 
+from erk.quant.SI import sec, deg_C
+from erk.quant.dimensions import (Molarity, MassConcentration, 
                                    VolumeConcentration, Volume)
-from quantities.temperature import TemperaturePoint
+from erk.quant.temperature import TemperaturePoint
 
 
 logger = logging.getLogger(__name__)

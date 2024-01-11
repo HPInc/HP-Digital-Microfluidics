@@ -17,9 +17,9 @@ from erk.cmd_line import (time_arg, ip_addr_arg, ip_subnet_arg, units_arg,
 from erk.config import ConfigParam
 from erk.logspec import LoggingSpec, logging_levels, logging_formats, LoggingLevel
 from erk.stringutils import conj_str
-from quantities.SI import ms, minutes, hr, days, uL, secs, volts, deg_C, V
-from quantities.core import set_default_units, UnitExpr, UEorSeq
-from quantities.dimensions import Time
+from erk.quant.SI import ms, minutes, hr, days, uL, secs, volts, deg_C, V
+from erk.quant.core import set_default_units, UnitExpr, UEorSeq
+from erk.quant.dimensions import Time
 
 from . import device, pipettor
 from .device import (Board, System, PowerMode, EC, ExternalComponent, 

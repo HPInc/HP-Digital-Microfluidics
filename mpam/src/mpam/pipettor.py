@@ -12,11 +12,11 @@ from erk.config import ConfigParam
 from erk.errors import ErrorHandler, PRINT
 from erk.formatting import Formatter
 from erk.monitored import MonitoredProperty, ChangeCallbackList
+from erk.quant.SI import uL
+from erk.quant.dimensions import Volume
 from erk.sched import (Postable, Delayed, OpScheduler, CanDelay, DelayType,
                        Operation)
 from erk.stringutils import map_str
-from quantities.SI import uL
-from quantities.dimensions import Volume
 
 from .device import (SystemComponent, UserOperation, PipettingTarget, System,
                      ProductLocation, ExternalComponent)

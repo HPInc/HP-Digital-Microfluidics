@@ -34,13 +34,13 @@ from erk.sample import TimestampSample, Sample
 from erk.sched import (DelayType, Delayed, CanDelay, OpScheduler, WaitableType,
                        NO_WAIT, Operation, Postable, Trigger)
 from erk.stringutils import map_str
-from quantities.SI import volts, deg_C
-from quantities.US import deg_F
-from quantities.core import Unit
-from quantities.dimensions import Time, Volume, Frequency, Temperature, Voltage
-from quantities.temperature import TemperaturePoint, abs_F
-from quantities.ticks import Ticks, tick, TickNumber
-from quantities.timestamp import time_now, Timestamp
+from erk.quant.SI import volts, deg_C
+from erk.quant.US import deg_F
+from erk.quant.core import Unit
+from erk.quant.dimensions import Time, Volume, Frequency, Temperature, Voltage
+from erk.quant.temperature import TemperaturePoint, abs_F
+from erk.quant.ticks import Ticks, tick, TickNumber
+from erk.quant.timestamp import time_now, Timestamp
 
 from .engine import (DevCommRequest, TimerFunc, ClockCallback,
                      Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,
@@ -5689,9 +5689,11 @@ class System(CanDelay):
             return self._batch
 
 
+    # PyDev (11.0.3) insists that BoardMonitor is undefined even though it's imported withing
+    # a TYPE_CHECKING contitional and only used in a hint.
     def run_monitored(self, fn: Callable[[System],T],
                       *,
-                      control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None,
+                      control_setup: Optional[Callable[[BoardMonitor, SubplotSpec], Any]] = None, # @UndefinedVariable
                       control_fraction: Optional[float] = None,
                       thread_name: Optional[str] = None,
                       ) -> T:

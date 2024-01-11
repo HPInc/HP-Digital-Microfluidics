@@ -14,9 +14,9 @@ from erk.grid import Dir, XYCoord
 from erk.sched import (OpScheduler, Operation, Delayed, Postable, Barrier,
                        WaitableType, DelayScheduler, StaticOperation, ComputeOp)
 from erk.stringutils import map_str
-from quantities.core import qstr
-from quantities.dimensions import Volume
-from quantities.ticks import Ticks, tick
+from erk.quant.core import qstr
+from erk.quant.dimensions import Volume
+from erk.quant.ticks import Ticks, tick
 
 from .device import (Pad, Board, Well, WellState, ExtractionPoint,
                      ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad,

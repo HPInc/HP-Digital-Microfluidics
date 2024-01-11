@@ -10,7 +10,7 @@ from typing import (Final, Iterator, Sequence, Optional, Callable, MutableMappin
 
 from erk.basic import not_None, Callback
 from erk.sched import Postable, Delayed, Operation, DelayType
-from quantities.ticks import Ticks, tick
+from erk.quant.ticks import Ticks, tick
 
 from .device import Pad, Board
 from .drop import Drop

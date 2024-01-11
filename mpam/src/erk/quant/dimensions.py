@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from .core import BaseDim, DerivedDim, Scalar,    Quantity, UnitExpr, Unit, AbbrExp, ScalarUnitExpr
+from .core import BaseDim, DerivedDim, Scalar, Quantity, UnitExpr, Unit, AbbrExp, ScalarUnitExpr
 from typing import overload, Union, Literal, Optional, cast
 
 ###########################################

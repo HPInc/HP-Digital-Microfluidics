@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-# This is a copy of sphinx-build, put here to make it easier to run from within
-# Eclipse.
-
 import re
 import sys
 from opentrons.simulate import main

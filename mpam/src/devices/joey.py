@@ -25,10 +25,10 @@ from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import State, \
     OnOff, DummyState, deg_C_per_sec
-from quantities.SI import uL, ms, volts, deg_C, mm
-from quantities.US import mil
-from quantities.dimensions import Volume, Distance, Area
-from quantities.temperature import abs_C
+from erk.quant.SI import uL, ms, volts, deg_C, mm
+from erk.quant.US import mil
+from erk.quant.dimensions import Volume, Distance, Area
+from erk.quant.temperature import abs_C
 
 
 logger = logging.getLogger(__name__)

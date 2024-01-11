@@ -10,9 +10,9 @@ from typing import (Final, NamedTuple, Sequence, Literal, Union, Optional,
 from erk.basic import not_None
 from erk.grid import Dir
 from erk.sched import Delayed, Postable
-from quantities.dimensions import Time
-from quantities.temperature import TemperaturePoint, absolute_zero
-from quantities.timestamp import time_now, Timestamp
+from erk.quant.dimensions import Time
+from erk.quant.temperature import TemperaturePoint, absolute_zero
+from erk.quant.timestamp import time_now, Timestamp
 
 from .device import TemperatureControl, Pad
 from .drop import Drop

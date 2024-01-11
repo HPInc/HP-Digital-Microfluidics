@@ -11,10 +11,10 @@ from typing import (Optional, Literal, Protocol, Any, Sequence,
                     Iterable, Final, Union, Callable, NamedTuple)
 
 from erk.stringutils import match_width
-from quantities.SI import sec, ms
-from quantities.dimensions import Time
-from quantities.ticks import Ticks, TickNumber, ticks
-from quantities.timestamp import time_now, time_in, Timestamp
+from erk.quant.SI import sec, ms
+from erk.quant.dimensions import Time
+from erk.quant.ticks import Ticks, TickNumber, ticks
+from erk.quant.timestamp import time_now, time_in, Timestamp
 
 
 logger = logging.getLogger(__name__)

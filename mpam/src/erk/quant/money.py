@@ -3,8 +3,7 @@ from __future__ import annotations
 from threading import RLock
 from typing import Union, Optional, Sequence, Final, Callable
 
-from erk.stringutils import is_are, conj_str, noun
-
+from ..stringutils import is_are, conj_str, noun
 from .core import UnitExpr
 from .dimensions import MoneyUnit, Money
 

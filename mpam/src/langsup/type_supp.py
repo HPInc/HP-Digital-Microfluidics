@@ -14,9 +14,9 @@ import typing
 from erk.basic import ComputedDefaultDict, not_None, partial_order_sort, ValOrFn, \
     ensure_val, MissingOr, MISSING
 from erk.formatting import Formatter, FormatFunction, RegisterableFormatFunction
+from erk.quant.core import Unit, qstr
 from erk.sched import Delayed, Postable
 from erk.stringutils import conj_str
-from quantities.core import Unit, qstr
 
 
 logger = logging.getLogger(__name__)

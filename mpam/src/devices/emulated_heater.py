@@ -5,13 +5,13 @@ import random
 from typing import Sequence, Optional, Union, Final
 
 from erk.grid import GridRegion
+from erk.quant.SI import deg_C, sec
+from erk.quant.dimensions import Temperature, HeatingRate
+from erk.quant.temperature import TemperaturePoint
+from erk.quant.timestamp import Timestamp, time_now
 from erk.sched import Delayed
 from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode, \
     Heater, Chiller
-from quantities.SI import deg_C, sec
-from quantities.dimensions import Temperature, HeatingRate
-from quantities.temperature import TemperaturePoint
-from quantities.timestamp import Timestamp, time_now
 
 
 class TemperatureControlEmulator:

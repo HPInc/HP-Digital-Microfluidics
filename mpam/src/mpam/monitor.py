@@ -36,11 +36,11 @@ from erk.color import ColorAllocator, Color
 from erk.config import ConfigParam
 from erk.grid import XYCoord, Orientation
 from erk.stringutils import match_width, conj_str, unwrap_text
-from quantities.SI import ms, sec
-from quantities.core import Unit, UEorSeq
-from quantities.dimensions import Volume, Time
-from quantities.temperature import abs_C, TemperaturePoint
-from quantities.timestamp import time_now, Timestamp
+from erk.quant.SI import ms, sec
+from erk.quant.core import Unit, UEorSeq
+from erk.quant.dimensions import Volume, Time
+from erk.quant.temperature import abs_C, TemperaturePoint
+from erk.quant.timestamp import time_now, Timestamp
 
 from . import paths
 from .device import (Board, Pad, Well, WellPad, PadBounds,

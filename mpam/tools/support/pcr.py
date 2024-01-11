@@ -15,6 +15,8 @@ from devices.dummy_pipettor import DummyPipettor
 from erk.basic import not_None
 from erk.color import Color
 from erk.grid import Dir
+from erk.quant.SI import second, seconds
+from erk.quant.temperature import abs_C
 from erk.sched import Barrier, WaitableType, NO_WAIT, Postable, \
     SingleFireTrigger, Delayed, schedule
 from erk.stringutils import map_str
@@ -30,8 +32,6 @@ from mpam.processes import PlacedMixSequence, Transform
 from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
 from mpam.types import Reagent, Liquid, waste_reagent
-from quantities.SI import second, seconds
-from quantities.temperature import abs_C
 
 
 logger = logging.getLogger(__name__)

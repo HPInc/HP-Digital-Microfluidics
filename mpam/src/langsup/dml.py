@@ -46,14 +46,14 @@ from mpam.paths import Path
 from mpam.processes import MultiDropProcessType, MultiDropProcessRun
 from mpam.types import unknown_reagent, Liquid, OnOff, \
     Reagent, Mixture
-from quantities import timestamp
-from quantities.SI import deg_C
-from quantities.US import deg_F
-from quantities.core import Unit, Dimensionality, NamedDim, Quantity
-from quantities.dimensions import Time, Volume, Temperature, Voltage, Frequency
-from quantities.temperature import TemperaturePoint, abs_C, abs_F
-from quantities.ticks import Ticks
-from quantities.timestamp import Timestamp, time_in, time_now
+from erk.quant import timestamp
+from erk.quant.SI import deg_C
+from erk.quant.US import deg_F
+from erk.quant.core import Unit, Dimensionality, NamedDim, Quantity
+from erk.quant.dimensions import Time, Volume, Temperature, Voltage, Frequency
+from erk.quant.temperature import TemperaturePoint, abs_C, abs_F
+from erk.quant.ticks import Ticks
+from erk.quant.timestamp import Timestamp, time_in, time_now
 
 
 if TYPE_CHECKING:
@@ -1152,9 +1152,11 @@ class Constant(SpecialVariable[T_]):
         self.val = val
         
 class MonitorVariable(SpecialVariable[T_]):
+    # PyDev (11.0.3) insists that BoardMonitor is undefined even though it's imported withing
+    # a TYPE_CHECKING contitional and only used in a hint.
     def __init__(self, name: str, var_type: Type, *,
-                 getter: Callable[[BoardMonitor], T_],
-                 setter: Optional[Callable[[BoardMonitor, T_], None]] = None,
+                 getter: Callable[[BoardMonitor], T_],                          # @UndefinedVariable
+                 setter: Optional[Callable[[BoardMonitor, T_], None]] = None,   # @UndefinedVariable
                  unmonitored_getter: Optional[Callable[[Environment], T_]] = None,
                  unmonitored_setter: Optional[Callable[[Environment, T_], None]] = None) -> None:
         def adapted_getter(env: Environment) -> Any:

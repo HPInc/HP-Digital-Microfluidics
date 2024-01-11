@@ -1,17 +1,18 @@
 from __future__ import annotations
 
+from argparse import _ArgumentGroup
 from enum import Enum, auto
 import logging
+from typing import Optional, Final, Mapping, Callable
 
+from erk.config import ConfigParam
+from erk.quant.SI import seconds, second, uL
+from erk.quant.dimensions import Time, Volume, FlowRate
+from mpam import exerciser
+from mpam.device import ProductLocation
 from mpam.pipettor import Pipettor, Transfer, EmptyTarget, PipettingSource
 from mpam.types import XferDir, waste_reagent, Reagent
-from quantities.SI import seconds, second, uL
-from quantities.dimensions import Time, Volume, FlowRate
-from mpam.device import ProductLocation
-from mpam import exerciser
-from argparse import _ArgumentGroup
-from typing import Optional, Final, Mapping, Callable
-from erk.config import ConfigParam
+
 
 logger = logging.getLogger(__name__)
 

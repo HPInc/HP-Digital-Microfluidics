@@ -18,11 +18,11 @@ from erk.sched import Delayed, Postable
 from mpam.device import Sensor, Pad, Laser, Board
 from mpam.exerciser import ComponentConfig
 from mpam.types import OnOff
-from quantities.SI import ms, mV
-from quantities.core import Unit, qstr
-from quantities.dimensions import Voltage, Time, Frequency
-from quantities.temperature import TemperaturePoint, abs_C
-from quantities.timestamp import Timestamp, time_now, sleep_until
+from erk.quant.SI import ms, mV
+from erk.quant.core import Unit, qstr
+from erk.quant.dimensions import Voltage, Time, Frequency
+from erk.quant.temperature import TemperaturePoint, abs_C
+from erk.quant.timestamp import Timestamp, time_now, sleep_until
 
 
 logger = logging.getLogger(__name__)

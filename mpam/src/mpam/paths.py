@@ -8,9 +8,9 @@ from typing import (Final, Optional, Callable, Any, Union, Iterable, Sequence,
 
 from erk.basic import Callback
 from erk.grid import Dir, XYCoord
+from erk.quant.dimensions import Volume
 from erk.sched import (Delayed, WaitableType, StaticOperation, Operation,
                        schedule, NO_WAIT, Trigger, Postable, Barrier)
-from quantities.dimensions import Volume
 
 from .device import Well, ExtractionPoint, Pad, System, Board, ProductLocation
 from .drop import Drop, DropComputeOp

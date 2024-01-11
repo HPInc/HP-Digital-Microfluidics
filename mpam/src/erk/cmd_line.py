@@ -6,20 +6,19 @@ from re import Pattern
 import re
 from typing import Final, Optional, Mapping, Sequence, TypeVar, Union, NoReturn
 
-from quantities import temperature
-from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz, \
-    deg_C, deg_K
-from quantities.US import deg_F
-from quantities.core import Quantity, UnitExpr
-from quantities.dimensions import Time, Volume, Voltage, Frequency, Temperature, \
-    TemperatureUnit
-from quantities.prefixes import kilo, milli
-from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
-
 from .grid import XYCoord
 from .logspec import logging_levels, logging_formats, LoggingSpec, \
     LoggingLevel
 from .network import canonicalize_ip_addr
+from .quant import temperature
+from .quant.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz, \
+    deg_C, deg_K
+from .quant.US import deg_F
+from .quant.core import Quantity, UnitExpr
+from .quant.dimensions import Time, Volume, Voltage, Frequency, Temperature, \
+    TemperatureUnit
+from .quant.prefixes import kilo, milli
+from .quant.temperature import abs_C, abs_K, abs_F, TemperaturePoint
 from .stringutils import conj_str
 
 

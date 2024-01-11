@@ -9,11 +9,11 @@ from typing import Optional, Sequence, Union, Callable
 
 from devices import joey
 from erk.basic import assert_never, MissingOr, MISSING
+from erk.cmd_line import voltage_arg, rel_temperature_arg
 from erk.config import ConfigParam
+from erk.quant.SI import volts, deg_C
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser, \
     PlatformChoiceTask
-from quantities.SI import volts, deg_C
-from erk.cmd_line import voltage_arg, rel_temperature_arg
 
 
 class Config:

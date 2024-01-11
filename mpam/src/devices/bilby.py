@@ -12,16 +12,16 @@ from erk.afs import AsyncFunctionSerializer
 from erk.basic import assert_never, not_None, map_unless_None, MISSING
 from erk.errors import ErrorHandler, PRINT
 from erk.grid import Dir
+from erk.quant.SI import mV, deg_C
+from erk.quant.dimensions import Voltage, Frequency, Time, Temperature
+from erk.quant.temperature import TemperaturePoint, abs_C
+from erk.quant.timestamp import Timestamp, time_now, time_in, sleep_until
 from erk.sched import Delayed, Postable
 from erk.stringutils import conj_str
 from mpam import device
 from mpam.device import Pad, Magnet, Well
 from mpam.types import OnOff, State, DummyState
 import pyglider
-from quantities.SI import mV, deg_C
-from quantities.dimensions import Voltage, Frequency, Time, Temperature
-from quantities.temperature import TemperaturePoint, abs_C
-from quantities.timestamp import Timestamp, time_now, time_in, sleep_until
 
 
 logger = logging.getLogger(__name__)

@@ -17,6 +17,17 @@ _V = TypeVar('_V')
 Callback = Callable[[], Any]
 PathOrStr = Union[str, pathlib.Path]
 
+ValOrFn = Union[_T, Callable[[], _T]]
+
+def ensure_val(val: ValOrFn[_T], as_class: type[_T]) -> _T:
+    # Note, we're making an assumption that the type passed in is exactly _T. It
+    # could be a subtype, in which case, this might not work, but the explicit
+    # call we would have made would've failed, too.
+    if isinstance(val, as_class):
+        return val
+    fn = cast(Callable[[], _T], val)
+    return fn()
+
 class Missing(Enum):
     """
     A singleton type to use for optional values when ``None`` is a possible non-
@@ -53,16 +64,22 @@ Args:
 """
 
 def not_Missing(x: MissingOr[_T], *, 
-                desc: Optional[Union[str, Callable[[], str]]] = None) -> _T:
+                desc: Optional[ValOrFn[str]] = None) -> _T:
     def error_msg() -> str:
-        nonlocal desc
-        if desc is None:
-            desc = "argument to not_MISSING"
-        elif not isinstance(desc, str):
-            desc = desc()
-        return f"{desc} is None"
+        d = "argument to not_MISSING" if desc is None else ensure_val(desc, str)
+        return f"{d} is MISSING"
     assert x is not MISSING, error_msg()
     return x
+
+def if_not_Missing(x: MissingOr[_T], fn: Callable[[_T], Any]) -> None:
+    if x is not MISSING:
+        fn(x)
+        
+def call_unless_Missing(obj: MissingOr[_T], fn: Callable[[_T], _V]) -> MissingOr[_V]:
+    return MISSING if obj is MISSING else fn(obj)
+
+def map_unless_Missing(obj: MissingOr[_T], m: Mapping[_T, _V]) -> MissingOr[_V]:
+    return MISSING if obj is MISSING else m[obj]
 
 
 
@@ -115,16 +132,6 @@ class Count(dict[_H,int]):
             self[elt] = new
         return new
     
-ValOrFn = Union[_T, Callable[[], _T]]
-
-def ensure_val(val: ValOrFn[_T], as_class: type[_T]) -> _T:
-    # Note, we're making an assumption that the type passed in is exactly _T. It
-    # could be a subtype, in which case, this might not work, but the explicit
-    # call we would have made would've failed, too.
-    if isinstance(val, as_class):
-        return val
-    fn = cast(Callable[[], _T], val)
-    return fn()
 
 def not_None(x: Optional[_T], *, 
              desc: Optional[ValOrFn[str]] = None) -> _T:

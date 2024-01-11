@@ -8,10 +8,10 @@ from typing import Optional, Union, Callable
 from erk.cmd_line import volume_arg, time_arg
 from erk.grid import XYCoord, Dir
 from erk.sched import Delayed, Barrier, Trigger
-from quantities.SI import seconds, Hz, ms
-from quantities.core import CountDim
-from quantities.dimensions import Volume, Time
-from quantities.timestamp import Timestamp, time_now, time_since
+from erk.quant.SI import seconds, Hz, ms
+from erk.quant.core import CountDim
+from erk.quant.dimensions import Volume, Time
+from erk.quant.timestamp import Timestamp, time_now, time_since
 
 from .device import Board, System, Pad, Well
 from .dilution import dilution_sequences

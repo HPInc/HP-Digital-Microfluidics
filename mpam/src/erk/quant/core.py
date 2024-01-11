@@ -1,18 +1,21 @@
 from __future__ import annotations
-from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
-    overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable,\
-    Literal, Mapping, Type
-from erk.stringutils import split_camel_case, infer_plural
+
+from _collections import defaultdict
+from abc import abstractmethod, ABC
+from enum import Enum, auto
+from functools import cached_property
 import logging
 import math
-from erk.basic import LazyPattern, Lazy
-import re
-from abc import abstractmethod, ABC
-from _collections import defaultdict
-import random
 from random import Random
-from functools import cached_property
-from enum import Enum, auto
+import random
+import re
+from typing import Optional, ClassVar, Callable, TypeVar, Generic, \
+    overload, Union, cast, MutableMapping, Any, Final, Tuple, Sequence, Iterable, \
+    Literal, Mapping, Type
+
+from ..basic import LazyPattern, Lazy
+from ..stringutils import split_camel_case, infer_plural
+
 
 logger = logging.getLogger(__name__)
 

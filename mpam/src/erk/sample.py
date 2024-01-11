@@ -7,10 +7,10 @@ from threading import RLock
 from typing import Union, TypeVar, Protocol, Final, Generic, Sequence, overload, \
     cast
 
-from quantities.core import Quantity, qstr
-from quantities.dimensions import Temperature, Time
-from quantities.temperature import TemperaturePoint
-from quantities.timestamp import Timestamp
+from .quant.core import Quantity, qstr
+from .quant.dimensions import Temperature, Time
+from .quant.temperature import TemperaturePoint
+from .quant.timestamp import Timestamp
 
 from .basic import assert_never
 

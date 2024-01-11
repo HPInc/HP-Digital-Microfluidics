@@ -27,9 +27,9 @@ from mpam.device import System, Board, PipettingTarget, ProductLocation
 from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget, \
     PipettingSource
 from mpam.types import Reagent, XferDir
-from quantities.SI import seconds, uL, ml, ul
-from quantities.dimensions import Time, Volume
-from quantities.timestamp import time_now
+from erk.quant.SI import seconds, uL, ml, ul
+from erk.quant.dimensions import Time, Volume
+from erk.quant.timestamp import time_now
 
 
 logger = logging.getLogger(__name__)
@@ -730,7 +730,7 @@ class OT2(Pipettor):
     def dirty(self, well: WPWell) -> None:
         # _dirty_wells contains the wells that need to receive updates. The
         # logic here is that when we receive, we will lock and set
-        # _receiving_update to True before changing any quantities, so we don't
+        # _receiving_update to True before changing any quantities.quant, so we don't
         # think we need to tell the robot about changes it already knows about.
         with self._lock:
             if not self._receiving_update:

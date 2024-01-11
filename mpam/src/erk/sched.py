@@ -8,8 +8,8 @@ from threading import Lock, Event, RLock
 from typing import TypeVar, Generic, cast, Optional, Any, Callable, Union, Final, \
     runtime_checkable, Protocol
 
-from quantities.dimensions import Time
-from quantities.ticks import Ticks
+from .quant.dimensions import Time
+from .quant.ticks import Ticks
 
 from .basic import ComputedDefaultDict, Callback, not_None, assert_never
 

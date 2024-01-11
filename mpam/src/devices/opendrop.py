@@ -7,13 +7,13 @@ from serial import Serial
 
 from erk.config import ConfigParam
 from erk.grid import XYCoord, Dir, Orientation
+from erk.quant.SI import uL, ms
 from mpam import device
 from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
     WellShape, Pad, WellGate, WellPad, StateDefs
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
 from mpam.types import OnOff, State
-from quantities.SI import uL, ms
 
 
 class Config:

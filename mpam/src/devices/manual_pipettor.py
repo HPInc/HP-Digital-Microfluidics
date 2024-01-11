@@ -1,18 +1,19 @@
 from __future__ import annotations
 
+from _collections import defaultdict
+from argparse import _ArgumentGroup
 import logging
+import math
+from typing import Final, Mapping, Sequence
 
+from erk.config import ConfigParam
+from erk.quant.SI import uL
+from erk.quant.dimensions import Volume
+from erk.stringutils import conj_str
 from mpam import exerciser
 from mpam.pipettor import Pipettor, Transfer, PipettingSource
 from mpam.types import XferDir, Reagent
-from typing import Final, Mapping, Sequence
-from _collections import defaultdict
-from erk.stringutils import conj_str
-from quantities.dimensions import Volume
-from erk.config import ConfigParam
-from argparse import _ArgumentGroup
-from quantities.SI import uL
-import math
+
 
 logger = logging.getLogger(__name__)
 
