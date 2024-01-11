@@ -9,15 +9,15 @@ from fractions import Fraction
 import logging
 import math
 from threading import Lock
-from typing import Union, Generic, TypeVar, Optional, Callable, \
-    Final, ClassVar, Mapping, Tuple, Sequence
+from typing import (Union, Generic, TypeVar, Optional, Callable,
+                    Final, ClassVar, Mapping, Tuple, Sequence)
 
 from erk.basic import MissingOr, MISSING
 from erk.monitored import MonitoredProperty, ChangeCallbackList
 from erk.numutils import farey
 from quantities.SI import sec, deg_C
-from quantities.dimensions import Molarity, MassConcentration, \
-    VolumeConcentration, Volume
+from quantities.dimensions import (Molarity, MassConcentration, 
+                                   VolumeConcentration, Volume)
 from quantities.temperature import TemperaturePoint
 
 
@@ -50,14 +50,6 @@ class OnOff(Enum):
 
 
 deg_C_per_sec: Final = (deg_C/sec)
-
-
-    
-        
-
-
-
-
 
 
 # Used in the case when a chemical is there, but its concentration

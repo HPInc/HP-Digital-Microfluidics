@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mpam.processes import MixSequenceLibrary, PM, MixSequence
+from .processes import MixSequenceLibrary, PM, MixSequence
 
 dilution_sequences = MixSequenceLibrary()
 

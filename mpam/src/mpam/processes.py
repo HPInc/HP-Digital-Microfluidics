@@ -5,15 +5,16 @@ from abc import ABC, abstractmethod
 from enum import Enum
 import sys
 from threading import Lock
-from typing import Final, Iterator, Sequence, Optional, Callable, MutableMapping, \
-    NamedTuple, Iterable, Mapping, TypeVar, Generic
+from typing import (Final, Iterator, Sequence, Optional, Callable, MutableMapping,
+                    NamedTuple, Iterable, Mapping, TypeVar, Generic)
 
 from erk.basic import not_None, Callback
 from erk.sched import Postable, Delayed, Operation, DelayType
-from mpam.device import Pad, Board
-from mpam.drop import Drop
-from mpam.types import Reagent, waste_reagent, OnOff
 from quantities.ticks import Ticks, tick
+
+from .device import Pad, Board
+from .drop import Drop
+from .types import Reagent, waste_reagent, OnOff
 
 
 PT = TypeVar("PT", bound='MultiDropProcessType')

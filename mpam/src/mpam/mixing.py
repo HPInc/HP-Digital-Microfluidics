@@ -1,5 +1,5 @@
 from __future__ import annotations
-from mpam.processes import MixSequenceLibrary, PM, MixSequence
+from .processes import MixSequenceLibrary, PM, MixSequence
 
 mixing_sequences = MixSequenceLibrary()
 

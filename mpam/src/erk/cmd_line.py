@@ -6,11 +6,6 @@ from re import Pattern
 import re
 from typing import Final, Optional, Mapping, Sequence, TypeVar, Union, NoReturn
 
-from erk.grid import XYCoord
-from erk.logspec import logging_levels, logging_formats, LoggingSpec, \
-    LoggingLevel
-from erk.network import canonicalize_ip_addr
-from erk.stringutils import conj_str
 from quantities import temperature
 from quantities.SI import ns, us, ms, sec, minutes, hr, days, mL, volts, uL, Hz, \
     deg_C, deg_K
@@ -20,6 +15,12 @@ from quantities.dimensions import Time, Volume, Voltage, Frequency, Temperature,
     TemperatureUnit
 from quantities.prefixes import kilo, milli
 from quantities.temperature import abs_C, abs_K, abs_F, TemperaturePoint
+
+from .grid import XYCoord
+from .logspec import logging_levels, logging_formats, LoggingSpec, \
+    LoggingLevel
+from .network import canonicalize_ip_addr
+from .stringutils import conj_str
 
 
 Q_ = TypeVar("Q_", bound = Quantity)

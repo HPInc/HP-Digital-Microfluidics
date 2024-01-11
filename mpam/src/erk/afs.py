@@ -4,7 +4,7 @@ from _collections import deque
 from threading import Thread, RLock
 from typing import Final, Optional
 
-from erk.basic import Callback
+from .basic import Callback
 
 
 class _AFS_Thread(Thread):

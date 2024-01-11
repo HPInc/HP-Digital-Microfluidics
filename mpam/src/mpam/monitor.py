@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from argparse import _ArgumentGroup, ArgumentParser, \
-    BooleanOptionalAction
+from argparse import (_ArgumentGroup, ArgumentParser, 
+                      BooleanOptionalAction)
 import logging
 import math
 from numbers import Number
@@ -12,8 +12,8 @@ import re
 from threading import RLock, Event, Lock
 import tkinter
 import traceback
-from typing import Final, Mapping, Optional, Union, Sequence, cast, Callable, \
-    ClassVar, MutableMapping, Any
+from typing import (Final, Mapping, Optional, Union, Sequence, cast, Callable, 
+                    ClassVar, MutableMapping, Any)
 from weakref import WeakKeyDictionary
 
 import clipboard
@@ -36,18 +36,18 @@ from erk.color import ColorAllocator, Color
 from erk.config import ConfigParam
 from erk.grid import XYCoord, Orientation
 from erk.stringutils import match_width, conj_str, unwrap_text
-from mpam import paths
-from mpam.device import Board, Pad, Well, WellPad, PadBounds, \
-    TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate, \
-    TempControllable, TemperatureControl, WellShape, Sensor
-from mpam.drop import Drop, DropStatus
-from mpam.types import OnOff, Reagent, \
-    Liquid, unknown_reagent, waste_reagent
 from quantities.SI import ms, sec
 from quantities.core import Unit, UEorSeq
 from quantities.dimensions import Volume, Time
 from quantities.temperature import abs_C, TemperaturePoint
 from quantities.timestamp import time_now, Timestamp
+
+from . import paths
+from .device import (Board, Pad, Well, WellPad, PadBounds,
+                     TemperatureMode, BinaryComponent, ChangeJournal, DropLoc, WellGate,
+                     TempControllable, TemperatureControl, WellShape, Sensor)
+from .drop import Drop, DropStatus
+from .types import OnOff, Reagent, Liquid, unknown_reagent, waste_reagent
 
 
 logger = logging.getLogger(__name__)
@@ -1103,7 +1103,7 @@ class BoardMonitor:
     def fmt_time(self, t: Optional[Time], *,
                  units: Optional[UEorSeq[Time]] = None,
                  on_None: str = "unspecified") -> str:
-        from mpam.exerciser import Exerciser
+        from .exerciser import Exerciser
         return Exerciser.fmt_time(t, units=units, on_None=on_None)
 
     @classmethod
@@ -1276,7 +1276,7 @@ class BoardMonitor:
 
         apply = Button(fig.add_subplot(grid[0,1]), "Do it")
 
-        from mpam.interpreter import DMLInterpreter
+        from .interpreter import DMLInterpreter
         interp = DMLInterpreter(board=self.board, cache_val_as="last")
         def on_press(event: KeyEvent) -> None: # @UnusedVariable
             expr = text.text.strip()

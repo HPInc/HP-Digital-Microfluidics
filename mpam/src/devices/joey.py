@@ -13,11 +13,11 @@ from erk.cmd_line import coord_arg
 from erk.config import ConfigParam
 from erk.grid import Dir, XYCoord, GridRegion, Orientation, RCOrder
 from erk.stringutils import conj_str
-from mpam.device import WellOpSeqDict, WellState, \
+from mpam import WellOpSeqDict, WellState, \
     WellShape, WellPad, Pad, Magnet, DispenseGroup, \
     WellGate, TemperatureControl, PowerSupply, PowerMode, Fan, \
     Heater, Chiller, StateDefs
-import mpam.device as device
+import mpam
 from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser, BoardKwdArgs
 from mpam.paths import Path
@@ -110,19 +110,21 @@ class Config:
     @classmethod
     def setup_defaults(cls) -> None:
         if not cls._defaults_set_up:
-            device.Config.polling_interval.default = 200*ms
-            device.Config.ps_min_voltage.default = 60*volts
-            device.Config.ps_max_voltage.default = 298*volts
-            device.Config.ps_initial_voltage.default = 0*volts
-            device.Config.ps_initial_mode.default = PowerMode.DC
-            device.Config.ps_can_toggle.default = True
-            device.Config.ps_can_change_mode.default = True
-            device.Config.fan_initial_state.default = OnOff.OFF
-            device.Config.fan_can_toggle.default = True
+            from mpam import Config as mpamConfig
+            
+            mpamConfig.polling_interval.default = 200*ms
+            mpamConfig.ps_min_voltage.default = 60*volts
+            mpamConfig.ps_max_voltage.default = 298*volts
+            mpamConfig.ps_initial_voltage.default = 0*volts
+            mpamConfig.ps_initial_mode.default = PowerMode.DC
+            mpamConfig.ps_can_toggle.default = True
+            mpamConfig.ps_can_change_mode.default = True
+            mpamConfig.fan_initial_state.default = OnOff.OFF
+            mpamConfig.fan_can_toggle.default = True
             cls._defaults_set_up = True
 
     
-class Well(device.Well):
+class Well(mpam.Well):
     @property
     def pipettor(self)->Pipettor:
         return self.board.pipettor
@@ -135,9 +137,9 @@ class ArmPos(Enum):
     BLOCK = auto()
 
 
-class ExtractionPoint(device.ExtractionPoint):
+class ExtractionPoint(mpam.ExtractionPoint):
 
-    def __init__(self, pad: device.Pad, *, splash_radius: Optional[int] = None) -> None:
+    def __init__(self, pad: mpam.Pad, *, splash_radius: Optional[int] = None) -> None:
         super().__init__(pad, splash_radius=splash_radius)
 
     @property
@@ -162,7 +164,7 @@ v1_5_shared_pad_cells: Mapping[tuple[str,int], str] = {
 
     
     
-class Board(device.Board):
+class Board(mpam.Board):
     thermocycler: Thermocycler
     _layout: Final[JoeyLayout]
     _lid: Final[LidType]
@@ -216,7 +218,7 @@ class Board(device.Board):
     def _dispensed_volume(self) -> Volume:
         return self._layout.pad_area*self._lid.height
 
-    def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: device.Pad,
+    def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: mpam.Pad,
               shared_states: Sequence[State[OnOff]], shape: WellShape) -> Well:
 
         if self._layout is JoeyLayout.V1:
@@ -273,7 +275,7 @@ class Board(device.Board):
         return [make_heater(regions=r) for r in regions]
             
     def _chillers(self) -> Sequence[Chiller]:
-        def make_chiller(*, wells: Sequence[device.Well]) -> Chiller:
+        def make_chiller(*, wells: Sequence[mpam.Well]) -> Chiller:
             return EmulatedChiller(board=self, regions=[], wells=wells,
                                    limit = 5*abs_C,
                                    driving_rate = 100*deg_C_per_sec,

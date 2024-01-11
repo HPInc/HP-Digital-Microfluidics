@@ -1,5 +1,7 @@
 from __future__ import annotations
-from quantities.money import Currency
+
+from ..money import Currency
+
 
 eur = EUR = Currency("EUR")
 euro = euros = EUR.new_denomination(EUR, "euros", singular="euro", prefix_symbol="€", 

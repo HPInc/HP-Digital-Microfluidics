@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from quantities.core import Prefix, Unit, Quantity
-from quantities import prefixes, SI
 from typing import TypeVar, Final
-from quantities.dimensions import Storage
+
+from .SI import second
+from .core import Prefix, Unit, Quantity
+from .dimensions import Storage
+from .prefixes import (kilo as dec_kilo, mega as dec_mega, giga as dec_giga,
+                       tera as dec_tera, peta as dec_peta, exa as dec_exa,
+                       zetta as dec_zetta, yotta as dec_yotta)
 
 
 bkilo = Prefix("K", 1024**1)
@@ -25,19 +29,11 @@ exbi  = Prefix("Ei", 1024**6)
 zebi  = Prefix("Zi", 1024**7)
 yobi  = Prefix("Yi", 1024**8)
 
-dec_kilo = prefixes.kilo
-dec_mega = prefixes.mega
-dec_giga = prefixes.giga
-dec_tera = prefixes.tera
-dec_peta = prefixes.peta
-dec_exa = prefixes.exa
-dec_zetta = prefixes.zetta
-dec_yotta = prefixes.yotta
 
 _bin_prefixes = (bkilo, bmega, bgiga, btera, bpeta, bexa, bzetta, byotta)
 _bibi_prefixes = (kibi, mebi, gibi, tebi, pebi, exbi, zebi, yobi)
-_dec_prefixes = (prefixes.kilo, prefixes.mega, prefixes.giga, prefixes.tera,
-                 prefixes.peta, prefixes.exa, prefixes.zetta, prefixes.yotta)
+_dec_prefixes = (dec_kilo, dec_mega, dec_giga, dec_tera,
+                 dec_peta, dec_exa, dec_zetta, dec_yotta)
 
 _force_import: Quantity
 
@@ -83,7 +79,7 @@ dec_gigabyte = dec_gigabytes = dec_GB = dec_giga(n_bytes)
 dec_terabyte = dec_terabytes = dec_TB = dec_tera(n_bytes)
 dec_petabyte = dec_petabytes = dec_PB = dec_peta(n_bytes)
 
-bps = bit_per_sec = bits_per_sec = (bit/SI.second).as_unit("bps")
+bps = bit_per_sec = bits_per_sec = (bit/second).as_unit("bps")
 
 kilobit_per_sec = kilobits_per_sec = Kbps = bkilo(bps)
 megabit_per_sec = megabits_per_sec = Mbps = bmega(bps)
@@ -93,7 +89,7 @@ kibibit_per_sec = kibibits_per_sec = Kibps = kibi(bps)
 mebibit_per_sec = mebibits_per_sec = Mibps = mebi(bps)
 gibibit_per_sec = gibibits_per_sec = Gibps = gibi(bps)
 
-Bps = byte_per_sec = bytes_per_sec = (n_bytes/SI.second).as_unit("Bps")
+Bps = byte_per_sec = bytes_per_sec = (n_bytes/second).as_unit("Bps")
 
 kilobyte_per_sec = kilobytes_per_sec = KBps = bkilo(Bps)
 megabyte_per_sec = megabytes_per_sec = MBps = bmega(Bps)

@@ -7,11 +7,12 @@ from threading import RLock
 from typing import Union, TypeVar, Protocol, Final, Generic, Sequence, overload, \
     cast
 
-from erk.basic import assert_never
 from quantities.core import Quantity, qstr
 from quantities.dimensions import Temperature, Time
 from quantities.temperature import TemperaturePoint
 from quantities.timestamp import Timestamp
+
+from .basic import assert_never
 
 
 Sampleable = Union[float, int, Quantity, Timestamp, TemperaturePoint]

@@ -6,7 +6,7 @@ import logging
 from typing import ClassVar, Mapping, Sequence, Union, Literal, Final, Callable,\
     TypeVar, Generator
 
-from erk.basic import assert_never
+from .basic import assert_never
 
 
 logger = logging.getLogger(__name__)

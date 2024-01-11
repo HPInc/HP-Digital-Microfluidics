@@ -8,18 +8,18 @@ from typing import Optional, Union, Callable
 from erk.cmd_line import volume_arg, time_arg
 from erk.grid import XYCoord, Dir
 from erk.sched import Delayed, Barrier, Trigger
-from mpam.device import Board, System, Pad, Well
-from mpam.dilution import dilution_sequences
-from mpam.drop import Drop
-from mpam.exerciser import Task, Exerciser
-from mpam.mixing import mixing_sequences
-from mpam.paths import Path
-from mpam.types import Liquid, unknown_reagent, \
-    Reagent
 from quantities.SI import seconds, Hz, ms
 from quantities.core import CountDim
 from quantities.dimensions import Volume, Time
 from quantities.timestamp import Timestamp, time_now, time_since
+
+from .device import Board, System, Pad, Well
+from .dilution import dilution_sequences
+from .drop import Drop
+from .exerciser import Task, Exerciser
+from .mixing import mixing_sequences
+from .paths import Path
+from .types import Liquid, unknown_reagent, Reagent
 
 
 class Dispense(Task):
@@ -409,18 +409,18 @@ class Dilute(Task):
         pre_barrier = Barrier(n_drops)
         post_barrier = Barrier(n_drops)
 
-        lead_path = Path.dispense_from(reagent_well) \
-            .to_row(lead_pad.row) \
-            .to_col(lead_pad.column) \
-            .then_process(lambda _: trigger.fire()) \
-            .reach(pre_barrier) \
-            .wait_for(pause_before) \
-            .start(pms.as_process(n_shuttles=args.shuttles)) \
-            .wait_for(pause_after) \
-            .reach(post_barrier) \
-            .to_col(18) \
-            .to_row(6) \
-            .enter_well()
+        lead_path = (Path.dispense_from(reagent_well)
+                         .to_row(lead_pad.row)
+                         .to_col(lead_pad.column)
+                         .then_process(lambda _: trigger.fire())
+                         .reach(pre_barrier)
+                         .wait_for(pause_before)
+                         .start(pms.as_process(n_shuttles=args.shuttles))
+                         .wait_for(pause_after)
+                         .reach(post_barrier)
+                         .to_col(18)
+                         .to_row(6)
+                         .enter_well())
             
             
         bottom_row = 1
@@ -430,21 +430,21 @@ class Dilute(Task):
             path = Path.dispense_from(solvent_well)
             if p.row == lead_pad.row and p.column > lead_pad.column:
                 if lead_pad.row == bottom_row or lead_pad.row == bottom_row+1:
-                    path = path.to_row(lead_pad.row+2) \
-                                .to_col(p.column) \
-                                .to_row(p.row)
+                    path = (path.to_row(lead_pad.row+2)
+                                .to_col(p.column)
+                                .to_row(p.row))
                 else:
-                    path = path.to_row(lead_pad.row-2) \
-                                .to_col(p.column) \
-                                .to_row(p.row)
+                    path = (path.to_row(lead_pad.row-2)
+                                .to_col(p.column)
+                                .to_row(p.row))
             else:
-                path = path.to_row(p.row) \
-                            .to_col(p.column)
+                path = (path.to_row(p.row)
+                            .to_col(p.column))
             
-            path = path.reach(pre_barrier) \
-                    .in_mix() \
-                    .reach(post_barrier) \
-                    .to_row(1).to_col(18).walk(Dir.DOWN)
+            path = (path.reach(pre_barrier)
+                        .in_mix()
+                        .reach(post_barrier)
+                        .to_row(1).to_col(18).walk(Dir.DOWN))
             return path.enter_well()
         
         solvent_paths = (solvent_path(p) for p in solvent_pads)

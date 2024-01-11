@@ -16,32 +16,24 @@ from pathlib import Path
 import random
 from threading import Event, Lock, Thread, RLock
 from types import TracebackType
-from typing import Optional, Final, Mapping, Callable, Literal, \
-    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator, \
-    NamedTuple, Iterable, Type, overload, Generic
+from typing import (Optional, Final, Mapping, Callable, Literal,
+                    TypeVar, Sequence, TYPE_CHECKING, Union, ClassVar, Any, Iterator,
+                    NamedTuple, Iterable, Type, overload, Generic,)
 
 from matplotlib.gridspec import SubplotSpec
 
 from erk.afs import AsyncFunctionSerializer
-from erk.basic import not_None, assert_never, ValOrFn, ensure_val, Callback, \
-    Missing, MISSING, MissingOr
+from erk.basic import (not_None, assert_never, ValOrFn, ensure_val, Callback,
+                       Missing, MISSING, MissingOr)
 from erk.config import ConfigParam
 from erk.errors import ErrorHandler, PRINT
 from erk.grid import XYCoord, RCOrder, Dir, Orientation
 from erk.monitored import MonitoredProperty, ChangeCallbackList
 from erk.network import local_ipv4_addr
 from erk.sample import TimestampSample, Sample
-from erk.sched import DelayType, Delayed, CanDelay, OpScheduler, WaitableType, \
-    NO_WAIT, Operation, Postable, Trigger
+from erk.sched import (DelayType, Delayed, CanDelay, OpScheduler, WaitableType,
+                       NO_WAIT, Operation, Postable, Trigger)
 from erk.stringutils import map_str
-from mpam.engine import DevCommRequest, TimerFunc, ClockCallback, \
-    Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest, \
-    ClockCommRequest, TimerDeltaRequest, IdleBarrier
-from mpam.exceptions import PadBrokenError
-from mpam.types import OnOff, Liquid, \
-    unknown_reagent, waste_reagent, Reagent, \
-    MixResult, State, \
-    DummyState
 from quantities.SI import volts, deg_C
 from quantities.US import deg_F
 from quantities.core import Unit
@@ -50,11 +42,18 @@ from quantities.temperature import TemperaturePoint, abs_F
 from quantities.ticks import Ticks, tick, TickNumber
 from quantities.timestamp import time_now, Timestamp
 
+from .engine import (DevCommRequest, TimerFunc, ClockCallback,
+                     Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,
+                     ClockCommRequest, TimerDeltaRequest, IdleBarrier)
+from .exceptions import PadBrokenError
+from .types import (OnOff, Liquid, unknown_reagent, waste_reagent, Reagent,
+                    MixResult, State, DummyState)
+
 
 if TYPE_CHECKING:
-    from mpam.drop import Drop, Blob
-    from mpam.monitor import BoardMonitor
-    from mpam.pipettor import Pipettor
+    from .drop import Drop, Blob
+    from .monitor import BoardMonitor
+    from .pipettor import Pipettor
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +109,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
 
         class Magnet(BinaryComponent['Magnet']): ...
 
-    This means that :class:`Magnet` can :func:`~mpam.types.OpScheduler.schedule`
+    This means that :class:`Magnet` can :func:`~.types.OpScheduler.schedule`
     operations of type :class:`.Operation`\[:class:`Magnet`, ``V``].
 
     Each :class:`BinaryComponent` objects is associated with a
@@ -222,7 +221,7 @@ class BinaryComponent(BoardComponent, OpScheduler[BC]):
                           ) -> Delayed[OnOff]:
             """
             The implementation of :func:`schedule_for`. Calls
-            :func:`~mpam.types.State.realize_state` on ``obj``'s
+            :func:`~.types.State.realize_state` on ``obj``'s
             :attr:`~BinaryComponent.state`.
 
             :meta public:
@@ -1909,11 +1908,11 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
       :class:`.Reagent`, use :func:`can_provide` and :func:`can_accept`.  Both
       of these return ``True`` if the proffered :class:`.Reagent` matches the
       :class:`Well`'s :attr:`reagent`, if the :class:`Well` is :attr:`available`
-      or if either :class:`.Reagent` is the :attr:`~mpam.types.unknown_reagent`.
+      or if either :class:`.Reagent` is the :attr:`~.types.unknown_reagent`.
       In addition, :func:`can_accept` returns ``True`` if the :class:`Well`'s
-      :attr:`reagent` is the :attr:`~mpam.types.waste_reagent`, and
+      :attr:`reagent` is the :attr:`~.types.waste_reagent`, and
       :func:`can_provide` returns ``True`` if the queried :class:`.Reagent` is
-      the :attr:`~mpam.types.waste_reagent`.
+      the :attr:`~.types.waste_reagent`.
 
     * To assert the :attr:`contents` of a :class:`Well`, you can set
       :attr:`contents` directly (which simply adopts the proffered optional
@@ -2469,9 +2468,9 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
             1. the :class:`Well` is :attr:`available`, or
             2. ``reagent`` matches the :class:`Well`'s :attr:`reagent`, or
             3. either :class:`.Reagent` is the
-               :attr:`~mpam.types.unknown_reagent`, or
+               :attr:`~.types.unknown_reagent`, or
             4. the :class:`Well`'s :attr:`reagent` is the
-               :attr:`~mpam.types.waste_reagent`.
+               :attr:`~.types.waste_reagent`.
 
         Args:
             reagent: the :class:`.Reagent` being provided
@@ -2494,8 +2493,8 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
             1. the :class:`Well` is :attr:`available`, or
             2. ``reagent`` matches the :class:`Well`'s :attr:`reagent`, or
             3. either :class:`.Reagent` is the
-               :attr:`~mpam.types.unknown_reagent`, or
-            4. ``reagent`` is the :attr:`~mpam.types.waste_reagent`.
+               :attr:`~.types.unknown_reagent`, or
+            4. ``reagent`` is the :attr:`~.types.waste_reagent`.
 
         The reason :func:`can_provide` returns ``True`` if the :class:`Well` is
         :attr:`available` is that it is assumed that :func:`ensure_content` will
@@ -2768,7 +2767,7 @@ class Well(OpScheduler['Well'], BoardComponent, PipettingTarget, TempControllabl
             the :class:`Well`'s :attr:`reagent`, ``on_no_sink`` will be invoked,
             but the transfer is expected to take place, with the :attr:`reagent`
             going wherever the :attr:`~PipettingTarget.pipettor` would put the
-            :attr:`mpam.types.waste_reagent`.
+            :attr:`.types.waste_reagent`.
 
         Warning:
             If the ``on_insufficient`` or ``on_no_source`` is invoked, it is
@@ -3905,7 +3904,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
 
         By default, it waits until there is a :class:`.Drop` on :attr:`pad`.
         """
-        from mpam.drop import Blob # @Reimport
+        from .drop import Blob # @Reimport
         
         def after_drop(drop: Drop) -> Delayed[None]:
             return (self.reserve_pads(expect_drop=True)
@@ -3930,7 +3929,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
         Keyword Args:
             last: ``True`` if this is the last transfer in a transfer request.
         """
-        from mpam.drop import Blob # @Reimport
+        from .drop import Blob # @Reimport
         
         pad = self.pad
         if volume > 0:
@@ -4059,7 +4058,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
             on_no_source: an :class:`.ErrorHandler` invoked if ``reagent`` cannot
                           be obtained
         """
-        from mpam.drop import Drop # @Reimport
+        from .drop import Drop # @Reimport
         pipettor = self.pipettor
         assert pipettor is not None, f"{self} has no pipettor and transfer_in() not overridden"
         p_future = pipettor.schedule(pipettor.Supply(reagent, volume, self,
@@ -4248,7 +4247,7 @@ class ExtractionPoint(OpScheduler['ExtractionPoint'], BoardComponent, PipettingT
                 a :class:`Delayed`\[:class:`.Drop`] future object to which the resulting
                 value will be posted unless ``post_result`` is ``False``
             """
-            from mpam.drop import Drop # @Reimport
+            from .drop import Drop # @Reimport
             volume = extraction_point.board.drop_size if self.volume is None else self.volume
             future = Postable[Drop]()
             extraction_point.transfer_in(self.reagent, volume,
@@ -4803,7 +4802,7 @@ class ChangeJournal:
             self.mix_result[pad] = mix_result
 
     def process_changes(self) -> None:
-        from mpam.drop import Blob # @Reimport
+        from .drop import Blob # @Reimport
         Blob.process_changes(self)
 
 
@@ -5100,19 +5099,19 @@ class Board(SystemComponent):
         
     @cached_property
     def pipettor(self) -> Pipettor:
-        from mpam.pipettor import Pipettor # @Reimport
+        from .pipettor import Pipettor # @Reimport
         return Pipettor.find_one_in(self, if_missing=lambda: f"{self} doesn't have a registered pipettor.")
         
     @abstractmethod
     def _add_pads(self) -> None: ...
     
     def _add_all_externals(self) -> None:
-            import mpam
-            pipettor_cp = mpam.pipettor.Config.pipettor
+            from . import pipettor as p
+            pipettor_cp = p.Config.pipettor
             pipettor = pipettor_cp() if pipettor_cp.has_value else ensure_val(self.default_pipettor(), 
-                                                                              mpam.pipettor.Pipettor) # type: ignore [type-abstract]
+                                                                              p.Pipettor) # type: ignore [type-abstract]
             
-            mpam.pipettor.Pipettor._add_external_to(self, pipettor)
+            p.Pipettor._add_external_to(self, pipettor)
             
             component_groups: dict[type[ExternalComponent], list[ExternalComponent]] = defaultdict(list)
             component_groups[Clock] = [Clock(self)]
@@ -5313,7 +5312,7 @@ class Board(SystemComponent):
     def print_blobs(self, *, force: bool = False) -> None:
         if not force and not self.trace_blobs:
             return
-        from mpam.drop import Blob # @Reimport
+        from .drop import Blob # @Reimport
         print("--------------")
         print("Blobs on board")
         print("--------------")
@@ -5696,7 +5695,7 @@ class System(CanDelay):
                       control_fraction: Optional[float] = None,
                       thread_name: Optional[str] = None,
                       ) -> T:
-        from mpam.monitor import BoardMonitor  # @Reimport
+        from .monitor import BoardMonitor  # @Reimport
         val: T
 
         done = Event()

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from quantities.money import Currency
+from ..money import Currency
 
 mxn = MXN = Currency("MXN")
 peso = pesos = MXN.new_denomination(MXN, "pesos", singular="peso", prefix_symbol="$", 

@@ -1,8 +1,11 @@
 from __future__ import annotations
-from quantities import dimensions
+
 from typing import overload, Union, Final, ClassVar, Optional
-from quantities.SI import deg_K
-from quantities.core import ZeroOr
+
+from .SI import deg_K
+from .core import ZeroOr
+from .dimensions import Temperature
+
 
 class TemperaturePoint:
     """
@@ -41,13 +44,13 @@ class TemperaturePoint:
     
         
     """
-    absolute: Final[dimensions.Temperature] #: The :class:`.Temperature` above :attr:`absolue_zero`
+    absolute: Final[Temperature] #: The :class:`.Temperature` above :attr:`absolue_zero`
     
     default_scale: ClassVar[Scale] #: The default :class:`Scale` to use when converting :class:`TemperaturePoint`\s to strings.
     
     
     
-    def __init__(self, absolute: dimensions.Temperature) -> None:
+    def __init__(self, absolute: Temperature) -> None:
         """
         Initialize the object
         
@@ -61,17 +64,17 @@ class TemperaturePoint:
         """
         self.absolute = absolute
         
-    def __add__(self, rhs: ZeroOr[dimensions.Temperature]) -> TemperaturePoint:
+    def __add__(self, rhs: ZeroOr[Temperature]) -> TemperaturePoint:
         return TemperaturePoint(self.absolute+rhs)
     
-    def __radd__(self, lhs: ZeroOr[dimensions.Temperature]) -> TemperaturePoint:
+    def __radd__(self, lhs: ZeroOr[Temperature]) -> TemperaturePoint:
         return TemperaturePoint(lhs+self.absolute)
 
     @overload    
-    def __sub__(self, rhs: TemperaturePoint) -> dimensions.Temperature: ...  # @UnusedVariable
+    def __sub__(self, rhs: TemperaturePoint) -> Temperature: ...  # @UnusedVariable
     @overload
-    def __sub__(self, rhs: ZeroOr[dimensions.Temperature]) -> TemperaturePoint: ...  # @UnusedVariable
-    def __sub__(self, rhs: Union[TemperaturePoint, ZeroOr[dimensions.Temperature]]) -> Union[dimensions.Temperature,
+    def __sub__(self, rhs: ZeroOr[Temperature]) -> TemperaturePoint: ...  # @UnusedVariable
+    def __sub__(self, rhs: Union[TemperaturePoint, ZeroOr[Temperature]]) -> Union[Temperature,
                                                                                      TemperaturePoint]:
         if isinstance(rhs, TemperaturePoint):
             return self.absolute-rhs.absolute
@@ -93,7 +96,7 @@ class TemperaturePoint:
         return self.absolute <= rhs.absolute
     
     def is_close_to(self, other: TemperaturePoint, *,
-                    abs_tol: Optional[ZeroOr[dimensions.Temperature]] = None) -> bool:
+                    abs_tol: Optional[ZeroOr[Temperature]] = None) -> bool:
         return self.absolute.is_close_to(other.absolute, abs_tol=abs_tol)
     
     def as_number(self, scale: Scale) -> float:

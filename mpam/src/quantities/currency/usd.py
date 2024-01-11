@@ -1,6 +1,6 @@
 from __future__ import annotations
-from quantities.money import Currency, Denomination
-from quantities.dimensions import Money
+from ..money import Currency, Denomination
+from ..dimensions import Money
 from typing import Sequence
 
 usd = USD = Currency("USD")

@@ -1,35 +1,32 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from argparse import Namespace, ArgumentParser, \
-    _SubParsersAction, _ArgumentGroup
+from argparse import Namespace, ArgumentParser, _SubParsersAction, _ArgumentGroup
 from functools import cache
 from importlib import import_module
 import logging.config
 import pathlib
 from threading import Event
-from typing import Final, Union, Optional, Sequence, Any, Callable, \
-    NoReturn, TypeVar
+from typing import Final, Union, Optional, Sequence, Any, Callable, NoReturn, TypeVar
 
 from matplotlib.gridspec import SubplotSpec
 
 from erk.basic import ValOrFn, PathOrStr
-from erk.cmd_line import time_arg, ip_addr_arg, ip_subnet_arg, units_arg, \
-    logging_spec_arg, voltage_arg
+from erk.cmd_line import (time_arg, ip_addr_arg, ip_subnet_arg, units_arg, 
+                          logging_spec_arg, voltage_arg)
 from erk.config import ConfigParam
-from erk.logspec import LoggingSpec, logging_levels, logging_formats, \
-    LoggingLevel
+from erk.logspec import LoggingSpec, logging_levels, logging_formats, LoggingLevel
 from erk.stringutils import conj_str
-from mpam import device, pipettor
-from mpam.device import Board, System, PowerMode, EC, ExternalComponent, \
-    BoardComponent, ComponentFactory
-from mpam.monitor import BoardMonitor
-from mpam.pipettor import Pipettor
-from mpam.types import OnOff
-from quantities.SI import ms, minutes, hr, days, uL, secs, \
-    volts, deg_C, V
+from quantities.SI import ms, minutes, hr, days, uL, secs, volts, deg_C, V
 from quantities.core import set_default_units, UnitExpr, UEorSeq
 from quantities.dimensions import Time
+
+from . import device, pipettor
+from .device import (Board, System, PowerMode, EC, ExternalComponent, 
+                     BoardComponent, ComponentFactory)
+from .monitor import BoardMonitor
+from .pipettor import Pipettor
+from .types import OnOff
 
 
 # import logging
@@ -171,7 +168,7 @@ class Exerciser(ABC):
         return self
 
     def run_task(self, task: Task, args: Namespace, *, board: Board) -> None:
-        from mpam import monitor
+        from . import monitor
         system = System(board=board)
 
         def prepare_and_run() -> None:
@@ -306,7 +303,7 @@ class Exerciser(ABC):
         display_group = parser.add_argument_group("display options")
         BoardMonitor.add_args_to(display_group, parser)
         input_group = parser.add_argument_group("input options")
-        from mpam.interpreter import DMLInterpreter
+        from .interpreter import DMLInterpreter
         DMLInterpreter.add_args_to(input_group, parser)
         debug_group = parser.add_argument_group("debugging options")
         Config.trace_blobs.add_arg_to(debug_group, "--trace-blobs", action="store_true",

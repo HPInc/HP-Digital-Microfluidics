@@ -1,4 +1,4 @@
-from quantities.core import Scalar
+from .core import Scalar
 
 each = Scalar(1).as_unit("each")
 pair = pairs = Scalar(2).as_unit("pair")

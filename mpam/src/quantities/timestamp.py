@@ -4,11 +4,9 @@ import math
 import time
 from typing import overload, Union, Final, MutableMapping
 
-from . import core
-from . import dimensions
-from .SI import sec, ns, ms
-from quantities.SI import seconds
-from quantities.core import ZeroOr
+from .SI import sec, ns, ms, seconds
+from .core import Unit, ZeroOr
+from .dimensions import Time
 
 
 class Timestamp:
@@ -44,15 +42,15 @@ class Timestamp:
     To format a :class:`Timestamp`, use :func:`strftime`.  This takes an
     optional format (which defaults to ``"%Y-%m-%d_%H:%M:%S.%f"`` and an
     optional precision, expressed as a :class:`.Time` :class:`.Unit`.  The
-    default precision is :attr:`~quantities.SI.ms`
+    default precision is :attr:`~.SI.ms`
 
     """
-    time: dimensions.Time
+    time: Time
     """
     The :class:`.Time` between the :func:`Timestamp.epoch` and this :class:`Timestamp`.
     """
     
-    def __init__(self, time: dimensions.Time) -> None:
+    def __init__(self, time: Time) -> None:
         """
         Initialize the object
         
@@ -77,41 +75,41 @@ class Timestamp:
         """
         A :class:`Timestamp` with :attr:`time` equal to zero
         """
-        return Timestamp(dimensions.Time.ZERO)
+        return Timestamp(Time.ZERO)
     
     @classmethod
     def never(cls) -> Timestamp: 
         """
         A :class:`Timestamp` with :attr:`time` equal to zero
         """
-        return Timestamp(dimensions.Time.ZERO)
+        return Timestamp(Time.ZERO)
     
     @classmethod
     def from_time_t(cls, time_t: float) -> Timestamp:
         return Timestamp(time_t*seconds)
     
-    def __add__(self, rhs: ZeroOr[dimensions.Time]) -> Timestamp:
+    def __add__(self, rhs: ZeroOr[Time]) -> Timestamp:
         return Timestamp(self.time+rhs)
     
-    def __radd__(self, lhs: ZeroOr[dimensions.Time]) -> Timestamp:
+    def __radd__(self, lhs: ZeroOr[Time]) -> Timestamp:
         return Timestamp(lhs+self.time)
     
-    # def __iadd__(self, rhs: dimensions.Time) -> Timestamp:
+    # def __iadd__(self, rhs: Time) -> Timestamp:
     #     self.time += rhs
     #     return self
     #
 
     @overload
-    def __sub__(self, rhs: Timestamp) -> dimensions.Time: ...  # @UnusedVariable
+    def __sub__(self, rhs: Timestamp) -> Time: ...  # @UnusedVariable
     @overload
-    def __sub__(self, rhs: ZeroOr[dimensions.Time]) -> Timestamp: ...  # @UnusedVariable
-    def __sub__(self, rhs: Union[Timestamp, ZeroOr[dimensions.Time]]) -> Union[dimensions.Time, Timestamp]:
+    def __sub__(self, rhs: ZeroOr[Time]) -> Timestamp: ...  # @UnusedVariable
+    def __sub__(self, rhs: Union[Timestamp, ZeroOr[Time]]) -> Union[Time, Timestamp]:
         if isinstance(rhs, Timestamp):
             return self.time-rhs.time
         else:
             return Timestamp(self.time-rhs)
     
-    # def __isub__(self, rhs: dimensions.Time) -> Timestamp:  # type: ignore
+    # def __isub__(self, rhs: Time) -> Timestamp:  # type: ignore
     #     self.time -= rhs
     #     return self
     
@@ -131,13 +129,13 @@ class Timestamp:
     def __le__(self, rhs: Timestamp) -> bool:
         return self.time <= rhs.time
     
-    _precision_size: Final[MutableMapping[core.Unit[dimensions.Time], int]] = {
+    _precision_size: Final[MutableMapping[Unit[Time], int]] = {
         sec: 0
         }
     
     def strftime(self, *,  
                  fmt: str = "%Y-%m-%d_%H:%M:%S.%f", 
-                 precision: core.Unit[dimensions.Time] = ms) -> str:
+                 precision: Unit[Time] = ms) -> str:
         """
         Format the :class:`Timestamp` as a string.  
         
@@ -145,7 +143,7 @@ class Timestamp:
         :func:`.time.strftime`.  It defaults to ``"%Y-%m-%d_%H:%M:%S.%f"``.  The
         optional ``precision`` specifies the precision of the result, expressed
         as a :class:`.Time` :class:`.Unit`.  It defaults to
-        :attr:`~quantities.SI.ms`.
+        :attr:`~.SI.ms`.
         
         Keyword Args:
             fmt: the format to use
@@ -181,7 +179,7 @@ def time_now() -> Timestamp:
     """
     return Timestamp.now()
 
-def time_in(delta: dimensions.Time) -> Timestamp:
+def time_in(delta: Time) -> Timestamp:
     """
     The current time plus ``delta``, which may be negative or zero.
     
@@ -192,7 +190,7 @@ def time_in(delta: dimensions.Time) -> Timestamp:
     """
     return time_now()+delta
 
-def time_since(ts: Timestamp) -> dimensions.Time:
+def time_since(ts: Timestamp) -> Time:
     """
     The delta between the current time and ``ts`` as a :class:`.Time`. 
     
@@ -206,7 +204,7 @@ def time_since(ts: Timestamp) -> dimensions.Time:
     
     return time_now()-ts
 
-def time_until(ts: Timestamp) -> dimensions.Time:
+def time_until(ts: Timestamp) -> Time:
     return ts-time_now()
 
 def sleep_until(ts: Timestamp) -> None:

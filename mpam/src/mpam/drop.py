@@ -5,25 +5,26 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 import logging
 import math
-from typing import Optional, Final, Union, Callable, Iterator, Iterable, \
-    Sequence, Mapping, NamedTuple, cast, Any, ClassVar, TypeVar
+from typing import (Optional, Final, Union, Callable, Iterator, Iterable,
+                    Sequence, Mapping, NamedTuple, cast, Any, ClassVar, TypeVar)
 
 from erk.basic import not_None, ComputedDefaultDict, Count, Callback
 from erk.errors import FIX_BY, PRINT
 from erk.grid import Dir, XYCoord
-from erk.sched import OpScheduler, Operation, Delayed, Postable, Barrier, \
-    WaitableType, DelayScheduler, StaticOperation, ComputeOp
+from erk.sched import (OpScheduler, Operation, Delayed, Postable, Barrier,
+                       WaitableType, DelayScheduler, StaticOperation, ComputeOp)
 from erk.stringutils import map_str
-from mpam.device import Pad, Board, Well, WellState, ExtractionPoint, \
-    ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad, \
-    BinaryComponent
-from mpam.types import Liquid, \
-    unknown_reagent, \
-    Reagent, MixResult, \
-    OnOff
 from quantities.core import qstr
 from quantities.dimensions import Volume
 from quantities.ticks import Ticks, tick
+
+from .device import (Pad, Board, Well, WellState, ExtractionPoint,
+                     ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad,
+                     BinaryComponent)
+from .types import (Liquid,
+                    unknown_reagent,
+                    Reagent, MixResult,
+                    OnOff,)
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ _T = TypeVar("_T")
 
 
 # if TYPE_CHECKING:
-    # from mpam.processes import MultiDropProcessType
+    # from .processes import MultiDropProcessType
 class Pull(NamedTuple):
     puller: DropLoc
     pullee: DropLoc
@@ -1053,9 +1054,9 @@ class Drop(OpScheduler['Drop']):
             def run_group(_: Any) -> None:
                 # Note, we post the drop as soon as we get to the DISPENSED state, even theough
                 # we continue on to READY
-                well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard())) \
-                    .then_call(make_drop) \
-                    .then_schedule(Well.TransitionTo(WellState.READY))
+                (well.schedule(Well.TransitionTo(WellState.DISPENSED, guard=guard()))
+                      .then_call(make_drop)
+                      .then_schedule(Well.TransitionTo(WellState.READY)))
 
             # well.ensure_content().then_call(run_group)
             run_group(None)
@@ -1119,9 +1120,9 @@ class Drop(OpScheduler['Drop']):
 
             # Note, we post the drop as soon as we get to the DISPENSED state, even theough
             # we continue on to READY
-            well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard())) \
-                .then_call(consume_drop) \
-                .then_schedule(Well.TransitionTo(WellState.READY))
+            (well.schedule(Well.TransitionTo(WellState.ABSORBED, guard=guard()))
+                 .then_call(consume_drop) 
+                 .then_schedule(Well.TransitionTo(WellState.READY)))
             return future
 
 

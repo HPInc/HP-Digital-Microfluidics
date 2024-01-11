@@ -1,5 +1,7 @@
 from __future__ import annotations
-from quantities.money import Currency
+
+from ..money import Currency
+
 
 gbp = GBP = Currency("GBP")
 pound = pounds = GBP.new_denomination(GBP, "pounds", singular="pound", prefix_symbol="£", 

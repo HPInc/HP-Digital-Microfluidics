@@ -1,10 +1,10 @@
 from __future__ import annotations
-from quantities.core import CountDim
+from .core import CountDim
 from typing import overload, Union, ClassVar
 
 class Ticks(CountDim):
     '''
-    A :class:`~quantities.core.Quantity` dimension for counting clock ticks
+    A :class:`~.core.Quantity` dimension for counting clock ticks
 
     The units of this dimension are :attr:`ticks` and :attr:`tick`,
     so ::
@@ -16,7 +16,7 @@ class Ticks(CountDim):
     use one of ::
         0*ticks
         Ticks.ZERO
-    As this is a :class:`~quantities.core.CountDim` dimension, it can be freely
+    As this is a :class:`~.core.CountDim` dimension, it can be freely
     added to or compared with a number.
     '''
     ...

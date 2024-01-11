@@ -47,7 +47,7 @@ vol_conc = volume["Substance"].derived_quotient(volume, "VolumeConcentration")
 
 time.extra_code(f'''
     def sleep(self) -> None:
-        from quantities import SI
+        from . import SI
         time.sleep(self.as_number(SI.seconds))
     @classmethod
     def rate_from(cls, val: Union[Time, Frequency]) -> Time:
@@ -62,7 +62,7 @@ time.extra_code(f'''
         Keyword Args:
             sep: the separator (default=":") to use between numbers
         """
-        from quantities.SI import hours, minutes, seconds
+        from .SI import hours, minutes, seconds
         return self.decomposed([hours, minutes, seconds], required="all").joined(sep, 2)
     def in_HM(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         """
@@ -74,7 +74,7 @@ time.extra_code(f'''
         Keyword Args:
             sep: the separator (default=":") to use between numbers
         """
-        from quantities.SI import hours, minutes
+        from .SI import hours, minutes
         return self.decomposed([hours, minutes], required="all").joined(sep, 2)
     def in_MS(self, sep: str = ":") -> _DecomposedQuantity.Joined:
         """
@@ -86,7 +86,7 @@ time.extra_code(f'''
         Keyword Args:
             sep: the separator (default=":") to use between numbers
         """
-        from quantities.SI import minutes, seconds
+        from .SI import minutes, seconds
         return self.decomposed([minutes, seconds], required="all").joined(sep, 2)
 ''')
 
@@ -262,7 +262,7 @@ emitter.at_top(f'''
 import time
 from abc import ABC, abstractmethod
 from typing import Protocol, Sequence, ClassVar, Callable, Iterable, TypeVar
-from quantities.core import Dimensionality, _BoundQuantity, _DecomposedQuantity, _DirectCreation
+from .core import Dimensionality, _BoundQuantity, _DecomposedQuantity, _DirectCreation
 
 T = TypeVar('T')
 ''')

@@ -8,7 +8,8 @@ from erk.sched import Delayed, Postable
 from erk.stringutils import conj_str
 from langsup import dml
 from langsup.type_supp import Type
-from mpam.device import Board
+
+from .device import Board
 
 
 class Config:

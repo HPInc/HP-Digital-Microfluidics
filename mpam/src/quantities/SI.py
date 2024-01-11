@@ -1,11 +1,11 @@
-from quantities import dimensions, prefixes
+from . import dimensions, prefixes
 import math
 
 # angle
 radians = dimensions.Angle.from_float(1).as_unit("rad")
 """
-Base :class:`~quantities.core.Unit` (``rad``) of
-:class:`~quantities.dimensions.Angle`
+Base :class:`~.core.Unit` (``rad``) of
+:class:`~.dimensions.Angle`
 
 Aliases include :attr:`rad` and :attr:`radian`.
 
@@ -14,8 +14,8 @@ radian = radians    #: alias of :attr:`radians`
 rad = radians       #: alias of :attr:`radians`
 steradians = dimensions.SolidAngle.from_float(1).as_unit("sr")
 """
-Base :class:`~quantities.core.Unit` (``wr``) of
-:class:`~quantities.dimensions.SolidAngle`
+Base :class:`~.core.Unit` (``wr``) of
+:class:`~.dimensions.SolidAngle`
 
 Aliases include :attr:`sr` :attr:`steradian`.
 """
@@ -23,8 +23,8 @@ steradian = steradians  #: alias of :attr:`steradians`
 sr = steradians         #: alias of :attr:`steradians` 
 degrees = ((math.pi/180)*rad).as_unit("deg")
 """
-:class:`~quantities.core.Unit` (``deg = π/180 rad``) of
-:class:`~quantities.dimensions.Angle`
+:class:`~.core.Unit` (``deg = π/180 rad``) of
+:class:`~.dimensions.Angle`
 
 Aliases include :attr:`deg` and :attr:`degree`.
 """
@@ -34,8 +34,8 @@ deg = degrees       #: alias of :attr:`degrees`
 # mass
 grams = dimensions.Mass.base_unit("g")
 """
-Base :class:`~quantities.core.Unit` (``g``) of
-:class:`~quantities.dimensions.Mass`
+Base :class:`~.core.Unit` (``g``) of
+:class:`~.dimensions.Mass`
 
 Aliases include :attr:`g`, :attr:`gram`, :attr:`grammes`,
 and :attr:`gramme`
@@ -47,7 +47,7 @@ g = grams  # alias of :attr:`grams`
 
 micrograms = prefixes.micro(gram)
 """
-Prefixed :class:`~quantities.core.Unit` (``µg``) of
+Prefixed :class:`~.core.Unit` (``µg``) of
 :attr:`grams`
 
 Aliases include :attr:`µg`, :attr:`ug`, :attr:`microgram`,
@@ -60,7 +60,7 @@ microgramme = micrograms    #: alias of :attr:`micrograms`
 ug = micrograms             #: alias of :attr:`micrograms`
 milligrams = prefixes.milli(gram)
 """
-Prefixed :class:`~quantities.core.Unit` (``mg``) of
+Prefixed :class:`~.core.Unit` (``mg``) of
 :attr:`grams`
 
 Aliases include :attr:`mg`, :attr:`milligram`,
@@ -72,7 +72,7 @@ milligramme = milligrams    #: alias of :attr:`milligrams`
 mg = milligrams             #: alias of :attr:`milligrams`
 kilograms = prefixes.kilo(gram)
 """
-Prefixed :class:`~quantities.core.Unit` (``kg``) of
+Prefixed :class:`~.core.Unit` (``kg``) of
 :attr:`grams`
 
 Aliases include :attr:`kg`, :attr:`kilogram`,
@@ -85,8 +85,8 @@ kg = kilograms             #: alias of :attr:`kilograms`
 
 tonnes = (1000*kg).as_unit("tonne")
 """
-:class:`~quantities.core.Unit` (``tonne = 1000 kg``) of
-:class:`~quantities.dimensions.Mass`
+:class:`~.core.Unit` (``tonne = 1000 kg``) of
+:class:`~.dimensions.Mass`
 
 Aliases include :attr:`tonne`, :attr:`metric_tons`,
 :attr:`metric_ton`, :attr:`metric_tonnes`, and
@@ -101,8 +101,8 @@ metric_tonne = tonnes    #: alias of :attr:`tonnes`
 # distance
 meters = dimensions.Distance.base_unit("m")
 """
-Base :class:`~quantities.core.Unit` (``m``) of
-:class:`~quantities.dimensions.Distance`
+Base :class:`~.core.Unit` (``m``) of
+:class:`~.dimensions.Distance`
 
 Aliases inclde :attr:`m`, :attr:`meter`,
 :attr:`metres`, and :attr:`metre`.
@@ -113,7 +113,7 @@ metre = meters  #: alias of :attr:`meters`
 m = meters      #: alias of :attr:`meters`
 decimeters = prefixes.deci(meter)
 """
-Prefixed :class:`~quantities.core.Unit` (``dm``) of
+Prefixed :class:`~.core.Unit` (``dm``) of
 :attr:`meters`
 
 Aliases include :attr:`dm`, :attr:`decimeter`,
@@ -125,7 +125,7 @@ decimetre = decimeters  #: alias of :attr:`decimeters`
 dm = decimeters  #: alias of :attr:`decimeters`
 centimeters = prefixes.centi(meter)
 """
-Prefixed :class:`~quantities.core.Unit` (``cm``) of
+Prefixed :class:`~.core.Unit` (``cm``) of
 :attr:`meters`
 
 Aliases include :attr:`cm`, :attr:`centimeter`,
@@ -137,7 +137,7 @@ centimetre = centimeters  #: alias of :attr:`centimeters`
 cm = centimeters  #: alias of :attr:`centimeters`
 millimeters = prefixes.milli(meter)
 """
-Prefixed :class:`~quantities.core.Unit` (``mm``) of
+Prefixed :class:`~.core.Unit` (``mm``) of
 :attr:`meters`
 
 Aliases include :attr:`mm`, :attr:`millimeter`,
@@ -150,7 +150,7 @@ mm = millimeters  #: alias of :attr:`millimeters`
 
 microns = prefixes.micro(meter)
 """
-Prefixed :class:`~quantities.core.Unit` (``µm``) of
+Prefixed :class:`~.core.Unit` (``µm``) of
 :attr:`meters`
 
 Aliases include :attr:`µm`, :attr:`um`,
@@ -166,7 +166,7 @@ um = microns  #: alias of :attr:`microns`
 
 nanometers = prefixes.nano(meter)
 """
-Prefixed :class:`~quantities.core.Unit` (``nm``) of
+Prefixed :class:`~.core.Unit` (``nm``) of
 :attr:`meters`
 
 Aliases include :attr:`nm`, :attr:`nanometer`,
@@ -179,7 +179,7 @@ nm = nanometers  #: alias of :attr:`nanometers`
 
 kilometers = prefixes.kilo(meter)
 """
-Prefixed :class:`~quantities.core.Unit` (``km``) of
+Prefixed :class:`~.core.Unit` (``km``) of
 :attr:`meters`
 
 Aliases include :attr:`km`, :attr:`kilometer`,
@@ -193,8 +193,8 @@ km = kilometers  #: alias of :attr:`kilometers`
 # area
 hectares = (10000*(m**2)).as_unit("ha")
 """
-:class:`~quantities.core.Unit` (``ha = 10,000 m**2``) of
-:class:`~quantities.dimensions.Area`
+:class:`~.core.Unit` (``ha = 10,000 m**2``) of
+:class:`~.dimensions.Area`
 
 Aliases include :attr:`ha` and :attr:`hectare`.
 """
@@ -204,8 +204,8 @@ ha  = hectares   #: alias of :attr:`hectares`
 # volume
 liters = (dm**3).as_unit("l")
 """
-:class:`~quantities.core.Unit` (``L = dm**3``) of
-:class:`~quantities.dimensions.Volume`
+:class:`~.core.Unit` (``L = dm**3``) of
+:class:`~.dimensions.Volume`
 
 Aliases include :attr:`L`, :attr:`l`, :attr:`liter`,
 :attr:`litres`, and :attr:`litre`.
@@ -218,7 +218,7 @@ l = liters      #: alias of :attr:`liter`
 
 deciliters = prefixes.deci(liter)
 """
-Prefixed :class:`~quantities.core.Unit` (``dL``) of
+Prefixed :class:`~.core.Unit` (``dL``) of
 :attr:`liters`
 
 Aliases include :attr:`dL`, :attr:`dl`, :attr:`deciliter`,
@@ -232,7 +232,7 @@ dl = deciliters  #: alias of :attr:`deciliters`
 
 centiliters = prefixes.centi(liter)
 """
-Prefixed :class:`~quantities.core.Unit` (``cL``) of
+Prefixed :class:`~.core.Unit` (``cL``) of
 :attr:`liters`
 
 Aliases include :attr:`cL`, :attr:`cl`, :attr:`centiliter`,
@@ -246,7 +246,7 @@ cl = centiliters  #: alias of :attr:`centiliters`
 
 milliliters = prefixes.milli(liter)
 """
-Prefixed :class:`~quantities.core.Unit` (``mL``) of
+Prefixed :class:`~.core.Unit` (``mL``) of
 :attr:`liters`
 
 Aliases include :attr:`mL`, :attr:`ml`, :attr:`milliliter`,
@@ -260,7 +260,7 @@ ml = milliliters  #: alias of :attr:`milliliters`
 
 microliters = prefixes.micro(liter)
 """
-Prefixed :class:`~quantities.core.Unit` (``µL``) of
+Prefixed :class:`~.core.Unit` (``µL``) of
 :attr:`liters`
 
 Aliases include :attr:`µL`, :attr:`µL`, :attr:`uL`,
@@ -277,7 +277,7 @@ ul = microliters  #: alias of :attr:`microliters`
 
 nanoliters = prefixes.nano(liter)
 """
-Prefixed :class:`~quantities.core.Unit` (``nL``) of
+Prefixed :class:`~.core.Unit` (``nL``) of
 :attr:`liters`
 
 Aliases include :attr:`nL`, :attr:`nl`, :attr:`nanoliter`,
@@ -291,7 +291,7 @@ nl = nanoliters  #: alias of :attr:`nanoliters`
 
 picoliters = prefixes.pico(liter)
 """
-Prefixed :class:`~quantities.core.Unit` (``pL``) of
+Prefixed :class:`~.core.Unit` (``pL``) of
 :attr:`liters`
 
 Aliases include :attr:`pL`, :attr:`pl`, :attr:`picoliter`,
@@ -305,13 +305,13 @@ pl = picoliters  #: alias of :attr:`picoliters`
 
 cc = (cm**3).as_unit("cc")
 """
-:class:`~quantities.core.Unit` (``cc = cm**3``) of
-:class:`~quantities.dimensions.Volume`
+:class:`~.core.Unit` (``cc = cm**3``) of
+:class:`~.dimensions.Volume`
 """ 
 steres = (m**3).as_unit("st")
 """
-:class:`~quantities.core.Unit` (``st = m**3``) of
-:class:`~quantities.dimensions.Volume`
+:class:`~.core.Unit` (``st = m**3``) of
+:class:`~.dimensions.Volume`
 
 Aliases include :attr:`st` and :attr:`stere`.
 """ 
@@ -322,8 +322,8 @@ st = steres     #: alias of :attr:`steres`
 # time
 seconds = dimensions.Time.base_unit("s")
 """
-Base :class:`~quantities.core.Unit` (``s``) of
-:class:`~quantities.dimensions.Time`
+Base :class:`~.core.Unit` (``s``) of
+:class:`~.dimensions.Time`
 
 Aliases include :attr:`s`, :attr:`second`,
 :attr:`secs`, and :attr:`sec`.
@@ -335,7 +335,7 @@ s = seconds    #: alias of :attr:`seconds`
 
 milliseconds = prefixes.milli(second)
 """
-Prefixed :class:`~quantities.core.Unit` (``ms``) of
+Prefixed :class:`~.core.Unit` (``ms``) of
 :attr:`seconds`
 
 Aliases include :attr:`ms`, :attr:`millisecond`,
@@ -351,7 +351,7 @@ ms = milliseconds  #: alias of :attr:`milliseconds`
 
 microseconds = prefixes.micro(second)
 """
-Prefixed :class:`~quantities.core.Unit` (``µs``) of
+Prefixed :class:`~.core.Unit` (``µs``) of
 :attr:`seconds`
 
 Aliases include :attr:`µs`, :attr:`us`, :attr:`microsecond`,
@@ -371,7 +371,7 @@ us = microseconds  #: alias of :attr:`microseconds`
 
 nanoseconds = prefixes.nano(second)
 """
-Prefixed :class:`~quantities.core.Unit` (``ns``) of
+Prefixed :class:`~.core.Unit` (``ns``) of
 :attr:`seconds`
 
 Aliases include :attr:`ns`, :attr:`nanosecond`,
@@ -387,8 +387,8 @@ ns = nanoseconds  #: alias of :attr:`nanoseconds`
 
 minutes = (60*second).as_unit("min")
 """
-:class:`~quantities.core.Unit` (``min = 60 s``) of
-:class:`~quantities.dimensions.Time`
+:class:`~.core.Unit` (``min = 60 s``) of
+:class:`~.dimensions.Time`
 
 Aliases include :attr:`minute` and :attr:`mins`.
 
@@ -400,8 +400,8 @@ mins = minutes    #: alias of :attr:`minutes`
 
 hours = (60*minute).as_unit("hr")
 """
-:class:`~quantities.core.Unit` (``hr = 60 min``) of
-:class:`~quantities.dimensions.Time`
+:class:`~.core.Unit` (``hr = 60 min``) of
+:class:`~.dimensions.Time`
 
 Aliases include :attr:`hr` and :attr:`hour`.
 """ 
@@ -410,8 +410,8 @@ hr = hours    #: alias of :attr:`hours`
 
 days = (24*hour).as_unit("days", singular="day")
 """
-:class:`~quantities.core.Unit` (``days = 24 hr``) of
-:class:`~quantities.dimensions.Time`
+:class:`~.core.Unit` (``days = 24 hr``) of
+:class:`~.dimensions.Time`
 
 Aliases include :attr:`day`.
 """ 
@@ -419,8 +419,8 @@ day = days  #: alias of :attr:`days`
 
 weeks = (7*day).as_unit("wk")
 """
-:class:`~quantities.core.Unit` (``wk = 7 days``) of
-:class:`~quantities.dimensions.Time`
+:class:`~.core.Unit` (``wk = 7 days``) of
+:class:`~.dimensions.Time`
 
 Aliases include :attr:`wk` and :attr:`week`.
 """ 
@@ -432,8 +432,8 @@ wk = weeks    #: alias of :attr:`weeks`
 hertz = (1/s).as_unit("Hz")
 
 """
-:class:`~quantities.core.Unit` (``Hz = 1/s``) of
-:class:`~quantities.dimensions.Frequency`
+:class:`~.core.Unit` (``Hz = 1/s``) of
+:class:`~.dimensions.Frequency`
 
 Aliases include :attr:`Hz`.
 """
@@ -454,8 +454,8 @@ W = watts = watt = (J/s).as_unit("W")
 # temperature
 degrees_Kelvin = dimensions.Temperature.base_unit("K")
 """
-Base :class:`~quantities.core.Unit` (``K``) of
-:class:`~quantities.dimensions.Temperature`.
+Base :class:`~.core.Unit` (``K``) of
+:class:`~.dimensions.Temperature`.
 
 Aliases include :attr:`deg_K`, :attr:`K`, :attr:`degree_Kelvin`,
 :attr:`degrees_K`, :attr:`degree_K`, :attr:`kelvins`,
@@ -463,7 +463,7 @@ and :attr:`kelvin`.
 
 Note:
     This is used for temperature differences.  For absolute temperature, use
-    :attr:`~quantities.temperature.abs_K`.
+    :attr:`~.temperature.abs_K`.
 """ 
 degree_Kelvin = degrees_Kelvin  #: alias of :attr:`degrees_Kelvin`
 degrees_K = degrees_Kelvin  #: alias of :attr:`degrees_Kelvin`
@@ -475,8 +475,8 @@ K = degrees_Kelvin  #: alias of :attr:`degrees_Kelvin`
 
 degrees_Celsius = kelvin.as_unit("°C")
 """
-:class:`~quantities.core.Unit` (``°C = K``) of
-:class:`~quantities.dimensions.Temperature`.
+:class:`~.core.Unit` (``°C = K``) of
+:class:`~.dimensions.Temperature`.
 
 Aliases include :attr:`deg_C`, :attr:`degree_Celsius`,
 :attr:`degrees_C`, :attr:`degree_C`,
@@ -484,7 +484,7 @@ Aliases include :attr:`deg_C`, :attr:`degree_Celsius`,
 
 Note:
     This is used for temperature differences.  For absolute temperature, use
-    :attr:`~quantities.temperature.abs_C`.
+    :attr:`~.temperature.abs_C`.
 """ 
 degree_Celsius = degrees_Celsius  #: alias of :attr:`degrees_Celsius`
 degrees_C = degrees_Celsius  #: alias of :attr:`degrees_Celsius`

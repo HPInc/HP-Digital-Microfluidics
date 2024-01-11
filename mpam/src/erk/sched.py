@@ -1,14 +1,18 @@
 
 from __future__ import annotations
-from typing import TypeVar, Generic, cast, Optional, Any, Callable, Union, Final,\
-    runtime_checkable, Protocol
-from threading import Lock, Event, RLock
+
+from _collections_abc import Iterable
 from abc import abstractmethod, ABC
 from enum import Enum, auto
+from threading import Lock, Event, RLock
+from typing import TypeVar, Generic, cast, Optional, Any, Callable, Union, Final, \
+    runtime_checkable, Protocol
+
 from quantities.dimensions import Time
-from _collections_abc import Iterable
-from erk.basic import ComputedDefaultDict, Callback, not_None, assert_never
 from quantities.ticks import Ticks
+
+from .basic import ComputedDefaultDict, Callback, not_None, assert_never
+
 
 _T = TypeVar('_T')
 _V = TypeVar('_V')
@@ -1166,8 +1170,8 @@ class CombinedOperation(Generic[_T, _V, _V3], Operation[_T, _V3]):
             a :class:`Delayed`\[:attr:`_V`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``.
         """
-        return self.first._schedule_for(obj) \
-                    .then_schedule(self.second, after=self.after, post_result=post_result)
+        return (self.first._schedule_for(obj)
+                    .then_schedule(self.second, after=self.after, post_result=post_result))
 
 
 class ComputeOp(Generic[_T, _V], Operation[_T, _V]):
@@ -1600,8 +1604,8 @@ class CombinedStaticOperation(Generic[_V, _V2], StaticOperation[_V2]):
             a :class:`Delayed`\[:attr:`_V2`] future object to which the resulting
             value will be posted unless ``post_result`` is ``False``
         """
-        return self.first._schedule() \
-                    .then_schedule(self.second, after=self.after, post_result=post_result)
+        return (self.first._schedule()
+                    .then_schedule(self.second, after=self.after, post_result=post_result))
 
 
 

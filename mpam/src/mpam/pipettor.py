@@ -12,17 +12,16 @@ from erk.config import ConfigParam
 from erk.errors import ErrorHandler, PRINT
 from erk.formatting import Formatter
 from erk.monitored import MonitoredProperty, ChangeCallbackList
-from erk.sched import Postable, Delayed, OpScheduler, CanDelay, DelayType, \
-    Operation
+from erk.sched import (Postable, Delayed, OpScheduler, CanDelay, DelayType,
+                       Operation)
 from erk.stringutils import map_str
-from mpam.device import SystemComponent, UserOperation, PipettingTarget, System, \
-    ProductLocation, ExternalComponent
-from mpam.engine import Worker
-from mpam.types import Reagent, \
-    Liquid, XferDir, \
-    unknown_reagent, MixResult
 from quantities.SI import uL
 from quantities.dimensions import Volume
+
+from .device import (SystemComponent, UserOperation, PipettingTarget, System,
+                     ProductLocation, ExternalComponent)
+from .engine import Worker
+from .types import Reagent, Liquid, XferDir, unknown_reagent, MixResult
 
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ import random
 from threading import Lock
 from typing import Generic, TypeVar, Optional, Final, Callable, overload, Union
 
-from erk.basic import MissingOr, MISSING
+from .basic import MissingOr, MISSING
 
 
 Obj_ = TypeVar("Obj_")

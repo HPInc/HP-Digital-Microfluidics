@@ -6,7 +6,7 @@ import re
 import socket
 from typing import Sequence, Optional, Final, NoReturn
 
-from erk.stringutils import conj_str
+from .stringutils import conj_str
 
 
 logger = logging.getLogger(__name__)

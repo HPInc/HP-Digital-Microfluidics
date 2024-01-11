@@ -3,19 +3,19 @@ from __future__ import  annotations
 import logging
 from re import Pattern, Match
 import re
-from typing import Final, Optional, Callable, Any, Union, Iterable, Sequence, \
-    overload, TypeVar
+from typing import (Final, Optional, Callable, Any, Union, Iterable, Sequence,
+                    overload, TypeVar)
 
 from erk.basic import Callback
 from erk.grid import Dir, XYCoord
-from erk.sched import Delayed, WaitableType, StaticOperation, Operation, \
-    schedule, NO_WAIT, Trigger, Postable, Barrier
-from mpam.device import Well, ExtractionPoint, Pad, System, Board, \
-    ProductLocation
-from mpam.drop import Drop, DropComputeOp
-from mpam.processes import StartProcess, JoinProcess, MultiDropProcessType
-from mpam.types import Reagent, Liquid
+from erk.sched import (Delayed, WaitableType, StaticOperation, Operation,
+                       schedule, NO_WAIT, Trigger, Postable, Barrier)
 from quantities.dimensions import Volume
+
+from .device import Well, ExtractionPoint, Pad, System, Board, ProductLocation
+from .drop import Drop, DropComputeOp
+from .processes import StartProcess, JoinProcess, MultiDropProcessType
+from .types import Reagent, Liquid
 
 
 logger = logging.getLogger(__name__)

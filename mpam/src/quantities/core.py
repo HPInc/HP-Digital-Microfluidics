@@ -1555,6 +1555,10 @@ def qstr(n: float, singular: str, *, plural: Optional[str] = None) -> Quantity:
 class Scalar(NamedDim):
     _dim = Dimensionality['Scalar']((), 'scalar')
     unit_expr: ScalarUnitExpr
+    
+    def __init__(self, mag: float) -> None:
+        super().__init__(mag, _dc=_DirectCreation.INST)
+    
     def __float__(self) -> float:
         return float(self.magnitude)
     

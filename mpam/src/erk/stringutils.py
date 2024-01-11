@@ -1,7 +1,10 @@
 from __future__ import annotations
-from typing import Optional, Final, Mapping, Union, cast, Sequence, Any
-from erk.basic import LazyPattern
+
 import textwrap
+from typing import Optional, Final, Mapping, Union, cast, Sequence, Any
+
+from .basic import LazyPattern
+
 
 _camel_case_re = LazyPattern('(?:^[a-z]|[A-z])[a-z0-9_]*')
 

@@ -1,4 +1,4 @@
-from quantities import prefixes, SI
+from . import prefixes, SI
 
 # mass
 lb = pounds = pound = (0.45359237*SI.kg).as_unit("lb")
@@ -66,7 +66,7 @@ bbl_d = dry_bbl = dry_barrels = dry_barrel = (7056*cu_in).as_unit("bbl_d")
 
 # time
 
-from quantities.SI import s,sec,second,secs,seconds,mins,minutes,minute,hr,hours,hour,days,day,wk,weeks  # @UnusedImport
+from .SI import s,sec,second,secs,seconds,mins,minutes,minute,hr,hours,hour,days,day,wk,weeks  # @UnusedImport
 
 
 # velocity

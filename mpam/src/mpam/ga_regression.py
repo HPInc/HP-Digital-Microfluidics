@@ -8,8 +8,10 @@ import os.path
 from random import randint, choice
 import random
 from sys import stdout
-from typing import Final, Sequence, NamedTuple, Optional, TextIO, TypeVar, \
-    Generic, Type, Mapping, Any
+from typing import (Sequence, TextIO, TypeVar, Generic, Final, Mapping,
+                    Optional, Type, Any,)
+
+from mypy.typeshed.stdlib.typing import NamedTuple
 
 from erk.grid import XYCoord, Dir, Orientation
 from erk.stringutils import map_str

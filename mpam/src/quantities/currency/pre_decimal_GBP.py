@@ -1,6 +1,6 @@
 from __future__ import annotations
-from quantities.money import Currency
-from quantities.dimensions import Money
+from ..money import Currency
+from ..dimensions import Money
 import math
 
 gbp = GBP = Currency("GBP")

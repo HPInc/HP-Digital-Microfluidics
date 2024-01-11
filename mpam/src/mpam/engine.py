@@ -7,8 +7,8 @@ import logging
 from threading import Thread, Condition, Event, Lock, Timer
 import traceback
 from types import TracebackType
-from typing import Optional, Literal, Protocol, Any, Sequence, \
-    Iterable, Final, Union, Callable, NamedTuple
+from typing import (Optional, Literal, Protocol, Any, Sequence,
+                    Iterable, Final, Union, Callable, NamedTuple)
 
 from erk.stringutils import match_width
 from quantities.SI import sec, ms
@@ -526,8 +526,8 @@ class ClockThread(WorkerThread):
                     new_delay: Optional[Ticks] = fn()
                     if new_delay is not None:
                         assert new_delay >= 0, f"Delay returned by before/after tick callback ({new_delay}) cannot be negative"
-                        assert new_delay > 0, f"Delay returned by before/after tick callback ({new_delay}) "+ \
-                                                "is relative to current tick number, and so cannot be zero"
+                        assert new_delay > 0, (f"Delay returned by before/after tick callback ({new_delay}) "
+                                               + "is relative to current tick number, and so cannot be zero")
                         # The least astonishing return value for something that should happen on relative to the next tick
                         # is 1*tick, not 0*ticks
                         new_queue.append((new_delay-1, fn))

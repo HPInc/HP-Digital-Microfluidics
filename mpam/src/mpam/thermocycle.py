@@ -4,20 +4,20 @@ from _collections import deque, defaultdict
 from enum import Enum, auto
 from functools import cached_property
 from threading import Lock
-from typing import Final, NamedTuple, Sequence, Literal, Union, Optional, \
-    Iterator, Any, Callable, Mapping
+from typing import (Final, NamedTuple, Sequence, Literal, Union, Optional,
+                    Iterator, Any, Callable, Mapping)
 
 from erk.basic import not_None
 from erk.grid import Dir
 from erk.sched import Delayed, Postable
-from mpam.device import TemperatureControl, Pad
-from mpam.drop import Drop
-from mpam.paths import Path
-from mpam.processes import MultiDropProcessType, PairwiseMix, \
-    MultiDropProcessRun
 from quantities.dimensions import Time
 from quantities.temperature import TemperaturePoint, absolute_zero
 from quantities.timestamp import time_now, Timestamp
+
+from .device import TemperatureControl, Pad
+from .drop import Drop
+from .paths import Path
+from .processes import MultiDropProcessType, PairwiseMix, MultiDropProcessRun
 
 
 class ChannelEndpoint(NamedTuple):
@@ -128,19 +128,19 @@ class BoundChannel:
     
     def step_in(self, end: ChannelEnd, rendezvous: Rendezvous) -> None:
         ep = self.channel[end]
-        ep.in_path \
-            .then_process(self.done_fn(rendezvous)) \
-            .schedule_for(self.drop)
+        (ep.in_path
+            .then_process(self.done_fn(rendezvous))
+            .schedule_for(self.drop))
     def step_out(self, end: ChannelEnd, rendezvous: Rendezvous) -> None:
         ep = self.channel[end]
-        ep.out_path \
-            .then_process(self.done_fn(rendezvous)) \
-            .schedule_for(self.drop)
+        (ep.out_path
+           .then_process(self.done_fn(rendezvous))
+           .schedule_for(self.drop))
     def switch_ends(self, end: ChannelEnd, rendezvous: Rendezvous) -> None:
         ep = self.channel[end]
-        ep.switch_path \
-            .then_process(self.done_fn(rendezvous)) \
-            .schedule_for(self.drop)
+        (ep.switch_path
+           .then_process(self.done_fn(rendezvous))
+           .schedule_for(self.drop))
             
     def step_target(self, end: ChannelEnd, i: int, shuttle_dir: ShuttleDir) -> Pad:
         ep = self.channel[end]
@@ -296,32 +296,26 @@ class ThermocycleRun(MultiDropProcessRun['ThermocycleProcessType']):
                             def mix_and_split(d1: Drop, d2: Drop) -> None:
                                 my_pads = (d1.on_board_pad, d2.on_board_pad)
                                 # print(f"m&s: {my_pads}, {my_drops}")
-                                pmix.merge(my_pads) \
-                                    .then_call(lambda _: pmix.split(my_pads) \
-                                                            .then_call(reached_rendezvous) \
-                                                            .then_call(reached_rendezvous))
+                                (pmix.merge(my_pads)
+                                     .then_call(lambda _: (pmix.split(my_pads)
+                                                               .then_call(reached_rendezvous)
+                                                               .then_call(reached_rendezvous))))
                             mix_and_split(drops[0], drops[1])
-                            # d1,d2 = drops
-                            # p1,p2 = d1.pad,d2.pad
-                            # pmix.merge((d1,d2)) \
-                                # .then_call(lambda _: pmix.split((d1,d2), (p1,p2))) \
-                                # .then_call(reached_rendezvous) \
-                                # .then_call(reached_rendezvous)
                             
                         else:
                             assert len(drops) == 1
                             current = drops[0].pad
                             if current.row == pad.row:
-                                Path.to_col(pad.column) \
-                                    .to_col(current.column) \
-                                    .then_process(reached_rendezvous) \
-                                    .schedule_for(drops[0])
+                                (Path.to_col(pad.column)
+                                     .to_col(current.column)
+                                     .then_process(reached_rendezvous)
+                                     .schedule_for(drops[0]))
                             else:
                                 assert current.column == pad.column
-                                Path.to_row(pad.row) \
-                                    .to_row(current.row) \
-                                    .then_process(reached_rendezvous) \
-                                    .schedule_for(drops[0])
+                                (Path.to_row(pad.row)
+                                     .to_row(current.row)
+                                     .then_process(reached_rendezvous)
+                                     .schedule_for(drops[0]))
                 while not rendezvous.ready:
                     yield True
                 # assert False

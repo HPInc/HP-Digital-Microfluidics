@@ -6,7 +6,7 @@ from erk.grid import XYCoord
 
 
 if TYPE_CHECKING:
-    from mpam.device import Pad, Well, BinaryComponent
+    from .device import Pad, Well, BinaryComponent
 
 class MPAMError(RuntimeError): ...
 

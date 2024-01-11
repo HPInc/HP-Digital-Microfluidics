@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from threading import RLock
 from typing import Union, Optional, Sequence, Final, Callable
 
-from quantities.core import UnitExpr
-from quantities.dimensions import MoneyUnit, Money
-from threading import RLock
 from erk.stringutils import is_are, conj_str, noun
+
+from .core import UnitExpr
+from .dimensions import MoneyUnit, Money
+
 
 CurrencyFormatter = Money.CurrencyFormatter
 
@@ -58,7 +60,7 @@ class Denomination(MoneyUnit, Money.CurrencyFormatter):
                  *, 
                  currency: Currency,
                  prefix_symbol: Optional[str] = None,
-                 postfix_symbol: Optional[str] = None,\
+                 postfix_symbol: Optional[str] = None,
                  separate_symbol: Optional[bool] = None,
                  decimal_places: Optional[int] = None,
                  singular: Optional[str] = None):

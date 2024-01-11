@@ -5,7 +5,7 @@ from threading import RLock
 from typing import TypeVar, Generic, Final, Optional, Callable, \
     Hashable, overload, Any, Union
 
-from erk.basic import MissingOr, MISSING, Gettable
+from .basic import MissingOr, MISSING, Gettable
 
 
 _T = TypeVar("_T")
