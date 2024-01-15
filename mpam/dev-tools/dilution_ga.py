@@ -3,7 +3,7 @@ from argparse import ArgumentParser, Namespace
 from typing import Final, Sequence, NamedTuple, Optional
 import math
 from random import randint
-from erk.stringutils import map_str
+from sifu.stringutils import map_str
 import random
 
 class Mix:

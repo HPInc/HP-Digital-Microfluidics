@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Final, TYPE_CHECKING
 
-from erk.grid import XYCoord
+from sifu.grid import XYCoord
 
 
 if TYPE_CHECKING:

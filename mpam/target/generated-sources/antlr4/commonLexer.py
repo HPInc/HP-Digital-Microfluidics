@@ -8,7 +8,7 @@ else:
     from typing.io import TextIO
 
 
-from erk.grid import Dir 
+from sifu.grid import Dir 
 
 
 

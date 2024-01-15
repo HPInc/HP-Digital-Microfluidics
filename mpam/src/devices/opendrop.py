@@ -5,9 +5,9 @@ from typing import Optional, Final, Sequence
 
 from serial import Serial
 
-from erk.config import ConfigParam
-from erk.grid import XYCoord, Dir, Orientation
-from erk.quant.SI import uL, ms
+from sifu.config import ConfigParam
+from sifu.grid import XYCoord, Dir, Orientation
+from sifu.quant.SI import uL, ms
 from mpam import device
 from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
     WellShape, Pad, WellGate, WellPad, StateDefs

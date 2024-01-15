@@ -5,7 +5,7 @@ options {
 }
 
 @header {
-from erk.grid import Dir 
+from sifu.grid import Dir 
 }
 
 fragment ALPHA: [a-zA-Z];

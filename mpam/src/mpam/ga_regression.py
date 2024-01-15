@@ -13,9 +13,9 @@ from typing import (Sequence, TextIO, TypeVar, Generic, Final, Mapping,
 
 from mypy.typeshed.stdlib.typing import NamedTuple
 
-from erk.grid import XYCoord, Dir, Orientation
-from erk.quant.timestamp import time_now
-from erk.stringutils import map_str
+from sifu.grid import XYCoord, Dir, Orientation
+from sifu.quant.timestamp import time_now
+from sifu.stringutils import map_str
 
 
 class Mix(NamedTuple):

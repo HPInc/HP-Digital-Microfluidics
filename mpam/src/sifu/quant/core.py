@@ -1559,9 +1559,6 @@ class Scalar(NamedDim):
     _dim = Dimensionality['Scalar']((), 'scalar')
     unit_expr: ScalarUnitExpr
     
-    def __init__(self, mag: float) -> None:
-        super().__init__(mag, _dc=_DirectCreation.INST)
-    
     def __float__(self) -> float:
         return float(self.magnitude)
     
@@ -1577,6 +1574,22 @@ class Scalar(NamedDim):
     
     def __rtruediv__(self, lhs: float) -> Scalar:
         return cast(Scalar, self.in_denom(lhs))
+    
+    def __add__(self, rhs: Union[float, Scalar]) -> Scalar:
+        if isinstance(rhs, Scalar):
+            rhs = rhs.magnitude
+        return self if rhs == 0 else Scalar.from_float(self.magnitude+rhs)
+    
+    def __radd__(self, lhs: float) -> Scalar:
+        return self + lhs
+
+    def __sub__(self, rhs: Union[float, Scalar]) -> Scalar:
+        if isinstance(rhs, Scalar):
+            rhs = rhs.magnitude
+        return self if rhs == 0 else Scalar.from_float(self.magnitude-rhs)
+    
+    def __rsub__(self, lhs: float) -> Scalar:
+        return Scalar.from_float(lhs-self.magnitude)
 
     @classmethod
     def dim(cls)->Dimensionality[Scalar]:

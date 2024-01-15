@@ -6,8 +6,8 @@ from itertools import product
 from typing import TypeVar, Generator, Tuple, List, Final, Mapping, Optional, \
     Sequence, Union, Iterable, Callable
 
-from erk.basic import always, ComputedDefaultDict, ValOrFn, ensure_val
-from erk.stringutils import split_camel_case, conj_str
+from sifu.basic import always, ComputedDefaultDict, ValOrFn, ensure_val
+from sifu.stringutils import split_camel_case, conj_str
 
 
 T = TypeVar('T')

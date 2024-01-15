@@ -3,7 +3,7 @@ from __future__ import annotations
 from argparse import ArgumentParser, Namespace
 import math
 
-from erk.grid import XYCoord, Orientation
+from sifu.grid import XYCoord, Orientation
 from mpam.ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
     Regression
 

@@ -24,12 +24,12 @@ from devices.eselog import ESELog, ESELogChannel
 from dmlLexer import dmlLexer
 from dmlParser import dmlParser
 from dmlVisitor import dmlVisitor
-from erk.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn, \
+from sifu.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn, \
     MissingOr, MISSING, not_Missing
-from erk.grid import Dir, Turn
-from erk.sample import Sample
-from erk.sched import Delayed, Postable, DelayType, Barrier
-from erk.stringutils import map_str, conj_str
+from sifu.grid import Dir, Turn
+from sifu.sample import Sample
+from sifu.sched import Delayed, Postable, DelayType, Barrier
+from sifu.stringutils import map_str, conj_str
 from langsup.type_supp import Type, CallableType, Signature, Attr, \
     Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit, \
     NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError, \
@@ -46,14 +46,14 @@ from mpam.paths import Path
 from mpam.processes import MultiDropProcessType, MultiDropProcessRun
 from mpam.types import unknown_reagent, Liquid, OnOff, \
     Reagent, Mixture
-from erk.quant import timestamp
-from erk.quant.SI import deg_C
-from erk.quant.US import deg_F
-from erk.quant.core import Unit, Dimensionality, NamedDim, Quantity
-from erk.quant.dimensions import Time, Volume, Temperature, Voltage, Frequency
-from erk.quant.temperature import TemperaturePoint, abs_C, abs_F
-from erk.quant.ticks import Ticks
-from erk.quant.timestamp import Timestamp, time_in, time_now
+from sifu.quant import timestamp
+from sifu.quant.SI import deg_C
+from sifu.quant.US import deg_F
+from sifu.quant.core import Unit, Dimensionality, NamedDim, Quantity
+from sifu.quant.dimensions import Time, Volume, Temperature, Voltage, Frequency
+from sifu.quant.temperature import TemperaturePoint, abs_C, abs_F
+from sifu.quant.ticks import Ticks
+from sifu.quant.timestamp import Timestamp, time_in, time_now
 
 
 if TYPE_CHECKING:

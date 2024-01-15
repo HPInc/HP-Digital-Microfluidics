@@ -10,11 +10,11 @@ from types import TracebackType
 from typing import (Optional, Literal, Protocol, Any, Sequence,
                     Iterable, Final, Union, Callable, NamedTuple)
 
-from erk.stringutils import match_width
-from erk.quant.SI import sec, ms
-from erk.quant.dimensions import Time
-from erk.quant.ticks import Ticks, TickNumber, ticks
-from erk.quant.timestamp import time_now, time_in, Timestamp
+from sifu.stringutils import match_width
+from sifu.quant.SI import sec, ms
+from sifu.quant.dimensions import Time
+from sifu.quant.ticks import Ticks, TickNumber, ticks
+from sifu.quant.timestamp import time_now, time_in, Timestamp
 
 
 logger = logging.getLogger(__name__)

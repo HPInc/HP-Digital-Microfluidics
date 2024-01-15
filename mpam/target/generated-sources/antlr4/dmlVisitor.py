@@ -6,13 +6,13 @@ else:
     from dmlParser import dmlParser
 
 from mpam.types import OnOff, unknown_reagent, waste_reagent
-from erk.grid import Dir, Turn
-from quantities.ticks import ticks
+from sifu.grid import Dir, Turn
+from sifu.quant.ticks import ticks
 from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit, NumberedItem
-from quantities import SI
+from sifu.quant import SI
 
 
-from erk.grid import Dir 
+from sifu.grid import Dir 
 
 
 # This class defines a complete generic visitor for a parse tree produced by dmlParser.

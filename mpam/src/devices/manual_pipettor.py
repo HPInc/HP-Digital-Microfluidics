@@ -6,10 +6,10 @@ import logging
 import math
 from typing import Final, Mapping, Sequence
 
-from erk.config import ConfigParam
-from erk.quant.SI import uL
-from erk.quant.dimensions import Volume
-from erk.stringutils import conj_str
+from sifu.config import ConfigParam
+from sifu.quant.SI import uL
+from sifu.quant.dimensions import Volume
+from sifu.stringutils import conj_str
 from mpam import exerciser
 from mpam.pipettor import Pipettor, Transfer, PipettingSource
 from mpam.types import XferDir, Reagent

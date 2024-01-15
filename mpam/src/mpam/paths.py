@@ -6,10 +6,10 @@ import re
 from typing import (Final, Optional, Callable, Any, Union, Iterable, Sequence,
                     overload, TypeVar)
 
-from erk.basic import Callback
-from erk.grid import Dir, XYCoord
-from erk.quant.dimensions import Volume
-from erk.sched import (Delayed, WaitableType, StaticOperation, Operation,
+from sifu.basic import Callback
+from sifu.grid import Dir, XYCoord
+from sifu.quant.dimensions import Volume
+from sifu.sched import (Delayed, WaitableType, StaticOperation, Operation,
                        schedule, NO_WAIT, Trigger, Postable, Barrier)
 
 from .device import Well, ExtractionPoint, Pad, System, Board, ProductLocation

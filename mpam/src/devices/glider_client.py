@@ -8,13 +8,13 @@ import pathlib
 from typing import Union, Optional, Final, Generic, TypeVar, Callable, List, \
     cast, Sequence, Mapping
 
-from erk.basic import ValOrFn, ensure_val, map_unless_None, MissingOr, MISSING
+from sifu.basic import ValOrFn, ensure_val, map_unless_None, MissingOr, MISSING
 from mpam.types import State, OnOff
 from pyglider import ErrorCode
 import pyglider
-from erk.quant.SI import volts, ms
-from erk.quant.dimensions import Voltage, Time
-from erk.quant.temperature import TemperaturePoint, abs_C
+from sifu.quant.SI import volts, ms
+from sifu.quant.dimensions import Voltage, Time
+from sifu.quant.temperature import TemperaturePoint, abs_C
 
 
 logger = logging.getLogger(__name__)

@@ -8,11 +8,11 @@ import logging
 from typing import Optional, Sequence, Final, Union, Mapping
 
 from devices.emulated_heater import EmulatedHeater, EmulatedChiller
-from erk.basic import assert_never
-from erk.cmd_line import coord_arg
-from erk.config import ConfigParam
-from erk.grid import Dir, XYCoord, GridRegion, Orientation, RCOrder
-from erk.stringutils import conj_str
+from sifu.basic import assert_never
+from sifu.cmd_line import coord_arg
+from sifu.config import ConfigParam
+from sifu.grid import Dir, XYCoord, GridRegion, Orientation, RCOrder
+from sifu.stringutils import conj_str
 from mpam import WellOpSeqDict, WellState, \
     WellShape, WellPad, Pad, Magnet, DispenseGroup, \
     WellGate, TemperatureControl, PowerSupply, PowerMode, Fan, \
@@ -25,10 +25,10 @@ from mpam.pipettor import Pipettor
 from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
 from mpam.types import State, \
     OnOff, DummyState, deg_C_per_sec
-from erk.quant.SI import uL, ms, volts, deg_C, mm
-from erk.quant.US import mil
-from erk.quant.dimensions import Volume, Distance, Area
-from erk.quant.temperature import abs_C
+from sifu.quant.SI import uL, ms, volts, deg_C, mm
+from sifu.quant.US import mil
+from sifu.quant.dimensions import Volume, Distance, Area
+from sifu.quant.temperature import abs_C
 
 
 logger = logging.getLogger(__name__)

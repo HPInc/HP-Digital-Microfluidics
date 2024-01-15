@@ -30,17 +30,17 @@ from matplotlib.path import Path
 from matplotlib.text import Annotation
 from matplotlib.widgets import Button, TextBox
 
-from erk.basic import Count, Callback
-from erk.cmd_line import time_arg
-from erk.color import ColorAllocator, Color
-from erk.config import ConfigParam
-from erk.grid import XYCoord, Orientation
-from erk.stringutils import match_width, conj_str, unwrap_text
-from erk.quant.SI import ms, sec
-from erk.quant.core import Unit, UEorSeq
-from erk.quant.dimensions import Volume, Time
-from erk.quant.temperature import abs_C, TemperaturePoint
-from erk.quant.timestamp import time_now, Timestamp
+from sifu.basic import Count, Callback
+from sifu.cmd_line import time_arg
+from sifu.color import ColorAllocator, Color
+from sifu.config import ConfigParam
+from sifu.grid import XYCoord, Orientation
+from sifu.stringutils import match_width, conj_str, unwrap_text
+from sifu.quant.SI import ms, sec
+from sifu.quant.core import Unit, UEorSeq
+from sifu.quant.dimensions import Volume, Time
+from sifu.quant.temperature import abs_C, TemperaturePoint
+from sifu.quant.timestamp import time_now, Timestamp
 
 from . import paths
 from .device import (Board, Pad, Well, WellPad, PadBounds,

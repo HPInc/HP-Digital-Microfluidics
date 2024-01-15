@@ -8,15 +8,15 @@ import math
 from typing import (Optional, Final, Union, Callable, Iterator, Iterable,
                     Sequence, Mapping, NamedTuple, cast, Any, ClassVar, TypeVar)
 
-from erk.basic import not_None, ComputedDefaultDict, Count, Callback
-from erk.errors import FIX_BY, PRINT
-from erk.grid import Dir, XYCoord
-from erk.sched import (OpScheduler, Operation, Delayed, Postable, Barrier,
+from sifu.basic import not_None, ComputedDefaultDict, Count, Callback
+from sifu.errors import FIX_BY, PRINT
+from sifu.grid import Dir, XYCoord
+from sifu.sched import (OpScheduler, Operation, Delayed, Postable, Barrier,
                        WaitableType, DelayScheduler, StaticOperation, ComputeOp)
-from erk.stringutils import map_str
-from erk.quant.core import qstr
-from erk.quant.dimensions import Volume
-from erk.quant.ticks import Ticks, tick
+from sifu.stringutils import map_str
+from sifu.quant.core import qstr
+from sifu.quant.dimensions import Volume
+from sifu.quant.ticks import Ticks, tick
 
 from .device import (Pad, Board, Well, WellState, ExtractionPoint,
                      ProductLocation, ChangeJournal, DropLoc, WellPad, LocatedPad,

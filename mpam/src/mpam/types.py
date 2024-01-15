@@ -12,13 +12,13 @@ from threading import Lock
 from typing import (Union, Generic, TypeVar, Optional, Callable,
                     Final, ClassVar, Mapping, Tuple, Sequence)
 
-from erk.basic import MissingOr, MISSING
-from erk.monitored import MonitoredProperty, ChangeCallbackList
-from erk.numutils import farey
-from erk.quant.SI import sec, deg_C
-from erk.quant.dimensions import (Molarity, MassConcentration, 
+from sifu.basic import MissingOr, MISSING
+from sifu.monitored import MonitoredProperty, ChangeCallbackList
+from sifu.numutils import farey
+from sifu.quant.SI import sec, deg_C
+from sifu.quant.dimensions import (Molarity, MassConcentration, 
                                    VolumeConcentration, Volume)
-from erk.quant.temperature import TemperaturePoint
+from sifu.quant.temperature import TemperaturePoint
 
 
 logger = logging.getLogger(__name__)

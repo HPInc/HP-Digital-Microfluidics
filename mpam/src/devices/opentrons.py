@@ -20,16 +20,16 @@ from aiohttp.web_response import Response
 from aiohttp.web_runner import GracefulExit
 import requests
 
-from erk.afs import AsyncFunctionSerializer
-from erk.config import ConfigParam
+from sifu.afs import AsyncFunctionSerializer
+from sifu.config import ConfigParam
 from mpam import exerciser
 from mpam.device import System, Board, PipettingTarget, ProductLocation
 from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget, \
     PipettingSource
 from mpam.types import Reagent, XferDir
-from erk.quant.SI import seconds, uL, ml, ul
-from erk.quant.dimensions import Time, Volume
-from erk.quant.timestamp import time_now
+from sifu.quant.SI import seconds, uL, ml, ul
+from sifu.quant.dimensions import Time, Volume
+from sifu.quant.timestamp import time_now
 
 
 logger = logging.getLogger(__name__)

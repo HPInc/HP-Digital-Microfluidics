@@ -7,12 +7,12 @@ from threading import Lock
 from typing import (Final, NamedTuple, Sequence, Literal, Union, Optional,
                     Iterator, Any, Callable, Mapping)
 
-from erk.basic import not_None
-from erk.grid import Dir
-from erk.sched import Delayed, Postable
-from erk.quant.dimensions import Time
-from erk.quant.temperature import TemperaturePoint, absolute_zero
-from erk.quant.timestamp import time_now, Timestamp
+from sifu.basic import not_None
+from sifu.grid import Dir
+from sifu.sched import Delayed, Postable
+from sifu.quant.dimensions import Time
+from sifu.quant.temperature import TemperaturePoint, absolute_zero
+from sifu.quant.timestamp import time_now, Timestamp
 
 from .device import TemperatureControl, Pad
 from .drop import Drop

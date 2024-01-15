@@ -2,12 +2,12 @@ from __future__ import annotations
 import zipfile
 from argparse import ArgumentParser, Namespace
 from typing import Final
-from erk.config import ConfigParam
+from sifu.config import ConfigParam
 import logging
 import os
 import re
 import sys
-from erk.basic import ValOrFn, ensure_val
+from sifu.basic import ValOrFn, ensure_val
 
 logger = logging.getLogger(__name__)
 

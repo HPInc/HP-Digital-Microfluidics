@@ -7,7 +7,7 @@ from serial import Serial
 
 from devices import joey
 from mpam.types import OnOff, State, DummyState
-from erk.basic import ComputedDefaultDict, assert_never
+from sifu.basic import ComputedDefaultDict, assert_never
 import logging
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser, BoardKwdArgs,\
     PlatformChoiceTask
@@ -15,7 +15,7 @@ from argparse import Namespace, _ArgumentGroup, ArgumentParser,\
     BooleanOptionalAction
 from devices.joey import JoeyLayout
 from mpam import device
-from erk.config import ConfigParam
+from sifu.config import ConfigParam
 
 logger = logging.getLogger(__name__)
 

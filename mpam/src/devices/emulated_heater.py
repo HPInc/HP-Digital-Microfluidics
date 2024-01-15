@@ -4,12 +4,12 @@ from random import Random
 import random
 from typing import Sequence, Optional, Union, Final
 
-from erk.grid import GridRegion
-from erk.quant.SI import deg_C, sec
-from erk.quant.dimensions import Temperature, HeatingRate
-from erk.quant.temperature import TemperaturePoint
-from erk.quant.timestamp import Timestamp, time_now
-from erk.sched import Delayed
+from sifu.grid import GridRegion
+from sifu.quant.SI import deg_C, sec
+from sifu.quant.dimensions import Temperature, HeatingRate
+from sifu.quant.temperature import TemperaturePoint
+from sifu.quant.timestamp import Timestamp, time_now
+from sifu.sched import Delayed
 from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode, \
     Heater, Chiller
 

@@ -11,12 +11,12 @@ from typing import Final, Optional, Sequence, ClassVar, Callable, \
     Any, Mapping, Union, NoReturn, TypeVar, Generic
 import typing
 
-from erk.basic import ComputedDefaultDict, not_None, partial_order_sort, ValOrFn, \
+from sifu.basic import ComputedDefaultDict, not_None, partial_order_sort, ValOrFn, \
     ensure_val, MissingOr, MISSING
-from erk.formatting import Formatter, FormatFunction, RegisterableFormatFunction
-from erk.quant.core import Unit, qstr
-from erk.sched import Delayed, Postable
-from erk.stringutils import conj_str
+from sifu.formatting import Formatter, FormatFunction, RegisterableFormatFunction
+from sifu.quant.core import Unit, qstr
+from sifu.sched import Delayed, Postable
+from sifu.stringutils import conj_str
 
 
 logger = logging.getLogger(__name__)

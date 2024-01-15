@@ -11,15 +11,15 @@ from typing import Final, Union, Optional, Sequence, Any, Callable, NoReturn, Ty
 
 from matplotlib.gridspec import SubplotSpec
 
-from erk.basic import ValOrFn, PathOrStr
-from erk.cmd_line import (time_arg, ip_addr_arg, ip_subnet_arg, units_arg, 
+from sifu.basic import ValOrFn, PathOrStr
+from sifu.cmd_line import (time_arg, ip_addr_arg, ip_subnet_arg, units_arg, 
                           logging_spec_arg, voltage_arg)
-from erk.config import ConfigParam
-from erk.logspec import LoggingSpec, logging_levels, logging_formats, LoggingLevel
-from erk.stringutils import conj_str
-from erk.quant.SI import ms, minutes, hr, days, uL, secs, volts, deg_C, V
-from erk.quant.core import set_default_units, UnitExpr, UEorSeq
-from erk.quant.dimensions import Time
+from sifu.config import ConfigParam
+from sifu.logspec import LoggingSpec, logging_levels, logging_formats, LoggingLevel
+from sifu.stringutils import conj_str
+from sifu.quant.SI import ms, minutes, hr, days, uL, secs, volts, deg_C, V
+from sifu.quant.core import set_default_units, UnitExpr, UEorSeq
+from sifu.quant.dimensions import Time
 
 from . import device, pipettor
 from .device import (Board, System, PowerMode, EC, ExternalComponent, 

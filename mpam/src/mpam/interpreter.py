@@ -3,9 +3,9 @@ from __future__ import annotations
 from argparse import _ArgumentGroup, ArgumentParser
 from typing import Final, Any, Optional
 
-from erk.config import ConfigParam
-from erk.sched import Delayed, Postable
-from erk.stringutils import conj_str
+from sifu.config import ConfigParam
+from sifu.sched import Delayed, Postable
+from sifu.stringutils import conj_str
 from langsup import dml
 from langsup.type_supp import Type
 

@@ -9,20 +9,20 @@ import random
 from typing import Sequence, Optional, Final, Union, Callable, Any, TypeVar, \
     Mapping
 
-from erk.afs import AsyncFunctionSerializer
-from erk.cmd_line import coord_arg, time_arg
-from erk.config import ConfigParam
-from erk.grid import XYCoord
-from erk.sample import IntSample, TemperaturePointSample, QuantitySample, Sample
-from erk.sched import Delayed, Postable
+from sifu.afs import AsyncFunctionSerializer
+from sifu.cmd_line import coord_arg, time_arg
+from sifu.config import ConfigParam
+from sifu.grid import XYCoord
+from sifu.sample import IntSample, TemperaturePointSample, QuantitySample, Sample
+from sifu.sched import Delayed, Postable
 from mpam.device import Sensor, Pad, Laser, Board
 from mpam.exerciser import ComponentConfig
 from mpam.types import OnOff
-from erk.quant.SI import ms, mV
-from erk.quant.core import Unit, qstr
-from erk.quant.dimensions import Voltage, Time, Frequency
-from erk.quant.temperature import TemperaturePoint, abs_C
-from erk.quant.timestamp import Timestamp, time_now, sleep_until
+from sifu.quant.SI import ms, mV
+from sifu.quant.core import Unit, qstr
+from sifu.quant.dimensions import Voltage, Time, Frequency
+from sifu.quant.temperature import TemperaturePoint, abs_C
+from sifu.quant.timestamp import Timestamp, time_now, sleep_until
 
 
 logger = logging.getLogger(__name__)

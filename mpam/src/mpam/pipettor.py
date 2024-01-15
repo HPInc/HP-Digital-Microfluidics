@@ -6,17 +6,17 @@ import math
 from threading import Lock
 from typing import Final, Callable, Optional, Sequence, Any
 
-from erk.afs import AsyncFunctionSerializer
-from erk.basic import Callback
-from erk.config import ConfigParam
-from erk.errors import ErrorHandler, PRINT
-from erk.formatting import Formatter
-from erk.monitored import MonitoredProperty, ChangeCallbackList
-from erk.quant.SI import uL
-from erk.quant.dimensions import Volume
-from erk.sched import (Postable, Delayed, OpScheduler, CanDelay, DelayType,
+from sifu.afs import AsyncFunctionSerializer
+from sifu.basic import Callback
+from sifu.config import ConfigParam
+from sifu.errors import ErrorHandler, PRINT
+from sifu.formatting import Formatter
+from sifu.monitored import MonitoredProperty, ChangeCallbackList
+from sifu.quant.SI import uL
+from sifu.quant.dimensions import Volume
+from sifu.sched import (Postable, Delayed, OpScheduler, CanDelay, DelayType,
                        Operation)
-from erk.stringutils import map_str
+from sifu.stringutils import map_str
 
 from .device import (SystemComponent, UserOperation, PipettingTarget, System,
                      ProductLocation, ExternalComponent)

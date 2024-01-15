@@ -8,10 +8,10 @@ import sys
 from typing import Optional, Sequence, Union, Callable
 
 from devices import joey
-from erk.basic import assert_never, MissingOr, MISSING
-from erk.cmd_line import voltage_arg, rel_temperature_arg
-from erk.config import ConfigParam
-from erk.quant.SI import volts, deg_C
+from sifu.basic import assert_never, MissingOr, MISSING
+from sifu.cmd_line import voltage_arg, rel_temperature_arg
+from sifu.config import ConfigParam
+from sifu.quant.SI import volts, deg_C
 from mpam.exerciser import PlatformChoiceExerciser, Exerciser, \
     PlatformChoiceTask
 

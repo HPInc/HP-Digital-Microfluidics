@@ -12,14 +12,14 @@ from typing import Sequence, Union, Optional, Final, NamedTuple, Callable
 
 from devices import joey
 from devices.dummy_pipettor import DummyPipettor
-from erk.basic import not_None
-from erk.color import Color
-from erk.grid import Dir
-from erk.quant.SI import second, seconds
-from erk.quant.temperature import abs_C
-from erk.sched import Barrier, WaitableType, NO_WAIT, Postable, \
+from sifu.basic import not_None
+from sifu.color import Color
+from sifu.grid import Dir
+from sifu.quant.SI import second, seconds
+from sifu.quant.temperature import abs_C
+from sifu.sched import Barrier, WaitableType, NO_WAIT, Postable, \
     SingleFireTrigger, Delayed, schedule
-from erk.stringutils import map_str
+from sifu.stringutils import map_str
 from mpam.device import Board, System, Pad, Well, ExtractionPoint, \
     ProductLocation
 from mpam.dilution import dilution_sequences

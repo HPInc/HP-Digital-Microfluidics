@@ -5,13 +5,13 @@ from contextlib import redirect_stdout
 import os.path
 from typing import Optional, Union, Callable
 
-from erk.cmd_line import volume_arg, time_arg
-from erk.grid import XYCoord, Dir
-from erk.sched import Delayed, Barrier, Trigger
-from erk.quant.SI import seconds, Hz, ms
-from erk.quant.core import CountDim
-from erk.quant.dimensions import Volume, Time
-from erk.quant.timestamp import Timestamp, time_now, time_since
+from sifu.cmd_line import volume_arg, time_arg
+from sifu.grid import XYCoord, Dir
+from sifu.sched import Delayed, Barrier, Trigger
+from sifu.quant.SI import seconds, Hz, ms
+from sifu.quant.core import CountDim
+from sifu.quant.dimensions import Volume, Time
+from sifu.quant.timestamp import Timestamp, time_now, time_since
 
 from .device import Board, System, Pad, Well
 from .dilution import dilution_sequences

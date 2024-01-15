@@ -5,9 +5,9 @@ from enum import Enum, auto
 import logging
 from typing import Optional, Final, Mapping, Callable
 
-from erk.config import ConfigParam
-from erk.quant.SI import seconds, second, uL
-from erk.quant.dimensions import Time, Volume, FlowRate
+from sifu.config import ConfigParam
+from sifu.quant.SI import seconds, second, uL
+from sifu.quant.dimensions import Time, Volume, FlowRate
 from mpam import exerciser
 from mpam.device import ProductLocation
 from mpam.pipettor import Pipettor, Transfer, EmptyTarget, PipettingSource

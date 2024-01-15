@@ -22,25 +22,25 @@ from typing import (Optional, Final, Mapping, Callable, Literal,
 
 from matplotlib.gridspec import SubplotSpec
 
-from erk.afs import AsyncFunctionSerializer
-from erk.basic import (not_None, assert_never, ValOrFn, ensure_val, Callback,
+from sifu.afs import AsyncFunctionSerializer
+from sifu.basic import (not_None, assert_never, ValOrFn, ensure_val, Callback,
                        Missing, MISSING, MissingOr)
-from erk.config import ConfigParam
-from erk.errors import ErrorHandler, PRINT
-from erk.grid import XYCoord, RCOrder, Dir, Orientation
-from erk.monitored import MonitoredProperty, ChangeCallbackList
-from erk.network import local_ipv4_addr
-from erk.sample import TimestampSample, Sample
-from erk.sched import (DelayType, Delayed, CanDelay, OpScheduler, WaitableType,
+from sifu.config import ConfigParam
+from sifu.errors import ErrorHandler, PRINT
+from sifu.grid import XYCoord, RCOrder, Dir, Orientation
+from sifu.monitored import MonitoredProperty, ChangeCallbackList
+from sifu.network import local_ipv4_addr
+from sifu.sample import TimestampSample, Sample
+from sifu.sched import (DelayType, Delayed, CanDelay, OpScheduler, WaitableType,
                        NO_WAIT, Operation, Postable, Trigger)
-from erk.stringutils import map_str
-from erk.quant.SI import volts, deg_C
-from erk.quant.US import deg_F
-from erk.quant.core import Unit
-from erk.quant.dimensions import Time, Volume, Frequency, Temperature, Voltage
-from erk.quant.temperature import TemperaturePoint, abs_F
-from erk.quant.ticks import Ticks, tick, TickNumber
-from erk.quant.timestamp import time_now, Timestamp
+from sifu.stringutils import map_str
+from sifu.quant.SI import volts, deg_C
+from sifu.quant.US import deg_F
+from sifu.quant.core import Unit
+from sifu.quant.dimensions import Time, Volume, Frequency, Temperature, Voltage
+from sifu.quant.temperature import TemperaturePoint, abs_F
+from sifu.quant.ticks import Ticks, tick, TickNumber
+from sifu.quant.timestamp import time_now, Timestamp
 
 from .engine import (DevCommRequest, TimerFunc, ClockCallback,
                      Engine, ClockThread, _wait_timeout, Worker, TimerRequest, ClockRequest,
