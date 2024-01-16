@@ -18,9 +18,9 @@ from sifu.quant.temperature import TemperaturePoint, abs_C
 from sifu.quant.timestamp import Timestamp, time_now, time_in, sleep_until
 from sifu.sched import Delayed, Postable
 from sifu.stringutils import conj_str
-from mpam import device
-from mpam.device import Pad, Magnet, Well
-from mpam.types import OnOff, State, DummyState
+from dmf import device
+from dmf.device import Pad, Magnet, Well
+from dmf.types import OnOff, State, DummyState
 import pyglider
 
 

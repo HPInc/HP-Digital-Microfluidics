@@ -8,10 +8,10 @@ from typing import Optional, Final, Mapping, Callable
 from sifu.config import ConfigParam
 from sifu.quant.SI import seconds, second, uL
 from sifu.quant.dimensions import Time, Volume, FlowRate
-from mpam import exerciser
-from mpam.device import ProductLocation
-from mpam.pipettor import Pipettor, Transfer, EmptyTarget, PipettingSource
-from mpam.types import XferDir, waste_reagent, Reagent
+from dmf import exerciser
+from dmf.device import ProductLocation
+from dmf.pipettor import Pipettor, Transfer, EmptyTarget, PipettingSource
+from dmf.types import XferDir, waste_reagent, Reagent
 
 
 logger = logging.getLogger(__name__)

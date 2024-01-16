@@ -21,31 +21,22 @@ from antlr4 import InputStream, CommonTokenStream, FileStream, ParserRuleContext
 from antlr4.tree.Tree import TerminalNode
 
 from devices.eselog import ESELog, ESELogChannel
+from dmf.device import Pad, Board, BinaryComponent, Well, \
+    WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller, \
+    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor, \
+    TemperatureMode, Clock, ExternalComponent
+from dmf.drop import Drop, DropStatus
+from dmf.exceptions import NoSuchPad
+from dmf.paths import Path
+from dmf.processes import MultiDropProcessType, MultiDropProcessRun
+from dmf.types import unknown_reagent, Liquid, OnOff, \
+    Reagent, Mixture
 from dmlLexer import dmlLexer
 from dmlParser import dmlParser
 from dmlVisitor import dmlVisitor
 from sifu.basic import LazyPattern, not_None, assert_never, to_const, ValOrFn, \
     MissingOr, MISSING, not_Missing
 from sifu.grid import Dir, Turn
-from sifu.sample import Sample
-from sifu.sched import Delayed, Postable, DelayType, Barrier
-from sifu.stringutils import map_str, conj_str
-from langsup.type_supp import Type, CallableType, Signature, Attr, \
-    Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit, \
-    NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError, \
-    Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc, \
-    SampleType, SampleableType, FutureType, FutureValue, \
-    BoundInjectionValue
-from mpam.device import Pad, Board, BinaryComponent, Well, \
-    WellGate, WellPad, TemperatureControl, PowerSupply, PowerMode, Chiller, \
-    Heater, System, DropLoc, ExtractionPoint, EC, Magnet, Fan, Sensor, \
-    TemperatureMode, Clock, ExternalComponent
-from mpam.drop import Drop, DropStatus
-from mpam.exceptions import NoSuchPad
-from mpam.paths import Path
-from mpam.processes import MultiDropProcessType, MultiDropProcessRun
-from mpam.types import unknown_reagent, Liquid, OnOff, \
-    Reagent, Mixture
 from sifu.quant import timestamp
 from sifu.quant.SI import deg_C
 from sifu.quant.US import deg_F
@@ -54,10 +45,20 @@ from sifu.quant.dimensions import Time, Volume, Temperature, Voltage, Frequency
 from sifu.quant.temperature import TemperaturePoint, abs_C, abs_F
 from sifu.quant.ticks import Ticks
 from sifu.quant.timestamp import Timestamp, time_in, time_now
+from sifu.sample import Sample
+from sifu.sched import Delayed, Postable, DelayType, Barrier
+from sifu.stringutils import map_str, conj_str
+
+from .support.type_supp import Type, CallableType, Signature, Attr, \
+    Rel, MaybeType, Func, PhysUnit, EnvRelativeUnit, \
+    NumberedItem, CallableTypeKind, CallableValue, EvaluationError, MaybeError, \
+    Val_, LoopExitType, ByNameCache, ExtraArgFunc, ExtraArgDelayedFunc, \
+    SampleType, SampleableType, FutureType, FutureValue, \
+    BoundInjectionValue
 
 
 if TYPE_CHECKING:
-    from mpam.monitor import BoardMonitor
+    from dmf.monitor import BoardMonitor
 
 logger = logging.getLogger(__name__)
 

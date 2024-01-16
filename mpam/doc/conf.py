@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'MPAM'
+project = 'HP-DMF'
 copyright = '2022, Evan Kirshenbaum'
 author = 'Evan Kirshenbaum'
 
@@ -60,7 +60,7 @@ autodoc_typehints_format = "short"
 # the other hand, it doesn't emit links to the aliases, so if you don't know
 # what they are, you have to seach for them.
 autodoc_type_aliases = {
-    # "DelayType": "mpam.types.DelayType",
+    # "DelayType": "dmf.types.DelayType",
 }
 
 # Add any paths that contain templates here, relative to this directory.

@@ -22,11 +22,11 @@ import requests
 
 from sifu.afs import AsyncFunctionSerializer
 from sifu.config import ConfigParam
-from mpam import exerciser
-from mpam.device import System, Board, PipettingTarget, ProductLocation
-from mpam.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget, \
+from dmf import exerciser
+from dmf.device import System, Board, PipettingTarget, ProductLocation
+from dmf.pipettor import Pipettor, Transfer, XferTarget, EmptyTarget, \
     PipettingSource
-from mpam.types import Reagent, XferDir
+from dmf.types import Reagent, XferDir
 from sifu.quant.SI import seconds, uL, ml, ul
 from sifu.quant.dimensions import Time, Volume
 from sifu.quant.timestamp import time_now

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from devices import joey, opentrons, bilby_task
-from mpam.exerciser import PlatformChoiceExerciser
+from dmf.exerciser import PlatformChoiceExerciser
 from support import pcr
 
 

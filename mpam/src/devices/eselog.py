@@ -15,9 +15,9 @@ from sifu.config import ConfigParam
 from sifu.grid import XYCoord
 from sifu.sample import IntSample, TemperaturePointSample, QuantitySample, Sample
 from sifu.sched import Delayed, Postable
-from mpam.device import Sensor, Pad, Laser, Board
-from mpam.exerciser import ComponentConfig
-from mpam.types import OnOff
+from dmf.device import Sensor, Pad, Laser, Board
+from dmf.exerciser import ComponentConfig
+from dmf.types import OnOff
 from sifu.quant.SI import ms, mV
 from sifu.quant.core import Unit, qstr
 from sifu.quant.dimensions import Voltage, Time, Frequency

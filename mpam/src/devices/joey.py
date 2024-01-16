@@ -13,17 +13,17 @@ from sifu.cmd_line import coord_arg
 from sifu.config import ConfigParam
 from sifu.grid import Dir, XYCoord, GridRegion, Orientation, RCOrder
 from sifu.stringutils import conj_str
-from mpam import WellOpSeqDict, WellState, \
+from dmf import WellOpSeqDict, WellState, \
     WellShape, WellPad, Pad, Magnet, DispenseGroup, \
     WellGate, TemperatureControl, PowerSupply, PowerMode, Fan, \
     Heater, Chiller, StateDefs
-import mpam
-from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
+import dmf
+from dmf.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser, BoardKwdArgs
-from mpam.paths import Path
-from mpam.pipettor import Pipettor
-from mpam.thermocycle import Thermocycler, ChannelEndpoint, Channel
-from mpam.types import State, \
+from dmf.paths import Path
+from dmf.pipettor import Pipettor
+from dmf.thermocycle import Thermocycler, ChannelEndpoint, Channel
+from dmf.types import State, \
     OnOff, DummyState, deg_C_per_sec
 from sifu.quant.SI import uL, ms, volts, deg_C, mm
 from sifu.quant.US import mil
@@ -110,21 +110,21 @@ class Config:
     @classmethod
     def setup_defaults(cls) -> None:
         if not cls._defaults_set_up:
-            from mpam import Config as mpamConfig
+            from dmf import Config as dmfConfig
             
-            mpamConfig.polling_interval.default = 200*ms
-            mpamConfig.ps_min_voltage.default = 60*volts
-            mpamConfig.ps_max_voltage.default = 298*volts
-            mpamConfig.ps_initial_voltage.default = 0*volts
-            mpamConfig.ps_initial_mode.default = PowerMode.DC
-            mpamConfig.ps_can_toggle.default = True
-            mpamConfig.ps_can_change_mode.default = True
-            mpamConfig.fan_initial_state.default = OnOff.OFF
-            mpamConfig.fan_can_toggle.default = True
+            dmfConfig.polling_interval.default = 200*ms
+            dmfConfig.ps_min_voltage.default = 60*volts
+            dmfConfig.ps_max_voltage.default = 298*volts
+            dmfConfig.ps_initial_voltage.default = 0*volts
+            dmfConfig.ps_initial_mode.default = PowerMode.DC
+            dmfConfig.ps_can_toggle.default = True
+            dmfConfig.ps_can_change_mode.default = True
+            dmfConfig.fan_initial_state.default = OnOff.OFF
+            dmfConfig.fan_can_toggle.default = True
             cls._defaults_set_up = True
 
     
-class Well(mpam.Well):
+class Well(dmf.Well):
     @property
     def pipettor(self)->Pipettor:
         return self.board.pipettor
@@ -137,9 +137,9 @@ class ArmPos(Enum):
     BLOCK = auto()
 
 
-class ExtractionPoint(mpam.ExtractionPoint):
+class ExtractionPoint(dmf.ExtractionPoint):
 
-    def __init__(self, pad: mpam.Pad, *, splash_radius: Optional[int] = None) -> None:
+    def __init__(self, pad: dmf.Pad, *, splash_radius: Optional[int] = None) -> None:
         super().__init__(pad, splash_radius=splash_radius)
 
     @property
@@ -164,7 +164,7 @@ v1_5_shared_pad_cells: Mapping[tuple[str,int], str] = {
 
     
     
-class Board(mpam.Board):
+class Board(dmf.Board):
     thermocycler: Thermocycler
     _layout: Final[JoeyLayout]
     _lid: Final[LidType]
@@ -218,7 +218,7 @@ class Board(mpam.Board):
     def _dispensed_volume(self) -> Volume:
         return self._layout.pad_area*self._lid.height
 
-    def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: mpam.Pad,
+    def _well(self, group: DispenseGroup, exit_dir: Dir, exit_pad: dmf.Pad,
               shared_states: Sequence[State[OnOff]], shape: WellShape) -> Well:
 
         if self._layout is JoeyLayout.V1:
@@ -275,7 +275,7 @@ class Board(mpam.Board):
         return [make_heater(regions=r) for r in regions]
             
     def _chillers(self) -> Sequence[Chiller]:
-        def make_chiller(*, wells: Sequence[mpam.Well]) -> Chiller:
+        def make_chiller(*, wells: Sequence[dmf.Well]) -> Chiller:
             return EmulatedChiller(board=self, regions=[], wells=wells,
                                    limit = 5*abs_C,
                                    driving_rate = 100*deg_C_per_sec,

@@ -3,8 +3,8 @@ from __future__ import annotations
 from devices import bilby, wombat
 
 from typing import Final
-from mpam.device import System
-from mpam import device
+from dmf.device import System
+from dmf import device
 
 class Board(bilby.Board):
     _yaminon: Final[wombat.Board]

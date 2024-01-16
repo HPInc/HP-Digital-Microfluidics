@@ -3,7 +3,7 @@ from devices import bilby_task, joey
 from devices.wombat import YaminonPlatformTask
 from typing import Final, Optional, Sequence
 from argparse import Namespace, _ArgumentGroup, ArgumentParser
-from mpam.exerciser import PlatformChoiceExerciser, Exerciser,\
+from dmf.exerciser import PlatformChoiceExerciser, Exerciser,\
     PlatformChoiceTask
 
 class PlatformTask(bilby_task.PlatformTask):

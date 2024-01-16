@@ -8,12 +8,12 @@ from serial import Serial
 from sifu.config import ConfigParam
 from sifu.grid import XYCoord, Dir, Orientation
 from sifu.quant.SI import uL, ms
-from mpam import device
-from mpam.device import Well, WellOpSeqDict, WellState, PadBounds, \
+from dmf import device
+from dmf.device import Well, WellOpSeqDict, WellState, PadBounds, \
     WellShape, Pad, WellGate, WellPad, StateDefs
-from mpam.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
+from dmf.exerciser import PlatformChoiceTask, PlatformChoiceExerciser, \
     Exerciser
-from mpam.types import OnOff, State
+from dmf.types import OnOff, State
 
 
 class Config:

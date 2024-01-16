@@ -4,7 +4,7 @@ from argparse import ArgumentParser, Namespace
 import math
 
 from sifu.grid import XYCoord, Orientation
-from mpam.ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
+from dmf.ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
     Regression
 
 

@@ -5,7 +5,7 @@ import math
 from typing import Optional, Sequence
 
 from sifu.grid import XYCoord, Orientation, Dir
-from mpam.ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
+from dmf.ga_regression import Candidate, MixSeq, Evaluation, EvaluatedMixSeq, \
     Regression
 
 

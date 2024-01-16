@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from devices import joey, opendrop, wombat, opentrons, manual_pipettor,\
     bilby_task, eselog, bilby_yaminon_task
-from mpam.exerciser import PlatformChoiceExerciser
-from mpam.exerciser_tasks import DisplayOnly
-from mpam.monitor import Config as monConfig
-from mpam import pipettor
-from langsup import type_supp
+from dmf.exerciser import PlatformChoiceExerciser
+from dmf.exerciser_tasks import DisplayOnly
+from dmf.monitor import Config as monConfig
+from dmf import pipettor
+from lang import dml
 
 
 if __name__ == '__main__':
@@ -29,5 +29,5 @@ if __name__ == '__main__':
                                                  pipettors=pipettors,
                                                  components=components,
                                                  default_pipettor=default_pipettor)
-    pipettor.Config.value_formatter(type_supp.Type.default_formatter)
+    pipettor.Config.value_formatter(dml.Type.default_formatter)
     exerciser.parse_args_and_run()

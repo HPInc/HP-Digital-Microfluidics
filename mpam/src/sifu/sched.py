@@ -1408,7 +1408,7 @@ class StaticOperation(Generic[_V], ABC):
     the call will return immediately, and `dv` will obtain a value of type :attr:`_V` at some point
     in the future, when the operation has completed.
 
-    The same effect can be obtained by calling :func:`mpam.types.schedule`::
+    The same effect can be obtained by calling :func:`dmf.types.schedule`::
 
         dv: Delayed[_V] = schedule(op)
 

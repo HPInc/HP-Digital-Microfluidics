@@ -6,8 +6,8 @@ from typing import Final, Any, Optional
 from sifu.config import ConfigParam
 from sifu.sched import Delayed, Postable
 from sifu.stringutils import conj_str
-from langsup import dml
-from langsup.type_supp import Type
+from lang import dml
+from lang.dml import Type
 
 from .device import Board
 

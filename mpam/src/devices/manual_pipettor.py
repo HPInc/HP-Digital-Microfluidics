@@ -10,9 +10,9 @@ from sifu.config import ConfigParam
 from sifu.quant.SI import uL
 from sifu.quant.dimensions import Volume
 from sifu.stringutils import conj_str
-from mpam import exerciser
-from mpam.pipettor import Pipettor, Transfer, PipettingSource
-from mpam.types import XferDir, Reagent
+from dmf import exerciser
+from dmf.pipettor import Pipettor, Transfer, PipettingSource
+from dmf.types import XferDir, Reagent
 
 
 logger = logging.getLogger(__name__)

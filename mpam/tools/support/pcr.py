@@ -20,18 +20,18 @@ from sifu.quant.temperature import abs_C
 from sifu.sched import Barrier, WaitableType, NO_WAIT, Postable, \
     SingleFireTrigger, Delayed, schedule
 from sifu.stringutils import map_str
-from mpam.device import Board, System, Pad, Well, ExtractionPoint, \
+from dmf.device import Board, System, Pad, Well, ExtractionPoint, \
     ProductLocation
-from mpam.dilution import dilution_sequences
-from mpam.drop import Drop
-from mpam.exerciser import Exerciser, Task
-from mpam.mixing import mixing_sequences
-from mpam.monitor import BoardMonitor
-from mpam.paths import Path, Schedulable
-from mpam.processes import PlacedMixSequence, Transform
-from mpam.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
+from dmf.dilution import dilution_sequences
+from dmf.drop import Drop
+from dmf.exerciser import Exerciser, Task
+from dmf.mixing import mixing_sequences
+from dmf.monitor import BoardMonitor
+from dmf.paths import Path, Schedulable
+from dmf.processes import PlacedMixSequence, Transform
+from dmf.thermocycle import ThermocyclePhase, ThermocycleProcessType, \
     Thermocycler, ShuttleDir
-from mpam.types import Reagent, Liquid, waste_reagent
+from dmf.types import Reagent, Liquid, waste_reagent
 
 
 logger = logging.getLogger(__name__)

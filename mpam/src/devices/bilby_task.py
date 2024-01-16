@@ -12,7 +12,7 @@ from sifu.basic import assert_never, MissingOr, MISSING
 from sifu.cmd_line import voltage_arg, rel_temperature_arg
 from sifu.config import ConfigParam
 from sifu.quant.SI import volts, deg_C
-from mpam.exerciser import PlatformChoiceExerciser, Exerciser, \
+from dmf.exerciser import PlatformChoiceExerciser, Exerciser, \
     PlatformChoiceTask
 
 

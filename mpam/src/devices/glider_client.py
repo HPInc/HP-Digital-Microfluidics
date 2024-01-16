@@ -9,7 +9,7 @@ from typing import Union, Optional, Final, Generic, TypeVar, Callable, List, \
     cast, Sequence, Mapping
 
 from sifu.basic import ValOrFn, ensure_val, map_unless_None, MissingOr, MISSING
-from mpam.types import State, OnOff
+from dmf.types import State, OnOff
 from pyglider import ErrorCode
 import pyglider
 from sifu.quant.SI import volts, ms

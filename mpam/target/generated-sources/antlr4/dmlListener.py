@@ -5,10 +5,10 @@ if __name__ is not None and "." in __name__:
 else:
     from dmlParser import dmlParser
 
-from mpam.types import OnOff, unknown_reagent, waste_reagent
+from dmf.types import OnOff, unknown_reagent, waste_reagent
 from sifu.grid import Dir, Turn
 from sifu.quant.ticks import ticks
-from langsup.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit, NumberedItem
+from lang.support.type_supp import Type, Rel, PhysUnit, EnvRelativeUnit, NumberedItem
 from sifu.quant import SI
 
 

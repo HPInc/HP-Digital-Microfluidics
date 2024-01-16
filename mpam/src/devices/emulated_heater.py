@@ -10,7 +10,7 @@ from sifu.quant.dimensions import Temperature, HeatingRate
 from sifu.quant.temperature import TemperaturePoint
 from sifu.quant.timestamp import Timestamp, time_now
 from sifu.sched import Delayed
-from mpam.device import TemperatureControl, Board, Well, Pad, TemperatureMode, \
+from dmf.device import TemperatureControl, Board, Well, Pad, TemperatureMode, \
     Heater, Chiller
 
 
