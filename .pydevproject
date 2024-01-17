@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?eclipse-pydev version="1.0"?><pydev_project>
-                                
+                                        
+    
+    
     
     
     
@@ -8,16 +10,18 @@
     
     
     <pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
-        <path>/${PROJECT_DIR_NAME}/src</path>
-        <path>/${PROJECT_DIR_NAME}/tests</path>
-        <path>/${PROJECT_DIR_NAME}/tools</path>
+        <path>/${PROJECT_DIR_NAME}/mpam/dev-tools</path>
+        <path>/${PROJECT_DIR_NAME}/mpam/opentrons</path>
+        <path>/${PROJECT_DIR_NAME}/mpam/sifu-tools</path>
+        <path>/${PROJECT_DIR_NAME}/mpam/src</path>
+        <path>/${PROJECT_DIR_NAME}/mpam/stubs</path>
+        <path>/${PROJECT_DIR_NAME}/mpam/tests</path>
+        <path>/${PROJECT_DIR_NAME}/mpam/tools</path>
         <path>/${PROJECT_DIR_NAME}/target/generated-sources/antlr4</path>
-        <path>/${PROJECT_DIR_NAME}/opentrons</path>
-        <path>/${PROJECT_DIR_NAME}/dev-tools</path>
-        <path>/${PROJECT_DIR_NAME}/stubs</path>
-        <path>/${PROJECT_DIR_NAME}/sifu-tools</path>
     </pydev_pathproperty>
-                                
+                                        
+    
+    
     
     
     
@@ -25,7 +29,9 @@
     
     
     <pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python interpreter</pydev_property>
-                                
+                                        
+    
+    
     
     
     
@@ -33,7 +39,9 @@
     
     
     <pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
-                            
+                                    
+
+
 
 
 
