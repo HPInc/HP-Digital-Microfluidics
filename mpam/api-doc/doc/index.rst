@@ -14,24 +14,24 @@ Microfluidics Platform Abstract Machine
      :template: custom-module-template.rst
      :recursive:
 
-     mpam.device
-     mpam.drop
-     mpam.engine
-     mpam.exceptions
-     mpam.monitor
-     mpam.paths
-     mpam.pipettor
-     mpam.processes
-     mpam.types
+     dmf.device
+     dmf.drop
+     dmf.engine
+     dmf.exceptions
+     dmf.monitor
+     dmf.paths
+     dmf.pipettor
+     dmf.processes
+     dmf.types
      
-     erk.errors
+     sifu.errors
 
-	 quantities.core
-	 quantities.dimensions
-	 quantities.timestamp
-	 quantities.temperature
-	 quantities.SI
-	 quantities.US
+	 sifu.quant.core
+	 sifu.quant.dimensions
+	 sifu.quant.timestamp
+	 sifu.quant.temperature
+	 sifu.quant.SI
+	 sifu.quant.US
 
      threading
 	 typing
