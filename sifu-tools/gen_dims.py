@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dim_generator import Dimensionality, Emitter
+from support.dim_generator import Dimensionality, Emitter
     
 scalar = Dimensionality.scalar()
 scalar.aliases.extend(("Angle", "SolidAngle"))

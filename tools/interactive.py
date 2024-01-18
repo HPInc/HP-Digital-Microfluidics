@@ -1,13 +1,27 @@
 from __future__ import annotations
 
-from devices import joey, opendrop, wombat, opentrons, manual_pipettor,\
+from argparse import Namespace
+
+from devices import joey, opendrop, wombat, opentrons, manual_pipettor, \
     bilby_task, eselog, bilby_yaminon_task
-from dmf.exerciser import PlatformChoiceExerciser
-from dmf.exerciser_tasks import DisplayOnly
-from dmf.monitor import Config as monConfig
 from dmf import pipettor
+from dmf.device import Board, System
+from dmf.exerciser import PlatformChoiceExerciser, Task
+from dmf.monitor import Config as monConfig
 from lang import dml
 
+
+class DisplayOnly(Task):
+    def __init__(self) -> None:
+        super().__init__(name="display-only",
+                         description = "Just bring up the display.")
+        pass
+
+        
+    def run(self, board: Board, system: System, args: Namespace) -> None:  # @UnusedVariable
+        # Nothing to do as a task.  We will set min_time to None, so the board
+        # will stay up until the user is done with it.
+        pass
 
 if __name__ == '__main__':
     platforms = (
