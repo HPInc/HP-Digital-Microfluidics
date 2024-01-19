@@ -1,0 +1,171 @@
+/*****************************
+ * Our first protocol
+ *
+ * Author: Evan Kirshenbaum
+ *****************************/
+
+// Protocol parameters
+
+reagent A = reagent "A";
+reagent B = reagent "B";
+reagent C = reagent "C";
+reagent D = reagent "D";
+
+well A_well = well #3;
+well B_well = well #4;
+well C_well = well #7;
+well D_well = well #8;
+well waste_well = well #5;
+
+pad pComb1 = (5, 4);
+pad pComb2 = (10, 6);
+pad pComb3 = (10, 2);
+
+time walk_time = 10s;
+int n_shuttles = 10;
+
+heater incubator = pComb2's heater;
+temperature incubation_temp = 80C;
+time incubation_time = 30 minutes;
+
+voltage reading_target = 70 V;
+extraction port product_port = extraction port #2;
+
+// For testing
+
+define speed_up {
+    incubation_time = 10 seconds;
+}
+
+// Helper functions
+
+define square(int len) -> path {
+    return left len 
+           : down len 
+           : right len 
+           : up len
+           ;
+}
+
+define shuttle(an injectable drop, int n) {
+    repeat n times {
+       the drop : east : west;
+    }
+}
+
+define incubate { 
+    incubator’s target = incubation_temp;
+    wait until incubator is ready;
+
+    print "Incubating at", incubation_temp, 
+                                "for", (incubation_time : in H:M:S)+".";
+    
+    timestamp end_at = time now + incubation_time;
+    
+    time pause_length = 1 minute;
+    
+    repeat until end_at {
+       time remaining = time until(end_at);
+       print time now+":", (remaining : in M:S), "left.";
+       
+       time t = remaining if remaining < pause_length 
+                          else pause_length;
+       wait for t;
+    }
+    incubator : off;
+}
+
+// The protocol
+
+define run_protocol {
+    // Step 0:                                                   
+                                                                     
+    A_well : require(1 drop of A);                                   
+    B_well : require(1 drop of B);                                   
+    C_well : require(1 drop of C);                                   
+    D_well : require(1 drop of D);                                   
+                                                                 
+    waste_well's reagent = waste;                                    
+
+    // Step 1. Dispense drops of reagents A and B and merge them     
+    //         together.  Walk the merged drop around for 10         
+    //         seconds to ensure mixing.                             
+                                                                 
+    drop d1;                                                         
+    [[                                                               
+            d1 = A_well : dispense drop                              
+              : to pComb1                                            
+              : accept merge from south                              
+              ;                                                      
+            B_well : dispense drop                                   
+         : to pComb1 + 2 south                                       
+         : merge into north                                          
+         ;                                                           
+    ]]                                                               
+                                                                 
+    path walk_to_mix = square(3);                                    
+    repeat for walk_time {                                           
+            d1 : walk_to_mix;                                        
+    }                                                                
+                                                                     
+    // Step 2. Split the merged drop in two and merge the            
+    //         resulting drops with a drop of reagents C and D       
+    //         respectively.  Mix these drops by “shuttling”         
+    //         (stepping back and forth) 10 times.                   
+
+    (eventual) drop d2;
+    [[
+       d1 : split to south as d2
+          : to pComb2
+          : accept merge from right
+          : shuttle(n_shuttles)
+          ;
+       d2 : to pComb3
+          : accept merge from right
+          : shuttle(n_shuttles)
+          ;
+       C_well : dispense drop
+              : to pComb2 + 2 right
+              : merge into left
+              ;  
+       D_well : dispense drop
+              : to pComb3 + 2 right
+              : merge into left
+              ;  
+    ]]
+    
+    // Step 3. Heat the combined drops at 80°C for 30 minutes.
+
+        incubate;
+        
+    // Step 4. Measure each heated drop using an ESELog sensor. 
+    //         If the mean voltage read on the E1D1 channel is  
+    //         greater than 70V, the drop passes and should be  
+    //         preserved for later testing.  Otherwise, the drop
+    //         fails and is waste.                              
+
+    define finish_up(injectable drop d) {
+        eselog e = the board's eselog;
+        
+        d : to e's target;
+
+        local r = e : take a reading
+                    : write to csv file;
+        voltage v = r's e1d1_on;
+
+        if v < reading_target {
+           print d's reagent, "is good!", "("+v+")";
+           d : to product_port : transfer out;
+      } else {
+           print d's reagent, "is bad.", "("+v+")";
+           d : become waste : to waste_well : enter well;
+      }
+    }
+
+    [[
+       d2 : finish_up;
+       d1 : finish_up;
+    ]]
+    
+    prompt "Finished at", time now;
+}

@@ -1,0 +1,149 @@
+reagent A = reagent "A";
+reagent B = reagent "B";
+reagent C = reagent "C";
+reagent D = reagent "D";
+reagent p1 = reagent "Product 1"; 
+reagent p2 = reagent "Product 2"; 
+   well A_well = well #3;
+   well B_well = well #4;
+   well C_well = well #7;
+   well D_well = well #8;
+   well waste_well = well #5;
+   extraction port product_port = extraction port #2;
+   
+    pad pComb1 = (5, 4);
+    pad pComb2 = (10, 6);
+    pad pComb3 = (10, 2);
+    
+heater incubator = pComb2's heater;
+    
+temperature incubation_temp = 80C;
+time incubation_time = 10 seconds;
+time walk_time = 5s;
+int n_shuttles = 5;
+
+eselog e = the board's eselog;
+voltage reading_target = 75V;
+
+ define square(int len) -> path {
+   return left len : down len 
+          : right len : up len;
+}
+
+//define walk_square(injectable drop d, int len) {
+//   d : left len : down len : right len : up len;
+//} 
+
+
+define shuttle(an injectable drop, int n) {
+    repeat n times {
+       the drop : east : west;
+    }
+ }
+
+define incubate { 
+    incubator's target = incubation_temp;
+    wait until incubator is ready;
+
+    print "Incubating at", incubation_temp, 
+				"for", (incubation_time : in H:M:S)+".";
+    
+    
+    timestamp end_at = time now + incubation_time;
+    
+    time pause_length = 1 s;
+    
+    repeat until end_at {
+       time remaining = time until(end_at);
+       print time now+":", (remaining : in M:S), "left.";
+       
+       time t = remaining if remaining < pause_length else pause_length;
+       wait for t;
+    }
+    incubator : off;
+} 
+
+define rp {
+   // Set up the wells
+   A_well : require(1 drop of A);
+   B_well : require(1 drop of B);
+   C_well : require(1 drop of C);
+   D_well : require(1 drop of D);
+   waste_well's reagent = waste;
+   
+   // Dispense a drop of A and a drop of B.
+   // Simultaneously walk them to the target
+   // pad and merge them.  Save the result as
+   // d1.
+   
+   drop d1;
+   [[
+     d1 = A_well : dispense drop 
+                 : to pComb1
+                 : accept merge from south
+                 ;
+     B_well : dispense drop
+                   : to pComb1 + 2 south
+                   : merge into north
+                   ;
+    ]] 
+    
+    // Walk the resulting A+B drop in a
+    // 3 by 3 square for the specified
+    // amount of time.
+    path walk_to_mix = square(3);
+    repeat for walk_time {
+      d1 : walk_to_mix;
+ //       d1 : walk_square(3);
+    }
+    
+    // Split the drop in two and walk the 
+    // two drops to the other target pads.
+    // Merge one with a drop of C and
+    // the other with a drop of D.
+    // Shuttle each (walk back and forth)
+    // to mix.
+    (eventual) drop d2;
+    [[
+       d1 : split to south as d2
+          : to pComb2
+          : accept merge from right
+          : shuttle(n_shuttles)
+          ;
+       d2 : to pComb3
+          : accept merge from right
+          : shuttle(n_shuttles)
+          ;
+       C_well : dispense drop
+              : to pComb2 + 2 right
+              : merge into left
+              ;  
+       D_well : dispense drop
+              : to pComb3 + 2 right
+              : merge into left
+              ;  
+    ]]
+    incubate;
+    
+    define finish_up(injectable drop d) {
+      d : to e's target;
+      local r = e : take a reading
+                  : write to csv file;
+      voltage v = r's e1d1_on;
+//      if v < reading_target {
+      if d == d2 {
+         print d's reagent, "is good!", "("+v+")";
+         d : to product_port : transfer out;
+      } else {
+         print d's reagent, "is bad.", "("+v+")";
+         d : become waste : to waste_well : enter well;
+      }
+//      d : split to east : to waste_well : enter well;
+    }
+    [[
+       d2 : finish_up;
+       d1 : finish_up;
+    ]]
+    
+    prompt "Finished at", time now;
+ }
