@@ -1,42 +1,110 @@
-# Thylacine
-_Thylacine_ is (or, at least, will be, if all goes well) a suite of software for Digital Microfluidics (DMF) platforms.  It is envisioned as containing several pieces:
+# HP Digital Microfluidics Software Platform and Language
 
-- __MPDL__, the _Microfluidics Platform Description Language_, is a language for describing and characterizing specific DMF platforms.
+## OVERVIEW
 
-- __MPAM__, the _Microfluidics Platform Abstract Machine_, is a low-level model (and associated language) for operations to be performed on DMF platforms characterizable by MPDL.
+This repository contains the **HP Digital Microfluidics Software Platform** and an interpreter for the **Digital Microfluidics Language (DML)**.  Together, these two components assist in the developmental testing and interactive use of DMF boards as well as the development and running of protocols for these boards, both in simulation and on actual hardware.
 
-- __MRL__, the _Microfluidics Recipe Language_, is an intermediate-level programming language for specifying DMF recipes independent of a particular DMF platform.
+The platform is a Python 3 package (`dmf`) which can simulate and/or drive DMF boards with arbitrary size, well configuration, and pipettor targets (e.g., lid holes), and which have available controllable internal or external components such as magnets, sensors, heaters/chillers, power supplies, and fans.  The repository contains board models for the [`opendrop`](https://www.gaudi.ch/OpenDrop/) board as well as for several versions of the “`Joey`” platform being developed at Hewlett-Packard[^joey].
 
-- __MPSL__, the _Microfluidics Protocol Specification Language_, is a high-level (e.g., near-natural-language) specification language for specifying microfluidics protocols close to the way they are described in the literature, with little or no programming expertise required
+[^joey]: The full `Joey` board is available in simulation, and the `Wombat` version drives a portion of the `Joey` board using an `Opendrop` controller.  Other included configurations (`Bilby`, `hybrid`) require middleware software not included in this repository.
 
-- An __MPAM API__ allows MPAM operations to be initiated from programming languages such as Java, C++, and/or Python
+The platform models/drives fluid transfer to and from the board by means of pipettors, and it includes a `manual` pipettor which prompts a user to perform the transfer and a `simulated` pipettor for use in protocol development and simulation.  There is also a pipettor model for driving the [Opentrons OT-2 pipetting robot](https://opentrons.com/products/robots/ot-2/).
 
-- An __MPAM emulator__, likely graphical, implements the MPAM API and can emulate DMF platforms specified by MPDL descriptions.
+The platform also contains a [graphical user interface](assets/gui-example.jpg) that allows both interactive manipulation of the board (by clicking the mouse to modify cell state and control the clock as well as by typing DML statements) and visualization of running protocols, including cell states, drop size and composition, well contents, heater temperatures and directions, and magnet states.
 
-- An __MPAM interpreter__ reads an MPAM program and executes it by making calls to the MPAM API
+The platform supports defining protocols in two ways:
 
-- An __MPAM assembler__ converts MPAM programs to equivalent programs in other programming languages
+1. Simple (and even reasonably complex) protocols can be written using the domain-friendly [DMF language](<doc/Introduction to DML.pdf>).  Protocols (and other functions and actions) can be preloaded into the `interactive` tool by using the `--dml-file` command-line argument and then executed by typing their names (and any associated parameters) into the `Expr:` box in the GUI.
 
-- An __MRL__ compiler takes as input an MPDL description and one or more MRL recipes and outputs an MPAM program that impelemnts the recipes for the platform
+2. More complicated protocols, including features of the platform not (yet) available in DML (e.g., n-way mixes and n-times dilutions, multi-zone thermocycling, and sophisticated drop traffic control) can be written in Python by creating a subclass of the `dmf.Task` class.  See [`tools/support/pcr.py`](tools/support/pcr.py) for several examples of Python-implemented protocols and [`tools/interactive.py`](tools/interactive.py) for a model for creating a command-line program to drive such a protocol.
 
-- An __MPSL__ compiler takes as input an MPSL specification and translates it into an MRL recipe (and, optionally, from there to an MPAM program).
+## INSTALLATION
 
-There will also be MPDL descriptions and MPAM API implementation libraries for various concrete DMF platforms
+Once the repository has been cloned,
 
-## Developer Notes
+1. Ensure that you are running Python version **3.10**.  As of this writing, the code has been tested with version `3.10.9`.  Later versions might work; earlier ones may well not.
 
-### QuickStart
+2. Install required packages by running
+   ```
+   pip -r requirements.txt
+   ```
 
-    cd thylacine/mpam
-    export PYTHONPATH=`pwd`/src:`pwd`/tools:`pwd`/target/generated-sources/antlr4
+3. Ensure that the following subdirectories of the repository root directory are on your `PYTHONPATH` variable:
 
-    python tools/wombat.py display-only --min-time 1day --macro-file inputs/macros.dmf
+   * `src`
+   * `tools`
+   * `stubs`
+   * `target/generated-sources/antlr4`
 
-    python tools/joey.py path --clock-speed=500ms --start-pad 0 18 --path 2R3D2R1U
+## RUNNING
 
-    python tools/pcr.py cs 5 --clock-speed=100ms --shuttles=2 --cycles=2 --pipettor-speed=2 --min-time=1hr
+To run `tools/interactive.py` (or any protocol-specific Python script), simply run it using a Python 3 interpreter.  Follow the script name by the name of the board model and any board- or protocol-specific command line arguments.  For example,
 
-### MyPy
+```
+python3 tools/interactive.py joey --clock-speed=100ms --dml-dir input --dml-file my-protocol.dml --hole 6,4
+```
 
-    cd thylacine/mpam
-    mypy --ignore-missing-imports --warn-redundant-casts --warn-return-any --warn-unreachable --strict-equality src tools
+specifies that the tool should 
+
+1. use the `joey` model,
+2. set the initial clock speed to 100 ms per clock tick,
+3. search for DML files in the `input` folder,
+4. pre-load the `my-protocol.dml` DML file, which will likely include functions and actions that define the protocol, and
+5. tell the system that the board being used has a pre-drilled pipetting hole above the cell at `(6,4)` (i.e., the sixth column in the fourth row).
+
+
+The DMF platform has a large number of command-line options.  A complete list, with explanations and default values, can be obtained by specifying `--help` after the board name.  To obtain a list of available board models, specify `--help` following the script name, before any further arguments.
+
+## DEVELOPING
+
+To develop (rather than simply use) the platform, a bit more will be required.  A full set of extra Python packages required to do any of these tasks can be installed by running
+
+```
+pip -r dev-install.txt
+```
+Tools for many of these tasks can be found in the `dev-tools` directory, which should be added to `PYTHONPATH`.
+
+### DML Grammar
+
+The grammar for the DML language can be found in the [`grammar`](grammar) directory.  The parser ([`dml.g4`](grammar/dml.g4)) and lexer ([`commonLexer.g4`](grammar/commonLexer.g4)) are written in [ANTLR4](https://www.antlr.org/).  
+
+If you modify the grammar, you will need a copy of ANTLR.  The current code was compiled using version 4.9.2.  You should configure the ANTLR tool to emit code to `target/generated-sources/antlr4` and should check in any changed emitted files.  The Python code implementing the language is in [`src/lang`](src/lang).
+
+### Board and Component Models
+
+The intention was/is that new board and component (e.g., pipettor or sensor) models would be described in a declarative **Board Description Language** and no Python expertise would be needed beyond perhaps writing glue code to talk to the actual hardware.
+
+That, unfortunately, is not there yet, so the best advice is probably to look at existing models like the [`joey`](src/devices/joey.py) board model, the [simulated](src/devices/dummy_pipettor.py) pipettor model, and the [`eselog`](src/devices/eselog.py) sensor model.  All of these (and more) are in the `devices` package in the [`src/devices`](src/devices) directory.
+
+
+### API Documentation
+
+Some of the code contains documentation comments that contain [Sphinx](https://www.sphinx-doc.org/en/master/)-based markup that can be extracted as web-based API documentation.[^apidoc]  This documentation can be extracted by running `dev-tools/build_doc.py` from within the `api-doc` directory.
+
+[^apidoc]: An unfortunately small portion of it.  Even worse, much of it is severely out of date and should certainly not be trusted at this point.
+
+### Mixing and Dilution Sequences
+
+Optimal multi-drop mixing and dilution sequences can be found by running `mix_ga_placed.py` and `dilution_ga_placed.py`, both found in the `dev-tools` directory.  These take as command-line arguments, respectively, the number of drops to mix, e.g.,
+
+```
+python3 mix_ga_placed.py 7
+```
+
+to get an even mixture of seven drops, and the “fold” of the dilution, e.g.,
+
+```
+python3 dilution_ga_place.py 1.2
+```
+
+to get a 1.2x (that is, 5:4) dilution.
+
+These scripts use a genetic algorithm to evolve the solutions, and the many parameters controlling the process can be found by adding `--help`.  The only one likely to be of use is `--full`, which tells the system to look for a solution in which all of the drops are fully mixed or diluted.  Without this, the solution will have only a single drop fully mixed or diluted.
+
+The final emitted result should be added to `src/dmf/mixing.py` or `src/dmf/dilution.py`.[^mixes]
+
+[^mixes]: As of this writing these files contain single-drop and full mixes for up to twelve drops and dilution sequences for 2x through 12x (including 2.5x, 3.5x, 4.5x, and 5.5x), as well as 15x, 16x, 20x, 25x, 32x, 50x, and 100x.
+
+### Linking to C++ Code
+
+For some board models, you may need to interface with C++ code in order to communicate with the board.  For the `bilby` model, we used [`pybind`](https://pybind11.readthedocs.io/) to wrap the C++ code.  The `dev-tools/pylider_stubs.py` tool (based on the `pybind11-stubgen` package) can be used to automatically generate stub files and put them in the `stubs` directory.  As always, use the `--help` argument to get a listing of the available command-line arguments.  In particular, this script was developed to generate stubs for a module named `pyglider`, but the `--module` argument can be used to replace this by the name of your module.
