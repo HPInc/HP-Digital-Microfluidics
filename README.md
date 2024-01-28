@@ -14,7 +14,7 @@ The platform also contains a [graphical user interface](assets/gui-example.jpg) 
 
 The platform supports defining protocols in two ways:
 
-1. Simple (and even reasonably complex) protocols can be written using the domain-friendly [DMF language](<doc/Introduction to DML.pdf>).  Protocols (and other functions and actions) can be preloaded into the `interactive` tool by using the `--dml-file` command-line argument and then executed by typing their names (and any associated parameters) into the `Expr:` box in the GUI.
+1. Simple (and even reasonably complex) protocols can be written using the domain-friendly [DML language](<doc/Introduction to DML.pdf>).  Protocols (and other functions and actions) can be preloaded into the `interactive` tool by using the `--dml-file` command-line argument and then executed by typing their names (and any associated parameters) into the `Expr:` box in the GUI.
 
 2. More complicated protocols, including features of the platform not (yet) available in DML (e.g., n-way mixes and n-times dilutions, multi-zone thermocycling, and sophisticated drop traffic control) can be written in Python by creating a subclass of the `dmf.Task` class.  See [`tools/support/pcr.py`](tools/support/pcr.py) for several examples of Python-implemented protocols and [`tools/interactive.py`](tools/interactive.py) for a model for creating a command-line program to drive such a protocol.
 
@@ -41,14 +41,14 @@ Once the repository has been cloned,
 To run `tools/interactive.py` (or any protocol-specific Python script), simply run it using a Python 3 interpreter.  Follow the script name by the name of the board model and any board- or protocol-specific command line arguments.  For example,
 
 ```
-python3 tools/interactive.py joey --clock-speed=100ms --dml-dir input --dml-file my-protocol.dml --hole 6,4
+python3 tools/interactive.py joey --clock-speed=100ms --dml-dir inputs --dml-file my-protocol.dml --hole 6,4
 ```
 
 specifies that the tool should 
 
 1. use the `joey` model,
 2. set the initial clock speed to 100 ms per clock tick,
-3. search for DML files in the `input` folder,
+3. search for DML files in the `inputs` folder,
 4. pre-load the `my-protocol.dml` DML file, which will likely include functions and actions that define the protocol, and
 5. tell the system that the board being used has a pre-drilled pipetting hole above the cell at `(6,4)` (i.e., the sixth column in the fourth row).
 
@@ -108,3 +108,17 @@ The final emitted result should be added to `src/dmf/mixing.py` or `src/dmf/dilu
 ### Linking to C++ Code
 
 For some board models, you may need to interface with C++ code in order to communicate with the board.  For the `bilby` model, we used [`pybind`](https://pybind11.readthedocs.io/) to wrap the C++ code.  The `dev-tools/pylider_stubs.py` tool (based on the `pybind11-stubgen` package) can be used to automatically generate stub files and put them in the `stubs` directory.  As always, use the `--help` argument to get a listing of the available command-line arguments.  In particular, this script was developed to generate stubs for a module named `pyglider`, but the `--module` argument can be used to replace this by the name of your module.
+
+## A Note on Issues in the Repo
+
+When the decision was made to open-source this codebase, it was also decided that the internal issues list should also be brought over, as the open issues contain ideas about a number of planned improvements (including thoughts on implementation)[^branches]  Unfortunately, GitHub makes it ***really*** difficult to copy issues and comments from a repo on one server to one on another.  If all has gone well, we've managed to approximate it so that all issues on the public repository have the same numbers they had on the internal repository.  There are, however, the following things to bear in mind:
+
+[^branches]: For the same reason, the entire commit history of the repo was copied over, as there were unfinished branches working on several of these issues.  Issue-related branches are named `issue.NNN` (with leading zeroes) for issue `NNN`.
+
+* All issues and comments show up as having been added by @EvanKirshenbaum in late January, 2024.
+   * Each has a note at the end identifying the original poster and date
+* Commits that reference the issues don't show up on the commit page.
+   * Instead, there is an extra (first) comment that lists the commits and their commit dates.
+* Comments that refer to issues with higher numbers correctly link to those issues, but there's no "mention" indication in the timeline of the target issue, so you'll have to search to see if anybody mentioned an issue.
+* There are references to internal codenames and early names for this project and related ones.
+   * In particular, "Thylacine" and "MPAM" both refer to this codebase, and "the macro language" is what's now called DML.

@@ -1,0 +1,25 @@
+# This is an example of a .logging file that can be used to configure logging messages.
+# The system looks for a configuration file like this one pointed to by the `--log-config`
+# command-line argument.  If that doesn't exist, it looks for a file named `.logging` in the
+# current directory.
+
+[loggers]
+keys=root
+
+[handlers]
+keys=to_stderr
+
+[formatters]
+keys=basic
+
+[logger_root]
+level=INFO
+handlers=to_stderr
+
+[handler_to_stderr]
+class=StreamHandler
+formatter=basic
+args=(sys.stderr,)
+
+[formatter_basic]
+format = TEST::%(levelname)7s|%(module)s|%(message)s
